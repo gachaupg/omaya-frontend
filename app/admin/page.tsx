@@ -1,3 +1,12 @@
 /**
  * page.tsx – auto‑generated placeholder
  */
+
+export default function AdminPage() {
+  return (
+    <div>
+      <h1>Dashboard Page</h1>
+      <p>This is the dashboard page.</p>
+    </div>
+  );
+}
