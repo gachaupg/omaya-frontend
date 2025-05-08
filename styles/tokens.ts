@@ -1,8 +1,6 @@
 /**
  * tokens.ts – auto‑generated placeholder
  */
-<<<<<<< HEAD
-=======
 // src/styles/tokens.ts
 export const tokens = {
   colors: {
@@ -17,4 +15,7 @@ export const tokens = {
     },
   },
 } as const;
->>>>>>> 0982b09 (chore(tokens): add design palette)
+
+/**
+ * tokens.ts – auto‑generated placeholder
+ */
