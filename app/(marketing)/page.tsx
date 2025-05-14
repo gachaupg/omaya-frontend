@@ -1,14 +1,1027 @@
-/**
- * page.tsx – auto‑generated placeholder
- */
+'use client';
+import React, { use, useState } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { tokens } from "@/styles/tokens";
+import { Play, MessageCircle } from "lucide-react";
 
-import { Metadata } from "next";
+const steps = [
+  {
+    icon: 'https://res.cloudinary.com/dam1sxczj/image/upload/v1746707947/create_account_gzbijn.png',
+    title: 'Create Account',
+    description: 'Create an account quickly and securely to start your digital trading journey.'
+  },
+  {
+    icon: 'https://res.cloudinary.com/dam1sxczj/image/upload/v1746707947/verify_i9k3dd.png',
+    title: 'Verify Identity',
+    description: 'Verify your identity to ensure a secure and compliant trading experience.'
+  },
+  {
+    icon: 'https://res.cloudinary.com/dam1sxczj/image/upload/v1746707947/Transfermoney_hnssjb.png',
+    title: 'Transfer Money',
+    description: 'Transfer funds effortlessly and access a world of digital assets.'
+  },
+  {
+    icon: 'https://res.cloudinary.com/dam1sxczj/image/upload/v1746707947/exchange_gmhyus.png',
+    title: 'Start Exchanging',
+    description: 'Start exchanging instantly and explore endless opportunities'
+  }
+];
+
+const achievements = [
+  {
+    value: "50M+",
+    label: "USD Total Transactions"
+  },
+  {
+    value: "5500+",
+    label: "Satisfied Clients"
+  },
+  {
+    value: "50,000+",
+    label: "Successful Transactions"
+  },
+  {
+    value: "5+",
+    label: "Years Of Experience"
+  }
+];
+
+const features = [
+  "Low Transaction Fee",
+  "Secure Payment Service",
+  "Fast Transactions",
+  "We Work 24/7"
+];
+
+type Category = 'News' | 'Blog';
+
+interface ArticleTag {
+  id: number;
+  name: string;
+}
+
+interface FAQItem {
+  id: number;
+  question: string;
+  answer: string;
+}
+
+interface Article {
+  id: number;
+  title: string;
+  excerpt: string;
+  image: string;
+  category: Category;
+  tags: ArticleTag[];
+  slug: string;
+  createdAt?: string;
+}
+
 
 export default function MarketingPage() {
+  const [activeCategory, setActiveCategory] = useState<Category>('News');
+  const [openFAQ, setOpenFAQ] = useState<number | null>(4); 
+  
+  const tags = [
+    { id: 1, name: 'Crypto' },
+    { id: 2, name: 'Investment' },
+    { id: 3, name: 'NFTs' },
+    { id: 4, name: 'Trading' },
+    { id: 5, name: 'Finance' },
+    { id: 6, name: 'Technology' },
+  ];
+  
+  const articles: Article[] = [
+    {
+      id: 1,
+      title: 'Understanding Cryptocurrency Fundamentals',
+      excerpt: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.',
+      image: 'https://res.cloudinary.com/dam1sxczj/image/upload/v1746799100/Rectangle_39365_wlbjxc.png',
+      category: 'News',
+      tags: [tags[0], tags[1], tags[3]],
+      slug: 'understanding-cryptocurrency-fundamentals',
+      createdAt: '15-Jun-2023',
+    },
+    {
+      id: 2,
+      title: 'How to Spot Profitable Crypto Investments',
+      excerpt: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.',
+      image: 'https://res.cloudinary.com/dam1sxczj/image/upload/v1746799100/Rectangle_39365_1_m5kk0k.png',
+      category: 'News',
+      tags: [tags[0], tags[1], tags[3]],
+      slug: 'how-to-spot-profitable-crypto-investments',
+      createdAt: '15-Jun-2023',
+    },
+    {
+      id: 3,
+      title: 'Top 10 Cryptocurrencies to Watch in 2025',
+      excerpt: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.',
+      image: 'https://res.cloudinary.com/dam1sxczj/image/upload/v1746799101/Rectangle_39365_2_zppekf.png',
+      category: 'News',
+      tags: [tags[0], tags[4], tags[5]],
+      slug: 'top-10-cryptocurrencies-to-watch',
+      createdAt: '15-Jun-2023',
+    },
+    {
+      id: 4,
+      title: 'Blockchain Technology: Beyond Cryptocurrencies',
+      excerpt: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.',
+      image: 'https://res.cloudinary.com/dam1sxczj/image/upload/v1746799100/Rectangle_39365_3_sflpns.png',
+      category: 'Blog',
+      tags: [tags[0], tags[5], tags[2]],
+      slug: 'blockchain-technology-beyond-cryptocurrencies',
+      createdAt: '15-Jun-2023',
+    },
+    {
+      id: 5,
+      title: 'Cryptocurrency Trading Strategies for Beginners',
+      excerpt: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.',
+      image: 'https://res.cloudinary.com/dam1sxczj/image/upload/v1746799099/Rectangle_39365_4_sadtbr.png',
+      category: 'Blog',
+      tags: [tags[0], tags[1], tags[3]],
+      slug: 'cryptocurrency-trading-strategies-for-beginners',
+      createdAt: '15-Jun-2023',
+    },
+    {
+      id: 6,
+      title: 'The Future of Digital Currency',
+      excerpt: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.',
+      image: 'https://res.cloudinary.com/dam1sxczj/image/upload/v1746799099/Rectangle_39365_5_brmtxk.png',
+      category: 'Blog',
+      tags: [tags[0], tags[4], tags[5]],
+      slug: 'the-future-of-digital-currency',
+      createdAt: '15-Jun-2023',
+    },
+    {
+      id: 7,
+      title: 'Blockchain Technology: Beyond Cryptocurrencies',
+      excerpt: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.',
+      image: 'https://res.cloudinary.com/dam1sxczj/image/upload/v1746799100/Rectangle_39365_3_sflpns.png',
+      category: 'News',
+      tags: [tags[0], tags[5], tags[2]],
+      slug: 'blockchain-technology-beyond-cryptocurrencies',
+      createdAt: '15-Jun-2023',
+    },
+    {
+      id: 8,
+      title: 'Cryptocurrency Trading Strategies for Beginners',
+      excerpt: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.',
+      image: 'https://res.cloudinary.com/dam1sxczj/image/upload/v1746799099/Rectangle_39365_4_sadtbr.png',
+      category: 'News',
+      tags: [tags[0], tags[1], tags[3]],
+      slug: 'cryptocurrency-trading-strategies-for-beginners',
+      createdAt: '15-Jun-2023',
+    },
+    {
+      id: 9,
+      title: 'The Future of Digital Currency',
+      excerpt: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.',
+      image: 'https://res.cloudinary.com/dam1sxczj/image/upload/v1746799099/Rectangle_39365_5_brmtxk.png',
+      category: 'News',
+      tags: [tags[0], tags[4], tags[5]],
+      slug: 'the-future-of-digital-currency',
+      createdAt: '15-Jun-2023',
+    },
+  ];
+
+  const faqItems: FAQItem[] = [
+    {
+      id: 1,
+      question: 'Praesent Finibus Dictum Nisl Sit Amet Vulputate.',
+      answer: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.'
+    },
+    {
+      id: 2,
+      question: 'Praesent Finibus Dictum Nisl Sit Amet Vulputate.',
+      answer: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.'
+    },
+    {
+      id: 3,
+      question: 'Praesent Finibus Dictum Nisl Sit Amet Vulputate.',
+      answer: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.'
+    },
+    {
+      id: 4,
+      question: 'Praesent Finibus Dictum Nisl Sit Amet Vulputate.',
+      answer: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.'
+    },
+    {
+      id: 5,
+      question: 'Praesent Finibus Dictum Nisl Sit Amet Vulputate.',
+      answer: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.'
+    }
+  ];
+
+  const toggleFAQ = (id: number) => {
+    setOpenFAQ(openFAQ === id ? null : id);
+  };
+  
+  const filteredArticles = articles.filter(article => article.category === activeCategory);
+
   return (
-    <div>
-      <h1>Marketing Page</h1>
-      <p>This is the marketing page.</p>
+    <div>   
+      <section
+        className="relative min-h-screen pt-24 pb-16 mx-auto overflow-hidden bg-gradient-to-br from-[#022E18] via-[#022E18CC] to-transparent"
+        style={{
+          background: `
+            radial-gradient(circle at top left, ${tokens.colors.brand.hero} 0%, ${tokens.colors.brand.hero}CC 30%, transparent 70%),
+            radial-gradient(circle at bottom right, ${tokens.colors.brand.hero} 0%, ${tokens.colors.brand.hero}CC 30%, transparent 70%),
+            linear-gradient(135deg, ${tokens.colors.brand.hero} 0%, ${tokens.colors.brand.hero}CC 40%, 
+            ${tokens.colors.brand.lightGreen} 50%, ${tokens.colors.brand.hero}CC 60%, ${tokens.colors.brand.hero} 100%)
+          `,
+        }}
+      >
+        {/* Heptagonal Patterns */}
+        <div className="absolute inset-0 overflow-hidden">
+          {/* Top right heptagon */}
+          <div
+            className="absolute bottom-[160px] right-[40px] w-[180px] h-[180px] opacity-20 bg-[#13B562]"
+            style={{
+              clipPath: "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
+            }}
+          ></div>
+
+          {/* Top left heptagon */}
+          <div 
+            className="absolute top-[-20px] left-[30px] w-[80px] h-[80px] opacity-20 bg-[#13B562]"
+            style={{
+              clipPath: "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
+            }}
+          ></div>
+
+          {/* Bottom left heptagon */}
+          <div
+            className="absolute bottom-[-40px] left-[300px] w-[180px] h-[180px] opacity-20 bg-[#13B562]"
+            style={{
+              clipPath: "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
+            }}
+          ></div>
+
+          {/* Top right heptagon */}
+          <div
+            className="absolute top-[80px] left-[720px] w-[180px] h-[180px] opacity-20 bg-[#13B562]"
+            style={{
+              clipPath: "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
+            }}
+          ></div>
+        </div>
+
+        <div className="container mx-auto px-4 relative z-10 mt-20">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-starts">
+            <div className="space-y-6 pl-6 md:pl-12 md:text-left text-center"> 
+              <h1 className="text-4xl md:text-5xl font-bold text-white tracking-wide"> 
+                <span className="inline-block w-full">Welcome&nbsp;to</span>
+                <span className="inline-block w-full">OMAYA&nbsp;Exchange</span> 
+              </h1>
+              <p className="text-white/80 max-w-md mx-auto md:mx-0">
+                We are OMAYA EXCHANGE, Somalia's leading platform for exchanging cryptocurrencies and Forex. Founded by experts with over 15 years of IT experience, we bridge traditional finance with the digital economy in East Africa. 
+                Our secure and user-friendly platform is designed to meet the unique needs of our market, empowering users with seamless access to the world of digital assets.
+                Committed to transparency, innovation, and education, we are shaping the future of finance in our region.
+              </p>
+              <div className="flex flex-wrap gap-4 justify-center md:justify-start">
+                <button className="rounded-md px-6 py-2 text-white bg-[#1D8751]">
+                  Contact Us
+                </button>
+                <button className="rounded-md text-white hover:bg-white/10 px-6 py-2 flex items-center gap-2 border border-[#1D8751]">
+                  Watch Video
+                  <Play size={16} className="ml-1 text-[#1D8751]"/>
+                </button>
+              </div>
+            </div>
+            <div className="flex justify-center">
+              <div className="relative">
+                <Image
+                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746561970/iPhone_13_Mockup_1_zzm7tt.png"
+                  alt="OMAYA Exchange App"
+                  width={300}
+                  height={400}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="py-20 px-4 bg-[#18181D]">      
+        <div className="container mx-auto max-w-6xl px-4">
+          {/* Section Title */}
+          <h2 className="text-center text-2xl md:text-3xl font-medium text-white mb-12">
+            Celebrating Success: <span className="text-[#1D8751]">Key Achievements at OMAYA EXCHANGE</span>
+          </h2>
+          {/* Achievement Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {achievements.map((achievement, index) => (
+              <div 
+                key={index} 
+                className="border border-[#13B562]/40 rounded-lg p-6 flex flex-col items-center justify-center bg-[#1D1D23]"
+              >
+                <div className="text-[#F79330] text-3xl md:text-4xl font-bold mb-2">
+                  {achievement.value}
+                </div>
+                <div className="text-white text-xm text-center">
+                  {achievement.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* About section */}
+        <div className="container mx-auto max-w-6xl mt-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            {/* Left side - About */}
+            <div className="md:text-left text-center">
+              <div className="flex mb-6 justify-center md:justify-start">
+                <div className="mr-4"></div>
+                <div>
+                  <div className='flex items-center mb-2 gap-4 justify-center md:justify-start'>
+                    <div className="text-sm text-white font-medium p-1 tracking-widest rotate-180 border-l-2 border-[#1D8751] [writing-mode:vertical-rl]">
+                      ABOUT US
+                    </div>
+                    <div>
+                      <h3 className="text-[#1D8751] text-xl font-medium mb-1">ABOUT</h3>
+                      <h4 className="text-[#1D8751] text-xl font-medium mb-4">OMAYA EXCHANGE .</h4>
+                    </div>
+                  </div>
+                  
+                  <div className="text-white space-y-6 text-left">
+                    <p>
+                      Established in 2019, OMAYA Express Exchange is Somalia's leading cryptocurrency exchange, licensed by the Central Bank of Somalia. With a team spread across the country and abroad, we've facilitated over 50,000 transactions, surpassing $60 million in volume. In addition to cryptocurrency services, we act as a local agent for premier Forex brokers, offering comprehensive financial solutions. We are fully compliant with government regulations, ensuring a secure and trustworthy platform for all our users.
+                      Our commitment to innovation and customer satisfaction drives everything we do at OMAYA Exchange. We focus on providing a seamless, user-friendly experience for both novice and experienced traders. By combining advanced technology with a deep understanding of the local market, we empower our users to confidently participate in the global digital economy. As we continue to grow, we remain dedicated to maintaining the highest standards of transparency, security, and regulatory compliance, ensuring that
+                      OMAYA Exchange remains the trusted gateway to financial freedom in East Africa.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right side - 3D illustration */}
+            <div className="flex justify-center items-start">
+              <div className="relative h-64 w-64 md:h-80 md:w-80">
+                <Image 
+                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746707948/Group_164015_izwpob.png" 
+                  alt="Cryptocurrency exchange 3D illustration" 
+                  fill
+                  className="object-contain"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main heading */}
+        <div className="text-center mb-12">
+          <h2 className="text-2xl md:text-3xl font-medium">
+            <span className="text-white">Get Set Up And </span>
+            <span className="text-[#1D8751]">Start Exchanging</span>
+          </h2>
+        </div>
+
+        {/* Steps */}
+        <div className="container mx-auto max-w-6xl relative mt-24">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {steps.map((step, index) => (
+            <div key={index} className="relative">
+              {/* Step card */}
+              <div className="border border-[#13B562]/40 rounded-lg p-6 flex flex-col items-center bg-[#18181D] h-full">
+                <div className="border border-[#13B562]/40 p-4 rounded-md mb-4 relative">
+                    <div className='bg-green-700 w-2 h-2 rounded-full absolute top-1.5 left-[-7]'></div>
+                    <div className='bg-green-700 w-2 h-2 rounded-full absolute bottom-3 right-[-4]'></div>
+                  <img
+                    src={step.icon || "/placeholder.svg"}
+                    alt={step.title}
+                    className="w-12 h-12 object-contain"
+                  ></img>
+                </div>
+                <h3 className="text-white font-medium text-lg mb-2 text-center">{step.title}</h3>
+                <p className="text-[#788099] text-center text-sm">{step.description}</p>
+              </div>
+
+              {/* Bottom semi-circle curves for first and third connections */}
+              {(index === 0 || index === 2) && index < steps.length - 1 && (
+                <div
+                  className="absolute hidden md:block"
+                  style={{
+                    left: "100%",
+                    top: "100%",
+                    transform: "translateX(-50%)",
+                    width: "130px",
+                    height: "60px",
+                    zIndex: 10,
+                  }}
+                >
+                  <svg width="100%" height="100%" viewBox="0 0 120 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M0 0 C30 50, 75 50, 120 0"
+                      stroke="#1D8751"
+                      strokeWidth="2"
+                      strokeDasharray="5,5"
+                      fill="none"
+                    />
+                  <polygon 
+                  points="115,5 125,0 115,-5" 
+                  fill="#1D8751"
+                  transform='translate(-1,0) rotate(160, 120, 0)'
+                />
+                  </svg>
+                </div>
+              )}
+
+              {/* Top semi-circle curve for the middle connection */}
+              {index === 1 && (
+                <div
+                  className="absolute hidden md:block"
+                  style={{
+                    left: "100%",
+                    bottom: "100%",
+                    transform: "translateX(-50%)",
+                    width: "130px",
+                    height: "75px",
+                    zIndex: 10,
+                  }}
+                >
+                  <svg width="100%" height="100%" viewBox="0 0 120 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M0 50 C25 0, 75 0, 100 50"
+                      stroke="#1D8751"
+                      strokeWidth="2"
+                      strokeDasharray="5,5"
+                      fill="none"
+                    />
+                    <polygon points="95,55 100,50 90,50" fill="#1D8751" transform="translate(5, 0) rotate(-45, 100, 50)" />
+                  </svg>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+       </div>
+
+        {/* Features section */}
+        <div className="container mx-auto max-w-6xl mt-24">
+          <h2 className="text-center text-2xl md:text-3xl font-medium text-white mb-16">
+            <span className="text-[#1D8751]">Why Choose Us</span>
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-24">
+            <div className="relative flex justify-center">    
+              <div className="relative w-64 h-96">
+                <div className="absolute w-60 h-60 rounded-full bg-[#12AA5D21] bg-opacity- top-[100px] right-1/4 " style={{ transform: 'scale(1.5)' }}></div>
+                <div className="absolute w-60 h-60 rounded-full border border-[#1D7A4A] border-opacity- top-[100px] " style={{ transform: 'scale(1.5)' }}></div>
+                <Image 
+                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746561970/iPhone_13_Mockup_1_zzm7tt.png" 
+                  alt="OMAYA Exchange mobile app" 
+                  fill
+                  className="object-contain"
+                  priority
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col justify-center md:items-start items-center">
+              <h3 className="text-2xl font-medium mb-8">
+                <span className="text-[#1D8751] mr-2">Fast</span>
+                <span className="text-white mr-2">and</span>
+                <span className="text-[#1D8751]">Secure</span>
+                <span className="text-white"> Crypto Exchange</span>
+              </h3>
+              
+              <ul className="space-y-4 ml-4">
+                {features.map((feature, index) => (
+                  <li key={index} className="flex items-center">
+                    <div className="w-3 h-3 rounded-full bg-[#1D8751] flex items-center justify-center mr-3"></div>
+                    <span className="text-[#788099]">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+              
+              {/* App Store Buttons */}
+              <div className="flex mt-8 space-x-4">
+                <div className="rounded px-4 py-2 flex items-center border border-gray-700">
+                  <Image 
+                    src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746786399/apple_f0yfel.png" 
+                    alt="Apple App Store" 
+                    width={20} 
+                    height={20} 
+                    className="mr-2"
+                  />
+                  <div>
+                    <p className="text-white text-xs">Download on the</p>
+                    <span className="text-white text-sm">App Store</span>
+                  </div>
+                </div>
+                <div className="rounded px-4 py-2 flex items-center border border-gray-700">
+                  <Image
+                    src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746787514/Google_Play-Icon-Logo.wine_dqxxk7.svg" 
+                    alt="Google Play Store" 
+                    width={45} 
+                    height={13} 
+                    className="mr-2"
+                  />
+                  <div>
+                    <p className="text-white text-xs">Download on the</p>
+                    <span className="text-white text-sm">Google Play</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>      
+      </div>
+          {/* Benefits Section*/}
+        <div className="w-full bg-gradient-to-r from-[#022E18] to-[#13B562] py-16">
+          <div className="container mx-auto max-w-6xl px-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Absolute Safety */}
+              <div className="flex">
+                <div className="mr-4">
+                <div
+                  className="w-16 h-16 bg-[#095E32] flex items-center justify-center shadow-lg shadow-[#0A6E3A]/50 p-2"
+                  style={{
+                    clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)", 
+                  }}
+                >
+                    <img src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746792649/safety_s0zxej.png" alt="" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-white font-medium text-lg mb-2">Absolute Safety</h3>
+                  <p className="text-gray-200 text-sm">Exchange confidently with OMAYA, where safety is our top priority.</p>
+                </div>
+              </div>
+
+              {/* Fast Deposits & Withdrawals */}
+              <div className="flex">
+                <div className="mr-4">
+                <div
+                  className="w-16 h-16 bg-[#095E32] flex items-center justify-center shadow-lg shadow-[#0A6E3A]/50 px-2 py-3"
+                  style={{
+                    clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)", 
+                  }}
+                >
+                    <img src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746792649/withdrawals_sy4kqe.png" alt="" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-white font-medium text-lg mb-2">Fast Deposits & Withdrawals</h3>
+                  <p className="text-gray-200 text-sm">Enjoy swift and seamless deposits and withdrawals.</p>
+                </div>
+              </div>
+
+              {/* Invite your friend and earn */}
+              <div className="flex">
+                <div className="mr-4">
+                <div
+                  className="w-16 h-16 bg-[#095E32] flex items-center justify-center shadow-lg shadow-[#0A6E3A]/50 p-2"
+                  style={{
+                    clipPath: "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)", 
+                  }}
+                >
+                    <img src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746792649/users-profiles-03_qfxyha.png" alt="" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-white font-medium text-lg mb-2">Invite your friend and earn</h3>
+                  <p className="text-gray-200 text-sm">Refer and invite your friends and earn commission on each transaction they make with us!</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Supported Assets Section*/}
+        <div className="w-full bg-[#18181D] py-16">
+          <div className="container mx-auto max-w-6xl px-4">
+            <h2 className="text-center text-2xl md:text-3xl font-medium text-white mb-12">
+              Supported Assets
+            </h2>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
+              {/* FXPRIMUS */}
+              <div className="bg-[#1D1D23] rounded-lg py-6 px-4 flex flex-col items-center">
+                <div className="w-16 h-16 mb-3">
+                  <Image
+                    src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746793801/FXPRIMUS-logo_2_k8ikwb.png"
+                    alt="FXPRIMUS"
+                    width={64}
+                    height={64}
+                    className="object-contain"
+                  />
+                </div>
+                <span className="text-white text-sm">FXPRIMUS</span>
+              </div>
+
+              {/* Perfect Money */}
+              <div className="bg-[#1D1D23] rounded-lg py-6 px-4 flex flex-col items-center">
+                <div className="w-16 h-16 mb-3">
+                  <Image
+                    src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746793801/Perfect_Money_Logo_2_niaa2j.png"
+                    alt="Perfect Money"
+                    width={64}
+                    height={64}
+                    className="object-contain"
+                  />
+                </div>
+                <span className="text-white text-sm">Perfect Money</span>
+              </div>
+
+              {/* USDT Tether (ERC20) */}
+              <div className="bg-[#1D1D23] rounded-lg py-6 px-4 flex flex-col items-center">
+                <div className="w-16 h-16 mb-3">
+                  <Image
+                    src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746793800/Group_164023_bluiv9.png"
+                    alt="USDT Tether (ERC20)"
+                    width={64}
+                    height={64}
+                    className="object-contain"
+                  />
+                </div>
+                <span className="text-white text-sm">USDT Tether (ERC20)</span>
+              </div>
+
+              {/* Bitcoin */}
+              <div className="bg-[#1D1D23] rounded-lg py-6 px-4 flex flex-col items-center">
+                <div className="w-16 h-16 mb-3">
+                  <Image
+                    src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746793800/Bitcoin-1_b6ku56.png"
+                    alt="Bitcoin"
+                    width={64}
+                    height={64}
+                    className="object-contain"
+                  />
+                </div>
+                <span className="text-white text-sm">Bitcoin</span>
+              </div>
+
+              {/* USDT Tether (TRC20) */}
+              <div className="bg-[#1D1D23] rounded-lg py-6 px-4 flex flex-col items-center">
+                <div className="w-16 h-16 mb-3">
+                  <Image
+                    src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746793800/Tether_ttkeym.png"
+                    alt="USDT Tether (TRC20)"
+                    width={64}
+                    height={64}
+                    className="object-contain"
+                  />
+                </div>
+                <span className="text-white text-sm">USDT Tether (TRC20)</span>
+              </div>
+
+              {/* ICM Capital */}
+              <div className="bg-[#1D1D23] rounded-lg py-6 px-4 flex flex-col items-center">
+                <div className="w-16 h-16 mb-3">
+                  <Image
+                    src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746793800/ICMCapital_1_qte6tt.png"
+                    alt="ICM Capital"
+                    width={64}
+                    height={64}
+                    className="object-contain"
+                  />
+                </div>
+                <span className="text-white text-sm">ICM Capital</span>
+              </div>
+
+              {/* +300 More */}
+              <div className="bg-[#1D1D23] rounded-lg py-6 px-4 flex flex-col items-center justify-center">
+                <div className="text-[#FFA500] font-medium">
+                  +300
+                </div>
+                <span className="text-gray-400 text-sm">More</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      {/* Referral Section*/}
+      <div className="w-full bg-gradient-to-r from-[#197345] to-[#278D59] relative  md:py-0 lg:py-8">
+        <div className="container mx-auto md:pl-18 md:pr-0 px-6">
+          <div className="flex flex-col md:flex-row items-center">
+            {/* Text content */}
+            <div className="w-full md:w-1/2 mb-8 md:mb-0">
+              <p className="text-white text-lg mb-2">Invite your friend, and earn commission</p>
+              <h2 className="text-white text-2xl md:text-2xl font-medium mb-6">
+                Refer and Invite your friends and earn commission on each transaction they make with us!
+              </h2>
+              <button className="bg-white text-[#0A6E3A] px-6 py-2 rounded-full hover:bg-gray-100 transition duration-300">
+                Contact Us
+              </button>
+            </div>
+            
+            <div className="hidden md:flex w-1/2 justify-end md:mt-8 lg:mt-12 absolute right-0">
+              <div className="relative w-64 h-64">
+                <Image 
+                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746795074/phones_fmej07.png" 
+                  alt="Referral Program" 
+                  fill
+                  className="object-contain"
+                />
+              </div>
+            </div>
+          </div>
+          
+          {/* Mobile-only image that appears below text */}
+          <div className="flex md:hidden justify-center mt-8">
+            <div className="relative w-64 h-64">
+              <Image 
+                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746795074/phones_fmej07.png" 
+                alt="Referral Program" 
+                fill
+                className="object-contain"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+        {/* Blogs Section */}
+      <div className="w-full bg-[#18181D] text-white py-12 px-4 md:px-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header section */}
+        <div className="mb-10">
+          <h2 className="text-center text-2xl font-semibold">
+            Enjoy Our <span className="text-[#1D8751] mr-2">Blog</span>On the <span className="text-[#1D8751]">Latest Company Updates</span>
+          </h2>
+          
+          {/* Category toggle buttons */}
+            <div className="mt-6 inline-flex bg-[#1D1D23] rounded-full p-1">
+            <button
+              onClick={() => setActiveCategory('News')}
+              className={`px-6 py-2 rounded-full text-sm font-medium flex items-center gap-2 transition-colors ${
+              activeCategory === 'News' ? 'bg-[#1D8751] text-white' : 'text-gray-300'
+              }`}
+            >
+              <span
+              className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${
+              activeCategory === 'News' ? 'border-white' : 'border-gray-400'
+              }`}
+              >
+              <span
+                className={`w-3 h-3 rounded-full ${
+                activeCategory === 'News' ? 'bg-white' : 'bg-transparent'
+                }`}
+              ></span>
+              </span>
+              News
+            </button>
+            <button
+              onClick={() => setActiveCategory('Blog')}
+              className={`px-6 py-2 rounded-full text-sm font-medium flex items-center gap-2 transition-colors ${
+              activeCategory === 'Blog' ? 'bg-[#1D8751] text-white' : 'text-gray-300'
+              }`}
+            >
+              <span
+              className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${
+              activeCategory === 'Blog' ? 'border-white' : 'border-gray-400'
+              }`}
+              >
+              <span
+                className={`w-3 h-3 rounded-full ${
+                activeCategory === 'Blog' ? 'bg-white' : 'bg-transparent'
+                }`}
+              ></span>
+              </span>
+              Blog
+            </button>
+            </div>
+        </div>
+
+        {/* Articles grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {filteredArticles.map((article) => (
+            <div key={article.id} className="bg-[#18181D] rounded-lg overflow-hidden  flex flex-col h-full">
+              <div className="relative h-48">
+                <Image
+                  src={article.image}
+                  alt={article.title}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+              <div className="py-6">
+                <div className="flex justify-between flex-wrap gap-2 mb-3">
+                  <p className="text-xs rounded-full text-[#727272]">{article.createdAt}</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {article.tags.map(tag => (
+                      <span key={tag.id} className="text-xs px-2 py-1 bg-[#35353E] rounded-full text-[#788099]">{tag.name}</span>
+                    ))}
+                  </div>
+                </div>
+                <h3 className="font-bold text-lg mb-4">{article.title}</h3>
+                <p className="text-[#788099] text-sm mb-4">{article.excerpt}</p>
+                <Link
+                  href={`/blog/${article.slug}`}
+                  className="inline-block text-[#1D8751] border border-[#1D8751] rounded-full px-4 py-1 text-sm transition-colors hover:bg-[#1D8751] hover:text-white"
+                >
+                  Read Article
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* See all button */}
+        <div className="mt-10 text-center">
+          <Link
+            href={`/${activeCategory.toLowerCase()}`}
+            className="inline-block bg-[#1D8751] text-white rounded-full px-6 py-3 font-medium text-sm transition-colors hover:bg-[#1D8751]"
+          >
+            Go To {activeCategory}
+          </Link>
+        </div>
+      </div>
+      </div>
+
+      {/* Contact Us Section */}
+      <section className="w-full bg-[#1D1D23] text-white py-16 px-4 md:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col lg:flex-row items-center gap-8">
+            {/* Form Section */}
+            <div className="w-full lg:w-1/2 space-y-6">
+              <h2 className="text-3xl font-bold mb-6 w-3/4">
+                Need Answers to Your Questions? Contact Us
+              </h2>
+              
+              <form className="space-y-4">
+                <div>
+                  <label htmlFor="email" className="block text-sm mb-2">Email</label>
+                  <div className="relative">
+                  <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                  <svg width="20" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="4" width="20" height="16" rx="2" stroke="#1D8751" strokeWidth="1.5" />
+                    <path d="M22 6L12 13L2 6" stroke="#1D8751" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  </div>
+                  <input
+                    type="email"
+                    id="email"
+                    className="w-full border border-[#35353E] rounded-full py-3 pl-10 pr-3 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#1D8751]"
+                    placeholder="Your email address"
+                    required
+                  />
+                  </div>
+                </div>
+                
+                <div>
+                  <label htmlFor="question" className="block text-sm mb-2">Text</label>
+                  <textarea
+                  id="question"
+                  className="w-full border border-[#35353E] rounded-3xl py-3 px-4 resize-none text-white  placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#1D8751]"
+                  placeholder="Your question"
+                  rows={5}
+                  required
+                  ></textarea>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <button
+                    type="button"
+                    className="w-full sm:w-auto flex-1 bg-[#1D8751] hover:bg-[#1D8751] text-white font-medium py-2 px-6 rounded-full transition-colors focus:outline-none "
+                  >
+                    Connect with Live Chat
+                  </button>
+                  
+                  <button
+                    type="submit"
+                    className="w-full sm:w-auto flex-1 bg-transparent border-2 border-[#1D8751] text-[#1D8751] font-medium py-2 px-6 rounded-full transition-colors focus:outline-none"
+                  >
+                    Submit Email
+                  </button>
+                </div>
+              </form>
+            </div>
+            
+            {/* Image Section */}
+            <div className="w-full lg:w-1/2">
+              <div className="rounded-2xl overflow-hidden">
+                <Image
+                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746799099/Rectangle_39366_f6i8px.png"
+                  alt="Customer service representatives"
+                  width={600}
+                  height={400}
+                  className="w-full h-auto object-cover"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="w-full bg-[#18181D] text-white py-16 px-4 md:px-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col lg:flex-row items-center gap-12">
+          {/* Illustration */}
+          <div className="w-full lg:w-1/2">
+            <div className="relative w-full max-w-md mx-auto">
+              <Image
+                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746799098/na_january_14-ai_2_odotog.png"
+                alt="FAQ Illustration"
+                width={500}
+                height={400}
+                className="w-full h-auto"
+              />
+            </div>
+          </div>
+
+        {/* FAQ Content */}
+        <div className="w-full lg:w-1/2 space-y-6">
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold">
+              Let's Answer Some Of Your Questions Or
+            </h2>
+            <p className="text-2xl font-medium text-[#1D8751]">
+              Frequently Asked Questions
+            </p>
+          </div>
+          
+          {/* Accordion */}
+          <div className="space-y-4">
+            {faqItems.map((item) => (
+              <div key={item.id} className="relative">
+                {/* Complete accordion with border around everything */}
+                <div className={`border rounded-xl overflow-hidden ${
+                  openFAQ === item.id ? 'border-[#1D8751]' : 'border-[#35353E]'
+                }`}>
+                  {/* Accordion Header */}
+                  <button
+                    onClick={() => toggleFAQ(item.id)}
+                    className="w-full flex justify-between items-center px-4 py-3 text-left bg-[#1D1D23]"
+                  >
+                    <span className="text-white">{item.question}</span>
+                    {openFAQ === item.id ? (
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M12 4L4 12"
+                          stroke="#1D8751"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M4 4L12 12"
+                          stroke="#1D8751"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M8 4V12"
+                          stroke="#1D8751"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M4 8H12"
+                          stroke="#1D8751"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                  
+                  {/* Accordion Content */}
+                  {openFAQ === item.id && (
+                    <>
+                      {/* Dashed separator line */}
+                      <div className="border-t border-dashed  border-gray-600 ml-2 mr-2"></div>
+                      <div className="px-4 py-3 bg-[#1D1D23]">
+                        <p className="text-gray-400 text-sm">{item.answer}</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        </div>
+
+     {/* Chat button */}
+     <div className="absolute right-4 mt-4">
+        <button className="rounded-full p-3 text-[#1D8751]">
+          <MessageCircle size={34} />
+        </button>
+      </div>
+      </div>
+    </section>
     </div>
   );
 }
