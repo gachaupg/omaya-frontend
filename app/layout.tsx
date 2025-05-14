@@ -1,10 +1,17 @@
 import type { Metadata } from "next";
-import { Mulish } from "next/font/google";
-const mulish = Mulish({ subsets: ["latin"] });
+import { Geist, Geist_Mono, Mulish } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
+// Load all three fonts
+const geistSans = Geist({ subsets: ["latin"] });
+const geistMono = Geist_Mono({ subsets: ["latin"] });
+const mulish = Mulish({
+  variable: "--font-mulish",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -18,10 +25,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-<body className={mulish.className}>
-        <Navbar/>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} ${mulish.variable} antialiased`}
+      >
+        <Navbar />
         {children}
-        <Footer/>
+        <Footer />
       </body>
     </html>
   );

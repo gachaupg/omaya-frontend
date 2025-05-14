@@ -1,3 +1,46 @@
+"use client";
+
 /**
- * P2PLayout.tsx – auto‑generated placeholder
+ * P2PLayout.tsx
  */
+import React, { useState } from "react";
+import { p2pTabs } from "../data";
+import { tokens } from "@/styles/tokens";
+import Tabs from "./Tabs";
+import P2PDashboard from "./tabs/P2PDashboard";
+import Market from "./tabs/Market";
+import Orders from "./tabs/Orders";
+import NotFound from "./tabs/NotFound";
+import P2PCenter from "./tabs/p2pCenter";
+
+const P2PLayout = () => {
+  const [activeTab, setActiveTab] = useState("dashboard");
+
+  // Function to render content based on active tab
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case "dashboard":
+        return <P2PDashboard />;
+      case "market":
+        return <Market />;
+
+      case "orders":
+        return <Orders />;
+      case "center":
+        return <P2PCenter />;
+      default:
+        return <NotFound />;
+    }
+  };
+
+  return (
+    <div className={`${tokens.colors.dark.background} w-full min-h-screen`}>
+      <Tabs tabs={p2pTabs} activeTab={activeTab} onTabChange={setActiveTab} />
+      <div className="p-4 pr-4 md:pr-[120px] flex flex-col gap-4 rounded-lg w-full">
+        {renderTabContent()}
+      </div>
+    </div>
+  );
+};
+
+export default P2PLayout;

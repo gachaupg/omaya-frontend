@@ -5,19 +5,19 @@
 export const tokens = {
   colors: {
     brand: {
-      primary:   "#1D8751",
-      secondary: "#E23D3A",
-      hero:      "#022E18",
-      lightGreen:"#13B562",
-      darkGreen: "#0E5531",
+      primary:   "#1D8751", // Brand-primary
+      secondary: "#E23D3A", // Brand-secondary
+      hero:      "#022E18", // Marketing hero variant
+      lightGreen:"#13B562", // Marketing accent
+      darkGreen: "#0E5531", // Marketing accent
     },
     dark: {
-      background:    "#18181D",
-      card:          "#1D1D23",
-      textTitle:     "#FFFFFF",
-      textBody:      "#788099",
-      border:        "#35353E",
-      textSecondary: "#E23D3A",
+      background:    "#18181D", // Dark-mode background
+      card:          "#1D1D23", // Dark-mode card bg
+      textTitle:     "#FFFFFF", // Dark-mode title text
+      textBody:      "#788099", // Dark-mode body text
+      border:        "#35353E", // Dark-mode border primary
+      textSecondary: "#E23D3A", // Dark-mode secondary
     },
   },
 } as const;

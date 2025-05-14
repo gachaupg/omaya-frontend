@@ -1,10 +1,11 @@
-import Image from "next/image";
+// app/page.tsx
+
 import MarketingPage from "./(marketing)/page";
 
 export default function Home() {
   return (
-    <div >
-      <MarketingPage/>
+    <div>
+      <MarketingPage />
     </div>
   );
 }
