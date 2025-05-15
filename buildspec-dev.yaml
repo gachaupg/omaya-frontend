@@ -1,0 +1,23 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 480195466229.dkr.ecr.eu-north-1.amazonaws.com
+  build:
+    commands:
+      - echo Build started on `date`
+      - aws s3 cp s3://omaya-env/omaya-frontend-dev/dev.env ./   
+      - echo Building the Docker image...          
+      - docker build -t omayafrontend-dev .
+      - docker tag omayafrontend-dev:latest 480195466229.dkr.ecr.eu-north-1.amazonaws.com/omayafrontend-dev:latest      
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker image...
+      - docker push 480195466229.dkr.ecr.eu-north-1.amazonaws.com/omayafrontend-dev:latest
+      - printf '[{"name":"omaya-frontend-container","imageUri":"%s"}]' 480195466229.dkr.ecr.eu-north-1.amazonaws.com/omayafrontend-dev:latest > imagedefinitions-dev.json
+
+artifacts:
+    files: imagedefinitions-dev.json
