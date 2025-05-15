@@ -4,6 +4,10 @@ import React, { useState } from "react";
 import Button from "../../../Common/Button";
 import Card from "../../../Common/Card";
 
+interface AddsProps {
+  filterType: "buy" | "sell";
+}
+
 const COLORS = {
   buy: "#1D8751",
   sell: "#E23D3A",
@@ -26,8 +30,8 @@ const timeLimits = [
   { label: "15 min", value: 15 },
 ];
 
-const Adds: React.FC = () => {
-  const [type, setType] = useState<"buy" | "sell">("buy");
+const Adds: React.FC<AddsProps> = ({ filterType }) => {
+  const [type, setType] = useState<"buy" | "sell">(filterType);
   const [asset] = useState("Tether USDT TRC20");
   const [commission, setCommission] = useState(1);
   const [amount, setAmount] = useState("");

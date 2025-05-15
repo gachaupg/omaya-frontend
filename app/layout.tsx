@@ -1,16 +1,24 @@
+// app/layout.tsx
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Mulish } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
-// Load all three fonts
-const geistSans = Geist({ subsets: ["latin"] });
-const geistMono = Geist_Mono({ subsets: ["latin"] });
+// Load all three fonts with CSS-variable support
+const geistSans = Geist({
+  subsets: ["latin"],
+  variable: "--font-geist-sans",
+});
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-geist-mono",
+});
 const mulish = Mulish({
-  variable: "--font-mulish",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+  variable: "--font-mulish",
 });
 
 export const metadata: Metadata = {
@@ -20,9 +28,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
       <body
