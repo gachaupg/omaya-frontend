@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Moon, Sun, Menu, X } from "lucide-react";
+import { Moon, Sun, Menu, X, Check } from "lucide-react";
 
 export default function Navbar() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
@@ -77,8 +77,12 @@ export default function Navbar() {
 
         {/* Desktop Auth Buttons */}
         <div className="hidden md:flex items-center space-x-4">
-          <AuthButton variant="primary">Register</AuthButton>
-          <AuthButton variant="secondary">Log In</AuthButton>
+            <Link href="/auth/register">
+            <AuthButton variant="primary">Register</AuthButton>
+            </Link>
+            <Link href="/auth/login">
+            <AuthButton variant="secondary">Log In</AuthButton>
+            </Link>
           
           <div className="flex items-center space-x-4">
             <LanguageSelector />
@@ -140,7 +144,7 @@ const MobileNavLink = ({ href, children, onClick }: { href: string; children: Re
 
 const AuthButton = ({ variant, children, fullWidth = false }: { variant: "primary" | "secondary"; children: React.ReactNode; fullWidth?: boolean }) => (
   <button
-    className={`${variant === "primary" ? "bg-[#0E5531] hover:bg-[#13B562]" : "bg-transparent border border-[#13B562]"} 
+    className={`${variant === "primary" ? "bg-[#0E5531] hover:bg-[#13B562]" : "bg-transparent border border-[#1D8751]"} 
     text-white px-4 py-2 rounded-md transition-colors duration-200 text-sm md:text-base
     ${fullWidth ? "w-full" : ""}`}
   >
@@ -148,27 +152,95 @@ const AuthButton = ({ variant, children, fullWidth = false }: { variant: "primar
   </button>
 );
 
-const LanguageSelector = () => (
-  <div className="flex items-center justify-center cursor-pointer">
-    <Image
-      src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746538734/united_kingdom_zud79x.png"
-      alt="English"
-      width={24}
-      height={24}
-      className="rounded-full"
-    />
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
-      className="fill-white"
-      viewBox="0 0 16 16"
-    >
-      <path d="M1.5 6.5l6 6 6-6h-12z" />
-    </svg>
-    
-  </div>
-);
+const LanguageSelector = () => {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState("English");
+
+  const toggleDropdown = () => {
+    setDropdownOpen(!dropdownOpen);
+  };
+
+  const selectLanguage = (language: string) => {
+    setSelectedLanguage(language);
+    setDropdownOpen(false);
+  };
+
+  return (
+    <div className="relative">
+      <div
+        className="flex items-center justify-center cursor-pointer"
+        onClick={toggleDropdown}
+      >
+        <Image
+          src={selectedLanguage === "English" 
+            ? "https://res.cloudinary.com/dam1sxczj/image/upload/v1746538734/united_kingdom_zud79x.png" 
+            : "https://res.cloudinary.com/dam1sxczj/image/upload/v1747216099/somali_jq5e97.png"}
+          alt={selectedLanguage}
+          width={32}
+          height={32}
+          className="rounded-full"
+        />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          className="fill-white"
+          viewBox="0 0 16 16"
+        >
+          <path d="M1.5 6.5l6 6 6-6h-12z" />
+        </svg>
+      </div>
+      {dropdownOpen && (
+        <div className="absolute right-0 mt-2 w-[300px] bg-[#18181D] border border-[#35353E] rounded-lg shadow-lg z-50">
+          <button
+            className="block w-full text-left px-4 py-2 text-white hover:bg-[#35353E]"
+            onClick={() => selectLanguage("English")}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Image
+                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746538734/united_kingdom_zud79x.png"
+                  alt="English"
+                  width={20}
+                  height={20}
+                  className="rounded-full"
+                />
+                 <span className="text-sm">English</span>
+              </div>
+              {selectedLanguage === "English" && (
+                <div className="w-4 h-4 rounded-full flex items-center justify-center">
+                    <Check size={16} className="text-[#1D8751]" />
+                </div>
+              )}
+            </div>
+          </button>
+          <button
+            className="block w-full text-left px-4 py-2 text-white hover:bg-[#35353E]"
+            onClick={() => selectLanguage("Somali")}
+          >
+            <div className="flex items-center justify-between gap-8">
+              <div  className="flex items-center space-x-2">
+                <Image
+                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747216099/somali_jq5e97.png"
+                  alt="Somali"
+                  width={20}
+                  height={20}
+                  className="rounded-full"
+                />
+                <span className="text-sm">Somali</span>       
+              </div>
+              {selectedLanguage === "Somali" && (
+                <div className="w-4 h-4 rounded-full flex items-center justify-center">
+                  <span className="text-[10px] text-[#1D8751]">✓</span>
+                </div>
+              )}
+            </div>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const ThemeToggle = ({ theme, toggleTheme }: { theme: "light" | "dark"; toggleTheme: () => void }) => (
   <button onClick={toggleTheme} className="text-white bg-transparent p-1">
