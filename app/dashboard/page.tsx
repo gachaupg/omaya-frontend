@@ -1,12 +1,20 @@
-/**
- * page.tsx – auto‑generated placeholder
- */
-
-export default function DashboardPage() {
+import UserCard from "@/components/dashboard/ui/UserCard";
+import PriceCards from "@/components/charts/PriceChart";
+import VolumeChart from "@/components/charts/VolumeChart";
+import LineCharts from "@/components/charts/LineCharts";
+import Transactions from "@/components/dashboard/ui/Transactions";
+export default function DashboardPage({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <div>
-      <h1>Dashboard Page</h1>
-      <p>This is the dashboard page.</p>
+    <div className="px-4 md:px-6 pt-0 mb-4 flex flex-col gap-4 rounded-lg w-full">
+      <UserCard />
+      <PriceCards />
+      <VolumeChart />
+      <LineCharts />
+      <Transactions />
     </div>
   );
 }

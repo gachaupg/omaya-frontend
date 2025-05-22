@@ -3,21 +3,29 @@
 
 import React, { useState, useEffect } from "react";
 import Adds from "@/features/p2p/components/ui/p2pdashboard/sections/Adds";
+import Sidebar from "@/components/layout/Sidebar";
 
 export default function AddsPage() {
   // default to "buy"
   const [filterType, setFilterType] = useState<"buy" | "sell">("buy");
 
   useEffect(() => {
-    // parse the `?type=` on the client
     const params = new URLSearchParams(window.location.search);
     const t = params.get("type");
     setFilterType(t === "sell" ? "sell" : "buy");
   }, []);
 
   return (
-    <div className="lg:mr-[200px]">
-      <Adds filterType={filterType} />
+    <div className="min-h-screen mt-28 flex flex-col md:flex-row gap-1 px-4 md:px-0">
+      {/* Sidebar */}
+      <div className="w-full md:w-[180.28px] md:fixed md:top-28">
+        <Sidebar />
+      </div>
+
+      {/* Main Adds section */}
+      <div className="flex-1 md:ml-24 w-full">
+        <Adds filterType={filterType} />
+      </div>
     </div>
   );
 }

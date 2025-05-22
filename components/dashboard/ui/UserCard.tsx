@@ -1,12 +1,10 @@
-import React from "react";
+"use client";
+
+import Button from "@/features/p2p/components/Common/Button";
+import Card from "@/features/p2p/components/Common/Card";
 import Image from "next/image";
-import Card from "../../Common/Card";
-import Button from "../../Common/Button";
-
-import { useRouter } from "next/navigation";
-
-const UserCard = () => {
-  const router = useRouter();
+import React from "react";
+function UserCard() {
   return (
     <Card
       borderColor="border-[#35353E]"
@@ -27,8 +25,8 @@ const UserCard = () => {
                 height={56}
                 className="object-cover"
                 unoptimized={true}
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
+                onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+                  const target = e.currentTarget;
                   target.onerror = null;
                   target.src = "https://via.placeholder.com/56";
                 }}
@@ -59,7 +57,9 @@ const UserCard = () => {
               </h2>
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-[#1D8751] text-[14px]">Verified Profile</span>
+              <span className="text-[#1D8751] text-[14px]">
+                Verified Profile
+              </span>
               <div className="rounded-full p-0.5 bg-[#1D8751]">
                 <svg
                   width="14"
@@ -125,26 +125,6 @@ const UserCard = () => {
 
           {/* Action Buttons */}
           <div className="flex flex-wrap gap-2">
-            <Button
-              borderRadius={24}
-              width={130}
-              height={36}
-              variant="primary"
-              size="sm"
-              onClick={() => router.push("/adds?type=buy")}
-            >
-              +Post Buy Ad
-            </Button>
-            <Button
-              borderRadius={24}
-                width={130}
-              height={36}
-              variant="secondary"
-              size="sm"
-              onClick={() => router.push("/adds?type=sell")}
-            >
-              +Post Sell Ad
-            </Button>
             <Button
               variant="ghost"
               size="sm"
@@ -212,6 +192,6 @@ const UserCard = () => {
       </div>
     </Card>
   );
-};
+}
 
 export default UserCard;

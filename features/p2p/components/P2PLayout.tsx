@@ -36,7 +36,7 @@ const P2PLayout = () => {
   return (
     <div className={`${tokens.colors.dark.background} w-full min-h-screen`}>
       <Tabs tabs={p2pTabs} activeTab={activeTab} onTabChange={setActiveTab} />
-      <div className="p-4 pr-4 md:pr-[120px] flex flex-col gap-4 rounded-lg w-full">
+      <div className="pl-4 pt-0 mb-4  flex flex-col gap-4 rounded-lg w-full">
         {renderTabContent()}
       </div>
     </div>

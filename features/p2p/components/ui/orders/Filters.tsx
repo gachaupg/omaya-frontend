@@ -25,7 +25,7 @@ const Filters = () => {
   return (
     <div className="w-full flex flex-col ">
       {/* Tabs */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-0 bg-transparent rounded-[10px] border border-[#1D8751] w-full sm:w-fit px-1 py-1 overflow-x-auto">
           {orderStatusTabs.map((tab) => (
             <Button
@@ -33,7 +33,7 @@ const Filters = () => {
               variant={activeTab === tab.id ? "primary" : "ghost"}
               size="md"
               borderRadius={10}
-              className={`px-5 py-2 font-medium text-sm transition-all flex items-center gap-1 shadow-none border-none min-w-[120px] ${
+              className={`px-4 py-2 font-medium text-sm transition-all flex items-center gap-1 shadow-none border-none min-w-[100px] ${
                 activeTab === tab.id
                   ? "bg-[#1D8751] text-white"
                   : "bg-transparent text-[#1D8751] hover:bg-[#1D8751]/10"
@@ -69,9 +69,9 @@ const Filters = () => {
         </button>
       </div>
       {/* Filters Bar */}
-      <div className="flex w-full flex-wrap gap-4 items-center justify-between bg-transparent mt-2">
+      <div className="flex w-full flex-wrap gap-4 items-center justify-between bg-transparent mt-4">
         {/* Token Selector */}
-        <div className="flex items-center gap-2 bg-[#1D1D23] border border-[#444454] p-1 rounded-[24px] w-full sm:w-auto min-w-[230.5px]">
+        <div className="flex items-center gap-2 bg-[#1D1D23] border border-[#444454] p-1 rounded-[24px] w-full sm:w-auto min-w-[200px]">
           <span className="flex items-center justify-center">
             <Image
               src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
@@ -91,7 +91,7 @@ const Filters = () => {
           />
         </div>
         {/* Type Dropdown */}
-        <div className="flex items-center gap-2 bg-[#1D1D23] border border-[#444454] p-1 rounded-[24px] w-full sm:w-auto min-w-[230.5px]">
+        <div className="flex items-center gap-2 bg-[#1D1D23] border border-[#444454] p-1 rounded-[24px] w-full sm:w-auto min-w-[200px]">
           <span className="text-[#1D8751]">
             <Image
               src="https://res.cloudinary.com/pitz/image/upload/v1746710370/coins-rotate_d278mb.png"
@@ -110,7 +110,7 @@ const Filters = () => {
           />
         </div>
         {/* Status Dropdown */}
-        <div className="flex items-center gap-2 bg-[#1D1D23] border border-[#444454] p-1 rounded-[24px] w-full sm:w-auto min-w-[230.5px]">
+        <div className="flex items-center gap-2 bg-[#1D1D23] border border-[#444454] p-1 rounded-[24px] w-full sm:w-auto min-w-[200px]">
           <span className="text-[#1D8751]">
             <GrStatusGood />
           </span>
@@ -124,7 +124,7 @@ const Filters = () => {
           />
         </div>
         {/* Date Dropdown */}
-        <div className="flex items-center gap-2 bg-[#1D1D23] border border-[#444454] p-1 rounded-[24px] w-full sm:w-auto min-w-[230.5px]">
+            <div className="flex items-center gap-2 bg-[#1D1D23] border border-[#444454] p-1 rounded-[24px] w-full sm:w-auto min-w-[200px]">
           <span className="text-[#1D8751]">
             <svg
               width="20"

@@ -31,7 +31,7 @@ const Overview = () => {
         <div className="flex flex-col items-center justify-center">
           {/* SVG Circle Chart */}
           <div className="mb-4">
-            <svg width="240" height="240" viewBox="0 0 260 260">
+            <svg width="200" height="200" viewBox="0 0 260 260">
               <circle
                 cx="130"
                 cy="130"

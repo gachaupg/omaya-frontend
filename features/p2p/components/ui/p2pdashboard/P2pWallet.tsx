@@ -27,9 +27,9 @@ const P2pWallet = ({
           </p>
 
           <div className="flex flex-wrap justify-between items-center">
-            <div className="flex flex-wrap items-baseline">
+            <div className="flex text-[14px]  flex-wrap items-baseline">
               <p
-                className={`text-2xl font-medium mr-2 text-[${tokens.colors.dark.textTitle}]`}
+                className={`text-[15px] font-medium mr-2 text-[${tokens.colors.dark.textTitle}]`}
               >
                 1900.8648 USDT
               </p>
@@ -45,10 +45,10 @@ const P2pWallet = ({
               </span>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               <Button
                 onClick={() => setIsOpenForm("deposit")}
-                width={145}
+                width={120}
                 height={40}
                 borderRadius={24}
                 variant={isOpenForm === "deposit" ? "primary" : "outline"}
@@ -64,7 +64,11 @@ const P2pWallet = ({
                   >
                     <path
                       d="M12 5V19M12 5L19 12M12 5L5 12"
-                      className={ isOpenForm === "deposit" ? `stroke-[#ffff]` : `stroke-[${tokens.colors.brand.primary}]`}
+                      className={
+                        isOpenForm === "deposit"
+                          ? `stroke-[#ffff]`
+                          : `stroke-[${tokens.colors.brand.primary}]`
+                      }
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -79,7 +83,7 @@ const P2pWallet = ({
 
               <Button
                 onClick={() => setIsOpenForm("withdraw")}
-                width={145}
+                width={120}
                 height={40}
                 borderRadius={24}
                 variant={isOpenForm === "withdraw" ? "secondary" : "outline"}
@@ -95,7 +99,11 @@ const P2pWallet = ({
                   >
                     <path
                       d="M12 19V5M12 19L19 12M12 19L5 12"
-                      className={ isOpenForm === "withdraw" ? `stroke-[#ffff]` : `stroke-[${tokens.colors.brand.secondary}]`}
+                      className={
+                        isOpenForm === "withdraw"
+                          ? `stroke-[#ffff]`
+                          : `stroke-[${tokens.colors.brand.secondary}]`
+                      }
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
