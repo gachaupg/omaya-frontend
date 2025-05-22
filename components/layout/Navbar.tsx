@@ -28,7 +28,7 @@ export default function Navbar() {
     };
 
     window.addEventListener("scroll", handleScroll);
-    
+
     // Clean up the event listener on component unmount
     return () => {
       window.removeEventListener("scroll", handleScroll);
@@ -37,36 +37,36 @@ export default function Navbar() {
 
   return (
     <>
-      <nav 
-        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-4 sm:px-6 md:px-12 transition-all duration-300 ${
+      <nav
+        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-4 sm:px-6 md:px-12 2xl:px-20 transition-all duration-300 ${
           scrolled ? "bg-[#1D1D23]" : "bg-transparent"
         }`}
       >
         <div className="flex items-center">
           <Link href="/" className="mr-4 md:mr-10">
-          {scrolled?  
-            <Image
-              src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747133499/Omaya_green-logo_yva2ah.png"
-              alt="OMAYA Exchange"
-              width={150}
-              height={40}
-              className="h-auto w-32 md:w-40"
-              priority
-            /> :
-            <Image
-            src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746538269/Frame_q3pwt7.png"
-            alt="OMAYA Exchange"
-            width={150}
-            height={40}
-            className="h-auto w-32 md:w-40"
-            priority
-          />
-          }
-
+            {scrolled ? (
+              <Image
+                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747133499/Omaya_green-logo_yva2ah.png"
+                alt="OMAYA Exchange"
+                width={150}
+                height={40}
+                className="h-auto w-32 md:w-40 2xl:w-48"
+                priority
+              />
+            ) : (
+              <Image
+                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746538269/Frame_q3pwt7.png"
+                alt="OMAYA Exchange"
+                width={150}
+                height={40}
+                className="h-auto w-32 md:w-40 2xl:w-48"
+                priority
+              />
+            )}
           </Link>
-          
+
           {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-6 lg:space-x-8">
+          <div className="hidden md:flex space-x-6 lg:space-x-8 2xl:space-x-12">
             <NavLink href="/">Home</NavLink>
             <NavLink href="/dashboard">Dashboard</NavLink>
             <NavLink href="/market">Market</NavLink>
@@ -76,15 +76,15 @@ export default function Navbar() {
         </div>
 
         {/* Desktop Auth Buttons */}
-        <div className="hidden md:flex items-center space-x-4">
-            <Link href="/auth/register">
+        <div className="hidden md:flex items-center space-x-4 2xl:space-x-6">
+          <Link href="/auth/register">
             <AuthButton variant="primary">Register</AuthButton>
-            </Link>
-            <Link href="/auth/login">
+          </Link>
+          <Link href="/auth/login">
             <AuthButton variant="secondary">Log In</AuthButton>
-            </Link>
-          
-          <div className="flex items-center space-x-4">
+          </Link>
+
+          <div className="flex items-center space-x-4 2xl:space-x-6">
             <LanguageSelector />
             <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
           </div>
@@ -101,18 +101,34 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div className={`fixed top-16 left-0 right-0 z-40 md:hidden p-6 space-y-6 shadow-lg transition-all duration-300 bg-[#1D1D23]`}>
-          <MobileNavLink href="/" onClick={toggleMobileMenu}>Home</MobileNavLink>
-          <MobileNavLink href="/dashboard" onClick={toggleMobileMenu}>Dashboard</MobileNavLink>
-          <MobileNavLink href="/market" onClick={toggleMobileMenu}>Market</MobileNavLink>
-          <MobileNavLink href="/rates" onClick={toggleMobileMenu}>Rates</MobileNavLink>
-          <MobileNavLink href="/blog" onClick={toggleMobileMenu}>Blog</MobileNavLink>
-          
+        <div
+          className={`fixed top-16 left-0 right-0 z-40 md:hidden p-6 space-y-6 shadow-lg transition-all duration-300 bg-[#1D1D23]`}
+        >
+          <MobileNavLink href="/" onClick={toggleMobileMenu}>
+            Home
+          </MobileNavLink>
+          <MobileNavLink href="/dashboard" onClick={toggleMobileMenu}>
+            Dashboard
+          </MobileNavLink>
+          <MobileNavLink href="/market" onClick={toggleMobileMenu}>
+            Market
+          </MobileNavLink>
+          <MobileNavLink href="/rates" onClick={toggleMobileMenu}>
+            Rates
+          </MobileNavLink>
+          <MobileNavLink href="/blog" onClick={toggleMobileMenu}>
+            Blog
+          </MobileNavLink>
+
           <div className="flex flex-col space-y-4 pt-4">
-            <AuthButton variant="primary" fullWidth>Register</AuthButton>
-            <AuthButton variant="secondary" fullWidth>Log In</AuthButton>
+            <AuthButton variant="primary" fullWidth>
+              Register
+            </AuthButton>
+            <AuthButton variant="secondary" fullWidth>
+              Log In
+            </AuthButton>
           </div>
-          
+
           <div className="flex items-center justify-between pt-4">
             <LanguageSelector />
             <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
@@ -123,16 +139,30 @@ export default function Navbar() {
   );
 }
 
-const NavLink = ({ href, children }: { href: string; children: React.ReactNode }) => (
+const NavLink = ({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) => (
   <Link
     href={href}
-    className="text-white hover:text-[#1D8751] transition-colors duration-200 text-sm lg:text-base"
+    className="text-white hover:text-[#1D8751] transition-colors duration-200 text-sm lg:text-base 2xl:text-lg"
   >
     {children}
   </Link>
 );
 
-const MobileNavLink = ({ href, children, onClick }: { href: string; children: React.ReactNode; onClick: () => void }) => (
+const MobileNavLink = ({
+  href,
+  children,
+  onClick,
+}: {
+  href: string;
+  children: React.ReactNode;
+  onClick: () => void;
+}) => (
   <Link
     href={href}
     className="block text-white hover:text-[#1D8751] py-2 transition-colors duration-200 text-lg"
@@ -142,10 +172,22 @@ const MobileNavLink = ({ href, children, onClick }: { href: string; children: Re
   </Link>
 );
 
-const AuthButton = ({ variant, children, fullWidth = false }: { variant: "primary" | "secondary"; children: React.ReactNode; fullWidth?: boolean }) => (
+const AuthButton = ({
+  variant,
+  children,
+  fullWidth = false,
+}: {
+  variant: "primary" | "secondary";
+  children: React.ReactNode;
+  fullWidth?: boolean;
+}) => (
   <button
-    className={`${variant === "primary" ? "bg-[#0E5531] hover:bg-[#13B562]" : "bg-transparent border border-[#1D8751]"} 
-    text-white px-4 py-2 rounded-md transition-colors duration-200 text-sm md:text-base
+    className={`${
+      variant === "primary"
+        ? "bg-[#0E5531] hover:bg-[#13B562]"
+        : "bg-transparent border border-[#1D8751]"
+    } 
+    text-white px-4 py-2 rounded-md transition-colors duration-200 text-sm md:text-base 2xl:text-lg
     ${fullWidth ? "w-full" : ""}`}
   >
     {children}
@@ -166,15 +208,17 @@ const LanguageSelector = () => {
   };
 
   return (
-    <div className="relative">
+    <div className="relative ">
       <div
         className="flex items-center justify-center cursor-pointer"
         onClick={toggleDropdown}
       >
         <Image
-          src={selectedLanguage === "English" 
-            ? "https://res.cloudinary.com/dam1sxczj/image/upload/v1746538734/united_kingdom_zud79x.png" 
-            : "https://res.cloudinary.com/dam1sxczj/image/upload/v1747216099/somali_jq5e97.png"}
+          src={
+            selectedLanguage === "English"
+              ? "https://res.cloudinary.com/dam1sxczj/image/upload/v1746538734/united_kingdom_zud79x.png"
+              : "https://res.cloudinary.com/dam1sxczj/image/upload/v1747216099/somali_jq5e97.png"
+          }
           alt={selectedLanguage}
           width={32}
           height={32}
@@ -205,11 +249,11 @@ const LanguageSelector = () => {
                   height={20}
                   className="rounded-full"
                 />
-                 <span className="text-sm">English</span>
+                <span className="text-sm">English</span>
               </div>
               {selectedLanguage === "English" && (
                 <div className="w-4 h-4 rounded-full flex items-center justify-center">
-                    <Check size={16} className="text-[#1D8751]" />
+                  <Check size={16} className="text-[#1D8751]" />
                 </div>
               )}
             </div>
@@ -219,7 +263,7 @@ const LanguageSelector = () => {
             onClick={() => selectLanguage("Somali")}
           >
             <div className="flex items-center justify-between gap-8">
-              <div  className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2">
                 <Image
                   src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747216099/somali_jq5e97.png"
                   alt="Somali"
@@ -227,7 +271,7 @@ const LanguageSelector = () => {
                   height={20}
                   className="rounded-full"
                 />
-                <span className="text-sm">Somali</span>       
+                <span className="text-sm">Somali</span>
               </div>
               {selectedLanguage === "Somali" && (
                 <div className="w-4 h-4 rounded-full flex items-center justify-center">
@@ -242,7 +286,13 @@ const LanguageSelector = () => {
   );
 };
 
-const ThemeToggle = ({ theme, toggleTheme }: { theme: "light" | "dark"; toggleTheme: () => void }) => (
+const ThemeToggle = ({
+  theme,
+  toggleTheme,
+}: {
+  theme: "light" | "dark";
+  toggleTheme: () => void;
+}) => (
   <button onClick={toggleTheme} className="text-white bg-transparent p-1">
     {theme === "light" ? (
       <Moon size={20} className="text-[#13b562]" />

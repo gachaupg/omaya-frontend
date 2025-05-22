@@ -20,10 +20,10 @@ const ForgetPassword = ()=>{
         className: "flex min-h-screen bg-[#18181D] flex-col md:flex-row items-start justify-center relative overflow-hidden px-6 py-8 md:pt-24",
         children: [
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                className: "w-full md:w-1/2 flex justify-center items-center mb-8 md:mb-0 relative z-10",
+                className: "w-full md:w-1/2 flex justify-center mb-8 md:mb-0 relative z-10",
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                        className: "w-[438px] h-[403px] bg-[#1D8751] blur-[60px] absolute left-12 top-2 opacity-60"
+                        className: "w-[438px] h-[403px] bg-[#1D8751] blur-[60px]  absolute left-16 2xl:left-54 opacity-60"
                     }, void 0, false, {
                         fileName: "[project]/features/auth/components/ForgotPasswordForm.tsx",
                         lineNumber: 15,
@@ -37,7 +37,7 @@ const ForgetPassword = ()=>{
                                 alt: "OMAYA Exchange Mobile App",
                                 width: 350,
                                 height: 650,
-                                className: "mx-auto",
+                                className: "mx-auto ",
                                 priority: true
                             }, void 0, false, {
                                 fileName: "[project]/features/auth/components/ForgotPasswordForm.tsx",
@@ -156,7 +156,7 @@ const ForgetPassword = ()=>{
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "w-1/2 p-8 flex flex-col justify-center",
                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
-                    className: "max-w-md mx-auto w-full",
+                    className: "max-w-md mx-auto w-full 2xl:max-w-3/4",
                     children: [
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("h1", {
                             className: "text-2xl font-semibold text-white mb-2",

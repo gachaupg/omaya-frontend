@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 7, "column": 0}, "map": {"version":3,"sources":["file://C%3A/Users/USER/Desktop/Projects/OMAYAExchangeFronted/app/dashboard/layout.tsx"],"sourcesContent":["// app/admin/layout.tsx\r\nexport default function DashboardLayout({\r\n  children,\r\n}: {\r\n  children: React.ReactNode;\r\n}) {\r\n  return <>{children}</>;\r\n}\r\n"],"names":[],"mappings":"AAAA,uBAAuB;;;;;;AACR,SAAS,gBAAgB,EACtC,QAAQ,EAGT;IACC,qBAAO;kBAAG;;AACZ","debugId":null}}]
+}

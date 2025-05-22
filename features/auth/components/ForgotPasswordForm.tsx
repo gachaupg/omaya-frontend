@@ -10,16 +10,16 @@ const ForgetPassword = () => {
   return (
     <div className="flex min-h-screen bg-[#18181D] flex-col md:flex-row items-start justify-center relative overflow-hidden px-6 py-8 md:pt-24">
       {/* Left Side - Mobile App Preview */}
-      <div className="w-full md:w-1/2 flex justify-center items-center mb-8 md:mb-0 relative z-10">
+      <div className="w-full md:w-1/2 flex justify-center mb-8 md:mb-0 relative z-10">
          {/* Background Glow Effect */}
-         <div className="w-[438px] h-[403px] bg-[#1D8751] blur-[60px] absolute left-12 top-2 opacity-60"></div>
+         <div className="w-[438px] h-[403px] bg-[#1D8751] blur-[60px]  absolute left-16 2xl:left-54 opacity-60"></div>
         <div className="relative">
           <Image
             src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747220053/iphone_vn7ejc.png"
             alt="OMAYA Exchange Mobile App"
             width={350}
             height={650}
-            className="mx-auto"
+            className="mx-auto "
             priority
           />
           {/* App store badges */}
@@ -56,7 +56,7 @@ const ForgetPassword = () => {
       
       {/* Right side - Forgot password flow */}
       <div className="w-1/2 p-8 flex flex-col justify-center">
-        <div className="max-w-md mx-auto w-full">
+        <div className="max-w-md mx-auto w-full 2xl:max-w-3/4">
               <h1 className="text-2xl font-semibold text-white mb-2">Forgot Password</h1>
               <p className="text-[#788099] mb-1">
                 Enter your email to receive the instruction <br />

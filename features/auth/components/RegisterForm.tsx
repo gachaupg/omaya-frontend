@@ -124,18 +124,18 @@ export default function RegistrationPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#18181D] flex flex-col md:flex-row items-start justify-center relative overflow-hidden px-6 py-8 md:pt-24">      
+    <div className="min-h-screen bg-[#18181D] flex flex-col md:flex-row items-start justify-center relative overflow-hidden px-6 py-16 md:pt-24 md:pb-24">      
       {/* Left Side - Mobile App Preview */}
       <div className="w-full md:w-1/2 flex justify-center mb-8 md:mb-0 relative z-10">
          {/* Background Glow Effect */}
-         <div className="w-[438px] h-[403px] bg-[#1D8751] blur-[60px] absolute left-12 opacity-60"></div>
+         <div className="w-[438px] h-[403px] bg-[#1D8751] blur-[60px]  absolute left-16 2xl:left-54 opacity-60"></div>
         <div className="relative">
           <Image
             src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747220053/iphone_vn7ejc.png"
             alt="OMAYA Exchange Mobile App"
             width={350}
             height={650}
-            className="mx-auto"
+            className="mx-auto "
             priority
           />
           {/* App store badges */}
@@ -171,8 +171,9 @@ export default function RegistrationPage() {
       </div>
 
       {/* Right Side - Registration Form */}
-      <div className="w-full md:w-1/2 max-w-md relative z-10">
-        <div className="mb-6">
+      <div className="w-full md:w-1/2 relative z-10">
+      <div className="max-w-md mx-auto 2xl:max-w-3/4">
+      <div className="mb-6">
           <h1 className="text-white text-2xl font-semibold">Registration</h1>
           <p className="text-[#788099]">Please Register with correct Information</p>
         </div>
@@ -397,15 +398,15 @@ export default function RegistrationPage() {
           {/* Password Requirements */}
           <div className="flex flex-col space-y-1 ml-1">
             <div className="flex items-center space-x-2">
-              <div className={`h-2 w-2 rounded-full ${hasMinChars ? "bg-[#1D8751]" : "bg-[#F04438]"}`}></div>
+              <div className={`h-2 w-2 rounded-full ${hasMinChars ? "bg-[#1D8751]" : "bg-[#1D8751]"}`}></div>
               <span className="text-sm text-white">At least 8 characters</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className={`h-2 w-2 rounded-full ${hasNumber || hasSymbol ? "bg-[#1D8751]" : "bg-[#F04438]"}`}></div>
+              <div className={`h-2 w-2 rounded-full ${hasNumber || hasSymbol ? "bg-[#1D8751]" : "bg-[#1D8751]"}`}></div>
               <span className="text-sm text-white">At least one number or symbol</span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className={`h-2 w-2 rounded-full ${hasMixedCase ? "bg-[#1D8751]" : "bg-[#F04438]"}`}></div>
+              <div className={`h-2 w-2 rounded-full ${hasMixedCase ? "bg-[#1D8751]" : "bg-[#1D8751]"}`}></div>
               <span className="text-sm text-white">Both uppercase and lowercase letters</span>
             </div>
           </div>
@@ -538,6 +539,8 @@ export default function RegistrationPage() {
             </div>
           </div>
         </form>
+
+      </div>
       </div>
     </div>
   );

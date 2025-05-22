@@ -30,27 +30,27 @@ export default function Footer() {
             <div className="space-y-4 mt-4">
               <p className="text-sm text-white">Follow us on:</p>
               <div className="flex space-x-4">
-                <Link href="#" className="hover:text-green-500 text-white">
+                <Link href="#" className="hover:text-[#1D8751] text-white">
                   <Telegram size={20} />
                 </Link>
-                <Link href="#" className="hover:text-green-500 text-white">
+                <Link href="#" className="hover:text-[#1D8751] text-white">
                   <Youtube size={20} />
                 </Link>
-                <Link href="#" className="hover:text-green-500 text-white">
+                <Link href="#" className="hover:text-[#1D8751] text-white">
                   <Facebook size={20} />
                 </Link>
-                <Link href="#" className="hover:text-green-500 text-white">
+                <Link href="#" className="hover:text-[#1D8751] text-white">
                   <Instagram size={20} />
                 </Link>
               </div>
               <div className="flex space-x-4">
-                <Link href="#" className="hover:text-green-500 text-white">
+                <Link href="#" className="hover:text-[#1D8751] text-white">
                   <WhatsApp size={20} />
                 </Link>
-                <Link href="#" className="hover:text-green-500 text-white" >
+                <Link href="#" className="hover:text-[#1D8751] text-white" >
                   <Twitter size={20} />
                 </Link>
-                <Link href="#" className="hover:text-green-500 text-white">
+                <Link href="#" className="hover:text-[#1D8751] text-white">
                   <TiktokIcon size={20} />
                 </Link>
               </div>
@@ -62,17 +62,17 @@ export default function Footer() {
             <h3 className="text-lg font-medium mb-4 text-white">Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="#" className="hover:text-green-500 text-white" >
+                <Link href="#" className="hover:text-[#1D8751] text-white" >
                   Support center
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-green-500 text-white">
+                <Link href="#" className="hover:text-[#1D8751] text-white">
                   Our Partners
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-green-500 text-white">
+                <Link href="#" className="hover:text-[#1D8751] text-white">
                   FAQ
                 </Link>
               </li>
@@ -84,17 +84,17 @@ export default function Footer() {
             <h3 className="text-lg font-medium mb-4 text-white">Company</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="#" className="hover:text-green-500 text-white" >
+                <Link href="#" className="hover:text-[#1D8751] text-white" >
                   Blog
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-green-500 text-white">
+                <Link href="#" className="hover:text-[#1D8751] text-white">
                   Contact us
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-green-500 text-white">
+                <Link href="#" className="hover:text-[#1D8751] text-white">
                   About us
                 </Link>
               </li>
@@ -106,27 +106,27 @@ export default function Footer() {
             <h3 className="text-lg font-medium mb-4 text-white">Legal Policies</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="#" className="hover:text-green-500 text-white">
+                <Link href="#" className="hover:text-[#1D8751] text-white">
                   Terms of Service
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-green-500 text-white">
+                <Link href="#" className="hover:text-[#1D8751] text-white">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-green-500 text-white">
+                <Link href="#" className="hover:text-[#1D8751] text-white">
                   Cookies Policy
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-green-500 text-white">
+                <Link href="#" className="hover:text-[#1D8751] text-white">
                   Disclaimer Policy
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-green-500 text-white">
+                <Link href="#" className="hover:text-[#1D8751] text-white">
                   Payment Policy
                 </Link>
               </li>
@@ -214,7 +214,7 @@ export default function Footer() {
         <div className="flex flex-col mb-4">
           {/* App Download Section */}
           <div className="lg:col-span-2 flex flex-col items-center justify-center">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <Image
                 src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539125/Appstore_nqe65y.png"
                 alt="App Store QR Code"
@@ -222,7 +222,7 @@ export default function Footer() {
                 height={100}
                 className="mb-2"
               />
-              <div className="flex items-center">
+              
               <Image
                 src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746551283/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
                 alt="Play Store QR Code"
@@ -230,31 +230,31 @@ export default function Footer() {
                 height={100}
                 className="mb-2"
               />
-              </div>
+              
             </div>
           </div>
 
           {/* Google Play Download */}
           <div className="lg:col-span-2 flex flex-col items-center justify-center">
-            <div className="flex items-center gap-1">
-              <Image
-                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539313/googleplay_1_w8djf0.png"
-                alt="Play Store QR Code"
-                width={100}
-                height={100}
-                className="mb-2"
-              />
-              <div className="flex items-center">
-              <Image
-                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746551283/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
-                alt="Play Store QR Code"
-                width={100}
-                height={100}
-                className="mb-2"
-              />
+          <div className="flex items-center gap-2">
+                <Image
+                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539313/googleplay_1_w8djf0.png"
+                  alt="Play Store QR Code"
+                  width={100}
+                  height={100}
+                  className="mb-2"
+                />
+                <Image
+                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746551283/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
+                  alt="Play Store QR Code"
+                  width={100}
+                  height={100}
+                  className="mb-2"
+                />
               </div>
-            </div>
           </div>
+
+          
           </div>
         </div>
 

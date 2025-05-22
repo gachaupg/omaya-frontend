@@ -222,7 +222,7 @@ export default function MarketingPage() {
   return (
     <div>   
       <section
-        className="relative min-h-screen pt-24 pb-16 mx-auto overflow-hidden bg-gradient-to-br from-[#022E18] via-[#022E18CC] to-transparent"
+        className="relative min-h-screen pt-18 pb-16 mx-auto overflow-hidden bg-gradient-to-br from-[#022E18] via-[#022E18CC] to-transparent"
         style={{
           background: `
             radial-gradient(circle at top left, ${tokens.colors.brand.hero} 0%, ${tokens.colors.brand.hero}CC 30%, transparent 70%),
@@ -234,9 +234,9 @@ export default function MarketingPage() {
       >
         {/* Heptagonal Patterns */}
         <div className="absolute inset-0 overflow-hidden">
-          {/* Top right heptagon */}
+          {/* Bottom right heptagon */}
           <div
-            className="absolute bottom-[160px] right-[40px] w-[180px] h-[180px] opacity-20 bg-[#13B562]"
+            className="absolute bottom-[160px] right-[40px] w-[170px] h-[170px] 2xl:bottom-[220px] 2xl:right-[130px] opacity-20 bg-[#13B562]"
             style={{
               clipPath: "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
             }}
@@ -244,7 +244,7 @@ export default function MarketingPage() {
 
           {/* Top left heptagon */}
           <div 
-            className="absolute top-[-20px] left-[30px] w-[80px] h-[80px] opacity-20 bg-[#13B562]"
+            className="absolute top-[-20px] left-[30px] w-[90px] h-[90px] 2xl:left-[60px] opacity-20 bg-[#13B562]"
             style={{
               clipPath: "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
             }}
@@ -260,7 +260,7 @@ export default function MarketingPage() {
 
           {/* Top right heptagon */}
           <div
-            className="absolute top-[80px] left-[720px] w-[180px] h-[180px] opacity-20 bg-[#13B562]"
+            className="absolute top-[70px] left-[720px] w-[180px] h-[180px] 2xl:left-[1250px] opacity-20 bg-[#13B562]"
             style={{
               clipPath: "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
             }}
@@ -268,48 +268,49 @@ export default function MarketingPage() {
         </div>
 
         <div className="container mx-auto px-4 relative z-10 mt-20">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-starts">
-            <div className="space-y-6 pl-6 md:pl-12 md:text-left text-center"> 
-              <h1 className="text-4xl md:text-5xl font-bold text-white tracking-wide"> 
-                <span className="inline-block w-full">Welcome&nbsp;to</span>
-                <span className="inline-block w-full">OMAYA&nbsp;Exchange</span> 
+          <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-12 items-starts">
+            <div className="space-y-6 pl-6 md:pl-12 md:text-left text-center 2xl:col-span-2"> 
+              <h1 className="text-4xl md:text-5xl font-bold text-white tracking-wide "> 
+              <span className="inline-block w-full 2xl:text-7xl">Welcome&nbsp;to</span>
+              <span className="inline-block w-full 2xl:text-7xl">OMAYA&nbsp;Exchange</span> 
               </h1>
-              <p className="text-white/80 max-w-md mx-auto md:mx-0">
-                We are OMAYA EXCHANGE, Somalia's leading platform for exchanging cryptocurrencies and Forex. Founded by experts with over 15 years of IT experience, we bridge traditional finance with the digital economy in East Africa. 
-                Our secure and user-friendly platform is designed to meet the unique needs of our market, empowering users with seamless access to the world of digital assets.
-                Committed to transparency, innovation, and education, we are shaping the future of finance in our region.
+              <p className="text-white/80 max-w-xl 2xl:max-w-3xl mx-auto md:mx-0 2xl:text-lg">
+          We are OMAYA EXCHANGE, Somalia's leading platform for exchanging cryptocurrencies and Forex. Founded by experts with over 15 years of IT experience, we bridge traditional finance with the digital economy in East Africa. 
+          Our secure and user-friendly platform is designed to meet the unique needs of our market, empowering users with seamless access to the world of digital assets.
+          Committed to transparency, innovation, and education, we are shaping the future of finance in our region.
               </p>
               <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-                <button className="rounded-md px-6 py-2 text-white bg-[#1D8751]">
-                  Contact Us
-                </button>
-                <button className="rounded-md text-white hover:bg-white/10 px-6 py-2 flex items-center gap-2 border border-[#1D8751]">
-                  Watch Video
-                  <Play size={16} className="ml-1 text-[#1D8751]"/>
-                </button>
+          <button className="rounded-md px-6 py-2 text-white bg-[#1D8751] 2xl:text-lg">
+            Contact Us
+          </button>
+          <button className="rounded-md text-white hover:bg-white/10 px-6 py-2 flex items-center gap-2 border border-[#1D8751] 2xl:text-lg">
+            Watch Video
+            <Play size={16} className="ml-1 text-[#1D8751]"/>
+          </button>
               </div>
             </div>
-            <div className="flex justify-center">
-              <div className="relative">
+            <div className="flex justify-center 2xl:justify-end 2xl:col-span-1">
+                <div className="relative">
                 <Image
                   src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746561970/iPhone_13_Mockup_1_zzm7tt.png"
                   alt="OMAYA Exchange App"
                   width={300}
                   height={400}
+                  className="2xl:w-[369.55px] 2xl:h-[695.7px]"
                 />
-              </div>
+                </div>
             </div>
           </div>
         </div>
       </section>
 
       <div className="py-20 px-4 bg-[#18181D]">      
-        <div className="container mx-auto max-w-6xl px-4">
+        <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
           {/* Section Title */}
-          <h2 className="text-center text-2xl md:text-3xl font-medium text-white mb-12">
+          <h2 className="text-center text-2xl md:text-3xl 2xl:text-4xl font-medium text-white mb-12">
             Celebrating Success: <span className="text-[#1D8751]">Key Achievements at OMAYA EXCHANGE</span>
           </h2>
-          {/* Achievement Cards */}
+          {/* Achievement Cards */} 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {achievements.map((achievement, index) => (
               <div 
@@ -319,7 +320,7 @@ export default function MarketingPage() {
                 <div className="text-[#F79330] text-3xl md:text-4xl font-bold mb-2">
                   {achievement.value}
                 </div>
-                <div className="text-white text-xm text-center">
+                <div className="text-white text-xm text-center 2xl:text-sm">
                   {achievement.label}
                 </div>
               </div>
@@ -328,7 +329,7 @@ export default function MarketingPage() {
         </div>
 
         {/* About section */}
-        <div className="container mx-auto max-w-6xl mt-16">
+        <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl mt-16">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             {/* Left side - About */}
             <div className="md:text-left text-center">
@@ -336,16 +337,16 @@ export default function MarketingPage() {
                 <div className="mr-4"></div>
                 <div>
                   <div className='flex items-center mb-2 gap-4 justify-center md:justify-start'>
-                    <div className="text-sm text-white font-medium p-1 tracking-widest rotate-180 border-l-2 border-[#1D8751] [writing-mode:vertical-rl]">
+                    <div className="text-sm 2xl:text-lg text-white font-medium p-1 tracking-widest rotate-180 border-l-2 border-[#1D8751] [writing-mode:vertical-rl]">
                       ABOUT US
                     </div>
                     <div>
-                      <h3 className="text-[#1D8751] text-xl font-medium mb-1">ABOUT</h3>
-                      <h4 className="text-[#1D8751] text-xl font-medium mb-4">OMAYA EXCHANGE .</h4>
+                      <h3 className="text-[#1D8751] text-xl 2xl:text-2xl font-medium mb-1">ABOUT</h3>
+                      <h4 className="text-[#1D8751] text-xl 2xl:text-2xl font-medium mb-4">OMAYA EXCHANGE .</h4>
                     </div>
                   </div>
                   
-                  <div className="text-white space-y-6 text-left">
+                  <div className="text-white space-y-6 text-left 2xl:text-lg">
                     <p>
                       Established in 2019, OMAYA Express Exchange is Somalia's leading cryptocurrency exchange, licensed by the Central Bank of Somalia. With a team spread across the country and abroad, we've facilitated over 50,000 transactions, surpassing $60 million in volume. In addition to cryptocurrency services, we act as a local agent for premier Forex brokers, offering comprehensive financial solutions. We are fully compliant with government regulations, ensuring a secure and trustworthy platform for all our users.
                       Our commitment to innovation and customer satisfaction drives everything we do at OMAYA Exchange. We focus on providing a seamless, user-friendly experience for both novice and experienced traders. By combining advanced technology with a deep understanding of the local market, we empower our users to confidently participate in the global digital economy. As we continue to grow, we remain dedicated to maintaining the highest standards of transparency, security, and regulatory compliance, ensuring that
@@ -358,7 +359,7 @@ export default function MarketingPage() {
 
             {/* Right side - 3D illustration */}
             <div className="flex justify-center items-start">
-              <div className="relative h-64 w-64 md:h-80 md:w-80">
+              <div className="relative h-64 w-64 md:h-80 md:w-80 2xl:h-110 2xl:w-110">
                 <Image 
                   src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746707948/Group_164015_izwpob.png" 
                   alt="Cryptocurrency exchange 3D illustration" 
@@ -372,14 +373,14 @@ export default function MarketingPage() {
 
         {/* Main heading */}
         <div className="text-center mb-12">
-          <h2 className="text-2xl md:text-3xl font-medium">
+          <h2 className="text-2xl md:text-3xl 2xl:text-4xl font-medium">
             <span className="text-white">Get Set Up And </span>
             <span className="text-[#1D8751]">Start Exchanging</span>
           </h2>
         </div>
 
         {/* Steps */}
-        <div className="container mx-auto max-w-6xl relative mt-24">
+        <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl relative mt-24">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {steps.map((step, index) => (
             <div key={index} className="relative">
@@ -394,8 +395,8 @@ export default function MarketingPage() {
                     className="w-12 h-12 object-contain"
                   ></img>
                 </div>
-                <h3 className="text-white font-medium text-lg mb-2 text-center">{step.title}</h3>
-                <p className="text-[#788099] text-center text-sm">{step.description}</p>
+                <h3 className="text-white font-medium text-lg 2xl:text-xl mb-2 text-center">{step.title}</h3>
+                <p className="text-[#788099] text-center text-sm 2xl:text-lg">{step.description}</p>
               </div>
 
               {/* Bottom semi-circle curves for first and third connections */}
@@ -459,15 +460,15 @@ export default function MarketingPage() {
        </div>
 
         {/* Features section */}
-        <div className="container mx-auto max-w-6xl mt-24">
-          <h2 className="text-center text-2xl md:text-3xl font-medium text-white mb-16">
+        <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl mt-24">
+          <h2 className="text-center text-2xl md:text-3xl 2xl:text-4xl font-medium text-white mb-16">
             <span className="text-[#1D8751]">Why Choose Us</span>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-24">
             <div className="relative flex justify-center">    
-              <div className="relative w-64 h-96">
-                <div className="absolute w-60 h-60 rounded-full bg-[#12AA5D21] bg-opacity- top-[100px] right-1/4 " style={{ transform: 'scale(1.5)' }}></div>
-                <div className="absolute w-60 h-60 rounded-full border border-[#1D7A4A] border-opacity- top-[100px] " style={{ transform: 'scale(1.5)' }}></div>
+              <div className="relative w-64 h-96 2xl:w-80 2xl:h-110">
+                <div className="absolute w-60 h-60 2xl:w-76 2xl:h-76  rounded-full bg-[#12AA5D21] bg-opacity- top-[100px] right-1/4 " style={{ transform: 'scale(1.5)' }}></div>
+                <div className="absolute w-60 h-60 2xl:w-76 2xl:h-76 rounded-full border border-[#1D7A4A] border-opacity- top-[100px] " style={{ transform: 'scale(1.5)' }}></div>
                 <Image 
                   src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746561970/iPhone_13_Mockup_1_zzm7tt.png" 
                   alt="OMAYA Exchange mobile app" 
@@ -479,7 +480,7 @@ export default function MarketingPage() {
             </div>
 
             <div className="flex flex-col justify-center md:items-start items-center">
-              <h3 className="text-2xl font-medium mb-8">
+              <h3 className="text-2xl 2xl:text-3xl font-medium mb-8">
                 <span className="text-[#1D8751] mr-2">Fast</span>
                 <span className="text-white mr-2">and</span>
                 <span className="text-[#1D8751]">Secure</span>
@@ -488,7 +489,7 @@ export default function MarketingPage() {
               
               <ul className="space-y-4 ml-4">
                 {features.map((feature, index) => (
-                  <li key={index} className="flex items-center">
+                  <li key={index} className="flex items-center 2xl:text-lg">
                     <div className="w-3 h-3 rounded-full bg-[#1D8751] flex items-center justify-center mr-3"></div>
                     <span className="text-[#788099]">{feature}</span>
                   </li>
@@ -496,7 +497,7 @@ export default function MarketingPage() {
               </ul>
               
               {/* App Store Buttons */}
-              <div className="flex mt-8 space-x-4">
+              <div className="flex mt-8 space-x-2">
                 <div className="rounded px-4 py-2 flex items-center border border-gray-700">
                   <Image 
                     src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746786399/apple_f0yfel.png" 
@@ -506,8 +507,8 @@ export default function MarketingPage() {
                     className="mr-2"
                   />
                   <div>
-                    <p className="text-white text-xs">Download on the</p>
-                    <span className="text-white text-sm">App Store</span>
+                    <p className="text-white text-xs 2xl:text-sm">Download on the</p>
+                    <span className="text-white text-sm 2xl:text-lg">App Store</span>
                   </div>
                 </div>
                 <div className="rounded px-4 py-2 flex items-center border border-gray-700">
@@ -519,8 +520,8 @@ export default function MarketingPage() {
                     className="mr-2"
                   />
                   <div>
-                    <p className="text-white text-xs">Download on the</p>
-                    <span className="text-white text-sm">Google Play</span>
+                    <p className="text-white text-xs 2xl:text-sm">Download on the</p>
+                    <span className="text-white text-sm 2xl:text-lg">Google Play</span>
                   </div>
                 </div>
               </div>
@@ -530,7 +531,7 @@ export default function MarketingPage() {
       </div>
           {/* Benefits Section*/}
         <div className="w-full bg-gradient-to-r from-[#022E18] to-[#13B562] py-16">
-          <div className="container mx-auto max-w-6xl px-4">
+          <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {/* Absolute Safety */}
               <div className="flex">
@@ -545,8 +546,8 @@ export default function MarketingPage() {
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-white font-medium text-lg mb-2">Absolute Safety</h3>
-                  <p className="text-gray-200 text-sm">Exchange confidently with OMAYA, where safety is our top priority.</p>
+                  <h3 className="text-white font-medium text-lg mb-2 2xl:text-xl">Absolute Safety</h3>
+                  <p className="text-gray-200 text-sm 2xl:text-lg">Exchange confidently with OMAYA, where safety is our top priority.</p>
                 </div>
               </div>
 
@@ -563,8 +564,8 @@ export default function MarketingPage() {
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-white font-medium text-lg mb-2">Fast Deposits & Withdrawals</h3>
-                  <p className="text-gray-200 text-sm">Enjoy swift and seamless deposits and withdrawals.</p>
+                  <h3 className="text-white font-medium text-lg 2xl:text-xl mb-2">Fast Deposits & Withdrawals</h3>
+                  <p className="text-gray-200 text-sm 2xl:text-lg">Enjoy swift and seamless deposits and withdrawals.</p>
                 </div>
               </div>
 
@@ -581,8 +582,8 @@ export default function MarketingPage() {
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-white font-medium text-lg mb-2">Invite your friend and earn</h3>
-                  <p className="text-gray-200 text-sm">Refer and invite your friends and earn commission on each transaction they make with us!</p>
+                  <h3 className="text-white font-medium text-lg 2xl:text-xl mb-2">Invite your friend and earn</h3>
+                  <p className="text-gray-200 text-sm 2xl:text-lg">Refer and invite your friends and earn commission on each transaction they make with us!</p>
                 </div>
               </div>
             </div>
@@ -591,8 +592,8 @@ export default function MarketingPage() {
 
         {/* Supported Assets Section*/}
         <div className="w-full bg-[#18181D] py-16">
-          <div className="container mx-auto max-w-6xl px-4">
-            <h2 className="text-center text-2xl md:text-3xl font-medium text-white mb-12">
+          <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
+            <h2 className="text-center text-2xl md:text-3xl 2xl:text-4xl font-medium text-white mb-12">
               Supported Assets
             </h2>
 
@@ -608,7 +609,7 @@ export default function MarketingPage() {
                     className="object-contain"
                   />
                 </div>
-                <span className="text-white text-sm">FXPRIMUS</span>
+                <span className="text-white text-sm 2xl:text-lg">FXPRIMUS</span>
               </div>
 
               {/* Perfect Money */}
@@ -622,7 +623,7 @@ export default function MarketingPage() {
                     className="object-contain"
                   />
                 </div>
-                <span className="text-white text-sm">Perfect Money</span>
+                <span className="text-white text-sm 2xl:text-lg">Perfect Money</span>
               </div>
 
               {/* USDT Tether (ERC20) */}
@@ -636,7 +637,7 @@ export default function MarketingPage() {
                     className="object-contain"
                   />
                 </div>
-                <span className="text-white text-sm">USDT Tether (ERC20)</span>
+                <span className="text-white text-sm 2xl:text-lg">USDT Tether (ERC20)</span>
               </div>
 
               {/* Bitcoin */}
@@ -650,7 +651,7 @@ export default function MarketingPage() {
                     className="object-contain"
                   />
                 </div>
-                <span className="text-white text-sm">Bitcoin</span>
+                <span className="text-white text-sm 2xl:text-lg">Bitcoin</span>
               </div>
 
               {/* USDT Tether (TRC20) */}
@@ -664,7 +665,7 @@ export default function MarketingPage() {
                     className="object-contain"
                   />
                 </div>
-                <span className="text-white text-sm">USDT Tether (TRC20)</span>
+                <span className="text-white text-sm 2xl:text-lg">USDT Tether (TRC20)</span>
               </div>
 
               {/* ICM Capital */}
@@ -678,15 +679,15 @@ export default function MarketingPage() {
                     className="object-contain"
                   />
                 </div>
-                <span className="text-white text-sm">ICM Capital</span>
+                <span className="text-white text-sm 2xl:text-lg">ICM Capital</span>
               </div>
 
               {/* +300 More */}
               <div className="bg-[#1D1D23] rounded-lg py-6 px-4 flex flex-col items-center justify-center">
-                <div className="text-[#FFA500] font-medium">
+                <div className="text-[#FFA500] font-semibold 2xl:text-2xl">
                   +300
                 </div>
-                <span className="text-gray-400 text-sm">More</span>
+                <span className="text-gray-400 text-sm 2xl:text-lg">More</span>
               </div>
             </div>
           </div>
@@ -698,8 +699,8 @@ export default function MarketingPage() {
           <div className="flex flex-col md:flex-row items-center">
             {/* Text content */}
             <div className="w-full md:w-1/2 mb-8 md:mb-0">
-              <p className="text-white text-lg mb-2">Invite your friend, and earn commission</p>
-              <h2 className="text-white text-2xl md:text-2xl font-medium mb-6">
+              <p className="text-white text-lg 2xl:text-xl mb-2">Invite your friend, and earn commission</p>
+              <h2 className="text-white text-2xl md:text-2xl 2xl:text-3xl font-medium mb-6">
                 Refer and Invite your friends and earn commission on each transaction they make with us!
               </h2>
               <button className="bg-white text-[#0A6E3A] px-6 py-2 rounded-full hover:bg-gray-100 transition duration-300">
@@ -735,10 +736,10 @@ export default function MarketingPage() {
 
         {/* Blogs Section */}
       <div className="w-full bg-[#18181D] text-white py-12 px-4 md:px-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto">
         {/* Header section */}
         <div className="mb-10">
-          <h2 className="text-center text-2xl font-semibold">
+          <h2 className="text-center text-2xl 2xl:text-3xl font-semibold">
             Enjoy Our <span className="text-[#1D8751] mr-2">Blog</span>On the <span className="text-[#1D8751]">Latest Company Updates</span>
           </h2>
           
@@ -746,7 +747,7 @@ export default function MarketingPage() {
             <div className="mt-6 inline-flex bg-[#1D1D23] rounded-full p-1">
             <button
               onClick={() => setActiveCategory('News')}
-              className={`px-6 py-2 rounded-full text-sm font-medium flex items-center gap-2 transition-colors ${
+              className={`px-6 py-2 rounded-full text-sm font-medium flex 2xl:text-lg items-center gap-2 transition-colors ${
               activeCategory === 'News' ? 'bg-[#1D8751] text-white' : 'text-gray-300'
               }`}
             >
@@ -765,7 +766,7 @@ export default function MarketingPage() {
             </button>
             <button
               onClick={() => setActiveCategory('Blog')}
-              className={`px-6 py-2 rounded-full text-sm font-medium flex items-center gap-2 transition-colors ${
+              className={`px-6 py-2 rounded-full text-sm 2xl:text-lg font-medium flex items-center gap-2 transition-colors ${
               activeCategory === 'Blog' ? 'bg-[#1D8751] text-white' : 'text-gray-300'
               }`}
             >
@@ -799,18 +800,18 @@ export default function MarketingPage() {
               </div>
               <div className="py-6">
                 <div className="flex justify-between flex-wrap gap-2 mb-3">
-                  <p className="text-xs rounded-full text-[#727272]">{article.createdAt}</p>
+                  <p className="text-xs 2xl:text-sm rounded-full text-[#727272]">{article.createdAt}</p>
                   <div className="flex gap-2 flex-wrap">
                     {article.tags.map(tag => (
-                      <span key={tag.id} className="text-xs px-2 py-1 bg-[#35353E] rounded-full text-[#788099]">{tag.name}</span>
+                      <span key={tag.id} className="text-xs 2xl:text-sm px-2 py-1 bg-[#35353E] rounded-full text-[#788099]">{tag.name}</span>
                     ))}
                   </div>
                 </div>
-                <h3 className="font-bold text-lg mb-4">{article.title}</h3>
-                <p className="text-[#788099] text-sm mb-4">{article.excerpt}</p>
+                <h3 className="font-bold text-lg 2xl:text-xl mb-4">{article.title}</h3>
+                <p className="text-[#788099] text-sm 2xl:text-lg mb-4">{article.excerpt}</p>
                 <Link
                   href={`/blog/${article.slug}`}
-                  className="inline-block text-[#1D8751] border border-[#1D8751] rounded-full px-4 py-1 text-sm transition-colors hover:bg-[#1D8751] hover:text-white"
+                  className="inline-block text-[#1D8751] border border-[#1D8751] rounded-full px-4 py-1 text-sm 2xl:text-lg transition-colors hover:bg-[#1D8751] hover:text-white"
                 >
                   Read Article
                 </Link>
@@ -833,17 +834,17 @@ export default function MarketingPage() {
 
       {/* Contact Us Section */}
       <section className="w-full bg-[#1D1D23] text-white py-16 px-4 md:px-8">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto">
           <div className="flex flex-col lg:flex-row items-center gap-8">
             {/* Form Section */}
             <div className="w-full lg:w-1/2 space-y-6">
-              <h2 className="text-3xl font-bold mb-6 w-3/4">
+              <h2 className="text-3xl 2xl:text-4xl font-bold mb-6 w-3/4">
                 Need Answers to Your Questions? Contact Us
               </h2>
               
               <form className="space-y-4">
                 <div>
-                  <label htmlFor="email" className="block text-sm mb-2">Email</label>
+                  <label htmlFor="email" className="block text-sm  2xl:text-lg mb-2">Email</label>
                   <div className="relative">
                   <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
                   <svg width="20" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -862,7 +863,7 @@ export default function MarketingPage() {
                 </div>
                 
                 <div>
-                  <label htmlFor="question" className="block text-sm mb-2">Text</label>
+                  <label htmlFor="question" className="block text-sm 2xl:text-lg mb-2">Text</label>
                   <textarea
                   id="question"
                   className="w-full border border-[#35353E] rounded-3xl py-3 px-4 resize-none text-white  placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#1D8751]"
@@ -908,7 +909,7 @@ export default function MarketingPage() {
 
       {/* FAQ Section */}
       <section className="w-full bg-[#18181D] text-white py-16 px-4 md:px-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto">
         <div className="flex flex-col lg:flex-row items-center gap-12">
           {/* Illustration */}
           <div className="w-full lg:w-1/2">
@@ -918,7 +919,7 @@ export default function MarketingPage() {
                 alt="FAQ Illustration"
                 width={500}
                 height={400}
-                className="w-full h-auto"
+                className="w-full h-auto "
               />
             </div>
           </div>
@@ -926,10 +927,10 @@ export default function MarketingPage() {
         {/* FAQ Content */}
         <div className="w-full lg:w-1/2 space-y-6">
           <div className="mb-8">
-            <h2 className="text-2xl font-bold">
+            <h2 className="text-2xl 2xl:text-3xl font-bold">
               Let's Answer Some Of Your Questions Or
             </h2>
-            <p className="text-2xl font-medium text-[#1D8751]">
+            <p className="text-2xl 2xl:text-3xl font-medium text-[#1D8751]">
               Frequently Asked Questions
             </p>
           </div>
@@ -938,7 +939,6 @@ export default function MarketingPage() {
           <div className="space-y-4">
             {faqItems.map((item) => (
               <div key={item.id} className="relative">
-                {/* Complete accordion with border around everything */}
                 <div className={`border rounded-xl overflow-hidden ${
                   openFAQ === item.id ? 'border-[#1D8751]' : 'border-[#35353E]'
                 }`}>
@@ -1003,7 +1003,7 @@ export default function MarketingPage() {
                       {/* Dashed separator line */}
                       <div className="border-t border-dashed  border-gray-600 ml-2 mr-2"></div>
                       <div className="px-4 py-3 bg-[#1D1D23]">
-                        <p className="text-gray-400 text-sm">{item.answer}</p>
+                        <p className="text-gray-400 text-sm 2xl:text-lg">{item.answer}</p>
                       </div>
                     </>
                   )}
