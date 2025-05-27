@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 16, "column": 0}, "map": {"version":3,"sources":["file://C%3A/Users/USER/Desktop/Projects/OMAYAExchangeFronted/app/auth/register/page.tsx"],"sourcesContent":["\r\n\"use client\"\r\nimport RegisterPage from \"@/features/auth/components/RegisterForm\"\r\n\r\nconst Register = () => {\r\n    return (\r\n        <>\r\n         <RegisterPage/>\r\n        </>\r\n        )\r\n    }\r\n    \r\nexport default Register;"],"names":[],"mappings":";;;;AAEA;AADA;;;AAGA,MAAM,WAAW;IACb,qBACI;kBACC,cAAA,6LAAC,kJAAA,CAAA,UAAY;;;;;;AAGlB;KANE;uCAQS","debugId":null}},
+    {"offset": {"line": 45, "column": 0}, "map": {"version":3,"sources":["file://C%3A/Users/USER/Desktop/Projects/OMAYAExchangeFronted/node_modules/next/navigation.js"],"sourcesContent":["module.exports = require('./dist/client/components/navigation')\n"],"names":[],"mappings":"AAAA,OAAO,OAAO","ignoreList":[0],"debugId":null}}]
+}

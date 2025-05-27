@@ -4,11 +4,20 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Moon, Sun, Menu, X, Check } from "lucide-react";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState, AppDispatch } from "@/features/auth/store";
+import { initializeAuth } from "@/features/auth/slices/authSlice";
 
 export default function Navbar() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const dispatch = useDispatch<AppDispatch>();
+
+  useEffect(() => {
+    dispatch(initializeAuth());
+  }, [dispatch]);
 
   const toggleTheme = () => {
     setTheme(theme === "light" ? "dark" : "light");
@@ -77,12 +86,40 @@ export default function Navbar() {
 
         {/* Desktop Auth Buttons */}
         <div className="hidden md:flex items-center space-x-4 2xl:space-x-6">
-          <Link href="/auth/register">
-            <AuthButton variant="primary">Register</AuthButton>
-          </Link>
-          <Link href="/auth/login">
-            <AuthButton variant="secondary">Log In</AuthButton>
-          </Link>
+          {isAuthenticated ? (
+            <div className="flex items-center space-x-4">
+              <Link href="/dashboard/deposit">
+                <button className="flex items-center bg-[#1D8751] hover:bg-[#13B562] text-white px-6 py-2 rounded-full transition-colors duration-200 text-sm md:text-base 2xl:text-lg">
+                  <svg className="mr-2" width="20" height="20" fill="none" viewBox="0 0 24 24">
+                    <path d="M12 3v14m0 0l-5-5m5 5l5-5" stroke="#FFB800" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Deposit
+                </button>
+              </Link>
+              <div className="relative">
+                <img
+                  src="https://randomuser.me/api/portraits/men/32.jpg"
+                  alt="Profile"
+                  className="w-10 h-10 rounded-full border-2 border-white object-cover"
+                />
+                <span className="absolute bottom-0 right-0 w-5 h-5 bg-[#1D8751] rounded-full flex items-center justify-center border-2 border-white">
+                  <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+                    <circle cx="10" cy="10" r="10" fill="#1D8751"/>
+                    <path d="M6 10.5L9 13.5L14 8.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </span>
+              </div>
+            </div>
+          ) : (
+            <>
+              <Link href="/auth/register">
+                <AuthButton variant="primary">Register</AuthButton>
+              </Link>
+              <Link href="/auth/login">
+                <AuthButton variant="secondary">Log In</AuthButton>
+              </Link>
+            </>
+          )}
 
           <div className="flex items-center space-x-4 2xl:space-x-6">
             <LanguageSelector />
@@ -121,12 +158,38 @@ export default function Navbar() {
           </MobileNavLink>
 
           <div className="flex flex-col space-y-4 pt-4">
-            <AuthButton variant="primary" fullWidth>
-              Register
-            </AuthButton>
-            <AuthButton variant="secondary" fullWidth>
-              Log In
-            </AuthButton>
+            {isAuthenticated ? (
+              <>
+                <Link href="/dashboard/deposit" onClick={toggleMobileMenu}>
+                  <button className="flex items-center w-full bg-[#1D8751] hover:bg-[#13B562] text-white px-6 py-2 rounded-full transition-colors duration-200 text-base">
+                    <img src="https://res.cloudinary.com/dam1sxczj/image/upload/v1748294216/deposit-new-f_okzshs.png" alt="" />
+                    Deposit
+                  </button>
+                </Link>
+                <div className="relative mt-4 flex justify-center">
+                  <img
+                    src="https://randomuser.me/api/portraits/men/32.jpg"
+                    alt="Profile"
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                  <span className="absolute bottom-0 right-0 w-5 h-5 bg-[#1D8751] rounded-full flex items-center justify-center border-2 border-white">
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+                      <circle cx="10" cy="10" r="10" fill="#1D8751"/>
+                      <path d="M6 10.5L9 13.5L14 8.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <AuthButton variant="primary" fullWidth>
+                  Register
+                </AuthButton>
+                <AuthButton variant="secondary" fullWidth>
+                  Log In
+                </AuthButton>
+              </>
+            )}
           </div>
 
           <div className="flex items-center justify-between pt-4">
