@@ -30,7 +30,7 @@ const initialState: AuthState = {
 // Helper to handle API errors
 const handleApiError = (error: unknown): string => {
   if (error instanceof AxiosError) {
-    return error.response?.data?.message || error.response?.data?.error || error.response?.data?.details || 'An error occurred';
+    return error.response?.data?.message || error.response?.data?.error || error.response?.data?.details || error.response?.data?.email || 'An error occurred';
   }
   return 'An unexpected error occurred';
 };

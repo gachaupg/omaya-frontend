@@ -4,7 +4,7 @@ import MarketingPage from "./(marketing)/page";
 
 export default function Home() {
   return (
-    <div>
+    <div className="bg-[#18181D]">
       <MarketingPage />
     </div>
   );
