@@ -1,0 +1,182 @@
+import React, { useRef, useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch } from "@/store";
+import { RootState } from "@/store/rootReducer";
+import {
+  createAppealThunk,
+  resetAppealState,
+} from "@/features/p2p/slices/appealSlice";
+
+interface AppealModalProps {
+  open: boolean;
+  onClose: () => void;
+  tradeId: string;
+}
+
+const APPEAL_REASONS = [
+  { value: "Order not received", label: "Order not received" },
+  { value: "Payment not confirmed", label: "Payment not confirmed" },
+  { value: "Other issues", label: "Other issues" },
+];
+
+const AppealModal: React.FC<AppealModalProps> = ({
+  open,
+  onClose,
+  tradeId,
+}) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { loading, error, success } = useSelector(
+    (state: RootState) => state.appeal
+  );
+  const [reason, setReason] = useState("");
+  const [screenshot, setScreenshot] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (success) {
+      setTimeout(() => {
+        dispatch(resetAppealState());
+        onClose();
+      }, 1200);
+    }
+  }, [success, dispatch, onClose]);
+
+  if (!open) return null;
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setScreenshot(e.target.files[0]);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reason || !tradeId) return;
+    const formData = new FormData();
+    formData.append("trade_id", tradeId);
+    formData.append("reason_for_appeal", reason);
+    if (screenshot) formData.append("screenshot", screenshot);
+    dispatch(createAppealThunk(formData) as any);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-[#23232A] rounded-[24px] p-8 w-full max-w-md shadow-lg relative">
+        <h2 className="text-[13px] text-center text-white mb-6">
+          Submit Appeal
+        </h2>
+        {/* Instruction Box */}
+        <div className="bg-[#A05C2F] bg-opacity-30 rounded-xl p-4 mb-6">
+          <div className="text-[#FFB37A] text-[13px] mb-1">
+            1. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sedl
+          </div>
+        </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+          {/* Appeal Reason */}
+          <div>
+            <label className="block text-white text-[13px] mb-2">
+              Appeal Reason
+            </label>
+            <div className="relative">
+              <select
+                className="w-full rounded-xl px-4 py-3 bg-[#18181D] text-white border border-[#35353E] focus:outline-none appearance-none"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                required
+              >
+                <option value="">Select the reason for appeal</option>
+                {APPEAL_REASONS.map((r) => (
+                  <option key={r.value} value={r.value}>
+                    {r.label}
+                  </option>
+                ))}
+              </select>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#888] pointer-events-none">
+                &#9662;
+              </span>
+            </div>
+          </div>
+          {/* Upload Proof */}
+          <div>
+            <label className="block text-white text-[13px] mb-2">
+              Upload Proof Documents
+            </label>
+            <div className="text-[#888] text-[13px] mb-4">
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+              eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
+            </div>
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={() =>
+                  fileInputRef.current && fileInputRef.current.click()
+                }
+                className="w-14 h-12 rounded-xl bg-[#35353E] flex items-center justify-center"
+              >
+                <svg width="28" height="28" fill="#1D8751" viewBox="0 0 24 24">
+                  <path
+                    d="M12 16v-8m0 0l-4 4m4-4l4 4"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <rect
+                    x="3"
+                    y="3"
+                    width="18"
+                    height="18"
+                    rx="4"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    fill="none"
+                  />
+                </svg>
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                onChange={handleFileChange}
+                accept="image/*"
+              />
+              <span className="text-[#888] text-[13px]">
+                {screenshot ? screenshot.name : "No file selected"}
+              </span>
+            </div>
+          </div>
+          {/* Buttons */}
+          <div className="flex gap-4 mt-2">
+            <button
+              type="button"
+              className="flex-1 rounded-xl border border-[#1D8751] bg-transparent text-[#1D8751] py-3 font-semibold hover:bg-[#1D8751]/10 transition"
+              onClick={onClose}
+              disabled={loading}
+            >
+              Close
+            </button>
+            <button
+              type="submit"
+              className="flex-1 rounded-xl bg-[#1D8751] text-white py-3 font-semibold hover:bg-[#17693f] transition"
+              disabled={loading || !reason}
+            >
+              {loading ? "Submitting..." : "Appeal"}
+            </button>
+          </div>
+          {error && (
+            <div className="text-red-500 text-[13px] text-center">
+              {error || "An error occurred while creating the appeal"}
+            </div>
+          )}
+          {success && (
+            <div className="text-green-500 text-[13px] text-center">
+              Appeal submitted!
+            </div>
+          )}
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default AppealModal;

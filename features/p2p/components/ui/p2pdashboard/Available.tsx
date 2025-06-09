@@ -1,83 +1,121 @@
-import { assetBalances } from "@/features/p2p/data";
 import { tokens } from "@/styles/tokens";
-import React from "react";
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch } from "@/store";
+import { RootState } from "@/store/rootReducer";
+import {
+  fetchTransactionSummary,
+  selectTransactionSummary,
+  selectTransactionSummaryLoading,
+} from "@/features/p2p/slices/transactionSummarySlice";
+import { formatNumber } from "@/utils/formatters";
+import { fetchWallets } from "@/features/p2p/slices/walletSlice";
+
+interface Wallet {
+  currency: string;
+  balance: string;
+}
+
+const USDT_ICON =
+  "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png";
 
 const Available = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const summary = useSelector(selectTransactionSummary);
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { data: wallets = [], loading: walletLoading } = useSelector(
+    (state: RootState) => state.wallets
+  );
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(fetchTransactionSummary());
+      dispatch(fetchWallets());
+    }
+  }, [dispatch, isAuthenticated]);
+
+  // Find USDT wallet with null check
+  const usdtWallet = wallets?.find(
+    (wallet: Wallet) => wallet.currency === "USDT"
+  );
+  const walletBalance = usdtWallet ? parseFloat(usdtWallet.balance) : 0;
+
+  // Calculate available balance (total approved - pending withdrawals)
+  const availableBalance = summary
+    ? walletBalance -
+      summary.total_pending_p2p_withdrawals -
+      summary.total_sell_orders_by_status.pending
+    : 0;
+
+  // Calculate locked amount (pending deposits + pending withdrawals)
+  const lockedAmount = 0;
+
   return (
-    <div className="mt-4">
-      {/* <h3 style={{ color: tokens.colors.brand.primary }} className="mb-2">Available</h3> */}
+    <div className="mt-3">
       <div
-        className={`rounded-[24px] border border-[#35353E] h-[140px] overflow-hidden bg-[${tokens.colors.dark.card}]`}
+        className={`rounded-[24px] border border-[${tokens.colors.dark.border}] overflow-hidden bg-[${tokens.colors.dark.card}]`}
+        style={{ height: 110 }}
       >
-        <div className="w-full">
+        <div className="w-full h-full">
           {/* Header */}
           <div
-            className={`grid grid-cols-3 py-4 px-6 border-b border-[#35353E] bg-[${tokens.colors.dark.card}]`}
+            className={`grid grid-cols-3 px-6  py-3 `}
+            style={{ background: "#35353E" }}
           >
-            <div className={`text-sm text-[${tokens.colors.dark.textBody}]`}>
+            <div
+              className={`text-sm text-[${tokens.colors.dark.textBody}] font-medium`}
+            >
               Asset
             </div>
             <div
-              className={`text-sm text-right text-[${tokens.colors.dark.textBody}]`}
+              className={`text-sm text-right text-[${tokens.colors.dark.textBody}] font-medium`}
             >
               Available
             </div>
             <div
-              className={`text-sm text-right text-[${tokens.colors.dark.textBody}]`}
+              className={`text-sm text-right text-[${tokens.colors.dark.textBody}] font-medium`}
             >
               In Escrow / Locked
             </div>
           </div>
 
-          {/* Assets List */}
-          <div className={`px-6 py-4 bg-[#18181D]`}>
-            {assetBalances.map((asset, index) => (
-              <div
-                key={index}
-                className={`grid grid-cols-3 py-3 border-b last:border-b-0 border-[${tokens.colors.dark.border}]`}
-              >
-                {/* Asset */}
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center bg-[${tokens.colors.brand.primary}]`}
-                  >
-                    {asset.icon === "tether" && (
-                      <span
-                        className={`font-bold text-lg text-[${tokens.colors.dark.textTitle}]`}
-                      >
-                        ₮
-                      </span>
-                    )}
-                  </div>
-                  <div>
-                    <div
-                      className={`font-medium text-sm text-[${tokens.colors.dark.textTitle}]`}
-                    >
-                      {asset.symbol}
-                    </div>
-                    <div
-                      className={`text-xs text-[${tokens.colors.dark.textBody}]`}
-                    >
-                      {asset.name}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Available */}
+          {/* Asset Row */}
+          <div
+            className={`grid grid-cols-3 px-6 py-4 bg-[${tokens.colors.dark.card}]`}
+            style={{ minHeight: 70 }}
+          >
+            {/* Asset */}
+            <div className="flex items-center gap-3">
+              <img
+                src={USDT_ICON}
+                alt="USDT"
+                className="w-7 h-7 rounded-full bg-white"
+              />
+              <div>
                 <div
-                  className={`text-right self-center text-sm text-[${tokens.colors.dark.textTitle}]`}
+                  className={`font-medium text-base text-[${tokens.colors.dark.textTitle}]`}
                 >
-                  {asset.available.toFixed(4)}
+                  USDT
                 </div>
-
-                {/* Locked */}
                 <div
-                  className={`text-right self-center text-sm text-[${tokens.colors.dark.textTitle}]`}
+                  className={`text-xs text-[${tokens.colors.dark.textBody}] mt-0.5`}
                 >
-                  {asset.locked.toFixed(4)}
+                  Tether US
                 </div>
               </div>
-            ))}
+            </div>
+            {/* Available */}
+            <div
+              className={`text-right self-center text-base text-[${tokens.colors.dark.textTitle}] font-medium`}
+            >
+              {formatNumber(availableBalance)}
+            </div>
+            {/* Locked */}
+            <div
+              className={`text-right self-center text-base text-[${tokens.colors.dark.textTitle}] font-medium`}
+            >
+              {formatNumber(lockedAmount)}
+            </div>
           </div>
         </div>
       </div>

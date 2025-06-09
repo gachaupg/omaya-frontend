@@ -1,19 +1,36 @@
-import React from "react";
+import { fetchMatchedTrades } from "@/features/p2p/slices/matchedTradesSlice";
+import { selectTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
+import { fetchWallets } from "@/features/p2p/slices/walletSlice";
+import { AppDispatch, RootState } from "@/store/rootReducer";
+import { formatNumber } from "@/utils/formatters";
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 
-const P2pProfile = () => {
+const P2pProfile = ({
+  user,
+  wallets,
+  summary,
+  loading,
+}: {
+  user: any;
+  wallets: any;
+  summary: any;
+  loading: any;
+}) => {
   return (
     <div className="w-full h-[130px] rounded-[24px] border-2 border-[#35353E] flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 sm:p-6 bg-[#1D1D23] box-border gap-4 sm:gap-0">
       {/* Left Section */}
       <div className="flex items-center gap-4 sm:gap-6">
         {/* Avatar */}
         <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xl sm:text-2xl font-bold">
-          OA
+          {user?.first_name?.charAt(0)}
+          {user?.last_name?.charAt(0)}
         </div>
         {/* User Info */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <span className="text-white text-base sm:text-lg font-medium">
-              User Name
+              {user?.first_name}
             </span>
             {/* Edit Icon (simple pencil SVG) */}
             <svg
@@ -60,10 +77,17 @@ const P2pProfile = () => {
         </span>
         <div className="flex items-end gap-2">
           <span className="text-white text-lg sm:text-xl font-semibold">
-            1900.8648 USDT
+            {wallets && wallets.length > 0
+              ? formatNumber(Number(wallets[0].balance)).toString()
+              : "0"}{" "}
+            USDT
           </span>
           <span className="text-[#7B8191] text-base sm:text-lg">
-            ≈ 1,900 USD
+            ≈{" "}
+            {wallets && wallets.length > 0
+              ? formatNumber(Number(wallets[0].balance)).toString()
+              : "0"}{" "}
+            USD
           </span>
         </div>
         <span className="text-[#7B8191] text-sm">

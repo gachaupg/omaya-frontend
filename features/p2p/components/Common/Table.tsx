@@ -3,11 +3,17 @@ import { tokens } from "@/styles/tokens";
 import { TransactionType } from "@/features/p2p/types";
 import Button from "./Button";
 import { MoreHorizontal } from "lucide-react";
+import { formatDate, formatNumber } from "@/utils/formatters";
 
 type TableProps = {
   title?: string;
   type?: string;
   data?: TransactionType[];
+  loading?: boolean;
+  error?: string | null;
+  currentPage?: number;
+  totalPages?: number;
+  onPageChange?: (page: number) => void;
   onExport?: () => void;
   onSearch?: (query: string) => void;
 };
@@ -16,17 +22,14 @@ export const Table: React.FC<TableProps> = ({
   title = "P2P History",
   data = [],
   type = "",
+  loading = false,
+  error = null,
+  currentPage = 1,
+  totalPages = 1,
+  onPageChange,
   onExport,
   onSearch,
 }) => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
-  const totalPages = Math.ceil(data.length / itemsPerPage);
-  const paginatedData = data.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (onSearch) {
       onSearch(e.target.value);
@@ -39,20 +42,120 @@ export const Table: React.FC<TableProps> = ({
     }
   };
 
-  const getStatusColor = (status: string) => {
-    if (status === "Completed") return `text-[${tokens.colors.brand.primary}]`;
-    if (status === "Processing") return "text-yellow-400";
-    return `text-[${tokens.colors.brand.secondary}]`;
+  const getAmountColor = (type: string | undefined | null) => {
+    if (!type) return `text-[${tokens.colors.dark.textBody}]`;
+    if (type.toLowerCase() === "buy") return "text-[#1D8751]";
+    if (type.toLowerCase() === "sell") return "text-[#FF4D4D]";
+    return `text-[${tokens.colors.dark.textBody}]`;
   };
 
-  const handlePageChange = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
+  const getStatusColor = (status: string | undefined | null) => {
+    return "text-[#788099]";
   };
+
+  if (loading) {
+    return (
+      <div className="w-full text-center py-8 text-[#788099]">Loading...</div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="w-full text-center py-8">
+        <div className="flex flex-col items-center justify-center border border-[#35353E] rounded-[24px] p-8 bg-[#23232B]">
+          <div className="w-16 h-16 mb-4 rounded-full bg-[#35353E] flex items-center justify-center">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="text-[#788099]"
+            >
+              <path
+                d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M12 8V12"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M12 16H12.01"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-[#788099] mb-2">
+            No Data Found
+          </h3>
+          <p className="text-sm text-[#8C8CA1] text-center max-w-md">
+            Please sign in to view your P2P transactions or check back later.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="w-full text-center py-8">
+        <div className="flex flex-col items-center justify-center border border-[#35353E] rounded-[24px] p-8 bg-[#23232B]">
+          <div className="w-16 h-16 mb-4 rounded-full bg-[#35353E] flex items-center justify-center">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="text-[#788099]"
+            >
+              <path
+                d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M12 8V12"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M12 16H12.01"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-[#788099] mb-2">
+            No Data Available
+          </h3>
+          <p className="text-sm text-[#8C8CA1] text-center max-w-md">
+            There are currently no records to display. Please check back later
+            or try adjusting your filters.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className=" mt-8">
+    <div className="mt-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3">
         <h3 className={`font-medium text-[${tokens.colors.dark.textTitle}]`}>
           {title}
@@ -98,7 +201,7 @@ export const Table: React.FC<TableProps> = ({
               variant="ghost"
               size="sm"
               onClick={handleExport}
-              className="text-sm "
+              className="text-sm"
             >
               <p className="text-[#1D8751]">Export Transactions</p>
             </Button>
@@ -108,393 +211,199 @@ export const Table: React.FC<TableProps> = ({
 
       <div className="overflow-x-auto rounded-[24px]">
         <div
-          className={`min-w-[800px] w-full border overflow-hidden bg-[${tokens.colors.dark.card}] border-[${tokens.colors.dark.border}]`}
+          className={`w-full border overflow-hidden bg-[${tokens.colors.dark.card}] border-[${tokens.colors.dark.border}]`}
         >
           {/* Table Header */}
-          {type === "myads" ? (
-            <div className="grid grid-cols-10 py-3 px-4 border-b bg-[${tokens.colors.dark.card}] border-[${tokens.colors.dark.border}]">
-              <div className="text-sm font-medium text-[${tokens.colors.dark.textTitle}]">
-                Asset
-              </div>
-              <div className="text-sm font-medium text-[${tokens.colors.dark.textTitle}]">
-                Ad ID
-              </div>
-              <div className="text-sm font-medium text-[${tokens.colors.dark.textTitle}]">
-                Type
-              </div>
-              <div className="text-sm font-medium text-[${tokens.colors.dark.textTitle}]">
-                Limit
-              </div>
-              <div className="text-sm font-medium text-[${tokens.colors.dark.textTitle}]">
-                Price
-              </div>
-              <div className="text-sm font-medium text-[${tokens.colors.dark.textTitle}]">
-                Commission
-              </div>
-              <div className="text-sm font-medium text-[${tokens.colors.dark.textTitle}]">
-                Payment
-              </div>
-              <div className="text-sm font-medium text-[${tokens.colors.dark.textTitle}]">
-                Last Update
-              </div>
-              <div className="text-sm font-medium text-[${tokens.colors.dark.textTitle}]">
-                Status
-              </div>
-              <div className="text-sm font-medium text-[${tokens.colors.dark.textTitle}]">
-                Action
-              </div>
-            </div>
-          ) : (
+          <div
+            className={`grid grid-cols-6 md:grid-cols-7 py-3 px-4 border-b bg-[${tokens.colors.dark.card}] border-[${tokens.colors.dark.border}]`}
+          >
             <div
-              className={`grid grid-cols-7 md:grid-cols-8 py-3 px-4 border-b bg-[${tokens.colors.dark.card}] border-[${tokens.colors.dark.border}]`}
+              className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
             >
+              Asset
+            </div>
+            {type === "p2p" && (
               <div
                 className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
               >
-                {type === "orders" ? "Coin" : "Asset"}
+                ID
               </div>
-              {type === "p2p" && (
-                <>
-                  {" "}
-                  <div
-                    className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
-                  >
-                    ID
-                  </div>
-                </>
-              )}
+            )}
+            <div>
               <div
                 className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
               >
                 Type
               </div>
-              <div
-                className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
-              >
-                Amount
-              </div>
-              {type === "orders" && (
-                <div
-                  className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
-                >
-                  Rate
-                </div>
-              )}
-
-              <div
-                className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
-              >
-                Date
-              </div>
-              <div
-                className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
-              >
-                Status
-              </div>
-
-              {type === "p2p" ? (
-                <>
-                  <div
-                    className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}] flex items-center gap-1`}
-                  >
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                      className={`text-[${tokens.colors.dark.textTitle}]`}
-                    >
-                      <path
-                        d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                    Receipt
-                  </div>
-                  <div
-                    className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
-                  >
-                    More
-                  </div>
-                </>
-              ) : (
-                <div
-                  className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
-                >
-                  Payments
-                </div>
-              )}
             </div>
-          )}
+            <div
+              className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
+            >
+              Amount
+            </div>
+
+            <div
+              className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
+            >
+              Date
+            </div>
+            <div
+              className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
+            >
+              Status
+            </div>
+            <div
+              className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
+            >
+              Receipt
+            </div>
+            <div
+              className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
+            >
+              More
+            </div>
+          </div>
 
           {/* Table Body */}
           <div>
-            {type === "myads"
-              ? paginatedData.map((row, idx) => (
+            {data.map((row, idx) => (
+              <div
+                key={idx}
+                className={`w-full grid grid-cols-6 md:grid-cols-7 py-4 px-4 border-b last:border-b-0 items-center hover:bg-opacity-80 transition-colors border-[${tokens.colors.dark.border}] bg-[${tokens.colors.dark.background}]`}
+              >
+                <div className="flex items-center gap-2">
+                  <img
+                    src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
+                    alt={row.asset}
+                    className="w-6 h-6"
+                  />
+                </div>
+                {type === "p2p" && (
                   <div
-                    key={idx}
-                    className={`w-full grid grid-cols-10 py-4 px-4 border-b last:border-b-0 items-center hover:bg-opacity-80 transition-colors border-[${tokens.colors.dark.border}] bg-[${tokens.colors.dark.background}]`}
+                    className={`text-sm text-[${tokens.colors.dark.textBody}]`}
                   >
-                    {/* Asset */}
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#26A17B]">
-                        <span className="font-bold text-lg text-white">₮</span>
-                      </div>
-                      <span
-                        className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
-                      >
-                        {row.assetSymbol}
-                      </span>
-                    </div>
-                    {/* Ad ID */}
-                    <div className="text-sm font-medium text-[${tokens.colors.dark.textTitle}]">
-                      {row.id}
-                    </div>
-                    {/* Type */}
-                    <div className="text-sm font-medium text-[#1D8751]">
-                      {row.type}
-                    </div>
-                    {/* Limit */}
-                    <div className="text-sm font-medium text-[${tokens.colors.dark.textTitle}]">
-                      {row.limit}
-                    </div>
-                    {/* Price */}
-                    <div className="text-sm font-medium font-semibold text-[${tokens.colors.dark.textTitle}]">
-                      {row.price}
-                    </div>
-                    {/* Commission */}
-                    <div className="text-sm font-medium text-[${tokens.colors.dark.textTitle}]">
-                      {row.commission}
-                    </div>
-                    {/* Payment */}
-                    <div className="flex flex-wrap gap-2">
-                      {Array.isArray(row.payment) &&
-                        row.payment.map((p, i) => (
-                          <span key={i} className="flex items-center gap-1">
-                            <img
-                              src={p.logo}
-                              alt={p.bank}
-                              className="w-6 h-6 rounded-full"
-                            />
-                            <span>{p.bank}</span>
-                          </span>
-                        ))}
-                    </div>
-                    {/* Last Update */}
-                    <div className="text-sm font-medium text-[${tokens.colors.dark.textTitle}]">
-                      {row.lastUpdate}
-                    </div>
-                    {/* Status */}
-                    <div
-                      className="text-sm font-medium"
-                      style={{
-                        color: row.status === "Published" ? "#1D8751" : "red",
-                      }}
-                    >
-                      {row.status}
-                    </div>
-                    {/* Action */}
-                    <div>
-                      <button className="text-[#1D8751]">...</button>
-                    </div>
+                    {row.id
+                      ? `${row.id.slice(0, 3)}...${row.id.slice(-3)}`
+                      : ""}
                   </div>
-                ))
-              : paginatedData.map((row: TransactionType, index: number) => (
-                  <div
-                    key={index}
-                    className={`w-full grid grid-cols-7 md:grid-cols-8 py-4 px-4 border-b last:border-b-0 items-center hover:bg-opacity-80 transition-colors border-[${tokens.colors.dark.border}] bg-[${tokens.colors.dark.background}]`}
-                  >
-                    {/* Coin */}
-                    <div className="flex items-center gap-2">
-                      {row.assetSymbol === "BTC" && (
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#F7931A]">
-                          <span className="font-bold text-lg text-white">
-                            ₿
-                          </span>
-                        </div>
-                      )}
-                      {row.assetSymbol === "ETH" && (
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#627EEA]">
-                          <span className="font-bold text-lg text-white">
-                            Ξ
-                          </span>
-                        </div>
-                      )}
-                      {row.assetSymbol === "USDT" && (
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center bg-[#26A17B]">
-                          <span className="font-bold text-lg text-white">
-                            ₮
-                          </span>
-                        </div>
-                      )}
-                      <span
-                        className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
-                      >
-                        {row.assetSymbol}
-                      </span>
-                    </div>
-                    {/* ID */}
-                    {type === "p2p" && (
-                      <div
-                        className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
-                      >
-                        {row.id}
-                      </div>
-                    )}
-                    {/* Type */}
-
-                    <div
-                      className={`text-sm font-medium ${
-                        row.type === "Buy"
-                          ? `text-[${tokens.colors.brand.primary}]`
-                          : `text-[${tokens.colors.brand.secondary}]`
-                      }`}
-                    >
-                      {row.type}
-                    </div>
-                    {/* Amount */}
-                    <div
-                      className={`text-sm font-medium ${
-                        row.amount.startsWith("+")
-                          ? `text-[${tokens.colors.brand.primary}]`
-                          : `text-[${tokens.colors.brand.secondary}]`
-                      }`}
-                    >
-                      {row.amount} USD
-                    </div>
-                    {/* Rate */}
-                    {type === "orders" && (
-                      <div
-                        className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
-                      >
-                        {row.rate}
-                      </div>
-                    )}
-
-                    {/* Date */}
-                    <div
-                      className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
-                    >
-                      {row.date}
-                    </div>
-                    {/* Status */}
-                    <div
-                      className={`text-sm font-medium ${getStatusColor(
-                        row.status
-                      )}`}
-                    >
-                      {row.status}
-                    </div>
-                    {/* Payment */}
-                    <div className="flex items-center gap-2">
-                      {Array.isArray(row.payment)
-                        ? row.payment.map((p, i) => (
-                            <span key={i}>{p.bank}</span>
-                          ))
-                        : row.payment?.logo && (
-                            <img
-                              src={row.payment.logo}
-                              alt="logo"
-                              className="w-6 h-6 rounded-full"
-                            />
-                          )}
-                      {Array.isArray(row.payment) ? null : row.payment?.bank}
-                    </div>
-                    {/* Actions */}
-                    {type == "p2p" ? (
-                      <>
-                        <div className="flex justify-between items-center">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            color="#1D8751"
-                            className="text-[#1D8751]"
-                            icon={
-                              <svg
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path
-                                  d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                                <path
-                                  d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                            }
-                          />
-                        </div>
-                        <div>
-                          <MoreHorizontal />
-                        </div>
-                      </>
-                    ) : null}
+                )}
+                <div> 
+                  <div className={`text-sm ${getAmountColor(String(row.type))}`}>
+                    {row.type}
                   </div>
-                ))}
+                </div>
+                <div>
+                  <div className={`text-sm ${getAmountColor(String(row.type))}`}>
+                    {formatNumber(Number(row.amount)).toString()}
+                  </div>
+                </div>
+                <div
+                  className={`text-sm text-[${tokens.colors.dark.textBody}]`}
+                >
+                  {formatDate(row.date)}
+                </div>
+                <div
+                  className={`text-sm ${getStatusColor(String(row.status))}`}
+                >
+                  {row.status}
+                </div>
+                <div className="flex items-center">
+                  <Button variant="ghost" size="sm" className="text-[#1D8751]">
+                    View
+                  </Button>
+                </div>
+                <div className="flex items-center">
+                  <Button variant="ghost" size="sm" className="text-[#788099]">
+                    <MoreHorizontal size={20} />
+                  </Button>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-2 mt-6 select-none">
-            <button
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
-                currentPage === 1
-                  ? "text-gray-400 cursor-not-allowed"
-                  : "text-[#7C8493] hover:bg-[#E6E8EC]"
-              }`}
-            >
-              <span className="text-xl">&#60;</span>
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2 py-4 bg-transparent">
+
               <button
-                key={page}
-                onClick={() => handlePageChange(page)}
-                className={`w-8 h-8 flex items-center justify-center rounded-[8px] font-medium text-base transition-colors ${
-                  currentPage === page
-                    ? "bg-[#1D8751] text-white"
-                    : "text-[#7C8493] hover:bg-[#E6E8EC]"
+                onClick={() => onPageChange?.(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={`px-3 py-1 rounded-md text-sm font-medium border border-[#35353E] bg-[#23232B] text-[#8C8CA1] ${
+                  currentPage === 1
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:bg-[#35353E]"
                 }`}
               >
-                {page}
+                &lt;
               </button>
-            ))}
-            <button
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
-                currentPage === totalPages
-                  ? "text-gray-400 cursor-not-allowed"
-                  : "text-[#7C8493] hover:bg-[#E6E8EC]"
-              }`}
-            >
-              <span className="text-xl">&#62;</span>
-            </button>
-          </div>
-        )}
+              {totalPages <= 10 ? (
+                // Show all pages if total pages is 10 or less
+                Array.from({ length: totalPages }, (_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => onPageChange?.(i + 1)}
+                    className={`px-3 py-1 rounded-md text-sm font-medium border border-[#35353E] ${
+                      currentPage === i + 1
+                        ? "bg-[#1D8751] text-white"
+                        : "bg-[#23232B] text-[#8C8CA1] hover:bg-[#35353E]"
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
+                ))
+              ) : (
+                // Show first 5 and last 5 pages with ellipsis
+                <>
+                  {/* First 5 pages */}
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => onPageChange?.(i + 1)}
+                      className={`px-3 py-1 rounded-md text-sm font-medium border border-[#35353E] ${
+                        currentPage === i + 1
+                          ? "bg-[#1D8751] text-white"
+                          : "bg-[#23232B] text-[#8C8CA1] hover:bg-[#35353E]"
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+
+                  {/* Ellipsis */}
+                  <span className="text-[#8C8CA1]">...</span>
+
+                  {/* Last 5 pages */}
+                  {Array.from({ length: 5 }, (_, i) => {
+                    const pageNum = totalPages - 4 + i;
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => onPageChange?.(pageNum)}
+                        className={`px-3 py-1 rounded-md text-sm font-medium border border-[#35353E] ${
+                          currentPage === pageNum
+                            ? "bg-[#1D8751] text-white"
+                            : "bg-[#23232B] text-[#8C8CA1] hover:bg-[#35353E]"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </>
+              )}
+              <button
+                onClick={() => onPageChange?.(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className={`px-3 py-1 rounded-md text-sm font-medium border border-[#35353E] bg-[#23232B] text-[#8C8CA1] ${
+                  currentPage === totalPages
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:bg-[#35353E]"
+                }`}
+              >
+                &gt;
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

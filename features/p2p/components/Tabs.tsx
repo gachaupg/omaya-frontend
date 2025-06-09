@@ -12,7 +12,7 @@ const Tabs = ({ tabs, activeTab, onTabChange }: TabsProps) => {
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={`py-2 px-4 relative flex cursor-pointer items-center font-mulish text-lg font-semibold leading-none tracking-[-0.2px] ${
+            className={`py-2 px-4 relative flex cursor-pointer items-center font-mulish text-lg  leading-none tracking-[-0.2px] ${
               activeTab === tab.id
                 ? `text-[${tokens.colors.dark.textTitle}]`
                 : `text-[${tokens.colors.dark.textBody}]`

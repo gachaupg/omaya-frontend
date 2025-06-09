@@ -171,4 +171,3 @@ inventory.forEach((item) => {
   }
 });
 
-console.log("✅  Project skeleton completed!");

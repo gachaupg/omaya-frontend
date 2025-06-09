@@ -9,7 +9,7 @@ export default function DashboardPage({
   children: React.ReactNode;
 }) {
   return (
-    <div className="px-4 md:px-6 pt-0 mb-4 flex flex-col gap-4 rounded-lg w-full">
+    <div className="pt-0 mb-4 flex flex-col gap-4 rounded-lg w-full">
       <UserCard />
       <PriceCards />
       <VolumeChart />

@@ -9,7 +9,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen mt-28">
+    <div className="min-h-screen ml-6 mt-28">
       {/* Mobile Sidebar */}
       <motion.div
         initial={{ y: -20, opacity: 0 }}

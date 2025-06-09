@@ -1,7 +1,35 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { tokens } from "@/styles/tokens";
 import Card from "../../Common/Card";
 import Button from "../../Common/Button";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/store/rootReducer";
+import { AppDispatch } from "@/store";
+import { fetchWallets } from "@/features/p2p/slices/walletSlice";
+import { fetchMatchedTrades } from "@/features/p2p/slices/matchedTradesSlice";
+import { FinancialCalculator } from "@/lib/utils/financial";
+import { toNumber } from "@/lib/finanacial";
+
+interface Wallet {
+  currency: string;
+  balance: string;
+}
+
+const formatBalance = (value: number, isUsdt: boolean = false) => {
+  if (isUsdt) {
+    return new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  }
+
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+};
 
 const P2pWallet = ({
   isOpenForm,
@@ -10,42 +38,65 @@ const P2pWallet = ({
   isOpenForm: string;
   setIsOpenForm: (isOpenForm: string) => void;
 }) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { data: wallets = [], loading } = useSelector(
+    (state: RootState) => state.wallets
+  );
+  const { data: matchedTrades, loading: matchedTradesLoading } = useSelector(
+    (state: RootState) => state.matchedTrades
+  );
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(fetchWallets());
+      dispatch(fetchMatchedTrades(1));
+    }
+  }, [dispatch, isAuthenticated]);
+
+  // Find USDT wallet with null check
+  const usdtWallet = wallets?.find(
+    (wallet: Wallet) => wallet.currency === "USDT"
+  );
+  const balance = usdtWallet ? toNumber(usdtWallet.balance) : 0;
+  const usdValue = balance;
+
   return (
     <div>
+      <p
+        className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}] mb-2`}
+      >
+        P2P Balance
+      </p>
       <Card
         borderColor={`border-[${tokens.colors.dark.border}]`}
         width="w-full"
         bgColor={`bg-[${tokens.colors.dark.card}]`}
-        borderRadius="rounded-[16px]"
-        className="p-3"
+        borderRadius="rounded-[24px]"
+        className="p-0 mb-2 shadow-none"
       >
-        <div className="flex flex-col space-y-3">
+        <div className="flex flex-col gap-3 py-3 px-4">
           <p
-            className={`text-base opacity-70 text-[${tokens.colors.dark.textBody}]`}
+            className={`text-sm font-medium opacity-70 text-[${tokens.colors.dark.textBody}] mb-1`}
           >
             Balance
           </p>
 
-          <div className="flex flex-wrap justify-between items-center">
-            <div className="flex text-[14px]  flex-wrap items-baseline">
-              <p
-                className={`text-[15px] font-medium mr-2 text-[${tokens.colors.dark.textTitle}]`}
-              >
-                1900.8648 USDT
-              </p>
+          <div className="flex flex-wrap justify-between items-center w-full">
+            <div className="flex flex-wrap items-baseline gap-2">
               <span
-                className={`text-[${tokens.colors.dark.textBody}] text-lg flex items-center`}
+                className={`text-lg font-bold text-[${tokens.colors.dark.textTitle}]`}
               >
-                <span className="mx-1 opacity-50">≈</span>
-                <span
-                  className={`text-[${tokens.colors.dark.textBody}] opacity-80`}
-                >
-                  1,900 USD
-                </span>
+                {`${formatBalance(balance, true)} USDT`}
+              </span>
+              <span
+                className={`text-base font-semibold text-[${tokens.colors.dark.textBody}] opacity-80 flex items-center`}
+              >
+                <span className="mx-1 opacity-50 text-lg">≈</span>
+                {loading ? "..." : formatBalance(usdValue)}
               </span>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <Button
                 onClick={() => setIsOpenForm("deposit")}
                 width={120}
@@ -54,10 +105,17 @@ const P2pWallet = ({
                 variant={isOpenForm === "deposit" ? "primary" : "outline"}
                 borderColor={tokens.colors.brand.primary}
                 size="md"
+                className={`transition-all duration-150 flex items-center gap-2 ${
+                  isOpenForm === "deposit"
+                    ? "bg-[" + tokens.colors.brand.primary + "] text-white"
+                    : "bg-transparent text-[" +
+                      tokens.colors.brand.primary +
+                      "]"
+                }`}
                 icon={
                   <svg
-                    width="16"
-                    height="16"
+                    width="18"
+                    height="18"
                     viewBox="0 0 24 24"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
@@ -66,7 +124,7 @@ const P2pWallet = ({
                       d="M12 5V19M12 5L19 12M12 5L5 12"
                       className={
                         isOpenForm === "deposit"
-                          ? `stroke-[#ffff]`
+                          ? `stroke-[#fff]`
                           : `stroke-[${tokens.colors.brand.primary}]`
                       }
                       strokeWidth="2"
@@ -76,9 +134,15 @@ const P2pWallet = ({
                   </svg>
                 }
               >
-                <p className={`text-[${tokens.colors.dark.textTitle}]`}>
+                <span
+                  className={`font-medium ${
+                    isOpenForm === "deposit"
+                      ? "text-white"
+                      : `text-[${tokens.colors.brand.primary}]`
+                  }`}
+                >
                   Deposit
-                </p>
+                </span>
               </Button>
 
               <Button
@@ -89,10 +153,17 @@ const P2pWallet = ({
                 variant={isOpenForm === "withdraw" ? "secondary" : "outline"}
                 borderColor={tokens.colors.brand.secondary}
                 size="md"
+                className={`transition-all duration-150 flex items-center gap-2 ${
+                  isOpenForm === "withdraw"
+                    ? "bg-[" + tokens.colors.brand.secondary + "] text-white"
+                    : "bg-transparent text-[" +
+                      tokens.colors.brand.secondary +
+                      "]"
+                }`}
                 icon={
                   <svg
-                    width="16"
-                    height="16"
+                    width="18"
+                    height="18"
                     viewBox="0 0 24 24"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
@@ -101,7 +172,7 @@ const P2pWallet = ({
                       d="M12 19V5M12 19L19 12M12 19L5 12"
                       className={
                         isOpenForm === "withdraw"
-                          ? `stroke-[#ffff]`
+                          ? `stroke-[#fff]`
                           : `stroke-[${tokens.colors.brand.secondary}]`
                       }
                       strokeWidth="2"
@@ -111,9 +182,15 @@ const P2pWallet = ({
                   </svg>
                 }
               >
-                <p className={`text-[${tokens.colors.dark.textTitle}]`}>
+                <span
+                  className={`font-medium ${
+                    isOpenForm === "withdraw"
+                      ? "text-white"
+                      : `text-[${tokens.colors.brand.secondary}]`
+                  }`}
+                >
                   Withdraw
-                </p>
+                </span>
               </Button>
             </div>
           </div>

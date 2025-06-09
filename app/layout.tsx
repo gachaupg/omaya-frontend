@@ -6,6 +6,7 @@ import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import Providers from "./providers";
+import { Toaster } from "@/components/ui/Toast";
 
 // Load all three fonts with CSS-variable support
 const geistSans = Geist({
@@ -36,11 +37,13 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${mulish.variable} antialiased`}
+        suppressHydrationWarning
       >
         <Providers>
           <Navbar />
           {children}
           <Footer />
+          <Toaster />
         </Providers>
       </body>
     </html>

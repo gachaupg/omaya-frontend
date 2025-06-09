@@ -25,7 +25,7 @@ const Select: React.FC<SelectProps> = ({
 }) => {
   return (
     <select
-      className={`bg-[#35353e] border border-[${borderColor}] rounded-lg px-4 py-2 text-[${tokens.colors.dark.textTitle}] focus:outline-none focus:border-[${tokens.colors.brand.primary}] transition ${className}`}
+      className={`bg-[#35353e] border border-[${borderColor}]  px-4 py-2 text-[${tokens.colors.dark.textTitle}] focus:outline-none focus:border-[${tokens.colors.brand.primary}] transition ${className}`}
       value={value}
       {...props}
     >

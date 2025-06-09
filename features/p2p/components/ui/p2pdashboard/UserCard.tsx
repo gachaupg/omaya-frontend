@@ -1,12 +1,30 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Image from "next/image";
 import Card from "../../Common/Card";
 import Button from "../../Common/Button";
-
+import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
+import { RootState } from "@/store/rootReducer";
+import { fetchMatchedTrades } from "@/features/p2p/slices/matchedTradesSlice";
+import { useDispatch } from "react-redux";
+import { AppDispatch } from "@/store";
 
 const UserCard = () => {
   const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
+  const { data: matchedTrades,  } = useSelector(
+    (state: RootState) => state.matchedTrades
+  );
+  const { user, isAuthenticated } = useSelector(
+    (state: RootState) => state.auth
+  );
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(fetchMatchedTrades(1));
+    }
+  }, [dispatch, isAuthenticated]);
+
   return (
     <Card
       borderColor="border-[#35353E]"
@@ -55,11 +73,13 @@ const UserCard = () => {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-lg text-[14px] font-semibold text-[#FFFFFF]">
-                Hello, Omar Ali!
+                Hello, {user?.first_name} !
               </h2>
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-[#1D8751] text-[14px]">Verified Profile</span>
+              <span className="text-[#1D8751] text-[14px]">
+                Verified Profile
+              </span>
               <div className="rounded-full p-0.5 bg-[#1D8751]">
                 <svg
                   width="14"
@@ -94,7 +114,7 @@ const UserCard = () => {
           <div>
             <p className="text-xs text-[#788099]">User ID</p>
             <div className="flex items-center gap-2">
-              <p className="text-base text-[#FFFFFF]">383672684</p>
+              <p className="text-base text-[#FFFFFF]">{user?.user_id}</p>
               <button>
                 <svg
                   width="20"
@@ -120,7 +140,7 @@ const UserCard = () => {
           {/* User Type */}
           <div>
             <p className="text-xs text-[#788099]">User Type</p>
-            <p className="text-base text-[#FFFFFF]">Individual</p>
+            <p className="text-base text-[#FFFFFF]">{user?.user_type}</p>
           </div>
 
           {/* Action Buttons */}
@@ -133,24 +153,25 @@ const UserCard = () => {
               size="sm"
               onClick={() => router.push("/adds?type=buy")}
             >
-              +Post Buy Ad
+              + Post Buy Ad
             </Button>
             <Button
               borderRadius={24}
-                width={130}
+              width={130}
               height={36}
               variant="secondary"
               size="sm"
               onClick={() => router.push("/adds?type=sell")}
             >
-              +Post Sell Ad
+              + Post Sell Ad
             </Button>
             <Button
               variant="ghost"
               size="sm"
               className=" flex items-center justify-center p-0"
+              onClick={() => router.push("/dashboard/notifications")}
               icon={
-                <div className="w-10 h-10 rounded-full border border-[#1D8751] flex items-center justify-center p-1">
+                <div className="w-10 h-10 rounded-full border border-[#1D8751] flex items-center justify-center p-1 relative">
                   <svg
                     width="16"
                     height="16"
@@ -173,6 +194,12 @@ const UserCard = () => {
                       strokeLinejoin="round"
                     />
                   </svg>
+                  {matchedTrades?.results &&
+                    matchedTrades.results.length > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-[#E23D3A] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {matchedTrades.results.length}
+                      </span>
+                    )}
                 </div>
               }
             />

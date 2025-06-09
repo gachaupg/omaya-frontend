@@ -1,8 +1,20 @@
-'use client';
+// app/providers.tsx
+"use client";
 
 import { Provider } from "react-redux";
-import { store } from "@/features/auth/store";
+import { store } from "@/store";
+import { setAuthCallback } from "@/lib/utils/errorHandler";
+import { logout } from "@/features/auth/slices/authSlice";
+import { useEffect } from "react";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    // Set up the auth callback to handle 401 errors
+    setAuthCallback(() => {
+      store.dispatch(logout());
+      window.location.href = "/auth/login";
+    });
+  }, []);
+
   return <Provider store={store}>{children}</Provider>;
-} 
+}

@@ -13,7 +13,7 @@ const Market = () => {
         activeTab={activeTab}
         setActiveTab={(tab: string) => setActiveTab(tab as "buy" | "sell")}
       />
-      <MarketTransactions />
+      <MarketTransactions activeTab={activeTab} />
     </div>
   );
 };

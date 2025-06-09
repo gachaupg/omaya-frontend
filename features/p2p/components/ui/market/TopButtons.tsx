@@ -24,7 +24,9 @@ const TopButtons = ({
         onClick={() => setActiveTab("sell")}
         variant={activeTab === "sell" ? "primary" : "ghost"}
         size="md"
-        className="rounded-none font-semibold min-w-[90px] h-12 transition-all duration-200"
+        className={`rounded-none font-semibold min-w-[90px] h-12 transition-all duration-200 ${
+          activeTab === "sell" ? "bg-[#E23D3A]" : "bg-transparent"
+        }`}
       >
         Sell
       </Button>

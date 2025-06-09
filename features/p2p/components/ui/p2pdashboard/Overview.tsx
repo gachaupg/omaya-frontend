@@ -1,20 +1,43 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { tokens } from "@/styles/tokens";
 import Card from "../../Common/Card";
-import { transactionData1 } from "@/features/p2p/data";
-
-// Define constants for colors that aren't in tokens
-const PROGRESS_COLOR = tokens.colors.brand.primary;
-const P2P_COLOR = tokens.colors.brand.secondary;
+import { useDispatch, useSelector } from "react-redux";
+import { selectTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
+import { fetchTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
+import { RootState } from "@/store/rootReducer";
 
 const Overview = () => {
-  const {
-    total = 0,
-    deposits = 0,
-    withdrawals = 0,
-    inProgress = 0,
-    p2p = 0,
-  } = transactionData1 || {};
+  const dispatch = useDispatch();
+  const summary = useSelector(selectTransactionSummary);
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch<any>(fetchTransactionSummary());
+    }
+  }, [dispatch, isAuthenticated]);
+
+ 
+
+  // Calculate totals for the pie chart
+  const deposits = summary?.total_approved_exchange_deposits || 0;
+  const withdrawals = summary?.total_approved_exchange_withdrawals || 0;
+  const inProgress =
+    (summary?.total_pending_exchange_deposits || 0) +
+    (summary?.total_pending_exchange_withdrawals || 0);
+  const p2p = summary?.total_approved_p2p_combined || 0;
+  const total = deposits + withdrawals + p2p;
+
+  // Calculate progress percentages
+  const buyProgressPercentage =
+    summary?.total_buy_orders && summary?.total_buy_orders
+      ? (summary.total_buy_orders / summary.total_p2p_orders) * 100
+      : 0;
+
+  const sellProgressPercentage =
+    summary?.total_sell_orders && summary?.total_sell_orders
+      ? (summary.total_sell_orders / summary.total_p2p_orders) * 100
+      : 0;
 
   return (
     <div>
@@ -228,14 +251,20 @@ const Overview = () => {
             <div
               className={`text-xl font-bold mb-3 text-[${tokens.colors.dark.textTitle}]`}
             >
-              30,000 USD
+              {summary?.total_buy_orders.toLocaleString()} USD
             </div>
 
             <div
               className={`mb-2 w-full rounded-full h-4 bg-[${tokens.colors.dark.border}]`}
             >
               <div
-                className={`h-4 rounded-full w-[66.7%] bg-[${tokens.colors.brand.primary}]`}
+                style={{
+                  width: `${Math.min(buyProgressPercentage, 100)}%`,
+                  height: "100%",
+                  borderRadius: "9999px",
+                  backgroundColor: tokens.colors.brand.primary,
+                  transition: "width 0.3s ease-in-out",
+                }}
               ></div>
             </div>
 
@@ -252,7 +281,8 @@ const Overview = () => {
                   </span>
                 </div>
                 <span className={`text-[${tokens.colors.dark.textTitle}]`}>
-                  20,000 USD
+                  {summary?.total_buy_orders_by_status.completed.toLocaleString()}{" "}
+                  USD
                 </span>
               </div>
 
@@ -264,11 +294,12 @@ const Overview = () => {
                   <span
                     className={`text-sm text-[${tokens.colors.dark.textBody}]`}
                   >
-                    In Escrow
+                    In Progress
                   </span>
                 </div>
                 <span className={`text-[${tokens.colors.dark.textTitle}]`}>
-                  10,000 USD
+                  {summary?.total_buy_orders_by_status.pending.toLocaleString()}{" "}
+                  USD
                 </span>
               </div>
             </div>
@@ -307,14 +338,20 @@ const Overview = () => {
             <div
               className={`text-xl font-bold mb-3 text-[${tokens.colors.dark.textTitle}]`}
             >
-              5,000 USD
+              {summary?.total_sell_orders.toLocaleString()} USD
             </div>
 
             <div
               className={`mb-2 w-full rounded-full h-4 bg-[${tokens.colors.dark.border}]`}
             >
               <div
-                className={`h-4 rounded-full w-[80%] bg-[${tokens.colors.brand.secondary}]`}
+                style={{
+                  width: `${Math.min(sellProgressPercentage, 100)}%`,
+                  height: "100%",
+                  borderRadius: "9999px",
+                  backgroundColor: tokens.colors.brand.secondary,
+                  transition: "width 0.3s ease-in-out",
+                }}
               ></div>
             </div>
 
@@ -331,7 +368,8 @@ const Overview = () => {
                   </span>
                 </div>
                 <span className={`text-[${tokens.colors.dark.textTitle}]`}>
-                  4,000 USD
+                  {summary?.total_sell_orders_by_status.completed.toLocaleString()}{" "}
+                  USD
                 </span>
               </div>
 
@@ -343,11 +381,12 @@ const Overview = () => {
                   <span
                     className={`text-sm text-[${tokens.colors.dark.textBody}]`}
                   >
-                    In Escrow
+                    In Progress
                   </span>
                 </div>
                 <span className={`text-[${tokens.colors.dark.textTitle}]`}>
-                  1,000 USD
+                  {summary?.total_sell_orders_by_status.pending.toLocaleString()}{" "}
+                  USD
                 </span>
               </div>
             </div>
