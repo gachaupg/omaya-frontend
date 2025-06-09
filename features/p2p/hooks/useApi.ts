@@ -34,13 +34,20 @@ export function useApi<T>(
         return data;
       } catch (error) {
         if (retries === maxRetries) {
-          const handledError = handleApiError(error);
-          setState((prev) => ({
-            ...prev,
-            isLoading: false,
-            error: handledError,
-          }));
-          throw handledError;
+          try {
+            handleApiError(error);
+          } catch (handledError) {
+            const errorObj =
+              handledError instanceof Error
+                ? handledError
+                : new Error("An error occurred");
+            setState((prev) => ({
+              ...prev,
+              isLoading: false,
+              error: errorObj,
+            }));
+            throw errorObj;
+          }
         }
         retries++;
         await new Promise((resolve) =>

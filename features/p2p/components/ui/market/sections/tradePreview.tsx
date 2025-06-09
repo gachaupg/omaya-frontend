@@ -31,8 +31,8 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-  const { wallets = [], loading: walletLoading } = useSelector(
-    (state: RootState) => state.wallets || { wallets: [], loading: false }
+  const { data: wallets = [], loading: walletLoading } = useSelector(
+    (state: RootState) => state.wallets || { data: [], loading: false }
   );
   const [transactionSummary, setTransactionSummary] =
     useState<TransactionSummary | null>(null);
@@ -69,7 +69,9 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   }, [dispatch, isAuthenticated]);
 
   // Get USDT wallet balance
-  const usdtWallet = wallets.find((w: { currency: string; }) => w.currency === "USDT");
+  const usdtWallet = wallets?.find(
+    (w: { currency: string }) => w.currency === "USDT"
+  );
   const walletBalance = usdtWallet ? parseFloat(usdtWallet.balance) : 0;
 
   const handleSendAmountChange = (value: string) => {
@@ -202,7 +204,6 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         `/p2p/${advertiserData.id}/matched?${searchParams.toString()}`
       );
     } catch (error: any) {
-     
       let errorMessage = "";
 
       if (error.response?.data) {

@@ -14,7 +14,9 @@ const P2PCenter = () => {
   const { user } = useSelector((state: RootState) => state.auth);
 
   const dispatch = useDispatch<AppDispatch>();
-  const { wallets, loading } = useSelector((state: RootState) => state.wallets);
+  const { data: wallets, loading } = useSelector(
+    (state: RootState) => state.wallets
+  );
   const summary = useSelector(selectTransactionSummary);
 
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -23,18 +25,16 @@ const P2PCenter = () => {
       dispatch(fetchWallets());
       dispatch(fetchMatchedTrades(1));
     }
-  }, [dispatch, isAuthenticated]);  
+  }, [dispatch, isAuthenticated]);
   return (
     <div className="flex flex-col gap-6 w-full h-full min-h-screen px-0 sm:px-1 lg:px-2 overflow-x-hidden">
-      <P2pProfile 
-      user={user}
-      wallets={wallets}
-      summary={summary}
-      loading={loading}
+      <P2pProfile
+        user={user}
+        wallets={wallets}
+        summary={summary}
+        loading={loading}
       />
-      <Stats 
-      summary={summary}
-      />
+      <Stats summary={summary} />
       <FiterTabs />
     </div>
   );

@@ -57,4 +57,3 @@ const appealSlice = createSlice({
 
 export const { resetAppealState } = appealSlice.actions;
 export default appealSlice.reducer;
-export { createAppealThunk };

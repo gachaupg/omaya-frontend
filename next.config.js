@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Remove or comment out the output: 'export' line
-  // output: 'export',
-
+  // Enable standalone output for Docker builds
+  output: 'standalone',
+  
   // Add other necessary configurations
   reactStrictMode: true,
   images: {

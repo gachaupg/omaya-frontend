@@ -1,32 +1,42 @@
 # Use an official Node.js runtime as the base image
-FROM node:18 AS builder
+FROM node:18-alpine AS base
 
-# Set the working directory inside the container
+# Install dependencies only when needed
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copy package.json and package-lock.json (if available)
+# Copy package files
 COPY package.json package-lock.json* ./
+RUN npm ci
 
-# Install dependencies
-RUN npm install --force
-
-# Copy the rest of the application code
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Build the application
 RUN npm run build
 
-# Use a lightweight server for the production stage
-FROM nginx:stable-alpine AS production
+# Production image, copy all the files and run next
+FROM base AS runner
+WORKDIR /app
 
-# Copy the built files from the builder stage
-COPY --from=builder /app/dist /usr/share/nginx/html
+ENV NODE_ENV=production
 
-# Copy custom Nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
-# Expose the port that NGINX is listening on
-EXPOSE 80
+# Copy the built application
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Start NGINX
-CMD ["nginx", "-g", "daemon off;"]
+USER nextjs
+
+EXPOSE 3000
+
+ENV PORT 3000
+
+CMD ["node", "server.js"]
