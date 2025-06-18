@@ -211,6 +211,14 @@ export const put = <T>(
   return apiClient.put<T>(url, data, config);
 };
 
+export const patch = <T>(
+  url: string,
+  data?: any,
+  config?: AxiosRequestConfig
+): Promise<AxiosResponse<T>> => {
+  return apiClient.patch<T>(url, data, config);
+};
+
 export const del = <T>(
   url: string,
   config?: AxiosRequestConfig

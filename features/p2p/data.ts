@@ -267,8 +267,8 @@ export const typeOptions = [
 export const statusOptions = [
   { value: "all", label: "Status" },
   { value: "completed", label: "Completed" },
-  { value: "processing", label: "Processing" },
-  { value: "matched", label: "Canceled" },
+  { value: "matched", label: "Processing" },
+  { value: "canceled", label: "Canceled" },
 ];
 
 // Date options for Filters

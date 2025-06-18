@@ -11,8 +11,15 @@ import {
   cancelP2POrder,
   confirmP2PTrade,
   confirmTrade,
+  deleteP2POrder,
+  toggleP2POrderStatus,
+  duplicateP2POrder,
+  editP2POrder,
+  updateProfile,
+  getP2PProfile,
+
 } from "../api";
-import { OrderMatchRequest, P2POrderList, P2POrder } from "../types";
+import { OrderMatchRequest, P2POrderList, P2POrder, Profile, P2PResponse   } from "../types";
 import { handleP2PError } from "../../../lib/utils/errorHandler";
 import { fetchWallets } from "./walletSlice";
 import { logger } from "@/lib/logger";
@@ -38,6 +45,25 @@ interface P2PState {
   confirmTradeLoading?: boolean;
   confirmTradeError?: string | null;
   confirmTradeSuccess?: boolean;
+  deleteLoading?: boolean;
+  deleteError?: string | null;
+  deleteSuccess?: boolean;
+  toggleLoading?: boolean;
+  toggleError?: string | null;
+  toggleSuccess?: boolean;
+  duplicateLoading?: boolean;
+  duplicateError?: string | null;
+  duplicateSuccess?: boolean;
+  editLoading?: boolean;
+  editError?: string | null;
+  editSuccess?: boolean;
+  updateProfileLoading?: boolean;
+  updateProfileError?: string | null;
+  updateProfileSuccess?: boolean;
+  getP2PProfileLoading?: boolean;
+  getP2PProfileError?: string | null;
+  getP2PProfileSuccess?: boolean;
+  getP2PProfile?: P2PResponse;
 }
 
 export const fetchAllP2POrders = createAsyncThunk(
@@ -143,6 +169,83 @@ export const completeP2PTradeThunk = createAsyncThunk(
       const response = await confirmTrade(id);
       await dispatch(fetchConfirmOrder(id));
       return response;
+    } catch (error: any) {
+      handleP2PError(error);
+      return rejectWithValue(error.message || "An error occurred");
+    }
+  }
+);
+
+export const deleteP2POrderThunk = createAsyncThunk(
+  "p2p/deleteOrder",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      return await deleteP2POrder(id);
+    } catch (error: any) {
+      handleP2PError(error);
+      return rejectWithValue(error.message || "An error occurred");
+    }
+  }
+);
+
+export const toggleP2POrderStatusThunk = createAsyncThunk(
+  "p2p/toggleOrderStatus",
+  async (
+    { id, status }: { id: string; status: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await toggleP2POrderStatus(id, status);
+      return response;
+    } catch (error: any) {
+      handleP2PError(error);
+      return rejectWithValue(error.message || "An error occurred");
+    }
+  }
+);
+
+export const duplicateP2POrderThunk = createAsyncThunk(
+  "p2p/duplicateOrder",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      const response = await duplicateP2POrder(id);
+      return response;
+    } catch (error: any) {
+      handleP2PError(error);
+      return rejectWithValue(error.message || "An error occurred");
+    }
+  }
+);
+
+export const editP2POrderThunk = createAsyncThunk(
+  "p2p/editOrder",
+  async ({ id, data }: { id: string; data: any }, { rejectWithValue }) => {
+    try {
+      return await editP2POrder(id, data);
+    } catch (error: any) {
+      handleP2PError(error);
+      return rejectWithValue(error.message || "An error occurred");
+    }
+  }
+);
+
+export const updateProfileThunk = createAsyncThunk(
+  "p2p/updateProfile",
+  async (data: FormData, { rejectWithValue }) => {
+    try {
+      return await updateProfile(data);
+    } catch (error: any) {
+      handleP2PError(error);
+      return rejectWithValue(error.message || "An error occurred");
+    }
+  }
+);
+
+export const getP2PProfileThunk = createAsyncThunk(
+  "p2p/getP2PProfile",
+  async (_, { rejectWithValue }) => {
+    try {
+      return await getP2PProfile();
     } catch (error: any) {
       handleP2PError(error);
       return rejectWithValue(error.message || "An error occurred");
@@ -295,6 +398,83 @@ const p2pMarketSlice = createSlice({
       .addCase(completeP2PTradeThunk.rejected, (state, action) => {
         state.confirmTradeLoading = false;
         state.confirmTradeError = action.payload as string;
+      })
+      .addCase(deleteP2POrderThunk.pending, (state) => {
+        state.deleteLoading = true;
+        state.deleteError = null;
+        state.deleteSuccess = false;
+      })
+      .addCase(deleteP2POrderThunk.fulfilled, (state) => {
+        state.deleteLoading = false;
+        state.deleteSuccess = true;
+      })
+      .addCase(deleteP2POrderThunk.rejected, (state, action) => {
+        state.deleteLoading = false;
+        state.deleteError = action.payload as string;
+      })
+      .addCase(toggleP2POrderStatusThunk.pending, (state) => {
+        state.toggleLoading = true;
+        state.toggleError = null;
+        state.toggleSuccess = false;
+      })
+      .addCase(toggleP2POrderStatusThunk.fulfilled, (state) => {
+        state.toggleLoading = false;
+        state.toggleSuccess = true;
+      })
+      .addCase(toggleP2POrderStatusThunk.rejected, (state, action) => {
+        state.toggleLoading = false;
+        state.toggleError = action.payload as string;
+      })
+      .addCase(duplicateP2POrderThunk.pending, (state) => {
+        state.duplicateLoading = true;
+        state.duplicateError = null;
+        state.duplicateSuccess = false;
+      })
+      .addCase(duplicateP2POrderThunk.fulfilled, (state) => {
+        state.duplicateLoading = false;
+        state.duplicateSuccess = true;
+      })
+      .addCase(duplicateP2POrderThunk.rejected, (state, action) => {
+        state.duplicateLoading = false;
+        state.duplicateError = action.payload as string;
+      })
+      .addCase(editP2POrderThunk.pending, (state) => {
+        state.editLoading = true;
+        state.editError = null;
+        state.editSuccess = false;
+      })
+      .addCase(editP2POrderThunk.fulfilled, (state) => {
+        state.editLoading = false;
+        state.editSuccess = true;
+      })
+      .addCase(editP2POrderThunk.rejected, (state, action) => {
+        state.editLoading = false;
+        state.editError = action.payload as string;
+      })
+      .addCase(updateProfileThunk.pending, (state) => {
+        state.updateProfileLoading = true;
+        state.updateProfileError = null;
+        state.updateProfileSuccess = false;
+      })
+      .addCase(updateProfileThunk.fulfilled, (state) => {
+        state.updateProfileLoading = false;
+        state.updateProfileSuccess = true;
+      })
+      .addCase(updateProfileThunk.rejected, (state, action) => {
+        state.updateProfileLoading = false;
+        state.updateProfileError = action.payload as string;
+      })
+      .addCase(getP2PProfileThunk.pending, (state) => {
+        state.getP2PProfileLoading = true;
+        state.getP2PProfileError = null;
+      })
+      .addCase(getP2PProfileThunk.fulfilled, (state, action) => {
+        state.getP2PProfileLoading = false;
+        state.getP2PProfile = action.payload;
+      })
+      .addCase(getP2PProfileThunk.rejected, (state, action) => {
+        state.getP2PProfileLoading = false;
+        state.getP2PProfileError = action.payload as string;
       });
   },
 });

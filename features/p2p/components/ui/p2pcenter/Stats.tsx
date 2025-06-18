@@ -1,14 +1,14 @@
 import React from "react";
 import { statsData } from "../../../data";
 
-const Stats = ({ summary }: { summary: any }) => {
+const Stats = ({ summary = {} }: { summary?: any }) => {
   const stats = [
-    { value: summary.total_trades, label: "Trades" },
-    { value: `${summary.completion_rate}%`, label: "Completion rate" },
+    { value: summary?.total_trades || 0, label: "Trades" },
+    { value: `${summary?.completion_rate || 0}%`, label: "Completion rate" },
     {
       value: (
         <>
-          <span>{summary.avg_release_time}</span>{" "}
+          <span>{summary?.avg_release_time || "0"}</span>{" "}
         </>
       ),
       label: "Avg. release time",
@@ -16,17 +16,16 @@ const Stats = ({ summary }: { summary: any }) => {
     {
       value: (
         <>
-          <span>{summary.avg_payment_time}</span>{" "}
+          <span>{summary?.avg_payment_time || "0"}</span>{" "}
         </>
       ),
       label: "Avg. pay time",
     },
-    { value: `${summary.rating}%`, label: "Rating" },
+    { value: `${summary?.rating || 0}%`, label: "Rating" },
     {
       value: (
         <>
-          <span>{summary.total_volume.toLocaleString()}</span>{" "}
-         
+          <span>{(summary?.total_volume || 0).toLocaleString()}</span>{" "}
         </>
       ),
       label: "Total volume",
@@ -38,7 +37,7 @@ const Stats = ({ summary }: { summary: any }) => {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6 w-full">
         {stats.map((stat, idx) => (
           <div key={idx} className="text-center w-full">
-            <div className="text-white text-[18px] sm:text-[22px] font-medium flex items-center justify-center gap-1">
+            <div className="text-white text-[16px] sm:text-[16px] font-medium flex items-center justify-center gap-1">
               {stat.value}
             </div>
             <div className="text-[#788099] text-[13px] sm:text-[15px]">

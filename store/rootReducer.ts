@@ -19,6 +19,8 @@ import appealReducer from "../features/p2p/slices/appealSlice";
 import messageReducer from "../features/p2p/slices/messageSlice";
 import matchedTradesReducer from "../features/p2p/slices/matchedTradesSlice";
 import userTradesReducer from "../features/p2p/slices/userTradesSlice";
+import feedbackReducer from "../features/p2p/slices/feedbackSlice";
+import p2pTransactionsReducer from "../features/p2p/slices/p2pTransactionsSlice";
 
 const rootReducer = combineReducers({
   deposits: depositReducer,
@@ -35,6 +37,8 @@ const rootReducer = combineReducers({
   message: messageReducer,
   matchedTrades: matchedTradesReducer,
   userTrades: userTradesReducer,
+  feedback: feedbackReducer,
+  p2pTransactions: p2pTransactionsReducer,
   // Add other reducers here
 });
 

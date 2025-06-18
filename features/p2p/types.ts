@@ -119,6 +119,20 @@ export interface P2PResponse {
   network: Network;
   wallet_type: WalletType;
   timestamp: string;
+  user?: {
+    id: number;
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone_number: string;
+    user_type: string;
+    referral_code: string;
+  };
+  profile?: {
+    date_of_birth: string | null;
+    country: string | null;
+    photo: string;
+  };
 }
 
 export interface P2PListResponse {
@@ -408,4 +422,109 @@ export interface MatchedTradesResponse {
   next: string | null;
   previous: string | null;
   results: MatchedTrade[];
+}
+export interface UserTrade {
+  id: string;
+  buy_order: number | null;
+  sell_order: number | null;
+  owner: string;
+  advertiser_name: string;
+  auto_reply: string;
+  terms_and_conditions: string;
+  completion_rate: number;
+  completion_time: string;
+  limit: string;
+  buyer: string;
+  seller: string;
+  price: string;
+  amount: string;
+  timestamp: string;
+  associated_trade: number;
+  order_type: string;
+  status: string;
+  rate: number;
+  currency?: string;
+  payment_details: Array<{
+    provider: string;
+    account_name: string;
+    account_number: string;
+  }>;
+}
+
+export interface UserTradesState {
+  trades: {
+    count: number;
+    next: string | null;
+    previous: string | null;
+    results: UserTrade[];
+  };
+  loading: boolean;
+  error: string | null;
+  currentPage: number;
+}
+
+export interface FetchUserTradesParams {
+  page: number;
+  type?: string;
+  status?: string;
+  date?: string;
+  currency?: string;
+}
+
+export interface Feedback {
+  trade_id: number;
+  order_id: number;
+  coin: string;
+  type: "buy" | "sell";
+  transaction_id: number;
+  amount: number;
+  price: number;
+  trade_status: string;
+  date: string;
+  is_positive: boolean;
+  comment: string;
+  reviewer_email: string;
+  order_amount: number;
+  order_type: "buy" | "sell";
+}
+
+export interface P2PTransaction {
+  transaction_id: string;
+  amount: number;
+  currency: string;
+  status: string;
+  stages: string;
+  transaction_harsh: string | null;
+  payment_method: string;
+  payment_provider: string;
+  account_name: string;
+  account_number: string;
+  transaction_type: string;
+  timestamp: string;
+  additional_info: string;
+  screenshot: string;
+  reason: string | null;
+  user_id: number;
+  total_amount: number;
+  user_email: string;
+  user_names: string;
+  withdrawal_address: string | null;
+  commission: number;
+  assigned_to: any[];
+}
+
+export interface P2PTransactionResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: P2PTransaction[];
+}
+
+export interface Profile {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone_number: string;
+  photo: File | null;
 }

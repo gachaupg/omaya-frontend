@@ -37,7 +37,7 @@ const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseStyles =
-    "flex items-center justify-center gap-2 transition-all duration-200 font-medium text-dark-textTitle cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed";
+    "flex items-center justify-center gap-2 transition-all duration-200 font-medium text-dark-textTitle cursor-pointer focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed";
 
   const sizeStyles = {
     sm: "px-3 text-xs",

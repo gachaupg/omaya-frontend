@@ -1,7 +1,7 @@
 /**
  * api.ts – auto‑generated placeholder
  */
-import { get, post, put } from "@/lib/apiClient";
+import { del, get, patch, post, put } from "@/lib/apiClient";
 import { withRetry } from "@/lib/utils/retry";
 import {
   P2PDeposit,
@@ -17,6 +17,9 @@ import {
   OrderMatchRequest,
   P2POrder,
   MatchedTradesResponse,
+  Feedback,
+  P2PTransactionResponse,
+  Profile,
 } from "./types";
 import { API_CONFIG } from "@/lib/appConfig";
 
@@ -331,6 +334,98 @@ export const getUserTrades = async (
       previous: string | null;
       results: any[];
     }>(`${API_CONFIG.P2P.USER_TRADES}${queryParams}`);
+    return response.data;
+  });
+};
+
+export const getFeedbackReviews = async (): Promise<Feedback[]> => {
+  return withRetry(async () => {
+    const response = await get<Feedback[]>(API_CONFIG.P2P.FEEDBACK_REVIEW);
+    return response.data;
+  });
+};
+
+export const getAllP2PTransactions = async (
+  page: number = 1
+): Promise<P2PTransactionResponse> => {
+  return withRetry(async () => {
+    const response = await get<P2PTransactionResponse>(
+      `${API_CONFIG.P2P.ALL_TRANSACTIONS}?page=${page}`
+    );
+    return response.data;
+  });
+};
+
+export const deleteP2POrder = async (id: string): Promise<P2PResponse> => {
+  return withRetry(async () => {
+    const response = await del<P2PResponse>(
+      `${API_CONFIG.P2P.DELETE_ORDER}${id}/`
+    );
+    return response.data;
+  });
+};
+
+export const toggleP2POrderStatus = async (
+  id: string,
+  status: string
+): Promise<P2PResponse> => {
+  return withRetry(async () => {
+    const response = await patch<P2PResponse>(
+      `${API_CONFIG.P2P.TOGGLE_ORDER_STATUS}${id}/toggle-status/`,
+      { status }
+    );
+    return response.data;
+  });
+};
+
+export const duplicateP2POrder = async (id: string): Promise<P2PResponse> => {
+  return withRetry(async () => {
+    const response = await post<P2PResponse>(
+      `${API_CONFIG.P2P.DUPLICATE_ORDER}${id}/duplicate/`
+    );
+    return response.data;
+  });
+};
+export const editP2POrder = async (
+  id: string,
+  data: any
+): Promise<P2PResponse> => {
+  return withRetry(async () => {
+    const response = await patch<P2PResponse>(
+      `${API_CONFIG.P2P.EDIT_AD}${id}/`,
+      data
+    );
+    return response.data;
+  });
+};
+
+export const deletePaymentMethod = async (id: string): Promise<P2PResponse> => {
+  return withRetry(async () => {
+    const response = await del<P2PResponse>(
+      `${API_CONFIG.P2P.DELETE_PAYMENT_METHOD}${id}/`
+    );
+    return response.data;
+  });
+};
+
+export const updateProfile = async (data: FormData): Promise<P2PResponse> => {
+  return withRetry(async () => {
+    const response = await patch<P2PResponse>(
+      API_CONFIG.P2P.UPDATE_PROFILE,
+      data,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return response.data;
+  });
+};
+
+export const getP2PProfile = async (): Promise<P2PResponse> => {
+  return withRetry(async () => {
+    const response = await get<P2PResponse>(API_CONFIG.P2P.UPDATE_PROFILE);
     return response.data;
   });
 };

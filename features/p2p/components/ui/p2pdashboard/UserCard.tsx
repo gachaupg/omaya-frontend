@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import Image from "next/image";
 import Card from "../../Common/Card";
 import Button from "../../Common/Button";
@@ -8,11 +8,20 @@ import { RootState } from "@/store/rootReducer";
 import { fetchMatchedTrades } from "@/features/p2p/slices/matchedTradesSlice";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
+import { toast } from "sonner";
+import {
+  updateProfileThunk,
+  getP2PProfileThunk,
+} from "../../../slices/orderSlice";
 
 const UserCard = () => {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const { data: matchedTrades,  } = useSelector(
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [profileImage, setProfileImage] = React.useState(
+    "https://res.cloudinary.com/pitz/image/upload/v1746538908/1fd9f384e7054d4ed9c913e3cfc2b1cf634d0cf4_ldkmkj.jpg"
+  );
+  const { data: matchedTrades } = useSelector(
     (state: RootState) => state.matchedTrades
   );
   const { user, isAuthenticated } = useSelector(
@@ -22,8 +31,60 @@ const UserCard = () => {
   useEffect(() => {
     if (isAuthenticated) {
       dispatch(fetchMatchedTrades(1));
+      dispatch(getP2PProfileThunk())
+        .unwrap()
+        .then((response) => {
+          if (response?.profile?.photo) {
+            setProfileImage(response.profile.photo);
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to fetch profile:", error);
+        });
     }
   }, [dispatch, isAuthenticated]);
+
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        // 5MB limit
+        toast.error("Image size should be less than 5MB");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64Image = e.target?.result as string;
+        setProfileImage(base64Image);
+
+        try {
+          const formData = new FormData();
+          formData.append("photo", file);
+
+          await dispatch(updateProfileThunk(formData)).unwrap();
+          // Refetch profile to get updated photo
+          const response = await dispatch(getP2PProfileThunk()).unwrap();
+          if (response?.profile?.photo) {
+            setProfileImage(response.profile.photo);
+          }
+          toast.success("Profile image updated successfully");
+        } catch (error: any) {
+          console.error("Profile update error:", error);
+          toast.error(error?.message || "Failed to update profile image");
+          // Revert the image if update fails
+          setProfileImage(
+            "https://res.cloudinary.com/pitz/image/upload/v1746538908/1fd9f384e7054d4ed9c913e3cfc2b1cf634d0cf4_ldkmkj.jpg"
+          );
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   return (
     <Card
@@ -39,7 +100,7 @@ const UserCard = () => {
           <div className="relative">
             <div className="h-14 w-14 rounded-full overflow-hidden relative">
               <Image
-                src="https://res.cloudinary.com/pitz/image/upload/v1746538908/1fd9f384e7054d4ed9c913e3cfc2b1cf634d0cf4_ldkmkj.jpg"
+                src={profileImage}
                 alt="User avatar"
                 width={56}
                 height={56}
@@ -51,20 +112,27 @@ const UserCard = () => {
                   target.src = "https://via.placeholder.com/56";
                 }}
               />
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageChange}
+                accept="image/*"
+                className="hidden"
+              />
             </div>
-            <div className="absolute -top-1 -right-1 rounded-full p-1 bg-[#1D8751]">
+            <div
+              className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[#1D8751] flex items-center justify-center cursor-pointer hover:bg-[#16663d] transition-colors"
+              onClick={handleImageClick}
+            >
               <svg
-                width="16"
-                height="16"
+                width="14"
+                height="14"
                 viewBox="0 0 24 24"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
+                className="stroke-[#FFFFFF]"
               >
-                <path
-                  d="M16 3L21 8L8 21L3 21L3 16L16 3Z"
-                  className="stroke-[#FFFFFF]"
-                  strokeWidth="2"
-                />
+                <path d="M16 3L21 8L8 21L3 21L3 16L16 3Z" strokeWidth="2" />
               </svg>
             </div>
           </div>
@@ -115,8 +183,13 @@ const UserCard = () => {
             <p className="text-xs text-[#788099]">User ID</p>
             <div className="flex items-center gap-2">
               <p className="text-base text-[#FFFFFF]">{user?.user_id}</p>
-              <button>
+              <button className="cursor-pointer">
                 <svg
+                  onClick={() => {
+                    navigator.clipboard.writeText(user?.user_id || "");
+                    toast.success("Copied to clipboard");
+                  }}
+                  className="cursor-pointer"
                   width="20"
                   height="20"
                   viewBox="0 0 24 24"

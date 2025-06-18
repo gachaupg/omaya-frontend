@@ -24,7 +24,7 @@ export const navItems = [
     {
       label: "Buy Crypto",
       icon: "https://res.cloudinary.com/pitz/image/upload/v1747237691/Group_164004_m9zmz3.png",
-      href: "/dashboard/markets",
+      href: "/dashboard/buy",
     },
     {
       label: "Account",

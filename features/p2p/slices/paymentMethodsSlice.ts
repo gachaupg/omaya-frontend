@@ -3,6 +3,7 @@ import {
   getAdminPaymentDetails,
   addUserPaymentDetail,
   getUserPaymentDetails,
+  deletePaymentMethod,
 } from "../api";
 
 export const fetchAdminPaymentMethods = createAsyncThunk(
@@ -50,6 +51,18 @@ export const fetchUserPaymentDetails = createAsyncThunk(
   }
 );
 
+export const deleteUserPaymentDetail = createAsyncThunk(
+
+  "paymentMethods/deleteUserPaymentDetail",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      return await deletePaymentMethod(id);
+    } catch (err: any) {
+      return rejectWithValue(err.message || "Failed to delete payment detail");
+    }
+  }
+);
+
 const paymentMethodsSlice = createSlice({
   name: "paymentMethods",
   initialState: {
@@ -62,6 +75,8 @@ const paymentMethodsSlice = createSlice({
     postSuccess: false,
     userDetailsLoading: false,
     userDetailsError: null,
+    deleteLoading: false,
+    deleteError: null,
   } as any,
   reducers: {
     clearPostStatus(state) {
@@ -109,6 +124,17 @@ const paymentMethodsSlice = createSlice({
       .addCase(fetchUserPaymentDetails.rejected, (state, action) => {
         state.userDetailsLoading = false;
         state.userDetailsError = action.payload;
+      })
+      .addCase(deleteUserPaymentDetail.pending, (state) => {
+        state.deleteLoading = true;
+        state.deleteError = null;
+      })
+      .addCase(deleteUserPaymentDetail.fulfilled, (state) => {
+        state.deleteLoading = false;
+      })
+      .addCase(deleteUserPaymentDetail.rejected, (state, action) => {
+        state.deleteLoading = false;
+        state.deleteError = action.payload;
       });
   },
 });

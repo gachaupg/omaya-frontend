@@ -1,3 +1,5 @@
+import { TransactionSummary } from "@/components/types";
+
 // Types for chart data
 export type LineChartData = {
   label: string;
@@ -27,26 +29,99 @@ export const p2pOverviewData: LineChartData = {
 };
 
 // Dummy data for Overview Total (Donut)
-export const overviewTotalData: DonutChartData[] = [
-  { label: "Deposits", value: 25000, color: "#22c55e" },
-  { label: "Withdrawals", value: 8000, color: "#ef4444" },
-  { label: "In Progress", value: 4000, color: "#facc15" },
-  { label: "Exchange", value: 1400, color: "#3b82f6" },
-];
+export const overviewTotalData = (
+  transactionSummary: TransactionSummary,
+  type: "exchange" | "p2p" | "buy" | "swap" = "exchange"
+): DonutChartData[] => {
+  if (type === "p2p") {
+    return [
+      {
+        label: "Deposits",
+        value: transactionSummary.total_approved_p2p_deposits,
+        color: "#1D8751",
+      },
+      {
+        label: "Withdrawals",
+        value: transactionSummary.total_approved_p2p_withdrawals,
+        color: "#ef4444",
+      },
+      {
+        label: "In Progress",
+        value:
+          transactionSummary.total_pending_p2p_deposits +
+          transactionSummary.total_pending_p2p_withdrawals,
+        color: "#facc15",
+      },
+    ];
+  }
+  if (type === "buy" || type === "swap") {
+    return [];
+  }
+  return [
+    {
+      label: "Deposits",
+      value: transactionSummary.total_approved_exchange_deposits,
+      color: "#1D8751",
+    },
+    {
+      label: "Withdrawals",
+      value: transactionSummary.total_approved_exchange_withdrawals,
+      color: "#ef4444",
+    },
+    {
+      label: "In Progress",
+      value:
+        transactionSummary.total_approved_exchange_deposits +
+        transactionSummary.total_approved_exchange_withdrawals,
+      color: "#facc15",
+    },
+  ];
+};
 
 // Dummy data for Referral Commissions (Donut)
-export const referralCommissionsData: DonutChartData[] = [
-  { label: "Deposits", value: 30000, color: "#22c55e" },
-  { label: "Withdrawals", value: 5000, color: "#ef4444" },
-];
+export const referralCommissionsData = (
+  transactionSummary: TransactionSummary
+): DonutChartData[] => {
+  return [
+    {
+      label: "Deposits",
+      value: transactionSummary.total_approved_exchange_deposits,
+      color: "#22c55e",
+    },
+    {
+      label: "Withdrawals",
+      value: transactionSummary.total_approved_exchange_withdrawals,
+      color: "#ef4444",
+    },
+  ];
+};
 
 // Summary values
-export const overviewTotalSummary = {
-  total: 35000,
-  currency: "USD",
+export const overviewTotalSummary = (
+  transactionSummary: TransactionSummary,
+  type: "exchange" | "p2p" | "buy" | "swap" = "exchange"
+) => {
+  if (type === "p2p") {
+    return {
+      total: transactionSummary.total_approved_p2p_combined,
+      currency: "USD",
+    };
+  }
+  if (type === "buy" || type === "swap") {
+    return {
+      total: 0,
+      currency: "USD",
+    };
+  }
+  return {
+    total: transactionSummary.total_approved_exchange_combined,
+    currency: "USD",
+  };
 };
 
-export const referralCommissionsSummary = {
-  total: 3400,
+export const referralCommissionsSummary = (
+  transactionSummary: TransactionSummary
+) => ({
+  total: transactionSummary.total_approved_exchange_combined || 0,
   currency: "USD",
-};
+});

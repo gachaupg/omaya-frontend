@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { Table } from "../../Common/Table";
-
 import { TransactionType } from "@/features/p2p/types";
+import TransactionModal from "@/components/ui/TransactionModal";
 
 const OrdersTransactions = ({
   transformedData,
@@ -18,6 +18,20 @@ const OrdersTransactions = ({
   handlePageChange: (page: number) => void;
   trades: { count: number };
 }) => {
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<TransactionType | null>(null);
+
+  const handleViewTransaction = (tx: TransactionType) => {
+    setSelectedTransaction(tx);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedTransaction(null);
+  };
+
+  // Debug log for selectedTransaction
+  console.log("selectedTransaction:", selectedTransaction);
+
   if (loading) {
     return (
       <div className="w-full flex items-center justify-center py-8">
@@ -55,7 +69,10 @@ const OrdersTransactions = ({
         currentPage={currentPage}
         totalPages={Math.ceil(trades.count / 10)}
         onPageChange={handlePageChange}
+        onViewTransaction={handleViewTransaction}
       />
+    
+     
     </div>
   );
 };

@@ -1,362 +1,272 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Button from "@/features/p2p/components/Common/Button";
 import Input from "@/features/p2p/components/Common/Input";
 import Select from "@/features/p2p/components/Common/Select";
 import { tokens } from "@/styles/tokens";
+import PaymentMethodsModal from "../../p2pdashboard/sections/PaymentMethodsModal";
+import {
+  fetchAdminPaymentMethods,
+  fetchUserPaymentDetails,
+  deleteUserPaymentDetail,
+} from "@/features/p2p/slices/paymentMethodsSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "@/store/rootReducer";
+import Loader from "@/features/p2p/components/Common/Loader";
 
-const bankOptions = [
-  { value: "premier", label: "Premier Bank", icon: "🏦" },
-  { value: "salam", label: "Salam Bank", icon: "🏦" },
-];
-
-const mobileMoneyOptions = [{ value: "taaj", label: "Taaj Money", icon: "💸" }];
-
-const methodOptions = [
-  { value: "bank", label: "Bank Transfer" },
-  { value: "mobile", label: "Mobile Money" },
-  { value: "merchant", label: "Merchant" },
-];
-
-type BankMethod = {
-  bank: string;
-  holder: string;
-  number: string;
-  editable: boolean;
+type PaymentMethod = {
+  id: number;
+  payment_method_name: string;
+  payment_provider_name: string;
+  account_name: string;
+  account_number: string;
+  wallet_address: string | null;
+  editable?: boolean;
 };
-type MobileMethod = {
-  provider: string;
-  name: string;
-  number: string;
-  editable: boolean;
-};
-type MerchantMethod = {
-  merchant?: string;
-  name: string;
-  number: string;
-  editable: boolean;
-};
+
+const ITEMS_PER_PAGE = 5;
 
 const PaymentMethods = () => {
-  const [bankMethods, setBankMethods] = useState<BankMethod[]>([
-    { bank: "premier", holder: "", number: "", editable: false },
-    { bank: "salam", holder: "", number: "", editable: false },
-  ]);
-  const [mobileMethods, setMobileMethods] = useState<MobileMethod[]>([
-    {
-      provider: "taaj",
-      name: "Omar Ali",
-      number: "123456789",
-      editable: false,
-    },
-  ]);
-  const [merchantMethods, setMerchantMethods] = useState<MerchantMethod[]>([]); // Stub for merchant
-  const [addMethodType, setAddMethodType] = useState<string>("");
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const dispatch = useDispatch<AppDispatch>();
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { userPaymentDetails, loading: userPaymentDetailsLoading } =
+    useSelector((state: RootState) => state.paymentMethods);
+  const [deletingMethodId, setDeletingMethodId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
 
-  // Add method handler
-  const handleAddMethod = () => {
-    if (addMethodType === "bank") {
-      setBankMethods((prev) => [
-        ...prev,
-        { bank: bankOptions[0].value, holder: "", number: "", editable: true },
-      ]);
-    } else if (addMethodType === "mobile") {
-      setMobileMethods((prev) => [
-        ...prev,
-        {
-          provider: mobileMoneyOptions[0].value,
-          name: "",
-          number: "",
-          editable: true,
-        },
-      ]);
-    } else if (addMethodType === "merchant") {
-      setMerchantMethods((prev) => [
-        ...prev,
-        { merchant: "", name: "", number: "", editable: true },
-      ]);
-    }
-    setAddMethodType("");
-  };
-
-  // Remove method handler
-  const handleRemoveMethod = (type: string, idx: number) => {
-    if (type === "bank") {
-      setBankMethods((prev) => prev.filter((_, i) => i !== idx));
-    } else if (type === "mobile") {
-      setMobileMethods((prev) => prev.filter((_, i) => i !== idx));
-    } else if (type === "merchant") {
-      setMerchantMethods((prev) => prev.filter((_, i) => i !== idx));
+  const handleDeleteMethod = async (methodId: string) => {
+    try {
+      setDeletingMethodId(methodId);
+      setDeleteError(null);
+      setDeleteSuccess(false);
+      await dispatch(deleteUserPaymentDetail(methodId) as any);
+      setDeleteSuccess(true);
+      await dispatch(fetchUserPaymentDetails() as any);
+    } catch (error) {
+      setDeleteError("Failed to delete payment method");
+    } finally {
+      setDeletingMethodId(null);
     }
   };
 
-  // Handle input change
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(fetchUserPaymentDetails() as any);
+    }
+  }, [dispatch, isAuthenticated]);
+
   const handleInputChange = (
-    type: string,
-    idx: number,
+    methodId: number,
     field: string,
     value: string
   ) => {
-    if (type === "bank") {
-      setBankMethods((prev) =>
-        prev.map((item, i) => (i === idx ? { ...item, [field]: value } : item))
-      );
-    } else if (type === "mobile") {
-      setMobileMethods((prev) =>
-        prev.map((item, i) => (i === idx ? { ...item, [field]: value } : item))
-      );
-    } else if (type === "merchant") {
-      setMerchantMethods((prev) =>
-        prev.map((item, i) => (i === idx ? { ...item, [field]: value } : item))
-      );
-    }
+    // TODO: Implement input change functionality
+    console.log("Input change:", methodId, field, value);
   };
+
+  const renderPaymentMethod = (method: PaymentMethod) => {
+    return (
+      <div key={method.id} className="mb-4">
+        <div className="flex items-center mb-2">
+          <img
+            src="https://res.cloudinary.com/pitz/image/upload/v1746705424/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg"
+            alt={`${method.payment_provider_name} Icon`}
+            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full mr-2 object-cover"
+          />
+          <span className="text-white font-medium flex items-center text-base sm:text-lg">
+            {method.payment_provider_name}
+            <svg
+              className="w-4 h-4 ml-1 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </span>
+          <button
+            disabled={deletingMethodId === method.id.toString()}
+            className="ml-auto text-[#1D8751] text-2xl flex items-center"
+            title="Delete"
+            onClick={() => handleDeleteMethod(method.id.toString())}
+          >
+            {deletingMethodId === method.id.toString() ? (
+              <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-[#1D8751]"></div>
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-5 h-5 sm:w-6 sm:h-6 cursor-pointer"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
+                />
+              </svg>
+            )}
+          </button>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Input
+            placeholder="Account Name"
+            value={method.account_name}
+            className="w-full sm:w-[539px] h-[52px] rounded-3xl border-[#353535] bg-[#353535] text-white px-[14px] py-[10px] text-base"
+            bgColor="#353535"
+            borderColor="#353535"
+            disabled={!method.editable}
+            onChange={(e) =>
+              handleInputChange(method.id, "account_name", e.target.value)
+            }
+          />
+          <Input
+            placeholder="Account Number"
+            value={method.account_number}
+            className="w-full sm:w-[539px] h-[52px] rounded-3xl border border-[#35353E] bg-[#18181D] text-white px-[14px] py-[10px] text-base"
+            bgColor="#18181D"
+            borderColor="#35353E"
+            disabled={!method.editable}
+            onChange={(e) =>
+              handleInputChange(method.id, "account_number", e.target.value)
+            }
+          />
+        </div>
+      </div>
+    );
+  };
+
+  const renderEmptyState = () => (
+    <div className="flex flex-col items-center justify-center py-12 px-4">
+      <div className="w-24 h-24 mb-6 rounded-full bg-[#1D1D23] flex items-center justify-center">
+        <svg
+          className="w-12 h-12 text-[#1D8751]"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+          />
+        </svg>
+      </div>
+      <h3 className="text-xl font-semibold text-white mb-2">
+        No Payment Methods
+      </h3>
+      <p className="text-gray-400 text-center mb-6 max-w-md">
+        You haven't added any payment methods yet. Add your first payment method
+        to start accepting payments.
+      </p>
+      <Button
+        onClick={() => setShowPaymentModal(true)}
+        className="bg-[#1D8751] hover:bg-[#176e43] text-white px-6 py-2 rounded-full"
+      >
+        Add Payment Method
+      </Button>
+    </div>
+  );
+
+  const renderPagination = () => {
+    const totalPages = Math.ceil(userPaymentDetails.length / ITEMS_PER_PAGE);
+    if (totalPages <= 1) return null;
+
+    return (
+      <div className="flex items-center justify-center gap-2 mt-6">
+        <button
+          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          disabled={currentPage === 1}
+          className="px-3 py-1 rounded-lg bg-[#1D1D23] text-white disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Previous
+        </button>
+        <div className="flex items-center gap-2">
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+            <button
+              key={page}
+              onClick={() => setCurrentPage(page)}
+              className={`w-8 h-8 rounded-lg ${
+                currentPage === page
+                  ? "bg-[#1D8751] text-white"
+                  : "bg-[#1D1D23] text-gray-400 hover:text-white"
+              }`}
+            >
+              {page}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={() =>
+            setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+          }
+          disabled={currentPage === totalPages}
+          className="px-3 py-1 rounded-lg bg-[#1D1D23] text-white disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Next
+        </button>
+      </div>
+    );
+  };
+
+  const paginatedMethods = userPaymentDetails.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   return (
     <div className="w-full min-h-[600px] bg-[#23232b] rounded-2xl p-4 text-white">
       {/* Bank Section */}
       <div>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4">
-          <span className="text-[18px] sm:text-[22px] font-semibold">Bank</span>
+          <span className="text-[18px] sm:text-[22px] font-semibold">
+            Payment Methods
+          </span>
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            <Select
-              options={methodOptions}
-              value={addMethodType}
-              onChange={(e) => {
-                const value = e.target.value;
-                setAddMethodType("");
-                if (value === "bank") {
-                  setBankMethods((prev) => [
-                    ...prev,
-                    {
-                      bank: bankOptions[0].value,
-                      holder: "",
-                      number: "",
-                      editable: true,
-                    },
-                  ]);
-                } else if (value === "mobile") {
-                  setMobileMethods((prev) => [
-                    ...prev,
-                    {
-                      provider: mobileMoneyOptions[0].value,
-                      name: "",
-                      number: "",
-                      editable: true,
-                    },
-                  ]);
-                } else if (value === "merchant") {
-                  setMerchantMethods((prev) => [
-                    ...prev,
-                    { merchant: "", name: "", number: "", editable: true },
-                  ]);
-                }
-              }}
-              placeholder={"+ Add Method"}
-              className="w-full sm:min-w-[180px] rounded-full border-[#1D8751] bg-[#23232b]"
-              borderColor="#1D8751"
-              bgColor={tokens.colors.dark.background}
-            />
-          </div>
-        </div>
-        {bankMethods.map((method, idx) => (
-          <div key={idx} className="mb-4">
-            {/* Bank Icon and Name in a row */}
-            <div className="flex items-center mb-2">
-              <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1746705424/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg"
-                alt="Bank Icon"
-                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full mr-2 object-cover"
-              />
-              <span className="text-white font-medium flex items-center text-base sm:text-lg">
-                {method.bank === "premier" ? "Premier Bank" : "Salam Bank"}
-                <svg
-                  className="w-4 h-4 ml-1 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </span>
-              <button
-                className="ml-auto text-[#1D8751] text-2xl flex items-center"
-                title="Delete"
-                onClick={() => handleRemoveMethod("bank", idx)}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-5 h-5 sm:w-6 sm:h-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
-                  />
-                </svg>
-              </button>
-            </div>
-            {/* Inputs in a row */}
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Input
-                placeholder="Account Holder"
-                value={method.holder}
-                className="w-full sm:w-[539px] h-[52px] rounded-3xl border-[#353535] bg-[#353535] text-white px-[14px] py-[10px] text-base"
-                bgColor="#353535"
-                borderColor="#353535"
-                disabled={!method.editable}
-                onChange={(e) =>
-                  handleInputChange("bank", idx, "holder", e.target.value)
-                }
-              />
-              <Input
-                placeholder="Account Number"
-                value={method.number}
-                className="w-full sm:w-[539px] h-[52px] rounded-3xl border border-[#35353E] bg-[#18181D] text-white px-[14px] py-[10px] text-base"
-                bgColor="#18181D"
-                borderColor="#35353E"
-                disabled={!method.editable}
-                onChange={(e) =>
-                  handleInputChange("bank", idx, "number", e.target.value)
-                }
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Mobile Money Section */}
-      <div className="mt-8">
-        <div className="text-[18px] sm:text-[22px] font-semibold mb-4">
-          Mobile Money
-        </div>
-        {mobileMethods.map((method, idx) => (
-          <div key={idx} className="mb-4">
-            {/* Provider Icon and Name in a row */}
-            <div className="flex items-center mb-2">
-              <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1746705424/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg"
-                alt="Provider Icon"
-                className="w-8 h-8 sm:w-10 sm:h-10 rounded-full mr-2 object-cover"
-              />
-              <span className="text-white font-medium flex items-center text-base sm:text-lg">
-                {method.provider === "taaj" ? "Taaj Money" : method.provider}
-                <svg
-                  className="w-4 h-4 ml-1 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </span>
-              <button
-                className="ml-auto text-[#1D8751] text-2xl flex items-center"
-                title="Delete"
-                onClick={() => handleRemoveMethod("mobile", idx)}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-5 h-5 sm:w-6 sm:h-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
-                  />
-                </svg>
-              </button>
-            </div>
-            {/* Inputs in a row */}
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Input
-                placeholder="Wallet Name"
-                value={method.name}
-                className="w-full sm:w-[539px] h-[52px] rounded-3xl border-[#353535] bg-[#353535] text-white px-[14px] py-[10px] text-base"
-                bgColor="#353535"
-                borderColor="#353535"
-                disabled={!method.editable}
-                onChange={(e) =>
-                  handleInputChange("mobile", idx, "name", e.target.value)
-                }
-              />
-              <Input
-                placeholder="Wallet Number"
-                value={method.number}
-                className="w-full sm:w-[539px] h-[52px] rounded-3xl border border-[#35353E] bg-[#18181D] text-white px-[14px] py-[10px] text-base"
-                bgColor="#18181D"
-                borderColor="#35353E"
-                disabled={!method.editable}
-                onChange={(e) =>
-                  handleInputChange("mobile", idx, "number", e.target.value)
-                }
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Merchant Section (Stub) */}
-      {merchantMethods.length > 0 && (
-        <div className="mt-8">
-          <div className="text-[18px] sm:text-[22px] font-semibold mb-4">
-            Merchant
-          </div>
-          {merchantMethods.map((method, idx) => (
-            <div
-              key={idx}
-              className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-[#1D1D23] rounded-xl p-4 sm:p-5 mb-4 border border-[#35353E]"
+            <Button
+              height={40}
+              borderRadius={10}
+              variant="outline"
+              className="border-1 border-[#1D8751] w-full text-white"
+              size="md"
+              onClick={() => setShowPaymentModal(true)}
             >
-              <Input
-                placeholder="Merchant Name"
-                value={method.name}
-                className="w-full sm:flex-1 bg-[#23232b] text-white"
-                bgColor="#23232b"
-                borderColor="#35353E"
-                disabled={!method.editable}
-                onChange={(e) =>
-                  handleInputChange("merchant", idx, "name", e.target.value)
-                }
-              />
-              <Input
-                placeholder="Merchant Number"
-                value={method.number}
-                className="w-full sm:flex-1 bg-[#18181D] text-white"
-                bgColor="#18181D"
-                borderColor="#35353E"
-                disabled={!method.editable}
-                onChange={(e) =>
-                  handleInputChange("merchant", idx, "number", e.target.value)
-                }
-              />
-              <button
-                className="text-[#1D8751] text-2xl flex items-center"
-                title="Delete"
-                onClick={() => handleRemoveMethod("merchant", idx)}
-              >
-                🗑️
-              </button>
-            </div>
-          ))}
+              <p className="text-white">+ Add Method</p>
+            </Button>
+          </div>
         </div>
-      )}
+        <PaymentMethodsModal
+          open={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          onAdd={() => {
+            setShowPaymentModal(false);
+          }}
+        />
+        {userPaymentDetailsLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#1D8751]"></div>
+          </div>
+        ) : userPaymentDetails.length === 0 ? (
+          renderEmptyState()
+        ) : (
+          <>
+            {paginatedMethods.map((method: PaymentMethod) =>
+              renderPaymentMethod(method)
+            )}
+            {renderPagination()}
+          </>
+        )}
+      </div>
 
       {/* Update Button */}
       <div className="mt-8 w-full">

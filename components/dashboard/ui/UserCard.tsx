@@ -3,8 +3,105 @@
 import Button from "@/features/p2p/components/Common/Button";
 import Card from "@/features/p2p/components/Common/Card";
 import Image from "next/image";
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { showToast } from "@/lib/utils/toast";
+import { fetchMatchedTrades } from "@/features/p2p/slices/matchedTradesSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch } from "@/store";
+import { RootState } from "@/store/rootReducer";
+import { useRouter } from "next/navigation";
+import {
+  updateProfileThunk,
+  getP2PProfileThunk,
+} from "@/features/p2p/slices/orderSlice";
+
 function UserCard() {
+  const router = useRouter();
+  const [isCopying, setIsCopying] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [profileImage, setProfileImage] = useState(
+    "https://res.cloudinary.com/pitz/image/upload/v1746538908/1fd9f384e7054d4ed9c913e3cfc2b1cf634d0cf4_ldkmkj.jpg"
+  );
+  const { user, isAuthenticated } = useSelector(
+    (state: RootState) => state.auth
+  );
+  const { data: matchedTrades } = useSelector(
+    (state: RootState) => state.matchedTrades
+  );
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(fetchMatchedTrades(1));
+      dispatch(getP2PProfileThunk())
+        .unwrap()
+        .then((response) => {
+          if (response?.profile?.photo) {
+            setProfileImage(response.profile.photo);
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to fetch profile:", error);
+        });
+    }
+  }, [dispatch, isAuthenticated]);
+
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        showToast.error("Image size should be less than 5MB");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64Image = e.target?.result as string;
+        setProfileImage(base64Image);
+
+        try {
+          const formData = new FormData();
+          formData.append("photo", file);
+
+          await dispatch(updateProfileThunk(formData)).unwrap();
+          // Refetch profile to get updated photo
+          const response = await dispatch(getP2PProfileThunk()).unwrap();
+          if (response?.profile?.photo) {
+            setProfileImage(response.profile.photo);
+          }
+          showToast.success("Profile image updated successfully");
+        } catch (error: any) {
+          console.error("Profile update error:", error);
+          showToast.error(error?.message || "Failed to update profile image");
+          // Revert the image if update fails
+          setProfileImage(
+            "https://res.cloudinary.com/pitz/image/upload/v1746538908/1fd9f384e7054d4ed9c913e3cfc2b1cf634d0cf4_ldkmkj.jpg"
+          );
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCopyUserId = async () => {
+    try {
+      setIsCopying(true);
+      await navigator.clipboard.writeText(user?.user_id || "");
+      showToast.success(
+        "User ID copied successfully!",
+        "You can now paste it anywhere"
+      );
+    } catch (error) {
+      showToast.error("Failed to copy User ID", "Please try again");
+    } finally {
+      setIsCopying(false);
+    }
+  };
+
   return (
     <Card
       borderColor="border-[#35353E]"
@@ -19,7 +116,7 @@ function UserCard() {
           <div className="relative">
             <div className="h-14 w-14 rounded-full overflow-hidden relative">
               <Image
-                src="https://res.cloudinary.com/pitz/image/upload/v1746538908/1fd9f384e7054d4ed9c913e3cfc2b1cf634d0cf4_ldkmkj.jpg"
+                src={profileImage}
                 alt="User avatar"
                 width={56}
                 height={56}
@@ -31,8 +128,18 @@ function UserCard() {
                   target.src = "https://via.placeholder.com/56";
                 }}
               />
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageChange}
+                accept="image/*"
+                className="hidden"
+              />
             </div>
-            <div className="absolute -top-1 -right-1 rounded-full p-1 bg-[#1D8751]">
+            <div
+              className="absolute -top-1 -right-1 rounded-full p-1 bg-[#1D8751] cursor-pointer hover:bg-[#16663d] transition-colors"
+              onClick={handleImageClick}
+            >
               <svg
                 width="16"
                 height="16"
@@ -94,25 +201,59 @@ function UserCard() {
           <div>
             <p className="text-xs text-[#788099]">User ID</p>
             <div className="flex items-center gap-2">
-              <p className="text-base text-[#FFFFFF]">383672684</p>
-              <button>
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <rect
-                    x="5"
-                    y="5"
-                    width="14"
-                    height="14"
-                    rx="2"
-                    className="stroke-[#E23D3A]"
-                    strokeWidth="2"
-                  />
-                </svg>
+              <p className="text-base text-[#FFFFFF]">{user?.user_id}</p>
+              <button
+                onClick={handleCopyUserId}
+                disabled={isCopying}
+                className={`cursor-pointer transition-all duration-200 ${
+                  isCopying
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:opacity-80 hover:scale-110"
+                }`}
+                title="Copy User ID"
+              >
+                {isCopying ? (
+                  <svg
+                    className="animate-spin"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <rect
+                      x="5"
+                      y="5"
+                      width="14"
+                      height="14"
+                      rx="2"
+                      className="stroke-[#E23D3A]"
+                      strokeWidth="2"
+                    />
+                  </svg>
+                )}
               </button>
             </div>
           </div>
@@ -129,8 +270,9 @@ function UserCard() {
               variant="ghost"
               size="sm"
               className=" flex items-center justify-center p-0"
+              onClick={() => router.push("/dashboard/notifications")}
               icon={
-                <div className="w-10 h-10 rounded-full border border-[#1D8751] flex items-center justify-center p-1">
+                <div className="w-10 h-10 rounded-full border border-[#1D8751] flex items-center justify-center p-1 relative">
                   <svg
                     width="16"
                     height="16"
@@ -153,6 +295,12 @@ function UserCard() {
                       strokeLinejoin="round"
                     />
                   </svg>
+                  {matchedTrades?.results &&
+                    matchedTrades.results.length > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-[#E23D3A] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {matchedTrades.results.length}
+                      </span>
+                    )}
                 </div>
               }
             />

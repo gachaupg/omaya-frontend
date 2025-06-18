@@ -1,5 +1,11 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch } from "@/store";
+import {
+  fetchP2PTransactions,
+  setCurrentPage,
+} from "@/features/p2p/slices/p2pTransactionsSlice";
 import {
   exchangeOverviewData,
   p2pOverviewData,
@@ -11,6 +17,9 @@ import {
   DonutChartData,
 } from "../../utils/chartData";
 import Button from "../ui/Button";
+import { TransactionSummary } from "../types";
+import { fetchUserTrades } from "@/features/p2p/slices/userTradesSlice";
+import { line, curveMonotoneX } from "d3-shape";
 
 const months = [
   "JAN",
@@ -26,37 +35,86 @@ const months = [
   "NOV",
   "DEC",
 ];
-const yTicks = [10000, 7500, 5000, 2500, 1000];
 
-function GradientLineChart({ data }: { data: LineChartData }) {
-  const max = Math.max(...data.data);
-  const min = Math.min(...data.data);
+function getDynamicYTicks(data: number[], minTicks = 5) {
+  const max = Math.max(...data, 0);
+  let step = 1000;
+  if (max > 0) {
+    const roughStep = max / (minTicks - 1);
+    // Round step to nearest 1000, 500, 100, etc.
+    const pow = Math.pow(10, Math.floor(Math.log10(roughStep)));
+    step = Math.ceil(roughStep / pow) * pow;
+  }
+  const ticks = [];
+  for (let i = 0; i < minTicks; i++) {
+    ticks.push(step * (minTicks - 1 - i));
+  }
+  return ticks;
+}
+
+function GradientLineChart({
+  data1,
+  data2,
+  color1 = "#1D8751",
+  color2 = "#FF4D4D",
+  showData1 = true,
+  showData2 = true,
+}: {
+  data1: LineChartData;
+  data2: LineChartData;
+  color1?: string;
+  color2?: string;
+  showData1?: boolean;
+  showData2?: boolean;
+}) {
+  const max = Math.max(...data1.data, ...data2.data, 0);
+  const min = 0;
   const chartWidth = "100%";
   const chartHeight = 240;
   const chartLeft = 40;
   const chartRight = 360;
   const chartTop = 40;
   const chartBottom = 200;
-  const points = data.data
-    .map(
-      (v, i) =>
-        `${chartLeft + (i / 11) * (chartRight - chartLeft)},${
-          chartTop +
-          (chartBottom - chartTop) -
-          ((v - min) / (max - min)) * (chartBottom - chartTop)
-        }`
-    )
-    .join(" ");
-  const areaPoints = `${chartLeft},${chartBottom} ${data.data
-    .map(
-      (v, i) =>
-        `${chartLeft + (i / 11) * (chartRight - chartLeft)},${
-          chartTop +
-          (chartBottom - chartTop) -
-          ((v - min) / (max - min)) * (chartBottom - chartTop)
-        }`
-    )
+  const yTicks = getDynamicYTicks([...data1.data, ...data2.data]);
+
+  const points1 = data1.data.map((v, i) => ({
+    x: chartLeft + (i / 11) * (chartRight - chartLeft),
+    y:
+      chartTop +
+      (chartBottom - chartTop) -
+      ((v - min) / (max - min || 1)) * (chartBottom - chartTop),
+  }));
+
+  const points2 = data2.data.map((v, i) => ({
+    x: chartLeft + (i / 11) * (chartRight - chartLeft),
+    y:
+      chartTop +
+      (chartBottom - chartTop) -
+      ((v - min) / (max - min || 1)) * (chartBottom - chartTop),
+  }));
+
+  const generateSmoothPath = (points: { x: number; y: number }[]) => {
+    if (points.length < 2) return "";
+    const firstPoint = points[0];
+    let path = `M ${firstPoint.x},${firstPoint.y}`;
+    for (let i = 1; i < points.length; i++) {
+      const current = points[i];
+      const previous = points[i - 1];
+      const controlX = (previous.x + current.x) / 2;
+      path += ` C ${controlX},${previous.y} ${controlX},${current.y} ${current.x},${current.y}`;
+    }
+    return path;
+  };
+
+  const linePath1 = generateSmoothPath(points1);
+  const linePath2 = generateSmoothPath(points2);
+  const areaPoints1 = `${chartLeft},${chartBottom} ${points1
+    .map((p) => `${p.x},${p.y}`)
     .join(" ")} ${chartRight},${chartBottom}`;
+  const areaPoints2 = `${chartLeft},${chartBottom} ${points2
+    .map((p) => `${p.x},${p.y}`)
+    .join(" ")} ${chartRight},${chartBottom}`;
+
   return (
     <div className="w-full overflow-x-auto">
       <svg
@@ -68,12 +126,27 @@ function GradientLineChart({ data }: { data: LineChartData }) {
         style={{ maxWidth: "100%" }}
       >
         <defs>
-          <linearGradient id="lineGradient" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#22c55e" stopOpacity="0.5" />
+          <linearGradient
+            id={`lineGradient-${color1}`}
+            x1="0"
+            y1="0"
+            x2="0"
+            y2="1"
+          >
+            <stop offset="0%" stopColor={color1} stopOpacity="0.5" />
+            <stop offset="100%" stopColor="#23262F" stopOpacity="0.1" />
+          </linearGradient>
+          <linearGradient
+            id={`lineGradient-${color2}`}
+            x1="0"
+            y1="0"
+            x2="0"
+            y2="1"
+          >
+            <stop offset="0%" stopColor={color2} stopOpacity="0.5" />
             <stop offset="100%" stopColor="#23262F" stopOpacity="0.1" />
           </linearGradient>
         </defs>
-        {/* Y-axis grid lines and labels */}
         {yTicks.map((y) => (
           <g key={y}>
             <line
@@ -82,12 +155,12 @@ function GradientLineChart({ data }: { data: LineChartData }) {
               y1={
                 chartTop +
                 (chartBottom - chartTop) -
-                ((y - min) / (max - min)) * (chartBottom - chartTop)
+                ((y - min) / (max - min || 1)) * (chartBottom - chartTop)
               }
               y2={
                 chartTop +
                 (chartBottom - chartTop) -
-                ((y - min) / (max - min)) * (chartBottom - chartTop)
+                ((y - min) / (max - min || 1)) * (chartBottom - chartTop)
               }
               stroke="#44454A"
               strokeDasharray="6 6"
@@ -98,7 +171,7 @@ function GradientLineChart({ data }: { data: LineChartData }) {
               y={
                 chartTop +
                 (chartBottom - chartTop) -
-                ((y - min) / (max - min)) * (chartBottom - chartTop) +
+                ((y - min) / (max - min || 1)) * (chartBottom - chartTop) +
                 2
               }
               fill="#A3A3A3"
@@ -111,17 +184,36 @@ function GradientLineChart({ data }: { data: LineChartData }) {
             </text>
           </g>
         ))}
-        {/* Gradient area */}
-        <polygon points={areaPoints} fill="url(#lineGradient)" />
-        {/* Line */}
-        <polyline
-          fill="none"
-          stroke="#22c55e"
-          strokeWidth="4"
-          points={points}
-          style={{ filter: "drop-shadow(0px 2px 6px #22c55e55)" }}
-        />
-        {/* X-axis labels (show every other month) */}
+        {showData1 && (
+          <>
+            <polygon
+              points={areaPoints1}
+              fill={`url(#lineGradient-${color1})`}
+            />
+            <path
+              d={linePath1}
+              fill="none"
+              stroke={color1}
+              strokeWidth="4"
+              style={{ filter: `drop-shadow(0px 2px 6px ${color1}55)` }}
+            />
+          </>
+        )}
+        {showData2 && (
+          <>
+            <polygon
+              points={areaPoints2}
+              fill={`url(#lineGradient-${color2})`}
+            />
+            <path
+              d={linePath2}
+              fill="none"
+              stroke={color2}
+              strokeWidth="4"
+              style={{ filter: `drop-shadow(0px 2px 6px ${color2}55)` }}
+            />
+          </>
+        )}
         {months.map((m, i) =>
           i % 2 === 0 ? (
             <text
@@ -149,14 +241,13 @@ function SimpleDonutChart({
   data: DonutChartData[];
   total: number;
 }) {
-  // Simple SVG donut chart for demo
   const radius = 40;
   const circumference = 2 * Math.PI * radius;
   let offset = 0;
   return (
     <svg width="100" height="100" viewBox="0 0 100 100">
       {data.map((d, i) => {
-        const value = (d.value / total) * circumference;
+        const value = total > 0 ? ((d.value || 0) / total) * circumference : 0;
         const el = (
           <circle
             key={d.label}
@@ -167,7 +258,7 @@ function SimpleDonutChart({
             stroke={d.color}
             strokeWidth="12"
             strokeDasharray={`${value} ${circumference - value}`}
-            strokeDashoffset={-offset}
+            strokeDashoffset={Number.isFinite(-offset) ? -offset : 0}
             style={{ transition: "stroke-dasharray 0.3s" }}
           />
         );
@@ -193,10 +284,17 @@ function DonutChartWithCenter({
   const circumference = 2 * Math.PI * radius;
   let offset = 0;
   const gap = 0.06 * circumference;
+
+  // Calculate total from actual data values
+  const actualTotal = data.reduce((sum, item) => sum + item.value, 0);
+
   return (
     <svg width="180" height="180" viewBox="0 0 180 180">
       {data.map((d, i) => {
-        const value = (d.value / total) * (circumference - gap * data.length);
+        const value =
+          actualTotal > 0
+            ? (d.value / actualTotal) * (circumference - gap * data.length)
+            : 0;
         const el = (
           <circle
             key={d.label}
@@ -207,8 +305,9 @@ function DonutChartWithCenter({
             stroke={d.color}
             strokeWidth={stroke}
             strokeDasharray={`${value} ${circumference - value}`}
-            strokeDashoffset={-offset}
+            strokeDashoffset={Number.isFinite(-offset) ? -offset : 0}
             strokeLinecap="round"
+            style={{ opacity: 1 }}
           />
         );
         offset += value + gap;
@@ -222,7 +321,7 @@ function DonutChartWithCenter({
         fontSize="13"
         fontWeight="bold"
       >
-        {total.toLocaleString()} USD
+        {(actualTotal || 0).toLocaleString()} USD
       </text>
       <text
         x={center}
@@ -306,12 +405,122 @@ const Legend = ({ data }: { data: DonutChartData[] }) => (
   </div>
 );
 
-const LineCharts = () => {
+const LineCharts = ({
+  transactionSummary,
+}: {
+  transactionSummary: TransactionSummary;
+}) => {
+  const dispatch = useDispatch<AppDispatch>();
   const [filter, setFilter] = useState<"All" | "Deposits" | "Withdrawals">(
     "Deposits"
   );
   const [p2pFilter, setP2pFilter] = useState<"All" | "Sells" | "Buys">("Sells");
   const [period, setPeriod] = useState("Month");
+  const [activeTab, setActiveTab] = useState<
+    "exchange" | "p2p" | "buy" | "swap"
+  >("exchange");
+  const [chartData, setChartData] = useState<{
+    depositData: LineChartData;
+    withdrawalData: LineChartData;
+  }>({
+    depositData: {
+      label: "Deposits",
+      data: Array(12).fill(0),
+    },
+    withdrawalData: {
+      label: "Withdrawals",
+      data: Array(12).fill(0),
+    },
+  });
+  const [p2pChartData, setP2pChartData] = useState<{
+    buyData: LineChartData;
+    sellData: LineChartData;
+  }>({
+    buyData: {
+      label: "P2P Buys",
+      data: Array(12).fill(0),
+    },
+    sellData: {
+      label: "P2P Sells",
+      data: Array(12).fill(0),
+    },
+  });
+
+  const { transactions } = useSelector((state: any) => state.p2pTransactions);
+  const userTrades = useSelector((state: any) => state.userTrades.trades);
+
+  useEffect(() => {
+    dispatch(fetchP2PTransactions(1));
+    dispatch(fetchUserTrades({ page: 1, currency: "usdt" }));
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (transactions?.results) {
+      const depositData = Array(12).fill(0);
+      const withdrawalData = Array(12).fill(0);
+      const currentDate = new Date();
+
+      transactions.results.forEach((transaction: any) => {
+        const transactionDate = new Date(transaction.timestamp);
+        const monthDiff =
+          (currentDate.getFullYear() - transactionDate.getFullYear()) * 12 +
+          (currentDate.getMonth() - transactionDate.getMonth());
+        if (monthDiff < 12) {
+          const monthIndex = 11 - monthDiff;
+          if (transaction.transaction_type === "deposit") {
+            depositData[monthIndex] += parseFloat(transaction.amount);
+          } else if (transaction.transaction_type === "withdrawal") {
+            withdrawalData[monthIndex] += parseFloat(transaction.amount);
+          }
+        }
+      });
+
+      setChartData({
+        depositData: {
+          label: "Deposits",
+          data: depositData,
+        },
+        withdrawalData: {
+          label: "Withdrawals",
+          data: withdrawalData,
+        },
+      });
+    }
+  }, [transactions]);
+
+  useEffect(() => {
+    if (userTrades?.results) {
+      const buyData = Array(12).fill(0);
+      const sellData = Array(12).fill(0);
+      const currentDate = new Date();
+
+      userTrades.results.forEach((trade: any) => {
+        const tradeDate = new Date(trade.timestamp);
+        const monthDiff =
+          (currentDate.getFullYear() - tradeDate.getFullYear()) * 12 +
+          (currentDate.getMonth() - tradeDate.getMonth());
+        if (monthDiff < 12) {
+          const monthIndex = 11 - monthDiff;
+          if (trade.order_type === "buy") {
+            buyData[monthIndex] += parseFloat(trade.amount);
+          } else if (trade.order_type === "sell") {
+            sellData[monthIndex] += parseFloat(trade.amount);
+          }
+        }
+      });
+
+      setP2pChartData({
+        buyData: {
+          label: "P2P Buys",
+          data: buyData,
+        },
+        sellData: {
+          label: "P2P Sells",
+          data: sellData,
+        },
+      });
+    }
+  }, [userTrades]);
 
   return (
     <div className="w-full">
@@ -355,7 +564,12 @@ const LineCharts = () => {
             </div>
           </div>
           <div className="w-full">
-            <GradientLineChart data={exchangeOverviewData} />
+            <GradientLineChart
+              data1={chartData.depositData}
+              data2={chartData.withdrawalData}
+              showData1={filter === "All" || filter === "Deposits"}
+              showData2={filter === "All" || filter === "Withdrawals"}
+            />
           </div>
         </Card>
         {/* P2P Overview */}
@@ -397,7 +611,12 @@ const LineCharts = () => {
             </div>
           </div>
           <div className="w-full">
-            <GradientLineChart data={p2pOverviewData} />
+            <GradientLineChart
+              data1={p2pChartData.buyData}
+              data2={p2pChartData.sellData}
+              showData1={p2pFilter === "All" || p2pFilter === "Buys"}
+              showData2={p2pFilter === "All" || p2pFilter === "Sells"}
+            />
           </div>
         </Card>
         {/* Overview Total */}
@@ -407,29 +626,109 @@ const LineCharts = () => {
               Overview Total
             </h3>
             <div className="flex flex-wrap gap-2">
-              <button className="bg-[#1D8751] text-white px-3 py-1 rounded-full text-[13px] font-semibold whitespace-nowrap">
+              <button
+                className={`${
+                  activeTab === "exchange"
+                    ? "bg-[#1D8751] text-white"
+                    : "bg-transparent border border-[#1D8751] text-[#1D8751]"
+                } px-3 py-1 rounded-full text-[13px] font-semibold whitespace-nowrap`}
+                onClick={() => setActiveTab("exchange")}
+              >
                 Exchange
               </button>
-              <button className="bg-transparent border border-[#1D8751] text-[#1D8751] px-3 py-1 rounded-full text-[13px] font-semibold whitespace-nowrap">
+              <button
+                className={`${
+                  activeTab === "p2p"
+                    ? "bg-[#1D8751] text-white"
+                    : "bg-transparent border border-[#1D8751] text-[#1D8751]"
+                } px-3 py-1 rounded-full text-[13px] font-semibold whitespace-nowrap`}
+                onClick={() => setActiveTab("p2p")}
+              >
                 P2P
               </button>
-              <button className="bg-transparent border border-[#1D8751] text-[#1D8751] px-3 py-1 rounded-full text-[13px] font-semibold whitespace-nowrap">
+              <button
+                className={`${
+                  activeTab === "swap"
+                    ? "bg-[#1D8751] text-white"
+                    : "bg-transparent border border-[#1D8751] text-[#1D8751]"
+                } px-3 py-1 rounded-full text-[13px] font-semibold whitespace-nowrap`}
+                onClick={() => setActiveTab("swap")}
+              >
                 Swap
               </button>
-              <button className="bg-transparent border border-[#1D8751] text-[#1D8751] px-3 py-1 rounded-full text-[13px] font-semibold whitespace-nowrap">
+              <button
+                className={`${
+                  activeTab === "buy"
+                    ? "bg-[#1D8751] text-white"
+                    : "bg-transparent border border-[#1D8751] text-[#1D8751]"
+                } px-3 py-1 rounded-full text-[13px] font-semibold whitespace-nowrap`}
+                onClick={() => setActiveTab("buy")}
+              >
                 Buy
               </button>
             </div>
           </div>
           <div className="flex flex-col lg:flex-row w-full pt-10">
-            <Legend data={overviewTotalData} />
-            <div className="flex-1 flex flex-col items-center justify-center mt-4 lg:mt-0">
-              <DonutChartWithCenter
-                data={overviewTotalData}
-                total={overviewTotalSummary.total}
-                label="Transactions"
-              />
-            </div>
+            {activeTab === "buy" || activeTab === "swap" ? (
+              <div className="w-full text-center py-8">
+                <div className="flex flex-col items-center justify-center border border-[#35353E] rounded-[24px] p-8 bg-[#23232B]">
+                  <div className="w-16 h-16 mb-4 rounded-full bg-[#35353E] flex items-center justify-center">
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="text-[#788099]"
+                    >
+                      <path
+                        d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M12 8V12"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d="M12 16H12.01"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-[#788099] mb-2">
+                    No Data Found
+                  </h3>
+                  <p className="text-sm text-[#8C8CA1] text-center max-w-md">
+                    There are currently no {activeTab} transactions to display.
+                    Please check back later.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <Legend
+                  data={overviewTotalData(transactionSummary, activeTab)}
+                />
+                <div className="flex-1 flex flex-col items-center justify-center mt-4 lg:mt-0">
+                  <DonutChartWithCenter
+                    data={overviewTotalData(transactionSummary, activeTab)}
+                    total={
+                      overviewTotalSummary(transactionSummary, activeTab).total
+                    }
+                    label="Transactions"
+                  />
+                </div>
+              </>
+            )}
           </div>
         </Card>
         {/* Referral Commissions */}
@@ -445,11 +744,11 @@ const LineCharts = () => {
             />
           </div>
           <div className="flex flex-col lg:flex-row w-full pt-10">
-            <Legend data={referralCommissionsData} />
+            <Legend data={referralCommissionsData(transactionSummary)} />
             <div className="flex-1 flex flex-col items-center justify-center mt-4 lg:mt-0">
               <DonutChartWithCenter
-                data={referralCommissionsData}
-                total={referralCommissionsSummary.total}
+                data={referralCommissionsData(transactionSummary)}
+                total={referralCommissionsSummary(transactionSummary).total}
                 label="Commissions"
               />
             </div>
