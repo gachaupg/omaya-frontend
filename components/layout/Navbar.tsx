@@ -12,7 +12,9 @@ export default function Navbar() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated } = useSelector(
+    (state: RootState) => state.auth || { isAuthenticated: false }
+  );
   const dispatch = useDispatch<AppDispatch>();
 
   useEffect(() => {
@@ -90,8 +92,20 @@ export default function Navbar() {
             <div className="flex items-center space-x-4">
               <Link href="/dashboard/deposit">
                 <button className="flex items-center bg-[#1D8751] hover:bg-[#13B562] text-white px-6 py-2 rounded-full transition-colors duration-200 text-sm md:text-base 2xl:text-lg">
-                  <svg className="mr-2" width="20" height="20" fill="none" viewBox="0 0 24 24">
-                    <path d="M12 3v14m0 0l-5-5m5 5l5-5" stroke="#FFB800" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <svg
+                    className="mr-2"
+                    width="20"
+                    height="20"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M12 3v14m0 0l-5-5m5 5l5-5"
+                      stroke="#FFB800"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                   Deposit
                 </button>
@@ -104,8 +118,14 @@ export default function Navbar() {
                 />
                 <span className="absolute bottom-0 right-0 w-5 h-5 bg-[#1D8751] rounded-full flex items-center justify-center border-2 border-white">
                   <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
-                    <circle cx="10" cy="10" r="10" fill="#1D8751"/>
-                    <path d="M6 10.5L9 13.5L14 8.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <circle cx="10" cy="10" r="10" fill="#1D8751" />
+                    <path
+                      d="M6 10.5L9 13.5L14 8.5"
+                      stroke="white"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                 </span>
               </div>
@@ -162,7 +182,10 @@ export default function Navbar() {
               <>
                 <Link href="/dashboard/deposit" onClick={toggleMobileMenu}>
                   <button className="flex items-center w-full bg-[#1D8751] hover:bg-[#13B562] text-white px-6 py-2 rounded-full transition-colors duration-200 text-base">
-                    <img src="https://res.cloudinary.com/dam1sxczj/image/upload/v1748294216/deposit-new-f_okzshs.png" alt="" />
+                    <img
+                      src="https://res.cloudinary.com/dam1sxczj/image/upload/v1748294216/deposit-new-f_okzshs.png"
+                      alt=""
+                    />
                     Deposit
                   </button>
                 </Link>
@@ -174,8 +197,14 @@ export default function Navbar() {
                   />
                   <span className="absolute bottom-0 right-0 w-5 h-5 bg-[#1D8751] rounded-full flex items-center justify-center border-2 border-white">
                     <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
-                      <circle cx="10" cy="10" r="10" fill="#1D8751"/>
-                      <path d="M6 10.5L9 13.5L14 8.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <circle cx="10" cy="10" r="10" fill="#1D8751" />
+                      <path
+                        d="M6 10.5L9 13.5L14 8.5"
+                        stroke="white"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
                     </svg>
                   </span>
                 </div>

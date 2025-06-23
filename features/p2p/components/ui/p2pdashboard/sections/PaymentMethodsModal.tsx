@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {  AppDispatch } from "@/store";
+import { AppDispatch } from "@/store";
 import { RootState } from "@/store/rootReducer";
 import {
   fetchAdminPaymentMethods,
@@ -60,7 +60,6 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   const methodTypes = Array.from(
     new Set((adminMethods || []).map((m: any) => m.payment_method_type))
   ) as string[];
- 
 
   // Providers for selected method
   const providers = (adminMethods || []).filter(
@@ -116,7 +115,48 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
           Add payment details
         </div>
         <div className="flex flex-col gap-3">
-         
+          {/* Payment Method Dropdown */}
+          <div>
+            <label className="block text-[#788099] text-sm mb-1">
+              Payment Method
+            </label>
+            <select
+              className="w-full p-3 rounded-[24px] bg-[#18181D] border border-[#35353E] text-white"
+              value={method}
+              onChange={(e) => setMethod(e.target.value)}
+              disabled={loading}
+            >
+              <option value="">Select Method</option>
+              {methodTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Provider Dropdown */}
+          {method && (
+            <div>
+              <label className="block text-[#788099] text-sm mb-1">
+                Provider
+              </label>
+              <select
+                className="w-full p-3 rounded-[24px] bg-[#18181D] border border-[#35353E] text-white"
+                value={provider}
+                onChange={(e) => setProvider(e.target.value)}
+                disabled={loading}
+              >
+                <option value="">Select Provider</option>
+                {providers.map((p: any) => (
+                  <option key={p.provider_name} value={p.provider_name}>
+                    {p.provider_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Name Input */}
           <input
             className="w-full bg-[#23232B] text-white rounded-lg px-4 py-3 focus:outline-none placeholder:text-[#788099]"

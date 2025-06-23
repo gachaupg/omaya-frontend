@@ -20,6 +20,8 @@ import {
   Feedback,
   P2PTransactionResponse,
   Profile,
+  ReferredUser,
+  ReferralWallet,
 } from "./types";
 import { API_CONFIG } from "@/lib/appConfig";
 
@@ -429,3 +431,32 @@ export const getP2PProfile = async (): Promise<P2PResponse> => {
     return response.data;
   });
 };
+
+export const getReferredUsers = async (
+  code: string
+): Promise<ReferredUser[]> => {
+  return withRetry(async () => {
+    const response = await get<ReferredUser[]>(
+      API_CONFIG.P2P.REFERRAL_USERS(code)
+    );
+    return response.data;
+  });
+};
+
+export const getReferralWallet = async (): Promise<ReferralWallet> => {
+  return withRetry(async () => {
+    const response = await get<ReferralWallet>(API_CONFIG.P2P.REFERRAL_WALLET);
+    return response.data;
+  });
+};
+
+export const createReferralWithdraw = async (data: {
+  amount: string;
+  wallet_address: string;
+}) => {
+  return withRetry(async () => {
+    const response = await post(API_CONFIG.P2P.REFERRAL_WITHDRAW, data);
+    return response.data;
+  });
+};
+

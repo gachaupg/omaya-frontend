@@ -2,7 +2,7 @@
 "use client";
 
 import { Provider } from "react-redux";
-import { store } from "@/store";
+import { store } from "@/store/index";
 import { setAuthCallback } from "@/lib/utils/errorHandler";
 import { logout } from "@/features/auth/slices/authSlice";
 import { useEffect } from "react";

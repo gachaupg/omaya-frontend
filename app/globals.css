@@ -1,6 +1,5 @@
 @import "tailwindcss";
 
-
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -15,13 +14,13 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #18181D;
+    --background: #18181d;
     --foreground: #ededed;
   }
 }
 
 body {
-  background: #18181D;
+  background: #18181d;
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
@@ -39,7 +38,7 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid #1D8751;
+  outline: 2px solid #1d8751;
   outline-offset: 2px;
 }
 
@@ -49,4 +48,14 @@ input:active,
 select:active,
 textarea:active {
   outline: none;
+}
+
+/* Utility class to hide scrollbars while maintaining scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Safari and Chrome */
 }

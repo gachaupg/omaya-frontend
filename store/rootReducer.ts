@@ -21,6 +21,10 @@ import matchedTradesReducer from "../features/p2p/slices/matchedTradesSlice";
 import userTradesReducer from "../features/p2p/slices/userTradesSlice";
 import feedbackReducer from "../features/p2p/slices/feedbackSlice";
 import p2pTransactionsReducer from "../features/p2p/slices/p2pTransactionsSlice";
+import referralReducer from "@/features/settings/slices/referralSlice";
+import referralWalletReducer from "@/features/settings/slices/referralWalletSlice";
+import settingsReducer from "@/features/settings/slices/settingsSlice";
+import swapReducer from "@/features/swap/slices/swapSlice";
 
 const rootReducer = combineReducers({
   deposits: depositReducer,
@@ -39,6 +43,10 @@ const rootReducer = combineReducers({
   userTrades: userTradesReducer,
   feedback: feedbackReducer,
   p2pTransactions: p2pTransactionsReducer,
+  referral: referralReducer,
+  referralWallet: referralWalletReducer,
+  settings: settingsReducer,
+  swap: swapReducer,
   // Add other reducers here
 });
 

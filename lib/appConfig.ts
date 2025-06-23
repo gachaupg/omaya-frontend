@@ -41,5 +41,14 @@ export const API_CONFIG = {
     DELETE_PAYMENT_METHOD: "/payments/user-payment-details/",
     TRADE_MESSAGES: (tradeId: string) =>
       `/trading_engine/trades/${tradeId}/messages/`,
+    REFERRAL_USERS: (code: string) => `/api/referred-users/${code}/`,
+    REFERRAL_WALLET: "/api/wallet/referral-wallet/",
+    REFERRAL_WITHDRAW: "/trading_engine/referral/withdraw/",
+  },
+  SWAP: {
+    SUPPORTED_ASSETS: "/api/changenow/supported-tokens/",
+    ESTIMATE_SWAP: "/api/changenow/estimate/",
+    CREATE_SWAP: "/api/changenow/create/",
+    SWAP_STATUS: "/api/changenow/status/",
   },
 };

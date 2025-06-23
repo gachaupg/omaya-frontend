@@ -160,7 +160,7 @@ function UserCard() {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-lg text-[14px] font-semibold text-[#FFFFFF]">
-                Hello, Omar Ali!
+                Hello, {user?.first_name} {user?.last_name}!
               </h2>
             </div>
             <div className="flex items-center gap-1">

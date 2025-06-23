@@ -1,0 +1,186 @@
+import { apiClient } from "@/lib/apiClient";
+import { withRetry } from "@/lib/utils/retry";
+import {
+  ProfileUpdateRequest,
+  PasswordChangeRequest,
+  ThemeSettings,
+  SecuritySettings,
+  PrivacySettings,
+  ProfileUpdateResponse,
+  PasswordChangeResponse,
+  ThemeUpdateResponse,
+  SecurityUpdateResponse,
+  PrivacyUpdateResponse,
+  SessionsResponse,
+} from "./types";
+
+const SETTINGS_API_BASE = "/api/settings";
+
+export const settingsApi = {
+  // Profile Management
+  getProfile: async (): Promise<ProfileUpdateResponse> => {
+    return withRetry(async () => {
+      const response = await apiClient.get(`${SETTINGS_API_BASE}/profile`);
+      return response.data;
+    });
+  },
+
+  updateProfile: async (
+    data: ProfileUpdateRequest
+  ): Promise<ProfileUpdateResponse> => {
+    return withRetry(async () => {
+      const response = await apiClient.put(
+        `${SETTINGS_API_BASE}/profile`,
+        data
+      );
+      return response.data;
+    });
+  },
+
+  updateProfilePhoto: async (photo: File): Promise<ProfileUpdateResponse> => {
+    return withRetry(async () => {
+      const formData = new FormData();
+      formData.append("photo", photo);
+
+      const response = await apiClient.put(
+        `${SETTINGS_API_BASE}/profile/photo`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      return response.data;
+    });
+  },
+
+  // Password Management
+  changePassword: async (
+    data: PasswordChangeRequest
+  ): Promise<PasswordChangeResponse> => {
+    return withRetry(async () => {
+      const response = await apiClient.put(
+        `${SETTINGS_API_BASE}/password`,
+        data
+      );
+      return response.data;
+    });
+  },
+
+  // Theme Management
+  getTheme: async (): Promise<ThemeUpdateResponse> => {
+    return withRetry(async () => {
+      const response = await apiClient.get(`${SETTINGS_API_BASE}/theme`);
+      return response.data;
+    });
+  },
+
+  updateTheme: async (theme: ThemeSettings): Promise<ThemeUpdateResponse> => {
+    return withRetry(async () => {
+      const response = await apiClient.put(`${SETTINGS_API_BASE}/theme`, theme);
+      return response.data;
+    });
+  },
+
+  // Security Settings
+  getSecuritySettings: async (): Promise<SecurityUpdateResponse> => {
+    return withRetry(async () => {
+      const response = await apiClient.get(`${SETTINGS_API_BASE}/security`);
+      return response.data;
+    });
+  },
+
+  updateSecuritySettings: async (
+    settings: SecuritySettings
+  ): Promise<SecurityUpdateResponse> => {
+    return withRetry(async () => {
+      const response = await apiClient.put(
+        `${SETTINGS_API_BASE}/security`,
+        settings
+      );
+      return response.data;
+    });
+  },
+
+  toggleTwoFactor: async (
+    enabled: boolean
+  ): Promise<SecurityUpdateResponse> => {
+    return withRetry(async () => {
+      const response = await apiClient.put(
+        `${SETTINGS_API_BASE}/security/2fa`,
+        {
+          enabled,
+        }
+      );
+      return response.data;
+    });
+  },
+
+  // Privacy Settings
+  getPrivacySettings: async (): Promise<PrivacyUpdateResponse> => {
+    return withRetry(async () => {
+      const response = await apiClient.get(`${SETTINGS_API_BASE}/privacy`);
+      return response.data;
+    });
+  },
+
+  updatePrivacySettings: async (
+    settings: PrivacySettings
+  ): Promise<PrivacyUpdateResponse> => {
+    return withRetry(async () => {
+      const response = await apiClient.put(
+        `${SETTINGS_API_BASE}/privacy`,
+        settings
+      );
+      return response.data;
+    });
+  },
+
+  // Session Management
+  getActiveSessions: async (): Promise<SessionsResponse> => {
+    return withRetry(async () => {
+      const response = await apiClient.get(`${SETTINGS_API_BASE}/sessions`);
+      return response.data;
+    });
+  },
+
+  terminateSession: async (sessionId: string): Promise<SessionsResponse> => {
+    return withRetry(async () => {
+      const response = await apiClient.delete(
+        `${SETTINGS_API_BASE}/sessions/${sessionId}`
+      );
+      return response.data;
+    });
+  },
+
+  terminateAllSessions: async (): Promise<SessionsResponse> => {
+    return withRetry(async () => {
+      const response = await apiClient.delete(`${SETTINGS_API_BASE}/sessions`);
+      return response.data;
+    });
+  },
+
+  // KYC Management
+  getKYCStatus: async (): Promise<any> => {
+    return withRetry(async () => {
+      const response = await apiClient.get(`${SETTINGS_API_BASE}/kyc`);
+      return response.data;
+    });
+  },
+
+  submitKYC: async (kycData: FormData): Promise<any> => {
+    return withRetry(async () => {
+      const response = await apiClient.post(
+        `${SETTINGS_API_BASE}/kyc`,
+        kycData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      return response.data;
+    });
+  },
+};

@@ -18,13 +18,14 @@ const Overview = () => {
   }, [dispatch, isAuthenticated]);
 
   // Calculate totals for the pie chart using API data
-  const deposits = summary?.total_approved_exchange_deposits || 0;
-  const withdrawals = summary?.total_approved_exchange_withdrawals || 0;
+  const deposits = summary?.total_approved_p2p_deposits || 0;
+  const withdrawals = summary?.total_approved_p2p_withdrawals || 0;
   const inProgress =
-    (summary?.total_pending_exchange_deposits || 0) +
-    (summary?.total_pending_exchange_withdrawals || 0);
+    (summary?.total_pending_p2p_deposits || 0) +
+    (summary?.total_pending_p2p_withdrawals || 0);
   const p2p = summary?.total_p2p_orders || 0;
   const chartTotal = deposits + withdrawals + inProgress + p2p;
+  const transactionTotal = deposits + withdrawals + p2p;
   const circumference = 2 * Math.PI * 90;
   const depositsDash = (deposits / chartTotal) * circumference;
   const withdrawalsDash = (withdrawals / chartTotal) * circumference;
@@ -140,7 +141,7 @@ const Overview = () => {
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-[15px] font-bold text-white">
-              {chartTotal.toLocaleString()} USD
+              {transactionTotal.toLocaleString()} USD
             </span>
             <span className="text-[#A0A0A0] text-base">Transactions</span>
           </div>

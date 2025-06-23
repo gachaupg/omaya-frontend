@@ -1,219 +1,324 @@
 /**
- * SwapWidget.tsx – auto‑generated placeholder
+ * SwapWidget.tsx – Refactored to use smaller components
  */
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useCallback } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  setFromAsset,
+  setToAsset,
+  setFromAmount,
+  setToAmount,
+  fetchSupportedAssets,
+  fetchSwapEstimate,
+  clearEstimate,
+  createSwapTransaction,
+  clearSwapResponse,
+} from "../slices/swapSlice";
+import { RootState, AppDispatch } from "@/store/rootReducer";
+import SwapStatusComponent from "./SwapStatus";
+import StepIndicator from "./StepIndicator";
+import TransactionInfoStep from "./TransactionInfoStep";
+import CopyAddressStep from "./CopyAddressStep";
+import { SwapStep } from "./types";
 
 const SwapWidget = () => {
-  const [fromAsset, setFromAsset] = useState("BTC");
-  const [toAsset, setToAsset] = useState("ETH");
-  const [fromAmount, setFromAmount] = useState("0.01");
-  const [toAmount, setToAmount] = useState("0.2210446");
-  const [walletAddress, setWalletAddress] = useState("");
-  const [toWalletAddress] = useState("31r8yoz21o44vy6SuhiLahwvRqQZF");
-  const [confirm, setConfirm] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
+  const {
+    fromAsset,
+    toAsset,
+    fromAmount,
+    toAmount,
+    supportedAssets,
+    loading,
+    error,
+    estimate,
+    estimateLoading,
+    estimateError,
+    swapResponse,
+    swapLoading,
+    swapError,
+  } = useSelector((state: RootState) => state.swap);
+
+  const [walletAddress, setWalletAddress] = React.useState("");
+  const [isFromAssetOpen, setIsFromAssetOpen] = React.useState(false);
+  const [isToAssetOpen, setIsToAssetOpen] = React.useState(false);
+  const [searchTerm, setSearchTerm] = React.useState("");
+  const [toSearchTerm, setToSearchTerm] = React.useState("");
+  const [showStatus, setShowStatus] = React.useState(false);
+  const [walletValidationError, setWalletValidationError] = React.useState("");
+  const [copyMessage, setCopyMessage] = React.useState("");
+  const [localSwapError, setLocalSwapError] = React.useState("");
+
+  // New state for the flow
+  const [currentStep, setCurrentStep] =
+    React.useState<SwapStep>("transaction-info");
+
+  // Simple debounce implementation
+  const [debouncedFromAmount, setDebouncedFromAmount] =
+    React.useState(fromAmount);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedFromAmount(fromAmount);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [fromAmount]);
+
+  useEffect(() => {
+    dispatch(fetchSupportedAssets());
+  }, [dispatch]);
+
+  // Fetch swap estimate when assets or amount changes
+  useEffect(() => {
+    if (
+      fromAsset &&
+      toAsset &&
+      debouncedFromAmount &&
+      parseFloat(debouncedFromAmount) > 0
+    ) {
+      dispatch(
+        fetchSwapEstimate({
+          fromCurrency: fromAsset.ticker,
+          fromNetwork: fromAsset.network,
+          toCurrency: toAsset.ticker,
+          toNetwork: toAsset.network,
+          amount: parseFloat(debouncedFromAmount),
+        })
+      );
+    } else {
+      // Clear estimate if conditions are not met
+      dispatch(clearEstimate());
+    }
+  }, [dispatch, fromAsset, toAsset, debouncedFromAmount]);
+
+  // Update toAmount when estimate is received
+  useEffect(() => {
+    if (
+      estimate &&
+      !estimateLoading &&
+      estimate.estimated_amount !== undefined
+    ) {
+      dispatch(setToAmount(estimate.estimated_amount.toString()));
+    }
+  }, [estimate, estimateLoading, dispatch]);
+
+  // Handle next step validation
+  const handleNextStep = () => {
+    if (currentStep === "transaction-info") {
+      // Validate that we have all required fields
+      if (
+        !fromAsset ||
+        !toAsset ||
+        !fromAmount ||
+        parseFloat(fromAmount) <= 0
+      ) {
+        return;
+      }
+
+      if (!estimate) {
+        return;
+      }
+
+      // Validate wallet address
+      if (!walletAddress.trim()) {
+        setWalletValidationError("Wallet address is required");
+        return;
+      }
+
+      // Import and use the validation function
+      import("@/lib/addressValidaion").then(({ validateWalletAddress }) => {
+        const normalizedNetwork = fromAsset?.network?.toUpperCase();
+        const validationResult = validateWalletAddress(
+          walletAddress,
+          normalizedNetwork
+        );
+
+        if (!validationResult.isValid) {
+          setWalletValidationError(
+            validationResult.message ||
+              `Invalid ${fromAsset?.network || "wallet"} address`
+          );
+          return;
+        }
+
+        // Clear any previous validation errors
+        setWalletValidationError("");
+
+        // All validation passed, create the swap
+        handleSubmit();
+      });
+    }
+  };
+
+  // Handle back step
+  const handleBackStep = () => {
+    if (currentStep === "copy-address") {
+      setCurrentStep("transaction-info");
+    } else if (currentStep === "status") {
+      setCurrentStep("copy-address");
+    }
+  };
+
+  const handleFromAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Only allow numbers and decimals
+    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      dispatch(setFromAmount(value));
+    }
+  };
+
+  const handleToAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Only allow numbers and decimals
+    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      dispatch(setToAmount(value));
+    }
+  };
+
+  const handleWalletAddressChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setWalletAddress(e.target.value);
+    setWalletValidationError(""); // Clear error when user types
+  };
+
+  const handleSubmit = async () => {
+    console.log("handleSubmit called");
+    if (!fromAsset || !toAsset || !walletAddress || !estimate) {
+      console.error("Missing required fields");
+      return;
+    }
+
+    console.log("All fields present, creating swap...");
+
+    try {
+      await dispatch(
+        createSwapTransaction({
+          from_currency: fromAsset.ticker,
+          from_network: fromAsset.network,
+          to_currency: toAsset.ticker,
+          to_network: toAsset.network,
+          amount: fromAmount,
+          address: walletAddress,
+        })
+      ).unwrap();
+      console.log("Swap created successfully");
+      setCurrentStep("copy-address");
+    } catch (error: any) {
+      console.error("Failed to create swap:", error);
+      console.error("Error response:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+    }
+  };
+
+  const handleCopyAddress = async () => {
+    try {
+      await navigator.clipboard.writeText(swapResponse?.payinAddress || "");
+      // Show success feedback
+      setCopyMessage("Copied!");
+      setTimeout(() => {
+        setCopyMessage("");
+      }, 2000);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+      setCopyMessage("Failed");
+      setTimeout(() => {
+        setCopyMessage("");
+      }, 2000);
+    }
+  };
+
+  const handleCopyAddressStepNext = () => {
+    setCurrentStep("status");
+  };
+
+  const handleCopyAddressStepBack = () => {
+    setCurrentStep("transaction-info");
+  };
+
+  if (error) {
+    return <div className="text-red-500">Error: {error}</div>;
+  }
+
+  if (showStatus && swapResponse?.id) {
+    return (
+      <SwapStatusComponent
+        swapId={swapResponse.id}
+        swapResponse={swapResponse}
+        onBack={() => {
+          setShowStatus(false);
+          dispatch(clearSwapResponse());
+          setCurrentStep("transaction-info");
+        }}
+      />
+    );
+  }
+
+  // Show status page if we're on status step and have a swap response
+  if (currentStep === "status" && swapResponse?.id) {
+    return (
+      <SwapStatusComponent
+        swapId={swapResponse.id}
+        swapResponse={swapResponse}
+        onBack={() => {
+          dispatch(clearSwapResponse());
+          setCurrentStep("transaction-info");
+        }}
+      />
+    );
+  }
 
   return (
-    <div className=" mx-auto bg-[#181820] p-6 rounded-2xl text-white">
+    <div className="mx-auto text-white">
       <h2 className="text-lg font-semibold mb-6">Swap Crypto</h2>
-      {/* 1- Transaction Info */}
-      <div className="mb-8">
-        <div className="mb-2 text-base font-semibold">1- Transaction Info</div>
-        <div className="bg-[#23232b] border border-[#35353E] rounded-xl p-5 mb-2">
-          <div className="flex flex-col gap-4">
-            {/* You Send */}
-            <div className="flex flex-col md:flex-row md:items-center gap-4">
-              <div className="flex-1">
-                <div className="text-xs mb-1">You Send</div>
-                <div className="flex items-center bg-[#181820] rounded-[18px] px-3 py-2">
-                  <img
-                    src="https://res.cloudinary.com/pitz/image/upload/v1749722107/Bitcoin_c5cb61.png"
-                    alt="BTC"
-                    className="w-6 h-6 mr-2"
-                  />
-                  <span className="font-medium mr-2">BTC</span>
-                  <span className="text-[#8C8CA1] text-xs">Bitcoin</span>
-                </div>
-              </div>
-              <div className="flex-1">
-                <div className="text-xs mb-1">I want to Recieve</div>
-                <div className="flex items-center bg-[#181820] rounded-[18px] px-3 py-2">
-                  <input
-                    type="text"
-                    value={fromAmount}
-                    onChange={(e) => setFromAmount(e.target.value)}
-                    className="bg-transparent outline-none w-full text-white"
-                  />
-                  <span className="ml-2 text-xs">BTC</span>
-                </div>
-              </div>
-            </div>
-            {/* Warning */}
-            <div className="flex items-center text-[#FF4D4D] text-xs mt-1">
-              <svg
-                className="w-4 h-4 mr-1"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span className="text-xs text-[#ffff]">
-                This is only estimated price and its based on current Market
-                Price. We will fix the price when we receive the funds .
-              </span>
-            </div>
-            {/* Estimated Rate */}
-            <div className="mt-2 flex items-center gap-2 border border-[#35353E] justify-center rounded-[24px] px-3 py-2">
-              <span className=" text-[#8C8CA1] bg-[#35353E] text-xs px-3 py-1 rounded-full">
-                Estimated rate: 1 BTC = 22.10446 ETH
-              </span>
-            </div>
-            {/* You Get */}{" "}
-            <div className="text-xs flex items-center gap-2 justify-between">
-              <span className="text-[#8C8CA1]">You Get</span>
-              <span className="text-[#ffff]">
-                <img
-                  src="https://res.cloudinary.com/pitz/image/upload/v1749722630/Group_164097_1_by5uzz.png"
-                  alt="ETH"
-                  className="w-6 h-6 mr-2"
-                />
-              </span>
-            </div>
-            <div className="flex flex-col md:flex-row md:items-center gap-4 ">
-              <div className="flex-1">
-                <div>Asset</div>
-                <div className="flex items-center bg-[#181820] rounded-[18px] px-3 py-2">
-                  <img
-                    src="https://res.cloudinary.com/pitz/image/upload/v1749722106/27463866eb9fa6fe4b6d2bd2cd3d6fd88392cb43_cedynw.png"
-                    alt="ETH"
-                    className="w-6 h-6 mr-2"
-                  />
-                  <span className="font-medium mr-2">ETH</span>
-                  <span className="text-[#8C8CA1] text-xs">Ethereum</span>
-                </div>
-              </div>
-              <div className="flex-1">
-                <div className="text-xs mb-1">I want to Recieve</div>
-                <div className="flex items-center border border-[#35353E] rounded-[18px] px-3 py-2">
-                  <input
-                    type="text"
-                    value={toAmount}
-                    onChange={(e) => setToAmount(e.target.value)}
-                    className="bg-transparent outline-none w-full text-white"
-                  />
-                  <span className="ml-2 text-xs">ETH</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      {/* 2- Your Wallet Address */}
-      <div className="mb-8">
-        <div className="mb-2 text-base font-semibold text-[#8C8CA1]">
-          Wallet/Account Address
-        </div>
-        <div className="bg-[#23232b] border border-[#35353E] rounded-xl p-5">
-            <p className="text-xs text-[#8C8CA1] mb-2">Wallet/Account Address</p>
-          <div className="mb-3 flex items-center relative">
-            {/* Wallet SVG Icon */}
-            <span className="absolute left-4 top-1/2 -translate-y-1/2">
-              <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1749724441/wallet-01_hugnf4.png"
-                alt="Paste Icon"
-                className="w-4 h-4 ml-1"
-              />  
-            </span>
-            <input
-              type="text"
-              placeholder="Paste here your Crypto address"
-              value={walletAddress}
-              onChange={(e) => setWalletAddress(e.target.value)}
-              className="w-full bg-[#181820] border-none rounded-[18px] px-12 py-2 text-white outline-none placeholder-[#8C8CA1] text-base"
-            />
-            {/* Paste Button with SVG */}
-            <button
-              className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 bg-[#35353E] text-[#8C8CA1] px-4 py-2 rounded-[18px] font-medium"
-              onClick={() =>
-                navigator.clipboard
-                  .readText()
-                  .then((text) => setWalletAddress(text))
-              }
-              type="button"
-            >
-              Paste
-              <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1749724441/wallet-01_hugnf4.png"
-                alt="Paste Icon"
-                className="w-4 h-4 ml-1"
-              />
-            </button>
-          </div>
-          {/* Checkbox */}
-          <div className="flex items-center  mb-3">
-            <input
-              type="checkbox"
-              checked={confirm}
-              onChange={(e) => setConfirm(e.target.checked)}
-              className="mr-2 accent-[#1D8751] w-5 h-5 rounded-[18px] border border-[#F79330] cursor-pointer"
-              id="confirm-address"
-            />
-            <label htmlFor="confirm-address" className="text-sm text-white">
-              I Confirm that the above submitted address is correct Address for
-              the Cryptocurrency i chose, and not other Crypto *
-            </label>
-          </div>
-          {/* Submit Button */}
-          <button
-            className="w-full bg-[#1D8751] hover:bg-[#1D8751] text-white py-2 rounded-[24px] font-semibold text-base transition"
-            disabled={!walletAddress || !confirm}
-          >
-            Submit
-          </button>
-        </div>
-      </div>
-      {/* 3- To Wallet Address */}
-      <div className="mb-2">
-        <div className="mb-2 text-base font-semibold">3- To Wallet Address</div>
-        <div className="bg-[#23232b] rounded-xl p-5">
-            <p className="text-xs text-[#8C8CA1] mb-2">Wallet/Account Address</p>
-          <div className="mb-3 flex items-center">
-            <input
-              type="text"
-              value={toWalletAddress}
-              readOnly
-              className="w-full bg-[#181820] border border-[#1D8751] rounded-[18px] px-3 py-2 text-[#1D8751] font-mono outline-none"
-            />
-            <button
-              className="ml-2 bg-[#181820] hover:bg-[#35353E] p- rounded-[18px] border border-[#35353E] text-[#1D8751]"
-              onClick={() => {
-                navigator.clipboard.writeText(toWalletAddress);
-              }}
-              title="Copy"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-              >
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-              </svg>
-            </button>
-          </div>
-          <button className="w-full bg-[#1D8751] hover:bg-[#16663d] text-white py-2 rounded-[18px] font-semibold transition">
-            Submit
-          </button>
-        </div>
-      </div>
+
+      {/* Step indicator */}
+      <StepIndicator currentStep={currentStep} />
+
+      {/* Step 1: Transaction Info */}
+      {currentStep === "transaction-info" && (
+        <TransactionInfoStep
+          fromAsset={fromAsset}
+          toAsset={toAsset}
+          fromAmount={fromAmount}
+          toAmount={toAmount}
+          walletAddress={walletAddress}
+          supportedAssets={supportedAssets}
+          estimate={estimate}
+          estimateLoading={estimateLoading}
+          estimateError={estimateError}
+          localSwapError={localSwapError}
+          walletValidationError={walletValidationError}
+          isFromAssetOpen={isFromAssetOpen}
+          isToAssetOpen={isToAssetOpen}
+          searchTerm={searchTerm}
+          toSearchTerm={toSearchTerm}
+          onFromAssetSelect={(asset) => dispatch(setFromAsset(asset))}
+          onToAssetSelect={(asset) => dispatch(setToAsset(asset))}
+          onFromAmountChange={handleFromAmountChange}
+          onToAmountChange={handleToAmountChange}
+          onWalletAddressChange={handleWalletAddressChange}
+          onFromAssetToggle={() => setIsFromAssetOpen(!isFromAssetOpen)}
+          onToAssetToggle={() => setIsToAssetOpen(!isToAssetOpen)}
+          onSearchTermChange={setSearchTerm}
+          onToSearchTermChange={setToSearchTerm}
+          onSubmit={handleNextStep}
+          swapLoading={swapLoading}
+        />
+      )}
+
+      {/* Step 2: Copy Address */}
+      {currentStep === "copy-address" && (
+        <CopyAddressStep
+          swapResponse={swapResponse}
+          copyMessage={copyMessage}
+          onCopyAddress={handleCopyAddress}
+          onBack={handleCopyAddressStepBack}
+          onNext={handleCopyAddressStepNext}
+        />
+      )}
     </div>
   );
 };

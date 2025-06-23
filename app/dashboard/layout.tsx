@@ -31,7 +31,7 @@ export default function DashboardLayout({
       </motion.div>
 
       {/* Main Content */}
-      <div className="w-full">
+      <div className="w-full h-full">
         <AnimatePresence mode="wait">
           <motion.div
             key={Math.random()} // This ensures animation plays on route changes

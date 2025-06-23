@@ -1,0 +1,145 @@
+import React from "react";
+import { Asset } from "./types";
+
+interface AssetDropdownProps {
+  assets: Asset[];
+  selectedAsset: Asset | null;
+  onAssetSelect: (asset: Asset) => void;
+  isOpen: boolean;
+  onToggle: () => void;
+  searchTerm: string;
+  onSearchChange: (term: string) => void;
+  placeholder: string;
+  label: string;
+}
+
+const AssetDropdown: React.FC<AssetDropdownProps> = ({
+  assets,
+  selectedAsset,
+  onAssetSelect,
+  isOpen,
+  onToggle,
+  searchTerm,
+  onSearchChange,
+  placeholder,
+  label,
+}) => {
+  const handleAssetSelect = (asset: Asset) => {
+    onAssetSelect(asset);
+    onSearchChange("");
+    onToggle(); // Close the dropdown after selection
+  };
+
+  return (
+    <div className="relative asset-dropdown">
+      <div
+        onClick={onToggle}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onToggle();
+          }
+        }}
+        role="combobox"
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        tabIndex={0}
+        className="w-full bg-[#181820] border border-[#35353E] rounded-[18px] px-3 py-2 text-white cursor-pointer flex items-center justify-between"
+      >
+        {selectedAsset ? (
+          <div className="flex items-center">
+            <img
+              src={selectedAsset.image || undefined}
+              alt={selectedAsset.name || "Asset"}
+              className="w-6 h-6 mr-3"
+            />
+            <div className="flex flex-col">
+              <span className="text-white text-xs font-medium">
+                {selectedAsset.ticker?.toUpperCase()}
+              </span>
+              <span className="text-[#8C8CA1] text-xs">
+                {selectedAsset.name}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <span className="text-[#8C8CA1]">{placeholder}</span>
+        )}
+        <svg
+          className={`w-4 h-4 text-[#8C8CA1] transition-transform ${
+            isOpen ? "rotate-180" : ""
+          }`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </div>
+
+      {isOpen && (
+        <div
+          className="absolute top-full left-0 right-0 mt-1 bg-[#23232b] border border-[#35353E] rounded-xl z-50 max-h-60 overflow-y-auto"
+          role="listbox"
+          aria-label={`${label} options`}
+        >
+          <div className="p-3 border-b border-[#35353E]">
+            <input
+              type="text"
+              placeholder="Search assets..."
+              value={searchTerm}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="w-full bg-[#181820] border border-[#35353E] rounded-lg px-3 py-2 text-white placeholder-[#8C8CA1] outline-none"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+          <div className="py-2">
+            {assets
+              .filter(
+                (asset) =>
+                  (asset.name?.toLowerCase() || "").includes(
+                    searchTerm.toLowerCase()
+                  ) ||
+                  (asset.ticker?.toLowerCase() || "").includes(
+                    searchTerm.toLowerCase()
+                  )
+              )
+              .map((asset, index) => (
+                <div
+                  key={asset.id || `asset-${index}`}
+                  onClick={() => handleAssetSelect(asset)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleAssetSelect(asset);
+                    }
+                  }}
+                  role="option"
+                  tabIndex={0}
+                  className="flex items-center px-3 py-2 hover:bg-[#35353E] cursor-pointer"
+                >
+                  <img
+                    src={asset.image || undefined}
+                    alt={asset.name || "Asset"}
+                    className="w-6 h-6 mr-3"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-white text-xs font-medium">
+                      {asset.ticker?.toUpperCase()}
+                    </span>
+                    <span className="text-[#8C8CA1] text-xs">{asset.name}</span>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AssetDropdown;

@@ -528,3 +528,16 @@ export interface Profile {
   phone_number: string;
   photo: File | null;
 }
+
+export interface ReferredUser {
+  id: string;
+  name: string;
+  email: string;
+  status: string;
+}
+
+export interface ReferralWallet {
+  total_earned: number;
+  total_withdrawn: number;
+  balance: number;
+}
