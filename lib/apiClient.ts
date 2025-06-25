@@ -188,28 +188,25 @@ const createApiClient = (): AxiosInstance => {
 
 const apiClient = createApiClient();
 
-export const get = <T>(
-  url: string,
-  config?: AxiosRequestConfig
-): Promise<AxiosResponse<T>> => {
-  return apiClient.get<T>(url, config);
-};
-
-export const post = <T>(
-  url: string,
-  data?: any,
-  config?: AxiosRequestConfig
-): Promise<AxiosResponse<T>> => {
-  return apiClient.post<T>(url, data, config);
-};
-
-export const put = <T>(
-  url: string,
-  data?: any,
-  config?: AxiosRequestConfig
-): Promise<AxiosResponse<T>> => {
-  return apiClient.put<T>(url, data, config);
-};
+  export const get = <T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
+    return apiClient.get<T>(url, config);
+  };
+  
+  export const post = <T>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig
+  ): Promise<AxiosResponse<T>> => {
+    return apiClient.post<T>(url, data, config);
+  };
+  
+  export const put = <T>(
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig
+  ): Promise<AxiosResponse<T>> => {
+    return apiClient.put<T>(url, data, config);
+  };
 
 export const patch = <T>(
   url: string,
@@ -218,13 +215,10 @@ export const patch = <T>(
 ): Promise<AxiosResponse<T>> => {
   return apiClient.patch<T>(url, data, config);
 };
-
-export const del = <T>(
-  url: string,
-  config?: AxiosRequestConfig
-): Promise<AxiosResponse<T>> => {
-  return apiClient.delete<T>(url, config);
-};
-
-// Export the raw instance if needed for custom configurations
-export { apiClient, AxiosError };
+  
+  export const del = <T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
+    return apiClient.delete<T>(url, config);
+  };
+  
+  export { apiClient, AxiosError, type AxiosRequestConfig };
+  

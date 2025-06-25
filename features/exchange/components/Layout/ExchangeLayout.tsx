@@ -1,107 +1,118 @@
 "use client";
-import React, { useState } from "react";
-import UserProfileCard from "@/features/exchange/components/UserProfileCard";
-import FavouriteAssets from "@/features/exchange/components/FavouriteAssets";
-import TransactionOverview from "@/features/exchange/components/TransactionOverviewChart";
-import TransactionHistoryTable from "@/features/exchange/components/TransactionHistoryTable";
-import OverviewTotal from "@/features/exchange/components/OverviewTotal";
-import ExchangeDepositWithdraw from "@/features/exchange/components/ExchangeDepositWithdraw";
-import ActionPanel from "@/features/exchange/components/ActionPanel";
-import TransactionTypePanel from "@/features/exchange/components/TransactionTypePanel";
-import {
-  userInfo,
-  favouriteAssets,
-  transactionHistory,
-  overviewTotal,
-  exchangeDeposit,
-  exchangeWithdraw,
-} from "@/features/exchange/components/dummyData";
+import React, { useState, useEffect, lazy, Suspense } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch } from "@/store";
+import { RootState } from "@/store/rootReducer";
+import { getFavoriteAssets, fetchExchangeStatistics } from "@/features/exchange/slices/exchangeSlice";
+import { storage } from "@/features/auth/utils/storage";
+import { User } from "@/features/auth/types";
 
-// Dummy forex brokers data
-const forexBrokers = [
-  {
-    broker_id: "1",
-    name: "FXTM",
-    description: "ForexTime Broker",
-    broker_image: "https://res.cloudinary.com/dam1sxczj/image/upload/v1749040264/ad8ca6c12336f925642e6fda58ff6c0e1c260143_wopd2d.jpg",
-    price: 1.0,
-    network: "MetaTrader",
-    isFavourite: false,
-  },
-  {
-    broker_id: "2",
-    name: "IC Markets",
-    description: "IC Markets Broker",
-    broker_image: "https://res.cloudinary.com/dam1sxczj/image/upload/v1749040264/e53c0bce69341205e18912ed81dcbfceb41d296d_wjzuvi.png",
-    price: 1.0,
-    network: "MetaTrader",
-    isFavourite: true,
-  },
-];
+// Lazy load all major components
+const UserProfileCard = lazy(() => import("@/features/exchange/components/UserProfileCard"));
+const FavouriteAssets = lazy(() => import("@/features/exchange/components/FavouriteAssets"));
+const TransactionOverview = lazy(() => import("@/features/exchange/components/TransactionOverviewChart"));
+const TransactionHistoryTable = lazy(() => import("@/features/exchange/components/TransactionHistoryTable/index"));
+const OverviewTotal = lazy(() => import("@/features/exchange/components/OverviewTotal"));
+const ExchangeDepositWithdraw = lazy(() => import("@/features/exchange/components/ExchangeDepositWithdraw"));
+const ActionPanel = lazy(() => import("@/features/exchange/components/ActionPanel"));
+const TransactionTypePanel = lazy(() => import("@/features/exchange/components/TransactionTypePanel"));
 
 const ExchangeLayout = () => {
   const [selectedAction, setSelectedAction] = useState<"deposit" | "withdraw" | null>(null);
   const [selectedType, setSelectedType] = useState<"crypto" | "forex">("crypto");
 
+  const dispatch = useDispatch<AppDispatch>();
+  const { statistics } = useSelector((state: RootState) => state.exchange);
+
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    dispatch(getFavoriteAssets());
+    dispatch(fetchExchangeStatistics());
+  }, []);
+
+  useEffect(() => {
+    const profile = storage.getProfile();
+    if (profile?.user) {
+      setCurrentUser(profile.user);
+    }
+  }, []);
+
   return (
-    <div className="w-full px-4 sm:px-0 lg:px-8">
+    <div className="w-full px-4 sm:px-0">
       {selectedAction ? (
         <div className="grid grid-cols-1 gap-4 lg:gap-6">
           <div className="w-full">
-            <TransactionTypePanel
-              selectedAction={selectedAction}
-              selectedType={selectedType}
-              onTypeChange={setSelectedType}
-              assets={favouriteAssets}
-              brokers={forexBrokers}
-              onBack={() => setSelectedAction(null)}
-              onActionChange={setSelectedAction}
-            />
+            <Suspense fallback={<div className="text-center text-white">Loading transaction type panel...</div>}>
+              <TransactionTypePanel
+                selectedAction={selectedAction}
+                selectedType={selectedType}
+                onTypeChange={setSelectedType}
+                onBack={() => setSelectedAction(null)}
+                onActionChange={setSelectedAction}
+              />
+            </Suspense>
           </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
           {/* Left/Main Section */}
           <div className="lg:col-span-2 flex flex-col gap-4 lg:gap-6">
-            <UserProfileCard {...userInfo} />
-            <FavouriteAssets 
-              assets={favouriteAssets.map(asset => ({
-                id: asset.asset_id,
-                name: asset.description,
-                symbol: asset.symbol,
-                image: asset.asset_image,
-                price: asset.price,
-                network: asset.network,
-                isFavourite: asset.isFavourite,
-                change: "0"
-              }))} 
-            />
-            <TransactionOverview/>
-            <TransactionHistoryTable transactions={transactionHistory} />
+            <Suspense fallback={<div className="text-center text-white">Loading profile...</div>}>
+              <UserProfileCard 
+                name={currentUser?.first_name || ""} 
+                userId={currentUser?.user_id || ""} 
+                userType={currentUser?.user_type || ""} 
+                profileImage="" 
+              />
+            </Suspense>
+            <Suspense fallback={<div className="text-center text-white">Loading assets...</div>}>
+              <FavouriteAssets />
+            </Suspense>
+            <Suspense fallback={<div className="text-center text-white">Loading overview...</div>}>
+              <TransactionOverview/>
+            </Suspense>
+            <Suspense fallback={<div className="text-center text-white">Loading transactions...</div>}>
+              <TransactionHistoryTable />
+            </Suspense>
           </div>
           {/* Right/Sidebar Section */}
           <div className="flex flex-col gap-4 lg:gap-6">
-            <ActionPanel
-              selectedAction={selectedAction}
-              selectedType={selectedType}
-              onActionChange={setSelectedAction}
-              onTypeChange={setSelectedType}
-            />
-            <OverviewTotal {...overviewTotal} />
-            <ExchangeDepositWithdraw
-              title="Exchange Deposit"
-              total={exchangeDeposit.total}
-              completed={exchangeDeposit.completed}
-              inEscrow={exchangeDeposit.inEscrow}
-              color="primary"
-            />
-            <ExchangeDepositWithdraw
-              title="Exchange Withdraw"
-              total={exchangeWithdraw.total}
-              completed={exchangeWithdraw.completed}
-              inEscrow={exchangeWithdraw.inEscrow}
-              color="secondary"
-            />
+            <Suspense fallback={<div className="text-center text-white">Loading actions...</div>}>
+              <ActionPanel
+                selectedAction={selectedAction}
+                selectedType={selectedType}
+                onActionChange={setSelectedAction}
+                onTypeChange={setSelectedType}
+              />
+            </Suspense>
+            <Suspense fallback={<div className="text-center text-white">Loading totals...</div>}>
+              <OverviewTotal 
+                total={statistics?.total_approved_exchange_combined || 0}
+                deposits={statistics?.total_approved_exchange_deposits || 0}
+                withdrawals={statistics?.total_approved_exchange_withdrawals || 0}
+                inProgress={(statistics?.total_pending_exchange_deposits || 0) + (statistics?.total_pending_exchange_withdrawals || 0)}
+                exchange={statistics?.total_approved_exchange_combined || 0}
+              />
+            </Suspense>
+            <Suspense fallback={<div className="text-center text-white">Loading deposit info...</div>}>
+              <ExchangeDepositWithdraw
+                title="Exchange Deposit"
+                total={(statistics?.total_approved_exchange_deposits || 0) + (statistics?.total_pending_exchange_deposits || 0)}
+                completed={statistics?.total_approved_exchange_deposits || 0}
+                inEscrow={statistics?.total_pending_exchange_deposits || 0}
+                color="primary"
+              />
+            </Suspense>
+            <Suspense fallback={<div className="text-center text-white">Loading withdraw info...</div>}>
+              <ExchangeDepositWithdraw
+                title="Exchange Withdraw"
+                total={(statistics?.total_approved_exchange_withdrawals || 0) + (statistics?.total_pending_exchange_withdrawals || 0)}
+                completed={statistics?.total_approved_exchange_withdrawals || 0}
+                inEscrow={statistics?.total_pending_exchange_withdrawals || 0}
+                color="secondary"
+              />
+            </Suspense>
           </div>
         </div>
       )}

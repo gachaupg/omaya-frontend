@@ -1,9 +1,15 @@
-import React, { useState } from "react";
-import { Search, ChevronDown, Eye, MoreHorizontal, ChevronLeft, ChevronRight, X, Share,Copy } from "lucide-react";
-import { transactionHistory } from "./dummyData";
+import React, { useState, useEffect } from "react";
+import { Search, ChevronDown, Eye, MoreHorizontal, ChevronLeft, ChevronRight, X, Share, Copy } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch} from "@/store";
+import { RootState } from '@/store/rootReducer';
+import { fetchTransactions, searchTransactions } from "@/features/exchange/slices/exchangeSlice";
+import { Transaction as ApiTransaction, Transaction } from "@/features/exchange/types";
+import { div } from "framer-motion/client";
+import { storage } from "@/features/auth/utils/storage";
 
-type Transaction = {
-  id: number;
+type TransactionDisplay = {
+  id: string;
   type: string;
   date: string;
   amount: string;
@@ -12,119 +18,166 @@ type Transaction = {
 };
 
 type TransactionHistoryTableProps = {
-  transactions: Transaction[];
+  transactions?: TransactionDisplay[];
 };
 
 const ReceiptModal = ({ isOpen, onClose, transaction }: { isOpen: boolean; onClose: () => void; transaction: Transaction | null }) => {
   if (!isOpen || !transaction) return null;
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 p-4 sm:p-1 overflow-y-auto max-h-[100vh]" style={{ background: "rgba(24, 24, 29, 0.7)" }} onClick={onClose}>
       <div className="bg-[#18181D] rounded-3xl w-full max-w-md relative border border-[#3A3B45] overflow-x-hidden mt-56 max-w-[80vh]" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="relative z-10 p-6 pb-4">
-          <div className="flex items-center justify-center mb-4">
-            <img src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747133499/Omaya_green-logo_yva2ah.png" alt="" /> 
+          <div className="flex items-center justify-between mb-4">
+            <img src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747133499/Omaya_green-logo_yva2ah.png" alt="" />
+            <button onClick={onClose} className="text-[#9CA3AF] hover:text-white">
+              <X className="w-6 h-6" />
+            </button>
           </div>
 
-        <div className="p-2 border border-[#35353E] rounded-lg">
-          {/* Bitcoin Transaction Header */}
-          <div className="flex items-center justify-between mb-2 border-b border-[#35353E] p-2">
-            <div className="flex items-center gap-3">
-              <BitcoinIcon />
-              <div>
-                <p className="text-white font-medium ">Bitcoin <span className="text-[#788099] text-sm">Deposit</span></p>
-                <p className="text-[#788099] text-sm">12 Jun 2023</p>
-              </div>
-            </div>
-            <div className="flex flex-col text-[#788099] ">
-              <div className="flex gap-2 text-right">
-                <span className="text-sm text-right">Share</span>
-                <Share className="w-4 h-4 text-[#9CA3AF]" />
-              </div>
-              <div className="flex gap-2 ">
-                <p className="text-sm">Transaction Screenshot</p>
-                <button className="text-[#10B981] hover:text-[#059669] transition-colors p-1 rounded">
-                  <Eye className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-          {/* Amount Section */}
-          <div className="mb-6">
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <p className="text-[#9CA3AF] text-sm mb-1">Total Amount</p>
-                <p className="text-[#10B981] text-lg font-medium">120.00 USD</p>
-              </div>
-              <div className="text-right space-y-2">
-                <div className="flex justify-between items-center gap-8">
-                  <span className="text-[#9CA3AF] text-sm">Total Fee</span>
-                  <span className="text-white text-sm">$3</span>
-                </div>
-                <div className="flex justify-between items-center gap-8">
-                  <span className="text-[#9CA3AF] text-sm">Network Fee</span>
-                  <span className="text-white text-sm">$2</span>
+          <div className="p-2 border border-[#35353E] rounded-lg">
+            {/* Transaction Header */}
+            <div className="flex items-center justify-between mb-2 border-b border-[#35353E] p-2">
+              <div className="flex items-center gap-3">
+                <BitcoinIcon />
+                <div>
+                  <p className="text-white font-medium">
+                    {transaction.currency} <span className="text-[#788099] text-sm">{transaction.transaction_type}</span>
+                  </p>
+                  <p className="text-[#788099] text-sm">{formatDate(transaction.timestamp)}</p>
                 </div>
               </div>
-            </div>
-          </div>
-
-        </div>
-
-        {/* Details Section */}
-        <div className="relative z-10 rounded-lg mt-2">
-          <div className="flex flex-col gap-2 mb-6 border border-[#35353E] p-2 rounded-lg">
-            <div className="flex justify-between border-b border-dotted border-[#35353E]">
-              <p className="text-white text-sm mb-1">Payment:</p>
-              <p className="text-[#788099] text-sm">Salam Bank 🏦</p>
-            </div>
-            <div className="flex justify-between border-b border-dotted border-[#35353E]">
-              <p className="text-white text-sm mb-1">Account Number:</p>
-              <p className="text-[#788099] text-sm">4856346129499050</p>
-            </div>
-            <div className="flex justify-between">
-            <p className="text-white text-sm mb-1">Account Name:</p>
-            <p className="text-[#788099] text-sm">Omar Ali Omar</p>
-          </div>
-          </div>
-
-          <div className="flex flex-col gap-2 p-2 border border-[#35353E] rounded-lg mb-6">
-            <div className="flex justify-between border-b border-dotted border-[#35353E]">
-              <p className="text-white text-sm mb-1">Deposit Sent to</p>
-              <p className="text-[#788099] text-sm break-all">3434343233</p>
-            </div>
-            <div className="flex justify-between">
-              <p className="text-white text-sm mb-1">Transaction Hash:</p>
-              <p className="text-[#788099] text-sm break-all">4673u9894B294r695893749339q</p>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2 p-2 border border-[#35353E] rounded-lg">
-            <div className="flex justify-between items-center border-b border-dotted border-[#35353E]">
-              <span className="text-white text-sm">Status:</span>
-              <span className="text-[#788099] text-sm font-medium">Completed</span>
+              <div className="flex flex-col text-[#788099]">
+                <div className="flex gap-2 text-right">
+                  <span className="text-sm text-right">Share</span>
+                  <Share className="w-4 h-4 text-[#9CA3AF]" />
+                </div>
+                {transaction.screenshot && (
+                  <div className="flex gap-2">
+                    <p className="text-sm">Transaction Screenshot</p>
+                    <button className="text-[#10B981] hover:text-[#059669] transition-colors p-1 rounded">
+                      <Eye className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="flex justify-between items-center border-b border-dotted border-[#35353E]">
-              <span className="text-white text-sm">Receipt:</span>
-              <button className="text-[#10B981] hover:text-[#059669] transition-colors">
-                <Eye className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="flex justify-between items-center">
-              <p className="text-white text-sm">Service Rating:</p>
-              <div className="flex gap-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <span key={star} className="text-[#F59E0B] text-lg">★</span>
-                ))}
+            {/* Amount Section */}
+            <div className="mb-6">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <p className="text-[#9CA3AF] text-sm mb-1">Total Amount</p>
+                  <p className={`${transaction.transaction_type === 'deposit' ? 'text-[#10B981]' : 'text-[#EF4444]'} text-lg font-medium`}>
+                    {transaction.transaction_type === 'deposit' ? '+' : '-'}{transaction.total_amount.toFixed(2)} {transaction.currency}
+                  </p>
+                </div>
+                <div className="text-right space-y-2">
+                  <div className="flex justify-between items-center gap-8">
+                    <span className="text-[#9CA3AF] text-sm">Commission</span>
+                    <span className="text-white text-sm">{transaction.commission.toFixed(2)} {transaction.currency}</span>
+                  </div>
+                  <div className="flex justify-between items-center gap-8">
+                    <span className="text-[#9CA3AF] text-sm">Net Amount</span>
+                    <span className="text-white text-sm">{transaction.amount.toFixed(2)} {transaction.currency}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        </div>
 
+          {/* Details Section */}
+          <div className="relative z-10 rounded-lg mt-2">
+            {/* Payment Details */}
+            <div className="flex flex-col gap-2 mb-6 border border-[#35353E] p-2 rounded-lg">
+              <div className="flex justify-between border-b border-dotted border-[#35353E]">
+                <p className="text-white text-sm mb-1">Payment Method:</p>
+                <p className="text-[#788099] text-sm">{transaction.payment_method}</p>
+              </div>
+              <div className="flex justify-between border-b border-dotted border-[#35353E]">
+                <p className="text-white text-sm mb-1">Payment Provider:</p>
+                <p className="text-[#788099] text-sm">{transaction.payment_provider}</p>
+              </div>
+              <div className="flex justify-between border-b border-dotted border-[#35353E]">
+                <p className="text-white text-sm mb-1">Account Name:</p>
+                <p className="text-[#788099] text-sm">{transaction.account_name}</p>
+              </div>
+              <div className="flex justify-between">
+                <p className="text-white text-sm mb-1">Account Number:</p>
+                <p className="text-[#788099] text-sm">{transaction.account_number}</p>
+              </div>
+            </div>
+
+            {/* Transaction Details */}
+            <div className="flex flex-col gap-2 p-2 border border-[#35353E] rounded-lg mb-6">
+              {transaction.withdrawal_address && (
+                <div className="flex justify-between border-b border-dotted border-[#35353E]">
+                  <p className="text-white text-sm mb-1">Withdrawal Address</p>
+                  <p className="text-[#788099] text-sm break-all">{transaction.withdrawal_address}</p>
+                </div>
+              )}
+              {transaction.transaction_harsh && (
+                <div className="flex justify-between">
+                  <p className="text-white text-sm mb-1">Transaction Hash:</p>
+                  <p className="text-[#788099] text-sm break-all">{transaction.transaction_harsh}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Status and Additional Info */}
+            <div className="flex flex-col gap-2 p-2 border border-[#35353E] rounded-lg">
+              <div className="flex justify-between items-center border-b border-dotted border-[#35353E]">
+                <span className="text-white text-sm">Status:</span>
+                <span className={`text-sm font-medium ${
+                  transaction.status === 'completed' ? 'text-[#10B981]' :
+                  transaction.status === 'pending' ? 'text-[#F59E0B]' :
+                  'text-[#EF4444]'
+                }`}>
+                  {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
+                </span>
+              </div>
+
+              {transaction.stages && (
+                <div className="flex justify-between items-center border-b border-dotted border-[#35353E]">
+                  <span className="text-white text-sm">Stage:</span>
+                  <span className="text-[#788099] text-sm">{transaction.stages}</span>
+                </div>
+              )}
+
+              {transaction.reason && (
+                <div className="flex justify-between items-center border-b border-dotted border-[#35353E]">
+                  <span className="text-white text-sm">Reason:</span>
+                  <span className="text-[#788099] text-sm">{transaction.reason}</span>
+                </div>
+              )}
+
+              {transaction.additional_info && (
+                <div className="flex justify-between items-center border-b border-dotted border-[#35353E]">
+                  <span className="text-white text-sm">Additional Info:</span>
+                  <span className="text-[#788099] text-sm">{transaction.additional_info}</span>
+                </div>
+              )}
+
+              {transaction.assigned_to && transaction.assigned_to.length > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-white text-sm">Assigned To:</span>
+                  <span className="text-[#788099] text-sm">{transaction.assigned_to.join(', ')}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -138,33 +191,92 @@ const BitcoinIcon = () => (
   </div>
 );
 
-const TransactionHistoryTable: React.FC<TransactionHistoryTableProps> = ({ transactions }) => {
-  const [searchTerm, setSearchTerm] = useState("");
+const TransactionHistoryTable: React.FC<TransactionHistoryTableProps> = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { transactions, loading, error } = useSelector((state: RootState) => state.exchange);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const totalPages = 1;
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const itemsPerPage = 5;
+
+  useEffect(() => {
+    const profile = storage.getProfile();
+    const email = profile?.user?.email || "";
+    setUserEmail(email);
+  }, []);
+
+  // Fetch transactions when userEmail is set
+  useEffect(() => {
+    if (userEmail) {
+      console.log('=== FETCHING TRANSACTIONS ===', { userEmail });
+      dispatch(fetchTransactions());
+    }
+  }, [dispatch, userEmail]);
+
+  console.log(userEmail)
+
+
+  // Handle search with debounce
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      if (searchQuery && userEmail) {
+        dispatch(searchTransactions({ 
+          search: searchQuery, 
+          page: currentPage,
+        }));
+      } else if (userEmail) {
+        dispatch(fetchTransactions());
+      }
+    }, 500);
+
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery, currentPage, dispatch, userEmail]);
 
   const handleEyeClick = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
-    setIsModalOpen(true);
+    setIsReceiptModalOpen(true);
   };
 
   const closeModal = () => {
-    setIsModalOpen(false);
+    setIsReceiptModalOpen(false);
     setSelectedTransaction(null);
   };
 
-  const getPageNumbers = () => {
-    const pages = [];
-    for (let i = 1; i <= totalPages; i++) {
-      pages.push(i);
+  const getFilteredTransactions = (): Transaction[] => {
+    if (!transactions || !userEmail) {
+      console.log('No transactions or user email available:', { transactions, userEmail });
+      return [];
     }
-    return pages;
+
+    console.log('Filtering transactions:', {
+      totalTransactions: transactions.length,
+      userEmail,
+      firstTransaction: transactions[0]
+    });
+
+    const filtered = transactions.filter(tx => {
+      const matches = tx.user_email === userEmail;
+      return matches;
+    });
+
+    console.log('Filtered transactions:', {
+      totalFiltered: filtered.length,
+      firstFiltered: filtered[0]
+    });
+
+    return filtered;
   };
 
+  const filteredTransactions = getFilteredTransactions();
+  const currentTransactions = filteredTransactions.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
-    <div className="w-full md:p-4">
+    <div className="bg-[#1A1B23] rounded-lg p-4 sm:p-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-2">
@@ -182,8 +294,8 @@ const TransactionHistoryTable: React.FC<TransactionHistoryTableProps> = ({ trans
             <input
               type="text"
               placeholder="Search"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-transparent border border-[#2D2E3A] rounded-full pl-10 pr-4 py-2.5 text-sm text-white placeholder-[#9CA3AF] focus:outline-none focus:border-[#10B981]"
             />
           </div>
@@ -227,62 +339,72 @@ const TransactionHistoryTable: React.FC<TransactionHistoryTableProps> = ({ trans
 
           {/* Table Body */}
           <div>
-            {transactions.map((tx, idx) => (
-              <div key={idx} className="border-b border-[#2D2E3A] last:border-b-0 hover:bg-[#232430] transition-colors group">
-                <div className="px-4 sm:px-6 py-4">
-                  <div className="grid grid-cols-12 items-center w-[800px]">
-                    {/* ID with Bitcoin Icon and colored left border */}
-                    <div className="col-span-2 flex items-center gap-3 relative">
-                      <div className={`absolute left-[-16px] sm:left-[-24px] top-0 bottom-0 w-1 rounded-r ${
-                        tx.type === "Deposit" ? "bg-[#10B981]" : "bg-[#EF4444]"
-                      }`}></div>
-                      <BitcoinIcon />
-                      <span className="text-[#788099] text-sm font-medium truncate">{tx.id}</span>
-                    </div>
-                    
-                    {/* Type */}
-                    <div className="col-span-2">
-                      <span className="text-white text-sm truncate">{tx.type}</span>
-                    </div>
-                    
-                    {/* Date */}
-                    <div className="col-span-2">
-                      <span className="text-[#788099] text-sm truncate">{tx.date}</span>
-                    </div>
-                    
-                    {/* Amount */}
-                    <div className="col-span-2">
-                      <span className={`text-sm font-medium truncate ${
-                        tx.amount.startsWith("+") ? "text-[#10B981]" : "text-[#EF4444]"
-                      }`}>
-                        {tx.amount} <span className="text-[#788099] ml-1">USD</span> 
-                      </span>
-                    </div>
-                    
-                    {/* Status */}
-                    <div className="col-span-2">
-                      <span className="text-[#788099] text-sm rounded-md text-xs truncate">
-                        {tx.status}
-                      </span>
-                    </div>
-                    
-                    {/* Receipt */}
-                    <div className="col-span-1">
-                      <button className="text-[#10B981] hover:text-[#059669] transition-colors p-1 rounded" onClick={() => handleEyeClick(tx)}>
-                        <Eye className="w-4 h-4" />
-                      </button>
-                    </div>
-                    
-                    {/* More */}
-                    <div className="col-span-1">
-                      <button className="text-[#9CA3AF] hover:text-white transition-colors p-1 rounded">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button>
+            {currentTransactions.length > 0 ? (
+              currentTransactions.map((tx: Transaction) => (
+                <div key={tx.transaction_id} className="border-b border-[#2D2E3A] last:border-b-0 hover:bg-[#232430] transition-colors group">
+                  <div className="px-4 sm:px-6 py-4">
+                    <div className="grid grid-cols-12 items-center w-[800px]">
+                      {/* ID with Bitcoin Icon and colored left border */}
+                      <div className="col-span-2 flex items-center gap-3 relative">
+                        <div className={`absolute left-[-16px] sm:left-[-24px] top-0 bottom-0 w-1 rounded-r ${
+                          tx.transaction_type === "deposit" ? "bg-[#10B981]" : "bg-[#EF4444]"
+                        }`}></div>
+                        <BitcoinIcon />
+                        <span className="text-[#788099] text-sm font-medium truncate">{tx.transaction_id}</span>
+                      </div>
+                      
+                      {/* Type */}
+                      <div className="col-span-2">
+                        <span className="text-white text-sm truncate">
+                          {tx.transaction_type.charAt(0).toUpperCase() + tx.transaction_type.slice(1)}
+                        </span>
+                      </div>
+                      
+                      {/* Date */}
+                      <div className="col-span-2">
+                        <span className="text-[#788099] text-sm truncate">
+                          {new Date(tx.timestamp).toLocaleDateString()}
+                        </span>
+                      </div>
+                      
+                      {/* Amount */}
+                      <div className="col-span-2">
+                        <span className={`text-sm font-medium truncate ${
+                          tx.transaction_type === 'deposit' ? "text-[#10B981]" : "text-[#EF4444]"
+                        }`}>
+                          {tx.transaction_type === 'deposit' ? '+' : '-'}{tx.amount.toFixed(2)} <span className="text-[#788099] ml-1">{tx.currency}</span>
+                        </span>
+                      </div>
+                      
+                      {/* Status */}
+                      <div className="col-span-2">
+                        <span className="text-[#788099] text-sm rounded-md text-xs truncate">
+                          {tx.status}
+                        </span>
+                      </div>
+                      
+                      {/* Receipt */}
+                      <div className="col-span-1">
+                        <button className="text-[#10B981] hover:text-[#059669] transition-colors p-1 rounded" onClick={() => handleEyeClick(tx)}>
+                          <Eye className="w-4 h-4" />
+                        </button>
+                      </div>
+                      
+                      {/* More */}
+                      <div className="col-span-1">
+                        <button className="text-[#9CA3AF] hover:text-white transition-colors p-1 rounded">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-[#788099]">
+                {loading ? "Loading transactions..." : "No transactions found"}
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>
@@ -297,31 +419,31 @@ const TransactionHistoryTable: React.FC<TransactionHistoryTableProps> = ({ trans
           <ChevronLeft className="w-4 h-4" />
         </button>
         
-        {getPageNumbers().map((page) => (
+        {Array.from({ length: Math.ceil(filteredTransactions.length / itemsPerPage) }, (_, i) => (
           <button
-            key={page}
-            onClick={() => setCurrentPage(page)}
+            key={i + 1}
+            onClick={() => setCurrentPage(i + 1)}
             className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg text-sm font-medium transition-colors ${
-              currentPage === page
+              currentPage === i + 1
                 ? "bg-[#10B981] text-white"
                 : "text-[#9CA3AF] hover:text-white hover:bg-[#232430]"
             }`}
           >
-            {page}
+            {i + 1}
           </button>
         ))}
         
         <button 
           className="p-2 text-[#9CA3AF] hover:text-white hover:bg-[#232430] transition-colors disabled:opacity-50"
-          disabled={currentPage === totalPages}
-          onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+          disabled={currentPage === Math.ceil(filteredTransactions.length / itemsPerPage)}
+          onClick={() => setCurrentPage(Math.min(Math.ceil(filteredTransactions.length / itemsPerPage), currentPage + 1))}
         >
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
 
       <ReceiptModal 
-        isOpen={isModalOpen} 
+        isOpen={isReceiptModalOpen} 
         onClose={closeModal} 
         transaction={selectedTransaction} 
       />

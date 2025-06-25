@@ -1,29 +1,58 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Plus,
   ChevronLeft,
   ChevronRight,
   Search,
 } from "lucide-react"
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch } from "@/store";
+import { RootState } from "@/store/rootReducer";
+import { fetchAssets, addFavoriteAsset, getFavoriteAssets } from "../slices/exchangeSlice";
+import toast from 'react-hot-toast';
+import { FavoriteAsset, Asset } from "../types";
 
-type Asset = {
-  id:string;
-  symbol: string;
-  name: string;
-  price: number;
-  change: string;
+// Dummy data for missing fields
+const DUMMY_ASSET_DATA: Record<string, { symbol: string; price: number; change: string }> = {
+  "USDT Tether": { symbol: "USDT", price: 0.99, change: "+0.01%" },
+  "USD Coin": { symbol: "USDC", price: 1.00, change: "+0.02%" },
+  "FXPRIMUS": { symbol: "FXP", price: 1.00, change: "+0.00%" },
 };
 
-type FavouriteAssetsProps = {
-  assets: Asset[];
-};
-
-const FavouriteAssets: React.FC<FavouriteAssetsProps> = ({ assets }) => {
+const FavouriteAssets: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { assets: allAvailableAssets, favoriteAssets, loading } = useSelector((state: RootState) => state.exchange);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    if (!allAvailableAssets) {
+      dispatch(fetchAssets());
+    }
+    dispatch(getFavoriteAssets());
+    // eslint-disable-next-line
+  }, []);
 
   const toggleDropdown = () => {
     setShowDropdown(!showDropdown);
+    setSearchTerm(''); // Clear search term when opening/closing
   };
+
+  const handleAddToFavorites = async (assetId: string) => {
+    try {
+      await dispatch(addFavoriteAsset({ asset_id: assetId })).unwrap();
+      toast.success('Asset added to favorites!');
+      setShowDropdown(false);
+      dispatch(fetchAssets());
+    } catch (error: any) {
+      toast.error(`Failed to add asset to favorites: ${error || 'Unknown error' || 'unexpected error occured'}`);
+    }
+  };
+
+  const filteredAvailableAssets = allAvailableAssets?.assets?.filter((asset: Asset) => 
+    asset.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    asset.name.toLowerCase().includes(searchTerm.toLowerCase())
+  ) || [];
 
   return (
     <div className="w-full">
@@ -45,12 +74,24 @@ const FavouriteAssets: React.FC<FavouriteAssetsProps> = ({ assets }) => {
                 type="text"
                 placeholder="Search"
                 className="bg-transparent border border-[#2D2E3A] rounded-full pl-10 pr-4 py-2.5 text-sm text-white placeholder-[#9CA3AF] focus:outline-none focus:border-[#10B981] w-44"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <ul className="py-1">
-              <li className="px-4 py-2 text-sm text-[#9CA3AF] hover:bg-[#35353E] cursor-pointer"><span className="text-white mr-2">XRP</span>Repo</li>
-              <li className="px-4 py-2 text-sm text-[#9CA3AF] hover:bg-[#35353E] cursor-pointer"><span className="text-white mr-2">BTC</span>Bitcoin</li>
-              <li className="px-4 py-2 text-sm text-[#9CA3AF] hover:bg-[#35353E] cursor-pointer"><span className="text-white mr-2">TRX</span>Tron</li>
+              {filteredAvailableAssets.length > 0 ? (
+                filteredAvailableAssets.map((asset: Asset) => (
+                  <li 
+                    key={asset.asset_id} 
+                    className="px-4 py-2 text-sm text-[#9CA3AF] hover:bg-[#35353E] cursor-pointer"
+                    onClick={() => handleAddToFavorites(asset.asset_id)}
+                  >
+                    <span className="text-white mr-2">{asset.symbol}</span>{asset.name}
+                  </li>
+                ))
+              ) : (
+                <li className="px-4 py-2 text-sm text-[#9CA3AF]">No assets found</li>
+              )}
             </ul>
           </div>
         )}
@@ -70,35 +111,44 @@ const FavouriteAssets: React.FC<FavouriteAssetsProps> = ({ assets }) => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {assets.slice(0, 3).map((asset, index) => (
-          <div key={index} className="bg-[#1D1D23] rounded-2xl p-4 flex items-center gap-3 border border-[#35353E]">
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                asset.symbol === "BTC"
-                  ? "bg-orange-500"
-                  : asset.symbol === "ETH"
-                    ? "bg-blue-500"
-                    : "bg-red-500"
-              }`}
-            >
-              <span className="text-white text-xs font-bold">{asset.symbol.charAt(0)}</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-white truncate">{asset.symbol}</div>
-              <div className="text-xs text-[#788099] truncate">{asset.name}</div>
-            </div>
-            <div className="text-right flex-shrink-0">
-              <div className="font-bold text-white whitespace-nowrap">
-                {asset.price}
-              </div>
+        {loading ? (
+          <div className="col-span-3 text-center text-white">Loading...</div>
+        ) : favoriteAssets?.slice(0, 3).map((asset: FavoriteAsset) => {
+          const dummyData = DUMMY_ASSET_DATA[asset.asset_name] || { 
+            symbol: asset.asset_name.split(' ')[0], 
+            price: 0, 
+            change: "+0.00%" 
+          };
+          return (
+            <div key={asset.favorite_asset_id} className="bg-[#1D1D23] rounded-2xl p-4 flex items-center gap-3 border border-[#35353E]">
               <div
-                className={`text-xs whitespace-nowrap ${asset.change?.startsWith("+") ? "text-[#1D8751]" : "text-[#1D8751]"}`}
+                className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  dummyData.symbol === "BTC"
+                    ? "bg-orange-500"
+                    : dummyData.symbol === "ETH"
+                      ? "bg-blue-500"
+                      : "bg-red-500"
+                }`}
               >
-                {asset.change || "+0.00%"} %
+                <span className="text-white text-xs font-bold">{dummyData.symbol.charAt(0)}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-white truncate">{dummyData.symbol}</div>
+                <div className="text-xs text-[#788099] truncate">{asset.asset_name}</div>
+              </div>
+              <div className="text-right flex-shrink-0">
+                <div className="font-bold text-white whitespace-nowrap">
+                  ${dummyData.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })}
+                </div>
+                <div
+                  className={`text-xs whitespace-nowrap ${dummyData.change.startsWith("+") ? "text-[#1D8751]" : "text-[#1D8751]"}`}
+                >
+                  {dummyData.change}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

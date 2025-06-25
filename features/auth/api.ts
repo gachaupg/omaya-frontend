@@ -8,5 +8,9 @@ export const API_ENDPOINTS = {
     RESET_PASSWORD: '/api/reset-password/',
     VERIFY_OTP: '/api/verify-otp/',
     LOGOUT: '/api/logout/',
-    REFRESH_TOKEN: '/api/token/refresh/'
+    REFRESH_TOKEN: '/api/token/refresh/',
+    KYC: '/api/kyc/status/',
+    KYC_VERIFY: '/api/kyc/verify/',
+    SUMSUB_INITIATE: '/api/sumsub/initiate/',
+    SUMSUB_TOKEN: '/api/sumsub/token/'
 }

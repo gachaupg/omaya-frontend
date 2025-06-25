@@ -1,32 +1,31 @@
-import React, { useState } from "react";
-import DepositModal from "./DepositModal";
+import React, { useState, useMemo, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch } from "../../../store";
+import { RootState } from '../../../store/rootReducer';
+import DepositModal from "./DepositModal/index";
+import WithdrawModal from "./WithdrawalModal";
 
-interface Asset {
-  asset_id: string;
-  symbol: string;
-  description: string;
-  asset_image: string;
-  price: number;
-  network: string;
-  isFavourite?: boolean;
-}
+import { Asset, Network } from "../types";
+import { fetchAssets, clearExchangeError } from "../slices/exchangeSlice";
+import toast, { Toaster } from 'react-hot-toast';
 
-interface Broker {
-  broker_id: string;
-  name: string;
-  description: string;
-  broker_image: string;
-  price: number;
-  network: string;
-  isFavourite?: boolean;
-}
+
+// Define asset types based on the choices
+const CRYPTO_ASSETS = ['USDT Tether', 'USDC', 'BTC', 'ETH', 'BNB', 'DOGE', 'ADA', 'SOL', 'XRP', 'USD'];
+
+const FOREX_BROKER_INFO: Record<string, { country: string; logo: string }> = {
+  FXP: { country: 'Cyprus', logo: 'https://upload.wikimedia.org/wikipedia/commons/7/7e/FXPRIMUS_logo.png' },
+  EUR: { country: 'Eurozone', logo: 'https://upload.wikimedia.org/wikipedia/commons/b/b7/Flag_of_Europe.svg' },
+  GBP: { country: 'United Kingdom', logo: 'https://upload.wikimedia.org/wikipedia/en/a/ae/Flag_of_the_United_Kingdom.svg' },
+  KES: { country: 'Kenya', logo: 'https://upload.wikimedia.org/wikipedia/commons/4/49/Flag_of_Kenya.svg' },
+  ICM: { country: 'UAE', logo: 'https://seeklogo.com/images/I/icm-capital-logo-6B1B6B6B2B-seeklogo.com.png' },
+  PM: { country: 'Russia', logo: 'https://seeklogo.com/images/P/perfect-money-logo-6B1B6B6B2B-seeklogo.com.png' },
+};
 
 type Props = {
   selectedAction: "deposit" | "withdraw";
   selectedType: "crypto" | "forex";
   onTypeChange: (type: "crypto" | "forex") => void;
-  assets: Asset[];
-  brokers: Broker[];
   onBack: () => void;
   onActionChange: (action: "deposit" | "withdraw") => void;
 };
@@ -35,27 +34,61 @@ const TransactionTypePanel: React.FC<Props> = ({
   selectedAction,
   selectedType,
   onTypeChange,
-  assets,
-  brokers,
   onBack,
   onActionChange,
 }) => {
-  const options = selectedType === "crypto" ? assets : brokers;
-
-  const [selectedAsset, setSelectedAsset] = useState<Asset | Broker | null>(null);
+  const dispatch = useDispatch<AppDispatch>();
+  const { assets, loading, error } = useSelector((state: RootState) => state.exchange);
+  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [showDepositModal, setShowDepositModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+
+  useEffect(() => {
+    if (!assets) {
+      void dispatch(fetchAssets());
+    }
+  }, [dispatch, assets]);
+
+  useEffect(() => {
+    if (error) {
+      toast.dismiss();
+      toast.error(error);
+      dispatch(clearExchangeError());
+    }
+  }, [error, dispatch]);
+
+  // Filter assets based on selected type
+  const filteredAssets = useMemo(() => {
+    if (!assets?.assets) return [];
+    return assets.assets.filter((asset: Asset) => {
+      const isCrypto = CRYPTO_ASSETS.includes(asset.symbol);
+      return selectedType === "crypto" ? isCrypto : !isCrypto;
+    });
+  }, [assets, selectedType]);
+
+  if (error) {
+    return (
+      <div className="w-full rounded-lg p-4 text-center text-red-500">
+        Error loading assets: {error}
+      </div>
+    );
+  }
 
   return (
     <div className="w-full rounded-lg">
+      <Toaster />
       {showDepositModal && selectedAsset && (
-        <DepositModal />
+        <DepositModal asset={selectedAsset} assetType={selectedType === 'crypto' ? 'Crypto' : 'Forex'} onClose={() => { setShowDepositModal(false); setSelectedAsset(null); }} />
       )}
-      {!showDepositModal && (
+      {showWithdrawModal && selectedAsset && (
+        <WithdrawModal asset={selectedAsset} assetType={selectedType === 'crypto' ? 'Crypto' : 'Forex'} onClose={() => { setShowWithdrawModal(false); setSelectedAsset(null); }} />
+      )}
+      {!showDepositModal && !showWithdrawModal && (
         <>
           {selectedAsset ? (
             <div className="mb-4">
               <div className="text-white text-sm">
-                {selectedType === "crypto" ? (selectedAsset as Asset).symbol : (selectedAsset as Broker).name}
+                {selectedAsset.symbol}
               </div>
             </div>
           ) : (
@@ -156,61 +189,157 @@ const TransactionTypePanel: React.FC<Props> = ({
           </div>
           <p className="text-[#9CA3AF] text-sm mb-4">
             To {selectedAction} funds, please select your transaction type: Crypto or Forex.<br />
-            Choose from the cryptocurrencies or Forex brokers listed below to proceed.
+            Choose from the cryptocurrencies or Forex assets listed below to proceed.
           </p>
           <div className="overflow-x-auto rounded-2xl">
-            <table className="min-w-full b rounded-2xl">
-              <thead className="bg-[#35353E] mb-1">
-                <tr className="text-[#9CA3AF] text-left text-sm">
-                  <th className="py-3 px-4">Name</th>
-                  <th className="py-3 px-4">Price</th>
-                  <th className="py-3 px-4">Network</th>
-                  <th className="py-3 px-4">Favorite</th>
-                </tr>
-              </thead>
-              <tbody className="bg-[#1D1D23]">
-                {options.map((item: any) => (
-                  <tr 
-                    key={item.asset_id || item.broker_id} 
-                    className="border-b border-[#23242B] hover:bg-[#35353E] transition-colors cursor-pointer" 
-                    onClick={() => {
-                      setSelectedAsset(item);
-                      setShowDepositModal(true);
-                    }}
-                  >
-                    <td className="py-3 px-4 flex items-center gap-3">
-                      <img 
-                        src={item.asset_image || item.broker_image} 
-                        alt={item.symbol || item.name} 
-                        className="w-7 h-7 rounded-full"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.onerror = null; // Prevent infinite loop
-                          // Fallback to a simple colored circle with the first letter of the asset/broker name
-                          const name = (item.symbol || item.name || '?')[0].toUpperCase();
-                          target.src = `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28"><circle cx="14" cy="14" r="14" fill="%231D8751"/><text x="14" y="18" font-family="Arial" font-size="14" fill="white" text-anchor="middle">${name}</text></svg>`;
-                        }}
-                      />
-                      <div>
-                        <div className="text-white font-medium text-sm">{item.symbol || item.name}</div>
-                        <div className="text-[#9CA3AF] text-xs">{item.description}</div>
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-[#F79330] font-semibold text-sm">${item.price?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })}</td>
-                    <td className="py-3 px-4 text-[#9CA3AF] text-sm">{item.network}</td>
-                    <td className="py-3 px-4">
-                      <span className="text-[#F79330] text-lg cursor-pointer">{item.isFavourite ? "★" : "☆"}</span>
-                    </td>
+            {selectedType === 'crypto' ? (
+              <table className="min-w-full b rounded-2xl">
+                <thead className="bg-[#35353E] mb-1">
+                  <tr className="text-[#9CA3AF] text-left text-sm">
+                    <th className="py-3 px-4">Name</th>
+                    <th className="py-3 px-4">Price</th>
+                    <th className="py-3 px-4">Network</th>
+                    <th className="py-3 px-4">Favorite</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="bg-[#1D1D23]">
+                  {loading?(
+                    <tr>
+                      <td colSpan={4} className="text-center py-4 text-white">
+                        Loading assets...
+                      </td>
+                    </tr>
+                  ) :(
+                    filteredAssets?.map((asset: Asset) => (
+                      <tr 
+                        key={asset.asset_id} 
+                        className="border-b border-[#23242B] hover:bg-[#35353E] transition-colors cursor-pointer" 
+                        onClick={() => {
+                          setSelectedAsset(asset);
+                          if (selectedAction === "deposit") {
+                            setShowDepositModal(true);
+                          } else {
+                            setShowWithdrawModal(true);
+                          }
+                        }}
+                      >
+                        <td className="py-3 px-4 flex items-center gap-3">
+                          {asset.asset_image ? (
+                            <img 
+                              src={asset.asset_image}
+                              alt={asset.symbol} 
+                              className="w-7 h-7 rounded-full"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.onerror = null;
+                                const name = (asset.symbol || '?')[0].toUpperCase();
+                                target.src = `data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"28\" height=\"28\" viewBox=\"0 0 28 28\"><circle cx=\"14\" cy=\"14\" r=\"14\" fill=\"%231D8751\"/><text x=\"14\" y=\"18\" font-family=\"Arial\" font-size=\"14\" fill=\"white\" text-anchor=\"middle\">${name}</text></svg>`;
+                              }}
+                            />
+                          ) : (
+                            <div className="w-7 h-7 rounded-full bg-[#1D8751] flex items-center justify-center">
+                              <span className="text-white text-sm font-medium">
+                                {(asset.symbol || '?')[0].toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+                          <div>
+                            <div className="text-white font-medium text-sm">{asset.symbol}</div>
+                            <div className="text-[#9CA3AF] text-xs">{asset.description}</div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-[#F79330] font-semibold text-sm">
+                          {/* Show price if available, otherwise show N/A */}
+                          {typeof (asset as any).price === 'number' ? `$${(asset as any).price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 8 })}` : 'N/A'}
+                        </td>
+                        <td className="py-3 px-4 text-[#9CA3AF] text-sm">
+                          {asset?.networks?.map((network: Network) => network.network_type).join(', ')}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="text-[#F79330] text-lg cursor-pointer">☆</span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            ) : (
+              <table className="min-w-full b rounded-2xl">
+                <thead className="bg-[#35353E] mb-1">
+                  <tr className="text-[#9CA3AF] text-left text-sm">
+                    <th className="py-3 px-4">Name</th>
+                    <th className="py-3 px-4">Country</th>
+                    <th className="py-3 px-4">More</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-[#1D1D23]">
+                  {loading ? (
+                    <tr>
+                      <td colSpan={3} className="text-center py-4 text-white">
+                        Loading assets...
+                      </td>
+                    </tr>
+                  ):(
+                    filteredAssets?.map((asset: Asset) => {
+                      // Prefer asset.asset_image, fallback to mapping logo
+                      const info = {
+                        country: (FOREX_BROKER_INFO[asset.symbol]?.country) || asset.description || 'N/A',
+                        logo: asset.asset_image || FOREX_BROKER_INFO[asset.symbol]?.logo || null
+                      };
+                      return (
+                        <tr 
+                          key={asset.asset_id} 
+                          className="border-b border-[#23242B] hover:bg-[#35353E] transition-colors cursor-pointer" 
+                          onClick={() => {
+                            setSelectedAsset(asset);
+                            if (selectedAction === "deposit") {
+                              setShowDepositModal(true);
+                            } else {
+                              setShowWithdrawModal(true);
+                            }
+                          }}
+                        >
+                          <td className="py-3 px-4 flex items-center gap-3">
+                            {info.logo ? (
+                              <img 
+                                src={info.logo}
+                                alt={asset.symbol} 
+                                className="w-7 h-7 rounded-full"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.onerror = null;
+                                  const name = (asset.symbol || '?')[0].toUpperCase();
+                                  target.src = `data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"28\" height=\"28\" viewBox=\"0 0 28 28\"><circle cx=\"14\" cy=\"14\" r=\"14\" fill=\"%231D8751\"/><text x=\"14\" y=\"18\" font-family=\"Arial\" font-size=\"14\" fill=\"white\" text-anchor=\"middle\">${name}</text></svg>`;
+                                }}
+                              />
+                            ) : (
+                              <div className="w-7 h-7 rounded-full bg-[#1D8751] flex items-center justify-center">
+                                <span className="text-white text-sm font-medium">
+                                  {(asset.symbol || '?')[0].toUpperCase()}
+                                </span>
+                              </div>
+                            )}
+                            <div>
+                              <div className="text-white font-medium text-sm">{asset.symbol}</div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-[#9CA3AF] text-sm">{info.country}</td>
+                          <td className="py-3 px-4">
+                            <span className="text-[#F79330] text-lg cursor-pointer">★</span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            )}
           </div>
           <div className="mt-4 flex items-center gap-2">
             <div className="w-4 h-4">
               <img src="https://res.cloudinary.com/dam1sxczj/image/upload/v1748601844/Icon_1_yzegcg.png" alt=""/>
             </div>  
-            <p className="text-[#1D8751] text-sm cursor-pointer">For more {selectedType === "crypto" ? "crypto assets" : "forex brokers"}, please contact us via Customer Support</p>
+            <p className="text-[#1D8751] text-sm cursor-pointer">For more {selectedType === "crypto" ? "crypto assets" : "forex assets"}, please contact us via Customer Support</p>
           </div>
         </>
       )}

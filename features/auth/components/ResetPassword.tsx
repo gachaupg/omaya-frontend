@@ -210,7 +210,17 @@ const ResetPassword = () => {
           <div className="bg-[#1D1D23] rounded-2xl p-8 max-w-sm w-full text-center relative">
             <div className="flex items-center justify-center mb-4">
               <div className="bg-[#1D8751] rounded-full w-14 h-14 flex items-center justify-center">
-                <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#1D8751"/><path d="M7 13l3 3 7-7" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <svg width="200" height="130" viewBox="0 0 200 130" xmlns="http://www.w3.org/2000/svg">
+                <rect width="200" height="130" fill="#1C1C21" />
+
+                <circle cx="100" cy="65" r="40" fill="#1D8751" />
+                <path d="M85 65 L95 75 L115 50" stroke="white" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+
+                <circle cx="25" cy="25" r="6" fill="#F79330" />
+                <circle cx="175" cy="20" r="6" fill="#1D8751" />
+                <circle cx="35" cy="105" r="6" fill="#1D8751" />
+                <circle cx="145" cy="90" r="6" fill="#4176BE" />
+              </svg>
               </div>
             </div>
             <h2 className="text-white text-xl font-semibold mb-2">Password changed successfully</h2>

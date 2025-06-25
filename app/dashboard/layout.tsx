@@ -2,12 +2,17 @@
 
 import Sidebar from "@/components/layout/Sidebar";
 import { motion, AnimatePresence } from "framer-motion";
+import KYCVerificationModal from "@/features/auth/components/KYCVerificationModal";
+import { useKYCVerification } from "@/features/auth/hooks/useKYCVerification";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Initialize KYC verification check
+  useKYCVerification();
+
   return (
     <div className="min-h-screen ml-6 mt-28">
       {/* Mobile Sidebar */}
@@ -45,6 +50,9 @@ export default function DashboardLayout({
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* KYC Verification Modal */}
+      <KYCVerificationModal />
     </div>
   );
 }

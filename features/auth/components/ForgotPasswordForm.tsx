@@ -10,31 +10,15 @@ import { useDispatch, useSelector } from 'react-redux';
 import { forgotPassword, resetPassword } from '@/features/auth/slices/authSlice';
 import { AppDispatch } from '@/features/auth/store';
 import { storage } from '../utils/storage';
-import { toast } from 'react-toastify';
-
-const PASSWORD_REQUIREMENTS = [
-  { label: 'At lease 8 characters', test: (v: string) => v.length >= 8 },
-  { label: 'At least one number or symbol', test: (v: string) => /[\d!@#$%^&*(),.?":{}|<>_~`[\]\\;'\/+= -]/.test(v) },
-  { label: 'Both uppercase and lowercase letters', test: (v: string) => /[a-z]/.test(v) && /[A-Z]/.test(v) },
-];
+import { showToast } from '@/lib/utils/toast';
 
 const ForgetPassword = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const [step, setStep] = useState<'email' | 'reset' | 'success'>('email');
   const [email, setEmail] = useState(() => storage.getUserEmail());
   const [emailError, setEmailError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [resetError, setResetError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
-  // Password requirements
-  const hasMinChars = PASSWORD_REQUIREMENTS[0].test(password);
-  const hasNumberOrSymbol = PASSWORD_REQUIREMENTS[1].test(password);
-  const hasMixedCase = PASSWORD_REQUIREMENTS[2].test(password);
 
   // Step 1: Submit email
   const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -53,9 +37,10 @@ const ForgetPassword = () => {
       await dispatch(forgotPassword({ email })).unwrap();
       setEmailSent(true);
       storage.setUserEmail(email);
-      toast.success('Check your email for a password reset link.');
+      showToast.success('Password Reset Email Sent', 'Check your email for a password reset link.');
     } catch (err: any) {
       setEmailError(err?.message || 'Failed to send reset email');
+      showToast.error('Password Reset Failed', err?.message || 'Failed to send reset email');
     } finally {
       setIsLoading(false);
     }

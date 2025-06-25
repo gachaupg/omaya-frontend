@@ -14,10 +14,16 @@ import {
   AuthState,
   OTPPayload,
   OTPResponse,
+  KYCResponse,
+  KYCVerifyPayload,
+  SumSubInitiatePayload,
+  SumSubInitiateResponse,
+  SumSubTokenPayload,
+  SumSubTokenResponse,
   ApiError,
 } from "../types";
 import { API_ENDPOINTS } from "../api";
-import { post, AxiosError } from "../../../lib/apiClient";
+import { post, get, AxiosError } from "../../../lib/apiClient";
 
 const initialState: AuthState = {
   user: null,
@@ -25,6 +31,7 @@ const initialState: AuthState = {
   loading: false,
   error: null,
   isAuthenticated: false,
+  kycModalOpen: false,
 };
 
 // Helper to handle API errors
@@ -63,6 +70,63 @@ export const loginUser = createAsyncThunk<AuthResponse, LoginPayload>(
     try {
       const response = await post<AuthResponse>(API_ENDPOINTS.LOGIN, payload);
       return response.data;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
+export const checkKYCStatus = createAsyncThunk<KYCResponse>(
+  "auth/checkKYCStatus",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await get<KYCResponse>(API_ENDPOINTS.KYC);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
+export const initiateKYCVerification = createAsyncThunk<SumSubInitiateResponse, SumSubInitiatePayload>(
+  "auth/initiateKYCVerification",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const response = await post<SumSubInitiateResponse>(
+        API_ENDPOINTS.SUMSUB_INITIATE,
+        payload
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
+export const getSumSubToken = createAsyncThunk<SumSubTokenResponse, SumSubTokenPayload>(
+  "auth/getSumSubToken",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const response = await post<SumSubTokenResponse>(
+        API_ENDPOINTS.SUMSUB_TOKEN,
+        payload
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
+export const verifyKYCStatus = createAsyncThunk<string, KYCVerifyPayload>(
+  "auth/verifyKYCStatus",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const response = await post<{ message: string }>(
+        API_ENDPOINTS.KYC_VERIFY,
+        payload
+      );
+      return response.data.message;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
     }
@@ -122,6 +186,7 @@ const authSlice = createSlice({
       state.user = null;
       state.tokens = null;
       state.isAuthenticated = false;
+      state.kycModalOpen = false;
       localStorage.removeItem("profile");
       // Clear access token cookie
       document.cookie =
@@ -138,6 +203,12 @@ const authSlice = createSlice({
         state.tokens = parsedData.tokens;
         state.isAuthenticated = true;
       }
+    },
+    openKYCModal(state) {
+      state.kycModalOpen = true;
+    },
+    closeKYCModal(state) {
+      state.kycModalOpen = false;
     },
   },
   extraReducers: (builder) => {
@@ -196,6 +267,72 @@ const authSlice = createSlice({
       state.error = action.payload as string;
     });
 
+    // Check KYC Status
+    builder.addCase(checkKYCStatus.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(
+      checkKYCStatus.fulfilled,
+      (state, action: PayloadAction<KYCResponse>) => {
+        state.loading = false;
+        if (state.user) {
+          state.user.is_verified = action.payload.is_verified;
+          // Show KYC modal if user is not verified
+          if (!action.payload.is_verified) {
+            state.kycModalOpen = true;
+          }
+        }
+      }
+    );
+    builder.addCase(checkKYCStatus.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
+
+    // Initiate KYC Verification
+    builder.addCase(initiateKYCVerification.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(initiateKYCVerification.fulfilled, (state) => {
+      state.loading = false;
+    });
+    builder.addCase(initiateKYCVerification.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
+
+    // Get SumSub Token
+    builder.addCase(getSumSubToken.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(getSumSubToken.fulfilled, (state) => {
+      state.loading = false;
+    });
+    builder.addCase(getSumSubToken.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
+
+    // Verify KYC Status
+    builder.addCase(verifyKYCStatus.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(verifyKYCStatus.fulfilled, (state) => {
+      state.loading = false;
+      if (state.user) {
+        state.user.is_verified = true;
+      }
+      state.kycModalOpen = false;
+    });
+    builder.addCase(verifyKYCStatus.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
+
     // Forgot Password
     builder.addCase(forgotPassword.pending, (state) => {
       state.loading = true;
@@ -232,7 +369,7 @@ const authSlice = createSlice({
       (state, action: PayloadAction<OTPResponse>) => {
         state.loading = false;
         if (state.user) {
-          state.user.is_verified = action.payload.user.is_verified;
+          state.user.otp_verified = action.payload.user.otp_verified;
         }
       }
     );
@@ -243,5 +380,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, clearError, initializeAuth } = authSlice.actions;
+export const { logout, clearError, initializeAuth, openKYCModal, closeKYCModal } = authSlice.actions;
 export default authSlice.reducer;

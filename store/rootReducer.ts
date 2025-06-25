@@ -11,6 +11,7 @@ import adReducer from "../features/p2p/slices/adSlice";
 import assetsReducer from "../features/p2p/slices/assetsSlice";
 import walletReducer from "../features/p2p/slices/walletSlice";
 import paymentMethodsReducer from "../features/p2p/slices/paymentMethodsSlice";
+import paymentReducer from "../features/exchange/slices/paymentSlice";
 import p2pMarketReducer from "../features/p2p/slices/orderSlice";
 import p2pBuySellReducer from "../features/p2p/slices/p2pbuysell";
 import authReducer from "../features/auth/slices/authSlice";
@@ -21,6 +22,7 @@ import matchedTradesReducer from "../features/p2p/slices/matchedTradesSlice";
 import userTradesReducer from "../features/p2p/slices/userTradesSlice";
 import feedbackReducer from "../features/p2p/slices/feedbackSlice";
 import p2pTransactionsReducer from "../features/p2p/slices/p2pTransactionsSlice";
+import exchangeReducer from "../features/exchange/slices/exchangeSlice";
 import referralReducer from "@/features/settings/slices/referralSlice";
 import referralWalletReducer from "@/features/settings/slices/referralWalletSlice";
 import settingsReducer from "@/features/settings/slices/settingsSlice";
@@ -33,6 +35,7 @@ const rootReducer = combineReducers({
   assets: assetsReducer,
   wallets: walletReducer,
   paymentMethods: paymentMethodsReducer,
+  payment: paymentReducer,
   p2pMarket: p2pMarketReducer,
   p2pBuySell: p2pBuySellReducer,
   auth: authReducer,
@@ -43,6 +46,7 @@ const rootReducer = combineReducers({
   userTrades: userTradesReducer,
   feedback: feedbackReducer,
   p2pTransactions: p2pTransactionsReducer,
+  exchange: exchangeReducer,
   referral: referralReducer,
   referralWallet: referralWalletReducer,
   settings: settingsReducer,

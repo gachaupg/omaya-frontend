@@ -7,6 +7,7 @@ export interface User {
     email: string;
     first_name: string;
     last_name: string;
+    otp_verified: boolean;
     is_verified: boolean;
     user_id: string;
     referral_code: string;
@@ -57,6 +58,7 @@ export interface User {
     loading: boolean;
     error: string | null;
     isAuthenticated: boolean;
+    kycModalOpen: boolean;
   }
   
   // Successful auth response
@@ -79,7 +81,40 @@ export interface User {
   
   export interface OTPResponse {
     message: string;
-    user: Pick<User, 'id' | 'email' | 'is_verified'>;
+    user: Pick<User, 'id' | 'email' | 'otp_verified'>;
+  }
+
+  export interface KYCResponse {
+    is_verified: boolean;
+  }
+
+  export interface KYCVerifyPayload {
+    user_id: string;
+    status: boolean;
+  }
+
+  export interface SumSubInitiatePayload {
+    user_id: string;
+  }
+
+  export interface SumSubInitiateResponse {
+    applicant_id: string;
+  }
+
+  export interface SumSubTokenPayload {
+    applicant_id: string;
+  }
+
+  export interface SumSubTokenResponse {
+    access_token: string;
+  }
+
+  export interface SumSubMessage {
+    type: string;
+    payload: {
+      reviewStatus?: string;
+      [key: string]: any;
+    };
   }
 
   export interface ApiError {
