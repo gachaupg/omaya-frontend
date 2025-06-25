@@ -11,15 +11,9 @@ import {
   selectTransactionSummary,
 } from "@/features/p2p/slices/transactionSummarySlice";
 import { AppDispatch } from "@/store";
-import {
-  emptyTransactionSummary,
-} from "@/components/types";
+import { emptyTransactionSummary } from "@/components/types";
 
-export default function DashboardPage({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function DashboardPage() {
   const dispatch = useDispatch<AppDispatch>();
   const transactionSummary = useSelector(selectTransactionSummary);
 
@@ -34,7 +28,9 @@ export default function DashboardPage({
       <VolumeChart
         transactionSummary={transactionSummary || emptyTransactionSummary}
       />
-      <LineCharts transactionSummary={transactionSummary || emptyTransactionSummary} />
+      <LineCharts
+        transactionSummary={transactionSummary || emptyTransactionSummary}
+      />
       <Transactions />
     </div>
   );

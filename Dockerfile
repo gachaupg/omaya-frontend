@@ -16,8 +16,12 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Build the application
-RUN npm run build
+# Set environment variables for Docker build
+ENV SKIP_LINT=true
+ENV DISABLE_ESLINT=true
+
+# Build the application with Docker-specific script
+RUN npm run build:docker
 
 # Production image, copy all the files and run next
 FROM base AS runner
@@ -37,6 +41,6 @@ USER nextjs
 
 EXPOSE 3000
 
-ENV PORT 3000
+ENV PORT=3000
 
 CMD ["node", "server.js"]

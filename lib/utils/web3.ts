@@ -15,6 +15,11 @@ export const connectMetaMask = async (): Promise<string | null> => {
       return null;
     }
 
+    if (!window.ethereum) {
+      showToast.error("MetaMask not available. Please refresh and try again.");
+      return null;
+    }
+
     const accounts = await window.ethereum.request({
       method: "eth_requestAccounts",
     });
