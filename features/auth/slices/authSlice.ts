@@ -21,6 +21,8 @@ import {
   SumSubTokenPayload,
   SumSubTokenResponse,
   ApiError,
+  UserProfile,
+  ProfileResponse,
 } from "../types";
 import { API_ENDPOINTS } from "../api";
 import { post, get, AxiosError } from "../../../lib/apiClient";
@@ -31,6 +33,7 @@ const initialState: AuthState = {
   loading: false,
   error: null,
   isAuthenticated: false,
+  profile: null,
   kycModalOpen: false,
 };
 
@@ -88,35 +91,35 @@ export const checkKYCStatus = createAsyncThunk<KYCResponse>(
   }
 );
 
-export const initiateKYCVerification = createAsyncThunk<SumSubInitiateResponse, SumSubInitiatePayload>(
-  "auth/initiateKYCVerification",
-  async (payload, { rejectWithValue }) => {
-    try {
-      const response = await post<SumSubInitiateResponse>(
-        API_ENDPOINTS.SUMSUB_INITIATE,
-        payload
-      );
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(handleApiError(error));
-    }
+export const initiateKYCVerification = createAsyncThunk<
+  SumSubInitiateResponse,
+  SumSubInitiatePayload
+>("auth/initiateKYCVerification", async (payload, { rejectWithValue }) => {
+  try {
+    const response = await post<SumSubInitiateResponse>(
+      API_ENDPOINTS.SUMSUB_INITIATE,
+      payload
+    );
+    return response.data;
+  } catch (error) {
+    return rejectWithValue(handleApiError(error));
   }
-);
+});
 
-export const getSumSubToken = createAsyncThunk<SumSubTokenResponse, SumSubTokenPayload>(
-  "auth/getSumSubToken",
-  async (payload, { rejectWithValue }) => {
-    try {
-      const response = await post<SumSubTokenResponse>(
-        API_ENDPOINTS.SUMSUB_TOKEN,
-        payload
-      );
-      return response.data;
-    } catch (error) {
-      return rejectWithValue(handleApiError(error));
-    }
+export const getSumSubToken = createAsyncThunk<
+  SumSubTokenResponse,
+  SumSubTokenPayload
+>("auth/getSumSubToken", async (payload, { rejectWithValue }) => {
+  try {
+    const response = await post<SumSubTokenResponse>(
+      API_ENDPOINTS.SUMSUB_TOKEN,
+      payload
+    );
+    return response.data;
+  } catch (error) {
+    return rejectWithValue(handleApiError(error));
   }
-);
+});
 
 export const verifyKYCStatus = createAsyncThunk<string, KYCVerifyPayload>(
   "auth/verifyKYCStatus",
@@ -178,6 +181,18 @@ export const verifyOTP = createAsyncThunk<OTPResponse, OTPPayload>(
   }
 );
 
+export const getUserProfile = createAsyncThunk<ProfileResponse>(
+  "auth/getUserProfile",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await get<ProfileResponse>(API_ENDPOINTS.PROFILE);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -186,6 +201,7 @@ const authSlice = createSlice({
       state.user = null;
       state.tokens = null;
       state.isAuthenticated = false;
+      state.profile = null;
       state.kycModalOpen = false;
       localStorage.removeItem("profile");
       // Clear access token cookie
@@ -202,6 +218,7 @@ const authSlice = createSlice({
         state.user = parsedData.user;
         state.tokens = parsedData.tokens;
         state.isAuthenticated = true;
+        state.profile = parsedData.profile || null;
       }
     },
     openKYCModal(state) {
@@ -245,6 +262,7 @@ const authSlice = createSlice({
           refresh: action.payload.refresh,
         };
         state.isAuthenticated = true;
+        state.profile = action.payload.profile;
 
         // Store in localStorage
         localStorage.setItem(
@@ -255,6 +273,7 @@ const authSlice = createSlice({
               access: action.payload.access,
               refresh: action.payload.refresh,
             },
+            profile: action.payload.profile,
           })
         );
 
@@ -377,8 +396,31 @@ const authSlice = createSlice({
       state.loading = false;
       state.error = action.payload as string;
     });
+
+    // Get User Profile
+    builder.addCase(getUserProfile.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(
+      getUserProfile.fulfilled,
+      (state, action: PayloadAction<ProfileResponse>) => {
+        state.loading = false;
+        state.profile = action.payload.profile;
+      }
+    );
+    builder.addCase(getUserProfile.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
   },
 });
 
-export const { logout, clearError, initializeAuth, openKYCModal, closeKYCModal } = authSlice.actions;
+export const {
+  logout,
+  clearError,
+  initializeAuth,
+  openKYCModal,
+  closeKYCModal,
+} = authSlice.actions;
 export default authSlice.reducer;

@@ -17,4 +17,5 @@ const store = configureStore({
 });
 
 export type AppDispatch = ThunkDispatch<RootState, unknown, AnyAction>;
+export type { RootState };
 export { store };

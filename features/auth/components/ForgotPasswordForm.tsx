@@ -4,43 +4,51 @@
  */
 
 "use client";
-import Image from 'next/image';
-import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { forgotPassword, resetPassword } from '@/features/auth/slices/authSlice';
-import { AppDispatch } from '@/features/auth/store';
-import { storage } from '../utils/storage';
-import { showToast } from '@/lib/utils/toast';
+import Image from "next/image";
+import React, { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  forgotPassword,
+  resetPassword,
+} from "@/features/auth/slices/authSlice";
+import { AppDispatch } from "@/features/auth/store";
+import { storage } from "../utils/storage";
+import { showToast } from "@/lib/utils/toast";
 
 const ForgetPassword = () => {
   const dispatch = useDispatch<AppDispatch>();
   const [email, setEmail] = useState(() => storage.getUserEmail());
-  const [emailError, setEmailError] = useState('');
+  const [emailError, setEmailError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
-
 
   // Step 1: Submit email
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setEmailError('');
+    setEmailError("");
     if (!email.trim()) {
-      setEmailError('Email is required');
+      setEmailError("Email is required");
       return;
     }
     if (!/\S+@\S+\.\S+/.test(email)) {
-      setEmailError('Email is invalid');
+      setEmailError("Email is invalid");
       return;
     }
     setIsLoading(true);
     try {
-      await dispatch(forgotPassword({ email })).unwrap();
+      const message = await dispatch(forgotPassword({ email })).unwrap();
       setEmailSent(true);
       storage.setUserEmail(email);
-      showToast.success('Password Reset Email Sent', 'Check your email for a password reset link.');
+      showToast.success(
+        "Password Reset Email Sent",
+        "Check your email for a password reset link."
+      );
     } catch (err: any) {
-      setEmailError(err?.message || 'Failed to send reset email');
-      showToast.error('Password Reset Failed', err?.message || 'Failed to send reset email');
+      setEmailError(err?.message || "Failed to send reset email");
+      showToast.error(
+        "Password Reset Failed",
+        err?.message || "Failed to send reset email"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -50,8 +58,8 @@ const ForgetPassword = () => {
     <div className="flex min-h-screen bg-[#18181D] flex-col md:flex-row items-start justify-center relative overflow-hidden px-6 py-8 md:pt-24">
       {/* Left Side - Mobile App Preview */}
       <div className="w-full md:w-1/2 flex justify-center mb-8 md:mb-0 relative z-10">
-         {/* Background Glow Effect */}
-         <div className="w-[438px] h-[403px] bg-[#1D8751] blur-[60px]  absolute left-16 2xl:left-54 opacity-60"></div>
+        {/* Background Glow Effect */}
+        <div className="w-[438px] h-[403px] bg-[#1D8751] blur-[60px]  absolute left-16 2xl:left-54 opacity-60"></div>
         <div className="relative">
           <Image
             src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747220053/iphone_vn7ejc.png"
@@ -62,41 +70,47 @@ const ForgetPassword = () => {
             priority
           />
           {/* App store badges */}
-        <div className="flex space-x-1 mt-4 justify-center">
-        <div className="rounded px-2 flex items-center border border-gray-700 bg-white">
-            <Image
-              src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746787514/Google_Play-Icon-Logo.wine_dqxxk7.svg" 
-              alt="Google Play Store" 
-              width={40} 
-              height={13} 
-              className="mr-2"
-            />
-            <div>
-              <p className="text-[#051015] text-xs">Download on the</p>
-              <span className="text-[#051015] text-sm font-bold">Google Play</span>
+          <div className="flex space-x-1 mt-4 justify-center">
+            <div className="rounded px-2 flex items-center border border-gray-700 bg-white">
+              <Image
+                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746787514/Google_Play-Icon-Logo.wine_dqxxk7.svg"
+                alt="Google Play Store"
+                width={40}
+                height={13}
+                className="mr-2"
+              />
+              <div>
+                <p className="text-[#051015] text-xs">Download on the</p>
+                <span className="text-[#051015] text-sm font-bold">
+                  Google Play
+                </span>
+              </div>
+            </div>
+            <div className="rounded px-2 flex items-center border border-gray-700 bg-white">
+              <Image
+                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747288173/dark_apple_rwpgwi.png"
+                alt="Apple App Store"
+                width={20}
+                height={20}
+                className="mr-2"
+              />
+              <div>
+                <p className="text-[#051015] text-xs">Download on the</p>
+                <span className="text-[#051015] text-sm font-bold">
+                  App Store
+                </span>
+              </div>
             </div>
           </div>
-          <div className="rounded px-2 flex items-center border border-gray-700 bg-white">
-            <Image 
-              src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747288173/dark_apple_rwpgwi.png" 
-              alt="Apple App Store" 
-              width={20} 
-              height={20} 
-              className="mr-2"
-            />
-            <div>
-              <p className="text-[#051015] text-xs">Download on the</p>
-              <span className="text-[#051015] text-sm font-bold">App Store</span>
-            </div>
-          </div>
-        </div>
         </div>
       </div>
-      
+
       {/* Right side - Forgot password flow */}
       <div className="w-1/2 p-8 flex flex-col justify-center">
         <div className="max-w-md mx-auto w-full 2xl:max-w-3/4">
-          <h1 className="text-2xl font-semibold text-white mb-2">Forgot Password</h1>
+          <h1 className="text-2xl font-semibold text-white mb-2">
+            Forgot Password
+          </h1>
           <p className="text-[#788099] mb-1">
             Enter your email to receive the instruction <br />
             to reset your password
@@ -104,7 +118,10 @@ const ForgetPassword = () => {
           <form className="space-y-4" onSubmit={handleEmailSubmit}>
             <div className="grid grid-cols-1 gap-4">
               <div>
-                <label htmlFor="email" className="block text-white text-sm mb-2">
+                <label
+                  htmlFor="email"
+                  className="block text-white text-sm mb-2"
+                >
                   Email*
                 </label>
                 <div className="relative">
@@ -112,18 +129,40 @@ const ForgetPassword = () => {
                     type="email"
                     id="email"
                     value={email}
-                    onChange={e => setEmail(e.target.value)}
+                    onChange={(e) => setEmail(e.target.value)}
                     placeholder="Email Address"
                     className="w-full py-2 px-4 pl-9 bg-[#1D1D23] border border-[#35353E] rounded-full  text-[#788099] placeholder-[#788099] focus:outline-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent"
                   />
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect x="2" y="4" width="16" height="12" rx="2" stroke="#1D8751" strokeWidth="1.5" />
-                      <path d="M18 6L10 11L2 6" stroke="#1D8751" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <rect
+                        x="2"
+                        y="4"
+                        width="16"
+                        height="12"
+                        rx="2"
+                        stroke="#1D8751"
+                        strokeWidth="1.5"
+                      />
+                      <path
+                        d="M18 6L10 11L2 6"
+                        stroke="#1D8751"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
                     </svg>
                   </div>
                 </div>
-                {emailError && <p className="text-[#F04438] text-sm mt-1">{emailError}</p>}
+                {emailError && (
+                  <p className="text-[#F04438] text-sm mt-1">{emailError}</p>
+                )}
               </div>
             </div>
             <button
@@ -131,7 +170,7 @@ const ForgetPassword = () => {
               className="w-full bg-[#1D8751] text-white py-2 px-4 rounded-full hover:bg-[#0E5531] transition-colors duration-300 mt-4"
               disabled={isLoading}
             >
-              {isLoading ? 'Sending...' : 'Confirm'}
+              {isLoading ? "Sending..." : "Confirm"}
             </button>
           </form>
         </div>
