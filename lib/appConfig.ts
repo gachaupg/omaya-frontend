@@ -10,6 +10,10 @@ export const API_CONFIG = {
     LOGIN: "/api/login",
     // ...
   },
+  BLOG: {
+    BLOGS: "/administration/blogs/blog/",
+    NEWS: "/administration/blogs/news/",
+  },
   P2P: {
     WALLETS: "/wallet/wallets/",
     DEPOSITS: "/trading_engine/p2p/deposit/",
@@ -50,5 +54,8 @@ export const API_CONFIG = {
     ESTIMATE_SWAP: "/api/changenow/estimate/",
     CREATE_SWAP: "/api/changenow/create/",
     SWAP_STATUS: "/api/changenow/status/",
+  },
+  RATES: {
+    TRANSACTIONS: "/trading_engine/detail-transactions/",
   },
 };

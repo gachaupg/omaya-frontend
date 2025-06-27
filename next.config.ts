@@ -6,8 +6,18 @@ const nextConfig: NextConfig = {
   output: "standalone",
   trailingSlash: true,
   images: {
-    domains: ["res.cloudinary.com"],
-    unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "res.cloudinary.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "images.pexels.com",
+        pathname: "/**",
+      },
+    ],
   },
   eslint: {
     ignoreDuringBuilds:
