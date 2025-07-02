@@ -1,7 +1,15 @@
-import React from "react";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store/rootReducer";
+"use client";
+import React, { useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "@/store/rootReducer";
 import Button from "@/features/p2p/components/Common/Button";
+import {
+  getP2PProfileThunk,
+  updateProfileThunk,
+} from "@/features/p2p/slices/orderSlice";
+import { fetchMatchedTrades } from "@/features/p2p/slices/matchedTradesSlice";
+import { showToast } from "@/lib/utils/toast";
+import { useRouter } from "next/navigation";
 
 type UserProfileCardProps = {
   name: string;
@@ -14,10 +22,84 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
   name,
   userId,
   userType,
-  profileImage,
+  profileImage: initialProfileImage,
 }) => {
-  const { user } = useSelector((state: RootState) => state.auth);
+  const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [profileImage, setProfileImage] = useState(
+    initialProfileImage || "https://via.placeholder.com/56"
+  );
+
+  const { user, isAuthenticated } = useSelector(
+    (state: RootState) => state.auth
+  );
+
   const isVerified = user?.is_verified ?? false;
+  const { data: matchedTrades } = useSelector(
+    (state: RootState) => state.matchedTrades
+  );
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(fetchMatchedTrades(1));
+      dispatch(getP2PProfileThunk())
+        .unwrap()
+        .then((response) => {
+          if (response?.profile?.photo) {
+            setProfileImage(response.profile.photo);
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to fetch profile:", error);
+        });
+    }
+  }, [dispatch, isAuthenticated]);
+
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        // 5MB limit
+        showToast.error("Image size should be less than 5MB");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const base64Image = e.target?.result as string;
+        setProfileImage(base64Image);
+
+        try {
+          const formData = new FormData();
+          formData.append("photo", file);
+
+          await dispatch(updateProfileThunk(formData)).unwrap();
+          // Refetch profile to get updated photo
+          const response = await dispatch(getP2PProfileThunk()).unwrap();
+          if (response?.profile?.photo) {
+            setProfileImage(response.profile.photo);
+          }
+          showToast.success("Profile image updated successfully");
+        } catch (error: any) {
+          console.error("Profile update error:", error);
+          showToast.error(error?.message || "Failed to update profile image");
+          // Revert the image if update fails
+          setProfileImage(
+            initialProfileImage || "https://via.placeholder.com/56"
+          );
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Ensure we always have a valid image source
+  const imageSrc = profileImage || "https://via.placeholder.com/56";
 
   return (
     <div className="flex items-center gap-4 p-2 rounded-2xl bg-[#1D1D23] border border-[#35353E]">
@@ -26,9 +108,28 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
           {/* User Avatar with Edit Button */}
           <div className="relative flex-shrink-0">
             <div className="h-14 w-14 rounded-full overflow-hidden relative">
-              <img src="https://res.cloudinary.com/pitz/image/upload/v1746538908/1fd9f384e7054d4ed9c913e3cfc2b1cf634d0cf4_ldkmkj.jpg" alt="" />
+              <img
+                src={imageSrc}
+                alt="User avatar"
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.onerror = null;
+                  target.src = "https://via.placeholder.com/56";
+                }}
+              />
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageChange}
+                accept="image/*"
+                className="hidden"
+              />
             </div>
-            <div className="absolute -top-1 -right-1 rounded-full p-1 bg-[#1D8751]">
+            <div
+              className="absolute -top-1 -right-1 rounded-full p-1 bg-[#1D8751] cursor-pointer hover:bg-[#16663d] transition-colors"
+              onClick={handleImageClick}
+            >
               <svg
                 width="16"
                 height="16"
@@ -53,7 +154,11 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
               </h2>
             </div>
             <div className="flex items-center gap-1">
-              <span className={`text-[14px] ${isVerified ? 'text-[#1D8751]' : 'text-[#E23D3A]'}`}>
+              <span
+                className={`text-[14px] ${
+                  isVerified ? "text-[#1D8751]" : "text-[#E23D3A]"
+                }`}
+              >
                 {isVerified ? "Verified" : "Unverified"} Profile
               </span>
               {isVerified && (
@@ -93,7 +198,13 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
             <p className="text-xs text-[#788099]">User ID</p>
             <div className="flex items-center gap-2">
               <p className="text-base text-[#FFFFFF] truncate">{userId}</p>
-              <button className="flex-shrink-0">
+              <button
+                className="flex-shrink-0"
+                onClick={() => {
+                  navigator.clipboard.writeText(userId);
+                  showToast.success("User ID copied to clipboard");
+                }}
+              >
                 <svg
                   width="20"
                   height="20"
@@ -126,9 +237,10 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              className="flex items-center justify-center p-0"
+              className=" flex items-center justify-center p-0"
+              onClick={() => router.push("/dashboard/notifications")}
               icon={
-                <div className="w-10 h-10 rounded-full border border-[#1D8751] flex items-center justify-center p-1">
+                <div className="w-10 h-10 rounded-full border border-[#1D8751] flex items-center justify-center p-1 relative">
                   <svg
                     width="16"
                     height="16"
@@ -151,6 +263,12 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
                       strokeLinejoin="round"
                     />
                   </svg>
+                  {matchedTrades?.results &&
+                    matchedTrades.results.length > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-[#E23D3A] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {matchedTrades.results.length}
+                      </span>
+                    )}
                 </div>
               }
             />
@@ -192,4 +310,4 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
   );
 };
 
-export default UserProfileCard; 
+export default UserProfileCard;

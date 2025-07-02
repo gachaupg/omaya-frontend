@@ -1,21 +1,57 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { tokens } from "@/styles/tokens";
 import Card from "../../Common/Card";
 import { useDispatch, useSelector } from "react-redux";
 import { selectTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
 import { fetchTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
 import { RootState } from "@/store/rootReducer";
+import { getAllP2PBuyandSell } from "@/features/p2p/api";
+import { P2POrder } from "@/features/p2p/types";
 
 const Overview = () => {
   const dispatch = useDispatch();
   const summary = useSelector(selectTransactionSummary);
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
 
+  // Add state for date filters and order data
+  const [buyDateFilter, setBuyDateFilter] = useState("ALL");
+  const [sellDateFilter, setSellDateFilter] = useState("ALL");
+  const [orderData, setOrderData] = useState<{
+    buyOrders: P2POrder[];
+    sellOrders: P2POrder[];
+  }>({ buyOrders: [], sellOrders: [] });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     if (isAuthenticated) {
       dispatch<any>(fetchTransactionSummary());
+      fetchOrderData();
     }
   }, [dispatch, isAuthenticated]);
+
+  const fetchOrderData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await getAllP2PBuyandSell(1);
+      if (response.results?.results) {
+        const orders = response.results.results;
+        const buyOrders = orders.filter(
+          (order: P2POrder) => order.order_type === "buy"
+        );
+        const sellOrders = orders.filter(
+          (order: P2POrder) => order.order_type === "sell"
+        );
+        setOrderData({ buyOrders, sellOrders });
+      }
+    } catch (error) {
+      console.error("Error fetching order data:", error);
+      setError("Failed to load order data");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Calculate totals for the pie chart using API data
   const deposits = summary?.total_approved_p2p_deposits || 0;
@@ -49,19 +85,125 @@ const Overview = () => {
     return Math.max(0, 173 - (value / safeTotal) * 691);
   };
 
+  // Helper function to get filtered data based on date range
+  const getFilteredData = (data: P2POrder[], dateFilter: string) => {
+    if (dateFilter === "ALL") return data;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return data.filter((item) => {
+      const itemDate = new Date(item.created_on);
+
+      switch (dateFilter) {
+        case "Today":
+          const itemDay = new Date(itemDate);
+          itemDay.setHours(0, 0, 0, 0);
+          return itemDay.getTime() === today.getTime();
+        case "Week":
+          const weekAgo = new Date(today);
+          weekAgo.setDate(today.getDate() - 7);
+          return itemDate >= weekAgo;
+        case "Month":
+          const monthAgo = new Date(today);
+          monthAgo.setMonth(today.getMonth() - 1);
+          return itemDate >= monthAgo;
+        case "Year":
+          const yearAgo = new Date(today);
+          yearAgo.setFullYear(today.getFullYear() - 1);
+          return itemDate >= yearAgo;
+        default:
+          return true;
+      }
+    });
+  };
+
+  // Calculate filtered totals for buy orders
+  const getFilteredBuyTotals = () => {
+    if (buyDateFilter === "ALL") {
+      return {
+        total: summary?.total_buy_orders || 0,
+        completed: summary?.total_buy_orders_by_status?.completed || 0,
+        pending: summary?.total_buy_orders_by_status?.pending || 0,
+      };
+    }
+
+    const filteredBuyOrders = getFilteredData(
+      orderData.buyOrders,
+      buyDateFilter
+    );
+
+    const total = filteredBuyOrders.reduce(
+      (sum, order) => sum + parseFloat(order.amount || "0"),
+      0
+    );
+    const completed = filteredBuyOrders
+      .filter((order) => order.status === "completed")
+      .reduce((sum, order) => sum + parseFloat(order.amount || "0"), 0);
+    const pending = filteredBuyOrders
+      .filter((order) => order.status === "pending")
+      .reduce((sum, order) => sum + parseFloat(order.amount || "0"), 0);
+
+    return { total, completed, pending };
+  };
+
+  // Calculate filtered totals for sell orders
+  const getFilteredSellTotals = () => {
+    if (sellDateFilter === "ALL") {
+      return {
+        total: summary?.total_sell_orders || 0,
+        completed: summary?.total_sell_orders_by_status?.completed || 0,
+        pending: summary?.total_sell_orders_by_status?.pending || 0,
+      };
+    }
+
+    const filteredSellOrders = getFilteredData(
+      orderData.sellOrders,
+      sellDateFilter
+    );
+
+    const total = filteredSellOrders.reduce(
+      (sum, order) => sum + parseFloat(order.amount || "0"),
+      0
+    );
+    const completed = filteredSellOrders
+      .filter((order) => order.status === "completed")
+      .reduce((sum, order) => sum + parseFloat(order.amount || "0"), 0);
+    const pending = filteredSellOrders
+      .filter((order) => order.status === "pending")
+      .reduce((sum, order) => sum + parseFloat(order.amount || "0"), 0);
+
+    return { total, completed, pending };
+  };
+
+  const buyTotals = getFilteredBuyTotals();
+  const sellTotals = getFilteredSellTotals();
+
   // Calculate progress percentages for buy/sell
   const buyProgressPercentage =
-    summary?.total_buy_orders && summary?.total_p2p_orders
-      ? (summary.total_buy_orders / summary.total_p2p_orders) * 100
+    buyTotals.total && summary?.total_p2p_orders
+      ? (buyTotals.total / summary.total_p2p_orders) * 100
       : 0;
 
   const sellProgressPercentage =
-    summary?.total_sell_orders && summary?.total_p2p_orders
-      ? (summary.total_sell_orders / summary.total_p2p_orders) * 100
+    sellTotals.total && summary?.total_p2p_orders
+      ? (sellTotals.total / summary.total_p2p_orders) * 100
       : 0;
 
   return (
     <div>
+      {error && (
+        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center justify-between">
+          <span>{error}</span>
+          <button
+            onClick={fetchOrderData}
+            disabled={loading}
+            className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 rounded text-xs transition-colors disabled:opacity-50"
+          >
+            Retry
+          </button>
+        </div>
+      )}
       <h3 className={`text-[${tokens.colors.dark.textTitle}] mb-2 text-sm`}>
         Overview Total
       </h3>
@@ -195,12 +337,17 @@ const Overview = () => {
                 P2P Buys
               </h3>
               <div className="relative">
-                <select className="px-2 py-1 rounded text-xs appearance-none pr-8 bg-[${tokens.colors.dark.card}] border border-[${tokens.colors.dark.border}] text-[${tokens.colors.dark.textTitle}]">
-                  <option>ALL</option>
-                  <option>Today</option>
-                  <option>Week</option>
-                  <option>Month</option>
-                  <option>Year</option>
+                <select
+                  className="px-2 py-1 text-[#1D1D23] rounded text-xs appearance-none pr-8 bg-[${tokens.colors.dark.card}] border border-[${tokens.colors.dark.border}] text-[${tokens.colors.dark.textTitle}]"
+                  value={buyDateFilter}
+                  onChange={(e) => setBuyDateFilter(e.target.value)}
+                  disabled={loading}
+                >
+                  <option value="ALL">ALL</option>
+                  <option value="Today">Today</option>
+                  <option value="Week">Week</option>
+                  <option value="Month">Month</option>
+                  <option value="Year">Year</option>
                 </select>
                 <span className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none text-[${tokens.colors.dark.textTitle}]">
                   ▼
@@ -209,7 +356,9 @@ const Overview = () => {
             </div>
 
             <div className="text-xl font-bold mb-3 text-[${tokens.colors.dark.textTitle}]">
-              {summary?.total_buy_orders.toLocaleString()} USD
+              {loading
+                ? "Loading..."
+                : `${buyTotals.total.toLocaleString()} USD`}
             </div>
 
             <div className="mb-2 w-full">
@@ -234,8 +383,9 @@ const Overview = () => {
                   </span>
                 </div>
                 <span className="text-[${tokens.colors.dark.textTitle}]">
-                  {summary?.total_buy_orders_by_status.completed.toLocaleString()}{" "}
-                  USD
+                  {loading
+                    ? "Loading..."
+                    : `${buyTotals.completed.toLocaleString()} USD`}
                 </span>
               </div>
 
@@ -247,8 +397,9 @@ const Overview = () => {
                   </span>
                 </div>
                 <span className="text-[${tokens.colors.dark.textTitle}]">
-                  {summary?.total_buy_orders_by_status.pending.toLocaleString()}{" "}
-                  USD
+                  {loading
+                    ? "Loading..."
+                    : `${buyTotals.pending.toLocaleString()} USD`}
                 </span>
               </div>
             </div>
@@ -269,12 +420,17 @@ const Overview = () => {
                 P2P Sells
               </h3>
               <div className="relative">
-                <select className="px-2 py-1 rounded text-xs appearance-none pr-8 bg-[${tokens.colors.dark.card}] border border-[${tokens.colors.dark.border}] text-[${tokens.colors.dark.textTitle}]">
-                  <option>ALL</option>
-                  <option>Today</option>
-                  <option>Week</option>
-                  <option>Month</option>
-                  <option>Year</option>
+                <select
+                  className="px-2 py-1 text-[#1D1D23] rounded text-xs appearance-none pr-8 bg-[${tokens.colors.dark.card}] border border-[${tokens.colors.dark.border}] text-[${tokens.colors.dark.textTitle}]"
+                  value={sellDateFilter}
+                  onChange={(e) => setSellDateFilter(e.target.value)}
+                  disabled={loading}
+                >
+                  <option value="ALL">ALL</option>
+                  <option value="Today">Today</option>
+                  <option value="Week">Week</option>
+                  <option value="Month">Month</option>
+                  <option value="Year">Year</option>
                 </select>
                 <span className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none text-[${tokens.colors.dark.textTitle}]">
                   ▼
@@ -283,7 +439,9 @@ const Overview = () => {
             </div>
 
             <div className="text-xl font-bold mb-3 text-[${tokens.colors.dark.textTitle}]">
-              {summary?.total_sell_orders.toLocaleString()} USD
+              {loading
+                ? "Loading..."
+                : `${sellTotals.total.toLocaleString()} USD`}
             </div>
 
             <div className="mb-2 w-full">
@@ -308,8 +466,9 @@ const Overview = () => {
                   </span>
                 </div>
                 <span className="text-[${tokens.colors.dark.textTitle}]">
-                  {summary?.total_sell_orders_by_status.completed.toLocaleString()}{" "}
-                  USD
+                  {loading
+                    ? "Loading..."
+                    : `${sellTotals.completed.toLocaleString()} USD`}
                 </span>
               </div>
 
@@ -321,8 +480,9 @@ const Overview = () => {
                   </span>
                 </div>
                 <span className="text-[${tokens.colors.dark.textTitle}]">
-                  {summary?.total_sell_orders_by_status.pending.toLocaleString()}{" "}
-                  USD
+                  {loading
+                    ? "Loading..."
+                    : `${sellTotals.pending.toLocaleString()} USD`}
                 </span>
               </div>
             </div>

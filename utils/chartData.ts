@@ -80,8 +80,34 @@ export const overviewTotalData = (
 
 // Dummy data for Referral Commissions (Donut)
 export const referralCommissionsData = (
-  transactionSummary: TransactionSummary
+  transactionSummary: TransactionSummary,
+  walletData?: {
+    balance: number;
+    total_earned: number;
+    total_withdrawn: number;
+  }
 ): DonutChartData[] => {
+  if (walletData) {
+    return [
+      {
+        label: "Available Balance",
+        value: walletData.balance || 0,
+        color: "#22c55e",
+      },
+      {
+        label: "Total Earned",
+        value: walletData.total_earned || 0,
+        color: "#3b82f6",
+      },
+      {
+        label: "Total Withdrawn",
+        value: walletData.total_withdrawn || 0,
+        color: "#ef4444",
+      },
+    ];
+  }
+
+  // Fallback to dummy data if no wallet data
   return [
     {
       label: "Deposits",
@@ -120,8 +146,22 @@ export const overviewTotalSummary = (
 };
 
 export const referralCommissionsSummary = (
-  transactionSummary: TransactionSummary
-) => ({
-  total: transactionSummary.total_approved_exchange_combined || 0,
-  currency: "USD",
-});
+  transactionSummary: TransactionSummary,
+  walletData?: {
+    balance: number;
+    total_earned: number;
+    total_withdrawn: number;
+  }
+) => {
+  if (walletData) {
+    return {
+      total: walletData.total_earned || 0,
+      currency: "USD",
+    };
+  }
+
+  return {
+    total: transactionSummary.total_approved_exchange_combined || 0,
+    currency: "USD",
+  };
+};

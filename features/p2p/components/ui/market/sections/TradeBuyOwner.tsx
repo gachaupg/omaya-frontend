@@ -18,6 +18,7 @@ import AppealModal from "./appeal";
 import ChatBox from "./ChatBox";
 import { showToast } from "@/lib/utils/toast";
 import { handleCopy } from "../../../Common/utils";
+import Image from "next/image";
 
 interface FinalSellProps {
   orderData?: P2POrder;
@@ -90,7 +91,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     }
   }, [confirmOrder, dispatch]);
 
-
   useEffect(() => {
     setIsClient(true);
   }, []);
@@ -101,8 +101,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       setCountdown(displaySeconds);
     }
   }, [confirmOrder?.status, displaySeconds]);
-
-  
 
   // Get payment details from order data
   const paymentDetails = singleOrder?.payment_details?.[0] || null;
@@ -156,12 +154,9 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   };
 
   const getButtonText = () => {
-
     if (confirmTradeLoading) return "Notifying seller...";
     return "Payments Received Notify Seller";
   };
-
- 
 
   // if (!paymentDetails) {
   //   return (
@@ -184,7 +179,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             <span className="text-white font-semibold text-lg">
               Order Created
             </span>
-            <span className="text-xs text-[#A3A3C2]">
+            <span className="text-[14px] text-[#A3A3C2]">
               Order Number :
               <button
                 className="text-[#1D8751] underline ml-1"
@@ -194,23 +189,33 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               </button>
             </span>
           </div>
-          <div className="flex gap-4 mt-4">
+          <div className="flex gap-4 border-2 border-[#35353E] p-2 rounded-xl mt-4">
             <div className="flex flex-row items-center justify-between w-full  bg-[#35353E] rounded-xl px-6 py-2">
               <span className="text-[#F79330] text-lg font-bold">
-                ${formatAmount(sendAmount)}
+                <span className="text-[#1D8751] text-xl">$</span>{" "}
+                {formatAmount(sendAmount)}
               </span>
               <span className="text-xs text-[#F79330]">USD</span>
             </div>
             <div className="flex f w-full flex-row  justify-between items-center bg-[#35353E] rounded-xl px-6 py-2">
+              <span className="text-[#1D8751] text-xl">$</span>{" "}
               <span className="text-[#F79330] text-lg font-bold">
                 {commissionRate}%
               </span>
               <span className="text-xs text-[#F79330]">Commission</span>
             </div>
             <div className="flex flex-row justify-between w-full items-center bg-[#35353E] rounded-xl px-6 py-2">
-              <span className="text-[#1D8751] text-lg font-bold">
-                {formatAmount(receiveAmount)}
-              </span>
+              <div className="flex flex-row items-center gap-2">
+                <Image
+                  src="https://res.cloudinary.com/pitz/image/upload/v1750918504/tether_1_yim48g.png"
+                  alt="USDT"
+                  width={20}
+                  height={20}
+                />
+                <span className="text-[#1D8751] text-lg font-bold">
+                  {formatAmount(receiveAmount)}
+                </span>
+              </div>
               <span className="text-xs text-[#A3A3C2]">USDT</span>
             </div>
           </div>
@@ -226,13 +231,13 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           </span>
           <div className="bg-[#23232A] rounded-2xl p-6 mt-4 flex flex-col gap-6 border border-[#31313C]">
             {/* Bank Info */}
-            <div className="flex items-center gap-4 border border-[#35353E] rounded-xl px-4 py-3 w-fit mb-2">
+            <div className="flex items-center bg-[#18181D] gap-4 border border-[#35353E] rounded-xl px-4 py-3 w-fit mb-2">
               <div className="w-10 h-10 rounded-full text-black bg-white flex items-center justify-center overflow-hidden">
                 {/* Use logo mapped from provider */}
-                 {paymentDetails?.provider[0]}
+                {paymentDetails?.provider[0]}
               </div>
               <span className="text-white font-medium text-lg">
-                {paymentDetails?.provider }
+                {paymentDetails?.provider}
               </span>
             </div>
             {/* Account Name */}
@@ -243,6 +248,16 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 <span className="text-[#1D8751] font-semibold text-lg">
                   {paymentDetails?.account_name || "Omar Ali"}
                 </span>
+                <div className="flex-1" />
+                <button
+                  className="ml-3 text-[#1D8751] hover:text-[#F79330] focus:outline-none"
+                  onClick={() =>
+                    handleCopy(paymentDetails?.account_name || "Omar Ali")
+                  }
+                  title="Copy Account Name"
+                >
+                  <FileIcon size={18} />
+                </button>
               </div>
             </div>
             {/* Account Number */}
@@ -255,6 +270,16 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 <span className="text-[#1D8751] font-semibold text-lg">
                   {paymentDetails?.account_number || "123456789"}
                 </span>
+                <div className="flex-1" />
+                <button
+                  className="ml-3 text-[#1D8751] hover:text-[#F79330] focus:outline-none"
+                  onClick={() =>
+                    handleCopy(paymentDetails?.account_number || "123456789")
+                  }
+                  title="Copy Account Number"
+                >
+                  <FileIcon size={18} />
+                </button>
               </div>
             </div>
             {/* Buyer's Name */}
@@ -290,7 +315,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               Appeal After 9:45
             </button>
             <button
-              className={`${confirmOrder?.status === "matched" ? "bg-[#23232A]": "bg-[#1D8751]"} text-white rounded-lg px-6 py-2 font-semibold ${
+              className={`${
+                confirmOrder?.status === "matched"
+                  ? "bg-[#23232A]"
+                  : "bg-[#1D8751]"
+              } text-white rounded-lg px-6 py-2 font-semibold ${
                 confirmTradeLoading ||
                 !confirmOrder?.id ||
                 confirmOrder?.status === "matched"
@@ -298,11 +327,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                   : ""
               }`}
               onClick={handleConfirmTrade}
-                disabled={
-                  confirmTradeLoading ||
-                  !confirmOrder?.id ||
-                  confirmOrder?.status === "matched"
-                }
+              disabled={
+                confirmTradeLoading ||
+                !confirmOrder?.id ||
+                confirmOrder?.status === "matched"
+              }
             >
               {getButtonText()}
             </button>

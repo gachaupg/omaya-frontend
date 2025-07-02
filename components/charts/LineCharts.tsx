@@ -20,6 +20,10 @@ import Button from "../ui/Button";
 import { TransactionSummary } from "../types";
 import { fetchUserTrades } from "@/features/p2p/slices/userTradesSlice";
 import { line, curveMonotoneX } from "d3-shape";
+import { RootState } from "@/store";
+import { fetchReferralWallet } from "@/features/settings/slices/referralWalletSlice";
+import { fetchTransactions } from "@/features/exchange/slices/exchangeSlice";
+import { storage } from "@/features/auth/utils/storage";
 
 const months = [
   "JAN",
@@ -288,31 +292,49 @@ function DonutChartWithCenter({
   // Calculate total from actual data values
   const actualTotal = data.reduce((sum, item) => sum + item.value, 0);
 
+  // Check if all values are 0
+  const allZero = actualTotal === 0;
+
   return (
     <svg width="180" height="180" viewBox="0 0 180 180">
-      {data.map((d, i) => {
-        const value =
-          actualTotal > 0
-            ? (d.value / actualTotal) * (circumference - gap * data.length)
-            : 0;
-        const el = (
-          <circle
-            key={d.label}
-            r={radius}
-            cx={center}
-            cy={center}
-            fill="transparent"
-            stroke={d.color}
-            strokeWidth={stroke}
-            strokeDasharray={`${value} ${circumference - value}`}
-            strokeDashoffset={Number.isFinite(-offset) ? -offset : 0}
-            strokeLinecap="round"
-            style={{ opacity: 1 }}
-          />
-        );
-        offset += value + gap;
-        return el;
-      })}
+      {allZero ? (
+        // Show gray circle when all values are 0
+        <circle
+          r={radius}
+          cx={center}
+          cy={center}
+          fill="transparent"
+          stroke="#44454A"
+          strokeWidth={stroke}
+          strokeDasharray={`${circumference} 0`}
+          strokeLinecap="round"
+        />
+      ) : (
+        // Show normal donut chart when there are values
+        data.map((d, i) => {
+          const value =
+            actualTotal > 0
+              ? (d.value / actualTotal) * (circumference - gap * data.length)
+              : 0;
+          const el = (
+            <circle
+              key={d.label}
+              r={radius}
+              cx={center}
+              cy={center}
+              fill="transparent"
+              stroke={d.color}
+              strokeWidth={stroke}
+              strokeDasharray={`${value} ${circumference - value}`}
+              strokeDashoffset={Number.isFinite(-offset) ? -offset : 0}
+              strokeLinecap="round"
+              style={{ opacity: 1 }}
+            />
+          );
+          offset += value + gap;
+          return el;
+        })
+      )}
       <text
         x={center}
         y={center - 2}
@@ -321,7 +343,7 @@ function DonutChartWithCenter({
         fontSize="13"
         fontWeight="bold"
       >
-        {(actualTotal || 0).toLocaleString()} USD
+        {allZero ? "00" : `${(actualTotal || 0).toLocaleString()} USD`}
       </text>
       <text
         x={center}
@@ -419,6 +441,7 @@ const LineCharts = ({
   const [activeTab, setActiveTab] = useState<
     "exchange" | "p2p" | "buy" | "swap"
   >("exchange");
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [chartData, setChartData] = useState<{
     depositData: LineChartData;
     withdrawalData: LineChartData;
@@ -446,21 +469,58 @@ const LineCharts = ({
     },
   });
 
-  const { transactions } = useSelector((state: any) => state.p2pTransactions);
+  // Get user email from storage
+  useEffect(() => {
+    const profile = storage.getProfile();
+    const email = profile?.user?.email || "";
+    console.log("=== USER PROFILE CHART ===", { profile, email });
+    setUserEmail(email);
+  }, []);
+
+  const { transactions: p2pTransactions } = useSelector(
+    (state: any) => state.p2pTransactions
+  );
+  const { transactions: exchangeTransactions } = useSelector(
+    (state: RootState) => state.exchange
+  );
   const userTrades = useSelector((state: any) => state.userTrades.trades);
+
+  // Fetch exchange transactions when userEmail is set
+  useEffect(() => {
+    if (userEmail) {
+      console.log("=== FETCHING EXCHANGE TRANSACTIONS CHART ===", {
+        userEmail,
+      });
+      dispatch(fetchTransactions());
+    }
+  }, [dispatch, userEmail]);
 
   useEffect(() => {
     dispatch(fetchP2PTransactions(1));
     dispatch(fetchUserTrades({ page: 1, currency: "usdt" }));
   }, [dispatch]);
 
+  // Process exchange transactions for Exchange Overview
   useEffect(() => {
-    if (transactions?.results) {
+    if (exchangeTransactions && userEmail) {
       const depositData = Array(12).fill(0);
       const withdrawalData = Array(12).fill(0);
       const currentDate = new Date();
 
-      transactions.results.forEach((transaction: any) => {
+      console.log("exchange transactions", exchangeTransactions);
+
+      // Filter transactions for the current user
+      const userTransactions = exchangeTransactions.filter(
+        (transaction: any) => transaction.user_email === userEmail
+      );
+
+      console.log("Filtered exchange transactions for chart:", {
+        totalTransactions: exchangeTransactions.length,
+        userTransactions: userTransactions.length,
+        userEmail,
+      });
+
+      userTransactions.forEach((transaction: any) => {
         const transactionDate = new Date(transaction.timestamp);
         const monthDiff =
           (currentDate.getFullYear() - transactionDate.getFullYear()) * 12 +
@@ -486,8 +546,9 @@ const LineCharts = ({
         },
       });
     }
-  }, [transactions]);
+  }, [exchangeTransactions, userEmail]);
 
+  // Process P2P transactions for P2P Overview
   useEffect(() => {
     if (userTrades?.results) {
       const buyData = Array(12).fill(0);
@@ -521,6 +582,30 @@ const LineCharts = ({
       });
     }
   }, [userTrades]);
+
+  const {
+    data: walletData,
+    loading: walletLoading,
+    error: walletError,
+  } = useSelector((state: RootState) => state.referralWallet);
+  const { user, isAuthenticated } = useSelector(
+    (state: RootState) => state.auth
+  );
+
+  console.log(walletData);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (user?.referral_code && isAuthenticated) {
+        try {
+          await Promise.all([dispatch(fetchReferralWallet())]);
+        } catch (error) {
+          console.error("Error fetching referral data:", error);
+        }
+      }
+    };
+    fetchData();
+  }, [user?.referral_code, dispatch, isAuthenticated]);
 
   return (
     <div className="w-full">
@@ -735,7 +820,7 @@ const LineCharts = ({
         <Card className="w-full rounded-none lg:rounded-2xl flex flex-col lg:flex-row items-center h-full relative">
           <div className="absolute left-0 top-0 px-2 pt-2 flex flex-wrap w-full justify-between items-center gap-2">
             <h3 className="text-white text-[14px] mb-2 font-semibold">
-              Your Referal Commissions
+              Your Referral Commissions
             </h3>
             <Dropdown
               value={period}
@@ -744,11 +829,24 @@ const LineCharts = ({
             />
           </div>
           <div className="flex flex-col lg:flex-row w-full pt-10">
-            <Legend data={referralCommissionsData(transactionSummary)} />
+            <Legend
+              data={referralCommissionsData(
+                transactionSummary,
+                walletData || undefined
+              )}
+            />
             <div className="flex-1 flex flex-col items-center justify-center mt-4 lg:mt-0">
               <DonutChartWithCenter
-                data={referralCommissionsData(transactionSummary)}
-                total={referralCommissionsSummary(transactionSummary).total}
+                data={referralCommissionsData(
+                  transactionSummary,
+                  walletData || undefined
+                )}
+                total={
+                  referralCommissionsSummary(
+                    transactionSummary,
+                    walletData || undefined
+                  ).total
+                }
                 label="Commissions"
               />
             </div>

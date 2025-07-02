@@ -21,21 +21,21 @@ export const navItems = [
       icon: "https://res.cloudinary.com/pitz/image/upload/v1747237691/Group_164002_fgt2kf.png",
       href: "/dashboard/swap",
     },
-    {
-      label: "Buy Crypto",
-      icon: "https://res.cloudinary.com/pitz/image/upload/v1747237691/Group_164004_m9zmz3.png",
-      href: "/dashboard/buy",
-    },
+    // {
+    //   label: "Buy Crypto",
+    //   icon: "https://res.cloudinary.com/pitz/image/upload/v1747237691/Group_164004_m9zmz3.png",
+    //   href: "/dashboard/buy",
+    // },
     {
       label: "Account",
       icon: "https://res.cloudinary.com/pitz/image/upload/v1747237692/users-profiles-left_e2oejc.png",
       href: "/dashboard/account",
     },
-    {
-      label: "Settings",
-      icon: "https://res.cloudinary.com/pitz/image/upload/v1747237691/settings_hi7ckx.png",
-      href: "/dashboard/settings",
-    },
+    // {
+    //   label: "Settings",
+    //   icon: "https://res.cloudinary.com/pitz/image/upload/v1747237691/settings_hi7ckx.png",
+    //   href: "/dashboard/settings",
+    // },
   ];
 
   export const transactions: (TransactionType & { when: string })[] = [

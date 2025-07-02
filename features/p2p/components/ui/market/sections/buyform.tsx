@@ -72,22 +72,32 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
 
   useEffect(() => {
     const orderId = params.id as string;
-    const orderToFetch = confirmOrder?.buy_order || confirmOrder?.sell_order;
+
+    console.log("useEffect debug:", { orderId, confirmOrder, singleOrder });
 
     if (isAuthenticated && orderId) {
       dispatch(fetchConfirmOrder(orderId));
-      if (orderToFetch && !singleOrder?.id) {
-        dispatch(fetchSingleOrder(orderToFetch));
-      }
     }
-  }, [
-    params.id,
-    dispatch,
-    confirmOrder?.buy_order,
-    confirmOrder?.sell_order,
-    isAuthenticated,
-    singleOrder?.id,
-  ]);
+  }, [params.id, dispatch, isAuthenticated]);
+
+  // Separate useEffect for fetching singleOrder when confirmOrder is available
+  useEffect(() => {
+    const orderToFetch = confirmOrder?.buy_order || confirmOrder?.sell_order;
+
+    console.log("SingleOrder useEffect:", {
+      orderToFetch,
+      confirmOrder,
+      singleOrder,
+    });
+
+    if (isAuthenticated && orderToFetch && !singleOrder?.id) {
+      console.log("Fetching single order:", orderToFetch);
+      dispatch(fetchSingleOrder(orderToFetch));
+    }
+  }, [confirmOrder, isAuthenticated, singleOrder?.id, dispatch]);
+
+  console.log("singleOrder", singleOrder);
+  console.log("confirmOrder", confirmOrder);
 
   useEffect(() => {
     setIsClient(true);

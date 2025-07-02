@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import Image from "next/image";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import { useSelector } from "react-redux";
@@ -52,16 +53,41 @@ const Stats = () => {
       {/* Header */}
       <div className="flex w-full items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <img
-            src={profileImage}
-            alt="avatar"
-            className="w-10 h-10 rounded-full object-cover border-2 border-[#35353E]"
-            onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-              const target = e.currentTarget;
-              target.onerror = null;
-              target.src = "https://via.placeholder.com/56";
-            }}
-          />
+          {profileImage ? (
+            <Image
+              src={profileImage}
+              alt="User avatar"
+              width={56}
+              height={56}
+              className="object-cover rounded-full"
+              unoptimized={true}
+            />
+          ) : (
+            <div className="w-full h-full bg-[#35353E] flex items-center justify-center">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"
+                  className="stroke-[#788099]"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <circle
+                  cx="12"
+                  cy="7"
+                  r="4"
+                  className="stroke-[#788099]"
+                  strokeWidth="2"
+                />
+              </svg>
+            </div>
+          )}
           <div className="flex flex-col">
             <span className="text-[14px] font-semibold">
               {user?.first_name}

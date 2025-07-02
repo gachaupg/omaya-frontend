@@ -32,6 +32,17 @@ const AppealModal: React.FC<AppealModalProps> = ({
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Debug logging for state changes
+  useEffect(() => {
+    console.log("AppealModal state:", {
+      open,
+      tradeId,
+      reason,
+      loading,
+      success,
+    });
+  }, [open, tradeId, reason, loading, success]);
+
   useEffect(() => {
     if (success) {
       setTimeout(() => {
@@ -41,23 +52,65 @@ const AppealModal: React.FC<AppealModalProps> = ({
     }
   }, [success, dispatch, onClose]);
 
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (!open) {
+      setReason("");
+      setScreenshot(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  }, [open]);
+
   if (!open) return null;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setScreenshot(e.target.files[0]);
+      const file = e.target.files[0];
+      console.log("File selected:", file.name);
+      setScreenshot(file);
     }
+  };
+
+  const handleReasonChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedReason = e.target.value;
+    console.log("Reason changed to:", selectedReason);
+    setReason(selectedReason);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reason || !tradeId) return;
+    console.log("Submit attempted with:", {
+      reason,
+      tradeId,
+      hasScreenshot: !!screenshot,
+    });
+
+    if (!reason || !tradeId) {
+      console.log("Form validation failed:", { reason, tradeId });
+      return;
+    }
+
     const formData = new FormData();
     formData.append("trade_id", tradeId);
     formData.append("reason_for_appeal", reason);
-    if (screenshot) formData.append("screenshot", screenshot);
+    if (screenshot) {
+      formData.append("screenshot", screenshot);
+    }
+
+    console.log("Submitting appeal with:", {
+      tradeId,
+      reason,
+      hasScreenshot: !!screenshot,
+    });
     dispatch(createAppealThunk(formData) as any);
   };
+
+  // Simplified validation - only require reason to be selected
+  const isFormValid = reason.trim() !== "";
+
+  console.log("Form validation:", { isFormValid, reason, tradeId });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -75,13 +128,13 @@ const AppealModal: React.FC<AppealModalProps> = ({
           {/* Appeal Reason */}
           <div>
             <label className="block text-white text-[13px] mb-2">
-              Appeal Reason
+              Appeal Reason *
             </label>
             <div className="relative">
               <select
                 className="w-full rounded-xl px-4 py-3 bg-[#18181D] text-white border border-[#35353E] focus:outline-none appearance-none"
                 value={reason}
-                onChange={(e) => setReason(e.target.value)}
+                onChange={handleReasonChange}
                 required
               >
                 <option value="">Select the reason for appeal</option>
@@ -95,11 +148,16 @@ const AppealModal: React.FC<AppealModalProps> = ({
                 &#9662;
               </span>
             </div>
+            {reason && (
+              <div className="text-green-500 text-[11px] mt-1">
+                ✓ Reason selected: {reason}
+              </div>
+            )}
           </div>
           {/* Upload Proof */}
           <div>
             <label className="block text-white text-[13px] mb-2">
-              Upload Proof Documents
+              Upload Proof Documents (Optional)
             </label>
             <div className="text-[#888] text-[13px] mb-4">
               Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
@@ -145,6 +203,7 @@ const AppealModal: React.FC<AppealModalProps> = ({
               </span>
             </div>
           </div>
+
           {/* Buttons */}
           <div className="flex gap-4 mt-2">
             <button
@@ -157,8 +216,15 @@ const AppealModal: React.FC<AppealModalProps> = ({
             </button>
             <button
               type="submit"
-              className="flex-1 rounded-xl bg-[#1D8751] text-white py-3 font-semibold hover:bg-[#17693f] transition"
-              disabled={loading || !reason}
+              className={`flex-1 rounded-xl py-3 font-semibold transition ${
+                isFormValid && !loading
+                  ? "bg-[#1D8751] text-white hover:bg-[#17693f] cursor-pointer"
+                  : "bg-[#35353E] text-[#888] cursor-not-allowed"
+              }`}
+              disabled={loading || !isFormValid}
+              onClick={() =>
+                console.log("Button clicked! Form valid:", isFormValid)
+              }
             >
               {loading ? "Submitting..." : "Appeal"}
             </button>
