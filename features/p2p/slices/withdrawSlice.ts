@@ -74,7 +74,7 @@ const withdrawSlice = createSlice({
         state.loading = false;
         state.withdrawals = [
           ...state.withdrawals,
-          action.payload as P2PWithdraw,
+          action.payload as unknown as P2PWithdraw,
         ];
       })
       .addCase(createWithdrawal.rejected, (state, action) => {

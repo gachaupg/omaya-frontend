@@ -92,11 +92,6 @@ const CoinIcon = ({
     />
   );
 };
-/**
- * MarketTable.tsx – auto‑generated placeholder
- */
-import React from "react";
-import { tokens } from "../../../styles/tokens";
 
 // Inline SVGs for coins
 const BTCIcon = () => (
@@ -361,7 +356,7 @@ const MarketTable = () => {
   }
 
   return (
-    <div className="bg-[#18181D] min-h-screen text-[#788099] font-sans">
+    <div className="bg-[#18181D] min-h-screen py-8 text-[#788099] font-sans">
       {/* Top Section */}
       <div className="max-w-[1000px] mx-auto mb-6 px-6">
         <div className="flex items-center justify-between mb-4">
@@ -382,11 +377,6 @@ const MarketTable = () => {
           </div>
         </div>
 
-  return (
-    <div className="bg-[#18181D] min-h-screen py-8 text-[#788099] font-sans">
-      {/* Top Section */}
-      <div className="max-w-[1000px] mx-auto mb-6 px-6">
-        <h1 className="text-[#fff] text-2xl font-bold mb-2">Market Review</h1>
         <div className="flex gap-2 mb-4">
           {filterTags.map((tag) => (
             <span
@@ -397,7 +387,6 @@ const MarketTable = () => {
                   ? "bg-[#35353E] text-[#fff]"
                   : "hover:bg-[#35353E]"
               }`}
-              className="bg-[#1D1D23] text-[#788099] rounded-2xl px-4 py-1 text-sm font-medium border border-[#35353E] cursor-pointer"
             >
               {tag}
             </span>
@@ -410,21 +399,11 @@ const MarketTable = () => {
           volumes, price fluctuations, and market capitalizations for every
           cryptocurrency available on global markets.
         </div>
-        <div className="text-sm text-[#788099] ">
-          Users can readily obtain crucial details about these digital assets
-          and directly navigate to the trading platform from this point.
-        </div>
-
-        {/* Favourite Assets Header Row */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2 font-semibold text-[#fff] text-lg">
-            Top Assets
-          cryptocurrency available on global marker.
-        </div>
         <div className="text-sm text-[#788099] mb-6">
           Users can readily obtain crucial details about these digital assets
           and directly navigate to the trading platform from this point.
         </div>
+
         {/* Favourite Assets Header Row */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2 font-semibold text-[#fff] text-lg">
@@ -443,7 +422,7 @@ const MarketTable = () => {
         </div>
 
         {/* Favourite Assets Cards Row */}
-        <div className="flex gap-4 mb-1">
+        <div className="flex gap-4 mb-8">
           {favoriteAssets.map((asset) => (
             <div
               key={asset.id}
@@ -473,27 +452,6 @@ const MarketTable = () => {
                 }`}
               >
                 {formatPercentage(asset.price_change_percentage_24h)}
-        {/* Favourite Assets Cards Row */}
-        <div className="flex gap-4 mb-8">
-          {favouriteAssets.map((asset) => (
-            <div
-              key={asset.name}
-              className="bg-[#1D1D23] rounded-xl px-4 py-2 min-w-[160px] min-h-[56px] flex flex-col items-start shadow-sm border border-[#35353E] gap-0.5"
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <span className="w-7 h-7 flex items-center">{asset.icon}</span>
-                <span className="font-semibold text-[#fff] text-base">
-                  {asset.name}
-                </span>
-              </div>
-              <div className="text-xs text-[#788099] mb-0.5">
-                {asset.fullName}
-              </div>
-              <div className="font-semibold text-[#fff] text-sm">
-                {asset.price}
-              </div>
-              <div className="text-[#13B562] text-xs font-medium">
-                {asset.change}
               </div>
             </div>
           ))}
@@ -741,58 +699,6 @@ const MarketTable = () => {
             </tbody>
           </table>
         )}
-      {/* Table Section */}
-      <div className="bg-[#18181D] rounded-2xl p-6 text-[#788099] font-sans shadow-lg max-w-[1000px] mx-auto">
-        <table className="w-full border-separate border-spacing-0">
-          <thead>
-            <tr>
-              {tableHeaders.map((header) => (
-                <th
-                  key={header}
-                  className="text-[#fff] bg-[#1D1D23] px-2 py-4 text-left font-semibold border-b-2 border-[#35353E] text-base"
-                >
-                  {header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {sampleRows.map((row, idx) => (
-              <tr
-                key={row.name}
-                className={
-                  idx % 2 === 0
-                    ? "bg-[#1D1D23] border-b border-[#35353E]"
-                    : "bg-[#18181D] border-b border-[#35353E]"
-                }
-              >
-                <td className="flex items-center gap-3 px-2 py-3 text-[#fff]">
-                  <span className="w-7 h-7 flex items-center">{row.icon}</span>
-                  <div>
-                    <div className="font-semibold">{row.name}</div>
-                    <div className="text-xs text-[#788099]">{row.fullName}</div>
-                  </div>
-                </td>
-                <td className="text-[#1D8751] font-medium px-2 py-3">
-                  {row.price}
-                </td>
-                <td className="text-[#13B562] font-medium px-2 py-3">
-                  {row.change}
-                </td>
-                <td className="px-2 py-3">{row.volume}</td>
-                <td className="px-2 py-3">{row.cap}</td>
-                <td className="px-2 py-3 flex items-center gap-3">
-                  <span className="cursor-pointer">
-                    <ChartIcon />
-                  </span>
-                  <span className="cursor-pointer">
-                    <StarIcon />
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
     </div>
   );

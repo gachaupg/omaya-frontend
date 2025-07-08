@@ -52,7 +52,7 @@ const Charts: React.FC<ChartProps> = ({
   data,
   onTimeFilterChange,
   selectedTimeFilter = "All Time",
-  selectedTimeFilter = "Last Month", showTimeFilter = true,
+  showTimeFilter = true,
 }) => {
   const dispatch = useDispatch<AppDispatch>();
   const [filter, setFilter] = useState<"All" | "Sells" | "Buys">("All");
