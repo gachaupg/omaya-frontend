@@ -169,7 +169,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         advertiser_last_name: advertiserData.advertiser.split(" ")[1] || "",
         advertiser_email: "", // This should come from the advertiser data
         asset: "TRON",
-        order_type: tradeType || "buy",
+        order_type: tradeType === "buy" ? "sell" : "buy",
         currency: "USDT",
         amount: sendAmount,
         min_order_amount: advertiserData.minAmount.toString(),
@@ -196,7 +196,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       searchParams.set(
         "orderData",
         JSON.stringify({
-          order_type: orderData.order_type,
+          order_type: orderData.order_type === "buy" ? "sell" : "buy",
         })
       );
 

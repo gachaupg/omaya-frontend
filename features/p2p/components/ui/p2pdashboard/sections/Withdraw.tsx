@@ -27,6 +27,7 @@ import { useRouter } from "next/navigation";
 import { RootState } from "@/store/rootReducer";
 import { FinancialCalculator } from "@/lib/utils/financial";
 import { useTransactionValidation } from "@/features/p2p/hooks/useTransactionValidation";
+import OTPModal from "./otpModal";
 
 const Withdraw = () => {
   const router = useRouter();
@@ -45,6 +46,8 @@ const Withdraw = () => {
   const [binanceAddress, setBinanceAddress] = useState("");
   const [errors, setErrors] = useState<ValidationError[]>([]);
   const [confirmPayment, setConfirmPayment] = useState(false);
+  const [showOTPModal, setShowOTPModal] = useState(false);
+  const [withdrawalId, setWithdrawalId] = useState("");
 
   useEffect(() => {
     if (!assetsData && !assetsLoading) {
@@ -124,11 +127,11 @@ const Withdraw = () => {
     try {
       const withdrawalData: CreateP2PWithdrawRequest = {
         amount: FinancialCalculator.toNumber(amount),
-        currency: selectedAsset?.symbol as Currency,
+        currency: "USDT",
         network: selectedNetwork?.network_type as Network,
         wallet_type: "withdraw",
         receiver_wallet: usdtAddress,
-        binance_address: "",
+        // binance_address: "",
       };
 
       const resultAction = await dispatch(createWithdrawal(withdrawalData));
@@ -137,6 +140,18 @@ const Withdraw = () => {
         throw new Error(
           resultAction.error.message || "Failed to submit withdrawal"
         );
+      }
+
+      // Log the successful withdrawal response
+      if (createWithdrawal.fulfilled.match(resultAction)) {
+        console.log("Withdrawal Response:", resultAction.payload);
+        showToast.success("Withdrawal request submitted successfully!");
+
+        // Store withdrawal ID and show OTP modal
+        if (resultAction.payload.withdrawal_id) {
+          setWithdrawalId(resultAction.payload.withdrawal_id);
+          setShowOTPModal(true);
+        }
       }
 
       // Reset form
@@ -413,6 +428,18 @@ const Withdraw = () => {
           </div>
         </form>
       </Card>
+
+      {/* OTP Modal */}
+      <OTPModal
+        isOpen={showOTPModal}
+        onClose={() => setShowOTPModal(false)}
+        withdrawalId={withdrawalId}
+        amount={amount}
+        onSuccess={() => {
+          // Handle successful verification
+          showToast.success("Withdrawal completed successfully!");
+        }}
+      />
     </div>
   );
 };

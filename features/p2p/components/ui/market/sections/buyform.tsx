@@ -88,6 +88,8 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
       orderToFetch,
       confirmOrder,
       singleOrder,
+      confirmOrderId: confirmOrder?.id,
+
     });
 
     if (isAuthenticated && orderToFetch && !singleOrder?.id) {
@@ -112,7 +114,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
 
   // Get payment details from order data
   const paymentDetails = singleOrder?.payment_details?.[0];
-
+  console.log("singleOrder", singleOrder);
   // --- Calculation logic ---
   const sendAmount = Number(confirmOrder?.amount) || 0;
   const commissionRate = Number(singleOrder?.commission_rate) || 0;
@@ -171,7 +173,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
           </div>
         )}
         <p className="text-white text-[13px]" style={{ fontSize: "13px" }}>
-          Advertiser Information
+          Advertiser Informations
         </p>
         {/* Advertiser Info */}
         <section className=" rounded-[18px] p-2 flex items-center gap-4  border-2 border-[#35353E]  ">

@@ -8,6 +8,7 @@ import {
   CreateP2PWithdrawRequest,
   P2PListResponse,
   P2PResponse,
+  WithdrawalResponse,
   P2PAd,
   CreateP2PAdRequest,
   AssetsResponse,
@@ -80,9 +81,25 @@ export const getWithdrawals = async (): Promise<P2PListResponse> => {
 
 export const createWithdrawal = async (
   data: CreateP2PWithdrawRequest
-): Promise<P2PResponse> => {
+): Promise<WithdrawalResponse> => {
   return withRetry(async () => {
-    const response = await post<P2PResponse>(API_CONFIG.P2P.WITHDRAWS, data);
+    const response = await post<WithdrawalResponse>(
+      API_CONFIG.P2P.WITHDRAWS,
+      data
+    );
+    return response.data;
+  });
+};
+
+export const verifyWithdrawal = async (data: {
+  withdrawal_id: string;
+  otp: string;
+}): Promise<P2PResponse> => {
+  return withRetry(async () => {
+    const response = await post<P2PResponse>(API_CONFIG.P2P.WITHDRAWAL_OTP, {
+      withdrawal_id: data.withdrawal_id,
+      otp: data.otp,
+    });
     return response.data;
   });
 };
@@ -459,4 +476,3 @@ export const createReferralWithdraw = async (data: {
     return response.data;
   });
 };
-

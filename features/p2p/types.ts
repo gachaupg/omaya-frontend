@@ -92,7 +92,7 @@ export interface CreateP2PWithdrawRequest {
   network: Network;
   wallet_type: WalletType;
   receiver_wallet: string;
-  binance_address: string;
+  // binance_address: string;
 }
 
 export interface P2PWithdraw {
@@ -133,6 +133,12 @@ export interface P2PResponse {
     country: string | null;
     photo: string;
   };
+}
+
+export interface WithdrawalResponse {
+  message: string;
+  withdrawal_id: string;
+  amount: string;
 }
 
 export interface P2PListResponse {

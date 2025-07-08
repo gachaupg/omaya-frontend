@@ -48,6 +48,7 @@ export const API_CONFIG = {
     REFERRAL_USERS: (code: string) => `/api/referred-users/${code}/`,
     REFERRAL_WALLET: "/api/wallet/referral-wallet/",
     REFERRAL_WITHDRAW: "/trading_engine/referral/withdraw/",
+    WITHDRAWAL_OTP: "/trading_engine/p2pwithdraw-otp/",
   },
   SWAP: {
     SUPPORTED_ASSETS: "/api/changenow/supported-tokens/",

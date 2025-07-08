@@ -27,6 +27,8 @@ import referralReducer from "@/features/settings/slices/referralSlice";
 import referralWalletReducer from "@/features/settings/slices/referralWalletSlice";
 import settingsReducer from "@/features/settings/slices/settingsSlice";
 import swapReducer from "@/features/swap/slices/swapSlice";
+import marketReducer from "@/features/markets/slices/marketSlice";
+=======
 import blogReducer from "@/features/blogs/slices/blog";
 import transactionReducer from "@/features/rates/slices/transactionSlice";
 
@@ -54,6 +56,7 @@ const rootReducer = combineReducers({
   referralWallet: referralWalletReducer,
   settings: settingsReducer,
   swap: swapReducer,
+  markets: marketReducer,
   blog: blogReducer,
   transaction: transactionReducer,
   // Add other reducers here

@@ -116,8 +116,8 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
     if (!orders) {
       return [];
     }
-    const orderType = activeTab === "buy" ? "buy_orders" : "sell_orders";
-   
+    const orderType = activeTab === "buy" ? "sell_orders" : "buy_orders";
+
     return orders[orderType]?.results || [];
   }, [orders, activeTab]);
 
@@ -134,8 +134,6 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
     if (!getActiveOrders) {
       return [];
     }
-
-   
 
     const data = getActiveOrders
       .map((order: any) => {
@@ -223,8 +221,8 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
   // Calculate total pages based on the active tab
   const totalPages = Math.ceil(
     (activeTab === "buy"
-      ? orders?.buy_orders?.total_orders_count
-      : orders?.sell_orders?.total_orders_count || 0) / 10
+      ? orders?.sell_orders?.total_orders_count
+      : orders?.buy_orders?.total_orders_count || 0) / 10
   );
 
   // Don't render anything until mounted to prevent hydration mismatch
@@ -239,17 +237,17 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
           <div
             className={`flex items-center w-full sm:w-auto bg-[${tokens.colors.dark.card}] border border-[${tokens.colors.dark.border}] rounded-lg px-2 py-1 gap-2`}
           >
-           <div className="">
-           <Input
-              bgColor={tokens.colors.dark.card}
-              borderColor={tokens.colors.dark.card}
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="Enter amount"
-              className={`bg-transparent h-[8px] border-none focus:ring-0 text-[${tokens.colors.dark.textTitle}] w-full sm:w-28`}
-            />
-           </div>
+            <div className="">
+              <Input
+                bgColor={tokens.colors.dark.card}
+                borderColor={tokens.colors.dark.card}
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="Enter amount"
+                className={`bg-transparent h-[8px] border-none focus:ring-0 text-[${tokens.colors.dark.textTitle}] w-full sm:w-28`}
+              />
+            </div>
             <Select
               bgColor={tokens.colors.dark.card}
               borderColor={tokens.colors.dark.card}

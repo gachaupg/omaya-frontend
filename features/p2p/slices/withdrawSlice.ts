@@ -33,6 +33,14 @@ export const createWithdrawal = createAsyncThunk(
   }
 );
 
+export const verifyWithdrawal = createAsyncThunk(
+  "withdrawals/verifyWithdrawal",
+  async (data: { withdrawal_id: string; otp: string }) => {
+    const response = await api.verifyWithdrawal(data);
+    return response;
+  }
+);
+
 const withdrawSlice = createSlice({
   name: "withdrawals",
   initialState,
@@ -72,6 +80,19 @@ const withdrawSlice = createSlice({
       .addCase(createWithdrawal.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || "Failed to create withdrawal";
+      })
+      // Verify Withdrawal
+      .addCase(verifyWithdrawal.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(verifyWithdrawal.fulfilled, (state, action) => {
+        state.loading = false;
+        // Handle successful verification
+      })
+      .addCase(verifyWithdrawal.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Failed to verify withdrawal";
       });
   },
 });

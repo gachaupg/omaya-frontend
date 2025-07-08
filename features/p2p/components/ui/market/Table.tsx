@@ -26,7 +26,6 @@ const MarketTable: React.FC<MarketTableProps> = ({
 
   return (
     <div className="w-full">
-  
       <div className="overflow-x-auto rounded-2xl">
         <div
           className={`min-w-[800px] w-full border overflow-hidden bg-[${tokens.colors.dark.card}] border-[${tokens.colors.dark.border}]`}
@@ -149,7 +148,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                       className="min-w-[90px] font-semibold"
                       onClick={() => handleTradeClick(idx)}
                     >
-                      {activeTab === "buy" ? "BUY USDT" : "SELL USDT"}
+                      {activeTab === "sell" ? "SELL USDT" : "BUY USDT"}
                     </Button>
                   </div>
                 </div>
