@@ -72,6 +72,10 @@ export interface SettingsState {
   error: string | null;
   success: string | null;
   updating: boolean;
+  // Device Session Management
+  deviceSessions: DeviceSession[];
+  deviceSessionsLoading: boolean;
+  deviceSessionsError: string | null;
 }
 
 export interface SettingsApiResponse {
@@ -115,4 +119,47 @@ export interface SessionInfo {
 
 export interface SessionsResponse extends SettingsApiResponse {
   data: SessionInfo[];
+}
+
+// Device Session Management Types
+export interface DeviceSession {
+  id: number;
+  session_id: string;
+  ip_address: string;
+  location: string;
+  browser: string;
+  sign_in_time: string;
+  is_active: boolean;
+  // Optional fields that might be present in some responses
+  last_activity?: string;
+  is_current?: boolean;
+  user_agent?: string;
+  device_type?: string;
+}
+
+export interface CreateDeviceSessionPayload {
+  ip_address: string;
+  location: string;
+  browser: string;
+  sign_in_time: string;
+  user_agent: string;
+  device_type: string;
+}
+
+export interface DeviceSessionsResponse extends SettingsApiResponse {
+  data: DeviceSession[];
+}
+
+export interface LogoutDeviceResponse extends SettingsApiResponse {
+  data: {
+    message: string;
+    logged_out_session_id: string;
+  };
+}
+
+export interface LogoutAllDevicesResponse extends SettingsApiResponse {
+  data: {
+    message: string;
+    logged_out_count: number;
+  };
 }

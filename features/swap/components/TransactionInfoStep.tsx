@@ -1,29 +1,26 @@
 import React from "react";
 import AssetDropdown from "./AssetDropdown";
-import FeeBreakdown from "./FeeBreakdown";
-import { Asset, Estimate } from "./types";
+import EstimatedPriceDisplay from "./EstimatedPriceDisplay";
+import { SupportedAsset, SwapEstimate } from "../types";
 
 interface TransactionInfoStepProps {
-  fromAsset: Asset | null;
-  toAsset: Asset | null;
+  fromAsset: SupportedAsset | null;
+  toAsset: SupportedAsset | null;
   fromAmount: string;
   toAmount: string;
-  walletAddress: string;
-  supportedAssets: Asset[];
-  estimate: Estimate | null;
+  supportedAssets: SupportedAsset[];
+  estimate: SwapEstimate | null;
   estimateLoading: boolean;
   estimateError: string | null;
   localSwapError: string;
-  walletValidationError: string;
   isFromAssetOpen: boolean;
   isToAssetOpen: boolean;
   searchTerm: string;
   toSearchTerm: string;
-  onFromAssetSelect: (asset: Asset) => void;
-  onToAssetSelect: (asset: Asset) => void;
+  onFromAssetSelect: (asset: SupportedAsset) => void;
+  onToAssetSelect: (asset: SupportedAsset) => void;
   onFromAmountChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onToAmountChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onWalletAddressChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onFromAssetToggle: () => void;
   onToAssetToggle: () => void;
   onSearchTermChange: (term: string) => void;
@@ -37,13 +34,11 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
   toAsset,
   fromAmount,
   toAmount,
-  walletAddress,
   supportedAssets,
   estimate,
   estimateLoading,
   estimateError,
   localSwapError,
-  walletValidationError,
   isFromAssetOpen,
   isToAssetOpen,
   searchTerm,
@@ -52,7 +47,6 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
   onToAssetSelect,
   onFromAmountChange,
   onToAmountChange,
-  onWalletAddressChange,
   onFromAssetToggle,
   onToAssetToggle,
   onSearchTermChange,
@@ -117,8 +111,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
             </span>
           </div>
 
-          {/* Fee Breakdown */}
-          <FeeBreakdown
+          {/* Estimated Price Display */}
+          <EstimatedPriceDisplay
             estimate={estimate}
             fromAsset={fromAsset}
             toAsset={toAsset}
@@ -175,27 +169,6 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
             </div>
           </div>
 
-          {/* Wallet Address Input */}
-          <div className="mt-4">
-            <div className="text-xs mb-1">To Wallet Address</div>
-            <div className="flex items-center bg-[#181820] border border-[#35353E] rounded-[18px] px-3 py-2">
-              <input
-                type="text"
-                value={walletAddress}
-                onChange={onWalletAddressChange}
-                className="bg-transparent outline-none w-full text-white"
-                placeholder={`Enter your ${
-                  fromAsset?.network || "wallet"
-                } address`}
-              />
-            </div>
-            {walletValidationError && (
-              <div className="text-red-500 text-xs mt-1">
-                {walletValidationError}
-              </div>
-            )}
-          </div>
-
           {/* Error Display */}
           {estimateError && (
             <div className="text-red-500 text-xs bg-red-900/20 border border-red-500/30 rounded-lg p-2">
@@ -217,12 +190,11 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
               !fromAmount ||
               parseFloat(fromAmount) <= 0 ||
               !estimate ||
-              estimateLoading ||
-              !walletAddress.trim()
+              estimateLoading
             }
             onClick={onSubmit}
           >
-            {swapLoading ? "Submitting..." : "Submit"}
+            {swapLoading ? "Loading..." : "Continue"}
           </button>
         </div>
       </div>

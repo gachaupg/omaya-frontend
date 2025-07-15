@@ -1,19 +1,23 @@
-import React from 'react';
-import { Toaster } from 'react-hot-toast';
-import { useDepositLogic } from './useDepositLogic';
-import AssetSelector from './AssetSelector';
-import DepositForm from './DepositForm';
-import WithdrawalModal from '../WithdrawalModal';
-import { Asset } from '../../types';
-import { ChevronDown } from 'lucide-react';
+import React from "react";
+import { Toaster } from "react-hot-toast";
+import { useDepositLogic } from "./useDepositLogic";
+import AssetSelector from "./AssetSelector";
+import DepositForm from "./DepositForm";
+import WithdrawalModal from "../WithdrawalModal";
+import { Asset } from "../../types";
+import { ChevronDown } from "lucide-react";
 
 interface DepositModalProps {
   asset: Asset;
-  assetType: 'Crypto' | 'Forex';
+  assetType: "Crypto" | "Forex";
   onClose: () => void;
 }
 
-const DepositModal: React.FC<DepositModalProps> = ({ asset, assetType, onClose }) => {
+const DepositModal: React.FC<DepositModalProps> = ({
+  asset,
+  assetType,
+  onClose,
+}) => {
   const logic = useDepositLogic(asset, assetType, onClose);
 
   return (
@@ -25,26 +29,26 @@ const DepositModal: React.FC<DepositModalProps> = ({ asset, assetType, onClose }
         <div className="flex flex-col">
           <h1 className="text-xl text-white mb-2">Asset Class</h1>
           <div className="flex w-full border border-[#1D8751] rounded-lg p-1 gap-2">
-          <button 
-                className={`flex-1 px-2 sm:px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
-                logic.currentAssetType === 'Crypto'
-                    ? 'bg-[#1D8751] text-white' 
-                    : 'bg-[#35353E] text-[#788099]'
-                }`}
-              onClick={() => logic.setCurrentAssetType('Crypto')}
-              >
-                Crypto
-              </button>
-              <button 
-                className={`flex-1 px-2 sm:px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
-                logic.currentAssetType === 'Forex'
-                    ? 'bg-[#1D8751] text-white' 
-                    : 'bg-[#35353E] text-[#788099]'
-                }`}
-              onClick={() => logic.setCurrentAssetType('Forex')}
-              >
-                Forex
-              </button>
+            <button
+              className={`flex-1 px-2 sm:px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
+                logic.currentAssetType === "Crypto"
+                  ? "bg-[#1D8751] text-white"
+                  : "bg-[#35353E] text-[#788099]"
+              }`}
+              onClick={() => logic.setCurrentAssetType("Crypto")}
+            >
+              Crypto
+            </button>
+            <button
+              className={`flex-1 px-2 sm:px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
+                logic.currentAssetType === "Forex"
+                  ? "bg-[#1D8751] text-white"
+                  : "bg-[#35353E] text-[#788099]"
+              }`}
+              onClick={() => logic.setCurrentAssetType("Forex")}
+            >
+              Forex
+            </button>
           </div>
         </div>
         {/* Transaction Type Toggle */}
@@ -57,20 +61,20 @@ const DepositModal: React.FC<DepositModalProps> = ({ asset, assetType, onClose }
             <div className="flex gap-2">
               <button
                 className={`px-4 py-2 rounded-full font-semibold text-sm text-white border flex items-center gap-2 ${
-                  !logic.showWithdraw 
-                    ? 'bg-[#1D8751] text-white border-[#1D8751]' 
-                    : 'bg-transparent border-[#1D8751] text-[#1D8751]'
+                  !logic.showWithdraw
+                    ? "bg-[#1D8751] text-white border-[#1D8751]"
+                    : "bg-transparent border-[#1D8751] text-[#1D8751]"
                 }`}
                 onClick={() => logic.setShowWithdraw(false)}
               >
-                <svg 
-                  width="16" 
-                  height="16" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  stroke={!logic.showWithdraw ? '#FFFFFF' : '#1D8751'}
-                  strokeWidth="2" 
-                  strokeLinecap="round" 
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke={!logic.showWithdraw ? "#FFFFFF" : "#1D8751"}
+                  strokeWidth="2"
+                  strokeLinecap="round"
                   strokeLinejoin="round"
                 >
                   <line x1="7" y1="17" x2="17" y2="7"></line>
@@ -80,20 +84,20 @@ const DepositModal: React.FC<DepositModalProps> = ({ asset, assetType, onClose }
               </button>
               <button
                 className={`px-4 py-2 rounded-full font-semibold text-sm border flex items-center gap-2 text-white ${
-                  logic.showWithdraw 
-                    ? 'bg-transparent border-[#E23D3A] text-[#E23D3A]' 
-                    : 'bg-transparent border-[#E23D3A] text-[#E23D3A]'
-                }${logic.showWithdraw ? ' bg-[#E23D3A] text-white' : ''}`}
+                  logic.showWithdraw
+                    ? "bg-transparent border-[#E23D3A] text-[#E23D3A]"
+                    : "bg-transparent border-[#E23D3A] text-[#E23D3A]"
+                }${logic.showWithdraw ? " bg-[#E23D3A] text-white" : ""}`}
                 onClick={() => logic.setShowWithdraw(true)}
               >
-                <svg 
-                  width="16" 
-                  height="16" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  stroke={logic.showWithdraw ? '#FFFFFF' : '#E23D3A'}
-                  strokeWidth="2" 
-                  strokeLinecap="round" 
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke={logic.showWithdraw ? "#FFFFFF" : "#E23D3A"}
+                  strokeWidth="2"
+                  strokeLinecap="round"
                   strokeLinejoin="round"
                 >
                   <line x1="17" y1="7" x2="7" y2="17"></line>
@@ -107,7 +111,11 @@ const DepositModal: React.FC<DepositModalProps> = ({ asset, assetType, onClose }
       </div>
       {/* Withdraw Modal */}
       {logic.showWithdraw ? (
-        <WithdrawalModal asset={logic.currentAsset!} assetType={logic.currentAssetType} onClose={onClose} />
+        <WithdrawalModal
+          asset={logic.currentAsset!}
+          assetType={logic.currentAssetType}
+          onClose={onClose}
+        />
       ) : (
         <>
           {/* Asset Selector (Transaction Info) */}
@@ -145,7 +153,9 @@ const DepositModal: React.FC<DepositModalProps> = ({ asset, assetType, onClose }
             handleFileUpload={logic.handleFileUpload}
             handleUploadClick={logic.handleUploadClick}
             fileError={logic.fileError}
-            fileInputRef={logic.fileInputRef as React.RefObject<HTMLInputElement>}
+            fileInputRef={
+              logic.fileInputRef as React.RefObject<HTMLInputElement>
+            }
             handlePasteClick={logic.handlePasteClick}
             handleWalletAddressChange={logic.handleWalletAddressChange}
             handleSubmit={logic.handleSubmit}

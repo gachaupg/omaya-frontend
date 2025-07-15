@@ -49,6 +49,7 @@ export const API_CONFIG = {
     REFERRAL_WALLET: "/api/wallet/referral-wallet/",
     REFERRAL_WITHDRAW: "/trading_engine/referral/withdraw/",
     WITHDRAWAL_OTP: "/trading_engine/p2pwithdraw-otp/",
+    WITHDRAWAL_ADDRESSES: "/trading_engine/withdrawal/addresses/",
   },
   SWAP: {
     SUPPORTED_ASSETS: "/api/changenow/supported-tokens/",
@@ -58,5 +59,15 @@ export const API_CONFIG = {
   },
   RATES: {
     TRANSACTIONS: "/trading_engine/detail-transactions/",
+  },
+  SETTINGS: {
+    CREATE_DEVICE: "/api/devices/create/",
+    GET_DEVICE: "/api/device-sessions/",
+    LOGOUT_DEVICE: (sessionId: string) => `/api/device-sessions/logout/${sessionId}/`,
+    LOGOUT_ALL_DEVICES: "/api/device-sessions/logout-all/",
+  },
+  EXCHANGE: {
+    DEPOSIT: "/trading_engine/deposit/",
+    WITHDRAW: "/trading_engine/withdraw/",
   },
 };

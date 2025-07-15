@@ -32,7 +32,7 @@ export default function Sidebar() {
                     href={item.href}
                     className={clsx(
                       "flex items-center px-6 py-3 rounded-lg text-base font-medium gap-4 transition",
-                      "w-full sm:w-auto", 
+                      "w-full sm:w-auto",
                       isActive
                         ? "bg-[#303038] text-white"
                         : "text-[#727272] hover:text-white hover:bg-[#23262F]"
@@ -43,7 +43,42 @@ export default function Sidebar() {
                       alt={item.label + " icon"}
                       className="w-6 h-6 object-contain"
                     />
-                    {item.label}
+                    {item.label === "Express" ? (
+                      <span
+                        className={clsx(
+                          "flex items-center justify-center gap-1",
+                          isActive
+                            ? "font-bold text-white text-base"
+                            : "font-normal text-[#727272] text-sm uppercase"
+                        )}
+                      >
+                       {
+                        isActive? <span className="flex items-center justify-center">
+                          <img
+                            src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
+                            alt=""
+                          />
+                          <img
+                            className="mt-2"
+                            src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                            alt=""
+                          />
+                        </span>:<span className="flex items-center justify-center">
+                          <img
+                            src="https://res.cloudinary.com/pitz/image/upload/v1752429831/Express_vkggc2.png"
+                            alt=""
+                          />
+                          <img
+                            className="mt-2"
+                            src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
+                            alt=""
+                          />
+                        </span>
+                       }
+                      </span>
+                    ) : (
+                      item.label
+                    )}
                   </Link>
                 </li>
               );
@@ -63,7 +98,7 @@ export default function Sidebar() {
                   <Link
                     href={item.href}
                     className={clsx(
-                      "flex items-center px-4 py-2 rounded-lg text-sm font-medium gap-2 whitespace-nowrap transition",
+                      "flex items-center px-1 py-2 rounded-lg text-sm font-medium gap-2 whitespace-nowrap transition",
                       isActive
                         ? "bg-[#303038] text-white"
                         : "text-[#727272] hover:text-white hover:bg-[#23262F]"
@@ -74,7 +109,68 @@ export default function Sidebar() {
                       alt={item.label + " icon"}
                       className="w-5 h-5 object-contain"
                     />
-                    {item.label}
+                    {item.label === "Express" ? (
+                      <span
+                        className={clsx(
+                          "flex items-center justify-center gap-1",
+                          isActive
+                            ? "font-bold text-white text-base"
+                            : "font-normal text-[#727272] text-sm uppercase"
+                        )}
+                      >
+                        <span
+                          className={isActive ? "font-bold" : "font-normal"}
+                        >
+                          Express
+                        </span>
+                        <svg
+                          width="28"
+                          height="32"
+                          viewBox="0 0 32 32"
+                          className="mx-0"
+                          style={{ minWidth: 28, verticalAlign: "middle" }}
+                        >
+                          {/* Left stroke (upper, green) */}
+                          <line
+                            x1="7"
+                            y1="4"
+                            x2="16"
+                            y2="16"
+                            stroke="#1D8751"
+                            strokeWidth="4"
+                            strokeLinecap="round"
+                          />
+                          {/* Left stroke (lower, white, very long) */}
+                          <line
+                            x1="16"
+                            y1="16"
+                            x2="28"
+                            y2="32"
+                            stroke={isActive ? "#fff" : "#727272"}
+                            strokeWidth="4"
+                            strokeLinecap="round"
+                          />
+                          {/* Right stroke (long, white) */}
+                          <line
+                            x1="25"
+                            y1="4"
+                            x2="7"
+                            y2="28"
+                            stroke={isActive ? "#fff" : "#727272"}
+                            strokeWidth="4"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <span
+                          className={isActive ? "font-bold" : "font-normal"}
+                          style={{ marginLeft: "-6px" }}
+                        >
+                          {isActive ? "Change" : "CHANGE"}
+                        </span>
+                      </span>
+                    ) : (
+                      item.label
+                    )}
                   </Link>
                 </li>
               );

@@ -20,8 +20,10 @@ import { RootState, AppDispatch } from "@/store/rootReducer";
 import SwapStatusComponent from "./SwapStatus";
 import StepIndicator from "./StepIndicator";
 import TransactionInfoStep from "./TransactionInfoStep";
+import WalletAddressStep from "./WalletAddressStep";
 import CopyAddressStep from "./CopyAddressStep";
 import { SwapStep } from "./types";
+import { SupportedAsset, SwapEstimate } from "../types";
 import { showToast } from "@/lib/utils/toast";
 import { handleApiError } from "@/lib/utils/errorHandler";
 
@@ -156,6 +158,9 @@ const SwapWidget = () => {
         return;
       }
 
+      // Move to wallet address step
+      setCurrentStep("wallet-address");
+    } else if (currentStep === "wallet-address") {
       // Validate wallet address
       if (!walletAddress.trim()) {
         setWalletValidationError("Wallet address is required");
@@ -168,7 +173,7 @@ const SwapWidget = () => {
 
       // Import and use the validation function
       import("@/lib/addressValidaion").then(({ validateWalletAddress }) => {
-        const normalizedNetwork = fromAsset?.network?.toUpperCase();
+        const normalizedNetwork = fromAsset?.network?.toUpperCase() || "ETH";
         const validationResult = validateWalletAddress(
           walletAddress,
           normalizedNetwork
@@ -194,8 +199,10 @@ const SwapWidget = () => {
 
   // Handle back step
   const handleBackStep = () => {
-    if (currentStep === "copy-address") {
+    if (currentStep === "wallet-address") {
       setCurrentStep("transaction-info");
+    } else if (currentStep === "copy-address") {
+      setCurrentStep("wallet-address");
     } else if (currentStep === "status") {
       setCurrentStep("copy-address");
     }
@@ -318,7 +325,7 @@ const SwapWidget = () => {
   };
 
   const handleCopyAddressStepBack = () => {
-    setCurrentStep("transaction-info");
+    setCurrentStep("wallet-address");
   };
 
   if (error) {
@@ -373,7 +380,7 @@ const SwapWidget = () => {
       <h2 className="text-lg font-semibold mb-6">Swap Crypto</h2>
 
       {/* Step indicator */}
-      <StepIndicator currentStep={currentStep} />
+      {/* <StepIndicator currentStep={currentStep} /> */}
 
       {/* Step 1: Transaction Info */}
       {currentStep === "transaction-info" && (
@@ -382,13 +389,11 @@ const SwapWidget = () => {
           toAsset={toAsset}
           fromAmount={fromAmount}
           toAmount={toAmount}
-          walletAddress={walletAddress}
           supportedAssets={supportedAssets}
           estimate={estimate}
           estimateLoading={estimateLoading}
           estimateError={estimateError}
           localSwapError={localSwapError}
-          walletValidationError={walletValidationError}
           isFromAssetOpen={isFromAssetOpen}
           isToAssetOpen={isToAssetOpen}
           searchTerm={searchTerm}
@@ -397,7 +402,6 @@ const SwapWidget = () => {
           onToAssetSelect={(asset) => dispatch(setToAsset(asset))}
           onFromAmountChange={handleFromAmountChange}
           onToAmountChange={handleToAmountChange}
-          onWalletAddressChange={handleWalletAddressChange}
           onFromAssetToggle={() => setIsFromAssetOpen(!isFromAssetOpen)}
           onToAssetToggle={() => setIsToAssetOpen(!isToAssetOpen)}
           onSearchTermChange={setSearchTerm}
@@ -407,7 +411,19 @@ const SwapWidget = () => {
         />
       )}
 
-      {/* Step 2: Copy Address */}
+      {/* Step 2: Wallet Address */}
+      {currentStep === "wallet-address" && (
+        <WalletAddressStep
+          walletAddress={walletAddress}
+          onWalletAddressChange={handleWalletAddressChange}
+          walletValidationError={walletValidationError}
+          onBack={handleBackStep}
+          onNext={handleNextStep}
+          fromAsset={fromAsset}
+        />
+      )}
+
+      {/* Step 3: Copy Address */}
       {currentStep === "copy-address" && (
         <CopyAddressStep
           swapResponse={swapResponse}
