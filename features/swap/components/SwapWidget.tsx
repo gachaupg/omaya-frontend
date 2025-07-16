@@ -379,8 +379,7 @@ const SwapWidget = () => {
     <div className="mx-auto text-white">
       <h2 className="text-lg font-semibold mb-6">Swap Crypto</h2>
 
-      {/* Step indicator */}
-      {/* <StepIndicator currentStep={currentStep} /> */}
+      {/* Step i    {/* <StepIndicator currentStep={currentStep} /> */}
 
       {/* Step 1: Transaction Info */}
       {currentStep === "transaction-info" && (
