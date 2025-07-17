@@ -294,41 +294,95 @@ const MarketTable = () => {
     setLoadingChart(true);
 
     try {
-      // Use direct fetch calls to avoid API key issues
+      // Use direct fetch calls to avoid API key issues with proper error handling
       const [detailsResponse, chartResponse] = await Promise.all([
-        fetch(`https://api.coingecko.com/api/v3/coins/${id}`).then((res) =>
-          res.json()
+        fetch(`https://api.coingecko.com/api/v3/coins/${id}`).then(
+          async (res) => {
+            if (!res.ok) {
+              throw new Error(`Details API error: ${res.status}`);
+            }
+            const text = await res.text();
+            try {
+              return JSON.parse(text);
+            } catch (e) {
+              console.warn("Invalid JSON in details response");
+              return { error: "Invalid JSON" };
+            }
+          }
         ),
+        // Remove interval=hourly to avoid Enterprise plan requirement
         fetch(
-          `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=1&interval=hourly`
-        ).then((res) => res.json()),
+          `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=1`
+        ).then(async (res) => {
+          if (!res.ok) {
+            throw new Error(`Chart API error: ${res.status}`);
+          }
+          const text = await res.text();
+          try {
+            return JSON.parse(text);
+          } catch (e) {
+            console.warn("Invalid JSON in chart response");
+            return { error: "Invalid JSON" };
+          }
+        }),
       ]);
 
-      // Set coin details
-      setCoinDetails(detailsResponse);
-
-      // Process chart data - ensure it's an array and has the expected format
+      // Set coin details with error checking
       if (
+        detailsResponse &&
+        !detailsResponse.error &&
+        !detailsResponse.status?.error_code
+      ) {
+        setCoinDetails(detailsResponse);
+      } else {
+        console.warn("Coin details API error:", detailsResponse);
+        setCoinDetails(null);
+      }
+
+      // Process chart data with comprehensive error handling
+      if (
+        chartResponse &&
+        !chartResponse.error &&
+        !chartResponse.status?.error_code &&
         chartResponse.prices &&
         Array.isArray(chartResponse.prices) &&
         chartResponse.prices.length > 0
       ) {
-        const processedChartData = chartResponse.prices.map(
-          ([timestamp, price]: [number, number]) => ({
-            time: new Date(timestamp).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-            price: Number(price),
-          })
-        );
-        setChartData(processedChartData);
+        try {
+          const processedChartData = chartResponse.prices.map(
+            ([timestamp, price]: [number, number]) => ({
+              time: new Date(timestamp).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+              price: Number(price),
+            })
+          );
+
+          // Validate processed data before setting
+          if (processedChartData && processedChartData.length > 0) {
+            setChartData(processedChartData);
+          } else {
+            console.warn("Processed chart data is empty");
+            setChartData([]);
+          }
+        } catch (processingError) {
+          console.warn("Error processing chart data:", processingError);
+          setChartData([]);
+        }
       } else {
-        console.error("Invalid chart data format:", chartResponse);
+        // Handle API errors gracefully
+        if (chartResponse?.status?.error_code) {
+          console.warn("Chart API error:", chartResponse.status.error_message);
+        } else {
+          console.warn(
+            "Invalid chart data format - missing or empty prices array"
+          );
+        }
         setChartData([]);
       }
     } catch (error) {
-      console.error("Error fetching coin data:", error);
+      console.warn("Network error fetching coin data:", error);
       setCoinDetails(null);
       setChartData([]);
     } finally {

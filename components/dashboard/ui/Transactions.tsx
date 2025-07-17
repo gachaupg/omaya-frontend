@@ -26,9 +26,9 @@ const Transactions = () => {
   };
 
   return (
-    <div className="bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-4">
+    <div className="dark:bg-[#1D1D23] bg-[#F5F5F5] border-2 border-[#35353E] rounded-2xl p-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4">
-        <h2 className="text-xl sm:text-2xl font-semibold text-white">
+        <h2 className="text-xl sm:text-2xl font-semibold dark:text-white text-[#0D0D0D]">
           My Transactions
         </h2>
         <div className="flex flex-wrap gap-2 sm:gap-4">

@@ -3,6 +3,7 @@
 
 import { Provider } from "react-redux";
 import { store } from "@/store/index";
+import { ThemeProvider } from "@/context/theme";
 import { setAuthCallback } from "@/lib/utils/errorHandler";
 import { logout } from "@/features/auth/slices/authSlice";
 import { useEffect } from "react";
@@ -16,5 +17,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  return <Provider store={store}>{children}</Provider>;
+  return (
+    <Provider store={store}>
+      <ThemeProvider>{children}</ThemeProvider>
+    </Provider>
+  );
 }

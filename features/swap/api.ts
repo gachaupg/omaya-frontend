@@ -21,12 +21,26 @@ export const getSupportedAssets = async (): Promise<SupportedAsset[]> => {
       return response.data;
     } catch (error: any) {
       console.error("Failed to fetch supported assets:", error);
-      if (error.response?.status === 500) {
-        throw new Error(
-          "Server Error: Unable to fetch supported assets. Please try again later."
-        );
+
+      // Handle different error scenarios
+      if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
+        console.warn("Network connection issue, returning empty assets list");
+        return [];
       }
-      throw error;
+
+      if (error.response?.status === 500) {
+        console.warn("Server error, returning empty assets list");
+        return [];
+      }
+
+      if (error.response?.status === 404) {
+        console.warn("Endpoint not found, returning empty assets list");
+        return [];
+      }
+
+      // For other errors, return empty array instead of throwing
+      console.warn("Unknown error, returning empty assets list");
+      return [];
     }
   });
 };
@@ -47,14 +61,28 @@ export const getEstimateSwap = async (
       return response.data;
     } catch (error: any) {
       console.error("Failed to fetch swap estimate:", error);
+
+      // Handle network errors gracefully
+      if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
+        throw new Error(
+          "Network connection issue. Please check your internet connection and try again."
+        );
+      }
+
       if (error.response?.status === 500) {
         throw new Error(
           "Server Error: Unable to calculate swap estimate. Please try again later."
         );
       } else if (error.response?.status === 400) {
         throw new Error("Invalid swap parameters. Please check your input.");
+      } else if (error.response?.status === 404) {
+        throw new Error("Swap service not available. Please try again later.");
       }
-      throw error;
+
+      // For other errors, provide a generic message
+      throw new Error(
+        "Unable to calculate swap estimate. Please try again later."
+      );
     }
   });
 };

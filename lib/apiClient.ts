@@ -10,6 +10,7 @@ import axios, {
 import { storage } from "../features/auth/utils/storage";
 import { API_BASE_URL } from "@/config/api";
 import { logger } from "./utils/logger";
+import ApiHealthChecker from "./utils/apiHealthChecker";
 
 if (!API_BASE_URL) {
   throw new Error(
@@ -146,9 +147,20 @@ const addRetryInterceptor = (
   config: ApiClientConfig
 ): AxiosInstance => {
   instance.interceptors.response.use(
-    (response) => response,
+    (response) => {
+      // Record successful API call
+      if (response.config.url) {
+        ApiHealthChecker.recordSuccess(response.config.url);
+      }
+      return response;
+    },
     async (error: AxiosError) => {
       const originalRequest = error.config as any;
+
+      // Record API failure
+      if (originalRequest?.url) {
+        ApiHealthChecker.recordFailure(originalRequest.url, error);
+      }
 
       if (!originalRequest || originalRequest._retryCount >= config.retries) {
         return Promise.reject(error);

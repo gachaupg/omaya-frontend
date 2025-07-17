@@ -5,8 +5,8 @@ const BuyTransactions = () => {
   return (
     <div className="overflow-x-auto">
       <div className="w-full text-center py-8">
-        <div className="flex flex-col items-center justify-center border border-[#35353E] rounded-[24px] p-8 bg-[#23232B]">
-          <div className="w-16 h-16 mb-4 rounded-full bg-[#35353E] flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center border border-[#35353E] rounded-[24px] p-8 dark:bg-[#23232B] bg-[#F5F5F5]">
+          <div className="w-16 h-16 mb-4 rounded-full dark:bg-[#35353E] bg-white flex items-center justify-center">
             <svg
               width="24"
               height="24"
@@ -38,7 +38,7 @@ const BuyTransactions = () => {
               />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-[#788099] mb-2">
+          <h3 className="text-lg font-semibold dark:text-[#788099] mb-2">
             No Buy Transactions Found
           </h3>
           <p className="text-sm text-[#8C8CA1] text-center max-w-md">

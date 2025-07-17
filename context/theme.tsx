@@ -20,7 +20,7 @@ interface ThemeProviderProps {
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const reduxTheme = useReduxThemeToggle();
 
-  const [theme, setThemeState] = useState<Theme>("light");
+  const [theme, setThemeState] = useState<Theme>("dark");
 
   // Sync with Redux theme state
   useEffect(() => {
@@ -36,8 +36,12 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    // Use Redux theme toggle to update the global state
-    reduxTheme.toggleTheme(newTheme as "light" | "dark" | "system");
+    // Use Redux theme toggle to update the global state (no server calls)
+    try {
+      reduxTheme.toggleTheme(newTheme as "light" | "dark" | "system");
+    } catch (error) {
+      console.log("Redux theme update failed, using local state:", error);
+    }
   };
 
   const value: ThemeContextType = {

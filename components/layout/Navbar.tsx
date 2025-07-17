@@ -3,10 +3,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Moon, Sun, Menu, X, Check } from "lucide-react";
+import { Menu, X, Check } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "@/features/auth/store";
-import { initializeAuth, getUserProfile } from "@/features/auth/slices/authSlice";
+import {
+  initializeAuth,
+  getUserProfile,
+} from "@/features/auth/slices/authSlice";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 const DefaultProfileIcon = () => (
   <div
@@ -26,11 +30,12 @@ const DefaultProfileIcon = () => (
 );
 
 export default function Navbar() {
-  const [theme, setTheme] = useState<"light" | "dark">("light");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [depositDropdownOpen, setDepositDropdownOpen] = useState(false);
-  const { isAuthenticated, profile: userProfile } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated, profile: userProfile } = useSelector(
+    (state: RootState) => state.auth
+  );
   const dispatch = useDispatch<AppDispatch>();
   const depositDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -44,11 +49,7 @@ export default function Navbar() {
     }
   }, [isAuthenticated, dispatch]);
 
-  console.log("profile", userProfile)
-
-  const toggleTheme = () => {
-    setTheme(theme === "light" ? "dark" : "light");
-  };
+  console.log("profile", userProfile);
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
@@ -57,19 +58,22 @@ export default function Navbar() {
   const toggleDepositDropdown = (e: React.MouseEvent) => {
     e.preventDefault();
     setDepositDropdownOpen(!depositDropdownOpen);
-  }
+  };
 
   //Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if(depositDropdownRef.current && !depositDropdownRef.current.contains(event.target as Node)){
+      if (
+        depositDropdownRef.current &&
+        !depositDropdownRef.current.contains(event.target as Node)
+      ) {
         setDepositDropdownOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -93,7 +97,7 @@ export default function Navbar() {
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-4 sm:px-6 md:px-12 2xl:px-20 transition-all duration-300 ${
+        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-4 sm:px-6 md:px-12 2xl:px-20 transition-all duration-300  ${
           scrolled ? "bg-[#1D1D23]" : "bg-transparent"
         }`}
       >
@@ -135,100 +139,308 @@ export default function Navbar() {
           {isAuthenticated ? (
             <div className="flex items-center space-x-4">
               <div className="" ref={depositDropdownRef}>
-                <button 
-                onClick={toggleDepositDropdown}
-                className="flex items-center bg-[#1D8751] hover:bg-[#13B562] text-white px-6 py-2 rounded-full transition-colors duration-200 text-sm md:text-base 2xl:text-lg">
-                  <svg className="mr-2" width="20" height="20" fill="none" viewBox="0 0 24 24">
-                    <path d="M12 3v14m0 0l-5-5m5 5l5-5" stroke="#FFB800" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <button
+                  onClick={toggleDepositDropdown}
+                  className="flex items-center bg-[#1D8751] hover:bg-[#13B562] text-white px-6 py-2 rounded-full transition-colors duration-200 text-sm md:text-base 2xl:text-lg"
+                >
+                  <svg
+                    className="mr-2"
+                    width="20"
+                    height="20"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      d="M12 3v14m0 0l-5-5m5 5l5-5"
+                      stroke="#FFB800"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                   Deposit
                 </button>
 
-                  {/* Deposit Dropdown */}
-                  {depositDropdownOpen && (
+                {/* Deposit Dropdown */}
+                {depositDropdownOpen && (
                   <div className="absolute top-full right-0 mt-2 w-md bg-[#1E2329] border border-[#35353E] rounded shadow-xl z-[9999]">
-                    <div className="p-6">               
+                    <div className="p-6">
                       {/* Exchange Option */}
-                      <Link href="/dashboard/exchange" className="block mb-3" onClick={() => {setDepositDropdownOpen(false)}}>
+                      <Link
+                        href="/dashboard/exchange"
+                        className="block mb-3"
+                        onClick={() => {
+                          setDepositDropdownOpen(false);
+                        }}
+                      >
                         <div className="flex items-center rounded-lg transition-colors duration-200 group">
                           <div className="flex items-center justify-center mr-4">
-                          <svg width="45" height="40" viewBox="0 0 45 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M28 12 L14 12 L18 8" stroke="#F79330" strokeWidth="4" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M17 20 L31 20 L27 24" stroke="#1D8751" strokeWidth="4" stroke-linecap="round" stroke-linejoin="round"/>
-                          </svg>
+                            <svg
+                              width="45"
+                              height="40"
+                              viewBox="0 0 45 40"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                d="M28 12 L14 12 L18 8"
+                                stroke="#F79330"
+                                strokeWidth="4"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                              <path
+                                d="M17 20 L31 20 L27 24"
+                                stroke="#1D8751"
+                                strokeWidth="4"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
                           </div>
                           <div className="flex-1">
-                            <h4 className="text-white font-medium text-base mb-1">Exchange</h4>
-                            <p className="text-gray-400 text-sm">Trade cryptocurrencies on the exchange with advanced tools and features for optimal transactions</p>
+                            <h4 className="text-white font-medium text-base mb-1">
+                              Exchange
+                            </h4>
+                            <p className="text-gray-400 text-sm">
+                              Trade cryptocurrencies on the exchange with
+                              advanced tools and features for optimal
+                              transactions
+                            </p>
                           </div>
-                          <svg className="w-5 h-5 text-gray-400 group-hover:text-[#1D8751] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          <svg
+                            className="w-5 h-5 text-gray-400 group-hover:text-[#1D8751] transition-colors"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
                           </svg>
                         </div>
                       </Link>
 
                       {/* P2P Option */}
-                      <Link href="/dashboard/p2p" className="block mb-3" onClick={() => {setDepositDropdownOpen(false)}}>
+                      <Link
+                        href="/dashboard/p2p"
+                        className="block mb-3"
+                        onClick={() => {
+                          setDepositDropdownOpen(false);
+                        }}
+                      >
                         <div className="flex items-center rounded-lg transition-colors duration-200 group">
                           <div className="w-10 h-10 flex items-center justify-center mr-4">
-                            <svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-                              <circle cx="40" cy="30" r="10" stroke="#1C8F4D" strokeWidth="6" fill="none"/>
-                              <path d="M58 22 A22 22 0 0 1 58 38" fill="none" stroke="#1C8F4D" strokeWidth="6" stroke-linecap="round"/>
-                              <path d="M20 90 Q20 65 45 65" fill="none" stroke="#1C8F4D" strokeWidth="6" stroke-linecap="round"/>
-                              <path d="M70 85 A20 20 0 0 1 110 85" fill="none" stroke="#F49A29" strokeWidth="6" stroke-linecap="round"/>
-                              <path d="M110 85 L104 80 M110 85 L108 77" stroke="#F49A29" strokeWidth="6" stroke-linecap="round"/>
-                              <path d="M110 85 A20 20 0 0 1 70 85" fill="none" stroke="#F49A29" strokeWidth="6" stroke-linecap="round"/>
-                              <path d="M70 85 L75 90 M70 85 L67 93" stroke="#F49A29" strokeWidth="6" stroke-linecap="round"/>
+                            <svg
+                              width="120"
+                              height="120"
+                              viewBox="0 0 120 120"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <circle
+                                cx="40"
+                                cy="30"
+                                r="10"
+                                stroke="#1C8F4D"
+                                strokeWidth="6"
+                                fill="none"
+                              />
+                              <path
+                                d="M58 22 A22 22 0 0 1 58 38"
+                                fill="none"
+                                stroke="#1C8F4D"
+                                strokeWidth="6"
+                                strokeLinecap="round"
+                              />
+                              <path
+                                d="M20 90 Q20 65 45 65"
+                                fill="none"
+                                stroke="#1C8F4D"
+                                strokeWidth="6"
+                                strokeLinecap="round"
+                              />
+                              <path
+                                d="M70 85 A20 20 0 0 1 110 85"
+                                fill="none"
+                                stroke="#F49A29"
+                                strokeWidth="6"
+                                strokeLinecap="round"
+                              />
+                              <path
+                                d="M110 85 L104 80 M110 85 L108 77"
+                                stroke="#F49A29"
+                                strokeWidth="6"
+                                strokeLinecap="round"
+                              />
+                              <path
+                                d="M110 85 A20 20 0 0 1 70 85"
+                                fill="none"
+                                stroke="#F49A29"
+                                strokeWidth="6"
+                                strokeLinecap="round"
+                              />
+                              <path
+                                d="M70 85 L75 90 M70 85 L67 93"
+                                stroke="#F49A29"
+                                strokeWidth="6"
+                                strokeLinecap="round"
+                              />
                             </svg>
-
                           </div>
                           <div className="flex-1">
-                            <h4 className="text-white font-medium text-base mb-1">P2P</h4>
-                            <p className="text-gray-400 text-sm">Buy and sell cryptocurrencies directly with flexible payment methods</p>
+                            <h4 className="text-white font-medium text-base mb-1">
+                              P2P
+                            </h4>
+                            <p className="text-gray-400 text-sm">
+                              Buy and sell cryptocurrencies directly with
+                              flexible payment methods
+                            </p>
                           </div>
-                          <svg className="w-5 h-5 text-gray-400 group-hover:text-[#1D8751] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          <svg
+                            className="w-5 h-5 text-gray-400 group-hover:text-[#1D8751] transition-colors"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
                           </svg>
                         </div>
                       </Link>
 
                       {/* Swap Option */}
-                      <Link href="/dashboard/swap" className="block mb-3" onClick={() => {setDepositDropdownOpen(false)}}>
+                      <Link
+                        href="/dashboard/swap"
+                        className="block mb-3"
+                        onClick={() => {
+                          setDepositDropdownOpen(false);
+                        }}
+                      >
                         <div className="flex items-center transition-colors duration-200 group">
                           <div className="w-10 h-10 flex items-center justify-center mr-4">
-                            <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M30 70H20V30H60V40" fill="none" stroke="#1C8F4D" strokeWidth="5" stroke-linecap="round" stroke-linejoin="round"/>
-                              <polygon points="30,60 20,70 30,80" fill="#1D8751"/>
-                              <path d="M70 30H80V70H40V60" fill="none" stroke="#F49A29" strokeWidth="5" stroke-linecap="round" stroke-linejoin="round"/>
-                              <polygon points="70,40 80,30 70,20" fill="#F79330"/>
+                            <svg
+                              width="100"
+                              height="100"
+                              viewBox="0 0 100 100"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                d="M30 70H20V30H60V40"
+                                fill="none"
+                                stroke="#1C8F4D"
+                                strokeWidth="5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                              <polygon
+                                points="30,60 20,70 30,80"
+                                fill="#1D8751"
+                              />
+                              <path
+                                d="M70 30H80V70H40V60"
+                                fill="none"
+                                stroke="#F49A29"
+                                strokeWidth="5"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                              <polygon
+                                points="70,40 80,30 70,20"
+                                fill="#F79330"
+                              />
                             </svg>
-
                           </div>
                           <div className="flex-1">
-                            <h4 className="text-white font-medium text-base mb-1">Swap</h4>
-                            <p className="text-gray-400 text-sm">Exchange one cryptocurrency for another instantly and securely within your wallet</p>
+                            <h4 className="text-white font-medium text-base mb-1">
+                              Swap
+                            </h4>
+                            <p className="text-gray-400 text-sm">
+                              Exchange one cryptocurrency for another instantly
+                              and securely within your wallet
+                            </p>
                           </div>
-                          <svg className="w-5 h-5 text-gray-400 group-hover:text-[#1D8751] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          <svg
+                            className="w-5 h-5 text-gray-400 group-hover:text-[#1D8751] transition-colors"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
                           </svg>
                         </div>
                       </Link>
 
                       {/* Buy Option */}
-                      <Link href="/dashboard/buy" className="block" onClick={() => {setDepositDropdownOpen(false)}}>
+                      <Link
+                        href="/dashboard/buy"
+                        className="block"
+                        onClick={() => {
+                          setDepositDropdownOpen(false);
+                        }}
+                      >
                         <div className="flex items-center transition-colors duration-200 group">
                           <div className="w-10 h-10 rounded-lg flex items-center justify-center mr-4">
-                            <svg width="50" height="50" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
-                              <rect x="8" y="15" width="34" height="20" rx="4" ry="4" stroke="#1C8F4D" strokeWidth="3" fill="none"/>
-                              <rect x="16" y="24" width="8" height="4" fill="#F49A29" rx="1" ry="1"/>
+                            <svg
+                              width="50"
+                              height="50"
+                              viewBox="0 0 50 50"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <rect
+                                x="8"
+                                y="15"
+                                width="34"
+                                height="20"
+                                rx="4"
+                                ry="4"
+                                stroke="#1C8F4D"
+                                strokeWidth="3"
+                                fill="none"
+                              />
+                              <rect
+                                x="16"
+                                y="24"
+                                width="8"
+                                height="4"
+                                fill="#F49A29"
+                                rx="1"
+                                ry="1"
+                              />
                             </svg>
                           </div>
                           <div className="flex-1">
-                            <h4 className="text-white font-medium text-base mb-1">Buy</h4>
-                            <p className="text-gray-400 text-sm">Buy crypto directly with cash, hassle-free and suggested for new users</p>
+                            <h4 className="text-white font-medium text-base mb-1">
+                              Buy
+                            </h4>
+                            <p className="text-gray-400 text-sm">
+                              Buy crypto directly with cash, hassle-free and
+                              suggested for new users
+                            </p>
                           </div>
-                          <svg className="w-5 h-5 text-gray-400 group-hover:text-[#1D8751] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          <svg
+                            className="w-5 h-5 text-gray-400 group-hover:text-[#1D8751] transition-colors"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
                           </svg>
                         </div>
                       </Link>
@@ -251,8 +463,14 @@ export default function Navbar() {
                 </Link>
                 <span className="absolute bottom-0 right-0 w-5 h-5 bg-[#1D8751] rounded-full flex items-center justify-center border-2 border-white">
                   <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
-                    <circle cx="10" cy="10" r="10" fill="#1D8751"/>
-                    <path d="M6 10.5L9 13.5L14 8.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <circle cx="10" cy="10" r="10" fill="#1D8751" />
+                    <path
+                      d="M6 10.5L9 13.5L14 8.5"
+                      stroke="white"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                 </span>
               </div>
@@ -270,7 +488,7 @@ export default function Navbar() {
 
           <div className="flex items-center space-x-4 2xl:space-x-6">
             <LanguageSelector />
-            <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
+            <ThemeToggle />
           </div>
         </div>
 
@@ -309,7 +527,10 @@ export default function Navbar() {
               <>
                 <Link href="/dashboard/deposit" onClick={toggleMobileMenu}>
                   <button className="flex items-center w-full bg-[#1D8751] hover:bg-[#13B562] text-white px-6 py-2 rounded-full transition-colors duration-200 text-base">
-                    <img src="https://res.cloudinary.com/dam1sxczj/image/upload/v1748294216/deposit-new-f_okzshs.png" alt="" />
+                    <img
+                      src="https://res.cloudinary.com/dam1sxczj/image/upload/v1748294216/deposit-new-f_okzshs.png"
+                      alt=""
+                    />
                     Deposit
                   </button>
                 </Link>
@@ -327,8 +548,14 @@ export default function Navbar() {
                   </Link>
                   <span className="absolute bottom-0 right-0 w-5 h-5 bg-[#1D8751] rounded-full flex items-center justify-center border-2 border-white">
                     <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
-                      <circle cx="10" cy="10" r="10" fill="#1D8751"/>
-                      <path d="M6 10.5L9 13.5L14 8.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <circle cx="10" cy="10" r="10" fill="#1D8751" />
+                      <path
+                        d="M6 10.5L9 13.5L14 8.5"
+                        stroke="white"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
                     </svg>
                   </span>
                 </div>
@@ -347,7 +574,7 @@ export default function Navbar() {
 
           <div className="flex items-center justify-between pt-4">
             <LanguageSelector />
-            <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
+            <ThemeToggle />
           </div>
         </div>
       )}
@@ -363,7 +590,7 @@ const NavLink = ({
 }) => (
   <Link
     href={href}
-    className="text-white hover:text-[#1D8751] transition-colors duration-200 text-sm lg:text-base 2xl:text-lg"
+    className="dark:text-white   text-white  hover:text-[#1D8751] transition-colors duration-200 text-sm lg:text-base 2xl:text-lg"
   >
     {children}
   </Link>
@@ -500,20 +727,3 @@ const LanguageSelector = () => {
     </div>
   );
 };
-
-const ThemeToggle = ({
-  theme,
-  toggleTheme,
-}: {
-  theme: "light" | "dark";
-  toggleTheme: () => void;
-}) => (
-  <button onClick={toggleTheme} className="text-white bg-transparent p-1">
-    {theme === "light" ? (
-      <Moon size={20} className="text-[#13b562]" />
-    ) : (
-      <Sun size={20} />
-    )}
-  </button>
-);
-

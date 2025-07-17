@@ -34,10 +34,10 @@ const Available = () => {
     }
   }, [dispatch, isAuthenticated]);
 
-  // Find USDT wallet with null check
-  const usdtWallet = wallets?.find(
-    (wallet: Wallet) => wallet.currency === "USDT"
-  );
+  // Find USDT wallet with null check and ensure wallets is an array
+  const usdtWallet = Array.isArray(wallets)
+    ? wallets.find((wallet: Wallet) => wallet.currency === "USDT")
+    : undefined;
   const walletBalance = usdtWallet ? parseFloat(usdtWallet.balance) : 0;
 
   // Calculate available balance (total approved - pending withdrawals)

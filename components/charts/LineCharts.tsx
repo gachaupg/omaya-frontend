@@ -418,8 +418,10 @@ const Legend = ({ data }: { data: DonutChartData[] }) => (
             borderRadius: "50%",
           }}
         ></span>
-        <span className="text-[#A3A3A3] font-medium flex-1">{d.label}</span>
-        <span className="text-white font-semibold ml-auto min-w-[70px] text-right">
+        <span className="dark:text-[#A3A3A3] font-medium flex-1">
+          {d.label}
+        </span>
+        <span className="dark:text-white font-semibold ml-auto min-w-[70px] text-right">
           {d.value.toLocaleString()} USD
         </span>
       </div>
@@ -611,8 +613,8 @@ const LineCharts = ({
     <div className="w-full">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 w-full">
         {/* Exchange Overview */}
-        <Card className="w-full rounded-none lg:rounded-2xl">
-          <h3 className="text-white text-[14px] mb-2 font-semibold">
+        <Card className="w-full rounded-none lg:rounded-2xl dark:bg-[#1D1D23] bg-[#F5F5F5]">
+          <h3 className="dark:text-white text-[14px] mb-2 font-semibold">
             Exchange Overview (USD)
           </h3>
           <div className="flex flex-wrap justify-between items-center mb-6 gap-2">
@@ -658,8 +660,8 @@ const LineCharts = ({
           </div>
         </Card>
         {/* P2P Overview */}
-        <Card className="w-full rounded-none lg:rounded-2xl">
-          <h3 className="text-white text-[14px] mb-2 font-semibold">
+        <Card className="w-full rounded-none lg:rounded-2xl dark:bg-[#1D1D23] bg-[#F5F5F5]">
+          <h3 className="dark:text-white text-[14px] mb-2 font-semibold">
             P2P Overview (USD)
           </h3>
           <div className="flex flex-wrap justify-between items-center mb-6 gap-2">
@@ -705,9 +707,9 @@ const LineCharts = ({
           </div>
         </Card>
         {/* Overview Total */}
-        <Card className="w-full rounded-none lg:rounded-2xl flex flex-col lg:flex-row items-center h-full relative">
+        <Card className="w-full rounded-none lg:rounded-2xl flex flex-col lg:flex-row items-center h-full relative dark:bg-[#1D1D23] bg-[#F5F5F5]">
           <div className="absolute left-0 top-0 px-2 pt-2 flex flex-wrap w-full justify-between items-center gap-2">
-            <h3 className="text-white text-[18px] font-semibold">
+            <h3 className="dark:text-white text-[18px] font-semibold">
               Overview Total
             </h3>
             <div className="flex flex-wrap gap-2">
@@ -817,9 +819,9 @@ const LineCharts = ({
           </div>
         </Card>
         {/* Referral Commissions */}
-        <Card className="w-full rounded-none lg:rounded-2xl flex flex-col lg:flex-row items-center h-full relative">
+        <Card className="w-full rounded-none lg:rounded-2xl flex flex-col lg:flex-row items-center h-full relative dark:bg-[#1D1D23] bg-[#F5F5F5]">
           <div className="absolute left-0 top-0 px-2 pt-2 flex flex-wrap w-full justify-between items-center gap-2">
-            <h3 className="text-white text-[14px] mb-2 font-semibold">
+            <h3 className="dark:text-white text-[14px] mb-2 font-semibold">
               Your Referral Commissions
             </h3>
             <Dropdown

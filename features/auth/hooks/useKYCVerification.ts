@@ -4,6 +4,9 @@ import { AppDispatch } from "@/store";
 import { RootState } from "@/store/rootReducer";
 import { checkKYCStatus } from "../slices/authSlice";
 
+// TEMPORARY: KYC BYPASS FOR TESTING - REMOVE IN PRODUCTION
+const KYC_BYPASS_ENABLED = true;
+
 export const useKYCVerification = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { user, isAuthenticated, kycModalOpen } = useSelector(
@@ -11,6 +14,11 @@ export const useKYCVerification = () => {
   );
 
   useEffect(() => {
+    // TEMPORARY: Skip KYC verification for testing
+    if (KYC_BYPASS_ENABLED) {
+      return;
+    }
+
     // Check KYC status when user is authenticated and we have user data
     if (isAuthenticated && user && !kycModalOpen) {
       dispatch(checkKYCStatus());
@@ -18,7 +26,8 @@ export const useKYCVerification = () => {
   }, [dispatch, isAuthenticated, user, kycModalOpen]);
 
   return {
-    isVerified: user?.is_verified ?? false,
-    kycModalOpen,
+    // TEMPORARY: Always return verified for testing
+    isVerified: KYC_BYPASS_ENABLED ? true : user?.is_verified ?? false,
+    kycModalOpen: KYC_BYPASS_ENABLED ? false : kycModalOpen,
   };
-}; 
+};
