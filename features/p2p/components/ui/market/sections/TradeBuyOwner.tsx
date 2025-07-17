@@ -94,7 +94,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       dispatch(fetchSingleOrder(singgleuseid));
     }
   }, [confirmOrder, dispatch, singgleuseid]);
-  }, [confirmOrder, dispatch]);
 
   useEffect(() => {
     setIsClient(true);
@@ -178,20 +177,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   };
 
   console.log(confirmOrder);
-  const getButtonText = () => {
-    if (confirmTradeLoading) return "Notifying seller...";
-    return "Payments Received Notify Seller";
-  };
-
-  // if (!paymentDetails) {
-  //   return (
-  //     <div className="text-center p-4">
-  //       <p>No payment details available for this order.</p>
-  //     </div>
-  //   );
-  // }
-
-  console.log("saved order", saveOrder);
   return (
     <div className="grid grid-cols-1 mt-10 md:grid-cols-3 gap-6 p-6 min-h-screen bg-[#18181D]">
       {/* Left: Timeline/Steps */}
@@ -215,15 +200,16 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                   {singleOrder?.id}
                 </button>
               </span>
-            <span className="text-[14px] text-[#A3A3C2]">
-              Order Number :
-              <button
-                onClick={handleRefresh}
-                className="flex items-center gap-1 bg-[#23232A] text-[#1D8751] rounded-lg px-2 py-1 border border-[#35353E] hover:bg-[#35353E] transition-colors"
-                title="Refresh"
-              >
-                <RefreshCw size={14} />
-              </button>
+              <span className="text-[14px] text-[#A3A3C2]">
+                Order Number :
+                <button
+                  onClick={handleRefresh}
+                  className="flex items-center gap-1 bg-[#23232A] text-[#1D8751] rounded-lg px-2 py-1 border border-[#35353E] hover:bg-[#35353E] transition-colors"
+                  title="Refresh"
+                >
+                  <RefreshCw size={14} />
+                </button>
+              </span>
             </div>
           </div>
           <div className="flex gap-4 border-2 border-[#35353E] p-2 rounded-xl mt-4">

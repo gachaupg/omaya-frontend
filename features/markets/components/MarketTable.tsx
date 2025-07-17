@@ -410,7 +410,6 @@ const MarketTable = () => {
   }
 
   return (
-    <div className="bg-[#18181D] min-h-screen text-[#788099] font-sans">
     <div className="bg-[#18181D] min-h-screen py-8 text-[#788099] font-sans">
       {/* Top Section */}
       <div className="max-w-[1000px] mx-auto mb-6 px-6">
@@ -454,7 +453,6 @@ const MarketTable = () => {
           volumes, price fluctuations, and market capitalizations for every
           cryptocurrency available on global markets.
         </div>
-        <div className="text-sm text-[#788099] ">
         <div className="text-sm text-[#788099] mb-6">
           Users can readily obtain crucial details about these digital assets
           and directly navigate to the trading platform from this point.
@@ -463,8 +461,7 @@ const MarketTable = () => {
         {/* Favourite Assets Header Row */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2 font-semibold text-[#fff] text-lg">
-            Top Assets
-            Favourite Assets
+            Top Assets Favourite Assets
             <button className="bg-none border-none text-[#788099] text-xl cursor-pointer p-0 ml-2">
               &lt;
             </button>
@@ -480,176 +477,261 @@ const MarketTable = () => {
 
         {/* Favourite Assets Cards Row */}
         <div className="flex gap-4 mb-1">
-        <div className="flex gap-4 mb-8">
-          {favoriteAssets.map((asset) => (
-            <div
-              key={asset.id}
-              className="bg-[#1D1D23] rounded-xl px-2 py-2 min-w-[160px] min-h-[56px] flex flex-col items-start shadow-sm border border-[#35353E] gap-0.5"
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <span className="w-7 h-7 flex items-center">
-                  <CoinIcon
-                    image={asset.image}
-                    symbol={asset.symbol}
-                    size={28}
-                  />
-                </span>
-                <span className="font-semibold text-[#fff] text-base">
-                  {asset.symbol.toUpperCase()}
-                </span>
-              </div>
-              <div className="text-xs text-[#788099] mb-0.5">{asset.name}</div>
-              <div className="font-semibold text-[#fff] text-sm">
-                {formatPrice(asset.current_price)}
-              </div>
+          <div className="flex gap-4 mb-8">
+            {favoriteAssets.map((asset) => (
               <div
-                className={`text-xs font-medium ${
-                  asset.price_change_percentage_24h >= 0
-                    ? "text-[#13B562]"
-                    : "text-[#FF6B6B]"
-                }`}
+                key={asset.id}
+                className="bg-[#1D1D23] rounded-xl px-2 py-2 min-w-[160px] min-h-[56px] flex flex-col items-start shadow-sm border border-[#35353E] gap-0.5"
               >
-                {formatPercentage(asset.price_change_percentage_24h)}
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="w-7 h-7 flex items-center">
+                    <CoinIcon
+                      image={asset.image}
+                      symbol={asset.symbol}
+                      size={28}
+                    />
+                  </span>
+                  <span className="font-semibold text-[#fff] text-base">
+                    {asset.symbol.toUpperCase()}
+                  </span>
+                </div>
+                <div className="text-xs text-[#788099] mb-0.5">
+                  {asset.name}
+                </div>
+                <div className="font-semibold text-[#fff] text-sm">
+                  {formatPrice(asset.current_price)}
+                </div>
+                <div
+                  className={`text-xs font-medium ${
+                    asset.price_change_percentage_24h >= 0
+                      ? "text-[#13B562]"
+                      : "text-[#FF6B6B]"
+                  }`}
+                >
+                  {formatPercentage(asset.price_change_percentage_24h)}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Table Section with rounded border */}
-      <div className="rounded-2xl border border-[#35353E] overflow-hidden bg-[#18181D] shadow-lg max-w-[1000px] mx-auto">
-        {loading && markets.length === 0 ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#13B562]"></div>
-            <span className="ml-3 text-[#fff]">Loading market data...</span>
+            ))}
           </div>
-        ) : (
-          <table className="w-full border-separate border-spacing-0">
-            <thead>
-              <tr>
-                {tableHeaders.map((header) => (
-                  <th
-                    key={header}
-                    className="text-[#fff] bg-[#1D1D23] px-2 py-4 text-left font-semibold border-b-2 border-[#35353E] text-base"
-                  >
-                    {header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredMarkets.map((market, idx) => (
-                <React.Fragment key={market.id}>
-                  <tr
-                    onClick={() => handleRowClick(market.id)}
-                    className={
-                      "cursor-pointer transition-colors " +
-                      (selectedCoinId === market.id
-                        ? "bg-[#23232a] border-l-4 border-[#13B562]"
-                        : idx % 2 === 0
-                        ? "bg-[#1D1D23]"
-                        : "bg-[#18181D]")
-                    }
-                  >
-                    <td className="flex items-center gap-3 px-2 py-3 text-[#fff]">
-                      <span className="w-7 h-7 flex items-center">
-                        <CoinIcon
-                          image={market.image}
-                          symbol={market.symbol}
-                          size={28}
-                        />
-                      </span>
-                      <div>
-                        <div className="font-semibold">
-                          {market.symbol.toUpperCase()}
-                        </div>
-                        <div className="text-xs text-[#788099]">
-                          {market.name}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="text-[#1D8751] font-medium px-2 py-3">
-                      {formatPrice(market.current_price)}
-                    </td>
-                    <td
-                      className={`font-medium px-2 py-3 ${
-                        market.price_change_percentage_24h >= 0
-                          ? "text-[#13B562]"
-                          : "text-[#FF6B6B]"
-                      }`}
+        </div>
+
+        {/* Table Section with rounded border */}
+        <div className="rounded-2xl border border-[#35353E] overflow-hidden bg-[#18181D] shadow-lg max-w-[1000px] mx-auto">
+          {loading && markets.length === 0 ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#13B562]"></div>
+              <span className="ml-3 text-[#fff]">Loading market data...</span>
+            </div>
+          ) : (
+            <table className="w-full border-separate border-spacing-0">
+              <thead>
+                <tr>
+                  {tableHeaders.map((header) => (
+                    <th
+                      key={header}
+                      className="text-[#fff] bg-[#1D1D23] px-2 py-4 text-left font-semibold border-b-2 border-[#35353E] text-base"
                     >
-                      {formatPercentage(market.price_change_percentage_24h)}
-                    </td>
-                    <td className="px-2 py-3">
-                      {formatVolume(market.total_volume)}
-                    </td>
-                    <td className="px-2 py-3">
-                      {formatMarketCap(market.market_cap)}
-                    </td>
-                    <td className="px-2 py-3 flex items-center gap-3">
-                      <span className="cursor-pointer">
-                        <ChartIcon />
-                      </span>
-                      <span className="cursor-pointer">
-                        <StarIcon />
-                      </span>
-                    </td>
-                  </tr>
-                  {/* Details row */}
-                  {selectedCoinId === market.id && (
-                    <tr>
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredMarkets.map((market, idx) => (
+                  <React.Fragment key={market.id}>
+                    <tr
+                      onClick={() => handleRowClick(market.id)}
+                      className={
+                        "cursor-pointer transition-colors " +
+                        (selectedCoinId === market.id
+                          ? "bg-[#23232a] border-l-4 border-[#13B562]"
+                          : idx % 2 === 0
+                          ? "bg-[#1D1D23]"
+                          : "bg-[#18181D]")
+                      }
+                    >
+                      <td className="flex items-center gap-3 px-2 py-3 text-[#fff]">
+                        <span className="w-7 h-7 flex items-center">
+                          <CoinIcon
+                            image={market.image}
+                            symbol={market.symbol}
+                            size={28}
+                          />
+                        </span>
+                        <div>
+                          <div className="font-semibold">
+                            {market.symbol.toUpperCase()}
+                          </div>
+                          <div className="text-xs text-[#788099]">
+                            {market.name}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="text-[#1D8751] font-medium px-2 py-3">
+                        {formatPrice(market.current_price)}
+                      </td>
                       <td
-                        colSpan={tableHeaders.length}
-                        className="bg-[#23232a] px-6 py-4 border-t border-[#35353E]"
+                        className={`font-medium px-2 py-3 ${
+                          market.price_change_percentage_24h >= 0
+                            ? "text-[#13B562]"
+                            : "text-[#FF6B6B]"
+                        }`}
                       >
-                        {/* Chart */}
-                        <div className="w-full mb-4" style={{ height: 260 }}>
-                          {loadingChart ? (
+                        {formatPercentage(market.price_change_percentage_24h)}
+                      </td>
+                      <td className="px-2 py-3">
+                        {formatVolume(market.total_volume)}
+                      </td>
+                      <td className="px-2 py-3">
+                        {formatMarketCap(market.market_cap)}
+                      </td>
+                      <td className="px-2 py-3 flex items-center gap-3">
+                        <span className="cursor-pointer">
+                          <ChartIcon />
+                        </span>
+                        <span className="cursor-pointer">
+                          <StarIcon />
+                        </span>
+                      </td>
+                    </tr>
+                    {/* Details row */}
+                    {selectedCoinId === market.id && (
+                      <tr>
+                        <td
+                          colSpan={tableHeaders.length}
+                          className="bg-[#23232a] px-6 py-4 border-t border-[#35353E]"
+                        >
+                          {/* Chart */}
+                          <div className="w-full mb-4" style={{ height: 260 }}>
+                            {loadingChart ? (
+                              <div className="flex items-center gap-2 text-[#13B562]">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#13B562]"></div>
+                                Loading chart...
+                              </div>
+                            ) : chartData.length > 0 ? (
+                              <ResponsiveContainer width="100%" height="100%">
+                                <LineChart
+                                  data={chartData}
+                                  margin={{
+                                    top: 10,
+                                    right: 30,
+                                    left: 0,
+                                    bottom: 0,
+                                  }}
+                                >
+                                  <XAxis
+                                    dataKey="time"
+                                    tick={{ fill: "#788099", fontSize: 12 }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                  />
+                                  <YAxis
+                                    domain={["auto", "auto"]}
+                                    tick={{ fill: "#788099", fontSize: 12 }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                    width={70}
+                                  />
+                                  <Tooltip
+                                    contentStyle={{
+                                      background: "#23232a",
+                                      border: "none",
+                                      color: "#fff",
+                                    }}
+                                    labelStyle={{ color: "#13B562" }}
+                                  />
+                                  <Line
+                                    type="monotone"
+                                    dataKey="price"
+                                    stroke="#13B562"
+                                    strokeWidth={2}
+                                    dot={false}
+                                  />
+                                </LineChart>
+                              </ResponsiveContainer>
+                            ) : (
+                              <div className="text-red-500 flex items-center gap-2">
+                                <svg
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 16 16"
+                                  fill="none"
+                                >
+                                  <path
+                                    d="M8 1C4.13 1 1 4.13 1 8s3.13 7 7 7 7-3.13 7-7-3.13-7-7-7zm0 10.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"
+                                    fill="currentColor"
+                                  />
+                                </svg>
+                                No chart data available
+                              </div>
+                            )}
+                          </div>
+                          {/* Coin details */}
+                          {loadingDetails ? (
                             <div className="flex items-center gap-2 text-[#13B562]">
                               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#13B562]"></div>
-                              Loading chart...
+                              Loading details...
                             </div>
-                          ) : chartData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                              <LineChart
-                                data={chartData}
-                                margin={{
-                                  top: 10,
-                                  right: 30,
-                                  left: 0,
-                                  bottom: 0,
+                          ) : coinDetails ? (
+                            <div className="flex flex-col gap-2">
+                              <div className="flex items-center gap-4">
+                                <img
+                                  src={coinDetails.image?.large}
+                                  alt={coinDetails.name}
+                                  className="w-12 h-12 rounded-full"
+                                />
+                                <div>
+                                  <div className="text-lg font-bold text-white">
+                                    {coinDetails.name} (
+                                    {coinDetails.symbol.toUpperCase()})
+                                  </div>
+                                  <div className="text-sm text-[#13B562]">
+                                    Rank #{coinDetails.market_cap_rank}
+                                  </div>
+                                </div>
+                              </div>
+                              <div
+                                className="text-sm text-[#fff] mt-2"
+                                dangerouslySetInnerHTML={{
+                                  __html:
+                                    coinDetails.description?.en?.slice(0, 300) +
+                                    "...",
                                 }}
-                              >
-                                <XAxis
-                                  dataKey="time"
-                                  tick={{ fill: "#788099", fontSize: 12 }}
-                                  axisLine={false}
-                                  tickLine={false}
-                                />
-                                <YAxis
-                                  domain={["auto", "auto"]}
-                                  tick={{ fill: "#788099", fontSize: 12 }}
-                                  axisLine={false}
-                                  tickLine={false}
-                                  width={70}
-                                />
-                                <Tooltip
-                                  contentStyle={{
-                                    background: "#23232a",
-                                    border: "none",
-                                    color: "#fff",
-                                  }}
-                                  labelStyle={{ color: "#13B562" }}
-                                />
-                                <Line
-                                  type="monotone"
-                                  dataKey="price"
-                                  stroke="#13B562"
-                                  strokeWidth={2}
-                                  dot={false}
-                                />
-                              </LineChart>
-                            </ResponsiveContainer>
+                              />
+                              <div className="flex flex-wrap gap-4 mt-2">
+                                <div>
+                                  <span className="font-semibold text-[#fff]">
+                                    Genesis:
+                                  </span>{" "}
+                                  {coinDetails.genesis_date || "N/A"}
+                                </div>
+                                <div>
+                                  <span className="font-semibold text-[#fff]">
+                                    Hashing:
+                                  </span>{" "}
+                                  {coinDetails.hashing_algorithm || "N/A"}
+                                </div>
+                                <div>
+                                  <span className="font-semibold text-[#fff]">
+                                    Block Time:
+                                  </span>{" "}
+                                  {coinDetails.block_time_in_minutes} min
+                                </div>
+                                <div>
+                                  <span className="font-semibold text-[#fff]">
+                                    Homepage:
+                                  </span>{" "}
+                                  <a
+                                    href={coinDetails.links?.homepage?.[0]}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[#13B562] underline"
+                                  >
+                                    {coinDetails.links?.homepage?.[0]}
+                                  </a>
+                                </div>
+                              </div>
+                            </div>
                           ) : (
                             <div className="text-red-500 flex items-center gap-2">
                               <svg
@@ -663,100 +745,18 @@ const MarketTable = () => {
                                   fill="currentColor"
                                 />
                               </svg>
-                              No chart data available
+                              Failed to load details. Please try again.
                             </div>
                           )}
-                        </div>
-                        {/* Coin details */}
-                        {loadingDetails ? (
-                          <div className="flex items-center gap-2 text-[#13B562]">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#13B562]"></div>
-                            Loading details...
-                          </div>
-                        ) : coinDetails ? (
-                          <div className="flex flex-col gap-2">
-                            <div className="flex items-center gap-4">
-                              <img
-                                src={coinDetails.image?.large}
-                                alt={coinDetails.name}
-                                className="w-12 h-12 rounded-full"
-                              />
-                              <div>
-                                <div className="text-lg font-bold text-white">
-                                  {coinDetails.name} (
-                                  {coinDetails.symbol.toUpperCase()})
-                                </div>
-                                <div className="text-sm text-[#13B562]">
-                                  Rank #{coinDetails.market_cap_rank}
-                                </div>
-                              </div>
-                            </div>
-                            <div
-                              className="text-sm text-[#fff] mt-2"
-                              dangerouslySetInnerHTML={{
-                                __html:
-                                  coinDetails.description?.en?.slice(0, 300) +
-                                  "...",
-                              }}
-                            />
-                            <div className="flex flex-wrap gap-4 mt-2">
-                              <div>
-                                <span className="font-semibold text-[#fff]">
-                                  Genesis:
-                                </span>{" "}
-                                {coinDetails.genesis_date || "N/A"}
-                              </div>
-                              <div>
-                                <span className="font-semibold text-[#fff]">
-                                  Hashing:
-                                </span>{" "}
-                                {coinDetails.hashing_algorithm || "N/A"}
-                              </div>
-                              <div>
-                                <span className="font-semibold text-[#fff]">
-                                  Block Time:
-                                </span>{" "}
-                                {coinDetails.block_time_in_minutes} min
-                              </div>
-                              <div>
-                                <span className="font-semibold text-[#fff]">
-                                  Homepage:
-                                </span>{" "}
-                                <a
-                                  href={coinDetails.links?.homepage?.[0]}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-[#13B562] underline"
-                                >
-                                  {coinDetails.links?.homepage?.[0]}
-                                </a>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="text-red-500 flex items-center gap-2">
-                            <svg
-                              width="16"
-                              height="16"
-                              viewBox="0 0 16 16"
-                              fill="none"
-                            >
-                              <path
-                                d="M8 1C4.13 1 1 4.13 1 8s3.13 7 7 7 7-3.13 7-7-3.13-7-7-7zm0 10.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"
-                                fill="currentColor"
-                              />
-                            </svg>
-                            Failed to load details. Please try again.
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
-              ))}
-            </tbody>
-          </table>
-        )}
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       </div>
     </div>
   );
