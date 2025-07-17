@@ -8,6 +8,7 @@ import {
   matchP2POrder,
   getConfirmOrder,
   SingleOrder,
+  SingleOrder1,
   cancelP2POrder,
   confirmP2PTrade,
   confirmTrade,
@@ -17,9 +18,14 @@ import {
   editP2POrder,
   updateProfile,
   getP2PProfile,
-
 } from "../api";
-import { OrderMatchRequest, P2POrderList, P2POrder, Profile, P2PResponse   } from "../types";
+import {
+  OrderMatchRequest,
+  P2POrderList,
+  P2POrder,
+  Profile,
+  P2PResponse,
+} from "../types";
 import { handleP2PError } from "../../../lib/utils/errorHandler";
 import { fetchWallets } from "./walletSlice";
 import { logger } from "@/lib/logger";
@@ -109,11 +115,79 @@ export const fetchConfirmOrder = createAsyncThunk(
 export const fetchSingleOrder = createAsyncThunk(
   "p2p/fetchSingleOrder",
   async (id: string, { rejectWithValue }) => {
+    // Since the error suggests we're getting a P2PTrade object,
+    // and the ID format looks like a UUID that could be either trade or order,
+    // let's try the trade endpoint first as it's more likely to be correct
     try {
-      return await SingleOrder(id);
+      logger.debug("Attempting to fetch single order via trade endpoint", {
+        id,
+      });
+      return await SingleOrder1(id);
     } catch (err: any) {
-      handleP2PError(err);
-      return rejectWithValue(err.message || "Failed to fetch single order");
+      // If we get a 500 error from trade endpoint, it might be an order ID
+      if (err.response?.status === 500) {
+        logger.warn("Trade endpoint returned 500, trying order endpoint", {
+          id,
+          error: err.message,
+        });
+
+        try {
+          logger.debug("Attempting to fetch single order via order endpoint", {
+            id,
+          });
+          return await SingleOrder(id);
+        } catch (orderErr: any) {
+          logger.error("Both endpoints failed", {
+            id,
+            tradeError: err.message,
+            orderError: orderErr.message,
+            tradeStatus: err.response?.status,
+            orderStatus: orderErr.response?.status,
+          });
+
+          // If both fail with 500 errors, this might be a backend issue
+          if (orderErr.response?.status === 500) {
+            return rejectWithValue(
+              "Backend server error. Please try again later or contact support."
+            );
+          }
+
+          handleP2PError(orderErr);
+          return rejectWithValue(
+            orderErr.message || "Failed to fetch single order"
+          );
+        }
+      } else {
+        // For non-500 errors from trade endpoint, try order endpoint as fallback
+        logger.warn(
+          "Trade endpoint failed with non-500 error, trying order endpoint",
+          {
+            id,
+            error: err.message,
+            status: err.response?.status,
+          }
+        );
+
+        try {
+          logger.debug("Attempting to fetch single order via order endpoint", {
+            id,
+          });
+          return await SingleOrder(id);
+        } catch (orderErr: any) {
+          logger.error("Both trade and order endpoints failed", {
+            id,
+            tradeError: err.message,
+            orderError: orderErr.message,
+            tradeStatus: err.response?.status,
+            orderStatus: orderErr.response?.status,
+          });
+
+          handleP2PError(orderErr);
+          return rejectWithValue(
+            orderErr.message || "Failed to fetch single order"
+          );
+        }
+      }
     }
   }
 );

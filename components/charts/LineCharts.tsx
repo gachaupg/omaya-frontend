@@ -594,12 +594,25 @@ const LineCharts = ({
     (state: RootState) => state.auth
   );
 
+  // Only log walletData if it exists and is not null
+  if (walletData) {
+    console.log("Wallet data:", walletData);
+  }
   console.log(walletData);
 
   useEffect(() => {
     const fetchData = async () => {
       if (user?.referral_code && isAuthenticated) {
         try {
+          await Promise.all([
+            dispatch(fetchReferralWallet()).catch((error) => {
+              console.warn(
+                "Referral wallet API not available in LineCharts:",
+                error
+              );
+              return null;
+            }),
+          ]);
           await Promise.all([dispatch(fetchReferralWallet())]);
         } catch (error) {
           console.error("Error fetching referral data:", error);

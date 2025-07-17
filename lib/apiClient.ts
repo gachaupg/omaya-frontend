@@ -43,6 +43,8 @@ const ENDPOINT_SPECIFIC_CONFIG: Record<string, Partial<ApiClientConfig>> = {
   "/trading_engine/p2p/deposit/": { timeout: 60000, retries: 1 }, // File uploads
   "/trading_engine/p2p/orders/": { timeout: 45000, retries: 2 },
   "/trading_engine/p2p/trades/": { timeout: 45000, retries: 1 }, // Critical operations
+  "/api/auth/login/": { timeout: 10000, retries: 1 }, // Faster login
+  "/api/auth/register/": { timeout: 10000, retries: 1 }, // Faster registration
 };
 
 const generateRequestId = (): string => {

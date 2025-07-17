@@ -179,11 +179,15 @@ export const addUserPaymentDetail = async (data: {
   provider_name: string;
   wallet_address?: string | null;
 }): Promise<P2PResponse> => {
+  console.log("API: addUserPaymentDetail called with data:", data);
+  console.log("API: endpoint:", API_CONFIG.P2P.USER_PAYMENT_DETAILS);
   return withRetry(async () => {
+    console.log("API: Making POST request...");
     const response = await post<P2PResponse>(
       API_CONFIG.P2P.USER_PAYMENT_DETAILS,
       data
     );
+    console.log("API: Response received:", response);
     return response.data;
   });
 };
@@ -263,6 +267,35 @@ export const SingleOrder = async (id: string): Promise<P2POrder> => {
     const response = await get<P2POrder>(
       `${API_CONFIG.P2P.SINGLE_ORDER}${id}/`
     );
+
+    console.log("SingleOrder API response:", {
+      status: response.status,
+      data: response.data,
+      headers: response.headers,
+    });
+
+    return response.data;
+  });
+};
+
+export const SingleOrder1 = async (id: string): Promise<P2POrder> => {
+  return withRetry(async () => {
+    console.log("SingleOrder1 API call:", {
+      url: `${API_CONFIG.P2P.MATCHED_TRADE}${id}/`,
+      id,
+      timestamp: new Date().toISOString(),
+    });
+
+    const response = await get<P2POrder>(
+      `${API_CONFIG.P2P.MATCHED_TRADE}${id}/`
+    );
+
+    console.log("SingleOrder1 API response:", {
+      status: response.status,
+      data: response.data,
+      headers: response.headers,
+    });
+
     return response.data;
   });
 };
@@ -405,6 +438,7 @@ export const duplicateP2POrder = async (id: string): Promise<P2PResponse> => {
     return response.data;
   });
 };
+
 export const editP2POrder = async (
   id: string,
   data: any

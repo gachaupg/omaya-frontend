@@ -18,21 +18,21 @@ export default function LoginPage() {
     password: "",
     rememberMe: "",
     notRobot: "",
-    submitAttempted: false
+    submitAttempted: false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
 
   const validateForm = () => {
     let isValid = true;
-    const newErrors = { 
-      email: "", 
+    const newErrors = {
+      email: "",
       password: "",
       rememberMe: "",
       notRobot: "",
-      submitAttempted: true
+      submitAttempted: true,
     };
 
     if (!email.trim()) {
@@ -59,7 +59,7 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -68,42 +68,50 @@ export default function LoginPage() {
 
     try {
       const result = await dispatch(loginUser({ email, password }));
-      
+
       if (loginUser.fulfilled.match(result)) {
-        router.push("/dashboard"); 
+        // Immediately navigate to dashboard without waiting for additional API calls
+        router.push("/dashboard");
+        // Force a hard navigation to ensure the redirect happens immediately
+        router.refresh();
       } else {
         if (result.payload) {
           const errorData = result.payload as any;
-          const errorMessage = errorData?.message || errorData?.error || errorData?.details ||errorData|| 'Login failed';
-          
+          const errorMessage =
+            errorData?.message ||
+            errorData?.error ||
+            errorData?.details ||
+            errorData ||
+            "Login failed";
+
           // If there are field-specific errors, set them
           if (errorData?.errors) {
             const fieldErrors: Record<string, string> = {};
             Object.entries(errorData.errors).forEach(([field, messages]) => {
               if (Array.isArray(messages)) {
                 fieldErrors[field] = messages[0];
-              } else if (typeof messages === 'string') {
+              } else if (typeof messages === "string") {
                 fieldErrors[field] = messages;
               }
             });
-            setErrors(prev => ({
+            setErrors((prev) => ({
               ...prev,
-              ...fieldErrors
+              ...fieldErrors,
             }));
           } else {
             // Set general error message
-            setErrors(prev => ({
+            setErrors((prev) => ({
               ...prev,
-              email: errorMessage
+              email: errorMessage,
             }));
           }
         }
       }
     } catch (error) {
       console.error("Login error:", error);
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        email: "An unexpected error occurred during login"
+        email: "An unexpected error occurred during login",
       }));
     } finally {
       setIsSubmitting(false);
@@ -111,7 +119,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#18181D] flex flex-col md:flex-row items-start justify-center relative overflow-hidden px-6 py-16 md:pt-24 md:pb-24">      
+    <div className="min-h-screen bg-[#18181D] flex flex-col md:flex-row items-start justify-center relative overflow-hidden px-6 py-16 md:pt-24 md:pb-24">
       {/* Left Side - Mobile App Preview */}
       <div className="w-full md:w-1/2 flex justify-center mb-8 md:mb-0 relative z-10">
         {/* Background Glow Effect */}
@@ -129,28 +137,32 @@ export default function LoginPage() {
           <div className="flex space-x-1 mt-4 justify-center">
             <div className="rounded px-2 flex items-center border border-gray-700 bg-white">
               <Image
-                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746787514/Google_Play-Icon-Logo.wine_dqxxk7.svg" 
-                alt="Google Play Store" 
-                width={40} 
-                height={13} 
+                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746787514/Google_Play-Icon-Logo.wine_dqxxk7.svg"
+                alt="Google Play Store"
+                width={40}
+                height={13}
                 className="mr-2"
               />
               <div>
                 <p className="text-[#051015] text-xs">Download on the</p>
-                <span className="text-[#051015] text-sm font-bold">Google Play</span>
+                <span className="text-[#051015] text-sm font-bold">
+                  Google Play
+                </span>
               </div>
             </div>
             <div className="rounded px-2 flex items-center border border-gray-700 bg-white">
-              <Image 
-                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747288173/dark_apple_rwpgwi.png" 
-                alt="Apple App Store" 
-                width={20} 
-                height={20} 
+              <Image
+                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747288173/dark_apple_rwpgwi.png"
+                alt="Apple App Store"
+                width={20}
+                height={20}
                 className="mr-2"
               />
               <div>
                 <p className="text-[#051015] text-xs">Download on the</p>
-                <span className="text-[#051015] text-sm font-bold">App Store</span>
+                <span className="text-[#051015] text-sm font-bold">
+                  App Store
+                </span>
               </div>
             </div>
           </div>
@@ -183,25 +195,59 @@ export default function LoginPage() {
                   placeholder="Email Address"
                 />
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg width="20" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="2" y="4" width="20" height="16" rx="2" stroke="#1D8751" strokeWidth="1.5" />
-                    <path d="M22 6L12 13L2 6" stroke="#1D8751" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <svg
+                    width="20"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <rect
+                      x="2"
+                      y="4"
+                      width="20"
+                      height="16"
+                      rx="2"
+                      stroke="#1D8751"
+                      strokeWidth="1.5"
+                    />
+                    <path
+                      d="M22 6L12 13L2 6"
+                      stroke="#1D8751"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                 </div>
                 {errors.email && (
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#F04438]" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 text-[#F04438]"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                   </div>
                 )}
               </div>
-              {errors.email && <p className="mt-1 text-sm text-[#F04438]">{errors.email}</p>}
+              {errors.email && (
+                <p className="mt-1 text-sm text-[#F04438]">{errors.email}</p>
+              )}
             </div>
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-white font-medium mb-2">
+              <label
+                htmlFor="password"
+                className="block text-white font-medium mb-2"
+              >
                 Password
               </label>
               <div className="relative">
@@ -216,21 +262,44 @@ export default function LoginPage() {
                   placeholder="****************"
                 />
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20">
-                    <path d="M8,10 L8,7 C8,4.791 9.791,3 12,3 C14.209,3 16,4.791 16,7 L16,10" 
-                          stroke="#1D8751" 
-                          strokeWidth="1.5" 
-                          fill="none" 
-                          strokeLinecap="round" />
-                    <rect x="7" y="10" width="10" height="8" rx="1" 
-                          stroke="#1D8751" 
-                          strokeWidth="1.5" 
-                          fill="none" />
-                    <line x1="12" y1="13.5" x2="12" y2="14.5" stroke="#1D8751" strokeWidth="1.5" strokeLinecap="round" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    width="20"
+                    height="20"
+                  >
+                    <path
+                      d="M8,10 L8,7 C8,4.791 9.791,3 12,3 C14.209,3 16,4.791 16,7 L16,10"
+                      stroke="#1D8751"
+                      strokeWidth="1.5"
+                      fill="none"
+                      strokeLinecap="round"
+                    />
+                    <rect
+                      x="7"
+                      y="10"
+                      width="10"
+                      height="8"
+                      rx="1"
+                      stroke="#1D8751"
+                      strokeWidth="1.5"
+                      fill="none"
+                    />
+                    <line
+                      x1="12"
+                      y1="13.5"
+                      x2="12"
+                      y2="14.5"
+                      stroke="#1D8751"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
                   </svg>
                 </div>
               </div>
-              {errors.password && <p className="mt-1 text-sm text-[#F04438]">{errors.password}</p>}
+              {errors.password && (
+                <p className="mt-1 text-sm text-[#F04438]">{errors.password}</p>
+              )}
             </div>
 
             {/* Checkboxes Row */}
@@ -245,19 +314,37 @@ export default function LoginPage() {
                       onChange={() => {
                         setRememberMe(!rememberMe);
                         if (errors.submitAttempted) {
-                          setErrors(prev => ({ ...prev, rememberMe: "" }));
+                          setErrors((prev) => ({ ...prev, rememberMe: "" }));
                         }
                       }}
-                      className={`opacity-0 absolute h-4 w-4 cursor-pointer ${errors.rememberMe ? 'ring-2 ring-[#F04438] rounded' : ''}`}
+                      className={`opacity-0 absolute h-4 w-4 cursor-pointer ${
+                        errors.rememberMe ? "ring-2 ring-[#F04438] rounded" : ""
+                      }`}
                     />
-                    <div className={`border ${errors.rememberMe ? "border-[#F04438]" : "border-[#1D8751]"} rounded h-4 w-4 flex flex-shrink-0 justify-center items-center mr-2 ${rememberMe ? 'bg-[#1D8751]' : 'bg-transparent'}`}>
+                    <div
+                      className={`border ${
+                        errors.rememberMe
+                          ? "border-[#F04438]"
+                          : "border-[#1D8751]"
+                      } rounded h-4 w-4 flex flex-shrink-0 justify-center items-center mr-2 ${
+                        rememberMe ? "bg-[#1D8751]" : "bg-transparent"
+                      }`}
+                    >
                       {rememberMe && (
-                        <svg className="fill-current w-2 h-2 text-white pointer-events-none" viewBox="0 0 20 20">
+                        <svg
+                          className="fill-current w-2 h-2 text-white pointer-events-none"
+                          viewBox="0 0 20 20"
+                        >
                           <path d="M0 11l2-2 5 5L18 3l2 2L7 18z" />
                         </svg>
                       )}
                     </div>
-                    <label htmlFor="remember-me" className={`text-sm cursor-pointer ${errors.rememberMe ? 'text-[#F04438]' : 'text-white'}`}>
+                    <label
+                      htmlFor="remember-me"
+                      className={`text-sm cursor-pointer ${
+                        errors.rememberMe ? "text-[#F04438]" : "text-white"
+                      }`}
+                    >
                       Remember me
                     </label>
                   </div>
@@ -271,19 +358,37 @@ export default function LoginPage() {
                       onChange={() => {
                         setNotRobot(!notRobot);
                         if (errors.submitAttempted) {
-                          setErrors(prev => ({ ...prev, notRobot: "" }));
+                          setErrors((prev) => ({ ...prev, notRobot: "" }));
                         }
                       }}
-                      className={`opacity-0 absolute h-4 w-4 cursor-pointer ${errors.notRobot ? 'ring-2 ring-[#F04438] rounded' : ''}`}
+                      className={`opacity-0 absolute h-4 w-4 cursor-pointer ${
+                        errors.notRobot ? "ring-2 ring-[#F04438] rounded" : ""
+                      }`}
                     />
-                    <div className={`border ${errors.notRobot ? "border-[#F04438]" : "border-[#1D8751]"} rounded h-4 w-4 flex flex-shrink-0 justify-center items-center mr-2 ${notRobot ? 'bg-[#1D8751]' : 'bg-transparent'}`}>
+                    <div
+                      className={`border ${
+                        errors.notRobot
+                          ? "border-[#F04438]"
+                          : "border-[#1D8751]"
+                      } rounded h-4 w-4 flex flex-shrink-0 justify-center items-center mr-2 ${
+                        notRobot ? "bg-[#1D8751]" : "bg-transparent"
+                      }`}
+                    >
                       {notRobot && (
-                        <svg className="fill-current w-2 h-2 text-white pointer-events-none" viewBox="0 0 20 20">
+                        <svg
+                          className="fill-current w-2 h-2 text-white pointer-events-none"
+                          viewBox="0 0 20 20"
+                        >
                           <path d="M0 11l2-2 5 5L18 3l2 2L7 18z" />
                         </svg>
                       )}
                     </div>
-                    <label htmlFor="not-robot" className={`text-sm cursor-pointer ${errors.notRobot ? 'text-[#F04438]' : 'text-white'}`}>
+                    <label
+                      htmlFor="not-robot"
+                      className={`text-sm cursor-pointer ${
+                        errors.notRobot ? "text-[#F04438]" : "text-white"
+                      }`}
+                    >
                       I'm not a robot
                     </label>
                   </div>
@@ -292,7 +397,10 @@ export default function LoginPage() {
 
               {/* Forgot Password Link */}
               <div>
-                <Link href="/auth/forgotPassword" className="text-[#1D8751] text-sm">
+                <Link
+                  href="/auth/forgotPassword"
+                  className="text-[#1D8751] text-sm"
+                >
                   Forgot Password
                 </Link>
               </div>
@@ -303,8 +411,16 @@ export default function LoginPage() {
               <div className="space-y-1 mt-2">
                 {errors.notRobot && (
                   <p className="text-sm text-[#F04438] flex items-center">
-                    <svg className="w-4 h-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    <svg
+                      className="w-4 h-4 mr-1"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
                     </svg>
                     {errors.notRobot}
                   </p>
@@ -317,17 +433,46 @@ export default function LoginPage() {
               type="submit"
               disabled={isSubmitting}
               className={`w-full bg-[#1D8751] text-white py-3 px-4 rounded-full hover:bg-[#0E5531] transition-colors duration-300 ${
-                isSubmitting ? 'opacity-70 cursor-not-allowed' : ''
+                isSubmitting ? "opacity-70 cursor-not-allowed" : ""
               }`}
             >
-              {isSubmitting ? 'Logging in...' : 'Log In'}
+              {isSubmitting ? (
+                <div className="flex items-center justify-center">
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Logging in...
+                </div>
+              ) : (
+                "Log In"
+              )}
             </button>
 
             {/* Sign Up Link */}
             <div className="text-center mt-4">
               <p className="text-gray-400">
                 Don't have an account?{" "}
-                <Link href="/auth/register" className="text-[#1D8751] hover:text-[#0E5531]">
+                <Link
+                  href="/auth/register"
+                  className="text-[#1D8751] hover:text-[#0E5531]"
+                >
                   Sign Up
                 </Link>{" "}
                 now
@@ -338,7 +483,9 @@ export default function LoginPage() {
             {/* Or Login With */}
             <div className="mt-6">
               <div className="relative flex items-center justify-center">
-                <span className="mx-4 text-gray-400 text-sm">Or Log in with</span>
+                <span className="mx-4 text-gray-400 text-sm">
+                  Or Log in with
+                </span>
               </div>
 
               <div className="grid grid-cols-2 gap-4 mt-4">

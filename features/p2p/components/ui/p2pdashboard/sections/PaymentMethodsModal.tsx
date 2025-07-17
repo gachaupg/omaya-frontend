@@ -32,7 +32,18 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   const dispatch = useDispatch<AppDispatch>();
   const { adminMethods, loading, error, postLoading, postError, postSuccess } =
     useSelector((state: RootState) => state.paymentMethods);
+  const { isAuthenticated, user } = useSelector(
+    (state: RootState) => state.auth
+  );
   console.log("adminMethods", adminMethods);
+  console.log("Redux state", {
+    loading,
+    error,
+    postLoading,
+    postError,
+    postSuccess,
+  });
+  console.log("Auth state", { isAuthenticated, user });
   const [method, setMethod] = useState("");
   const [provider, setProvider] = useState("");
   const [name, setName] = useState("");
@@ -50,11 +61,15 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
       dispatch(fetchAdminPaymentMethods() as any);
       setMethod("");
       setProvider("");
-      setName("");
+      // Auto-populate name with user's full name
+      const fullName = user
+        ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
+        : "";
+      setName(fullName);
       setAccount("");
       dispatch(clearPostStatus());
     }
-  }, [open, dispatch, isClient]);
+  }, [open, dispatch, isClient, user]);
 
   // Unique method types for dropdown
   const methodTypes = Array.from(
@@ -68,30 +83,51 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
 
   // Handle Add
   const handleAdd = () => {
-    if (!method || !provider || !name || !account) return;
+    console.log("handleAdd called", { method, provider, name, account });
+    if (!isAuthenticated) {
+      console.log("User not authenticated");
+      showToast.error("Please log in to add payment methods");
+      return;
+    }
+    if (!method || !provider || !name || !account) {
+      console.log("Validation failed", { method, provider, name, account });
+      showToast.error("Please fill all required fields");
+      return;
+    }
     const selectedProvider = providers.find(
       (p: any) => p.provider_name === provider
     );
-    dispatch(
-      postUserPaymentDetail({
-        account_name: name,
-        account_number: account,
-        payment_method_name: method,
-        payment_provider_name: provider,
-        provider_name: provider,
-        wallet_address: selectedProvider?.wallet_address || null,
-      })
-    );
+    console.log("Selected provider", selectedProvider);
+    const payload = {
+      account_name: name,
+      account_number: account,
+      payment_method_name: method,
+      payment_provider_name: provider,
+      provider_name: provider,
+      wallet_address: selectedProvider?.wallet_address || null,
+    };
+    console.log("Dispatching payload", payload);
+    dispatch(postUserPaymentDetail(payload));
   };
 
   // Close modal on success
   useEffect(() => {
+    console.log("postSuccess effect triggered", postSuccess);
     if (postSuccess) {
+      console.log("Payment method added successfully!");
       showToast.success("Payment method added!");
       if (onAdd) onAdd();
       onClose();
     }
   }, [postSuccess, onAdd, onClose]);
+
+  // Handle errors
+  useEffect(() => {
+    if (postError) {
+      console.log("Post error occurred:", postError);
+      showToast.error(postError);
+    }
+  }, [postError]);
 
   if (!open) return null;
 
@@ -114,7 +150,13 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
         <div className="text-white text-base font-semibold mb-4">
           Add payment details
         </div>
-        <div className="flex flex-col gap-3">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleAdd();
+          }}
+          className="flex flex-col gap-3"
+        >
           {/* Payment Method Dropdown */}
           <div>
             <label className="block text-[#788099] text-sm mb-1">
@@ -158,24 +200,40 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
           )}
 
           {/* Name Input */}
-          <input
-            className="w-full bg-[#23232B] text-white rounded-lg px-4 py-3 focus:outline-none placeholder:text-[#788099]"
-            placeholder="Peter"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            disabled={loading}
-          />
+          <div>
+            <label className="block text-[#788099] text-sm mb-1">
+              Account Name (Auto-filled)
+            </label>
+            <input
+              className="w-full bg-[#23232B] text-white rounded-lg px-4 py-3 focus:outline-none placeholder:text-[#788099]"
+              placeholder="Your name will be auto-filled"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={loading}
+            />
+          </div>
           {/* Account Number Input */}
-          <input
-            className="w-full bg-[#23232B] text-white rounded-lg px-4 py-3 focus:outline-none placeholder:text-[#788099]"
-            placeholder="Account Number"
-            value={account}
-            onChange={(e) => setAccount(e.target.value)}
-            disabled={loading}
-          />
+          <div>
+            <label className="block text-[#788099] text-sm mb-1">
+              Account Number
+            </label>
+            <input
+              className="w-full bg-[#23232B] text-white rounded-lg px-4 py-3 focus:outline-none placeholder:text-[#788099]"
+              placeholder="Enter account number"
+              value={account}
+              onChange={(e) => setAccount(e.target.value)}
+              disabled={loading}
+            />
+          </div>
           {/* Error/Loading */}
           {error && <div className="text-red-500 text-sm">{error}</div>}
           {postError && <div className="text-red-500 text-sm">{postError}</div>}
+          {postLoading && (
+            <div className="text-blue-500 text-sm">
+              Adding payment method...
+            </div>
+          )}
+
           {/* Buttons */}
           <div className="flex gap-4 mt-2">
             <button
@@ -187,9 +245,8 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
               Cancel
             </button>
             <button
-              className="flex-1 rounded-lg bg-[#1D8751] text-white py-2 font-medium hover:bg-[#17693f] transition"
-              onClick={handleAdd}
-              type="button"
+              className="flex-1 rounded-lg bg-[#1D8751] text-white py-2 font-medium hover:bg-[#17693f] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              type="submit"
               disabled={
                 loading ||
                 postLoading ||
@@ -202,7 +259,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
               {postLoading ? "Adding..." : "Add"}
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );

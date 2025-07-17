@@ -410,6 +410,7 @@ const MarketTable = () => {
   }
 
   return (
+    <div className="bg-[#18181D] min-h-screen text-[#788099] font-sans">
     <div className="bg-[#18181D] min-h-screen py-8 text-[#788099] font-sans">
       {/* Top Section */}
       <div className="max-w-[1000px] mx-auto mb-6 px-6">
@@ -453,6 +454,7 @@ const MarketTable = () => {
           volumes, price fluctuations, and market capitalizations for every
           cryptocurrency available on global markets.
         </div>
+        <div className="text-sm text-[#788099] ">
         <div className="text-sm text-[#788099] mb-6">
           Users can readily obtain crucial details about these digital assets
           and directly navigate to the trading platform from this point.
@@ -461,6 +463,7 @@ const MarketTable = () => {
         {/* Favourite Assets Header Row */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2 font-semibold text-[#fff] text-lg">
+            Top Assets
             Favourite Assets
             <button className="bg-none border-none text-[#788099] text-xl cursor-pointer p-0 ml-2">
               &lt;
@@ -476,6 +479,7 @@ const MarketTable = () => {
         </div>
 
         {/* Favourite Assets Cards Row */}
+        <div className="flex gap-4 mb-1">
         <div className="flex gap-4 mb-8">
           {favoriteAssets.map((asset) => (
             <div
