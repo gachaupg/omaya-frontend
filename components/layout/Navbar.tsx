@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Moon, Sun, Menu, X, Check } from "lucide-react";
+import { Menu, X, Check } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "@/features/auth/store";
 import {
@@ -12,6 +13,8 @@ import {
   getUserProfile,
   logout,
 } from "@/features/auth/slices/authSlice";
+} from "@/features/auth/slices/authSlice";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 const DefaultProfileIcon = () => (
   <div
@@ -31,7 +34,6 @@ const DefaultProfileIcon = () => (
 );
 
 export default function Navbar() {
-  const [theme, setTheme] = useState<"light" | "dark">("light");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [depositDropdownOpen, setDepositDropdownOpen] = useState(false);
@@ -41,6 +43,9 @@ export default function Navbar() {
     profile: userProfile,
     user,
   } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated, profile: userProfile } = useSelector(
+    (state: RootState) => state.auth
+  );
   const dispatch = useDispatch<AppDispatch>();
   const depositDropdownRef = useRef<HTMLDivElement>(null);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
@@ -119,7 +124,7 @@ export default function Navbar() {
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-4 sm:px-6 md:px-12 2xl:px-20 transition-all duration-300 ${
+        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-4 sm:px-6 md:px-12 2xl:px-20 transition-all duration-300  ${
           scrolled ? "bg-[#1D1D23]" : "bg-transparent"
         }`}
       >
@@ -210,6 +215,8 @@ export default function Navbar() {
                                 strokeWidth="4"
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
                               />
                               <path
                                 d="M17 20 L31 20 L27 24"
@@ -217,6 +224,9 @@ export default function Navbar() {
                                 strokeWidth="4"
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
+
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
                               />
                             </svg>
                           </div>
@@ -276,6 +286,8 @@ export default function Navbar() {
                                 stroke="#1C8F4D"
                                 strokeWidth="6"
                                 stroke-linecap="round"
+
+                                strokeLinecap="round"
                               />
                               <path
                                 d="M20 90 Q20 65 45 65"
@@ -283,6 +295,7 @@ export default function Navbar() {
                                 stroke="#1C8F4D"
                                 strokeWidth="6"
                                 stroke-linecap="round"
+                                strokeLinecap="round"
                               />
                               <path
                                 d="M70 85 A20 20 0 0 1 110 85"
@@ -290,12 +303,15 @@ export default function Navbar() {
                                 stroke="#F49A29"
                                 strokeWidth="6"
                                 stroke-linecap="round"
+
+                                strokeLinecap="round"
                               />
                               <path
                                 d="M110 85 L104 80 M110 85 L108 77"
                                 stroke="#F49A29"
                                 strokeWidth="6"
                                 stroke-linecap="round"
+                                strokeLinecap="round"
                               />
                               <path
                                 d="M110 85 A20 20 0 0 1 70 85"
@@ -303,12 +319,14 @@ export default function Navbar() {
                                 stroke="#F49A29"
                                 strokeWidth="6"
                                 stroke-linecap="round"
+                                strokeLinecap="round"
                               />
                               <path
                                 d="M70 85 L75 90 M70 85 L67 93"
                                 stroke="#F49A29"
                                 strokeWidth="6"
                                 stroke-linecap="round"
+                                strokeLinecap="round"
                               />
                             </svg>
                           </div>
@@ -360,6 +378,9 @@ export default function Navbar() {
                                 strokeWidth="5"
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
+
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
                               />
                               <polygon
                                 points="30,60 20,70 30,80"
@@ -372,6 +393,8 @@ export default function Navbar() {
                                 strokeWidth="5"
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
                               />
                               <polygon
                                 points="70,40 80,30 70,20"
@@ -611,7 +634,7 @@ export default function Navbar() {
 
           <div className="flex items-center space-x-4 2xl:space-x-6">
             <LanguageSelector />
-            <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
+            <ThemeToggle />
           </div>
         </div>
 
@@ -805,7 +828,7 @@ export default function Navbar() {
 
           <div className="flex items-center justify-between pt-4">
             <LanguageSelector />
-            <ThemeToggle theme={theme} toggleTheme={toggleTheme} />
+            <ThemeToggle />
           </div>
         </div>
       )}
@@ -821,7 +844,7 @@ const NavLink = ({
 }) => (
   <Link
     href={href}
-    className="text-white hover:text-[#1D8751] transition-colors duration-200 text-sm lg:text-base 2xl:text-lg"
+    className="dark:text-white   text-white  hover:text-[#1D8751] transition-colors duration-200 text-sm lg:text-base 2xl:text-lg"
   >
     {children}
   </Link>
@@ -974,3 +997,5 @@ const ThemeToggle = ({
     )}
   </button>
 );
+=======
+};

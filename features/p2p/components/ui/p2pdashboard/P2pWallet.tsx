@@ -54,9 +54,9 @@ const P2pWallet = ({
   }, [dispatch, isAuthenticated]);
 
   // Find USDT wallet with null check
-  const usdtWallet = wallets?.find(
-    (wallet: Wallet) => wallet.currency === "USDT"
-  );
+  const usdtWallet = Array.isArray(wallets)
+    ? wallets.find((wallet: Wallet) => wallet.currency === "USDT")
+    : null;
   const balance = usdtWallet ? toNumber(usdtWallet.balance) : 0;
   const usdValue = balance;
 

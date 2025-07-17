@@ -30,17 +30,24 @@ const Referral = () => {
     const fetchData = async () => {
       if (user?.referral_code && isAuthenticated) {
         try {
-          await Promise.all([
-            dispatch(fetchReferredUsers(user.referral_code)),
-            dispatch(fetchReferralWallet()),
-          ]);
+          // Fetch referred users
+          await dispatch(fetchReferredUsers(user.referral_code));
+
+          // Fetch referral wallet only if on referral tab
+          if (tab === "Referral") {
+            try {
+              await dispatch(fetchReferralWallet());
+            } catch (error) {
+              console.warn("Referral wallet API not available:", error);
+            }
+          }
         } catch (error) {
           console.error("Error fetching referral data:", error);
         }
       }
     };
     fetchData();
-  }, [user?.referral_code, dispatch, isAuthenticated]);
+  }, [user?.referral_code, dispatch, isAuthenticated, tab]);
 
   if (showWithdrawPage) {
     return (

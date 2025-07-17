@@ -159,19 +159,19 @@ const P2PTransactions = () => {
       <table className="min-w-full divide-y divide-[#35353E]">
         <thead>
           <tr>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium dark:text-gray-400 text-gray-400 uppercase tracking-wider">
               Asset
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium dark:text-gray-400 text-gray-400 uppercase tracking-wider">
               Transaction Type
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium dark:text-gray-400 text-gray-400 uppercase tracking-wider">
               Amount
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium dark:text-gray-400 text-gray-400 uppercase tracking-wider">
               Payment Method
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-xs font-medium dark:text-gray-400 text-gray-400 uppercase tracking-wider">
               When
             </th>
           </tr>

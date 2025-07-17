@@ -11,7 +11,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Initialize KYC verification check
+  // Always call the hook to maintain hook order consistency
   useKYCVerification();
 
   // Initialize device session tracking

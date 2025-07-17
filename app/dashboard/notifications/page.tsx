@@ -1,22 +1,23 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "@/store/rootReducer";
 import { FaUserCircle } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { fetchMatchedTrades } from "@/features/p2p/slices/matchedTradesSlice";
+import { MatchedTradesResponse } from "@/features/p2p/types";
 import { div } from "framer-motion/client";
 
 const getOrderType = (order_type: string) => {
   if (order_type === "buy") {
-    return { label: "Buy", color: "text-[#1D8751]" };
-  } else {
     return { label: "Sell", color: "text-red-400" };
+  } else {
+    return { label: "Buy", color: "text-[#1D8751]" };
   }
 };
 
 const getStatus = (trade: any, userEmail: string) => {
-  if (trade.owner.startsWith(userEmail.charAt(0))) {
+  if (trade.owner === userEmail) {
     return { text: "Pending Incoming Trade", color: "text-[#1D8751]" };
   } else {
     return {
@@ -38,24 +39,109 @@ const Notifications = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
   useEffect(() => {
     if (isAuthenticated) {
-      dispatch(fetchMatchedTrades(1));
-    }
-  }, [dispatch]);
+      // First, get page 1 to determine total count and pages
+      dispatch(fetchMatchedTrades(1)).then((result) => {
+        const payload = result.payload as MatchedTradesResponse;
+        if (payload && payload.count) {
+          const itemsPerPage = 10; // Assuming 10 items per page based on the data
+          const calculatedTotalPages = Math.ceil(payload.count / itemsPerPage);
+          setTotalPages(calculatedTotalPages);
 
+          // Always start from the last page to show latest notifications
+          if (calculatedTotalPages > 0) {
+            setCurrentPage(calculatedTotalPages);
+            dispatch(fetchMatchedTrades(calculatedTotalPages));
+          }
+        }
+      });
+    }
+  }, [dispatch, isAuthenticated]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    dispatch(fetchMatchedTrades(page));
+  };
+
+  // Reverse pagination: Next = go to previous page, Previous = go to next page
+  const handleNextPage = () => {
+    if (currentPage > 1) {
+      handlePageChange(currentPage - 1);
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (currentPage < totalPages) {
+      handlePageChange(currentPage + 1);
+    }
+  };
+  // console.log(user?.email);
+  // console.log(matchedTrades?.results);
   const handleViewOrder = (trade: any) => {
-    const status = getStatus(trade, user?.email || "");
-    if (status.text === `Pending ${trade.order_type} Trade`) {
-      const searchParams = new URLSearchParams();
-      searchParams.set(
-        "orderData",
-        JSON.stringify({ order_type: trade.order_type })
+    // Store the full order in local storage
+    try {
+      const fullOrderData = {
+        ...trade, // Store the complete trade object
+        storedAt: new Date().toISOString(),
+        viewedFrom: "notifications",
+      };
+
+      localStorage.setItem("new_order", JSON.stringify(fullOrderData));
+
+      // Also store in a general orders list for easy access
+      const existingOrders = JSON.parse(
+        localStorage.getItem("p2p_orders") || "[]"
       );
-      router.push(`/p2p/${trade.id}/matched?${searchParams.toString()}`);
+      const orderExists = existingOrders.find(
+        (order: any) => order.id === trade.id
+      );
+
+      if (!orderExists) {
+        existingOrders.push(fullOrderData);
+        localStorage.setItem("p2p_orders", JSON.stringify(existingOrders));
+      } else {
+        // Update existing order with latest data
+        const orderIndex = existingOrders.findIndex(
+          (order: any) => order.id === trade.id
+        );
+        existingOrders[orderIndex] = fullOrderData;
+        localStorage.setItem("p2p_orders", JSON.stringify(existingOrders));
+      }
+    } catch (error) {
+      console.error("Error storing order in localStorage:", error);
+    }
+
+    const status = getStatus(trade, user?.email || "");
+    if (
+      status.text ===
+      `Pending ${trade.order_type} Trade`
+    ) {
+      if (trade.owner === user?.email) {
+        router.push(
+          `/p2p/${trade.id}/matched?order_type=${
+            trade.order_type === "buy" ? "sell" : "buy"
+          }&trade=buyer`
+        );
+      } else {
+        const searchParams = new URLSearchParams();
+        searchParams.set(
+          "orderData",
+          JSON.stringify({
+            order_type: trade.order_type === "buy" ? "sell" : "buy",
+          })
+        );
+
+        router.push(`/p2p/${trade.id}/matched?${searchParams.toString()}`);
+      }
     } else {
       router.push(
-        `/p2p/${trade.id}/matched?order_type=${trade.order_type}&trade=buyer`
+        `/p2p/${trade.id}/matched?order_type=${
+          trade.order_type === "buy" ? "sell" : "buy"
+        }&trade=seller`
       );
     }
   };
@@ -102,8 +188,8 @@ const Notifications = () => {
           Notifications Center
         </h6>
         <span className="text-sm text-[#A3A3C2]">
-          {matchedTrades.results.length}{" "}
-          {matchedTrades.results.length === 1
+          {matchedTrades.count || matchedTrades.results.length}{" "}
+          {(matchedTrades.count || matchedTrades.results.length) === 1
             ? "notification"
             : "notifications"}
         </span>
@@ -177,6 +263,64 @@ const Notifications = () => {
           );
         })}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center mt-6 space-x-2">
+          <button
+            onClick={handlePreviousPage}
+            disabled={currentPage === totalPages}
+            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+              currentPage === totalPages
+                ? "bg-[#31313C] text-[#A3A3C2] cursor-not-allowed"
+                : "bg-[#1D8751] text-white hover:bg-[#17693F]"
+            }`}
+          >
+            Previous
+          </button>
+
+          <div className="flex space-x-1">
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              let pageNum;
+              if (totalPages <= 5) {
+                pageNum = i + 1;
+              } else if (currentPage <= 3) {
+                pageNum = i + 1;
+              } else if (currentPage >= totalPages - 2) {
+                pageNum = totalPages - 4 + i;
+              } else {
+                pageNum = currentPage - 2 + i;
+              }
+
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => handlePageChange(pageNum)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                    currentPage === pageNum
+                      ? "bg-[#1D8751] text-white"
+                      : "bg-[#31313C] text-[#A3A3C2] hover:bg-[#2A2A33]"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+          </div>
+
+          <button
+            onClick={handleNextPage}
+            disabled={currentPage === 1}
+            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+              currentPage === 1
+                ? "bg-[#31313C] text-[#A3A3C2] cursor-not-allowed"
+                : "bg-[#1D8751] text-white hover:bg-[#17693F]"
+            }`}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 };

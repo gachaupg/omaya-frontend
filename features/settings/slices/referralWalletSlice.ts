@@ -19,9 +19,18 @@ const initialState: ReferralWalletState = {
 
 export const fetchReferralWallet = createAsyncThunk(
   "referralWallet/fetch",
-  async () => {
-    const response = await getReferralWallet();
-    return response;
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getReferralWallet();
+      return response;
+    } catch (error: any) {
+      // Handle 404 errors gracefully
+      if (error.response?.status === 404) {
+        console.warn("Referral wallet endpoint not available");
+        return rejectWithValue("Referral wallet not available");
+      }
+      return rejectWithValue(error.response?.data || error.message);
+    }
   }
 );
 

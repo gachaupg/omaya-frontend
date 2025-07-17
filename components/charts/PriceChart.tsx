@@ -113,7 +113,7 @@ const CryptoCard = ({
     <div className="flex items-center justify-between mb-1">
       <div className="flex items-center gap-1.5">
         {icon}
-        <span className="text-white font-semibold text-sm sm:text-base">
+        <span className="dark:text-white font-semibold text-sm sm:text-base">
           {name}
         </span>
       </div>
@@ -121,7 +121,7 @@ const CryptoCard = ({
         24h
       </span>
     </div>
-    <div className="text-white flex flex-row gap-1.5 text-[13px] font-bold text-base sm:text-lg mb-1">
+    <div className="dark:text-white text-black flex flex-row gap-1.5 text-[13px] font-bold text-base sm:text-lg mb-1">
       <p>{price}</p>
       <div className="w-16 h-4 rounded-lg mb-1 flex flex-row gap-1.5 items-center justify-center bg-[#48CC544D]">
         <p className="text-xs text-[#48CC54]">{rate}</p>
@@ -146,7 +146,7 @@ const PriceCards = () => {
 
   return (
     <div className="w-full">
-      <h2 className="text-white text-[16px] mb-4">Market Overview</h2>
+      <h2 className="dark:text-white text-[16px] mb-4">Market Overview</h2>
       <div className="flex flex-row gap-4 overflow-x-auto pb-4">
         {cryptoData.map((crypto) => (
           <CryptoCard key={crypto.name} {...crypto} />

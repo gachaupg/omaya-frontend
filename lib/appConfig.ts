@@ -50,6 +50,8 @@ export const API_CONFIG = {
     REFERRAL_WITHDRAW: "/trading_engine/referral/withdraw/",
     WITHDRAWAL_OTP: "/trading_engine/p2pwithdraw-otp/",
     WITHDRAWAL_ADDRESSES: "/trading_engine/withdrawal/addresses/",
+    MATCHED_TRADE: "/trading_engine/p2p/trades/",
+
   },
   SWAP: {
     SUPPORTED_ASSETS: "/api/changenow/supported-tokens/",

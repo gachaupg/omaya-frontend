@@ -16,7 +16,22 @@ export const useThemeToggle = () => {
   // Ensure component is mounted before applying theme
   useEffect(() => {
     setMounted(true);
-  }, []);
+
+    // Load theme from localStorage on mount
+    try {
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme) {
+        const parsedTheme = JSON.parse(savedTheme);
+        if (parsedTheme.mode) {
+          dispatch(setThemeMode(parsedTheme.mode));
+        }
+      }
+    } catch (error) {
+      console.log("Failed to load theme from localStorage:", error);
+      // Fallback to default theme
+      dispatch(setThemeMode("dark"));
+    }
+  }, [dispatch]);
 
   // Apply theme to document when theme changes
   useEffect(() => {
@@ -77,13 +92,14 @@ export const useThemeToggle = () => {
       // Update local state immediately for better UX
       dispatch(setThemeMode(mode));
 
-      // Update server state
+      // Store theme in localStorage for persistence
       const updatedTheme: ThemeSettings = {
         ...theme,
         mode,
       };
+      localStorage.setItem("theme", JSON.stringify(updatedTheme));
 
-      await dispatch(updateTheme(updatedTheme)).unwrap();
+      // No server API calls - using client-side only
     } catch (error) {
       console.error("Failed to update theme:", error);
       // Revert to previous theme on error
@@ -102,7 +118,10 @@ export const useThemeToggle = () => {
         accent_color: accentColor,
       };
 
-      await dispatch(updateTheme(updatedTheme)).unwrap();
+      // Store in localStorage
+      localStorage.setItem("theme", JSON.stringify(updatedTheme));
+
+      // No server API calls - using client-side only
     } catch (error) {
       console.error("Failed to update custom colors:", error);
     }

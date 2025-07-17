@@ -5,7 +5,8 @@ import Image from "next/image";
 import { getP2PProfileThunk } from "@/features/p2p/slices/orderSlice";
 import { AppDispatch } from "@/store";
 
-const DEFAULT_AVATAR = "https://via.placeholder.com/56";
+const DEFAULT_AVATAR =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56' viewBox='0 0 56 56'%3E%3Ccircle cx='28' cy='28' r='28' fill='%23e5e7eb'/%3E%3Cg fill='%239ca3af'%3E%3Ccircle cx='28' cy='22' r='8'/%3E%3Cpath d='M28 32c-8 0-14 4-14 8v6c0 2 1 3 3 3h22c2 0 3-1 3-3v-6c0-4-6-8-14-8z'/%3E%3C/g%3E%3C/svg%3E";
 
 const KYC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -65,7 +66,7 @@ const KYC = () => {
               onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                 const target = e.currentTarget;
                 target.onerror = null;
-                target.src = "https://via.placeholder.com/56";
+                target.src = DEFAULT_AVATAR;
               }}
             />
             <input

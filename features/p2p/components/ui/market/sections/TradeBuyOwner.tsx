@@ -13,7 +13,7 @@ import {
   cancelP2POrderThunk,
   completeP2PTradeThunk,
 } from "@/features/p2p/slices/orderSlice";
-import { FileIcon, SendIcon } from "lucide-react";
+import { FileIcon, SendIcon, RefreshCw } from "lucide-react";
 import AppealModal from "./appeal";
 import ChatBox from "./ChatBox";
 import { showToast } from "@/lib/utils/toast";
@@ -36,6 +36,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     confirmTradeSuccess,
   } = useSelector((state: RootState) => state.p2pMarket);
   const [showAppealModal, setShowAppealModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const { user } = useSelector((state: RootState) => state.auth);
 
@@ -83,12 +84,16 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       dispatch(fetchConfirmOrder(orderId));
     }
   }, [params.id, dispatch]);
-
+  const saveOrder = localStorage.getItem("new_order")
+    ? JSON.parse(localStorage.getItem("new_order")!)
+    : null;
+  const singgleuseid = confirmOrder?.buy_order;
   useEffect(() => {
     const orderToFetch = confirmOrder?.buy_order || confirmOrder?.sell_order;
-    if (orderToFetch) {
-      dispatch(fetchSingleOrder(orderToFetch));
+    if (orderToFetch && singgleuseid) {
+      dispatch(fetchSingleOrder(singgleuseid));
     }
+  }, [confirmOrder, dispatch, singgleuseid]);
   }, [confirmOrder, dispatch]);
 
   useEffect(() => {
@@ -102,8 +107,15 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     }
   }, [confirmOrder?.status, displaySeconds]);
 
+  // Show success modal when trade is completed
+  useEffect(() => {
+    if (confirmOrder?.status === "completed") {
+      setShowSuccessModal(true);
+    }
+  }, [confirmOrder?.status]);
+
   // Get payment details from order data
-  const paymentDetails = singleOrder?.payment_details?.[0] || null;
+  const paymentDetails = saveOrder?.payment_details?.[0] || null;
 
   // --- Calculation logic ---
   const sendAmount = Number(confirmOrder?.amount) || 0;
@@ -127,7 +139,18 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     }
   };
 
-  // Add handler for confirming trade
+  const getButtonText = () => {
+    if (confirmTradeLoading) return "Notifying seller...";
+    return "Payments Received Notify Seller";
+  };
+
+  const handleRefresh = () => {
+    const orderId = params.id as string;
+    if (orderId) {
+      dispatch(fetchConfirmOrder(orderId));
+    }
+  };
+
   const handleConfirmTrade = () => {
     const orderId = params.id as string;
 
@@ -139,10 +162,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             "Trade completed successfully!",
             "You will be redirected to the dashboard"
           );
+          // Refresh confirm order after successful trade
           dispatch(fetchConfirmOrder(confirmOrder.id));
-          setTimeout(() => {
-            router.push("/dashboard");
-          }, 2000);
+          // setTimeout(() => {
+          //   router.push("/dashboard");
+          // }, 2000);
         })
         .catch((error) => {
           showToast.error(
@@ -153,6 +177,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     }
   };
 
+  console.log(confirmOrder);
   const getButtonText = () => {
     if (confirmTradeLoading) return "Notifying seller...";
     return "Payments Received Notify Seller";
@@ -166,12 +191,13 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   //   );
   // }
 
+  console.log("saved order", saveOrder);
   return (
     <div className="grid grid-cols-1 mt-10 md:grid-cols-3 gap-6 p-6 min-h-screen bg-[#18181D]">
       {/* Left: Timeline/Steps */}
-      <div className="md:col-span-2 flex flex-col gap-8">
+      <div className="md:col-span-2 flex flex-col gap-4">
         {/* Step 1: Order Created */}
-        <div className="relative pl-8 pb-8 border-l-2 border-[#35353E]">
+        <div className="relative pl-8 pb-4 border-l-2 border-[#35353E]">
           <div className="absolute -left-4 top-0 w-8 h-8 rounded-full bg-[#23232A] border-2 border-[#1D8751] flex items-center justify-center text-[#1D8751] font-bold text-lg">
             1
           </div>
@@ -179,15 +205,26 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             <span className="text-white font-semibold text-lg">
               Order Created
             </span>
+            <div className="flex items-center gap-2">
+              <span className="text-[14px] text-[#A3A3C2]">
+                Order Number :
+                <button
+                  className="text-[#1D8751] underline ml-1"
+                  onClick={() => handleCopy(singleOrder?.id)}
+                >
+                  {singleOrder?.id}
+                </button>
+              </span>
             <span className="text-[14px] text-[#A3A3C2]">
               Order Number :
               <button
-                className="text-[#1D8751] underline ml-1"
-                onClick={() => handleCopy(singleOrder?.id)}
+                onClick={handleRefresh}
+                className="flex items-center gap-1 bg-[#23232A] text-[#1D8751] rounded-lg px-2 py-1 border border-[#35353E] hover:bg-[#35353E] transition-colors"
+                title="Refresh"
               >
-                {singleOrder?.id}
+                <RefreshCw size={14} />
               </button>
-            </span>
+            </div>
           </div>
           <div className="flex gap-4 border-2 border-[#35353E] p-2 rounded-xl mt-4">
             <div className="flex flex-row items-center justify-between w-full  bg-[#35353E] rounded-xl px-6 py-2">
@@ -200,7 +237,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             <div className="flex f w-full flex-row  justify-between items-center bg-[#35353E] rounded-xl px-6 py-2">
               <span className="text-[#1D8751] text-xl">$</span>{" "}
               <span className="text-[#F79330] text-lg font-bold">
-                {commissionRate}%
+                {saveOrder?.commission_rate ?? commissionRate}%
               </span>
               <span className="text-xs text-[#F79330]">Commission</span>
             </div>
@@ -213,6 +250,8 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                   height={20}
                 />
                 <span className="text-[#1D8751] text-lg font-bold">
+                  {formatAmount(saveOrder?.amount)}
+
                   {formatAmount(receiveAmount)}
                 </span>
               </div>
@@ -222,7 +261,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
         </div>
 
         {/* Step 2: Confirm Payment From Buyer */}
-        <div className="relative pl-8 pb-8 border-l-2 border-[#35353E]">
+        <div className="relative pl-8 pb-4 border-l-2 border-[#35353E]">
           <div className="absolute -left-4 top-0 w-8 h-8 rounded-full bg-[#23232A] border-2 border-[#1D8751] flex items-center justify-center text-[#1D8751] font-bold text-lg">
             2
           </div>
@@ -344,11 +383,8 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
         <ChatBox
           tradeId={confirmOrder?.id || ""}
           userId={user?.id.toString() || ""}
-          userName={
-            `${singleOrder?.advertiser_first_name} ${singleOrder?.advertiser_last_name}` ||
-            ""
-          }
-          autoreply={singleOrder?.auto_reply || ""}
+          userName={`${saveOrder?.advertiser_name}` || ""}
+          autoreply={saveOrder?.auto_reply || ""}
         />
         {/* Advertiser's Terms */}
         <section className="advertiser-terms rounded-lg p-4">
@@ -357,11 +393,75 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           </div>
           <div className="text-xs flex flex-col gap-2">
             <div className="text-[#1D8751]">
-              {singleOrder?.terms_and_conditions}
+              {saveOrder?.terms_and_conditions}
             </div>
           </div>
         </section>
       </div>
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-[#23232A] rounded-2xl p-8 max-w-md w-full mx-4 border border-[#35353E]">
+            <div className="text-center">
+              {/* Success Icon */}
+              <div className="w-16 h-16 bg-[#1D8751] rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg
+                  className="w-8 h-8 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              </div>
+
+              {/* Success Title */}
+              <h2 className="text-2xl font-bold text-white mb-4">
+                Trade Completed Successfully!
+              </h2>
+
+              {/* Trade Details */}
+              <div className="bg-[#18181D] rounded-xl p-4 mb-6 border border-[#35353E]">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[#A3A3C2]">Amount Sent:</span>
+                  <span className="text-[#F79330] font-semibold">
+                    ${formatAmount(sendAmount)} USD
+                  </span>
+                </div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[#A3A3C2]">Commission:</span>
+                  <span className="text-[#1D8751] font-semibold">
+                    {commissionRate}%
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#A3A3C2]">Amount Received:</span>
+                  <span className="text-[#1D8751] font-semibold">
+                    {formatAmount(receiveAmount)} USDT
+                  </span>
+                </div>
+              </div>
+
+              {/* Go to Dashboard Button */}
+              <button
+                onClick={() => {
+                  setShowSuccessModal(false);
+                  router.push("/dashboard");
+                }}
+                className="w-full bg-[#1D8751] text-white rounded-lg px-6 py-3 font-semibold hover:bg-[#167a45] transition-colors"
+              >
+                Go to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

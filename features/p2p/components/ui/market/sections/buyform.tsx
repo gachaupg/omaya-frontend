@@ -17,6 +17,8 @@ import AppealModal from "./appeal";
 import ChatBox from "./ChatBox";
 import { showToast } from "@/lib/utils/toast";
 import { handleCopy } from "@/features/p2p/components/Common/utils";
+import { RefreshCw } from "lucide-react";
+import { Dialog } from "@headlessui/react";
 
 interface FinalBuyProps {
   orderData?: P2POrder;
@@ -34,6 +36,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
     singleOrderError,
   } = useSelector((state: RootState) => state.p2pMarket);
   const [showAppealModal, setShowAppealModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
@@ -65,7 +68,15 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
     if (confirmOrder?.status !== "matched") return;
     if (countdown <= 0) return;
     const timer = setInterval(() => {
-      setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          // When countdown reaches 0, auto-cancel the transaction
+          console.log("Countdown reached 0, auto-cancelling transaction");
+          handleCancelTransaction();
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
     return () => clearInterval(timer);
   }, [confirmOrder?.status, countdown]);
@@ -90,6 +101,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
       singleOrder,
       confirmOrderId: confirmOrder?.id,
 
+
     });
 
     if (isAuthenticated && orderToFetch && !singleOrder?.id) {
@@ -97,6 +109,14 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
       dispatch(fetchSingleOrder(orderToFetch));
     }
   }, [confirmOrder, isAuthenticated, singleOrder?.id, dispatch]);
+
+  // New useEffect to check for completed status and show success modal
+  useEffect(() => {
+    if (confirmOrder?.status === "completed" && !showSuccessModal) {
+      setShowSuccessModal(true);
+    }
+  }, [confirmOrder?.status, showSuccessModal]);
+
 
   console.log("singleOrder", singleOrder);
   console.log("confirmOrder", confirmOrder);
@@ -154,7 +174,29 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
   // Add handler for confirming trade
   const handleConfirmTrade = () => {
     if (isAuthenticated && confirmOrder?.id) {
-      dispatch(confirmP2PTradeThunk(confirmOrder.id));
+      dispatch(confirmP2PTradeThunk(confirmOrder.id))
+        .unwrap()
+        .then(() => {
+          showToast.success(
+            "Trade confirmed successfully!",
+            "Waiting for seller confirmation"
+          );
+          // Refresh confirm order after successful trade
+          dispatch(fetchConfirmOrder(confirmOrder.id));
+        })
+        .catch((error) => {
+          showToast.error(
+            "Failed to confirm trade",
+            error.message || "Please try again"
+          );
+        });
+    }
+  };
+
+  const handleRefresh = () => {
+    const orderId = params.id as string;
+    if (orderId) {
+      dispatch(fetchConfirmOrder(orderId));
     }
   };
 
@@ -172,6 +214,18 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
             {singleOrderError}
           </div>
         )}
+        <div className="flex items-center justify-between">
+          <p className="text-white text-[13px]" style={{ fontSize: "13px" }}>
+            Advertiser Informations
+          </p>
+          <button
+            onClick={handleRefresh}
+            className="flex items-center gap-1 bg-[#23232A] text-[#1D8751] rounded-lg px-2 py-1 border border-[#35353E] hover:bg-[#35353E] transition-colors"
+            title="Refresh"
+          >
+            <RefreshCw size={14} />
+          </button>
+        </div>
         <p className="text-white text-[13px]" style={{ fontSize: "13px" }}>
           Advertiser Informations
         </p>
@@ -524,6 +578,78 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
           Trade cancelled
         </div>
       )}
+
+      {/* Success Modal - Using Headless UI Dialog */}
+      <Dialog
+        open={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        className="relative z-50"
+      >
+        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <Dialog.Panel className="mx-auto w-full max-w-md rounded-2xl bg-[#23232A] text-white border border-[#35353E]">
+            <div className="p-8">
+              <div className="text-center">
+                {/* Success Icon */}
+                <div className="w-16 h-16 bg-[#1D8751] rounded-full flex items-center justify-center mx-auto mb-6">
+                  <svg
+                    className="w-8 h-8 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                </div>
+
+                {/* Success Title */}
+                <Dialog.Title className="text-2xl font-bold text-white mb-4">
+                  Trade Completed Successfully!
+                </Dialog.Title>
+
+                {/* Trade Details */}
+                <div className="bg-[#18181D] rounded-xl p-4 mb-6 border border-[#35353E]">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-[#A3A3C2]">Amount Sent:</span>
+                    <span className="text-[#F79330] font-semibold">
+                      ${formatAmount(sendAmount)} USD
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-[#A3A3C2]">Commission:</span>
+                    <span className="text-[#1D8751] font-semibold">
+                      {commissionRate}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#A3A3C2]">Amount Received:</span>
+                    <span className="text-[#1D8751] font-semibold">
+                      {formatAmount(receiveAmount)} USDT
+                    </span>
+                  </div>
+                </div>
+
+                {/* Go to Dashboard Button */}
+                <button
+                  onClick={() => {
+                    setShowSuccessModal(false);
+                    router.push("/dashboard");
+                  }}
+                  className="w-full bg-[#1D8751] text-white rounded-lg px-6 py-3 font-semibold hover:bg-[#167a45] transition-colors"
+                >
+                  Go to Dashboard
+                </button>
+              </div>
+            </div>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
     </div>
   );
 };

@@ -47,6 +47,7 @@ async function testMarketsAPI() {
 // Run the test if this file is executed directly
 if (typeof window !== "undefined") {
   // Browser environment
+  window.testMarketsAPI = testMarketsAPI;
   (window as any).testMarketsAPI = testMarketsAPI;
   console.log("🌐 Markets API test available. Run: window.testMarketsAPI()");
 } else {

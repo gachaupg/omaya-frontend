@@ -79,7 +79,7 @@ const P2PTransactions = () => {
   });
 
   return (
-    <div className="w-full h-full bg-[#23232b] rounded-2xl p-6">
+    <div className="w-full h-full dark:bg-[#23232b] bg-[#F5F5F5] rounded-2xl p-6">
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm text-left bg-transparent">
           <thead>
@@ -106,7 +106,7 @@ const P2PTransactions = () => {
               </tr>
             ) : paginatedData.length === 0 ? (
               <tr>
-                <td colSpan={5} className="text-center py-8 text-white">
+                <td colSpan={5} className="text-center py-8 dark:text-white">
                   No transactions found.
                 </td>
               </tr>
