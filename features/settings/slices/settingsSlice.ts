@@ -518,7 +518,11 @@ const settingsSlice = createSlice({
       })
       .addCase(createDeviceSession.fulfilled, (state, action) => {
         state.deviceSessionsLoading = false;
-        state.deviceSessions.push(...action.payload);
+        if (Array.isArray(action.payload)) {
+          state.deviceSessions.push(...action.payload);
+        } else {
+          state.deviceSessions.push(action.payload);
+        }
         state.success = "Device session created successfully";
       })
       .addCase(createDeviceSession.rejected, (state, action) => {
