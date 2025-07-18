@@ -47,7 +47,12 @@ const Withdraw = () => {
   const handleWithdraw = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    dispatch(createReferralWithdraw({ amount, wallet_address: walletAddress }));
+    dispatch(
+      createReferralWithdraw({
+        requested_amount: amount,
+        wallet_address: walletAddress,
+      })
+    );
   };
 
   const commission = 0;

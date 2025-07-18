@@ -1,10 +1,10 @@
 import React from "react";
-import { Asset } from "./types";
+import { SupportedAsset } from "../types";
 
 interface AssetDropdownProps {
-  assets: Asset[];
-  selectedAsset: Asset | null;
-  onAssetSelect: (asset: Asset) => void;
+  assets: SupportedAsset[];
+  selectedAsset: SupportedAsset | null;
+  onAssetSelect: (asset: SupportedAsset) => void;
   isOpen: boolean;
   onToggle: () => void;
   searchTerm: string;
@@ -24,7 +24,7 @@ const AssetDropdown: React.FC<AssetDropdownProps> = ({
   placeholder,
   label,
 }) => {
-  const handleAssetSelect = (asset: Asset) => {
+  const handleAssetSelect = (asset: SupportedAsset) => {
     onAssetSelect(asset);
     onSearchChange("");
     onToggle(); // Close the dropdown after selection

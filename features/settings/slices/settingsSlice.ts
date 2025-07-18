@@ -13,6 +13,8 @@ import {
   ProfileUpdateRequest,
   PasswordChangeRequest,
   SessionInfo,
+  DeviceSession,
+  CreateDeviceSessionPayload,
 } from "../types";
 import { showToast } from "@/lib/utils/toast";
 
@@ -42,6 +44,10 @@ const initialState: SettingsState = {
   error: null,
   success: null,
   updating: false,
+  // Device Session Management
+  deviceSessions: [],
+  deviceSessionsLoading: false,
+  deviceSessionsError: null,
 };
 
 // Async thunks
@@ -249,6 +255,68 @@ export const terminateAllSessions = createAsyncThunk(
   }
 );
 
+// Device Session Management Async Thunks
+export const createDeviceSession = createAsyncThunk(
+  "settings/createDeviceSession",
+  async (payload: CreateDeviceSessionPayload, { rejectWithValue }) => {
+    try {
+      const response = await settingsApi.createDeviceSession(payload);
+      showToast.success("Device session created successfully");
+      return response.data;
+    } catch (error: any) {
+      showToast.error(error.message || "Failed to create device session");
+      return rejectWithValue(
+        error.message || "Failed to create device session"
+      );
+    }
+  }
+);
+
+
+
+export const fetchDeviceSessions = createAsyncThunk(
+  "settings/fetchDeviceSessions",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await settingsApi.getDeviceSessions();
+      // The API returns the sessions directly as an array
+      return response.data || response;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.message || "Failed to fetch device sessions"
+      );
+    }
+  }
+);
+
+export const logoutDevice = createAsyncThunk(
+  "settings/logoutDevice",
+  async (sessionId: string, { rejectWithValue }) => {
+    try {
+      const response = await settingsApi.logoutDevice(sessionId);
+      showToast.success("Device logged out successfully");
+      return { sessionId, response: response.data };
+    } catch (error: any) {
+      showToast.error(error.message || "Failed to logout device");
+      return rejectWithValue(error.message || "Failed to logout device");
+    }
+  }
+);
+
+export const logoutAllDevices = createAsyncThunk(
+  "settings/logoutAllDevices",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await settingsApi.logoutAllDevices();
+      showToast.success("All devices logged out successfully");
+      return response.data;
+    } catch (error: any) {
+      showToast.error(error.message || "Failed to logout all devices");
+      return rejectWithValue(error.message || "Failed to logout all devices");
+    }
+  }
+);
+
 const settingsSlice = createSlice({
   name: "settings",
   initialState,
@@ -442,6 +510,47 @@ const settingsSlice = createSlice({
       })
       .addCase(terminateAllSessions.fulfilled, (state) => {
         state.success = "All sessions terminated successfully";
+      });
+
+    // Device Sessions
+    builder
+      .addCase(createDeviceSession.pending, (state) => {
+        state.deviceSessionsLoading = true;
+        state.deviceSessionsError = null;
+      })
+      .addCase(createDeviceSession.fulfilled, (state, action) => {
+        state.deviceSessionsLoading = false;
+        state.deviceSessions.push(action.payload);
+        state.success = "Device session created successfully";
+      })
+      .addCase(createDeviceSession.rejected, (state, action) => {
+        state.deviceSessionsLoading = false;
+        state.deviceSessionsError = action.payload as string;
+      })
+      .addCase(fetchDeviceSessions.pending, (state) => {
+        state.deviceSessionsLoading = true;
+        state.deviceSessionsError = null;
+      })
+      .addCase(fetchDeviceSessions.fulfilled, (state, action) => {
+        state.deviceSessionsLoading = false;
+        console.log("Redux: fetchDeviceSessions.fulfilled payload:", action.payload);
+        console.log("Redux: payload type:", typeof action.payload);
+        console.log("Redux: is array:", Array.isArray(action.payload));
+        state.deviceSessions = action.payload;
+      })
+      .addCase(fetchDeviceSessions.rejected, (state, action) => {
+        state.deviceSessionsLoading = false;
+        state.deviceSessionsError = action.payload as string;
+      })
+      .addCase(logoutDevice.fulfilled, (state, action) => {
+        state.deviceSessions = state.deviceSessions.filter(
+          (session) => session.session_id !== action.payload.sessionId
+        );
+        state.success = "Device logged out successfully";
+      })
+      .addCase(logoutAllDevices.fulfilled, (state, action) => {
+        state.deviceSessions = [];
+        state.success = "All devices logged out successfully";
       });
   },
 });

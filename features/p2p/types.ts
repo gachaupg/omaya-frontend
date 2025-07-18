@@ -547,3 +547,29 @@ export interface ReferralWallet {
   total_withdrawn: number;
   balance: number;
 }
+
+export interface WithdrawalAddress {
+  id: number;
+  address: string;
+  chain: string;
+  network_name: string;
+  is_default: boolean;
+  created_at: string;
+}
+
+export interface WithdrawalAddressDebug {
+  address: string;
+  chain: string;
+  assigned: boolean;
+  is_activated: boolean;
+}
+
+export interface WithdrawalAddressesResponse {
+  status: string;
+  data: WithdrawalAddress[];
+  debug: {
+    user_id: number;
+    address_count: number;
+    addresses: WithdrawalAddressDebug[];
+  };
+}

@@ -23,6 +23,7 @@ import {
   Profile,
   ReferredUser,
   ReferralWallet,
+  WithdrawalAddressesResponse,
 } from "./types";
 import { API_CONFIG } from "@/lib/appConfig";
 
@@ -502,7 +503,7 @@ export const getReferralWallet = async (): Promise<ReferralWallet> => {
 };
 
 export const createReferralWithdraw = async (data: {
-  amount: string;
+  requested_amount: string;
   wallet_address: string;
 }) => {
   return withRetry(async () => {
@@ -510,3 +511,13 @@ export const createReferralWithdraw = async (data: {
     return response.data;
   });
 };
+
+export const getWithdrawalAddresses =
+  async (): Promise<WithdrawalAddressesResponse> => {
+    return withRetry(async () => {
+      const response = await get<WithdrawalAddressesResponse>(
+        API_CONFIG.P2P.WITHDRAWAL_ADDRESSES
+      );
+      return response.data;
+    });
+  };

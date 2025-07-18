@@ -21,9 +21,7 @@ const Stats = () => {
   );
   const summary = useSelector(selectTransactionSummary);
   console.log("summary", summary);
-  const [profileImage, setProfileImage] = useState(
-    "https://res.cloudinary.com/pitz/image/upload/v1746538908/1fd9f384e7054d4ed9c913e3cfc2b1cf634d0cf4_ldkmkj.jpg"
-  );
+  const [profileImage, setProfileImage] = useState("");
 
   useEffect(() => {
     if (user) {
@@ -63,7 +61,7 @@ const Stats = () => {
               unoptimized={true}
             />
           ) : (
-            <div className="w-full h-full bg-[#35353E] flex items-center justify-center">
+            <div className="w-14 h-14 bg-[#35353E] rounded-full flex items-center justify-center">
               <svg
                 width="24"
                 height="24"
@@ -152,7 +150,11 @@ const Stats = () => {
         </div>
         <div className="w-full h-3 bg-[#35353E] rounded-full mb-4">
           <div
-            className="h-3 bg-[#1D8751] rounded-full"
+            className={`h-3 rounded-full ${
+              (summary?.total_approved_p2p_deposits || 0) > 0
+                ? "bg-[#1D8751]"
+                : "bg-[#788099]"
+            }`}
             style={{
               width: `${
                 ((summary?.total_approved_p2p_deposits || 0) /
@@ -195,7 +197,11 @@ const Stats = () => {
         </div>
         <div className="w-full h-3 bg-[#35353E] rounded-full mb-4">
           <div
-            className="h-3 bg-[#E23D3A] rounded-full"
+            className={`h-3 rounded-full ${
+              (summary?.total_approved_p2p_withdrawals || 0) > 0
+                ? "bg-[#E23D3A]"
+                : "bg-[#788099]"
+            }`}
             style={{
               width: `${
                 ((summary?.total_approved_p2p_withdrawals || 0) /

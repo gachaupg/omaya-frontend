@@ -1,7 +1,6 @@
 /**
  * orderSlice.ts – auto‑generated placeholder
  */
-
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import {
   getAllP2POrders,
@@ -18,6 +17,7 @@ import {
   editP2POrder,
   updateProfile,
   getP2PProfile,
+  getWithdrawalAddresses,
 } from "../api";
 import {
   OrderMatchRequest,
@@ -25,6 +25,8 @@ import {
   P2POrder,
   Profile,
   P2PResponse,
+  WithdrawalAddressesResponse,
+
 } from "../types";
 import { handleP2PError } from "../../../lib/utils/errorHandler";
 import { fetchWallets } from "./walletSlice";
@@ -70,6 +72,10 @@ interface P2PState {
   getP2PProfileError?: string | null;
   getP2PProfileSuccess?: boolean;
   getP2PProfile?: P2PResponse;
+  getWithdrawalAddressesLoading?: boolean;
+  getWithdrawalAddressesError?: string | null;
+  getWithdrawalAddressesSuccess?: boolean;
+  getWithdrawalAddresses?: WithdrawalAddressesResponse | null;
 }
 
 export const fetchAllP2POrders = createAsyncThunk(
@@ -80,6 +86,20 @@ export const fetchAllP2POrders = createAsyncThunk(
     } catch (err: any) {
       handleP2PError(err);
       return rejectWithValue(err.message || "Failed to fetch all orders");
+    }
+  }
+);
+
+export const fetchWithdrawalAddresses = createAsyncThunk(
+  "p2p/fetchWithdrawalAddresses",
+  async (_, { rejectWithValue }) => {
+    try {
+      return await getWithdrawalAddresses();
+    } catch (err: any) {
+      handleP2PError(err);
+      return rejectWithValue(
+        err.message || "Failed to fetch withdrawal addresses"
+      );
     }
   }
 );
@@ -360,6 +380,10 @@ const p2pMarketSlice = createSlice({
     confirmTradeLoading: false,
     confirmTradeError: null,
     confirmTradeSuccess: false,
+    getWithdrawalAddressesLoading: false,
+    getWithdrawalAddressesError: null,
+    getWithdrawalAddressesSuccess: false,
+    getWithdrawalAddresses: null,
   } as P2PState,
   reducers: {
     setCurrentPage: (state, action) => {
@@ -379,6 +403,12 @@ const p2pMarketSlice = createSlice({
       state.singleOrder = null;
       state.singleOrderLoading = false;
       state.singleOrderError = null;
+    },
+    resetWithdrawalAddressesState: (state) => {
+      state.getWithdrawalAddresses = null;
+      state.getWithdrawalAddressesLoading = false;
+      state.getWithdrawalAddressesError = null;
+      state.getWithdrawalAddressesSuccess = false;
     },
   },
   extraReducers: (builder) => {
@@ -549,6 +579,19 @@ const p2pMarketSlice = createSlice({
       .addCase(getP2PProfileThunk.rejected, (state, action) => {
         state.getP2PProfileLoading = false;
         state.getP2PProfileError = action.payload as string;
+      })
+      .addCase(fetchWithdrawalAddresses.pending, (state) => {
+        state.getWithdrawalAddressesLoading = true;
+        state.getWithdrawalAddressesError = null;
+      })
+      .addCase(fetchWithdrawalAddresses.fulfilled, (state, action) => {
+        state.getWithdrawalAddressesLoading = false;
+        state.getWithdrawalAddresses = action.payload;
+        state.getWithdrawalAddressesSuccess = true;
+      })
+      .addCase(fetchWithdrawalAddresses.rejected, (state, action) => {
+        state.getWithdrawalAddressesLoading = false;
+        state.getWithdrawalAddressesError = action.payload as string;
       });
   },
 });
@@ -558,5 +601,6 @@ export const {
   resetMatchState,
   resetConfirmOrderState,
   resetSingleOrderState,
+  resetWithdrawalAddressesState,
 } = p2pMarketSlice.actions;
 export default p2pMarketSlice.reducer;

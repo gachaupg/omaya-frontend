@@ -12,9 +12,13 @@ import {
   SecurityUpdateResponse,
   PrivacyUpdateResponse,
   SessionsResponse,
+  CreateDeviceSessionPayload,
+  DeviceSessionsResponse,
+  LogoutDeviceResponse,
+  LogoutAllDevicesResponse,
 } from "./types";
 
-const SETTINGS_API_BASE = "/api/settings";
+const SETTINGS_API_BASE = "/api";
 
 export const settingsApi = {
   // Profile Management
@@ -179,6 +183,46 @@ export const settingsApi = {
             "Content-Type": "multipart/form-data",
           },
         }
+      );
+      return response.data;
+    });
+  },
+
+  // Device Session Management
+  createDeviceSession: async (
+    payload: CreateDeviceSessionPayload
+  ): Promise<DeviceSessionsResponse> => {
+    return withRetry(async () => {
+      const response = await apiClient.post(
+        `${SETTINGS_API_BASE}/devices/create/`,
+        payload
+      );
+      return response.data;
+    });
+  },
+
+  getDeviceSessions: async (): Promise<DeviceSessionsResponse> => {
+    return withRetry(async () => {
+      const response = await apiClient.get(
+        `${SETTINGS_API_BASE}/device-sessions/`
+      );
+      return response.data;
+    });
+  },
+
+  logoutDevice: async (sessionId: string): Promise<LogoutDeviceResponse> => {
+    return withRetry(async () => {
+      const response = await apiClient.post(
+        `${SETTINGS_API_BASE}/device-sessions/logout/${sessionId}/`
+      );
+      return response.data;
+    });
+  },
+
+  logoutAllDevices: async (): Promise<LogoutAllDevicesResponse> => {
+    return withRetry(async () => {
+      const response = await apiClient.post(
+        `${SETTINGS_API_BASE}/device-sessions/logout-all/`
       );
       return response.data;
     });
