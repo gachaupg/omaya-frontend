@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   distDir: ".next",
   output: "standalone",
   trailingSlash: true,
+  reactStrictMode: true,
   images: {
     remotePatterns: [
       {
@@ -15,6 +16,11 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "images.pexels.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "omayabucket.s3.amazonaws.com",
         pathname: "/**",
       },
     ],

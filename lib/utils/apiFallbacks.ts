@@ -79,7 +79,8 @@ export const ApiFallbacks = {
         market_cap_rank: 1,
         price_change_percentage_24h: 0,
         total_volume: 0,
-        image: "https://via.placeholder.com/32",
+        image:
+          "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23f97316'/%3E%3Ctext x='16' y='20' text-anchor='middle' fill='white' font-family='Arial' font-size='12' font-weight='bold'%3E₿%3C/text%3E%3C/svg%3E",
       },
     ],
   },

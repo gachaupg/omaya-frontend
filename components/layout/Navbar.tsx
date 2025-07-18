@@ -3,16 +3,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { Moon, Sun, Menu, X, Check } from "lucide-react";
 import { Menu, X, Check } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "@/features/auth/store";
 import {
   initializeAuth,
   getUserProfile,
-  logout,
-} from "@/features/auth/slices/authSlice";
 } from "@/features/auth/slices/authSlice";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
@@ -37,19 +33,11 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [depositDropdownOpen, setDepositDropdownOpen] = useState(false);
-  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const {
-    isAuthenticated,
-    profile: userProfile,
-    user,
-  } = useSelector((state: RootState) => state.auth);
   const { isAuthenticated, profile: userProfile } = useSelector(
     (state: RootState) => state.auth
   );
   const dispatch = useDispatch<AppDispatch>();
   const depositDropdownRef = useRef<HTMLDivElement>(null);
-  const profileDropdownRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
 
   useEffect(() => {
     dispatch(initializeAuth());
@@ -63,10 +51,6 @@ export default function Navbar() {
 
   console.log("profile", userProfile);
 
-  const toggleTheme = () => {
-    setTheme(theme === "light" ? "dark" : "light");
-  };
-
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
@@ -74,11 +58,6 @@ export default function Navbar() {
   const toggleDepositDropdown = (e: React.MouseEvent) => {
     e.preventDefault();
     setDepositDropdownOpen(!depositDropdownOpen);
-  };
-
-  const toggleProfileDropdown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setProfileDropdownOpen(!profileDropdownOpen);
   };
 
   //Close dropdown when clicking outside
@@ -89,12 +68,6 @@ export default function Navbar() {
         !depositDropdownRef.current.contains(event.target as Node)
       ) {
         setDepositDropdownOpen(false);
-      }
-      if (
-        profileDropdownRef.current &&
-        !profileDropdownRef.current.contains(event.target as Node)
-      ) {
-        setProfileDropdownOpen(false);
       }
     };
 
@@ -213,8 +186,6 @@ export default function Navbar() {
                                 d="M28 12 L14 12 L18 8"
                                 stroke="#F79330"
                                 strokeWidth="4"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                               />
@@ -222,9 +193,6 @@ export default function Navbar() {
                                 d="M17 20 L31 20 L27 24"
                                 stroke="#1D8751"
                                 strokeWidth="4"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                               />
@@ -285,8 +253,6 @@ export default function Navbar() {
                                 fill="none"
                                 stroke="#1C8F4D"
                                 strokeWidth="6"
-                                stroke-linecap="round"
-
                                 strokeLinecap="round"
                               />
                               <path
@@ -294,7 +260,6 @@ export default function Navbar() {
                                 fill="none"
                                 stroke="#1C8F4D"
                                 strokeWidth="6"
-                                stroke-linecap="round"
                                 strokeLinecap="round"
                               />
                               <path
@@ -302,15 +267,12 @@ export default function Navbar() {
                                 fill="none"
                                 stroke="#F49A29"
                                 strokeWidth="6"
-                                stroke-linecap="round"
-
                                 strokeLinecap="round"
                               />
                               <path
                                 d="M110 85 L104 80 M110 85 L108 77"
                                 stroke="#F49A29"
                                 strokeWidth="6"
-                                stroke-linecap="round"
                                 strokeLinecap="round"
                               />
                               <path
@@ -318,14 +280,12 @@ export default function Navbar() {
                                 fill="none"
                                 stroke="#F49A29"
                                 strokeWidth="6"
-                                stroke-linecap="round"
                                 strokeLinecap="round"
                               />
                               <path
                                 d="M70 85 L75 90 M70 85 L67 93"
                                 stroke="#F49A29"
                                 strokeWidth="6"
-                                stroke-linecap="round"
                                 strokeLinecap="round"
                               />
                             </svg>
@@ -376,9 +336,6 @@ export default function Navbar() {
                                 fill="none"
                                 stroke="#1C8F4D"
                                 strokeWidth="5"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                               />
@@ -391,8 +348,6 @@ export default function Navbar() {
                                 fill="none"
                                 stroke="#F49A29"
                                 strokeWidth="5"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                               />
@@ -494,23 +449,18 @@ export default function Navbar() {
                 )}
               </div>
 
-              <div className="relative" ref={profileDropdownRef}>
-                <button
-                  onClick={toggleProfileDropdown}
-                  className="text-white focus:outline-none"
-                >
+              <div className="relative">
+                <Link href="/profile" className="text-white">
                   {userProfile?.photo ? (
                     <img
                       src={userProfile.photo}
                       alt="Profile"
-                      className="w-10 h-10 rounded-full border-2 border-white object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                      className="w-10 h-10 rounded-full border-2 border-white object-cover"
                     />
                   ) : (
-                    <div className="cursor-pointer hover:opacity-80 transition-opacity">
-                      <DefaultProfileIcon />
-                    </div>
+                    <DefaultProfileIcon />
                   )}
-                </button>
+                </Link>
                 <span className="absolute bottom-0 right-0 w-5 h-5 bg-[#1D8751] rounded-full flex items-center justify-center border-2 border-white">
                   <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
                     <circle cx="10" cy="10" r="10" fill="#1D8751" />
@@ -523,102 +473,6 @@ export default function Navbar() {
                     />
                   </svg>
                 </span>
-
-                {/* Profile Dropdown */}
-                {profileDropdownOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-48 bg-[#1E2329] border border-[#35353E] rounded-lg shadow-xl z-[9999] py-2">
-                    <div className="px-4 py-3 border-b border-[#35353E]">
-                      <p className="text-white font-medium text-sm">
-                        {user?.first_name
-                          ? `${user.first_name} ${user.last_name || ""}`
-                          : "User"}
-                      </p>
-                      <p className="text-gray-400 text-xs">
-                        {user?.email || "user@example.com"}
-                      </p>
-                    </div>
-
-                    <Link
-                      href="/dashboard/account"
-                      className="block px-4 py-2 text-sm text-gray-300 hover:bg-[#35353E] hover:text-white transition-colors"
-                      onClick={() => setProfileDropdownOpen(false)}
-                    >
-                      <div className="flex items-center">
-                        <svg
-                          className="w-4 h-4 mr-3"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                          />
-                        </svg>
-                        Account
-                      </div>
-                    </Link>
-
-                    <Link
-                      href="/dashboard/settings"
-                      className="block px-4 py-2 text-sm text-gray-300 hover:bg-[#35353E] hover:text-white transition-colors"
-                      onClick={() => setProfileDropdownOpen(false)}
-                    >
-                      <div className="flex items-center">
-                        <svg
-                          className="w-4 h-4 mr-3"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                        </svg>
-                        Settings
-                      </div>
-                    </Link>
-
-                    <div className="border-t border-[#35353E] mt-2 pt-2">
-                      <button
-                        className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-[#35353E] hover:text-red-300 transition-colors"
-                        onClick={() => {
-                          dispatch(logout());
-                          router.push("/auth/login");
-                          setProfileDropdownOpen(false);
-                        }}
-                      >
-                        <div className="flex items-center">
-                          <svg
-                            className="w-4 h-4 mr-3"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                            />
-                          </svg>
-                          Log Out
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           ) : (
@@ -681,22 +535,17 @@ export default function Navbar() {
                   </button>
                 </Link>
                 <div className="relative mt-4 flex justify-center">
-                  <button
-                    onClick={toggleProfileDropdown}
-                    className="text-white focus:outline-none"
-                  >
+                  <Link href="/profile" className="text-white">
                     {userProfile?.photo ? (
                       <img
                         src={userProfile.photo}
                         alt="Profile"
-                        className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                        className="w-10 h-10 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="cursor-pointer hover:opacity-80 transition-opacity">
-                        <DefaultProfileIcon />
-                      </div>
+                      <DefaultProfileIcon />
                     )}
-                  </button>
+                  </Link>
                   <span className="absolute bottom-0 right-0 w-5 h-5 bg-[#1D8751] rounded-full flex items-center justify-center border-2 border-white">
                     <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
                       <circle cx="10" cy="10" r="10" fill="#1D8751" />
@@ -709,109 +558,6 @@ export default function Navbar() {
                       />
                     </svg>
                   </span>
-
-                  {/* Mobile Profile Dropdown */}
-                  {profileDropdownOpen && (
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-48 bg-[#1E2329] border border-[#35353E] rounded-lg shadow-xl z-[9999] py-2">
-                      <div className="px-4 py-3 border-b border-[#35353E]">
-                        <p className="text-white font-medium text-sm text-center">
-                          {user?.first_name
-                            ? `${user.first_name} ${user.last_name || ""}`
-                            : "User"}
-                        </p>
-                        <p className="text-gray-400 text-xs text-center">
-                          {user?.email || "user@example.com"}
-                        </p>
-                      </div>
-
-                      <Link
-                        href="/dashboard/account"
-                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-[#35353E] hover:text-white transition-colors"
-                        onClick={() => {
-                          setProfileDropdownOpen(false);
-                          toggleMobileMenu();
-                        }}
-                      >
-                        <div className="flex items-center">
-                          <svg
-                            className="w-4 h-4 mr-3"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                            />
-                          </svg>
-                          Account
-                        </div>
-                      </Link>
-
-                      <Link
-                        href="/dashboard/settings"
-                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-[#35353E] hover:text-white transition-colors"
-                        onClick={() => {
-                          setProfileDropdownOpen(false);
-                          toggleMobileMenu();
-                        }}
-                      >
-                        <div className="flex items-center">
-                          <svg
-                            className="w-4 h-4 mr-3"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                            />
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                            />
-                          </svg>
-                          Settings
-                        </div>
-                      </Link>
-
-                      <div className="border-t border-[#35353E] mt-2 pt-2">
-                        <button
-                          className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-[#35353E] hover:text-red-300 transition-colors"
-                          onClick={() => {
-                            dispatch(logout());
-                            router.push("/auth/login");
-                            setProfileDropdownOpen(false);
-                            toggleMobileMenu();
-                          }}
-                        >
-                          <div className="flex items-center">
-                            <svg
-                              className="w-4 h-4 mr-3"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                              />
-                            </svg>
-                            Log Out
-                          </div>
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </>
             ) : (
@@ -980,22 +726,4 @@ const LanguageSelector = () => {
       )}
     </div>
   );
-};
-
-const ThemeToggle = ({
-  theme,
-  toggleTheme,
-}: {
-  theme: "light" | "dark";
-  toggleTheme: () => void;
-}) => (
-  <button onClick={toggleTheme} className="text-white bg-transparent p-1">
-    {theme === "light" ? (
-      <Moon size={20} className="text-[#13b562]" />
-    ) : (
-      <Sun size={20} />
-    )}
-  </button>
-);
-=======
 };

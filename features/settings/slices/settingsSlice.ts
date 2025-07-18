@@ -272,8 +272,6 @@ export const createDeviceSession = createAsyncThunk(
   }
 );
 
-
-
 export const fetchDeviceSessions = createAsyncThunk(
   "settings/fetchDeviceSessions",
   async (_, { rejectWithValue }) => {
@@ -520,7 +518,7 @@ const settingsSlice = createSlice({
       })
       .addCase(createDeviceSession.fulfilled, (state, action) => {
         state.deviceSessionsLoading = false;
-        state.deviceSessions.push(action.payload);
+        state.deviceSessions.push(...action.payload);
         state.success = "Device session created successfully";
       })
       .addCase(createDeviceSession.rejected, (state, action) => {
@@ -533,7 +531,10 @@ const settingsSlice = createSlice({
       })
       .addCase(fetchDeviceSessions.fulfilled, (state, action) => {
         state.deviceSessionsLoading = false;
-        console.log("Redux: fetchDeviceSessions.fulfilled payload:", action.payload);
+        console.log(
+          "Redux: fetchDeviceSessions.fulfilled payload:",
+          action.payload
+        );
         console.log("Redux: payload type:", typeof action.payload);
         console.log("Redux: is array:", Array.isArray(action.payload));
         state.deviceSessions = action.payload;

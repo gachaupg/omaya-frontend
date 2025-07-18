@@ -1,10 +1,10 @@
 import React from "react";
-import { Estimate, Asset } from "./types";
+import { SwapEstimate, SupportedAsset } from "../types";
 
 interface FeeBreakdownProps {
-  estimate: Estimate | null;
-  fromAsset: Asset | null;
-  toAsset: Asset | null;
+  estimate: SwapEstimate | null;
+  fromAsset: SupportedAsset | null;
+  toAsset: SupportedAsset | null;
   fromAmount: string;
   estimateLoading: boolean;
 }
