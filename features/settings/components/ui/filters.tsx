@@ -100,15 +100,15 @@ const Filters = () => {
     <div className="flex flex-col">
       {/* Mobile: Vertical column tabs */}
       <div className="md:hidden">
-        <div className="flex flex-col rounded-lg border bg-[#1D1D23] border-[#35353E] w-full overflow-hidden">
+        <div className="flex flex-col rounded-lg border dark:bg-[#1D1D23] bg-white dark:border-[#35353E] border-gray-300 w-full overflow-hidden">
           {tabs.map((tab, idx) => (
             <button
               key={tab.label}
-              className={`flex flex-row items-center justify-start gap-3 transition-all duration-150 focus:outline-none w-full px-4 py-3 border-b border-[#35353E] last:border-b-0
+              className={`flex flex-row items-center justify-start gap-3 transition-all duration-150 focus:outline-none w-full px-4 py-3 border-b dark:border-[#35353E] border-gray-300 last:border-b-0
                 ${
                   activeIdx === idx
                     ? "bg-[#1D8751] text-white font-semibold"
-                    : "bg-transparent text-white hover:bg-[#23232a]"
+                    : "bg-transparent dark:text-white text-[#0D0D0D] hover:dark:bg-[#23232a] hover:bg-gray-100"
                 }
               `}
               onClick={() => setActiveIdx(idx)}
@@ -124,7 +124,7 @@ const Filters = () => {
       </div>
 
       {/* Desktop: Horizontal tabs */}
-      <div className="hidden md:flex items-center rounded-lg border px-2 py-2 bg-[#1D1D23] border-[#35353E] w-full">
+      <div className="hidden md:flex items-center rounded-lg border px-2 py-2 dark:bg-[#1D1D23] bg-white dark:border-[#35353E] border-gray-300 w-full">
         {tabs.map((tab, idx) => (
           <button
             key={tab.label}
@@ -132,7 +132,7 @@ const Filters = () => {
               ${
                 activeIdx === idx
                   ? "bg-[#1D8751] text-white font-semibold px-6 py-3 mr-4 rounded-[24px]"
-                  : "bg-transparent text-white hover:bg-[#23232a] rounded-lg"
+                  : "bg-transparent dark:text-white text-[#0D0D0D] hover:dark:bg-[#23232a] hover:bg-gray-100 rounded-lg"
               }
             `}
             onClick={() => setActiveIdx(idx)}

@@ -21,18 +21,20 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
   return (
     <div className="mb-8">
       <div className="mb-2 text-base font-semibold">2- Copy Address</div>
-      <div className="bg-[#23232b] border border-[#35353E] rounded-xl p-5 mb-2">
+      <div className="dark:bg-[#23232b] bg-[#F5F5F5] border dark:border-[#35353E] border-gray-300 rounded-xl p-5 mb-2">
         <div className="flex flex-col gap-4">
           <div className="text-center">
             <h3 className="text-lg font-semibold mb-2">Send Payment To</h3>
-            <p className="text-sm text-[#8C8CA1] mb-4">
+            <p className="text-sm dark:text-[#8C8CA1] text-[#788099] mb-4">
               Please copy the address below and send your payment to complete
               the swap
             </p>
           </div>
-          <div className="text-xs text-[#8C8CA1] mb-2">Payment Address:</div>
+          <div className="text-xs dark:text-[#8C8CA1] text-[#788099] mb-2">
+            Payment Address:
+          </div>
           <div className="flex items-center gap-2">
-            <div className="bg-[#181820] w-full border border-[#1D8751] rounded-[18px] p-2">
+            <div className="dark:bg-[#181820] bg-white w-full border border-[#1D8751] rounded-[18px] p-2">
               <div className="flex items-center gap-2">
                 <input
                   type="text"
@@ -62,27 +64,25 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
                 </button>
               </div>
             </div>
-
           </div>
         </div>
         <div className="flex mt-6 gap-5 justify-between">
-        <button
-          className="bg-[#35353E] w-full hover:bg-[#45454E] text-white px-6 py-2 rounded-[24px] font-semibold transition"
-          onClick={onBack}
-        >
-          Back
-        </button>
-        <button
-          className="bg-[#1D8751] w-full hover:bg-[#16663d] text-white px-6 py-2 rounded-[24px] font-semibold transition"
-          onClick={onNext}
-        >
-          I've Sent Payment
-        </button>
-      </div>
+          <button
+            className="dark:bg-[#35353E] bg-gray-300 w-full hover:dark:bg-[#45454E] hover:bg-gray-400 dark:text-white text-[#0D0D0D] px-6 py-2 rounded-[24px] font-semibold transition"
+            onClick={onBack}
+          >
+            Back
+          </button>
+          <button
+            className="bg-[#1D8751] w-full hover:bg-[#16663d] text-white px-6 py-2 rounded-[24px] font-semibold transition"
+            onClick={onNext}
+          >
+            I've Sent Payment
+          </button>
+        </div>
       </div>
 
       {/* Navigation buttons */}
-     
     </div>
   );
 };

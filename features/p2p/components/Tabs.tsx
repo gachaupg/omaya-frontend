@@ -14,16 +14,14 @@ const Tabs = ({ tabs, activeTab, onTabChange }: TabsProps) => {
             onClick={() => onTabChange(tab.id)}
             className={`py-2 px-4 relative flex cursor-pointer items-center font-mulish text-lg  leading-none tracking-[-0.2px] ${
               activeTab === tab.id
-                ? `text-[${tokens.colors.dark.textTitle}]`
-                : `text-[${tokens.colors.dark.textBody}]`
+                ? "dark:text-white text-[#0D0D0D]"
+                : "dark:text-[#788099] text-[#788099]"
             }`}
           >
             <span className="relative">
               {tab.label}
               {activeTab === tab.id && (
-                <div
-                  className={`absolute bottom-[-8px] left-0 h-0.5 w-full bg-[${tokens.colors.brand.primary}]`}
-                />
+                <div className="absolute bottom-[-8px] left-0 h-0.5 w-full bg-[#1D8751]" />
               )}
             </span>
           </button>

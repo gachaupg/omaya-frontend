@@ -330,7 +330,7 @@ const SwapWidget = () => {
 
   if (error) {
     return (
-      <div className="mx-auto text-white">
+      <div className="mx-auto dark:text-white text-[#0D0D0D]">
         <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
           <h3 className="text-red-400 font-semibold mb-2">
             Error Loading Swap
@@ -376,10 +376,11 @@ const SwapWidget = () => {
   }
 
   return (
-    <div className="mx-auto text-white">
+    <div className="mx-auto dark:text-white text-[#0D0D0D]">
       <h2 className="text-lg font-semibold mb-6">Swap Crypto</h2>
 
-      {/* Step i    {/* <StepIndicator currentStep={currentStep} /> */}
+      {/* Step Indicator */}
+      {/* <StepIndicator currentStep={currentStep} /> */}
 
       {/* Step 1: Transaction Info */}
       {currentStep === "transaction-info" && (

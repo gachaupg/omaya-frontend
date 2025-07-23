@@ -204,13 +204,13 @@ const Overview = () => {
           </button>
         </div>
       )}
-      <h3 className={`text-[${tokens.colors.dark.textTitle}] mb-2 text-sm`}>
+      <h3 className="dark:text-white text-[#0D0D0D] mb-2 text-sm">
         Overview Total
       </h3>
       <Card
         borderColor="border-[#35353E]"
         width="w-full"
-        bgColor="bg-[#23232B]"
+        bgColor="dark:bg-[#23232B] bg-[#F5F5F5]"
         borderRadius="rounded-[20px]"
         className="p-6 flex flex-col items-center justify-center"
       >
@@ -282,38 +282,40 @@ const Overview = () => {
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-[15px] font-bold text-white">
+            <span className="text-[15px] font-bold dark:text-white text-[#0D0D0D]">
               {transactionTotal.toLocaleString()} USD
             </span>
-            <span className="text-[#A0A0A0] text-base">Transactions</span>
+            <span className="dark:text-[#A0A0A0] text-[#788099] text-base">
+              Transactions
+            </span>
           </div>
         </div>
         <div className="mt-6 w-full flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <span className="w-4 h-4 rounded-full bg-[#1D8751] inline-block" />
-            <span className="text-white">Deposits</span>
-            <span className="ml-auto text-white">
+            <span className="dark:text-white text-[#0D0D0D]">Deposits</span>
+            <span className="ml-auto dark:text-white text-[#0D0D0D]">
               {deposits.toLocaleString()} USD
             </span>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-4 h-4 rounded-full bg-[#E23D3A] inline-block" />
-            <span className="text-white">Withdrawals</span>
-            <span className="ml-auto text-white">
+            <span className="dark:text-white text-[#0D0D0D]">Withdrawals</span>
+            <span className="ml-auto dark:text-white text-[#0D0D0D]">
               {withdrawals.toLocaleString()} USD
             </span>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-4 h-4 rounded-full bg-[#FFD600] inline-block" />
-            <span className="text-white">In Progress</span>
-            <span className="ml-auto text-white">
+            <span className="dark:text-white text-[#0D0D0D]">In Progress</span>
+            <span className="ml-auto dark:text-white text-[#0D0D0D]">
               {inProgress.toLocaleString()} USD
             </span>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-4 h-4 rounded-full bg-[#386AB5] inline-block" />
-            <span className="text-white">P2P</span>
-            <span className="ml-auto text-white">
+            <span className="dark:text-white text-[#0D0D0D]">P2P</span>
+            <span className="ml-auto dark:text-white text-[#0D0D0D]">
               {p2p.toLocaleString()} USD
             </span>
           </div>
@@ -325,20 +327,18 @@ const Overview = () => {
         <Card
           borderColor="border-[#35353E]"
           width="w-full"
-          bgColor={`bg-[${tokens.colors.dark.card}]`}
+          bgColor="dark:bg-[#23232B] bg-[#F5F5F5]"
           borderRadius="rounded-[14px]"
           className="p-3"
         >
           <div className="flex flex-col">
             <div className="flex items-center justify-between mb-3">
-              <h3
-                className={`font-medium text-sm text-[${tokens.colors.dark.textTitle}]`}
-              >
+              <h3 className="font-medium text-sm dark:text-white text-[#0D0D0D]">
                 P2P Buys
               </h3>
               <div className="relative">
                 <select
-                  className="px-2 py-1 text-[#1D1D23] rounded text-xs appearance-none pr-8 bg-[${tokens.colors.dark.card}] border border-[${tokens.colors.dark.border}] text-[${tokens.colors.dark.textTitle}]"
+                  className="px-2 py-1 rounded text-xs appearance-none pr-8 dark:bg-[#35353E] bg-white border dark:border-[#35353E] border-gray-300 dark:text-white text-[#0D0D0D]"
                   value={buyDateFilter}
                   onChange={(e) => setBuyDateFilter(e.target.value)}
                   disabled={loading}
@@ -349,58 +349,55 @@ const Overview = () => {
                   <option value="Month">Month</option>
                   <option value="Year">Year</option>
                 </select>
-                <span className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none text-[${tokens.colors.dark.textTitle}]">
-                  ▼
-                </span>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                  <svg
+                    className="w-3 h-3 dark:text-white text-[#0D0D0D]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
               </div>
             </div>
-
-            <div className="text-xl font-bold mb-3 text-[${tokens.colors.dark.textTitle}]">
-              {loading
-                ? "Loading..."
-                : `${buyTotals.total.toLocaleString()} USD`}
-            </div>
-
-            <div className="mb-2 w-full">
-              <div className="relative w-full h-4 rounded-full bg-[#35353E] overflow-hidden">
+            <div className="mb-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs dark:text-[#A0A0A0] text-[#788099]">
+                  Total
+                </span>
+                <span className="text-xs font-medium dark:text-white text-[#0D0D0D]">
+                  ${buyTotals.total.toLocaleString()}
+                </span>
+              </div>
+              <div className="w-full bg-[#2D2D37] rounded-full h-2">
                 <div
-                  className="absolute left-0 top-0 h-4 rounded-full"
-                  style={{
-                    width: `${Math.min(buyProgressPercentage, 100)}%`,
-                    backgroundColor: tokens.colors.brand.primary,
-                    transition: "width 0.3s ease-in-out",
-                  }}
+                  className="bg-[#1D8751] h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.min(buyProgressPercentage, 100)}%` }}
                 />
               </div>
             </div>
-
-            <div className="flex flex-col gap-3 mt-4">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-[${tokens.colors.brand.primary}]" />
-                  <span className="text-sm text-[${tokens.colors.dark.textBody}]">
-                    Completed
-                  </span>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="text-center">
+                <div className="text-xs dark:text-[#A0A0A0] text-[#788099] mb-1">
+                  Completed
                 </div>
-                <span className="text-[${tokens.colors.dark.textTitle}]">
-                  {loading
-                    ? "Loading..."
-                    : `${buyTotals.completed.toLocaleString()} USD`}
-                </span>
+                <div className="text-sm font-semibold text-[#1D8751]">
+                  ${buyTotals.completed.toLocaleString()}
+                </div>
               </div>
-
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-[${tokens.colors.brand.secondary}]" />
-                  <span className="text-sm text-[${tokens.colors.dark.textBody}]">
-                    In Progress
-                  </span>
+              <div className="text-center">
+                <div className="text-xs dark:text-[#A0A0A0] text-[#788099] mb-1">
+                  Pending
                 </div>
-                <span className="text-[${tokens.colors.dark.textTitle}]">
-                  {loading
-                    ? "Loading..."
-                    : `${buyTotals.pending.toLocaleString()} USD`}
-                </span>
+                <div className="text-sm font-semibold text-[#FFD600]">
+                  ${buyTotals.pending.toLocaleString()}
+                </div>
               </div>
             </div>
           </div>
@@ -410,18 +407,18 @@ const Overview = () => {
         <Card
           borderColor="border-[#35353E]"
           width="w-full"
-          bgColor="bg-[${tokens.colors.dark.card}]"
+          bgColor="dark:bg-[#23232B] bg-[#F5F5F5]"
           borderRadius="rounded-[14px]"
           className="p-3"
         >
           <div className="flex flex-col">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-medium text-sm text-[${tokens.colors.dark.textTitle}]">
+              <h3 className="font-medium text-sm dark:text-white text-[#0D0D0D]">
                 P2P Sells
               </h3>
               <div className="relative">
                 <select
-                  className="px-2 py-1 text-[#1D1D23] rounded text-xs appearance-none pr-8 bg-[${tokens.colors.dark.card}] border border-[${tokens.colors.dark.border}] text-[${tokens.colors.dark.textTitle}]"
+                  className="px-2 py-1 rounded text-xs appearance-none pr-8 dark:bg-[#35353E] bg-white border dark:border-[#35353E] border-gray-300 dark:text-white text-[#0D0D0D]"
                   value={sellDateFilter}
                   onChange={(e) => setSellDateFilter(e.target.value)}
                   disabled={loading}
@@ -432,58 +429,55 @@ const Overview = () => {
                   <option value="Month">Month</option>
                   <option value="Year">Year</option>
                 </select>
-                <span className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none text-[${tokens.colors.dark.textTitle}]">
-                  ▼
-                </span>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                  <svg
+                    className="w-3 h-3 dark:text-white text-[#0D0D0D]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
               </div>
             </div>
-
-            <div className="text-xl font-bold mb-3 text-[${tokens.colors.dark.textTitle}]">
-              {loading
-                ? "Loading..."
-                : `${sellTotals.total.toLocaleString()} USD`}
-            </div>
-
-            <div className="mb-2 w-full">
-              <div className="relative w-full h-4 rounded-full bg-[#35353E] overflow-hidden">
+            <div className="mb-3">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs dark:text-[#A0A0A0] text-[#788099]">
+                  Total
+                </span>
+                <span className="text-xs font-medium dark:text-white text-[#0D0D0D]">
+                  ${sellTotals.total.toLocaleString()}
+                </span>
+              </div>
+              <div className="w-full bg-[#2D2D37] rounded-full h-2">
                 <div
-                  className="absolute left-0 top-0 h-4 rounded-full"
-                  style={{
-                    width: `${Math.min(sellProgressPercentage, 100)}%`,
-                    backgroundColor: tokens.colors.brand.secondary,
-                    transition: "width 0.3s ease-in-out",
-                  }}
+                  className="bg-[#E23D3A] h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.min(sellProgressPercentage, 100)}%` }}
                 />
               </div>
             </div>
-
-            <div className="flex flex-col gap-3 mt-4">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-[${tokens.colors.brand.secondary}]" />
-                  <span className="text-sm text-[${tokens.colors.dark.textBody}]">
-                    Completed
-                  </span>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="text-center">
+                <div className="text-xs dark:text-[#A0A0A0] text-[#788099] mb-1">
+                  Completed
                 </div>
-                <span className="text-[${tokens.colors.dark.textTitle}]">
-                  {loading
-                    ? "Loading..."
-                    : `${sellTotals.completed.toLocaleString()} USD`}
-                </span>
+                <div className="text-sm font-semibold text-[#1D8751]">
+                  ${sellTotals.completed.toLocaleString()}
+                </div>
               </div>
-
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-[${tokens.colors.brand.primary}]" />
-                  <span className="text-sm text-[${tokens.colors.dark.textBody}]">
-                    In Progress
-                  </span>
+              <div className="text-center">
+                <div className="text-xs dark:text-[#A0A0A0] text-[#788099] mb-1">
+                  Pending
                 </div>
-                <span className="text-[${tokens.colors.dark.textTitle}]">
-                  {loading
-                    ? "Loading..."
-                    : `${sellTotals.pending.toLocaleString()} USD`}
-                </span>
+                <div className="text-sm font-semibold text-[#FFD600]">
+                  ${sellTotals.pending.toLocaleString()}
+                </div>
               </div>
             </div>
           </div>

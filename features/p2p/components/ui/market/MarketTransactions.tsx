@@ -234,62 +234,55 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
     <div className="flex flex-col gap-4 w-full">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
-          <div
-            className={`flex items-center w-full sm:w-auto bg-[${tokens.colors.dark.card}] border border-[${tokens.colors.dark.border}] rounded-lg px-2 py-1 gap-2`}
-          >
+          <div className="flex items-center w-full sm:w-auto dark:bg-[#23232B] bg-[#F5F5F5] border dark:border-[#35353E] border-gray-300 rounded-lg px-2 py-1 gap-2">
             <div className="">
               <Input
-                bgColor={tokens.colors.dark.card}
-                borderColor={tokens.colors.dark.card}
+                bgColor="transparent"
+                borderColor="transparent"
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="Enter amount"
-                className={`bg-transparent h-[8px] border-none focus:ring-0 text-[${tokens.colors.dark.textTitle}] w-full sm:w-28`}
+                className="bg-transparent h-[8px] border-none focus:ring-0 dark:text-white text-[#0D0D0D] w-full sm:w-28"
               />
             </div>
             <Select
-              bgColor={tokens.colors.dark.card}
-              borderColor={tokens.colors.dark.card}
+              bgColor="transparent"
+              borderColor="transparent"
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
               options={currencyOptions}
               placeholder="USDT"
-              className={`bg-transparent border-none focus:ring-0 text-[${tokens.colors.dark.textTitle}] w-full sm:w-16`}
+              className="bg-transparent border-none focus:ring-0 dark:text-white text-[#0D0D0D] w-full sm:w-16"
             />
           </div>
           <Select
-            bgColor={tokens.colors.dark.card}
-            borderColor={tokens.colors.dark.border}
+            bgColor="dark:bg-[#23232B] bg-[#F5F5F5]"
+            borderColor="dark:border-[#35353E] border-gray-300"
             value={paymentType}
             onChange={(e) => setPaymentType(e.target.value)}
             options={paymentTypeOptions}
             placeholder="Payment Type"
-            className={`bg-[${tokens.colors.dark.card}] border border-[${tokens.colors.dark.border}] rounded-lg text-[${tokens.colors.dark.textBody}] w-full sm:w-40`}
+            className="dark:bg-[#23232B] bg-[#F5F5F5] border dark:border-[#35353E] border-gray-300 rounded-lg dark:text-white text-[#0D0D0D] w-full sm:w-40"
           />
           <Select
-            bgColor={tokens.colors.dark.card}
-            borderColor={tokens.colors.dark.border}
+            bgColor="dark:bg-[#23232B] bg-[#F5F5F5]"
+            borderColor="dark:border-[#35353E] border-gray-300"
             value={provider}
             onChange={(e) => setProvider(e.target.value)}
             options={providerOptions}
             placeholder="Select Provider"
-            className={`bg-[${tokens.colors.dark.card}] border border-[${tokens.colors.dark.border}] rounded-lg text-[${tokens.colors.dark.textBody}] w-full sm:w-40`}
+            className="dark:bg-[#23232B] bg-[#F5F5F5] border dark:border-[#35353E] border-gray-300 rounded-lg dark:text-white text-[#0D0D0D] w-full sm:w-40"
           />
           <Button
-            borderColor={tokens.colors.dark.border}
+            borderColor="dark:border-[#35353E] border-gray-300"
             width={44}
             height={40}
             borderRadius={10}
             variant="outline"
             size="md"
-            className={`!bg-[${tokens.colors.dark.card}] !border-[${tokens.colors.dark.border}] border rounded-lg`}
-            icon={
-              <FaFilter
-                className={`text-[${tokens.colors.brand.primary}]`}
-                size={26}
-              />
-            }
+            className="!dark:bg-[#23232B] !bg-[#F5F5F5] !dark:border-[#35353E] !border-gray-300 border rounded-lg"
+            icon={<FaFilter className="text-[#1D8751]" size={26} />}
           />
         </div>
 

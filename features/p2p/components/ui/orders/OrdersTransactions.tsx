@@ -44,7 +44,7 @@ const OrdersTransactions = ({
     return (
       <div className="w-full text-center py-8">
         <p className="text-red-500 mb-2">Error loading orders</p>
-        <p className="text-gray-500 text-sm">{error}</p>
+        <p className="dark:text-gray-400 text-gray-500 text-sm">{error}</p>
       </div>
     );
   }
@@ -52,8 +52,10 @@ const OrdersTransactions = ({
   if (!transformedData || transformedData.length === 0) {
     return (
       <div className="w-full text-center py-8">
-        <p className="text-gray-500 mb-2">No orders found</p>
-        <p className="text-gray-400 text-sm">Try adjusting your filters</p>
+        <p className="dark:text-gray-400 text-gray-500 mb-2">No orders found</p>
+        <p className="dark:text-[#788099] text-gray-400 text-sm">
+          Try adjusting your filters
+        </p>
       </div>
     );
   }
@@ -71,8 +73,6 @@ const OrdersTransactions = ({
         onPageChange={handlePageChange}
         onViewTransaction={handleViewTransaction}
       />
-    
-     
     </div>
   );
 };

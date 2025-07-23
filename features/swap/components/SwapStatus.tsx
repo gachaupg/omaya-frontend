@@ -190,7 +190,7 @@ const SwapStatusComponent: React.FC<SwapStatusProps> = ({
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#181820] flex items-center justify-center">
+      <div className="min-h-screen dark:bg-[#181820] bg-gray-100 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1D8751]"></div>
       </div>
     );
@@ -198,7 +198,7 @@ const SwapStatusComponent: React.FC<SwapStatusProps> = ({
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#181820] flex items-center justify-center">
+      <div className="min-h-screen dark:bg-[#181820] bg-gray-100 flex items-center justify-center">
         <div className="text-center">
           <div className="text-red-500 text-xl mb-4">Error: {error}</div>
           <button
@@ -213,13 +213,13 @@ const SwapStatusComponent: React.FC<SwapStatusProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-[#181820] w-full">
+    <div className="min-h-screen dark:bg-[#181820] bg-gray-100 w-full">
       <div className="w-full px-4 py-6 max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <button
             onClick={onBack}
-            className="flex items-center text-[#8C8CA1] hover:text-white transition-colors"
+            className="flex items-center dark:text-[#8C8CA1] text-[#788099] hover:dark:text-white hover:text-black transition-colors"
           >
             <svg
               className="w-5 h-5 mr-2"
@@ -236,18 +236,18 @@ const SwapStatusComponent: React.FC<SwapStatusProps> = ({
             </svg>
             Back to Swap
           </button>
-          <div className="text-sm text-[#8C8CA1]">
+          <div className="text-sm dark:text-[#8C8CA1] text-[#788099]">
             Time elapsed: {formatTime(timeElapsed)}
           </div>
         </div>
 
         {/* Progress Steps */}
-        <div className="bg-[#23232b] border border-[#35353E] rounded-2xl p-6 md:p-8 mb-6">
+        <div className="dark:bg-[#23232b] bg-white border dark:border-[#35353E] border-gray-300 rounded-2xl p-6 md:p-8 mb-6">
           <div className="text-center mb-8">
-            <h2 className="text-xl md:text-2xl font-bold text-white mb-2">
+            <h2 className="text-xl md:text-2xl font-bold dark:text-white text-[#0D0D0D] mb-2">
               Swap Progress
             </h2>
-            <p className="text-[#8C8CA1]">
+            <p className="dark:text-[#8C8CA1] text-[#788099]">
               Track your swap transaction progress
             </p>
           </div>
@@ -261,7 +261,7 @@ const SwapStatusComponent: React.FC<SwapStatusProps> = ({
                   className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center mb-2 ${
                     status?.status
                       ? "bg-[#1D8751] text-white"
-                      : "bg-[#35353E] text-[#8C8CA1]"
+                      : "dark:bg-[#35353E] bg-gray-300 dark:text-[#8C8CA1] text-[#788099]"
                   }`}
                 >
                   <svg
@@ -280,7 +280,9 @@ const SwapStatusComponent: React.FC<SwapStatusProps> = ({
                 </div>
                 <span
                   className={`text-xs text-center ${
-                    status?.status ? "text-[#1D8751]" : "text-[#8C8CA1]"
+                    status?.status
+                      ? "text-[#1D8751]"
+                      : "dark:text-[#8C8CA1] text-[#788099]"
                   }`}
                 >
                   Swap Created
@@ -292,7 +294,7 @@ const SwapStatusComponent: React.FC<SwapStatusProps> = ({
                 className={`flex-1 h-0.5 mx-2 md:mx-4 ${
                   status?.status && status.status !== "pending"
                     ? "bg-[#1D8751]"
-                    : "bg-[#35353E]"
+                    : "dark:bg-[#35353E] bg-gray-300"
                 }`}
               ></div>
 
@@ -461,53 +463,65 @@ const SwapStatusComponent: React.FC<SwapStatusProps> = ({
           {status && (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-[#181820] rounded-lg p-4">
-                  <div className="text-sm text-[#8C8CA1] mb-1">From</div>
-                  <div className="text-white font-medium">
+                <div className="dark:bg-[#181820] bg-gray-100 rounded-lg p-4">
+                  <div className="text-sm dark:text-[#8C8CA1] text-[#788099] mb-1">
+                    From
+                  </div>
+                  <div className="dark:text-white text-[#0D0D0D] font-medium">
                     {swapResponse
                       ? `${swapResponse.fromAmount} ${swapResponse.fromCurrency}`
                       : `${status.from_amount} ${status.from_currency}`}
                   </div>
-                  <div className="text-xs text-[#8C8CA1]">
+                  <div className="text-xs dark:text-[#8C8CA1] text-[#788099]">
                     {swapResponse
                       ? swapResponse.fromNetwork
                       : status.from_network}
                   </div>
                 </div>
-                <div className="bg-[#181820] rounded-lg p-4">
-                  <div className="text-sm text-[#8C8CA1] mb-1">To</div>
-                  <div className="text-white font-medium">
+                <div className="dark:bg-[#181820] bg-gray-100 rounded-lg p-4">
+                  <div className="text-sm dark:text-[#8C8CA1] text-[#788099] mb-1">
+                    To
+                  </div>
+                  <div className="dark:text-white text-[#0D0D0D] font-medium">
                     {swapResponse
                       ? `${swapResponse.toAmount} ${swapResponse.toCurrency}`
                       : `${status.to_amount} ${status.to_currency}`}
                   </div>
-                  <div className="text-xs text-[#8C8CA1]">
+                  <div className="text-xs dark:text-[#8C8CA1] text-[#788099]">
                     {swapResponse ? swapResponse.toNetwork : status.to_network}
                   </div>
                 </div>
               </div>
 
               {/* Transaction Details */}
-              <div className="bg-[#181820] rounded-lg p-4">
-                <div className="text-sm text-[#8C8CA1] mb-3">
+              <div className="dark:bg-[#181820] bg-gray-100 rounded-lg p-4">
+                <div className="text-sm dark:text-[#8C8CA1] text-[#788099] mb-3">
                   Transaction Details
                 </div>
                 <div className="space-y-2 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-[#8C8CA1]">Swap ID:</span>
-                    <span className="text-white font-mono">{status.id}</span>
+                    <span className="dark:text-[#8C8CA1] text-[#788099]">
+                      Swap ID:
+                    </span>
+                    <span className="dark:text-white text-[#0D0D0D] font-mono">
+                      {status.id}
+                    </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#8C8CA1]">From Address:</span>
-                    <span className="text-white font-mono truncate max-w-[200px]">
+                    <span className="dark:text-[#8C8CA1] text-[#788099]">
+                      From Address:
+                    </span>
+                    <span className="dark:text-white text-[#0D0D0D] font-mono truncate max-w-[200px]">
                       {swapResponse
                         ? swapResponse.payinAddress
                         : status.from_address}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#8C8CA1]">To Address:</span>
-                    <span className="text-white font-mono truncate max-w-[200px]">
+                    <span className="dark:text-[#8C8CA1] text-[#788099]">
+                      To Address:
+                    </span>
+                    <span className="dark:text-white text-[#0D0D0D] font-mono truncate max-w-[200px]">
                       {swapResponse
                         ? swapResponse.payoutAddress
                         : status.to_address}
@@ -522,7 +536,7 @@ const SwapStatusComponent: React.FC<SwapStatusProps> = ({
                   <div className="text-green-500 font-medium mb-2">
                     🎉 Swap Completed!
                   </div>
-                  <div className="text-sm text-[#8C8CA1]">
+                  <div className="text-sm dark:text-[#8C8CA1] text-[#788099]">
                     Your{" "}
                     {swapResponse
                       ? swapResponse.fromCurrency
@@ -541,7 +555,7 @@ const SwapStatusComponent: React.FC<SwapStatusProps> = ({
                   <div className="text-red-500 font-medium mb-2">
                     ❌ Swap Failed
                   </div>
-                  <div className="text-sm text-[#8C8CA1]">
+                  <div className="text-sm dark:text-[#8C8CA1] text-[#788099]">
                     Please contact support if you believe this is an error
                   </div>
                 </div>

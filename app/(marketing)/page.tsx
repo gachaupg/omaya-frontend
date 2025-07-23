@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { tokens } from "@/styles/tokens";
 import { Play, MessageCircle } from "lucide-react";
+import ExchangeForm from "@/components/ExchangeForm";
 
 const steps = [
   {
@@ -299,7 +300,7 @@ export default function MarketingPage() {
         </div>
 
         <div className="container mx-auto px-4 relative z-10 mt-20">
-          <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 gap-12 items-starts">
+          <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3  items-starts">
             <div className="space-y-6 pl-6 md:pl-12 md:text-left text-center 2xl:col-span-2">
               <h1 className="text-4xl md:text-5xl font-bold text-white tracking-wide ">
                 <span className="inline-block w-full 2xl:text-7xl">
@@ -330,7 +331,7 @@ export default function MarketingPage() {
               </div>
             </div>
             <div className="flex justify-center 2xl:justify-end 2xl:col-span-1">
-              <div className="relative">
+              {/* <div className="relative">
                 <Image
                   src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746561970/iPhone_13_Mockup_1_zzm7tt.png"
                   alt="OMAYA Exchange App"
@@ -338,7 +339,8 @@ export default function MarketingPage() {
                   height={400}
                   className="2xl:w-[369.55px] 2xl:h-[695.7px]"
                 />
-              </div>
+              </div> */}
+              <ExchangeForm />
             </div>
           </div>
         </div>

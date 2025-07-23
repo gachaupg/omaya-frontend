@@ -53,35 +53,26 @@ const Available = () => {
   return (
     <div className="mt-3">
       <div
-        className={`rounded-[24px] border border-[${tokens.colors.dark.border}] overflow-hidden bg-[${tokens.colors.dark.card}]`}
+        className="rounded-[24px] border dark:border-[#35353E] border-gray-300 overflow-hidden dark:bg-[#23232B] bg-[#F5F5F5]"
         style={{ height: 110 }}
       >
         <div className="w-full h-full">
           {/* Header */}
-          <div
-            className={`grid grid-cols-3 px-6  py-3 `}
-            style={{ background: "#35353E" }}
-          >
-            <div
-              className={`text-sm text-[${tokens.colors.dark.textBody}] font-medium`}
-            >
+          <div className="grid grid-cols-3 px-6 py-3 dark:bg-[#35353E] bg-gray-200">
+            <div className="text-sm dark:text-[#788099] text-[#788099] font-medium">
               Asset
             </div>
-            <div
-              className={`text-sm text-right text-[${tokens.colors.dark.textBody}] font-medium`}
-            >
+            <div className="text-sm text-right dark:text-[#788099] text-[#788099] font-medium">
               Available
             </div>
-            <div
-              className={`text-sm text-right text-[${tokens.colors.dark.textBody}] font-medium`}
-            >
+            <div className="text-sm text-right dark:text-[#788099] text-[#788099] font-medium">
               In Escrow / Locked
             </div>
           </div>
 
           {/* Asset Row */}
           <div
-            className={`grid grid-cols-3 px-6 py-4 bg-[${tokens.colors.dark.card}]`}
+            className="grid grid-cols-3 px-6 py-4 dark:bg-[#23232B] bg-[#F5F5F5]"
             style={{ minHeight: 70 }}
           >
             {/* Asset */}
@@ -92,28 +83,20 @@ const Available = () => {
                 className="w-7 h-7 rounded-full bg-white"
               />
               <div>
-                <div
-                  className={`font-medium text-base text-[${tokens.colors.dark.textTitle}]`}
-                >
+                <div className="font-medium text-base dark:text-white text-[#0D0D0D]">
                   USDT
                 </div>
-                <div
-                  className={`text-xs text-[${tokens.colors.dark.textBody}] mt-0.5`}
-                >
+                <div className="text-xs dark:text-[#788099] text-[#788099] mt-0.5">
                   Tether US
                 </div>
               </div>
             </div>
             {/* Available */}
-            <div
-              className={`text-right self-center text-base text-[${tokens.colors.dark.textTitle}] font-medium`}
-            >
+            <div className="text-right self-center text-base dark:text-white text-[#0D0D0D] font-medium">
               {formatNumber(availableBalance)}
             </div>
             {/* Locked */}
-            <div
-              className={`text-right self-center text-base text-[${tokens.colors.dark.textTitle}] font-medium`}
-            >
+            <div className="text-right self-center text-base dark:text-white text-[#0D0D0D] font-medium">
               {formatNumber(lockedAmount)}
             </div>
           </div>

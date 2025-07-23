@@ -19,9 +19,13 @@ const ClientIdSection: React.FC<ClientIdSectionProps> = ({ user }) => {
 
   return (
     <>
-      <div className="text-base font-semibold text-white">Client ID</div>
-      <section className="bg-[#18181D] rounded-xl border border-[#35353E] p-3 shadow-lg">
-        <label className="text-[#fff] text-xs mb-1 block">Your unique ID</label>
+      <div className="text-base font-semibold dark:text-white text-[#0D0D0D]">
+        Client ID
+      </div>
+      <section className="dark:bg-[#18181D] bg-[#F5F5F5] rounded-xl border dark:border-[#35353E] border-gray-300 p-3 shadow-lg">
+        <label className="dark:text-[#fff] text-[#0D0D0D] text-xs mb-1 block">
+          Your unique ID
+        </label>
         <div className="flex items-center gap-2">
           <div className="flex flex-1 items-center border border-[#1D8751] rounded-xl px-3 py-2 bg-transparent">
             <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block mr-2"></span>
@@ -81,7 +85,7 @@ const ClientIdSection: React.FC<ClientIdSectionProps> = ({ user }) => {
             </span>
           </div>
           <button
-            className={`flex items-center gap-1 px-3 py-2 rounded-xl bg-[#23232B] text-[#1D8751] font-semibold hover:bg-[#1D8751] hover:text-white transition text-sm ${
+            className={`flex items-center gap-1 px-3 py-2 rounded-xl dark:bg-[#23232B] bg-gray-200 text-[#1D8751] font-semibold hover:bg-[#1D8751] hover:text-white transition text-sm ${
               copied ? "bg-[#1D8751] text-white" : ""
             }`}
             onClick={handleCopy}

@@ -41,12 +41,12 @@ const KYC = () => {
   };
 
   return (
-    <div className="p-3 text-white flex flex-col gap-2">
+    <div className="p-3 dark:text-white text-[#0D0D0D] flex flex-col gap-2">
       <p className="text-base font-semibold">KYC Verification</p>
-      <div className="flex flex-col border bg-[#18181D] border-[#35353E] rounded-xl p-3 gap-3">
+      <div className="flex flex-col border dark:bg-[#18181D] bg-[#F5F5F5] dark:border-[#35353E] border-gray-300 rounded-xl p-3 gap-3">
         {/* Avatar, Name, and Status */}
         {/* KYC Info */}
-        <p className="text-sm text-[#808080]">
+        <p className="text-sm dark:text-[#808080] text-[#788099]">
           Lorem ipsum dolor sit amet consectetur adipisicing elit. Ipsam
           impedit, velit nemo doloremque, quae harum voluptatum cum eligendi
           saepe unde excepturi repellat pariatur officiis culpa, fuga id quaerat

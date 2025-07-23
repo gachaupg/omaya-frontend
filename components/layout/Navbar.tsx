@@ -9,6 +9,7 @@ import { RootState, AppDispatch } from "@/features/auth/store";
 import {
   initializeAuth,
   getUserProfile,
+  logout,
 } from "@/features/auth/slices/authSlice";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
@@ -33,9 +34,11 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [depositDropdownOpen, setDepositDropdownOpen] = useState(false);
-  const { isAuthenticated, profile: userProfile } = useSelector(
-    (state: RootState) => state.auth
-  );
+  const {
+    isAuthenticated,
+    profile: userProfile,
+    user,
+  } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch<AppDispatch>();
   const depositDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -55,9 +58,14 @@ export default function Navbar() {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
-  const toggleDepositDropdown = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const toggleDepositDropdown = () => {
     setDepositDropdownOpen(!depositDropdownOpen);
+  };
+
+  const handleSignOut = () => {
+    dispatch(logout());
+    // Redirect to login page after logout
+    window.location.href = "/auth/login";
   };
 
   //Close dropdown when clicking outside
@@ -67,7 +75,7 @@ export default function Navbar() {
         depositDropdownRef.current &&
         !depositDropdownRef.current.contains(event.target as Node)
       ) {
-        setDepositDropdownOpen(false);
+        setDepositDropdownOpen(false); // Close deposit dropdown
       }
     };
 
@@ -450,29 +458,27 @@ export default function Navbar() {
               </div>
 
               <div className="relative">
-                <Link href="/profile" className="text-white">
-                  {userProfile?.photo ? (
-                    <img
-                      src={userProfile.photo}
-                      alt="Profile"
-                      className="w-10 h-10 rounded-full border-2 border-white object-cover"
-                    />
-                  ) : (
-                    <DefaultProfileIcon />
-                  )}
-                </Link>
-                <span className="absolute bottom-0 right-0 w-5 h-5 bg-[#1D8751] rounded-full flex items-center justify-center border-2 border-white">
-                  <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
-                    <circle cx="10" cy="10" r="10" fill="#1D8751" />
+                <Link
+                  href="/dashboard/account"
+                  className="flex items-center bg-transparent border border-[#1D8751] text-white px-6 py-2 rounded-full transition-colors duration-200 text-sm md:text-base 2xl:text-lg"
+                >
+                  <svg
+                    className="mr-2"
+                    width="20"
+                    height="20"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
                     <path
-                      d="M6 10.5L9 13.5L14 8.5"
-                      stroke="white"
+                      d="M12 3v14m0 0l-5-5m5 5l5-5"
+                      stroke="#FFB800"
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
                   </svg>
-                </span>
+                  Profile
+                </Link>
               </div>
             </div>
           ) : (
@@ -534,30 +540,32 @@ export default function Navbar() {
                     Deposit
                   </button>
                 </Link>
-                <div className="relative mt-4 flex justify-center">
-                  <Link href="/profile" className="text-white">
-                    {userProfile?.photo ? (
-                      <img
-                        src={userProfile.photo}
-                        alt="Profile"
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
-                    ) : (
-                      <DefaultProfileIcon />
-                    )}
-                  </Link>
-                  <span className="absolute bottom-0 right-0 w-5 h-5 bg-[#1D8751] rounded-full flex items-center justify-center border-2 border-white">
-                    <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
-                      <circle cx="10" cy="10" r="10" fill="#1D8751" />
-                      <path
-                        d="M6 10.5L9 13.5L14 8.5"
-                        stroke="white"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </span>
+                <div className="flex flex-col items-center space-y-3 mt-4">
+                  <div className="flex items-center space-x-3">
+                    <Link
+                      href="/dashboard/account"
+                      onClick={toggleMobileMenu}
+                      className="text-white"
+                    >
+                      {userProfile?.photo ? (
+                        <img
+                          src={userProfile.photo}
+                          alt="Profile"
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <DefaultProfileIcon />
+                      )}
+                    </Link>
+                    <div className="text-left">
+                      <h4 className="text-white font-medium text-sm">
+                        {user?.first_name && user?.last_name
+                          ? `${user.first_name} ${user.last_name}`
+                          : user?.email}
+                      </h4>
+                      <p className="text-gray-400 text-xs">{user?.email}</p>
+                    </div>
+                  </div>
                 </div>
               </>
             ) : (

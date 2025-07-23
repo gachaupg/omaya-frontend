@@ -58,7 +58,7 @@ const Referral = () => {
   }
 
   return (
-    <div className="text-white bg-[#18181B]">
+    <div className="dark:text-white text-[#0D0D0D] dark:bg-[#18181B] bg-gray-100">
       <ReferralTabs tab={tab} setTab={setTab} />
 
       {/* Main Card & Users Section */}
@@ -75,7 +75,7 @@ const Referral = () => {
         </>
       )}
       {tab === "History" && (
-        <div className="text-center py-12 text-[#A3A3A3] text-lg">
+        <div className="text-center py-12 dark:text-[#A3A3A3] text-[#788099] text-lg">
           History page content goes here.
         </div>
       )}

@@ -47,7 +47,7 @@ const Stats = () => {
   }, [dispatch, isAuthenticated]);
 
   return (
-    <Card className="w-full p-2 bg-[#18181D] rounded-2xl border border-[#35353E] text-white shadow-lg">
+    <Card className="w-full p-2 dark:bg-[#18181D] bg-[#F5F5F5] rounded-2xl border dark:border-[#35353E] border-gray-300 dark:text-white text-[#0D0D0D] shadow-lg">
       {/* Header */}
       <div className="flex w-full items-center justify-between mb-6">
         <div className="flex items-center gap-4">
@@ -61,7 +61,7 @@ const Stats = () => {
               unoptimized={true}
             />
           ) : (
-            <div className="w-14 h-14 bg-[#35353E] rounded-full flex items-center justify-center">
+            <div className="w-14 h-14 dark:bg-[#35353E] bg-gray-300 rounded-full flex items-center justify-center">
               <svg
                 width="24"
                 height="24"
@@ -106,7 +106,7 @@ const Stats = () => {
 
       {/* Total Transactions */}
       <div className="mb-6">
-        <div className="text-[#788099] text-sm font-medium">
+        <div className="dark:text-[#788099] text-[#788099] text-sm font-medium">
           Total Transactions
         </div>
         <div className="text-[15px] font-semibold mt-1 mb-2">
@@ -114,7 +114,7 @@ const Stats = () => {
             (summary?.total_p2p_orders || 0)}{" "}
           USDT
         </div>
-        <div className="border-b border-[#35353E] mt-2" />
+        <div className="border-b dark:border-[#35353E] border-gray-300 mt-2" />
       </div>
 
       {/* Deposits & Withdrawals */}
@@ -123,8 +123,10 @@ const Stats = () => {
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center flex-col gap-2">
             <div className="flex items-center gap-2">
-              <span className="text-[#788099] font-medium">Deposits</span>
-              <span className="text-[#788099] text-sm">
+              <span className="dark:text-[#788099] text-[#788099] font-medium">
+                Deposits
+              </span>
+              <span className="dark:text-[#788099] text-[#788099] text-sm">
                 Month{" "}
                 <svg
                   className="inline ml-1"
@@ -143,12 +145,12 @@ const Stats = () => {
                 </svg>
               </span>
             </div>
-            <span className="text-white font-medium">
+            <span className="dark:text-white text-[#0D0D0D] font-medium">
               {formatNumber(summary?.total_approved_p2p_deposits || 0)} USD
             </span>
           </div>
         </div>
-        <div className="w-full h-3 bg-[#35353E] rounded-full mb-4">
+        <div className="w-full h-3 dark:bg-[#35353E] bg-gray-300 rounded-full mb-4">
           <div
             className={`h-3 rounded-full ${
               (summary?.total_approved_p2p_deposits || 0) > 0
@@ -169,9 +171,11 @@ const Stats = () => {
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center flex-col gap-2">
             <div className="flex items-center gap-2 justify-between">
-              <span className="text-[#788099] font-medium">Withdrawals</span>
+              <span className="dark:text-[#788099] text-[#788099] font-medium">
+                Withdrawals
+              </span>
 
-              <span className="text-[#788099] text-sm">
+              <span className="dark:text-[#788099] text-[#788099] text-sm">
                 Month{" "}
                 <svg
                   className="inline ml-1"
@@ -190,12 +194,12 @@ const Stats = () => {
                 </svg>
               </span>
             </div>
-            <span className="text-white font-medium">
+            <span className="dark:text-white text-[#0D0D0D] font-medium">
               {formatNumber(summary?.total_approved_p2p_withdrawals || 0)} USD
             </span>
           </div>
         </div>
-        <div className="w-full h-3 bg-[#35353E] rounded-full mb-4">
+        <div className="w-full h-3 dark:bg-[#35353E] bg-gray-300 rounded-full mb-4">
           <div
             className={`h-3 rounded-full ${
               (summary?.total_approved_p2p_withdrawals || 0) > 0
@@ -212,18 +216,20 @@ const Stats = () => {
             }}
           />
         </div>
-        <div className="border-b border-[#35353E] mt-2" />
+        <div className="border-b dark:border-[#35353E] border-gray-300 mt-2" />
       </div>
 
       {/* Referral Section */}
       <div className="mb-2">
         <div className="text-lg font-semibold mb-1">Referral</div>
-        <div className="text-[#788099] text-sm mb-3">
+        <div className="dark:text-[#788099] text-[#788099] text-sm mb-3">
           Invite friends to earn commission money
         </div>
-        <div className="border-b border-[#35353E] mb-3" />
+        <div className="border-b dark:border-[#35353E] border-gray-300 mb-3" />
         <div className="flex items-center justify-between mb-2">
-          <span className="text-[#788099] text-sm">Users Invited:</span>
+          <span className="dark:text-[#788099] text-[#788099] text-sm">
+            Users Invited:
+          </span>
           <span className="text-[#1D8751] font-semibold">0 Users</span>
         </div>
         <div className="space-y-2 mt-2">

@@ -62,7 +62,7 @@ const Withdraw = () => {
   const totalWithFees = Number(amount || 0) + totalFees;
 
   return (
-    <div className="min-h-screen  text-white flex flex-col items-center ">
+    <div className="min-h-screen dark:text-white text-[#0D0D0D] flex flex-col items-center">
       {/* Withdraw Form Card */}
       <div className="w-full max-w-2xl rounded-2xl   p-6 shadow-lg">
         <form onSubmit={handleWithdraw}>
