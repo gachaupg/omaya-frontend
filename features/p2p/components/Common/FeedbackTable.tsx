@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Feedback } from "@/features/p2p/types";
+import { NoDataFound } from "@/components/dashboard/ui/Transactions";
 
 const COIN_ICONS: Record<string, string> = {
   USDT: "https://cryptologos.cc/logos/tether-usdt-logo.png",
@@ -73,7 +74,13 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
     );
   }
 
-  if (!data || data.length === 0) return <div>No feedback found.</div>;
+  if (!data || data.length === 0)
+    return (
+      <NoDataFound
+        title="No Feedback Records Found"
+        message="There are currently no feedback records to display. Try again later or after you have some feedback."
+      />
+    );
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;

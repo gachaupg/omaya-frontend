@@ -153,31 +153,66 @@ const Notifications = () => {
       </div>
     );
 
-  if (!matchedTrades || !matchedTrades.results)
+  // Check for no notifications - handle both null/undefined and empty array cases
+  const hasNotifications =
+    matchedTrades &&
+    matchedTrades.results &&
+    Array.isArray(matchedTrades.results) &&
+    matchedTrades.results.length > 0;
+
+  if (!hasNotifications)
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-        <div className="w-24 h-24 mb-4 text-[#A3A3C2]">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-            />
-          </svg>
+      <div className="max-w-5xl mx-auto px-4">
+        <div className="flex items-center justify-between mb-6">
+          <h6 className="text-[#A3A3C2] text-xl font-semibold">
+            Notifications Center
+          </h6>
+          <span className="text-sm text-[#A3A3C2]">0 notifications</span>
         </div>
-        <h3 className="text-xl font-semibold text-[#A3A3C2] mb-2">
-          No Notifications
-        </h3>
-        <p className="text-[#A3A3C2] max-w-md">
-          You don't have any notifications at the moment. When you receive
-          notifications, they will appear here.
-        </p>
+
+        <div className="bg-[#23232B] rounded-xl p-8 text-center shadow-lg">
+          <div className="flex flex-col items-center justify-center min-h-[400px]">
+            {/* Beautiful notification bell icon with gradient */}
+            <div className="relative mb-6">
+              <div className="w-24 h-24 bg-gradient-to-br from-[#1D8751] to-[#17693F] rounded-full flex items-center justify-center mb-4">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  className="w-12 h-12 text-white"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                  />
+                </svg>
+              
+              </div>
+              {/* Subtle pulse animation */}
+              <div className="absolute inset-0 w-24 h-24 bg-gradient-to-br from-[#1D8751] to-[#17693F] rounded-full opacity-20 animate-pulse"></div>
+            </div>
+
+            <h3 className="text-2xl font-bold text-white mb-3">
+              You have no notifications
+            </h3>
+
+            <p className="text-[#A3A3C2] max-w-md mb-6 leading-relaxed">
+              When you receive notifications about your trades, orders, or
+              account updates, they will appear here. Stay tuned for important
+              updates!
+            </p>
+
+            {/* Decorative elements */}
+            <div className="flex items-center space-x-2 text-[#A3A3C2] text-sm">
+              <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+              <span>All caught up</span>
+              <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+            </div>
+          </div>
+        </div>
       </div>
     );
 

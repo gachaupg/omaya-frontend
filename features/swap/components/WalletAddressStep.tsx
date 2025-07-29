@@ -7,6 +7,7 @@ interface WalletAddressStepProps {
   onBack: () => void;
   onNext: () => void;
   fromAsset: any;
+  isLoading?: boolean;
 }
 
 const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
@@ -16,9 +17,9 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   onBack,
   onNext,
   fromAsset,
+  isLoading = false,
 }) => {
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
   const handlePaste = async () => {
     try {
@@ -39,14 +40,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
       return;
     }
 
-    setIsLoading(true);
-    try {
-      await onNext();
-    } catch (error) {
-      console.error("Error in wallet address step:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    await onNext();
   };
 
   return (
@@ -214,6 +208,8 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
       </div>
 
       {/* Navigation Buttons */}
+      <div className="flex mt-6">
+
       <div className="flex gap-4 mt-6">
         <button
           onClick={onBack}

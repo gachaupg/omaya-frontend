@@ -22,7 +22,7 @@ const ProfileSettings = () => {
   };
 
   return (
-    <div className="w-full flex flex-col gap-2 mx-auto">
+    <div className="w-full flex flex-col gap-1 mx-auto">
       <ClientIdSection user={user} />
       <BasicInfoSection user={user} />
       <PasswordSection />

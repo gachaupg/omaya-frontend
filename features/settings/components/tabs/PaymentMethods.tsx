@@ -72,7 +72,7 @@ const PaymentMethods = () => {
         {userPaymentDetails.map((payment: UserPaymentDetail) => (
           <div
             key={payment.id}
-            className="flex border border-[#35353E] rounded-xl p-3 justify-between gap-3 items-center"
+            className="flex bg-[#1D1D23] border-2 border-[#35353E] rounded-xl p-3 justify-between gap-3 items-center"
           >
             <div>
               <p className="text-sm">{payment?.payment_method_name}</p>

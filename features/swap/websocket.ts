@@ -1,3 +1,9 @@
+import { API_CONFIG } from "@/lib/appConfig";
+
+export function connectSwapStatusWebSocket(swapId: string): WebSocket {
+  const wsUrl = API_CONFIG.SWAP.SWAP_STATUS_WS(swapId);
+  return new WebSocket(wsUrl);
+}
 // import { API_CONFIG } from "@/lib/appConfig";
 
 // export function connectSwapStatusWebSocket({

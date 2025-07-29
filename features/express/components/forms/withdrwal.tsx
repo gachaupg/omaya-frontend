@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { FaExchangeAlt, FaExclamationCircle } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../../../store";
@@ -17,7 +17,7 @@ import UserPaymentSelector, {
   UserPaymentDetail,
 } from "../../../p2p/components/ui/p2pdashboard/sections/UserPaymentSelector";
 
-interface DepositFormProps {
+interface WithdrawalFormProps {
   onExchange?: (transactionData: {
     type: "withdrawal";
     amount: number;
@@ -26,19 +26,29 @@ interface DepositFormProps {
     walletAddress: string;
     network: any;
   }) => void;
+  mode: "deposit" | "withdrawal";
+  onModeChange?: (mode: "deposit" | "withdrawal") => void;
 }
 
-export default function DepositForm({ onExchange }: DepositFormProps) {
+export default function WithdrawalForm({
+  onExchange,
+  mode,
+  onModeChange,
+}: WithdrawalFormProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const { userPaymentDetails, loading, error } = useSelector(
-    (state: any) => state.payment
-  );
+  const {
+    userPaymentDetails,
+    loading: paymentLoading,
+    error: paymentError,
+  } = useSelector((state: any) => state.payment);
   const { assets, loading: assetsLoading } = useSelector(
     (state: any) => state.exchange
   );
-  const { adminMethods, loading: adminLoading } = useSelector(
-    (state: any) => state.paymentMethods
-  );
+  const {
+    adminMethods,
+    loading: adminLoading,
+    error: adminError,
+  } = useSelector((state: any) => state.paymentMethods);
   const { getWithdrawalAddresses, getWithdrawalAddressesLoading } = useSelector(
     (state: any) => state.p2pMarket
   );
@@ -54,11 +64,28 @@ export default function DepositForm({ onExchange }: DepositFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [selectedBscAddress, setSelectedBscAddress] = useState<string>("");
+  const [payBank, setPayBank] = useState("");
+  const {
+    adminPaymentDetails,
+    loading: adminPaymentLoading,
+    error: adminPaymentError,
+  } = useSelector((state: any) => state.payment);
+  const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(null);
 
   // Payment selection state - same as Adds page
   const [selectedPaymentDetails, setSelectedPaymentDetails] = useState<
     UserPaymentDetail[]
   >([]);
+
+  // Filter user payment details based on selected payment method
+  const filteredUserPaymentDetails = payBank
+    ? (userPaymentDetails || []).filter(
+        (detail: any) => detail.payment_provider_name === payBank
+      )
+    : userPaymentDetails || [];
+
+  const walletSectionRef = useRef<HTMLDivElement>(null);
+  const [prevPaymentDetailsCount, setPrevPaymentDetailsCount] = useState(0);
 
   useEffect(() => {
     dispatch(fetchUserPaymentDetails())
@@ -268,8 +295,23 @@ export default function DepositForm({ onExchange }: DepositFormProps) {
     }
   };
 
+  useEffect(() => {
+    if (
+      prevPaymentDetailsCount === 0 &&
+      selectedPaymentDetails.length > 0 &&
+      walletSectionRef.current
+    ) {
+      const y =
+        walletSectionRef.current.getBoundingClientRect().top +
+        window.pageYOffset -
+        100; // 100px offset
+      window.scrollTo({ top: y, behavior: "smooth" });
+    }
+    setPrevPaymentDetailsCount(selectedPaymentDetails.length);
+  }, [selectedPaymentDetails.length]);
+
   return (
-    <div className="w-full min-h-screen flex flex-col justify-center bg-[#18181f]">
+    <div className="w-full min-h-screen flex flex-col justify- bg-[#18181f]">
       <h2 className="text-xl font-bold  mb-2 text-[#788099]">
         <span className="text-[#7e7e8f]">1-</span> Transaction Info
       </h2>
@@ -296,33 +338,40 @@ export default function DepositForm({ onExchange }: DepositFormProps) {
               <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
                 Asset
               </label>
-              <select
-                value={selectedAsset?.asset_id || ""}
-                onChange={(e) => {
-                  const asset = assets?.assets?.find(
-                    (a: any) => a.asset_id === e.target.value
-                  );
-                  setSelectedAsset(asset || null);
-                  // Auto-select BEP20 network when asset is selected
-                  if (asset && asset.networks) {
-                    const bep20Network = asset.networks.find(
-                      (n: any) => n.network_type === "BEP20"
+              <div className="relative">
+                <img
+                  src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                  alt="asset icon"
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 pointer-events-none"
+                />
+                <select
+                  value={selectedAsset?.asset_id || ""}
+                  onChange={(e) => {
+                    const asset = assets?.assets?.find(
+                      (a: any) => a.asset_id === e.target.value
                     );
-                    setSelectedNetwork(bep20Network || null);
-                  }
-                }}
-                disabled={assetsLoading}
-                className="w-full bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg text-white focus:outline-none border border-[#39394a] appearance-none disabled:opacity-50"
-              >
-                <option value="">
-                  {assetsLoading ? "Loading assets..." : "Select Asset"}
-                </option>
-                {assets?.assets?.map((asset: any) => (
-                  <option key={asset.asset_id} value={asset.asset_id}>
-                    {asset.symbol} - {asset.description}
+                    setSelectedAsset(asset || null);
+                    // Auto-select BEP20 network when asset is selected
+                    if (asset && asset.networks) {
+                      const bep20Network = asset.networks.find(
+                        (n: any) => n.network_type === "BEP20"
+                      );
+                      setSelectedNetwork(bep20Network || null);
+                    }
+                  }}
+                  disabled={assetsLoading}
+                  className="w-full bg-[#1D1D23] rounded-2xl px-9 py-2 text-lg text-white focus:outline-none border border-[#39394a] appearance-none disabled:opacity-50"
+                >
+                  <option value="">
+                    {assetsLoading ? "Loading assets..." : "Select Asset"}
                   </option>
-                ))}
-              </select>
+                  {assets?.assets?.map((asset: any) => (
+                    <option key={asset.asset_id} value={asset.asset_id}>
+                      {asset.symbol} - {asset.description}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
           {/* Fee & Rate - Dynamic based on selected asset */}
@@ -339,12 +388,15 @@ export default function DepositForm({ onExchange }: DepositFormProps) {
                 {commissionAmount.toFixed(2)}
               </span>
             </div>
-            <span className="ml-auto flex items-center justify-center w-12 h-12 bg-[#23232b] rounded-2xl border border-[#39394a]">
-              <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1752243765/Vector_2_xauedx.png"
-                alt=""
-              />
-            </span>
+            <img
+              src="https://res.cloudinary.com/pitz/image/upload/v1752243765/Vector_2_xauedx.png"
+              alt=""
+              style={{ cursor: "pointer" }}
+              onClick={() =>
+                onModeChange &&
+                onModeChange(mode === "deposit" ? "withdrawal" : "deposit")
+              }
+            />
           </div>
           {/* Second Row - You Get Amount and Payment Method Selection */}
           <div className="flex flex-col md:flex-row gap-3 mb-2">
@@ -363,184 +415,240 @@ export default function DepositForm({ onExchange }: DepositFormProps) {
                 className="w-full bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg text-white focus:outline-none border border-[#39394a] appearance-none"
               />
             </div>
+            <div className="flex-1">
+              <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+                Bank/Payment Method
+              </label>
+              <div className="relative">
+                <img
+                  src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                  alt="bank icon"
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 pointer-events-none"
+                />
+                <select
+                  value={payBank}
+                  onChange={(e) => {
+                    const selectedPayment = adminPaymentDetails?.find(
+                      (payment: any) => payment.provider_name === e.target.value
+                    );
+                    setPayBank(e.target.value);
+                    setSelectedPaymentDetail(selectedPayment || null);
+                  }}
+                  disabled={adminLoading}
+                  className="w-full bg-[#1D1D23] rounded-2xl px-9 py-2 text-lg text-white focus:outline-none border border-[#39394a] appearance-none disabled:opacity-50"
+                >
+                  <option value="">
+                    {adminLoading
+                      ? "Loading payment methods..."
+                      : "Select Payment Method"}
+                  </option>
+                  {adminPaymentDetails?.map((payment: any, index: number) => (
+                    <option key={index} value={payment.provider_name}>
+                      {payment.provider_name} - {payment.payment_method_type}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {adminError && (
+                <p className="text-red-500 text-sm mt-1">{adminError}</p>
+              )}
+            </div>
           </div>
 
           {/* Payment Method Selection - Using UserPaymentSelector like Adds page */}
-          <div className="mt-6">
-            <UserPaymentSelector
-              userPaymentDetails={userPaymentDetails || []}
-              onSelect={handleSelectPaymentDetail}
-              onRemove={handleRemovePaymentDetail}
-              selectedDetails={selectedPaymentDetails}
-            />
-          </div>
-
-          {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
-        </div>
-      </div>
-
-      <h2 className="text-xl font-bold  mb-2 text-[#788099]">
-        <span className="text-[#7e7e8f]">2-</span> Wallet Address
-      </h2>
-      <div className="flex flex-col bg-[#23232b] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full max-w-4xl mx-auto text-white mb-6">
-        {/* Wallet/Account Address Label */}
-        <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
-          Wallet/Account Address
-        </label>
-
-        {/* BSC Address Display */}
-        {getWithdrawalAddresses?.data &&
-          getWithdrawalAddresses.data.length > 0 && (
-            <div className="mb-4">
-              {getWithdrawalAddresses.data
-                .filter((address: WithdrawalAddress) => address.chain === "BSC")
-                .map((address: WithdrawalAddress) => (
-                  <div
-                    key={address.id}
-                    className={`bg-[#1D1D23] border rounded-xl p-4 ${
-                      selectedBscAddress === address.address
-                        ? "border-[#1D8751] bg-[#1D8751]/10"
-                        : "border-[#39394a]"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-white font-medium">
-                        BSC Address{" "}
-                        {selectedBscAddress === address.address && "(Selected)"}
-                      </span>
-                      <div className="flex gap-2">
-                        {selectedBscAddress !== address.address && (
-                          <button
-                            onClick={() => {
-                              setSelectedBscAddress(address.address);
-                              setWalletAddress(address.address);
-                            }}
-                            className="bg-[#1D8751] text-white px-3 py-1 rounded-lg text-sm hover:bg-[#166b3e] transition-colors"
-                          >
-                            Select
-                          </button>
-                        )}
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(address.address);
-                            showToast.success(
-                              "BSC address copied to clipboard!"
-                            );
-                          }}
-                          className="bg-[#39394a] text-white px-3 py-1 rounded-lg text-sm hover:bg-[#4a4a5a] transition-colors"
-                        >
-                          Copy
-                        </button>
-                      </div>
-                    </div>
-                    <p className="text-[#788099] text-sm font-mono break-all">
-                      {address.address}
-                    </p>
-                  </div>
-                ))}
+          {payBank && (
+            <div className="mt-6">
+              <UserPaymentSelector
+                userPaymentDetails={filteredUserPaymentDetails}
+                onSelect={handleSelectPaymentDetail}
+                onRemove={handleRemovePaymentDetail}
+                selectedDetails={selectedPaymentDetails}
+              />
             </div>
           )}
 
-        {/* Terms and Conditions Summary */}
-        <div className="flex items-center mb-2">
-          <span className="mr-2 text-[#1D8751]">
-            <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10" stroke="#1D8751" strokeWidth="2" />
-              <line
-                x1="12"
-                y1="8"
-                x2="12"
-                y2="12"
-                stroke="#1D8751"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-              <circle cx="12" cy="16" r="1" fill="#1D8751" />
-            </svg>
-          </span>
-          <span className="text-base font-semibold text-[#7e7e8f]">
-            Terms and Conditions Summary
-          </span>
-        </div>
-        <div className="bg-[#23232b] border border-[#1D8751] rounded-xl p-4">
-          <ul className="list-none space-y-2">
-            <li className="flex items-start">
-              <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-              <span className="text-white text-sm">
-                Please send the money from your own account Only
-              </span>
-            </li>
-            <li className="flex items-start">
-              <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-              <span className="text-white text-sm">
-                Put transaction ID in the description field of the bank
-              </span>
-            </li>
-            <li className="flex items-start">
-              <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-              <span className="text-white text-sm">
-                Please note, If you do not follow above conditions, we will
-                reject your transaction and send you back your money.
-              </span>
-            </li>
-          </ul>
+          {paymentError && (
+            <p className="text-red-500 text-sm mt-1">{paymentError}</p>
+          )}
         </div>
       </div>
 
-      {/* Validation Errors Display */}
-      {validationErrors.length > 0 && (
-        <div className="max-w-4xl mx-auto w-full px-2 mb-4">
-          <div className="bg-red-500/10 border border-red-500 rounded-2xl p-4">
-            <h3 className="text-red-500 font-semibold mb-2">
-              Please fix the following errors:
-            </h3>
-            <ul className="list-disc list-inside text-red-400 space-y-1">
-              {validationErrors.map((error, index) => (
-                <li key={index}>{error}</li>
-              ))}
-            </ul>
+      {/* Only show wallet address, terms, disclaimer, and submit button if payment details are selected */}
+      {selectedPaymentDetails.length > 0 && (
+        <div ref={walletSectionRef}>
+          <h2 className="text-xl font-bold  mb-2 text-[#788099]">
+            <span className="text-[#7e7e8f]">2-</span> Wallet Address
+          </h2>
+          <div className="flex flex-col bg-[#23232b] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full max-w-4xl mx-auto text-white mb-6">
+            {/* Wallet/Account Address Label */}
+            <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+              Wallet/Account Address
+            </label>
+
+            {/* BSC Address Display */}
+            {getWithdrawalAddresses?.data &&
+              getWithdrawalAddresses.data.length > 0 && (
+                <div className="mb-4">
+                  {getWithdrawalAddresses.data
+                    .filter(
+                      (address: WithdrawalAddress) => address.chain === "BSC"
+                    )
+                    .map((address: WithdrawalAddress) => (
+                      <div
+                        key={address.id}
+                        className={`bg-[#1D1D23] border rounded-xl p-4 ${
+                          selectedBscAddress === address.address
+                            ? "border-[#1D8751] bg-[#1D8751]/10"
+                            : "border-[#39394a]"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-white font-medium">
+                            BSC Address{" "}
+                            {selectedBscAddress === address.address &&
+                              "(Selected)"}
+                          </span>
+                          <div className="flex gap-2">
+                            {selectedBscAddress !== address.address && (
+                              <button
+                                onClick={() => {
+                                  setSelectedBscAddress(address.address);
+                                  setWalletAddress(address.address);
+                                }}
+                                className="bg-[#1D8751] text-white px-3 py-1 rounded-lg text-sm hover:bg-[#166b3e] transition-colors"
+                              >
+                                Select
+                              </button>
+                            )}
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(address.address);
+                                showToast.success(
+                                  "BSC address copied to clipboard!"
+                                );
+                              }}
+                              className="bg-[#39394a] text-white px-3 py-1 rounded-lg text-sm hover:bg-[#4a4a5a] transition-colors"
+                            >
+                              Copy
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-[#788099] text-sm font-mono break-all">
+                          {address.address}
+                        </p>
+                      </div>
+                    ))}
+                </div>
+              )}
+
+            {/* Terms and Conditions Summary */}
+            <div className="flex items-center mb-2">
+              <span className="mr-2 text-[#1D8751]">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="#1D8751"
+                    strokeWidth="2"
+                  />
+                  <line
+                    x1="12"
+                    y1="8"
+                    x2="12"
+                    y2="12"
+                    stroke="#1D8751"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                  <circle cx="12" cy="16" r="1" fill="#1D8751" />
+                </svg>
+              </span>
+              <span className="text-base font-semibold text-[#7e7e8f]">
+                Terms and Conditions Summary
+              </span>
+            </div>
+            <div className="bg-[#23232b] border border-[#1D8751] rounded-xl p-4">
+              <ul className="list-none space-y-2">
+                <li className="flex items-start">
+                  <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                  <span className="text-white text-sm">
+                    Please send the money from your own account Only
+                  </span>
+                </li>
+                <li className="flex items-start">
+                  <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                  <span className="text-white text-sm">
+                    Put transaction ID in the description field of the bank
+                  </span>
+                </li>
+                <li className="flex items-start">
+                  <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                  <span className="text-white text-sm">
+                    Please note, If you do not follow above conditions, we will
+                    reject your transaction and send you back your money.
+                  </span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Validation Errors Display */}
+          {validationErrors.length > 0 && (
+            <div className="max-w-4xl mx-auto w-full px-2 mb-4">
+              <div className="bg-red-500/10 border border-red-500 rounded-2xl p-4">
+                <h3 className="text-red-500 font-semibold mb-2">
+                  Please fix the following errors:
+                </h3>
+                <ul className="list-disc list-inside text-red-400 space-y-1">
+                  {validationErrors.map((error, index) => (
+                    <li key={index}>{error}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* Disclaimer and Button outside the card */}
+          <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
+            <div className="flex items-center text-white text-[16px] font-semibold">
+              <FaExclamationCircle className="mr-2 text-red-500" />
+              <span>
+                This is only an estimated price based on current market rates.
+                The final price will be confirmed when we receive the funds.
+              </span>
+            </div>
+            <button
+              className={`w-full text-white text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
+                isSubmitting
+                  ? "bg-gray-500 cursor-not-allowed"
+                  : "bg-[#1D8751] hover:bg-[#166b3e]"
+              }`}
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <span>Submitting...</span>
+                </div>
+              ) : (
+                <span className="flex items-center justify-center">
+                  <img
+                    src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
+                    alt=""
+                  />
+                  <img
+                    className="mt-2"
+                    src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                    alt=""
+                  />
+                </span>
+              )}
+            </button>
           </div>
         </div>
       )}
-
-      {/* Disclaimer and Button outside the card */}
-      <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
-        <div className="flex items-center text-white text-[16px] font-semibold">
-          <FaExclamationCircle className="mr-2 text-red-500" />
-          <span>
-            This is only an estimated price based on current market rates. The
-            final price will be confirmed when we receive the funds.
-          </span>
-        </div>
-        <button
-          className={`w-full text-white text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
-            isSubmitting
-              ? "bg-gray-500 cursor-not-allowed"
-              : "bg-[#1D8751] hover:bg-[#166b3e]"
-          }`}
-          onClick={handleSubmit}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <div className="flex items-center gap-2">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              <span>Submitting...</span>
-            </div>
-          ) : (
-            <span className="flex items-center justify-center">
-              <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
-                alt=""
-              />
-              <img
-                className="mt-2"
-                src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                alt=""
-              />
-            </span>
-          )}
-        </button>
-      </div>
     </div>
   );
 }

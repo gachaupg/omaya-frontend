@@ -10,6 +10,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { toast } from "sonner";
 import EditAdModal from "./EditAdModal";
 import { formatDate, formatNumber } from "@/utils/formatters";
+import { NoDataFound } from "@/components/dashboard/ui/Transactions";
 
 const columns = [
   "Asset",
@@ -164,6 +165,18 @@ const MyAdsTable = ({
       }
     }
   };
+
+  // Add check for empty trades
+  if (!trades || trades.length === 0) {
+    return (
+      <div className="w-full min-h-[600px] bg-[#23232b] rounded-2xl p-4 text-white">
+        <NoDataFound
+          title="No Ads Found"
+          message="You haven't created any ads yet. Create your first ad to start trading."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full min-h-[600px] bg-[#23232b] rounded-2xl p-4 text-white">

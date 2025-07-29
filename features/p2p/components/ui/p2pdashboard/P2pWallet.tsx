@@ -63,7 +63,7 @@ const P2pWallet = ({
   return (
     <div>
       <p
-        className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}] mb-2`}
+        className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}] mb-1`}
       >
         P2P Balance
       </p>
@@ -74,33 +74,33 @@ const P2pWallet = ({
         borderRadius="rounded-[24px]"
         className="p-0 mb-2 shadow-none"
       >
-        <div className="flex flex-col gap-3 py-3 px-4">
-          <p
-            className={`text-sm font-medium opacity-70 text-[${tokens.colors.dark.textBody}] mb-1`}
-          >
-            Balance
-          </p>
-
+        <div className="flex flex-col gap-3 pl-4 py-2 px-2">
           <div className="flex flex-wrap justify-between items-center w-full">
-            <div className="flex flex-wrap items-baseline gap-2">
-              <span
-                className={`text-lg font-bold text-[${tokens.colors.dark.textTitle}]`}
+            <div className="flex flex-col gap-2">
+              <p
+                className={`text-sm font-medium opacity-70 text-[${tokens.colors.dark.textBody}] `}
               >
-                {`${formatBalance(balance, true)} USDT`}
-              </span>
-              <span
-                className={`text-base font-semibold text-[${tokens.colors.dark.textBody}] opacity-80 flex items-center`}
-              >
-                <span className="mx-1 opacity-50 text-lg">≈</span>
-                {loading ? "..." : formatBalance(usdValue)}
-              </span>
+                Balance
+              </p>
+              <div className="flex flex-wrap items-baseline gap-2">
+                <span
+                  className={`text-lg font-bold text-[${tokens.colors.dark.textTitle}]`}
+                >
+                  {`${formatBalance(balance, true)} USDT`}
+                </span>
+                <span
+                  className={`text-base font-semibold text-[${tokens.colors.dark.textBody}] opacity-80 flex items-center`}
+                >
+                  <span className="mx-1 opacity-50 text-lg">≈</span>
+                  {loading ? "..." : formatBalance(usdValue)}
+                </span>
+              </div>
             </div>
-
             <div className="flex gap-3">
               <Button
                 onClick={() => setIsOpenForm("deposit")}
                 width={120}
-                height={40}
+                height={35}
                 borderRadius={24}
                 variant={isOpenForm === "deposit" ? "primary" : "outline"}
                 borderColor={tokens.colors.brand.primary}

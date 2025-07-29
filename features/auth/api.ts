@@ -14,4 +14,6 @@ export const API_ENDPOINTS = {
   KYC_VERIFY: "/api/kyc/verify/",
   SUMSUB_INITIATE: "/api/sumsub/initiate/",
   SUMSUB_TOKEN: "/api/sumsub/token/",
+  ENABLE_2FA: "/api/2fa/enable/",
+  VERIFY_2FA_SETUP: "/api/2fa/verify-setup/",
 };

@@ -88,186 +88,212 @@ const PasswordSection: React.FC = () => {
   };
 
   return (
-    <section className="bg-[#18181D] rounded-xl border border-[#35353E] p-3 shadow-lg">
-      <div className="text-base font-semibold text-white mb-2">Password</div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
-        <div>
-          <label className="block text-xs text-[#fff] mb-1">
-            Current Password*
-          </label>
-          <div className="flex items-center bg-[#23232B] rounded-lg px-3 py-2 border border-[#35353E]">
-            <svg
-              width="16"
-              height="16"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="#1D8751"
-            >
-              <rect x="3" y="11" width="18" height="8" rx="4" strokeWidth="2" />
-              <path d="M7 11V7a5 5 0 0110 0v4" strokeWidth="2" />
-            </svg>
-            <input
-              type={showPasswords.current ? "text" : "password"}
-              className="bg-transparent flex-1 ml-2 outline-none text-sm text-white"
-              placeholder="Enter current password"
-              value={formData.current_password}
-              onChange={(e) =>
-                handleInputChange("current_password", e.target.value)
-              }
-            />
-            <button
-              type="button"
-              onClick={() => togglePasswordVisibility("current")}
-              className="text-[#788099] hover:text-white transition-colors"
-            >
-              <svg
-                width="16"
-                height="16"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                {showPasswords.current ? (
-                  <path
-                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"
-                    strokeWidth="2"
-                  />
-                ) : (
-                  <path
-                    d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"
-                    strokeWidth="2"
-                  />
-                )}
-              </svg>
-            </button>
-          </div>
-          {errors.current_password && (
-            <div className="text-red-500 text-xs mt-1">
-              {errors.current_password}
-            </div>
-          )}
-        </div>
-        <div>
-          <label className="block text-xs text-[#fff] mb-1">
-            New Password*
-          </label>
-          <div className="flex items-center bg-[#23232B] rounded-lg px-3 py-2 border border-[#35353E]">
-            <svg
-              width="16"
-              height="16"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="#1D8751"
-            >
-              <rect x="3" y="11" width="18" height="8" rx="4" strokeWidth="2" />
-              <path d="M7 11V7a5 5 0 0110 0v4" strokeWidth="2" />
-            </svg>
-            <input
-              type={showPasswords.new ? "text" : "password"}
-              className="bg-transparent flex-1 ml-2 outline-none text-sm text-white"
-              placeholder="Enter new password"
-              value={formData.new_password}
-              onChange={(e) =>
-                handleInputChange("new_password", e.target.value)
-              }
-            />
-            <button
-              type="button"
-              onClick={() => togglePasswordVisibility("new")}
-              className="text-[#788099] hover:text-white transition-colors"
-            >
-              <svg
-                width="16"
-                height="16"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                {showPasswords.new ? (
-                  <path
-                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"
-                    strokeWidth="2"
-                  />
-                ) : (
-                  <path
-                    d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"
-                    strokeWidth="2"
-                  />
-                )}
-              </svg>
-            </button>
-          </div>
-          {errors.new_password && (
-            <div className="text-red-500 text-xs mt-1">
-              {errors.new_password}
-            </div>
-          )}
-        </div>
-        <div className="md:col-span-2">
-          <label className="block text-xs text-[#fff] mb-1">
-            Confirm New Password*
-          </label>
-          <div className="flex items-center bg-[#23232B] rounded-lg px-3 py-2 border border-[#35353E]">
-            <svg
-              width="16"
-              height="16"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="#1D8751"
-            >
-              <rect x="3" y="11" width="18" height="8" rx="4" strokeWidth="2" />
-              <path d="M7 11V7a5 5 0 0110 0v4" strokeWidth="2" />
-            </svg>
-            <input
-              type={showPasswords.confirm ? "text" : "password"}
-              className="bg-transparent flex-1 ml-2 outline-none text-sm text-white"
-              placeholder="Confirm new password"
-              value={formData.confirm_password}
-              onChange={(e) =>
-                handleInputChange("confirm_password", e.target.value)
-              }
-            />
-            <button
-              type="button"
-              onClick={() => togglePasswordVisibility("confirm")}
-              className="text-[#788099] hover:text-white transition-colors"
-            >
-              <svg
-                width="16"
-                height="16"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                {showPasswords.confirm ? (
-                  <path
-                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"
-                    strokeWidth="2"
-                  />
-                ) : (
-                  <path
-                    d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"
-                    strokeWidth="2"
-                  />
-                )}
-              </svg>
-            </button>
-          </div>
-          {errors.confirm_password && (
-            <div className="text-red-500 text-xs mt-1">
-              {errors.confirm_password}
-            </div>
-          )}
-        </div>
+    <>
+      <div className="text-base font-semibold text-[#788099] mb-2">
+        3-Password
       </div>
-      <button
-        className="w-full py-1.5 rounded-lg border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-        onClick={handleSubmit}
-        disabled={updating}
-      >
-        {updating ? "Updating..." : "Update Password"}
-      </button>
-    </section>
+
+      <section className="bg-[#1D1D23] rounded-xl border-2 border-[#35353E] p-3 shadow-lg">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+          <div>
+            <label className="block text-xs text-[#fff] mb-1">
+              Current Password*
+            </label>
+            <div className="flex items-center bg-[#23232B] rounded-lg px-3 py-2 border border-[#35353E]">
+              <svg
+                width="16"
+                height="16"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="#1D8751"
+              >
+                <rect
+                  x="3"
+                  y="11"
+                  width="18"
+                  height="8"
+                  rx="4"
+                  strokeWidth="2"
+                />
+                <path d="M7 11V7a5 5 0 0110 0v4" strokeWidth="2" />
+              </svg>
+              <input
+                type={showPasswords.current ? "text" : "password"}
+                className="bg-transparent flex-1 ml-2 outline-none text-sm text-white"
+                placeholder="Enter current password"
+                value={formData.current_password}
+                onChange={(e) =>
+                  handleInputChange("current_password", e.target.value)
+                }
+              />
+              <button
+                type="button"
+                onClick={() => togglePasswordVisibility("current")}
+                className="text-[#788099] hover:text-white transition-colors"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  {showPasswords.current ? (
+                    <path
+                      d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"
+                      strokeWidth="2"
+                    />
+                  ) : (
+                    <path
+                      d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"
+                      strokeWidth="2"
+                    />
+                  )}
+                </svg>
+              </button>
+            </div>
+            {errors.current_password && (
+              <div className="text-red-500 text-xs mt-1">
+                {errors.current_password}
+              </div>
+            )}
+          </div>
+          <div>
+            <label className="block text-xs text-[#fff] mb-1">
+              New Password*
+            </label>
+            <div className="flex items-center bg-[#23232B] rounded-lg px-3 py-2 border border-[#35353E]">
+              <svg
+                width="16"
+                height="16"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="#1D8751"
+              >
+                <rect
+                  x="3"
+                  y="11"
+                  width="18"
+                  height="8"
+                  rx="4"
+                  strokeWidth="2"
+                />
+                <path d="M7 11V7a5 5 0 0110 0v4" strokeWidth="2" />
+              </svg>
+              <input
+                type={showPasswords.new ? "text" : "password"}
+                className="bg-transparent flex-1 ml-2 outline-none text-sm text-white"
+                placeholder="Enter new password"
+                value={formData.new_password}
+                onChange={(e) =>
+                  handleInputChange("new_password", e.target.value)
+                }
+              />
+              <button
+                type="button"
+                onClick={() => togglePasswordVisibility("new")}
+                className="text-[#788099] hover:text-white transition-colors"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  {showPasswords.new ? (
+                    <path
+                      d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"
+                      strokeWidth="2"
+                    />
+                  ) : (
+                    <path
+                      d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"
+                      strokeWidth="2"
+                    />
+                  )}
+                </svg>
+              </button>
+            </div>
+            {errors.new_password && (
+              <div className="text-red-500 text-xs mt-1">
+                {errors.new_password}
+              </div>
+            )}
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-xs text-[#fff] mb-1">
+              Confirm New Password*
+            </label>
+            <div className="flex items-center bg-[#23232B] rounded-lg px-3 py-2 border border-[#35353E]">
+              <svg
+                width="16"
+                height="16"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="#1D8751"
+              >
+                <rect
+                  x="3"
+                  y="11"
+                  width="18"
+                  height="8"
+                  rx="4"
+                  strokeWidth="2"
+                />
+                <path d="M7 11V7a5 5 0 0110 0v4" strokeWidth="2" />
+              </svg>
+              <input
+                type={showPasswords.confirm ? "text" : "password"}
+                className="bg-transparent flex-1 ml-2 outline-none text-sm text-white"
+                placeholder="Confirm new password"
+                value={formData.confirm_password}
+                onChange={(e) =>
+                  handleInputChange("confirm_password", e.target.value)
+                }
+              />
+              <button
+                type="button"
+                onClick={() => togglePasswordVisibility("confirm")}
+                className="text-[#788099] hover:text-white transition-colors"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  {showPasswords.confirm ? (
+                    <path
+                      d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"
+                      strokeWidth="2"
+                    />
+                  ) : (
+                    <path
+                      d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"
+                      strokeWidth="2"
+                    />
+                  )}
+                </svg>
+              </button>
+            </div>
+            {errors.confirm_password && (
+              <div className="text-red-500 text-xs mt-1">
+                {errors.confirm_password}
+              </div>
+            )}
+          </div>
+        </div>
+        <button
+          className="w-full py-1.5 rounded-lg border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={handleSubmit}
+          disabled={updating}
+        >
+          {updating ? "Updating..." : "Update Password"}
+        </button>
+      </section>
+    </>
   );
 };
 

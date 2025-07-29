@@ -9,12 +9,14 @@ interface ReferralWalletState {
   data: ReferralWallet | null;
   loading: boolean;
   error: string | null;
+  success: boolean;
 }
 
 const initialState: ReferralWalletState = {
   data: null,
   loading: false,
   error: null,
+  success: false,
 };
 
 export const fetchReferralWallet = createAsyncThunk(
@@ -52,12 +54,20 @@ export const createReferralWithdraw = createAsyncThunk(
 const referralWalletSlice = createSlice({
   name: "referralWallet",
   initialState,
-  reducers: {},
+  reducers: {
+    clearSuccess: (state) => {
+      state.success = false;
+    },
+    clearError: (state) => {
+      state.error = null;
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchReferralWallet.pending, (state) => {
         state.loading = true;
         state.error = null;
+        state.success = false;
       })
       .addCase(fetchReferralWallet.fulfilled, (state, action) => {
         state.loading = false;
@@ -66,13 +76,16 @@ const referralWalletSlice = createSlice({
       .addCase(fetchReferralWallet.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || "Failed to fetch referral wallet";
+        state.success = false;
       })
       .addCase(createReferralWithdraw.pending, (state) => {
         state.loading = true;
         state.error = null;
+        state.success = false;
       })
       .addCase(createReferralWithdraw.fulfilled, (state, action) => {
         state.loading = false;
+        state.success = true;
         // Optionally update state.data if API returns updated wallet
       })
       .addCase(createReferralWithdraw.rejected, (state, action) => {
@@ -80,8 +93,11 @@ const referralWalletSlice = createSlice({
         state.error =
           (action.payload as string) ||
           "Failed to withdraw from referral wallet";
+        state.success = false;
       });
   },
 });
+
+export const { clearSuccess, clearError } = referralWalletSlice.actions;
 
 export default referralWalletSlice.reducer;

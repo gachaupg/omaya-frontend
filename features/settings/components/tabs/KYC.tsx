@@ -43,6 +43,7 @@ const KYC = () => {
   return (
     <div className="p-3 dark:text-white text-[#0D0D0D] flex flex-col gap-2">
       <p className="text-base font-semibold">KYC Verification</p>
+      <div className="flex flex-col border-2 bg-[#1D1D23] border-[#35353E] rounded-xl p-3 gap-3">
       <div className="flex flex-col border dark:bg-[#18181D] bg-[#F5F5F5] dark:border-[#35353E] border-gray-300 rounded-xl p-3 gap-3">
         {/* Avatar, Name, and Status */}
         {/* KYC Info */}
@@ -55,6 +56,40 @@ const KYC = () => {
           fugiat ea quia voluptas.
         </p>
         <div className="flex items-center gap-3">
+          <div
+            className="relative"
+            onClick={handleImageClick}
+            style={{ cursor: "pointer" }}
+          >
+            {!profileImage || profileImage === DEFAULT_AVATAR ? (
+              // Simple SVG avatar icon
+              <svg
+                width="48"
+                height="48"
+                viewBox="0 0 48 48"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="rounded-full bg-[#35353E]"
+              >
+                <circle cx="24" cy="24" r="24" fill="#35353E" />
+                <circle cx="24" cy="20" r="8" fill="#808080" />
+                <ellipse cx="24" cy="36" rx="12" ry="8" fill="#808080" />
+              </svg>
+            ) : (
+              <Image
+                src={profileImage}
+                alt="User avatar"
+                width={48}
+                height={48}
+                className="object-cover rounded-full"
+                unoptimized={true}
+                onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+                  const target = e.currentTarget;
+                  target.onerror = null;
+                  target.src = DEFAULT_AVATAR;
+                }}
+              />
+            )}
           <div className="relative">
             <Image
               src={profileImage}

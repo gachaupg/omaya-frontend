@@ -9,6 +9,7 @@ import {
 import { TransactionType } from "@/features/p2p/types";
 // TODO: If not installed, run: npm install date-fns
 import { formatDistanceToNow } from "date-fns";
+import { NoDataFound } from "../ui/Transactions";
 
 const COIN_ICONS: Record<string, string> = {
   USDT: "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png",
@@ -78,6 +79,15 @@ const P2PTransactions = () => {
     };
   });
 
+  if (!paginatedData.length) {
+    return (
+      <NoDataFound
+        title="No P2P Transactions Found"
+        message="There are currently no P2P transactions to display. Please check back later or try adjusting your filters."
+      />
+    );
+  }
+
   return (
     <div className="w-full h-full dark:bg-[#23232b] bg-[#F5F5F5] rounded-2xl p-6">
       <div className="overflow-x-auto">
@@ -104,7 +114,7 @@ const P2PTransactions = () => {
                   {error}
                 </td>
               </tr>
-            ) : paginatedData.length === 0 ? (
+            ) : transformedData.length === 0 ? (
               <tr>
                 <td colSpan={5} className="text-center py-8 dark:text-white">
                   No transactions found.

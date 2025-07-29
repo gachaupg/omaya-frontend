@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { FaExchangeAlt, FaExclamationCircle } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../../../store";
@@ -18,9 +18,15 @@ interface DepositFormProps {
     walletAddress: string;
     network: any;
   }) => void;
+  mode: "deposit" | "withdrawal";
+  onModeChange?: (mode: "deposit" | "withdrawal") => void;
 }
 
-export default function DepositForm({ onExchange }: DepositFormProps) {
+export default function DepositForm({
+  onExchange,
+  mode,
+  onModeChange,
+}: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const { adminPaymentDetails, loading, error } = useSelector(
     (state: any) => state.payment
@@ -40,6 +46,16 @@ export default function DepositForm({ onExchange }: DepositFormProps) {
   const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  // Add transaction code state
+  const [transactionCode, setTransactionCode] = useState<string>("");
+  const paymentDetailsRef = useRef<HTMLDivElement>(null);
+
+  // Generate transaction code on mount
+  useEffect(() => {
+    // Generate a random 6-digit code
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    setTransactionCode(code);
+  }, []);
 
   useEffect(() => {
     dispatch(fetchAdminPaymentDetails())
@@ -196,8 +212,20 @@ export default function DepositForm({ onExchange }: DepositFormProps) {
     }
   };
 
+  useEffect(() => {
+    if (selectedPaymentDetail && paymentDetailsRef.current) {
+      paymentDetailsRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      setTimeout(() => {
+        window.scrollBy({ top: -80, left: 0, behavior: "smooth" });
+      }, 400);
+    }
+  }, [selectedPaymentDetail]);
+
   return (
-    <div className="w-full min-h-screen flex flex-col justify-center bg-[#18181f]">
+    <div className="w-full min-h-screen flex flex-col justify- bg-[#18181f]">
       <h2 className="text-xl font-bold  mb-2 text-[#788099]">
         <span className="text-[#7e7e8f]">1-</span> Transaction Info
       </h2>
@@ -224,33 +252,40 @@ export default function DepositForm({ onExchange }: DepositFormProps) {
               <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
                 Asset
               </label>
-              <select
-                value={selectedAsset?.asset_id || ""}
-                onChange={(e) => {
-                  const asset = assets?.assets?.find(
-                    (a: any) => a.asset_id === e.target.value
-                  );
-                  setSelectedAsset(asset || null);
-                  // Auto-select BEP20 network when asset is selected
-                  if (asset && asset.networks) {
-                    const bep20Network = asset.networks.find(
-                      (n: any) => n.network_type === "BEP20"
+              <div className="relative">
+                <img
+                  src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                  alt="asset icon"
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 pointer-events-none"
+                />
+                <select
+                  value={selectedAsset?.asset_id || ""}
+                  onChange={(e) => {
+                    const asset = assets?.assets?.find(
+                      (a: any) => a.asset_id === e.target.value
                     );
-                    setSelectedNetwork(bep20Network || null);
-                  }
-                }}
-                disabled={assetsLoading}
-                className="w-full bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg text-white focus:outline-none border border-[#39394a] appearance-none disabled:opacity-50"
-              >
-                <option value="">
-                  {assetsLoading ? "Loading assets..." : "Select Asset"}
-                </option>
-                {assets?.assets?.map((asset: any) => (
-                  <option key={asset.asset_id} value={asset.asset_id}>
-                    {asset.symbol} - {asset.description}
+                    setSelectedAsset(asset || null);
+                    // Auto-select BEP20 network when asset is selected
+                    if (asset && asset.networks) {
+                      const bep20Network = asset.networks.find(
+                        (n: any) => n.network_type === "BEP20"
+                      );
+                      setSelectedNetwork(bep20Network || null);
+                    }
+                  }}
+                  disabled={assetsLoading}
+                  className="w-full bg-[#1D1D23] rounded-2xl px-9 py-2 text-lg text-white focus:outline-none border border-[#39394a] appearance-none disabled:opacity-50"
+                >
+                  <option value="">
+                    {assetsLoading ? "Loading assets..." : "Select Asset"}
                   </option>
-                ))}
-              </select>
+                  {assets?.assets?.map((asset: any) => (
+                    <option key={asset.asset_id} value={asset.asset_id}>
+                      {asset.symbol} - {asset.description}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
           {/* Fee & Rate - Dynamic based on selected asset */}
@@ -267,18 +302,21 @@ export default function DepositForm({ onExchange }: DepositFormProps) {
                 {commissionAmount.toFixed(2)}
               </span>
             </div>
-            <span className="ml-auto flex items-center justify-center w-12 h-12 bg-[#23232b] rounded-2xl border border-[#39394a]">
-              <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1752243765/Vector_2_xauedx.png"
-                alt=""
-              />
-            </span>
+            <img
+              src="https://res.cloudinary.com/pitz/image/upload/v1752910494/swap_rgi057.png"
+              alt=""
+              style={{ cursor: "pointer" }}
+              onClick={() =>
+                onModeChange &&
+                onModeChange(mode === "deposit" ? "withdrawal" : "deposit")
+              }
+            />
           </div>
           {/* Second Row - You Get Amount and Bank/Payment Method */}
           <div className="flex flex-col md:flex-row gap-3 mb-2">
             <div className="flex-1">
               <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
-                You Get
+                You Recieve
               </label>
               <input
                 type="number"
@@ -295,345 +333,454 @@ export default function DepositForm({ onExchange }: DepositFormProps) {
               <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
                 Bank/Payment Method
               </label>
-              <select
-                value={payBank}
-                onChange={(e) => {
-                  const selectedPayment = adminPaymentDetails?.find(
-                    (payment: any) => payment.provider_name === e.target.value
-                  );
-                  setPayBank(e.target.value);
-                  setSelectedPaymentDetail(selectedPayment || null);
-                }}
-                disabled={loading}
-                className="w-full bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg text-white focus:outline-none border border-[#39394a] appearance-none disabled:opacity-50"
-              >
-                <option value="">
-                  {loading
-                    ? "Loading payment methods..."
-                    : "Select Payment Method"}
-                </option>
-                {adminPaymentDetails?.map((payment: any, index: number) => (
-                  <option key={index} value={payment.provider_name}>
-                    {payment.provider_name} - {payment.payment_method_type}
+              <div className="relative">
+                <img
+                  src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                  alt="bank icon"
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 pointer-events-none"
+                />
+                <select
+                  value={payBank}
+                  onChange={(e) => {
+                    const selectedPayment = adminPaymentDetails?.find(
+                      (payment: any) => payment.provider_name === e.target.value
+                    );
+                    setPayBank(e.target.value);
+                    setSelectedPaymentDetail(selectedPayment || null);
+                  }}
+                  disabled={loading}
+                  className="w-full bg-[#1D1D23] rounded-2xl px-9 py-2 text-lg text-white focus:outline-none border border-[#39394a] appearance-none disabled:opacity-50"
+                >
+                  <option value="">
+                    {loading
+                      ? "Loading payment methods..."
+                      : "Select Payment Method"}
                   </option>
-                ))}
-              </select>
+                  {adminPaymentDetails?.map((payment: any, index: number) => (
+                    <option key={index} value={payment.provider_name}>
+                      {payment.provider_name} - {payment.payment_method_type}
+                    </option>
+                  ))}
+                </select>
+              </div>
               {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Show account details when payment method is selected */}
-          {selectedPaymentDetail && (
-            <div className="mt-3 flex flex-row gap-3">
-              {/* Account Name Card */}
-              <div className="flex-1 flex items-center justify-between p-3 h-12 bg-[#1D1D23] rounded-xl border border-[#39394a]">
-                <div className="flex items-center gap-3">
-                  <span className="text-[#7e7e8f] text-sm font-medium">
-                    Account Name:
-                  </span>
-                  <span className="text-white text-sm font-medium">
-                    {selectedPaymentDetail.account_name}
+      {selectedPaymentDetail && (
+        <>
+          {/* Payment Details Card */}
+          <div
+            ref={paymentDetailsRef}
+            className="mt-1 mb-2 flex flex-col gap-3"
+          >
+            <h2 className="text-xl font-bold mb-2 text-[#788099]">
+              <span className="text-[#7e7e8f]">2-</span> Payment Details
+            </h2>
+            <div className="flex-1 bg-[#1D1D23] rounded-2xl border border-[#39394a] flex flex-col justify-between p-5 relative min-h-[120px]">
+              {/* Bank and logo */}
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-[#7e7e8f] text-base font-semibold">
+                  Bank:
+                </span>
+                <div className="flex items-center gap-2">
+                  <img
+                    src={
+                      selectedPaymentDetail.logo ||
+                      "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                    }
+                    alt="Bank Logo"
+                    className="w-8 h-8 rounded-full object-contain"
+                  />
+                  <span className="text-white text-base font-semibold">
+                    {selectedPaymentDetail.provider_name}
                   </span>
                 </div>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(
-                      selectedPaymentDetail.account_name
-                    );
-                    showToast.success("copied!");
-                  }}
-                  className="text-[#1D8751] hover:text-white transition-colors p-1 rounded"
-                >
-                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                    <path
-                      d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <rect
-                      x="8"
-                      y="2"
-                      width="8"
-                      height="4"
-                      rx="1"
-                      ry="1"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
               </div>
-
-              {/* Account Number Card */}
-              <div className="flex-1 flex items-center justify-between p-3 h-12 bg-[#1D1D23] rounded-xl border border-[#39394a]">
-                <div className="flex items-center gap-3">
-                  <span className="text-[#7e7e8f] text-sm font-medium">
-                    Account Number:
-                  </span>
-                  <span className="text-white text-sm font-medium">
+              <div className="border-t border-dashed border-[#39394a] mb-2"></div>
+              {/* Account Name */}
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[#7e7e8f] text-base font-medium">
+                  Account Name :
+                </span>
+                <span className="text-white text-base font-medium">
+                  {selectedPaymentDetail.account_name}
+                </span>
+              </div>
+              <div className="border-t border-dashed border-[#39394a] mb-2"></div>
+              {/* Account Number */}
+              <div className="flex items-center justify-between">
+                <span className="text-[#7e7e8f] text-base font-medium">
+                  Account Number :
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-white text-base font-medium">
                     {selectedPaymentDetail.account_number}
                   </span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(
+                        selectedPaymentDetail.account_number
+                      );
+                      showToast.success("copied!");
+                    }}
+                    className="text-[#F79330] hover:text-white transition-colors p-1 rounded"
+                    title="Copy Account Number"
+                  >
+                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                      <rect
+                        x="9"
+                        y="9"
+                        width="13"
+                        height="13"
+                        rx="2"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                      <rect
+                        x="3"
+                        y="3"
+                        width="13"
+                        height="13"
+                        rx="2"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                    </svg>
+                  </button>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* All sections below are only shown after payment method is selected */}
+          {/* Transaction Code Card - below Payment Details, before Wallet Address */}
+          <div className="mb-6 flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
+            <h2 className="text-xl font-bold mb-2 text-[#788099]">
+              <span className="text-[#7e7e8f]">3-</span> Transaction Code
+            </h2>
+            <div className="bg-[#23232b] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full text-white">
+              {/* Transaction Code Row */}
+              <div className="flex items-center justify-center gap-2 mb-4">
+                {/* Example transaction code, replace with real code if available */}
+                {[...transactionCode].map((digit, idx) => (
+                  <span
+                    key={idx}
+                    className="bg-[#1D1D23] rounded-lg px-4 py-2 text-2xl font-bold border border-[#39394a] tracking-widest"
+                  >
+                    {digit}
+                  </span>
+                ))}
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText(
-                      selectedPaymentDetail.account_number
-                    );
-                    showToast.success("copied!");
+                    navigator.clipboard.writeText(transactionCode);
+                    showToast.success("Transaction code copied!");
                   }}
-                  className="text-[#1D8751] hover:text-white transition-colors p-1 rounded"
+                  className="flex items-center gap-1 bg-[#23232b] border border-[#1D8751] text-[#1D8751] rounded-full px-4 py-1 ml-2 font-semibold text-base hover:bg-[#1D8751] hover:text-white transition-colors"
                 >
-                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                    <path
-                      d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"
+                  <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                    <rect
+                      x="9"
+                      y="9"
+                      width="13"
+                      height="13"
+                      rx="2"
                       stroke="currentColor"
                       strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
                     />
                     <rect
-                      x="8"
-                      y="2"
-                      width="8"
-                      height="4"
-                      rx="1"
-                      ry="1"
+                      x="3"
+                      y="3"
+                      width="13"
+                      height="13"
+                      rx="2"
                       stroke="currentColor"
                       strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
                     />
                   </svg>
+                  Copy
                 </button>
+              </div>
+              {/* Note Section */}
+              <div className="flex flex-col gap-2 mt-2">
+                <div className="flex items-center mb-2">
+                  <span className="mr-2 text-[#1D8751]">
+                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="#1D8751"
+                        strokeWidth="2"
+                      />
+                      <line
+                        x1="12"
+                        y1="8"
+                        x2="12"
+                        y2="12"
+                        stroke="#1D8751"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                      <circle cx="12" cy="16" r="1" fill="#1D8751" />
+                    </svg>
+                  </span>
+                  <span className="text-base font-semibold text-[#7e7e8f]">
+                    Note
+                  </span>
+                </div>
+                <div className="bg-[#23232b] border border-[#1D8751] rounded-xl p-4">
+                  <ul className="list-none space-y-2">
+                    <li className="flex items-start">
+                      <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                      <span className="text-white text-sm">
+                        Please write this Transaction Code in the bank message
+                        or note section.
+                      </span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                      <span className="text-white text-sm">
+                        This helps us process your payment quickly and
+                        accurately.
+                      </span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Wallet Address Section */}
+          <h2 className="text-xl font-bold  mb-2 text-[#788099]">
+            <span className="text-[#7e7e8f]">4-</span> Wallet Address
+          </h2>
+          <div className="flex flex-col bg-[#23232b] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full max-w-4xl mx-auto text-white mb-6">
+            {/* Wallet/Account Address Label */}
+            <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+              Wallet/Account Address
+            </label>
+            {/* Input group */}
+            <div className="flex items-center bg-[#23232b] border border-[#39394a] rounded-2xl px-4 py-2 mb-4">
+              {/* Left icon */}
+              <span className="mr-2 text-[#1D8751]">
+                <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
+                  <path
+                    d="M7 17v2a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"
+                    stroke="#1D8751"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <rect
+                    x="3"
+                    y="3"
+                    width="12"
+                    height="12"
+                    rx="2"
+                    stroke="#1D8751"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+              <input
+                type="text"
+                value={walletAddress}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setWalletAddress(value);
+
+                  // Validate immediately as user types
+                  if (value.trim() === "") {
+                    setWalletError(null);
+                  } else if (!selectedAsset) {
+                    setWalletError("Please select an asset first");
+                  } else {
+                    const validation = validateWalletAddress(value, "BEP20");
+
+                    if (!validation.isValid) {
+                      const errorMessage =
+                        validation.message || "Invalid wallet address format";
+                      setWalletError(errorMessage);
+                      setForceUpdate((prev) => prev + 1);
+                    } else {
+                      setWalletError(null);
+                      setForceUpdate((prev) => prev + 1);
+                    }
+                  }
+                }}
+                placeholder="Paste here your Crypto address"
+                className={`flex-1 bg-transparent border-none outline-none text-white placeholder-[#788099] text-base ${
+                  walletError
+                    ? "border-red-500"
+                    : walletAddress.trim() && !walletError
+                    ? "border-green-500"
+                    : ""
+                }`}
+              />
+              {/* Bookmark icon */}
+              <span className="mx-2 text-[#788099] cursor-pointer">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                  <path
+                    d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"
+                    stroke="#788099"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+              {/* Paste button */}
+              <button
+                onClick={async () => {
+                  try {
+                    const text = await navigator.clipboard.readText();
+                    setWalletAddress(text);
+                  } catch (err) {
+                    console.error("Failed to read clipboard:", err);
+                    showToast.error("Failed to paste from clipboard");
+                  }
+                }}
+                className="flex items-center gap-1 bg-[#23232b] border border-[#1D8751] text-[#1D8751] rounded-full px-4 py-1 ml-2 font-semibold text-base hover:bg-[#1D8751] hover:text-white transition-colors"
+              >
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                  <path
+                    d="M19 21H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4l2-2h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                Paste
+              </button>
+            </div>
+
+            {/* Show validation messages below the wallet address input */}
+            {walletError && (
+              <p className="text-red-500 text-sm mt-2 font-medium">
+                ❌ {walletError}
+              </p>
+            )}
+
+            {walletAddress.trim() && !walletError && selectedAsset && (
+              <p className="text-green-500 text-sm mt-2 font-medium">
+                ✅ Valid BEP20 address
+              </p>
+            )}
+
+            {/* Terms and Conditions Summary */}
+            <div className="flex items-center mb-2">
+              <span className="mr-2 text-[#1D8751]">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="#1D8751"
+                    strokeWidth="2"
+                  />
+                  <line
+                    x1="12"
+                    y1="8"
+                    x2="12"
+                    y2="12"
+                    stroke="#1D8751"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                  <circle cx="12" cy="16" r="1" fill="#1D8751" />
+                </svg>
+              </span>
+              <span className="text-base font-semibold text-[#7e7e8f]">
+                Terms and Conditions Summary
+              </span>
+            </div>
+            <div className="bg-[#23232b] border border-[#1D8751] rounded-xl p-4">
+              <ul className="list-none space-y-2">
+                <li className="flex items-start">
+                  <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                  <span className="text-white text-sm">
+                    Please send the money from your own account Only
+                  </span>
+                </li>
+                <li className="flex items-start">
+                  <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                  <span className="text-white text-sm">
+                    Put transaction ID in the description field of the bank
+                  </span>
+                </li>
+                <li className="flex items-start">
+                  <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                  <span className="text-white text-sm">
+                    Please note, If you do not follow above conditions, we will
+                    reject your transaction and send you back your money.
+                  </span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Validation Errors Display */}
+          {validationErrors.length > 0 && (
+            <div className="max-w-4xl mx-auto w-full px-2 mb-4">
+              <div className="bg-red-500/10 border border-red-500 rounded-2xl p-4">
+                <h3 className="text-red-500 font-semibold mb-2">
+                  Please fix the following errors:
+                </h3>
+                <ul className="list-disc list-inside text-red-400 space-y-1">
+                  {validationErrors.map((error, index) => (
+                    <li key={index}>{error}</li>
+                  ))}
+                </ul>
               </div>
             </div>
           )}
-        </div>
-      </div>
 
-      <h2 className="text-xl font-bold  mb-2 text-[#788099]">
-        <span className="text-[#7e7e8f]">2-</span> Wallet Address
-      </h2>
-      <div className="flex flex-col bg-[#23232b] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full max-w-4xl mx-auto text-white mb-6">
-        {/* Wallet/Account Address Label */}
-        <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
-          Wallet/Account Address
-        </label>
-        {/* Input group */}
-        <div className="flex items-center bg-[#23232b] border border-[#39394a] rounded-2xl px-4 py-2 mb-4">
-          {/* Left icon */}
-          <span className="mr-2 text-[#1D8751]">
-            <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
-              <path
-                d="M7 17v2a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"
-                stroke="#1D8751"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <rect
-                x="3"
-                y="3"
-                width="12"
-                height="12"
-                rx="2"
-                stroke="#1D8751"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </span>
-          <input
-            type="text"
-            value={walletAddress}
-            onChange={(e) => {
-              const value = e.target.value;
-              setWalletAddress(value);
-
-              // Validate immediately as user types
-              if (value.trim() === "") {
-                setWalletError(null);
-              } else if (!selectedAsset) {
-                setWalletError("Please select an asset first");
-              } else {
-                const validation = validateWalletAddress(value, "BEP20");
-
-                if (!validation.isValid) {
-                  const errorMessage =
-                    validation.message || "Invalid wallet address format";
-                  setWalletError(errorMessage);
-                  setForceUpdate((prev) => prev + 1);
-                } else {
-                  setWalletError(null);
-                  setForceUpdate((prev) => prev + 1);
-                }
-              }
-            }}
-            placeholder="Paste here your Crypto address"
-            className={`flex-1 bg-transparent border-none outline-none text-white placeholder-[#788099] text-base ${
-              walletError
-                ? "border-red-500"
-                : walletAddress.trim() && !walletError
-                ? "border-green-500"
-                : ""
-            }`}
-          />
-          {/* Bookmark icon */}
-          <span className="mx-2 text-[#788099] cursor-pointer">
-            <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-              <path
-                d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"
-                stroke="#788099"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </span>
-          {/* Paste button */}
-          <button
-            onClick={async () => {
-              try {
-                const text = await navigator.clipboard.readText();
-                setWalletAddress(text);
-              } catch (err) {
-                console.error("Failed to read clipboard:", err);
-                showToast.error("Failed to paste from clipboard");
-              }
-            }}
-            className="flex items-center gap-1 bg-[#23232b] border border-[#1D8751] text-[#1D8751] rounded-full px-4 py-1 ml-2 font-semibold text-base hover:bg-[#1D8751] hover:text-white transition-colors"
-          >
-            <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
-              <path
-                d="M19 21H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4l2-2h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            Paste
-          </button>
-        </div>
-
-        {/* Show validation messages below the wallet address input */}
-        {walletError && (
-          <p className="text-red-500 text-sm mt-2 font-medium">
-            ❌ {walletError}
-          </p>
-        )}
-
-        {walletAddress.trim() && !walletError && selectedAsset && (
-          <p className="text-green-500 text-sm mt-2 font-medium">
-            ✅ Valid BEP20 address
-          </p>
-        )}
-
-        {/* Terms and Conditions Summary */}
-        <div className="flex items-center mb-2">
-          <span className="mr-2 text-[#1D8751]">
-            <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10" stroke="#1D8751" strokeWidth="2" />
-              <line
-                x1="12"
-                y1="8"
-                x2="12"
-                y2="12"
-                stroke="#1D8751"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-              <circle cx="12" cy="16" r="1" fill="#1D8751" />
-            </svg>
-          </span>
-          <span className="text-base font-semibold text-[#7e7e8f]">
-            Terms and Conditions Summary
-          </span>
-        </div>
-        <div className="bg-[#23232b] border border-[#1D8751] rounded-xl p-4">
-          <ul className="list-none space-y-2">
-            <li className="flex items-start">
-              <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-              <span className="text-white text-sm">
-                Please send the money from your own account Only
+          {/* Disclaimer and Button outside the card */}
+          <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
+            <div className="flex items-center text-white text-[16px] font-semibold">
+              <FaExclamationCircle className="mr-2 text-red-500" />
+              <span>
+                This is only an estimated price based on current market rates.
+                The final price will be confirmed when we receive the funds.
               </span>
-            </li>
-            <li className="flex items-start">
-              <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-              <span className="text-white text-sm">
-                Put transaction ID in the description field of the bank
-              </span>
-            </li>
-            <li className="flex items-start">
-              <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-              <span className="text-white text-sm">
-                Please note, If you do not follow above conditions, we will
-                reject your transaction and send you back your money.
-              </span>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      {/* Validation Errors Display */}
-      {validationErrors.length > 0 && (
-        <div className="max-w-4xl mx-auto w-full px-2 mb-4">
-          <div className="bg-red-500/10 border border-red-500 rounded-2xl p-4">
-            <h3 className="text-red-500 font-semibold mb-2">
-              Please fix the following errors:
-            </h3>
-            <ul className="list-disc list-inside text-red-400 space-y-1">
-              {validationErrors.map((error, index) => (
-                <li key={index}>{error}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
-
-      {/* Disclaimer and Button outside the card */}
-      <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
-        <div className="flex items-center text-white text-[16px] font-semibold">
-          <FaExclamationCircle className="mr-2 text-red-500" />
-          <span>
-            This is only an estimated price based on current market rates. The
-            final price will be confirmed when we receive the funds.
-          </span>
-        </div>
-        <button
-          className={`w-full text-white text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
-            isSubmitting
-              ? "bg-gray-500 cursor-not-allowed"
-              : "bg-[#1D8751] hover:bg-[#166b3e]"
-          }`}
-          onClick={handleSubmit}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <div className="flex items-center gap-2">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              <span>Submitting...</span>
             </div>
-          ) : (
-            <span className="flex items-center justify-center">
-              <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
-                alt=""
-              />
-              <img
-                className="mt-2"
-                src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                alt=""
-              />
-            </span>
-          )}
-        </button>
-      </div>
+            <button
+              className={`w-full text-white text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
+                isSubmitting
+                  ? "bg-gray-500 cursor-not-allowed"
+                  : "bg-[#1D8751] hover:bg-[#166b3e]"
+              }`}
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <span>Submitting...</span>
+                </div>
+              ) : (
+                <span className="flex items-center justify-center">
+                  <img
+                    src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
+                    alt=""
+                  />
+                  <img
+                    className="mt-2"
+                    src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                    alt=""
+                  />
+                </span>
+              )}
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

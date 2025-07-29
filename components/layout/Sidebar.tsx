@@ -29,6 +29,7 @@ export default function Sidebar() {
               return (
                 <li key={item.label}>
                   <Link
+                    prefetch={true}
                     href={item.href}
                     className={clsx(
                       "flex items-center px-6 py-3 rounded-lg text-base font-medium gap-4 transition",

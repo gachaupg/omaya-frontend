@@ -111,13 +111,15 @@ export const settingsApi = {
     enabled: boolean
   ): Promise<SecurityUpdateResponse> => {
     return withRetry(async () => {
-      const response = await apiClient.put(
-        `${SETTINGS_API_BASE}/security/2fa`,
-        {
-          enabled,
-        }
-      );
-      return response.data;
+      if (enabled) {
+        // Enable 2FA
+        const response = await apiClient.post("/api/2fa/enable/");
+        return response.data;
+      } else {
+        // Disable 2FA
+        const response = await apiClient.post("/api/2fa/disable/");
+        return response.data;
+      }
     });
   },
 

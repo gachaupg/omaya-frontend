@@ -1,19 +1,29 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Button from "@/components/ui/Button";
 import { useDispatch, useSelector } from "react-redux";
-import { createReferralWithdraw } from "@/features/settings/slices/referralWalletSlice";
+import {
+  createReferralWithdraw,
+  clearSuccess,
+} from "@/features/settings/slices/referralWalletSlice";
 import { AppDispatch } from "@/store/rootReducer";
 import { validateWithdrawalForm } from "@/features/p2p/components/ui/p2pdashboard/sections/validation";
+import { useRouter } from "next/navigation";
 
 const Withdraw = () => {
   const [walletAddress, setWalletAddress] = useState("");
   const [amount, setAmount] = useState("");
+  const [confirmAddress, setConfirmAddress] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const [errors, setErrors] = useState<{
     amount?: string;
     walletAddress?: string;
+    confirmAddress?: string;
   }>({});
   const dispatch = useDispatch<AppDispatch>();
-  const { loading, error } = useSelector((state: any) => state.referralWallet);
+  const router = useRouter();
+  const { loading, error, success } = useSelector(
+    (state: any) => state.referralWallet
+  );
 
   const handlePaste = async () => {
     try {
@@ -34,14 +44,26 @@ const Withdraw = () => {
       },
       "TRC20"
     );
-    const errorObj: { amount?: string; walletAddress?: string } = {};
+    const errorObj: {
+      amount?: string;
+      walletAddress?: string;
+      confirmAddress?: string;
+    } = {};
+
     validationErrors.forEach((err) => {
       if (err.field === "amount" || err.field === "walletAddress") {
         errorObj[err.field] = err.message;
       }
     });
+
+    // Validate wallet address confirmation
+    if (!confirmAddress) {
+      errorObj.confirmAddress =
+        "Please confirm that the wallet address is correct";
+    }
+
     setErrors(errorObj);
-    return validationErrors.length === 0;
+    return validationErrors.length === 0 && confirmAddress;
   };
 
   const handleWithdraw = (e: React.FormEvent) => {
@@ -55,6 +77,24 @@ const Withdraw = () => {
     );
   };
 
+  // Handle success and navigation
+  useEffect(() => {
+    if (success) {
+      setShowSuccess(true);
+      // Reset form
+      setAmount("");
+      setWalletAddress("");
+      setConfirmAddress(false);
+      setErrors({});
+
+      setTimeout(() => {
+        setShowSuccess(false);
+        dispatch(clearSuccess()); // Clear success state
+        router.back();
+      }, 2000);
+    }
+  }, [success, router, dispatch]);
+
   const commission = 0;
   const networkFee = 0;
   const totalFees = commission + networkFee;
@@ -62,9 +102,40 @@ const Withdraw = () => {
   const totalWithFees = Number(amount || 0) + totalFees;
 
   return (
+    <div className="min-h-screen text-white flex flex-col items-center">
+      {/* Success Message */}
+      {showSuccess && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-[#1D1D23] border border-[#1D8751] rounded-2xl p-8 max-w-md mx-4 text-center">
+            <div className="mb-4">
+              <svg
+                className="w-16 h-16 text-[#1D8751] mx-auto"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">
+              Withdrawal Successful!
+            </h3>
+            <p className="text-[#A3A3A3] mb-4">
+              Your withdrawal request has been submitted successfully.
+              Redirecting back...
+            </p>
+          </div>
+        </div>
+      )}
+
     <div className="min-h-screen dark:text-white text-[#0D0D0D] flex flex-col items-center">
       {/* Withdraw Form Card */}
-      <div className="w-full max-w-2xl rounded-2xl   p-6 shadow-lg">
+      <div className="w-full max-w-2xl rounded-2xl p-6 shadow-lg">
         <form onSubmit={handleWithdraw}>
           {/* Tabs for USDT TRC20 / Cash */}
           <div className="flex gap-2 mb-6 border border-[#EF4444] rounded-lg p-1 w-fit">
@@ -143,10 +214,13 @@ const Withdraw = () => {
                   Net Amount to Transfer
                 </div>
                 <button className="w-full bg-[#35353F] text-white font-bold text-[14px] rounded-[18px] px-2 py-2">
-                  Amount including Total Fees ${totalWithFees}
+                  Amount including Total Fees{" "}
+                  <span className="bg-[#1D8751] rounded-lg px-2 py-1 text-white text-12">
+                    ${totalWithFees}
+                  </span>
                 </button>
               </div>
-              <div className="flex-1 border border-[#35353F]  p-3 flex flex-col gap-1 text-sm">
+              <div className="flex-1 border rounded-lg border-[#35353F]  p-3 flex flex-col gap-1 text-sm">
                 <div className="flex justify-between">
                   <span className="text-[#A3A3A3]">Commission:</span>
                   <span className="text-[#1D8751]">$0</span>
@@ -161,13 +235,13 @@ const Withdraw = () => {
                 </div>
               </div>
             </div>
-            <div className="flex items-center text-[#FACC15] text-xs mb-1">
+            <div className="flex items-start text-[#FACC15] text-xs mb-1">
               <svg
                 width="16"
                 height="16"
                 fill="none"
                 viewBox="0 0 24 24"
-                className="mr-1"
+                className="mr-1 mt-0.5 flex-shrink-0"
               >
                 <circle
                   cx="12"
@@ -184,8 +258,10 @@ const Withdraw = () => {
                 />
                 <circle cx="12" cy="16" r="1" fill="#FACC15" />
               </svg>
-              Transactions are subject to commission, above is the information
-              on the commission rates
+              <span className="text-white">
+                Transactions are subject to commission, above is the information
+                on the commission rates
+              </span>
             </div>
           </div>
           {/* 2- Wallet Address */}
@@ -213,11 +289,23 @@ const Withdraw = () => {
                   Paste
                 </button>
               </div>
-              <div className="flex items-center text-[#FACC15] text-xs mb-2">
-                <input type="checkbox" className="mr-2 accent-[#1D8751]" />I
-                Confirm that the above submitted address is correct Address for
-                the Cryptocurrency i chose, and not other Crypto *
+              <div className="flex items-start text-[#FACC15] text-xs mb-2">
+                <input
+                  type="checkbox"
+                  className="mr-2 mt-1 accent-[#1D8751] flex-shrink-0"
+                  checked={confirmAddress}
+                  onChange={(e) => setConfirmAddress(e.target.checked)}
+                />
+                <span className="text-white">
+                  I confirm that the above submitted address is correct Address
+                  for the Cryptocurrency I chose, and not other Crypto *
+                </span>
               </div>
+              {errors.confirmAddress && (
+                <div className="text-red-500 text-xs mb-2">
+                  {errors.confirmAddress}
+                </div>
+              )}
               <div className="bg-[#18181B] border border-[#1D8751] rounded-xl p-4 mb-4">
                 <div className="flex items-center mb-2 text-[#1D8751] font-semibold text-base">
                   <svg
@@ -260,7 +348,7 @@ const Withdraw = () => {
               <Button
                 variant="primary"
                 size="lg"
-                className="w-full bg-[#EF4444] hover:bg-[#d32f2f] text-white font-semibold text-[14px] rounded-[18px] py-2 mt-2 flex items-center justify-center"
+                className="w-full bg-[#EF4444] hover:bg-[#d32f2f] text-white font-semibold text-[14px] rounded-[18px] py-3 mt-4 flex items-center justify-center transition-all duration-200 transform hover:scale-[1.02]"
                 type="submit"
                 disabled={loading}
               >
@@ -285,7 +373,7 @@ const Withdraw = () => {
                     />
                   </svg>
                 )}
-                Withdraw
+                {loading ? "Processing..." : "Withdraw"}
               </Button>
               {error && (
                 <div className="text-red-500 text-xs mt-2 text-center">

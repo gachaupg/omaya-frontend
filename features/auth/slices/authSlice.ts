@@ -193,6 +193,32 @@ export const getUserProfile = createAsyncThunk<ProfileResponse>(
   }
 );
 
+// Enable 2FA
+export const enable2FA = createAsyncThunk<any>(
+  "auth/enable2FA",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await post<any>(API_ENDPOINTS.ENABLE_2FA, {});
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
+// Verify 2FA setup
+export const verify2FASetup = createAsyncThunk<any, { code: string }>(
+  "auth/verify2FASetup",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const response = await post<any>(API_ENDPOINTS.VERIFY_2FA_SETUP, payload);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
 const authSlice = createSlice({
   name: "auth",
   initialState,

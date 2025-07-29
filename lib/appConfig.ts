@@ -1,5 +1,11 @@
 import { API_BASE_URL } from "@/config/api";
 
+function getWebSocketBaseUrl() {
+  if (API_BASE_URL.startsWith("https")) {
+    return API_BASE_URL.replace(/^https/, "wss");
+  }
+  return API_BASE_URL.replace(/^http/, "ws");
+}
 // Create lib/apiConfig.ts
 export const API_CONFIG = {
   BASE_URL: API_BASE_URL,
@@ -9,6 +15,8 @@ export const API_CONFIG = {
   AUTH: {
     LOGIN: "/api/login",
     // ...
+    ENABLE_2FA: "/api/2fa/enable/",
+    VERIFY_2FA_SETUP: "/api/2fa/verify-setup/",
   },
   BLOG: {
     BLOGS: "/administration/blogs/blog/",
@@ -58,6 +66,8 @@ export const API_CONFIG = {
     ESTIMATE_SWAP: "/api/changenow/estimate/",
     CREATE_SWAP: "/api/changenow/create/",
     SWAP_STATUS: "/api/changenow/status/",
+    SWAP_STATUS_WS: (swapId: string) =>
+      `${getWebSocketBaseUrl()}/ws/changenow/status/${swapId}/`,
   },
   RATES: {
     TRANSACTIONS: "/trading_engine/detail-transactions/",
@@ -65,7 +75,8 @@ export const API_CONFIG = {
   SETTINGS: {
     CREATE_DEVICE: "/api/devices/create/",
     GET_DEVICE: "/api/device-sessions/",
-    LOGOUT_DEVICE: (sessionId: string) => `/api/device-sessions/logout/${sessionId}/`,
+    LOGOUT_DEVICE: (sessionId: string) =>
+      `/api/device-sessions/logout/${sessionId}/`,
     LOGOUT_ALL_DEVICES: "/api/device-sessions/logout-all/",
   },
   EXCHANGE: {

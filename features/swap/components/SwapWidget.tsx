@@ -58,6 +58,7 @@ const SwapWidget = () => {
   // New state for the flow
   const [currentStep, setCurrentStep] =
     React.useState<SwapStep>("transaction-info");
+  const [showWalletAddress, setShowWalletAddress] = React.useState(false);
 
   // Simple debounce implementation
   const [debouncedFromAmount, setDebouncedFromAmount] =
@@ -135,66 +136,61 @@ const SwapWidget = () => {
 
   // Handle next step validation
   const handleNextStep = () => {
-    if (currentStep === "transaction-info") {
-      // Validate that we have all required fields
-      if (
-        !fromAsset ||
-        !toAsset ||
-        !fromAmount ||
-        parseFloat(fromAmount) <= 0
-      ) {
-        showToast.error(
-          "Missing Required Fields",
-          "Please select assets and enter a valid amount"
-        );
-        return;
-      }
-
-      if (!estimate) {
-        showToast.error(
-          "No Estimate Available",
-          "Please wait for the swap estimate to load"
-        );
-        return;
-      }
-
-      // Move to wallet address step
-      setCurrentStep("wallet-address");
-    } else if (currentStep === "wallet-address") {
-      // Validate wallet address
-      if (!walletAddress.trim()) {
-        setWalletValidationError("Wallet address is required");
-        showToast.error(
-          "Wallet Address Required",
-          "Please enter a valid wallet address"
-        );
-        return;
-      }
-
-      // Import and use the validation function
-      import("@/lib/addressValidaion").then(({ validateWalletAddress }) => {
-        const normalizedNetwork = fromAsset?.network?.toUpperCase() || "ETH";
-        const validationResult = validateWalletAddress(
-          walletAddress,
-          normalizedNetwork
-        );
-
-        if (!validationResult.isValid) {
-          const errorMessage =
-            validationResult.message ||
-            `Invalid ${fromAsset?.network || "wallet"} address`;
-          setWalletValidationError(errorMessage);
-          showToast.error("Invalid Wallet Address", errorMessage);
-          return;
-        }
-
-        // Clear any previous validation errors
-        setWalletValidationError("");
-
-        // All validation passed, create the swap
-        handleSubmit();
-      });
+    // Validate that we have all required fields
+    if (!fromAsset || !toAsset || !fromAmount || parseFloat(fromAmount) <= 0) {
+      showToast.error(
+        "Missing Required Fields",
+        "Please select assets and enter a valid amount"
+      );
+      return;
     }
+
+    if (!estimate) {
+      showToast.error(
+        "No Estimate Available",
+        "Please wait for the swap estimate to load"
+      );
+      return;
+    }
+
+    // Show wallet address form below
+    setShowWalletAddress(true);
+  };
+
+  const handleWalletAddressNext = () => {
+    // Validate wallet address
+    if (!walletAddress.trim()) {
+      setWalletValidationError("Wallet address is required");
+      showToast.error(
+        "Wallet Address Required",
+        "Please enter a valid wallet address"
+      );
+      return;
+    }
+
+    // Import and use the validation function
+    import("@/lib/addressValidaion").then(({ validateWalletAddress }) => {
+      const normalizedNetwork = fromAsset?.network?.toUpperCase() || "ETH";
+      const validationResult = validateWalletAddress(
+        walletAddress,
+        normalizedNetwork
+      );
+
+      if (!validationResult.isValid) {
+        const errorMessage =
+          validationResult.message ||
+          `Invalid ${fromAsset?.network || "wallet"} address`;
+        setWalletValidationError(errorMessage);
+        showToast.error("Invalid Wallet Address", errorMessage);
+        return;
+      }
+
+      // Clear any previous validation errors
+      setWalletValidationError("");
+
+      // All validation passed, create the swap
+      handleSubmit();
+    });
   };
 
   // Handle back step
@@ -347,35 +343,37 @@ const SwapWidget = () => {
     );
   }
 
-  if (showStatus && swapResponse?.id) {
-    return (
-      <SwapStatusComponent
-        swapId={swapResponse.id}
-        swapResponse={swapResponse}
-        onBack={() => {
-          setShowStatus(false);
-          dispatch(clearSwapResponse());
-          setCurrentStep("transaction-info");
-        }}
-      />
-    );
-  }
+  // if (showStatus && swapResponse?.id) {
+  //   return (
+  //     <SwapStatusComponent
+  //       swapId={swapResponse.id}
+  //       swapResponse={swapResponse}
+  //       onBack={() => {
+  //         setShowStatus(false);
+  //         dispatch(clearSwapResponse());
+  //         setCurrentStep("transaction-info");
+  //       }}
+  //     />
+  //   );
+  // }
 
   // Show status page if we're on status step and have a swap response
-  if (currentStep === "status" && swapResponse?.id) {
-    return (
-      <SwapStatusComponent
-        swapId={swapResponse.id}
-        swapResponse={swapResponse}
-        onBack={() => {
-          dispatch(clearSwapResponse());
-          setCurrentStep("transaction-info");
-        }}
-      />
-    );
-  }
+  // if (currentStep === "status" && swapResponse?.id) {
+  //   return (
+  //     <SwapStatusComponent
+  //       // swapId={swapResponse.id}
+  //       // swapResponse={swapResponse}
+  //       // onBack={() => {
+  //       //   dispatch(clearSwapResponse());
+  //       //   setCurrentStep("transaction-info");
+  //       // }}
+  //     />
+  //   );
+  // }
 
   return (
+    <div className="mx-auto text-white">
+      <h2 className="text-lg font-semibold mb-2">Swap Crypto</h2>
     <div className="mx-auto dark:text-white text-[#0D0D0D]">
       <h2 className="text-lg font-semibold mb-6">Swap Crypto</h2>
 
@@ -411,20 +409,16 @@ const SwapWidget = () => {
         />
       )}
 
-      {/* Step 2: Wallet Address */}
-      {currentStep === "wallet-address" && (
-        <WalletAddressStep
-          walletAddress={walletAddress}
-          onWalletAddressChange={handleWalletAddressChange}
-          walletValidationError={walletValidationError}
-          onBack={handleBackStep}
-          onNext={handleNextStep}
-          fromAsset={fromAsset}
-        />
+      {/* Show error message if swapError exists */}
+      {swapError && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-4">
+          <h3 className="text-red-400 font-semibold mb-2">Swap Error</h3>
+          <p className="text-red-300 text-sm">{swapError}</p>
+        </div>
       )}
 
-      {/* Step 3: Copy Address */}
-      {currentStep === "copy-address" && (
+      {/* Only render CopyAddressStep as a new page when currentStep is 'copy-address' */}
+      {currentStep === "copy-address" ? (
         <CopyAddressStep
           swapResponse={swapResponse}
           copyMessage={copyMessage}
@@ -432,7 +426,50 @@ const SwapWidget = () => {
           onBack={handleCopyAddressStepBack}
           onNext={handleCopyAddressStepNext}
         />
+      ) : (
+        <>
+          <TransactionInfoStep
+            fromAsset={fromAsset}
+            toAsset={toAsset}
+            fromAmount={fromAmount}
+            toAmount={toAmount}
+            supportedAssets={supportedAssets}
+            estimate={estimate}
+            estimateLoading={estimateLoading}
+            estimateError={estimateError}
+            localSwapError={localSwapError}
+            isFromAssetOpen={isFromAssetOpen}
+            isToAssetOpen={isToAssetOpen}
+            searchTerm={searchTerm}
+            toSearchTerm={toSearchTerm}
+            onFromAssetSelect={(asset) => dispatch(setFromAsset(asset))}
+            onToAssetSelect={(asset) => dispatch(setToAsset(asset))}
+            onFromAmountChange={handleFromAmountChange}
+            onToAmountChange={handleToAmountChange}
+            onFromAssetToggle={() => setIsFromAssetOpen(!isFromAssetOpen)}
+            onToAssetToggle={() => setIsToAssetOpen(!isToAssetOpen)}
+            onSearchTermChange={setSearchTerm}
+            onToSearchTermChange={setToSearchTerm}
+            onSubmit={showWalletAddress ? () => {} : handleNextStep}
+            swapLoading={swapLoading}
+            hideContinueButton={showWalletAddress}
+          />
+          {showWalletAddress && (
+            <WalletAddressStep
+              walletAddress={walletAddress}
+              onWalletAddressChange={handleWalletAddressChange}
+              walletValidationError={walletValidationError}
+              onBack={() => {}}
+              onNext={handleWalletAddressNext}
+              fromAsset={fromAsset}
+              // Pass loading state to disable button
+              isLoading={swapLoading}
+            />
+          )}
+        </>
       )}
+        {/* <SwapStatusComponent transactionId={""} date={""} paidAmount={""} paidCurrency={""} receivedAmount={""} receivedCurrency={""}        */}
+      {/* /> */}
     </div>
   );
 };

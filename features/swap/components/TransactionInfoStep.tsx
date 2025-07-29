@@ -27,6 +27,7 @@ interface TransactionInfoStepProps {
   onToSearchTermChange: (term: string) => void;
   onSubmit: () => void;
   swapLoading: boolean;
+  hideContinueButton?: boolean;
 }
 
 const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
@@ -53,10 +54,12 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
   onToSearchTermChange,
   onSubmit,
   swapLoading,
+  hideContinueButton,
 }) => {
   return (
     <div className="mb-8">
       <div className="mb-2 text-base font-semibold">1- Transaction Info</div>
+      <div className="bg-[#1D1D23] border-2 border-[#35353E] rounded-xl p-5 mb-2">
       <div className="dark:bg-[#23232b] bg-[#F5F5F5] border dark:border-[#35353E] border-gray-300 rounded-xl p-5 mb-2">
         <div className="flex flex-col gap-4">
           {/* You Send */}
@@ -159,6 +162,25 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
             </div>
           </div>
         </div>
+        {!hideContinueButton && (
+          <div className="flex w-full mt-4">
+            <button
+              className="bg-[#1D8751] w-full hover:bg-[#16663d] text-white px-6 py-2 rounded-[24px] font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={
+                !fromAsset ||
+                !toAsset ||
+                !fromAmount ||
+                parseFloat(fromAmount) <= 0 ||
+                !estimate ||
+                estimateLoading
+              }
+              onClick={onSubmit}
+            >
+              {swapLoading ? "Loading..." : "Continue"}
+            </button>
+          </div>
+        )}
+
 
         {/* Display estimated price */}
         <EstimatedPriceDisplay

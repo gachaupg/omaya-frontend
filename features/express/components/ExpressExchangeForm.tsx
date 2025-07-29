@@ -15,7 +15,7 @@ export default function ExpressExchangeForm({
   return (
     <div className="w-full min-h-screen flex flex-col justify-center bg-[#18181f]">
       {/* Mode Toggle Button */}
-      <div className="flex">
+      {/* <div className="flex">
         <div className="bg-[#23232b] border border-[#39394a] rounded-2xl p-1 flex">
           <button
             onClick={() => setMode("deposit")}
@@ -38,13 +38,21 @@ export default function ExpressExchangeForm({
             Withdrawal
           </button>
         </div>
-      </div>
+      </div> */}
 
       {/* Render the appropriate form based on mode */}
       {mode === "deposit" ? (
-        <DepositForm onExchange={onExchange} />
+        <DepositForm
+          onExchange={onExchange}
+          mode={mode}
+          onModeChange={setMode}
+        />
       ) : (
-        <WithdrawalForm onExchange={onExchange} />
+        <WithdrawalForm
+          onExchange={onExchange}
+          mode={mode}
+          onModeChange={setMode}
+        />
       )}
     </div>
   );

@@ -19,10 +19,12 @@ const SystemThemeSection: React.FC = () => {
   const isLight = currentTheme === "light";
 
   return (
-    <section className="bg-[#18181D] rounded-xl border border-[#35353E] p-4 shadow-lg">
-      <div className="text-base font-semibold text-white mb-2">
-        System Theme
-      </div>
+    <>
+    <div className="text-base font-semibold text-[#788099] mb-2">
+    System Theme
+  </div>
+    <section className="bg-[#1D1D23] rounded-xl border-2 border-[#35353E] p-4 shadow-lg">
+     
       <div className="flex gap-3 mb-3">
         <button
           className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-semibold text-sm transition-all ${
@@ -105,6 +107,7 @@ const SystemThemeSection: React.FC = () => {
         Current theme: {currentTheme} {currentTheme === "system" && "(system)"}
       </div>
     </section>
+    </>
   );
 };
 

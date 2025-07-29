@@ -47,6 +47,8 @@ const Stats = () => {
   }, [dispatch, isAuthenticated]);
 
   return (
+    <Card className="w-full p-2 bg-[#1D1D23] rounded-2xl border-2 border-[#35353E] text-white shadow-lg">
+
     <Card className="w-full p-2 dark:bg-[#18181D] bg-[#F5F5F5] rounded-2xl border dark:border-[#35353E] border-gray-300 dark:text-white text-[#0D0D0D] shadow-lg">
       {/* Header */}
       <div className="flex w-full items-center justify-between mb-6">

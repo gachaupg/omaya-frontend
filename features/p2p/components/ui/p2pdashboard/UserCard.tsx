@@ -205,7 +205,7 @@ const UserCard = () => {
         </div>
 
         {/* User Details and Actions */}
-        <div className="flex  text-[14px] flex-col w-full md:w-auto md:flex-row items-start md:items-center gap-4 md:gap-6">
+        <div className="flex  text-[14px] flex-col w-full md:w-auto md:flex-row items-start md:items-center gap-4 md:gap-6 md:justify-between">
           {/* User ID */}
           <div>
             <p className="text-xs text-[#788099]">User ID</p>

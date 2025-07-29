@@ -8,6 +8,7 @@ import {
 } from "@/features/p2p/slices/p2pTransactionsSlice";
 import { format, formatDistanceToNow } from "date-fns";
 import { P2PTransaction } from "@/features/p2p/types";
+import { NoDataFound } from "../ui/Transactions";
 
 interface RootState {
   p2pTransactions: {
@@ -81,7 +82,10 @@ const P2PTransactions = () => {
     transactions.results.length === 0
   ) {
     return (
-      <div className="text-center p-8 text-gray-400">No transactions found</div>
+      <NoDataFound
+        title="No Exchange Transactions Found"
+        message="There are currently no exchange transactions to display. Please check back later or try adjusting your filters."
+      />
     );
   }
 

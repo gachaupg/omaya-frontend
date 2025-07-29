@@ -190,6 +190,9 @@ const Overview = () => {
       ? (sellTotals.total / summary.total_p2p_orders) * 100
       : 0;
 
+  // Check if there's no data
+  const hasNoData = transactionTotal === 0 || chartTotal === 0;
+
   return (
     <div>
       {error && (
@@ -215,73 +218,99 @@ const Overview = () => {
         className="p-6 flex flex-col items-center justify-center"
       >
         <div className="relative w-60 h-60 flex items-center justify-center">
-          <svg width="220" height="220" viewBox="0 0 220 220">
-            <circle
-              cx="110"
-              cy="110"
-              r="90"
-              stroke="#2D2D37"
-              strokeWidth="18"
-              fill="none"
-            />
-            {/* Deposits - Green */}
-            <circle
-              cx="110"
-              cy="110"
-              r="90"
-              stroke="#1D8751"
-              strokeWidth="18"
-              fill="none"
-              strokeDasharray={`${depositsDash} ${
-                circumference - depositsDash
-              }`}
-              strokeDashoffset="0"
-              strokeLinecap="butt"
-            />
-            {/* Withdrawals - Red */}
-            <circle
-              cx="110"
-              cy="110"
-              r="90"
-              stroke="#E23D3A"
-              strokeWidth="18"
-              fill="none"
-              strokeDasharray={`${withdrawalsDash} ${
-                circumference - withdrawalsDash
-              }`}
-              strokeDashoffset={`-${depositsDash}`}
-              strokeLinecap="butt"
-            />
-            {/* In Progress - Yellow */}
-            <circle
-              cx="110"
-              cy="110"
-              r="90"
-              stroke="#FFD600"
-              strokeWidth="18"
-              fill="none"
-              strokeDasharray={`${inProgressDash} ${
-                circumference - inProgressDash
-              }`}
-              strokeDashoffset={`-${depositsDash + withdrawalsDash}`}
-              strokeLinecap="butt"
-            />
-            {/* P2P - Blue */}
-            <circle
-              cx="110"
-              cy="110"
-              r="90"
-              stroke="#386AB5"
-              strokeWidth="18"
-              fill="none"
-              strokeDasharray={`${p2pDash} ${circumference - p2pDash}`}
-              strokeDashoffset={`-${
-                depositsDash + withdrawalsDash + inProgressDash
-              }`}
-              strokeLinecap="butt"
-            />
-          </svg>
+          {hasNoData ? (
+            <svg width="220" height="220" viewBox="0 0 220 220">
+              <circle
+                cx="110"
+                cy="110"
+                r="90"
+                stroke="#35353E"
+                strokeWidth="18"
+                fill="none"
+              />
+              <circle
+                cx="110"
+                cy="110"
+                r="90"
+                stroke="#35353E"
+                strokeWidth="18"
+                fill="none"
+                strokeDasharray="565.48 565.48"
+                strokeDashoffset="0"
+                strokeLinecap="butt"
+              />
+            </svg>
+          ) : (
+            <svg width="220" height="220" viewBox="0 0 220 220">
+              <circle
+                cx="110"
+                cy="110"
+                r="90"
+                stroke="#2D2D37"
+                strokeWidth="18"
+                fill="none"
+              />
+              {/* Deposits - Green */}
+              <circle
+                cx="110"
+                cy="110"
+                r="90"
+                stroke="#1D8751"
+                strokeWidth="18"
+                fill="none"
+                strokeDasharray={`${depositsDash} ${
+                  circumference - depositsDash
+                }`}
+                strokeDashoffset="0"
+                strokeLinecap="butt"
+              />
+              {/* Withdrawals - Red */}
+              <circle
+                cx="110"
+                cy="110"
+                r="90"
+                stroke="#E23D3A"
+                strokeWidth="18"
+                fill="none"
+                strokeDasharray={`${withdrawalsDash} ${
+                  circumference - withdrawalsDash
+                }`}
+                strokeDashoffset={`-${depositsDash}`}
+                strokeLinecap="butt"
+              />
+              {/* In Progress - Yellow */}
+              <circle
+                cx="110"
+                cy="110"
+                r="90"
+                stroke="#FFD600"
+                strokeWidth="18"
+                fill="none"
+                strokeDasharray={`${inProgressDash} ${
+                  circumference - inProgressDash
+                }`}
+                strokeDashoffset={`-${depositsDash + withdrawalsDash}`}
+                strokeLinecap="butt"
+              />
+              {/* P2P - Blue */}
+              <circle
+                cx="110"
+                cy="110"
+                r="90"
+                stroke="#386AB5"
+                strokeWidth="18"
+                fill="none"
+                strokeDasharray={`${p2pDash} ${circumference - p2pDash}`}
+                strokeDashoffset={`-${
+                  depositsDash + withdrawalsDash + inProgressDash
+                }`}
+                strokeLinecap="butt"
+              />
+            </svg>
+          )}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-[15px] font-bold text-white">
+              {hasNoData ? "0 USD" : transactionTotal.toLocaleString() + " USD"}
             <span className="text-[15px] font-bold dark:text-white text-[#0D0D0D]">
               {transactionTotal.toLocaleString()} USD
             </span>
