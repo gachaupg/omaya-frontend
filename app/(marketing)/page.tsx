@@ -5,6 +5,9 @@ import Link from "next/link";
 import { tokens } from "@/styles/tokens";
 import { Play, MessageCircle } from "lucide-react";
 import ExchangeForm from "@/components/ExchangeForm";
+import { useBlog } from "@/features/blogs/hooks/blog";
+import { BlogPost } from "@/features/blogs/types";
+import { useFAQ } from "@/features/faq/hooks/useFAQ";
 
 const steps = [
   {
@@ -85,6 +88,8 @@ interface Article {
 export default function MarketingPage() {
   const [activeCategory, setActiveCategory] = useState<Category>("News");
   const [openFAQ, setOpenFAQ] = useState<number | null>(4);
+  const { blogs, news, loading, error } = useBlog();
+  const { faqs: faqItems, loading: faqLoading, error: faqError } = useFAQ();
 
   const tags = [
     { id: 1, name: "Crypto" },
@@ -95,157 +100,75 @@ export default function MarketingPage() {
     { id: 6, name: "Technology" },
   ];
 
-  const articles: Article[] = [
-    {
-      id: 1,
-      title: "Understanding Cryptocurrency Fundamentals",
-      excerpt:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.",
-      image:
-        "https://res.cloudinary.com/dam1sxczj/image/upload/v1746799100/Rectangle_39365_wlbjxc.png",
-      category: "News",
-      tags: [tags[0], tags[1], tags[3]],
-      slug: "understanding-cryptocurrency-fundamentals",
-      createdAt: "15-Jun-2023",
-    },
-    {
-      id: 2,
-      title: "How to Spot Profitable Crypto Investments",
-      excerpt:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.",
-      image:
-        "https://res.cloudinary.com/dam1sxczj/image/upload/v1746799100/Rectangle_39365_1_m5kk0k.png",
-      category: "News",
-      tags: [tags[0], tags[1], tags[3]],
-      slug: "how-to-spot-profitable-crypto-investments",
-      createdAt: "15-Jun-2023",
-    },
-    {
-      id: 3,
-      title: "Top 10 Cryptocurrencies to Watch in 2025",
-      excerpt:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.",
-      image:
-        "https://res.cloudinary.com/dam1sxczj/image/upload/v1746799101/Rectangle_39365_2_zppekf.png",
-      category: "News",
-      tags: [tags[0], tags[4], tags[5]],
-      slug: "top-10-cryptocurrencies-to-watch",
-      createdAt: "15-Jun-2023",
-    },
-    {
-      id: 4,
-      title: "Blockchain Technology: Beyond Cryptocurrencies",
-      excerpt:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.",
-      image:
-        "https://res.cloudinary.com/dam1sxczj/image/upload/v1746799100/Rectangle_39365_3_sflpns.png",
-      category: "Blog",
-      tags: [tags[0], tags[5], tags[2]],
-      slug: "blockchain-technology-beyond-cryptocurrencies",
-      createdAt: "15-Jun-2023",
-    },
-    {
-      id: 5,
-      title: "Cryptocurrency Trading Strategies for Beginners",
-      excerpt:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.",
-      image:
-        "https://res.cloudinary.com/dam1sxczj/image/upload/v1746799099/Rectangle_39365_4_sadtbr.png",
-      category: "Blog",
-      tags: [tags[0], tags[1], tags[3]],
-      slug: "cryptocurrency-trading-strategies-for-beginners",
-      createdAt: "15-Jun-2023",
-    },
-    {
-      id: 6,
-      title: "The Future of Digital Currency",
-      excerpt:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.",
-      image:
-        "https://res.cloudinary.com/dam1sxczj/image/upload/v1746799099/Rectangle_39365_5_brmtxk.png",
-      category: "Blog",
-      tags: [tags[0], tags[4], tags[5]],
-      slug: "the-future-of-digital-currency",
-      createdAt: "15-Jun-2023",
-    },
-    {
-      id: 7,
-      title: "Blockchain Technology: Beyond Cryptocurrencies",
-      excerpt:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.",
-      image:
-        "https://res.cloudinary.com/dam1sxczj/image/upload/v1746799100/Rectangle_39365_3_sflpns.png",
-      category: "News",
-      tags: [tags[0], tags[5], tags[2]],
-      slug: "blockchain-technology-beyond-cryptocurrencies",
-      createdAt: "15-Jun-2023",
-    },
-    {
-      id: 8,
-      title: "Cryptocurrency Trading Strategies for Beginners",
-      excerpt:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.",
-      image:
-        "https://res.cloudinary.com/dam1sxczj/image/upload/v1746799099/Rectangle_39365_4_sadtbr.png",
-      category: "News",
-      tags: [tags[0], tags[1], tags[3]],
-      slug: "cryptocurrency-trading-strategies-for-beginners",
-      createdAt: "15-Jun-2023",
-    },
-    {
-      id: 9,
-      title: "The Future of Digital Currency",
-      excerpt:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.",
-      image:
-        "https://res.cloudinary.com/dam1sxczj/image/upload/v1746799099/Rectangle_39365_5_brmtxk.png",
-      category: "News",
-      tags: [tags[0], tags[4], tags[5]],
-      slug: "the-future-of-digital-currency",
-      createdAt: "15-Jun-2023",
-    },
-  ];
+  // Transform Sanity blog data to match the Article interface
+  const transformBlogToArticle = (blog: BlogPost, index: number): Article => {
+    // Get image URL from Sanity data
+    const getImageUrl = (post: BlogPost) => {
+      if (typeof post.image === 'string') {
+        return post.image;
+      }
+      
+      if (post.image?.asset?._ref) {
+        const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || 'your-project-id';
+        const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || 'production';
+        const imageId = post.image.asset._ref.replace('image-', '').replace('-jpg', '.jpg').replace('-png', '.png').replace('-webp', '.webp');
+        return `https://cdn.sanity.io/images/${projectId}/${dataset}/${imageId}`;
+      }
+      
+      return '/images/placeholder.jpg';
+    };
 
-  const faqItems: FAQItem[] = [
-    {
-      id: 1,
-      question: "Praesent Finibus Dictum Nisl Sit Amet Vulputate.",
-      answer:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-    },
-    {
-      id: 2,
-      question: "Praesent Finibus Dictum Nisl Sit Amet Vulputate.",
-      answer:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-    },
-    {
-      id: 3,
-      question: "Praesent Finibus Dictum Nisl Sit Amet Vulputate.",
-      answer:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-    },
-    {
-      id: 4,
-      question: "Praesent Finibus Dictum Nisl Sit Amet Vulputate.",
-      answer:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-    },
-    {
-      id: 5,
-      question: "Praesent Finibus Dictum Nisl Sit Amet Vulputate.",
-      answer:
-        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-    },
-  ];
+    // Format date
+    const formatDate = (dateString: string) => {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    };
+
+    // Create slug from title
+    const createSlug = (title: string) => {
+      return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    };
+
+    // Truncate description to 300 characters with ellipses
+    const truncateDescription = (description: string) => {
+      if (description.length <= 300) {
+        return description;
+      }
+      return description.substring(0, 300).trim() + '...';
+    };
+
+    return {
+      id: index + 1,
+      title: blog.title,
+      excerpt: truncateDescription(blog.description),
+      image: getImageUrl(blog),
+      category: blog.category === 'news' ? 'News' : 'Blog' as Category,
+      tags: [tags[0], tags[1]], // Default tags
+      slug: createSlug(blog.title),
+      createdAt: formatDate(blog.created_at || blog.createdAt || new Date().toISOString()),
+    };
+  };
+
+  // Get articles based on active category
+  const getArticles = (): Article[] => {
+    const posts = activeCategory === "News" ? news : blogs;
+    return posts.slice(0, 6).map((post, index) => transformBlogToArticle(post, index));
+  };
+
+  const articles = getArticles();
+
+  // Filter articles based on active category
+  const filteredArticles = articles.filter(
+    (article) => article.category === activeCategory
+  );
 
   const toggleFAQ = (id: number) => {
     setOpenFAQ(openFAQ === id ? null : id);
   };
-
-  const filteredArticles = articles.filter(
-    (article) => article.category === activeCategory
-  );
 
   return (
     <div>
@@ -938,50 +861,89 @@ export default function MarketingPage() {
 
           {/* Articles grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredArticles.map((article) => (
-              <div
-                key={article.id}
-                className=" dar:bg-[#18181D] rounded-lg overflow-hidden  flex flex-col h-full"
-              >
-                <div className="relative h-48">
-                  <Image
-                    src={article.image}
-                    alt={article.title}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <div className="py-6">
-                  <div className="flex justify-between flex-wrap gap-2 mb-3">
-                    <p className="text-xs 2xl:text-sm rounded-full dark:text-[#727272] text-[#788099]">
-                      {article.createdAt}
-                    </p>
-                    <div className="flex gap-2 flex-wrap">
-                      {article.tags.map((tag) => (
-                        <span
-                          key={tag.id}
-                          className="text-xs 2xl:text-sm px-2 py-1 dark:bg-[#35353E] bg-[#F5F5F5] rounded-full text-[#788099]"
-                        >
-                          {tag.name}
-                        </span>
-                      ))}
-                    </div>
+            {loading ? (
+              // Loading state
+              Array.from({ length: 6 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="dark:bg-[#18181D] rounded-lg overflow-hidden flex flex-col h-full animate-pulse"
+                >
+                  <div className="relative h-48 bg-gray-700"></div>
+                  <div className="py-6 space-y-3">
+                    <div className="h-4 bg-gray-700 rounded"></div>
+                    <div className="h-6 bg-gray-700 rounded"></div>
+                    <div className="h-4 bg-gray-700 rounded"></div>
                   </div>
-                  <h3 className="font-bold text-lg 2xl:text-xl mb-4 darK:text-white  dark:text-white text-[#0D0D0D] ">
-                    {article.title}
-                  </h3>
-                  <p className="dark:text-[#788099] text-[#788099] text-sm 2xl:text-lg mb-4">
-                    {article.excerpt}
-                  </p>
-                  <Link
-                    href={`/blog/${article.slug}`}
-                    className="inline-block text-[#1D8751] border border-[#1D8751] rounded-full px-4 py-1 text-sm 2xl:text-lg transition-colors hover:bg-[#1D8751] hover:text-white"
-                  >
-                    Read Article
-                  </Link>
                 </div>
+              ))
+            ) : error ? (
+              // Error state
+              <div className="col-span-full text-center py-12">
+                <p className="text-red-400 mb-4">Error loading blog posts: {error}</p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="bg-[#1D8751] text-white px-4 py-2 rounded-lg hover:bg-[#167a47] transition-colors"
+                >
+                  Try Again
+                </button>
               </div>
-            ))}
+            ) : filteredArticles.length === 0 ? (
+              // Empty state
+              <div className="col-span-full text-center py-12">
+                <p className="text-gray-400 text-lg">
+                  No {activeCategory.toLowerCase()} posts available.
+                </p>
+                <p className="text-gray-500 text-sm mt-2">
+                  Please add some blog posts to your Sanity CMS.
+                </p>
+              </div>
+            ) : (
+              // Articles grid
+              filteredArticles.map((article) => (
+                <div
+                  key={article.id}
+                  className="dark:bg-[#18181D] rounded-lg overflow-hidden flex flex-col h-full"
+                >
+                  <div className="relative h-48">
+                    <Image
+                      src={article.image}
+                      alt={article.title}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="py-6">
+                    <div className="flex justify-between flex-wrap gap-2 mb-3">
+                      <p className="text-xs 2xl:text-sm rounded-full dark:text-[#727272] text-[#788099]">
+                        {article.createdAt}
+                      </p>
+                      <div className="flex gap-2 flex-wrap">
+                        {article.tags.map((tag) => (
+                          <span
+                            key={tag.id}
+                            className="text-xs 2xl:text-sm px-2 py-1 dark:bg-[#35353E] bg-[#F5F5F5] rounded-full text-[#788099]"
+                          >
+                            {tag.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <h3 className="font-bold text-lg 2xl:text-xl mb-4 dark:text-white text-[#0D0D0D]">
+                      {article.title}
+                    </h3>
+                    <p className="dark:text-[#788099] text-[#788099] text-sm 2xl:text-lg mb-4">
+                      {article.excerpt}
+                    </p>
+                    <Link
+                      href={`/blog/${article.id}`}
+                      className="inline-block text-[#1D8751] border border-[#1D8751] rounded-full px-4 py-1 text-sm 2xl:text-lg transition-colors hover:bg-[#1D8751] hover:text-white"
+                    >
+                      Read Article
+                    </Link>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
 
           {/* See all button */}
@@ -1131,87 +1093,121 @@ export default function MarketingPage() {
 
               {/* Accordion */}
               <div className="space-y-4">
-                {faqItems.map((item) => (
-                  <div key={item.id} className="relative">
-                    <div
-                      className={`border rounded-xl   overflow-hidden   ${
-                        openFAQ === item.id
-                          ? "border-[#1D8751]"
-                          : "border-[#35353E]"
-                      }`}
-                    >
-                      {/* Accordion Header */}
-                      <button
-                        onClick={() => toggleFAQ(item.id)}
-                        className="w-full flex justify-between items-center px-4 py-3 text-left dark:bg-[#1D1D23] bg-[#F5F5F5]"
-                      >
-                        <span className="dark:text-white text-black">
-                          {item.question}
-                        </span>
-                        {openFAQ === item.id ? (
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 16 16"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              d="M12 4L4 12"
-                              stroke="#1D8751"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                            <path
-                              d="M4 4L12 12"
-                              stroke="#1D8751"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                        ) : (
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 16 16"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              d="M8 4V12"
-                              stroke="#1D8751"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                            <path
-                              d="M4 8H12"
-                              stroke="#1D8751"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                        )}
-                      </button>
-
-                      {/* Accordion Content */}
-                      {openFAQ === item.id && (
-                        <>
-                          {/* Dashed separator line */}
-                          <div className="border-t border-dashed  border-gray-600 ml-2 mr-2"></div>
-                          <div className="px-4 py-3 dark:bg-[#1D1D23] bg-[#F5F5F5]">
-                            <p className="text-gray-400 text-sm 2xl:text-lg">
-                              {item.answer}
-                            </p>
-                          </div>
-                        </>
-                      )}
+                {faqLoading ? (
+                  // Loading state
+                  Array.from({ length: 5 }).map((_, index) => (
+                    <div key={index} className="relative animate-pulse">
+                      <div className="border rounded-xl overflow-hidden border-[#35353E]">
+                        <div className="w-full flex justify-between items-center px-4 py-3 text-left dark:bg-[#1D1D23] bg-[#F5F5F5]">
+                          <div className="h-4 bg-gray-700 rounded w-3/4"></div>
+                          <div className="h-4 bg-gray-700 rounded w-4"></div>
+                        </div>
+                      </div>
                     </div>
+                  ))
+                ) : faqError ? (
+                  // Error state
+                  <div className="text-center py-8">
+                    <p className="text-red-400 mb-4">Error loading FAQs: {faqError}</p>
+                    <button
+                      onClick={() => window.location.reload()}
+                      className="bg-[#1D8751] text-white px-4 py-2 rounded-lg hover:bg-[#167a47] transition-colors"
+                    >
+                      Try Again
+                    </button>
                   </div>
-                ))}
+                ) : faqItems.length === 0 ? (
+                  // Empty state
+                  <div className="text-center py-8">
+                    <p className="text-gray-400 text-lg">No FAQs available.</p>
+                    <p className="text-gray-500 text-sm mt-2">
+                      Please add some FAQ items to your Sanity CMS.
+                    </p>
+                  </div>
+                ) : (
+                  // FAQ items
+                  faqItems.map((item) => (
+                    <div key={item.id || item._id} className="relative">
+                      <div
+                        className={`border rounded-xl overflow-hidden ${
+                          openFAQ === (item.id || 0)
+                            ? "border-[#1D8751]"
+                            : "border-[#35353E]"
+                        }`}
+                      >
+                        {/* Accordion Header */}
+                        <button
+                          onClick={() => toggleFAQ(item.id || 0)}
+                          className="w-full flex justify-between items-center px-4 py-3 text-left dark:bg-[#1D1D23] bg-[#F5F5F5]"
+                        >
+                          <span className="dark:text-white text-black">
+                            {item.question}
+                          </span>
+                          {openFAQ === (item.id || 0) ? (
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 16 16"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                d="M12 4L4 12"
+                                stroke="#1D8751"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                              <path
+                                d="M4 4L12 12"
+                                stroke="#1D8751"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                          ) : (
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 16 16"
+                              fill="none"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                d="M8 4V12"
+                                stroke="#1D8751"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                              <path
+                                d="M4 8H12"
+                                stroke="#1D8751"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                          )}
+                        </button>
+
+                        {/* Accordion Content */}
+                        {openFAQ === (item.id || 0) && (
+                          <>
+                            {/* Dashed separator line */}
+                            <div className="border-t border-dashed border-gray-600 ml-2 mr-2"></div>
+                            <div className="px-4 py-3 dark:bg-[#1D1D23] bg-[#F5F5F5]">
+                              <p className="text-gray-400 text-sm 2xl:text-lg">
+                                {item.answer}
+                              </p>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>

@@ -12,6 +12,9 @@
   "dependencies": {
     "@headlessui/react": "^2.2.4",
     "@reduxjs/toolkit": "^2.8.2",
+    "@sanity/image-url": "^1.1.0",
+    "@sanity/structure": "^2.36.2",
+    "@sanity/vision": "^3.99.0",
     "@sumsub/websdk-react": "^2.3.18",
     "@types/js-cookie": "^3.0.6",
     "@types/react-redux": "^7.1.34",
@@ -27,6 +30,7 @@
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.507.0",
     "next": "15.3.1",
+    "next-sanity": "^9.12.3",
     "postcss": "^8.5.3",
     "qrcode": "^1.5.4",
     "react": "^19.0.0",
@@ -37,7 +41,9 @@
     "react-redux": "^9.2.0",
     "react-toastify": "^11.0.5",
     "recharts": "^2.15.4",
+    "sanity": "^3.99.0",
     "sonner": "^2.0.5",
+    "styled-components": "^6.1.19",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

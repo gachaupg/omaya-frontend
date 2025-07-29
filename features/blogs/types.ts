@@ -3,14 +3,21 @@
  */
 
 export interface BlogPost {
-  id: number;
-  category: string;
+  _id: string;
   title: string;
   description: string;
-  image: string;
-  created_at: string;
-  updated_at: string;
-  author_name: string;
+  category: string;
+  image?: {
+    asset: {
+      _ref: string;
+    };
+  } | string;
+  author_name?: string;
+  createdAt?: string;
+  // Legacy fields for UI compatibility
+  id?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface BlogResponse {

@@ -17,8 +17,9 @@ export const fetchBlogs = createAsyncThunk(
   "blog/fetchBlogs",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await blogApi.fetchBlogs();
-      return response.results;
+      const blogs = await blogApi.fetchBlogs();
+      // Filter for blog category
+      return blogs.filter((blog: BlogPost) => blog.category === 'blog');
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to fetch blogs"
@@ -31,8 +32,8 @@ export const fetchNews = createAsyncThunk(
   "blog/fetchNews",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await blogApi.fetchNews();
-      return response.results;
+      const news = await blogApi.fetchNews();
+      return news;
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to fetch news"

@@ -14,12 +14,15 @@ const SingleBlogPage = () => {
   const [blogPost, setBlogPost] = useState<BlogPost | null>(null);
 
   useEffect(() => {
-    if (params.id && (blogs.length > 0 || news.length > 0)) {
+    if (params?.id && (blogs.length > 0 || news.length > 0)) {
       const allPosts = [...blogs, ...news];
-      const post = allPosts.find((post) => post.id.toString() === params.id);
+      const post = allPosts.find((post) => {
+        const postId = post.id || post._id;
+        return postId.toString() === params.id;
+      });
       setBlogPost(post || null);
     }
-  }, [params.id, blogs, news]);
+  }, [params?.id, blogs, news]);
 
   // Format date function
   const formatDate = (dateString: string) => {
@@ -29,6 +32,23 @@ const SingleBlogPage = () => {
       month: "long",
       year: "numeric",
     });
+  };
+
+  // Get image URL from Sanity data structure
+  const getImageUrl = (post: BlogPost) => {
+    if (typeof post.image === 'string') {
+      return post.image;
+    }
+    
+    if (post.image?.asset?._ref) {
+      // Convert Sanity image reference to URL
+      const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || 'your-project-id';
+      const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || 'production';
+      const imageId = post.image.asset._ref.replace('image-', '').replace('-jpg', '.jpg').replace('-png', '.png').replace('-webp', '.webp');
+      return `https://cdn.sanity.io/images/${projectId}/${dataset}/${imageId}`;
+    }
+    
+    return '/images/placeholder.jpg';
   };
 
   if (loading) {
@@ -98,7 +118,7 @@ const SingleBlogPage = () => {
           {/* Featured Image */}
           <div className="relative w-full h-64 md:h-96">
             <Image
-              src={blogPost.image}
+              src={getImageUrl(blogPost)}
               alt={blogPost.title}
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 800px"
@@ -128,7 +148,7 @@ const SingleBlogPage = () => {
                   features.
                 </p>
                 <p>
-                  The blog post was created on {formatDate(blogPost.created_at)}
+                  The blog post was created on {formatDate(blogPost.created_at || blogPost.createdAt || new Date().toISOString())}
                   and belongs to the {blogPost.category} category.
                 </p>
               </div>
@@ -141,11 +161,11 @@ const SingleBlogPage = () => {
               <div className="flex items-center gap-4 text-sm text-gray-400">
                 <div className="flex items-center gap-2">
                   <FaUser className="h-4 w-4" />
-                  <span>By {blogPost.author_name}</span>
+                  <span>By {blogPost.author_name || 'Anonymous'}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <FaCalendar className="h-4 w-4" />
-                  <span>Published {formatDate(blogPost.created_at)}</span>
+                  <span>Published {formatDate(blogPost.created_at || blogPost.createdAt || new Date().toISOString())}</span>
                 </div>
               </div>
 

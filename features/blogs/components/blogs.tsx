@@ -25,7 +25,7 @@ const BlogPage = () => {
       (post: BlogPost) =>
         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         post.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        post.author_name.toLowerCase().includes(searchTerm.toLowerCase())
+        (post.author_name && post.author_name.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   };
 
@@ -42,8 +42,30 @@ const BlogPage = () => {
   };
 
   // Handle read article click
-  const handleReadArticle = (postId: number) => {
+  const handleReadArticle = (postId: string | number) => {
     router.push(`/blog/${postId}`);
+  };
+
+  // Get image URL from Sanity data structure
+  const getImageUrl = (post: BlogPost) => {
+    if (typeof post.image === 'string') {
+      return post.image;
+    }
+    
+    if (post.image?.asset?._ref) {
+      // Convert Sanity image reference to URL
+      const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || 'your-project-id';
+      const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || 'production';
+      const imageId = post.image.asset._ref.replace('image-', '').replace('-jpg', '.jpg').replace('-png', '.png').replace('-webp', '.webp');
+      return `https://cdn.sanity.io/images/${projectId}/${dataset}/${imageId}`;
+    }
+    
+    return '/images/placeholder.jpg';
+  };
+
+  // Get post ID for routing
+  const getPostId = (post: BlogPost) => {
+    return post.id || post._id;
   };
 
   if (loading) {
@@ -62,6 +84,7 @@ const BlogPage = () => {
       <div className=" text-white min-h-screen p-4 sm:p-6 md:p-8 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-400 mb-4">Error: {error}</p>
+          <p className="text-gray-400 mb-4 text-sm">Please check your Sanity configuration and try again.</p>
           <button
             onClick={() => window.location.reload()}
             className="bg-[#1D8751] text-white px-4 py-2 rounded-lg hover:bg-[#167a47] transition-colors"
@@ -129,17 +152,22 @@ const BlogPage = () => {
                 ? "No posts found matching your search."
                 : `No ${activeTab.toLowerCase()} posts available.`}
             </p>
+            {!searchTerm && (
+              <p className="text-gray-500 text-sm mt-2">
+                Please add some blog posts to your Sanity CMS.
+              </p>
+            )}
           </div>
         ) : (
           <main className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredPosts.map((post: BlogPost) => (
               <article
-                key={post.id}
+                key={getPostId(post)}
                 className="bg-[#161B22] border border-[#30363D] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-[#1D87514f] transition-shadow duration-300 flex flex-col"
               >
                 <div className="relative w-full h-56">
                   <Image
-                    src={post.image}
+                    src={getImageUrl(post)}
                     alt={post.title}
                     fill
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -148,7 +176,7 @@ const BlogPage = () => {
                 </div>
                 <div className="p-6 flex flex-col flex-grow">
                   <div className="flex justify-between items-center text-sm text-gray-400 mb-4">
-                    <span>{formatDate(post.created_at)}</span>
+                    <span>{formatDate(post.created_at || post.createdAt || new Date().toISOString())}</span>
                     <div className="flex flex-wrap gap-2">
                       <span className="text-xs font-semibold bg-[#30363D] text-gray-300 px-2 py-1 rounded-md">
                         {post.category}
@@ -159,13 +187,16 @@ const BlogPage = () => {
                     {post.title}
                   </h2>
                   <p className="text-gray-400 mb-4 text-sm line-clamp-3">
-                    {post.description}
+                    {post.description.length > 300 
+                      ? post.description.substring(0, 300).trim() + '...'
+                      : post.description
+                    }
                   </p>
                   <p className="text-xs text-gray-500 mb-6">
-                    By {post.author_name}
+                    By {post.author_name || 'Anonymous'}
                   </p>
                   <button
-                    onClick={() => handleReadArticle(post.id)}
+                    onClick={() => handleReadArticle(getPostId(post))}
                     className="mt-auto w-fit text-[#1D8751] border border-[#1D8751] rounded-full px-6 py-2 text-sm font-semibold hover:bg-[#1D8751] hover:text-white transition-colors duration-300 self-start"
                   >
                     Read Article

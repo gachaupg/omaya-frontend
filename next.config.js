@@ -22,6 +22,11 @@ const nextConfig = {
         hostname: "omayabucket.s3.amazonaws.com",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "cdn.sanity.io",
+        pathname: "/**",
+      },
     ],
   },
 };
