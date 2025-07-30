@@ -9,9 +9,9 @@ import React from "react";
 
 const MatchedOrderPage = () => {
   const searchParams = useSearchParams();
-  const orderData = searchParams.get("orderData");
-  const orderId = searchParams.get("order_type");
-  const trade = searchParams.get("trade");
+  const orderData = searchParams?.get("orderData");
+  const orderId = searchParams?.get("order_type");
+  const trade = searchParams?.get("trade");
 
   let orderType = null;
   if (orderData) {
@@ -23,12 +23,10 @@ const MatchedOrderPage = () => {
     }
   }
 
-
-
   if (trade && trade !== "") {
-    return  orderId === "buy"   ? <TradeBuyOwner /> : <TradeSellerOwner />;
+    return orderId === "buy" ? <TradeBuyOwner /> : <TradeSellerOwner />;
   } else {
-    return  orderType === "buy"  ? <FinalBuy /> : <FinalSell />;
+    return orderType === "buy" ? <FinalBuy /> : <FinalSell />;
   }
 };
 

@@ -90,7 +90,7 @@ const UserCard = () => {
       width="w-full"
       bgColor="bg-[#1D1D23]"
       borderRadius="rounded-[20px]"
-      className="p-2"
+      className="p-2 dark:bg-[#1D1D23] bg-white"
     >
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between w-full gap-3 md:gap-0">
         <div className="flex items-center gap-2">
@@ -115,7 +115,7 @@ const UserCard = () => {
                   }}
                 />
               ) : (
-                <div className="w-full h-full bg-[#35353E] flex items-center justify-center">
+                <div className="w-full h-full dark:bg-[#35353E] bg-[#E5E7EB] flex items-center justify-center">
                   <svg
                     width="24"
                     height="24"
@@ -168,7 +168,7 @@ const UserCard = () => {
           {/* User Info */}
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-lg text-[14px] font-semibold text-[#FFFFFF]">
+              <h2 className="text-lg text-[14px] font-semibold dark:text-[#FFFFFF] text-[#1D1D23]">
                 Hello, {user?.first_name} !
               </h2>
             </div>
@@ -208,9 +208,9 @@ const UserCard = () => {
         <div className="flex  text-[14px] flex-col w-full md:w-auto md:flex-row items-start md:items-center gap-4 md:gap-6 md:justify-between">
           {/* User ID */}
           <div>
-            <p className="text-xs text-[#788099]">User ID</p>
+            <p className="text-xs dark:text-[#788099] text-black">User ID</p>
             <div className="flex items-center gap-2">
-              <p className="text-base text-[#FFFFFF]">{user?.user_id}</p>
+              <p className="text-base dark:text-[#FFFFFF]">{user?.user_id}</p>
               <button className="cursor-pointer">
                 <svg
                   onClick={() => {
@@ -241,7 +241,7 @@ const UserCard = () => {
           {/* User Type */}
           <div>
             <p className="text-xs text-[#788099]">User Type</p>
-            <p className="text-base text-[#FFFFFF]">{user?.user_type}</p>
+            <p className="text-base dark:text-[#FFFFFF]">{user?.user_type}</p>
           </div>
 
           {/* Action Buttons */}

@@ -1,136 +1,109 @@
 import React, { useState } from "react";
-import { tokens } from "@/styles/tokens";
 import Button from "../../Common/Button";
 import { FaCheckCircle, FaRegClock, FaUniversity } from "react-icons/fa";
 import { ThumbsUp } from "lucide-react";
 import { MarketTableProps } from "./types";
 import TradePreview from "./sections/tradePreview";
 import Loader from "../../Common/Loader";
+
 const MarketTable: React.FC<MarketTableProps> = ({
   data = [],
-  currentPage,
-  totalPages,
-  onPageChange,
-  loading,
-  activeTab,
+  currentPage = 1,
+  totalPages = 1,
+  onPageChange = () => {},
+  loading = false,
+  activeTab = "buy",
 }) => {
   const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
 
-  const handleTradeClick = (index: number) => {
-    setSelectedRowIndex(index);
-  };
+  const handleTradeClick = (i: number) => setSelectedRowIndex(i);
 
-  if (loading) {
-    return <Loader />;
-  }
+  /* ------------------------------------------------------------------ */
+  /* Loading state                                                      */
+  /* ------------------------------------------------------------------ */
+  if (loading) return <Loader />;
 
+  /* ------------------------------------------------------------------ */
+  /* Component                                                          */
+  /* ------------------------------------------------------------------ */
   return (
     <div className="w-full">
       <div className="overflow-x-auto rounded-2xl">
-        <div
-          className={`min-w-[800px] w-full border overflow-hidden bg-[${tokens.colors.dark.card}] border-[${tokens.colors.dark.border}]`}
-        >
-          {/* Table Header */}
-          <div
-            className={`grid grid-cols-5 py-3 px-4 border-b bg-[#35353E] border-[${tokens.colors.dark.border}]`}
-          >
-            <div className="text-xs font-semibold text-[#788099] min-w-[200px]">
-              Advertiser
-            </div>
-            <div className="text-xs font-semibold text-[#788099] min-w-[120px]">
-              Commission
-            </div>
-            <div className="text-xs font-semibold text-[#788099] min-w-[180px]">
-              Available/Order Limit
-            </div>
-            <div className="text-xs font-semibold text-[#788099] min-w-[200px]">
-              Payment
-            </div>
-            <div className="text-xs font-semibold text-right text-[#788099] min-w-[120px]">
-              Trade
-            </div>
+        <div className="min-w-[800px] w-full overflow-hidden border bg-white border-gray-200 rounded-2xl dark:bg-[#1D1D23] dark:border-[#35353E]">
+          {/* ---------------- header row ---------------- */}
+          <div className="grid grid-cols-5 py-3 px-4 border-b bg-gray-50 border-gray-200 text-xs font-semibold text-gray-500 dark:bg-[#35353E] dark:border-[#35353E] dark:text-[#788099]">
+            <div className="min-w-[200px]">Advertiser</div>
+            <div className="min-w-[120px]">Commission</div>
+            <div className="min-w-[180px]">Available/Order Limit</div>
+            <div className="min-w-[200px]">Payment</div>
+            <div className="min-w-[120px] text-right">Trade</div>
           </div>
-          {/* Table Body */}
+
+          {/* ---------------- empty state --------------- */}
           {data.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 px-4">
-              <div className="w-16 h-16 mb-4 rounded-full bg-[#35353E] flex items-center justify-center">
-                <FaRegClock className="text-[#788099] text-2xl" />
+            <div className="flex flex-col items-center justify-center py-12 px-4 bg-white dark:bg-transparent">
+              <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-[#35353E] flex items-center justify-center">
+                <FaRegClock className="text-gray-400 dark:text-[#788099] text-2xl" />
               </div>
-              <h3 className="text-lg font-semibold text-[#788099] mb-2">
+              <h3 className="text-lg font-semibold text-gray-500 dark:text-[#788099] mb-2">
                 No Orders Found
               </h3>
-              <p className="text-sm text-[#8C8CA1] text-center max-w-md">
+              <p className="text-sm text-gray-400 dark:text-[#8C8CA1] text-center max-w-md">
                 There are currently no {activeTab === "buy" ? "buy" : "sell"}{" "}
                 orders available. Please check back later or try adjusting your
                 filters.
               </p>
             </div>
           ) : (
+            /* ---------------- table rows --------------- */
             data.map((row, idx) => (
               <React.Fragment key={idx}>
-                <div
-                  className={`grid grid-cols-5 items-center py-4 px-4 border-b last:border-b-0 border-[${tokens.colors.dark.border}]`}
-                >
+                <div className="grid grid-cols-5 items-center py-4 px-4 border-b last:border-b-0 bg-white hover:bg-gray-50 border-gray-200 dark:bg-[#23232B] dark:hover:bg-[#2d2d36] dark:border-[#35353E]">
                   {/* Advertiser */}
                   <div className="flex flex-col gap-1 min-w-[200px]">
                     <div className="flex items-center gap-2">
-                      <span className="bg-[#1D8751] text-white h-10 w-10 rounded-[10px] text-xs font-bold px-2 py-0.5 justify-center mr-1 flex items-center gap-1">
+                      <span className="bg-[#1D8751] text-white h-10 w-10 rounded-[10px] text-xs font-bold flex items-center justify-center">
                         {row.advertiserInitials}
                       </span>
-                      <span
-                        className={`font-medium flex items-center text-sm text-[${tokens.colors.dark.textTitle}]`}
-                      >
-                        {row.advertiser}{" "}
-                        <FaCheckCircle
-                          className="text-[#FFD600] ml-1"
-                          title="Verified"
-                        />
+                      <span className="font-medium flex items-center text-sm text-gray-900 dark:text-[#E4E4E6]">
+                        {row.advertiser}
+                        <FaCheckCircle className="text-[#FFD600] ml-1" />
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs text-[#8C8CA1]">
-                        <span className="text-[#1D8751]">{row.orders}</span>{" "}
-                        Orders |{" "}
-                        <span className="text-[#1D8751]">{row.completion}</span>{" "}
-                        Completion
-                      </span>
-                    </div>
+                    <span className="text-xs text-gray-400 dark:text-[#8C8CA1]">
+                      <span className="text-[#1D8751]">{row.orders}</span>{" "}
+                      Orders |{" "}
+                      <span className="text-[#1D8751]">{row.completion}</span>{" "}
+                      Completion
+                    </span>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="flex items-center gap-1 text-xs text-[#1D8751] font-semibold bg-[#1D8751]/10 px-2 py-0.5 rounded">
-                        <ThumbsUp
-                          height={10}
-                          className="text-[#1D8751] text-xs"
-                        />{" "}
-                        95%
+                        <ThumbsUp height={10} /> 95%
                       </span>
                       <span className="flex items-center gap-1 text-xs text-[#1D8751] font-semibold bg-[#1D8751]/10 px-2 py-0.5 rounded">
-                        <FaRegClock className="text-[#1D8751] text-xs" /> 20 min
+                        <FaRegClock className="text-xs" /> 20 min
                       </span>
                     </div>
                   </div>
                   {/* Commission */}
-                  <div
-                    className={`text-sm font-semibold ml-7 text-[${tokens.colors.dark.textTitle}] min-w-[120px]`}
-                  >
+                  <div className="text-sm font-semibold ml-7 text-gray-900 dark:text-[#E4E4E6] min-w-[120px]">
                     {row.commission}
                   </div>
-                  {/* Available/Order Limit */}
+                  {/* Available */}
                   <div className="flex flex-col min-w-[180px]">
-                    <span
-                      className={`font-semibold text-sm text-[${tokens.colors.dark.textTitle}]`}
-                    >
+                    <span className="font-semibold text-sm text-gray-900 dark:text-[#E4E4E6]">
                       {row.available}
                     </span>
-                    <span className="text-xs text-[#8C8CA1]">
-                      Limit:{row.limit}
+                    <span className="text-xs text-gray-400 dark:text-[#8C8CA1]">
+                      Limit: {row.limit}
                     </span>
                   </div>
                   {/* Payment */}
                   <div className="flex flex-wrap gap-2 min-w-[200px]">
                     {row.payment.map((method, i) => (
                       <span
-                        key={`${method}-${i}`}
-                        className="flex items-center gap-1 text-[14px] font-medium text-white w-1/2"
+                        key={i}
+                        className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-white w-1/2"
                       >
                         <FaUniversity className="text-[#1D8751] text-xs" />{" "}
                         {method}
@@ -164,16 +137,17 @@ const MarketTable: React.FC<MarketTableProps> = ({
               </React.Fragment>
             ))
           )}
-          {/* Pagination */}
-          <div className="flex justify-center items-center gap-2 py-4 bg-transparent">
+
+          {/* ---------------- pagination --------------- */}
+          <div className="flex justify-center items-center gap-2 py-4 bg-gray-50 dark:bg-transparent">
             <button
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className={`px-3 py-1 rounded-md text-sm font-medium border border-[#35353E] bg-[#23232B] text-[#8C8CA1] ${
+              className={`px-3 py-1 rounded-md text-sm font-medium border bg-white border-gray-200 text-gray-500 ${
                 currentPage === 1
                   ? "opacity-50 cursor-not-allowed"
-                  : "hover:bg-[#35353E]"
-              }`}
+                  : "hover:bg-gray-100"
+              } dark:bg-[#23232B] dark:border-[#35353E] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]`}
             >
               &lt;
             </button>
@@ -181,10 +155,10 @@ const MarketTable: React.FC<MarketTableProps> = ({
               <button
                 key={i}
                 onClick={() => onPageChange(i + 1)}
-                className={`px-3 py-1 rounded-md text-sm font-medium border border-[#35353E] ${
+                className={`px-3 py-1 rounded-md text-sm font-medium border ${
                   currentPage === i + 1
-                    ? "bg-[#1D8751] text-white"
-                    : "bg-[#23232B] text-[#8C8CA1] hover:bg-[#35353E]"
+                    ? "bg-[#1D8751] text-white border-[#1D8751]"
+                    : "bg-white text-gray-500 border-gray-200 hover:bg-gray-100 dark:bg-[#23232B] dark:text-[#8C8CA1] dark:border-[#35353E] dark:hover:bg-[#35353E]"
                 }`}
               >
                 {i + 1}
@@ -193,11 +167,11 @@ const MarketTable: React.FC<MarketTableProps> = ({
             <button
               onClick={() => onPageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className={`px-3 py-1 rounded-md text-sm font-medium border border-[#35353E] bg-[#23232B] text-[#8C8CA1] ${
+              className={`px-3 py-1 rounded-md text-sm font-medium border bg-white border-gray-200 text-gray-500 ${
                 currentPage === totalPages
                   ? "opacity-50 cursor-not-allowed"
-                  : "hover:bg-[#35353E]"
-              }`}
+                  : "hover:bg-gray-100"
+              } dark:bg-[#23232B] dark:border-[#35353E] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]`}
             >
               &gt;
             </button>

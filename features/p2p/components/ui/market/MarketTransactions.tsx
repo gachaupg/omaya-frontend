@@ -17,7 +17,6 @@ interface Option {
   value: string;
 }
 
-// Get unique currencies from the orders
 const getCurrencyOptions = (orders: any): Option[] => {
   if (!orders?.buy_orders?.results) return [{ label: "USDT", value: "USDT" }];
 
@@ -30,7 +29,6 @@ const getCurrencyOptions = (orders: any): Option[] => {
   }));
 };
 
-// Get unique payment providers from the orders
 const getProviderOptions = (orders: any): Option[] => {
   if (!orders?.buy_orders?.results)
     return [{ label: "Select Provider", value: "" }];
@@ -92,12 +90,10 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
   const [provider, setProvider] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Handle client-side mounting
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Fetch orders only after component is mounted and user is authenticated
   useEffect(() => {
     if (mounted && isAuthenticated) {
       const fetchOrders = async () => {
@@ -107,21 +103,17 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
     }
   }, [dispatch, mounted, currentPage, isAuthenticated]);
 
-  // Get dynamic options based on available data
   const currencyOptions = useMemo(() => getCurrencyOptions(orders), [orders]);
   const providerOptions = useMemo(() => getProviderOptions(orders), [orders]);
 
-  // Get the appropriate orders based on activeTab
   const getActiveOrders = useMemo(() => {
     if (!orders) {
       return [];
     }
     const orderType = activeTab === "buy" ? "sell_orders" : "buy_orders";
-
     return orders[orderType]?.results || [];
   }, [orders, activeTab]);
 
-  // Payment type options (example, update as needed)
   const paymentTypeOptions = [
     { label: "All Types", value: "" },
     { label: "Bank Transfer", value: "Bank Transfer" },
@@ -129,7 +121,6 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
     { label: "Merchant", value: "Merchant" },
   ];
 
-  // Transform and filter the data
   const transformedData: MarketRow[] = useMemo(() => {
     if (!getActiveOrders) {
       return [];
@@ -174,28 +165,18 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
         };
       })
       .filter((row: MarketRow) => {
-        // Filter by currency
         if (currency && row.currency !== currency) return false;
-
-        // Filter by payment type
         if (paymentType && row.paymentType !== paymentType) return false;
-
-        // Filter by provider
         if (provider && !row.payment.includes(provider)) return false;
-
-        // Filter by amount
         if (amount) {
           const amountValue = parseFloat(amount);
           if (amountValue < row.minAmount || amountValue > row.maxAmount)
             return false;
         }
-
-        // Filter by search query (advertiser name)
         if (searchQuery) {
           const query = searchQuery.toLowerCase();
           if (!row.advertiser.toLowerCase().includes(query)) return false;
         }
-
         return true;
       });
 
@@ -218,14 +199,12 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
     dispatch(fetchAllP2POrders(currentPage) as any);
   };
 
-  // Calculate total pages based on the active tab
   const totalPages = Math.ceil(
     (activeTab === "buy"
       ? orders?.sell_orders?.total_orders_count
       : orders?.buy_orders?.total_orders_count || 0) / 10
   );
 
-  // Don't render anything until mounted to prevent hydration mismatch
   if (!mounted) {
     return null;
   }
@@ -234,7 +213,7 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
     <div className="flex flex-col gap-4 w-full">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
-          <div className="flex items-center w-full sm:w-auto dark:bg-[#23232B] bg-[#F5F5F5] border dark:border-[#35353E] border-gray-300 rounded-lg px-2 py-1 gap-2">
+          <div className="flex items-center w-full sm:w-auto bg-gray-100 dark:bg-[#23232B] border border-gray-300 dark:border-[#35353E] rounded-lg px-2 py-1 gap-2">
             <div className="">
               <Input
                 bgColor="transparent"
@@ -243,7 +222,7 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="Enter amount"
-                className="bg-transparent h-[8px] border-none focus:ring-0 dark:text-white text-[#0D0D0D] w-full sm:w-28"
+                className="bg-transparent h-[8px]  border-none focus:ring-0 text-gray-900 dark:text-white w-full sm:w-28"
               />
             </div>
             <Select
@@ -253,35 +232,35 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
               onChange={(e) => setCurrency(e.target.value)}
               options={currencyOptions}
               placeholder="USDT"
-              className="bg-transparent border-none focus:ring-0 dark:text-white text-[#0D0D0D] w-full sm:w-16"
+              className="bg-transparent border-none  dark:bg-[#23232B] focus:ring-0 text-gray-900 dark:text-white w-full sm:w-16"
             />
           </div>
           <Select
-            bgColor="dark:bg-[#23232B] bg-[#F5F5F5]"
-            borderColor="dark:border-[#35353E] border-gray-300"
+            bgColor="bg-gray-100 dark:bg-[#23232B]"
+            borderColor="border-gray-300 dark:border-[#35353E]"
             value={paymentType}
             onChange={(e) => setPaymentType(e.target.value)}
             options={paymentTypeOptions}
             placeholder="Payment Type"
-            className="dark:bg-[#23232B] bg-[#F5F5F5] border dark:border-[#35353E] border-gray-300 rounded-lg dark:text-white text-[#0D0D0D] w-full sm:w-40"
+            className="bg-gray-100 dark:bg-[#23232B] border border-gray-300 dark:border-[#35353E] rounded-lg text-gray-900 dark:text-white w-full sm:w-40"
           />
           <Select
-            bgColor="dark:bg-[#23232B] bg-[#F5F5F5]"
-            borderColor="dark:border-[#35353E] border-gray-300"
+            bgColor="bg-gray-100 dark:bg-[#23232B]"
+            borderColor="border-gray-300 dark:border-[#35353E]"
             value={provider}
             onChange={(e) => setProvider(e.target.value)}
             options={providerOptions}
             placeholder="Select Provider"
-            className="dark:bg-[#23232B] bg-[#F5F5F5] border dark:border-[#35353E] border-gray-300 rounded-lg dark:text-white text-[#0D0D0D] w-full sm:w-40"
+            className="bg-gray-100 dark:bg-[#23232B] border border-gray-300 dark:border-[#35353E] rounded-lg text-gray-900 dark:text-white w-full sm:w-40"
           />
           <Button
-            borderColor="dark:border-[#35353E] border-gray-300"
+            borderColor="border-gray-300 dark:border-[#35353E]"
             width={44}
             height={40}
             borderRadius={10}
             variant="outline"
             size="md"
-            className="!dark:bg-[#23232B] !bg-[#F5F5F5] !dark:border-[#35353E] !border-gray-300 border rounded-lg"
+            className="!bg-gray-100 !dark:bg-[#23232B] !border-gray-300 !dark:border-[#35353E] border rounded-lg"
             icon={<FaFilter className="text-[#1D8751]" size={26} />}
           />
         </div>

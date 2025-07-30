@@ -393,7 +393,7 @@ const MarketTable = () => {
 
   if (error) {
     return (
-      <div className="bg-[#18181D] min-h-screen py-8 text-[#788099] font-sans">
+      <div className="bg-white dark:bg-[#18181D] min-h-screen py-8 text-gray-900 dark:text-[#788099] font-sans">
         <div className="max-w-[1000px] mx-auto px-6">
           <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-4 mb-4">
             <p className="text-red-400">Error loading market data: {error}</p>
@@ -410,21 +410,23 @@ const MarketTable = () => {
   }
 
   return (
-    <div className="bg-[#18181D] min-h-screen py-8 text-[#788099] font-sans">
+    <div className="bg-white dark:bg-[#18181D] min-h-screen py-8 text-gray-900 dark:text-[#788099] font-sans">
       {/* Top Section */}
       <div className="max-w-[1000px] mx-auto mb-6 px-6">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-[#fff] text-2xl font-bold">Market Review</h1>
+          <h1 className="text-gray-900 dark:text-[#fff] text-2xl font-bold">
+            Market Review
+          </h1>
           <div className="flex items-center gap-2">
             {lastUpdated && (
-              <span className="text-xs text-[#788099]">
+              <span className="text-xs text-gray-600 dark:text-[#788099]">
                 Last updated: {new Date(lastUpdated).toLocaleTimeString()}
               </span>
             )}
             <button
               onClick={handleRefresh}
               disabled={loading}
-              className="px-3 py-1 bg-[#1D1D23] text-[#788099] rounded border border-[#35353E] hover:bg-[#35353E] disabled:opacity-50"
+              className="px-3 py-1 bg-gray-100 dark:bg-[#1D1D23] text-gray-700 dark:text-[#788099] rounded border border-gray-300 dark:border-[#35353E] hover:bg-gray-200 dark:hover:bg-[#35353E] disabled:opacity-50"
             >
               {loading ? "Loading..." : "Refresh"}
             </button>
@@ -436,10 +438,10 @@ const MarketTable = () => {
             <span
               key={tag}
               onClick={() => handleFilterClick(tag)}
-              className={`bg-[#1D1D23] text-[#788099] rounded-2xl px-4 py-1 text-sm font-medium border border-[#35353E] cursor-pointer transition-colors ${
+              className={`bg-gray-100 dark:bg-[#1D1D23] text-gray-700 dark:text-[#788099] rounded-2xl px-4 py-1 text-sm font-medium border border-gray-300 dark:border-[#35353E] cursor-pointer transition-colors ${
                 activeFilter === tag
-                  ? "bg-[#35353E] text-[#fff]"
-                  : "hover:bg-[#35353E]"
+                  ? "bg-gray-200 dark:bg-[#35353E] text-gray-900 dark:text-[#fff]"
+                  : "hover:bg-gray-200 dark:hover:bg-[#35353E]"
               }`}
             >
               {tag}
@@ -447,29 +449,29 @@ const MarketTable = () => {
           ))}
         </div>
 
-        <div className="text-sm text-[#788099] mb-2">
+        <div className="text-sm text-gray-600 dark:text-[#788099] mb-2">
           Gain a comprehensive overview of all cryptocurrencies through OMAYA
           Express. This webpage presents the most recent prices, 24-hour trade
           volumes, price fluctuations, and market capitalizations for every
           cryptocurrency available on global markets.
         </div>
-        <div className="text-sm text-[#788099] mb-6">
+        <div className="text-sm text-gray-600 dark:text-[#788099] mb-6">
           Users can readily obtain crucial details about these digital assets
           and directly navigate to the trading platform from this point.
         </div>
 
         {/* Favourite Assets Header Row */}
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2 font-semibold text-[#fff] text-lg">
+          <div className="flex items-center gap-2 font-semibold text-gray-900 dark:text-[#fff] text-lg">
             Top Assets Favourite Assets
-            <button className="bg-none border-none text-[#788099] text-xl cursor-pointer p-0 ml-2">
+            <button className="bg-none border-none text-gray-600 dark:text-[#788099] text-xl cursor-pointer p-0 ml-2">
               &lt;
             </button>
-            <button className="bg-none border-none text-[#788099] text-xl cursor-pointer p-0 ml-1">
+            <button className="bg-none border-none text-gray-600 dark:text-[#788099] text-xl cursor-pointer p-0 ml-1">
               &gt;
             </button>
           </div>
-          <div className="flex items-center text-[#fff] font-medium text-base cursor-pointer gap-1">
+          <div className="flex items-center text-gray-900 dark:text-[#fff] font-medium text-base cursor-pointer gap-1">
             Add Asset{" "}
             <span className="text-lg font-bold ml-1 flex items-center">+</span>
           </div>
@@ -481,7 +483,7 @@ const MarketTable = () => {
             {favoriteAssets.map((asset) => (
               <div
                 key={asset.id}
-                className="bg-[#1D1D23] rounded-xl px-2 py-2 min-w-[160px] min-h-[56px] flex flex-col items-start shadow-sm border border-[#35353E] gap-0.5"
+                className="bg-gray-50 dark:bg-[#1D1D23] rounded-xl px-2 py-2 min-w-[160px] min-h-[56px] flex flex-col items-start shadow-sm border border-gray-200 dark:border-[#35353E] gap-0.5"
               >
                 <div className="flex items-center gap-2 mb-1">
                   <span className="w-7 h-7 flex items-center">
@@ -491,14 +493,14 @@ const MarketTable = () => {
                       size={28}
                     />
                   </span>
-                  <span className="font-semibold text-[#fff] text-base">
+                  <span className="font-semibold text-gray-900 dark:text-[#fff] text-base">
                     {asset.symbol.toUpperCase()}
                   </span>
                 </div>
-                <div className="text-xs text-[#788099] mb-0.5">
+                <div className="text-xs text-gray-600 dark:text-[#788099] mb-0.5">
                   {asset.name}
                 </div>
-                <div className="font-semibold text-[#fff] text-sm">
+                <div className="font-semibold text-gray-900 dark:text-[#fff] text-sm">
                   {formatPrice(asset.current_price)}
                 </div>
                 <div
@@ -516,11 +518,13 @@ const MarketTable = () => {
         </div>
 
         {/* Table Section with rounded border */}
-        <div className="rounded-2xl border border-[#35353E] overflow-hidden bg-[#18181D] shadow-lg max-w-[1000px] mx-auto">
+        <div className="rounded-2xl border border-gray-200 dark:border-[#35353E] overflow-hidden bg-white dark:bg-[#18181D] shadow-lg max-w-[1000px] mx-auto">
           {loading && markets.length === 0 ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#13B562]"></div>
-              <span className="ml-3 text-[#fff]">Loading market data...</span>
+              <span className="ml-3 text-gray-900 dark:text-[#fff]">
+                Loading market data...
+              </span>
             </div>
           ) : (
             <table className="w-full border-separate border-spacing-0">
@@ -529,7 +533,7 @@ const MarketTable = () => {
                   {tableHeaders.map((header) => (
                     <th
                       key={header}
-                      className="text-[#fff] bg-[#1D1D23] px-2 py-4 text-left font-semibold border-b-2 border-[#35353E] text-base"
+                      className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#1D1D23] px-2 py-4 text-left font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-base"
                     >
                       {header}
                     </th>
@@ -544,13 +548,13 @@ const MarketTable = () => {
                       className={
                         "cursor-pointer transition-colors " +
                         (selectedCoinId === market.id
-                          ? "bg-[#23232a] border-l-4 border-[#13B562]"
+                          ? "bg-gray-100 dark:bg-[#23232a] border-l-4 border-[#13B562]"
                           : idx % 2 === 0
-                          ? "bg-[#1D1D23]"
-                          : "bg-[#18181D]")
+                          ? "bg-gray-50 dark:bg-[#1D1D23]"
+                          : "bg-white dark:bg-[#18181D]")
                       }
                     >
-                      <td className="flex items-center gap-3 px-2 py-3 text-[#fff]">
+                      <td className="flex items-center gap-3 px-2 py-3 text-gray-900 dark:text-[#fff]">
                         <span className="w-7 h-7 flex items-center">
                           <CoinIcon
                             image={market.image}
@@ -562,7 +566,7 @@ const MarketTable = () => {
                           <div className="font-semibold">
                             {market.symbol.toUpperCase()}
                           </div>
-                          <div className="text-xs text-[#788099]">
+                          <div className="text-xs text-gray-600 dark:text-[#788099]">
                             {market.name}
                           </div>
                         </div>
@@ -599,7 +603,7 @@ const MarketTable = () => {
                       <tr>
                         <td
                           colSpan={tableHeaders.length}
-                          className="bg-[#23232a] px-6 py-4 border-t border-[#35353E]"
+                          className="bg-gray-100 dark:bg-[#23232a] px-6 py-4 border-t border-gray-200 dark:border-[#35353E]"
                         >
                           {/* Chart */}
                           <div className="w-full mb-4" style={{ height: 260 }}>
@@ -681,7 +685,7 @@ const MarketTable = () => {
                                   className="w-12 h-12 rounded-full"
                                 />
                                 <div>
-                                  <div className="text-lg font-bold text-white">
+                                  <div className="text-lg font-bold text-gray-900 dark:text-white">
                                     {coinDetails.name} (
                                     {coinDetails.symbol.toUpperCase()})
                                   </div>
@@ -691,7 +695,7 @@ const MarketTable = () => {
                                 </div>
                               </div>
                               <div
-                                className="text-sm text-[#fff] mt-2"
+                                className="text-sm text-gray-700 dark:text-[#fff] mt-2"
                                 dangerouslySetInnerHTML={{
                                   __html:
                                     coinDetails.description?.en?.slice(0, 300) +
@@ -700,25 +704,31 @@ const MarketTable = () => {
                               />
                               <div className="flex flex-wrap gap-4 mt-2">
                                 <div>
-                                  <span className="font-semibold text-[#fff]">
+                                  <span className="font-semibold text-gray-900 dark:text-[#fff]">
                                     Genesis:
                                   </span>{" "}
-                                  {coinDetails.genesis_date || "N/A"}
+                                  <span className="text-gray-700 dark:text-gray-300">
+                                    {coinDetails.genesis_date || "N/A"}
+                                  </span>
                                 </div>
                                 <div>
-                                  <span className="font-semibold text-[#fff]">
+                                  <span className="font-semibold text-gray-900 dark:text-[#fff]">
                                     Hashing:
                                   </span>{" "}
-                                  {coinDetails.hashing_algorithm || "N/A"}
+                                  <span className="text-gray-700 dark:text-gray-300">
+                                    {coinDetails.hashing_algorithm || "N/A"}
+                                  </span>
                                 </div>
                                 <div>
-                                  <span className="font-semibold text-[#fff]">
+                                  <span className="font-semibold text-gray-900 dark:text-[#fff]">
                                     Block Time:
                                   </span>{" "}
-                                  {coinDetails.block_time_in_minutes} min
+                                  <span className="text-gray-700 dark:text-gray-300">
+                                    {coinDetails.block_time_in_minutes} min
+                                  </span>
                                 </div>
                                 <div>
-                                  <span className="font-semibold text-[#fff]">
+                                  <span className="font-semibold text-gray-900 dark:text-[#fff]">
                                     Homepage:
                                   </span>{" "}
                                   <a

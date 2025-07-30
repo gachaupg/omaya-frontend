@@ -9,7 +9,11 @@ interface FilterTabsProps {
   loading: boolean;
 }
 
-const FilterTabs = ({ transformedTrades, loading }: FilterTabsProps) => {
+const FilterTabs: React.FC<FilterTabsProps> = ({
+  transformedTrades,
+  loading,
+}) => {
+  /** Local state */
   const [activeTab, setActiveTab] = useState(0);
   const [filters, setFilters] = useState({
     token: "Tether",
@@ -18,6 +22,7 @@ const FilterTabs = ({ transformedTrades, loading }: FilterTabsProps) => {
     date: "Date",
   });
 
+  /** Tabs */
   const tabList = [
     { label: "Payment Methods" },
     { label: "Feedback (0)" },
@@ -32,146 +37,118 @@ const FilterTabs = ({ transformedTrades, loading }: FilterTabsProps) => {
 
   const handleTabClick = (idx: number) => {
     setActiveTab(idx);
-    if (idx === 3) {
-      window.location.href = "/adds?type=buy";
-    }
+    if (idx === 3) window.location.href = "/adds?type=buy";
   };
 
-  // Filter trades based on selected filters
+  /** Derived — filtered trades */
   const filteredTrades = useMemo(() => {
     return transformedTrades.filter((trade: any) => {
-      // Token filter
-      if (filters.token !== "Tether" && trade.currency !== filters.token) {
+      if (filters.token !== "Tether" && trade.currency !== filters.token)
         return false;
-      }
-
-      // Type filter
       if (
         filters.type !== "Type" &&
         trade.order_type.toLowerCase() !== filters.type.toLowerCase()
-      ) {
+      )
         return false;
-      }
-
-      // Status filter
       if (
         filters.status !== "Status" &&
         trade.status.toLowerCase() !== filters.status.toLowerCase()
-      ) {
+      )
         return false;
-      }
-
-      // Date filter
       if (filters.date !== "Date") {
         const tradeDate = new Date(trade.timestamp);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-
         switch (filters.date) {
-          case "Today":
-            const tradeDay = new Date(tradeDate);
-            tradeDay.setHours(0, 0, 0, 0);
-            if (tradeDay.getTime() !== today.getTime()) {
-              return false;
-            }
+          case "Today": {
+            const d = new Date(tradeDate);
+            d.setHours(0, 0, 0, 0);
+            if (d.getTime() !== today.getTime()) return false;
             break;
-          case "Yesterday":
-            const yesterday = new Date(today);
-            yesterday.setDate(today.getDate() - 1);
-            const tradeYesterday = new Date(tradeDate);
-            tradeYesterday.setHours(0, 0, 0, 0);
-            if (tradeYesterday.getTime() !== yesterday.getTime()) {
-              return false;
-            }
+          }
+          case "Yesterday": {
+            const y = new Date(today);
+            y.setDate(today.getDate() - 1);
+            const d = new Date(tradeDate);
+            d.setHours(0, 0, 0, 0);
+            if (d.getTime() !== y.getTime()) return false;
             break;
-          case "Last 7 Days":
+          }
+          case "Last 7 Days": {
             const weekAgo = new Date(today);
             weekAgo.setDate(today.getDate() - 7);
-            if (tradeDate < weekAgo) {
-              return false;
-            }
+            if (tradeDate < weekAgo) return false;
             break;
-          case "Last 30 Days":
-            const monthAgo = new Date(today);
-            monthAgo.setDate(today.getDate() - 30);
-            if (tradeDate < monthAgo) {
-              return false;
-            }
+          }
+          case "Last 30 Days": {
+            const mAgo = new Date(today);
+            mAgo.setDate(today.getDate() - 30);
+            if (tradeDate < mAgo) return false;
             break;
-          case "Last 90 Days":
-            const threeMonthsAgo = new Date(today);
-            threeMonthsAgo.setDate(today.getDate() - 90);
-            if (tradeDate < threeMonthsAgo) {
-              return false;
-            }
+          }
+          case "Last 90 Days": {
+            const qAgo = new Date(today);
+            qAgo.setDate(today.getDate() - 90);
+            if (tradeDate < qAgo) return false;
             break;
-          case "Last 180 Days":
-            const sixMonthsAgo = new Date(today);
-            sixMonthsAgo.setDate(today.getDate() - 180);
-            if (tradeDate < sixMonthsAgo) {
-              return false;
-            }
+          }
+          case "Last 180 Days": {
+            const hAgo = new Date(today);
+            hAgo.setDate(today.getDate() - 180);
+            if (tradeDate < hAgo) return false;
             break;
+          }
         }
       }
-
       return true;
     });
   }, [transformedTrades, filters]);
 
-  // Filter bar for My Ads
+  /** My-Ads filter bar */
   const MyAdsFilterBar = () => (
     <div className="flex flex-col mb-5 sm:flex-row gap-4 items-start sm:items-center justify-between w-full">
-      {/* Token Filter */}
-      <div className="flex items-center bg-[#23242A] rounded-full px-4 py-2 w-full sm:w-auto">
+      {/* Token */}
+      <div className="flex items-center bg-gray-100 dark:bg-[#23242A] rounded-full px-4 py-2 w-full sm:w-auto">
         <img
           src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
           alt="Tether"
           className="w-6 h-6 mr-2"
         />
-        <span className="text-white mr-2">Tether</span>
+        <span className="text-gray-900 dark:text-white mr-2">Tether</span>
         <span className="text-[#788099]">USDT</span>
         <select
-          className="bg-transparent text-white ml-2 outline-none w-full sm:w-auto"
+          className="bg-transparent text-gray-900 dark:text-white ml-2 outline-none w-full sm:w-auto"
           value={filters.token}
-          onChange={(e) =>
-            setFilters((prev) => ({ ...prev, token: e.target.value }))
-          }
+          onChange={(e) => setFilters((p) => ({ ...p, token: e.target.value }))}
         >
           <option>Tether</option>
         </select>
       </div>
-      {/* Type Filter */}
+      {/* Type */}
       <select
-        className="bg-[#23242A] rounded-full px-4 py-2 text-white outline-none w-full sm:w-auto"
+        className="bg-gray-100 dark:bg-[#23242A] rounded-full px-4 py-2 text-gray-900 dark:text-white outline-none w-full sm:w-auto"
         value={filters.type}
-        onChange={(e) =>
-          setFilters((prev) => ({ ...prev, type: e.target.value }))
-        }
+        onChange={(e) => setFilters((p) => ({ ...p, type: e.target.value }))}
       >
         <option>All</option>
         <option>Buy</option>
         <option>Sell</option>
       </select>
-      {/* Status Filter */}
+      {/* Status */}
       <select
-        className="bg-[#23242A] rounded-full px-4 py-2 text-white outline-none w-full sm:w-auto"
+        className="bg-gray-100 dark:bg-[#23242A] rounded-full px-4 py-2 text-gray-900 dark:text-white outline-none w-full sm:w-auto"
         value={filters.status}
-        onChange={(e) =>
-          setFilters((prev) => ({ ...prev, status: e.target.value }))
-        }
+        onChange={(e) => setFilters((p) => ({ ...p, status: e.target.value }))}
       >
         <option>Status</option>
         <option>Published</option>
         <option>Offline</option>
       </select>
-      {/* Date Filter */}
+      {/* Date */}
       <select
-        className="bg-[#23242A] rounded-full px-4 py-2 text-white outline-none w-full sm:w-auto"
+        className="bg-gray-100 dark:bg-[#23242A] rounded-full px-4 py-2 text-gray-900 dark:text-white outline-none w-full sm:w-auto"
         value={filters.date}
-        onChange={(e) =>
-          setFilters((prev) => ({ ...prev, date: e.target.value }))
-        }
+        onChange={(e) => setFilters((p) => ({ ...p, date: e.target.value }))}
       >
         <option>All</option>
         <option>Today</option>
@@ -181,7 +158,7 @@ const FilterTabs = ({ transformedTrades, loading }: FilterTabsProps) => {
         <option>Last 90 Days</option>
         <option>Last 180 Days</option>
       </select>
-      {/* Action Buttons */}
+      {/* Actions */}
       <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
         <button className="w-full sm:w-auto px-4 py-2 rounded-full bg-[#1D8751] text-white">
           Publish
@@ -193,8 +170,10 @@ const FilterTabs = ({ transformedTrades, loading }: FilterTabsProps) => {
     </div>
   );
 
+  /** Render */
   return (
     <div className="flex flex-col gap-6 w-full">
+      {/* Tabs */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center w-full">
         <div className="flex flex-wrap gap-4 w-full sm:w-auto">
           {tabList.map((tab, idx) => (

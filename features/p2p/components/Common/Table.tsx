@@ -53,14 +53,15 @@ export const Table: React.FC<TableProps> = ({
   };
 
   const getAmountColor = (type: string | undefined | null) => {
-    if (!type) return `text-[${tokens.colors.dark.textBody}]`;
+    if (!type)
+      return `text-gray-500 dark:text-[${tokens.colors.dark.textBody}]`;
     if (type.toLowerCase() === "buy") return "text-[#1D8751]";
     if (type.toLowerCase() === "sell") return "text-[#FF4D4D]";
-    return `text-[${tokens.colors.dark.textBody}]`;
+    return `text-gray-500 dark:text-[${tokens.colors.dark.textBody}]`;
   };
 
   const getStatusColor = (status: string | undefined | null) => {
-    return "text-[#788099]";
+    return "text-gray-500 dark:text-[#788099]";
   };
 
   const handleViewTransaction = (row: TransactionType) => {
@@ -76,22 +77,24 @@ export const Table: React.FC<TableProps> = ({
 
   if (loading) {
     return (
-      <div className="w-full text-center py-8 text-[#788099]">Loading...</div>
+      <div className="w-full text-center py-8 text-gray-500 dark:text-[#788099]">
+        Loading...
+      </div>
     );
   }
 
   if (error) {
     return (
       <div className="w-full text-center py-8">
-        <div className="flex flex-col items-center justify-center border border-[#35353E] rounded-[24px] p-8 bg-[#23232B]">
-          <div className="w-16 h-16 mb-4 rounded-full bg-[#35353E] flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center border border-gray-200 dark:border-[#35353E] rounded-[24px] p-8 bg-white dark:bg-[#23232B]">
+          <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-[#35353E] flex items-center justify-center">
             <svg
               width="24"
               height="24"
               viewBox="0 0 24 24"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
-              className="text-[#788099]"
+              className="text-gray-500 dark:text-[#788099]"
             >
               <path
                 d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
@@ -116,10 +119,10 @@ export const Table: React.FC<TableProps> = ({
               />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-[#788099] mb-2">
+          <h3 className="text-lg font-semibold text-gray-500 dark:text-[#788099] mb-2">
             No Data Found
           </h3>
-          <p className="text-sm text-[#8C8CA1] text-center max-w-md">
+          <p className="text-sm text-gray-400 dark:text-[#8C8CA1] text-center max-w-md">
             Please sign in to view your P2P transactions or check back later.
           </p>
         </div>
@@ -130,15 +133,15 @@ export const Table: React.FC<TableProps> = ({
   if (data.length === 0) {
     return (
       <div className="w-full text-center py-8">
-        <div className="flex flex-col items-center justify-center border border-[#35353E] rounded-[24px] p-8 bg-[#23232B]">
-          <div className="w-16 h-16 mb-4 rounded-full bg-[#35353E] flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center border border-gray-200 dark:border-[#35353E] rounded-[24px] p-8 bg-white dark:bg-[#23232B]">
+          <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-[#35353E] flex items-center justify-center">
             <svg
               width="24"
               height="24"
               viewBox="0 0 24 24"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
-              className="text-[#788099]"
+              className="text-gray-500 dark:text-[#788099]"
             >
               <path
                 d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
@@ -163,10 +166,10 @@ export const Table: React.FC<TableProps> = ({
               />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-[#788099] mb-2">
+          <h3 className="text-lg font-semibold text-gray-500 dark:text-[#788099] mb-2">
             No Data Available
           </h3>
-          <p className="text-sm text-[#8C8CA1] text-center max-w-md">
+          <p className="text-sm text-gray-400 dark:text-[#8C8CA1] text-center max-w-md">
             There are currently no records to display. Please check back later
             or try adjusting your filters.
           </p>
@@ -179,7 +182,9 @@ export const Table: React.FC<TableProps> = ({
     <>
       <div className="mt-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3">
-          <h3 className={`font-medium text-[${tokens.colors.dark.textTitle}]`}>
+          <h3
+            className={`font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
+          >
             {title}
           </h3>
 
@@ -191,12 +196,12 @@ export const Table: React.FC<TableProps> = ({
                   placeholder="Search transactions..."
                   value={searchQuery}
                   onChange={handleSearch}
-                  className={`py-2 pl-9 pr-4 rounded-[24px] text-sm w-full border focus:outline-none bg-[${tokens.colors.dark.card}] text-[${tokens.colors.dark.textTitle}] border-[${tokens.colors.dark.border}]`}
+                  className={`py-2 pl-9 pr-4 rounded-[24px] text-sm w-full border focus:outline-none bg-white dark:bg-[${tokens.colors.dark.card}] text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] border-gray-200 dark:border-[${tokens.colors.dark.border}]`}
                 />
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                   <Search
                     size={16}
-                    className={`text-[${tokens.colors.dark.textBody}]`}
+                    className={`text-gray-400 dark:text-[${tokens.colors.dark.textBody}]`}
                   />
                 </div>
               </div>
@@ -212,17 +217,17 @@ export const Table: React.FC<TableProps> = ({
                 </Button>
 
                 {showExportOptions && (
-                  <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-[#23232B] border border-[#35353E] z-10">
+                  <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E] z-10">
                     <div className="py-1">
                       <button
                         onClick={() => handleExport("csv")}
-                        className="block w-full text-left px-4 py-2 text-sm text-[#8C8CA1] hover:bg-[#35353E]"
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-400 dark:text-[#8C8CA1] hover:bg-gray-100 dark:hover:bg-[#35353E]"
                       >
                         Export as CSV
                       </button>
                       <button
                         onClick={() => handleExport("pdf")}
-                        className="block w-full text-left px-4 py-2 text-sm text-[#8C8CA1] hover:bg-[#35353E]"
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-400 dark:text-[#8C8CA1] hover:bg-gray-100 dark:hover:bg-[#35353E]"
                       >
                         Export as PDF
                       </button>
@@ -236,57 +241,52 @@ export const Table: React.FC<TableProps> = ({
 
         <div className="overflow-x-auto">
           <div
-            className={`w-full border-2 bg-[${tokens.colors.dark.card}] border-[${tokens.colors.dark.border}] shadow-lg rounded-[24px]`}
+            className={`w-full border-2 bg-white dark:bg-[${tokens.colors.dark.card}] border-gray-200 dark:border-[${tokens.colors.dark.border}] shadow-lg rounded-[24px]`}
           >
             {/* Table Header */}
             <div
-              className={`grid grid-cols-6 md:grid-cols-7 py-3 px-4 border-b bg-[${tokens.colors.dark.card}] border-[${tokens.colors.dark.border}] rounded-t-[24px]`}
+              className={`grid grid-cols-6 md:grid-cols-7 py-3 px-4 border-b bg-gray-50 dark:bg-[${tokens.colors.dark.card}] border-gray-200 dark:border-[${tokens.colors.dark.border}] rounded-t-[24px]`}
             >
               <div
-                className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
+                className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
               >
                 Asset
               </div>
               {type === "p2p" && (
                 <div
-                  className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
+                  className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
                 >
                   ID
                 </div>
               )}
               <div>
                 <div
-                  className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
+                  className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
                 >
                   Type
                 </div>
               </div>
               <div
-                className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
+                className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
               >
                 Amount
               </div>
 
               <div
-                className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
+                className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
               >
                 Date
               </div>
               <div
-                className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
+                className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
               >
                 Status
               </div>
               <div
-                className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
+                className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
               >
                 Receipt
               </div>
-              {/* <div
-                className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
-              >
-                More
-              </div> */}
             </div>
 
             {/* Table Body */}
@@ -294,7 +294,7 @@ export const Table: React.FC<TableProps> = ({
               {data.map((row, idx) => (
                 <div
                   key={idx}
-                  className={`w-full grid grid-cols-6 md:grid-cols-7 py-4 px-4 border-b last:border-b-0 items-center hover:bg-opacity-80 transition-colors border-[${tokens.colors.dark.border}] bg-[${tokens.colors.dark.background}]`}
+                  className={`w-full grid grid-cols-6 md:grid-cols-7 py-4 px-4 border-b last:border-b-0 items-center hover:bg-gray-100 dark:hover:bg-opacity-80 transition-colors border-gray-200 dark:border-[${tokens.colors.dark.border}] bg-white dark:bg-[${tokens.colors.dark.background}]`}
                 >
                   <div className="flex items-center gap-2">
                     <img
@@ -305,7 +305,7 @@ export const Table: React.FC<TableProps> = ({
                   </div>
                   {type === "p2p" && (
                     <div
-                      className={`text-sm text-[${tokens.colors.dark.textBody}]`}
+                      className={`text-sm text-gray-500 dark:text-[${tokens.colors.dark.textBody}]`}
                     >
                       {row.id
                         ? `${row.id.slice(0, 3)}...${row.id.slice(-3)}`
@@ -327,7 +327,7 @@ export const Table: React.FC<TableProps> = ({
                     </div>
                   </div>
                   <div
-                    className={`text-sm text-[${tokens.colors.dark.textBody}]`}
+                    className={`text-sm text-gray-500 dark:text-[${tokens.colors.dark.textBody}]`}
                   >
                     {formatDate(row.date)}
                   </div>
@@ -346,11 +346,6 @@ export const Table: React.FC<TableProps> = ({
                       View
                     </Button>
                   </div>
-                  {/* <div className="flex items-center">
-                    <Button variant="ghost" size="sm" className="text-[#788099]">
-                      <MoreHorizontal size={20} />
-                    </Button>
-                  </div> */}
                 </div>
               ))}
             </div>
@@ -360,10 +355,10 @@ export const Table: React.FC<TableProps> = ({
                 <button
                   onClick={() => onPageChange?.(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className={`px-3 py-1 rounded-md text-sm font-medium border border-[#35353E] bg-[#23232B] text-[#8C8CA1] ${
+                  className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#23232B] text-gray-400 dark:text-[#8C8CA1] ${
                     currentPage === 1
                       ? "opacity-50 cursor-not-allowed"
-                      : "hover:bg-[#35353E]"
+                      : "hover:bg-gray-100 dark:hover:bg-[#35353E]"
                   }`}
                 >
                   &lt;
@@ -374,10 +369,10 @@ export const Table: React.FC<TableProps> = ({
                     <button
                       key={i}
                       onClick={() => onPageChange?.(i + 1)}
-                      className={`px-3 py-1 rounded-md text-sm font-medium border border-[#35353E] ${
+                      className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
                         currentPage === i + 1
                           ? "bg-[#1D8751] text-white"
-                          : "bg-[#23232B] text-[#8C8CA1] hover:bg-[#35353E]"
+                          : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[#23232B] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
                       }`}
                     >
                       {i + 1}
@@ -391,10 +386,10 @@ export const Table: React.FC<TableProps> = ({
                       <button
                         key={i}
                         onClick={() => onPageChange?.(i + 1)}
-                        className={`px-3 py-1 rounded-md text-sm font-medium border border-[#35353E] ${
+                        className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
                           currentPage === i + 1
                             ? "bg-[#1D8751] text-white"
-                            : "bg-[#23232B] text-[#8C8CA1] hover:bg-[#35353E]"
+                            : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[#23232B] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
                         }`}
                       >
                         {i + 1}
@@ -402,7 +397,9 @@ export const Table: React.FC<TableProps> = ({
                     ))}
 
                     {/* Ellipsis */}
-                    <span className="text-[#8C8CA1]">...</span>
+                    <span className="text-gray-400 dark:text-[#8C8CA1]">
+                      ...
+                    </span>
 
                     {/* Last 5 pages */}
                     {Array.from({ length: 5 }, (_, i) => {
@@ -411,10 +408,10 @@ export const Table: React.FC<TableProps> = ({
                         <button
                           key={pageNum}
                           onClick={() => onPageChange?.(pageNum)}
-                          className={`px-3 py-1 rounded-md text-sm font-medium border border-[#35353E] ${
+                          className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
                             currentPage === pageNum
                               ? "bg-[#1D8751] text-white"
-                              : "bg-[#23232B] text-[#8C8CA1] hover:bg-[#35353E]"
+                              : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[#23232B] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
                           }`}
                         >
                           {pageNum}
@@ -426,10 +423,10 @@ export const Table: React.FC<TableProps> = ({
                 <button
                   onClick={() => onPageChange?.(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className={`px-3 py-1 rounded-md text-sm font-medium border border-[#35353E] bg-[#23232B] text-[#8C8CA1] ${
+                  className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#23232B] text-gray-400 dark:text-[#8C8CA1] ${
                     currentPage === totalPages
                       ? "opacity-50 cursor-not-allowed"
-                      : "hover:bg-[#35353E]"
+                      : "hover:bg-gray-100 dark:hover:bg-[#35353E]"
                   }`}
                 >
                   &gt;
@@ -443,11 +440,11 @@ export const Table: React.FC<TableProps> = ({
       {/* Modal Portal */}
       {selectedTransaction && (
         <div
-          className="fixed inset-0 flex items-center justify-center z-[9999]"
+          className="fixed inset-0 flex items-center justify-center z-[9999] bg-black/30 dark:bg-black/60"
           onClick={() => setSelectedTransaction(null)}
         >
           <div
-            className="bg-[#23232B] rounded-[24px] p-6 w-full max-w-[500px] mx-4"
+            className="bg-white dark:bg-[#23232B] rounded-[24px] p-6 w-full max-w-[500px] mx-4"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Image at the top */}
@@ -469,7 +466,7 @@ export const Table: React.FC<TableProps> = ({
                   className="w-10 h-10 rounded-full"
                 />
                 <div>
-                  <div className="text-white font-semibold">
+                  <div className="text-gray-900 dark:text-white font-semibold">
                     {selectedTransaction.asset}{" "}
                     <span
                       className={
@@ -477,13 +474,13 @@ export const Table: React.FC<TableProps> = ({
                           ? "text-[#1D8751]"
                           : selectedTransaction.type === "sell"
                           ? "text-[#FF4D4D]"
-                          : "text-[#788099]"
+                          : "text-gray-500 dark:text-[#788099]"
                       }
                     >
                       {selectedTransaction.type}
                     </span>
                   </div>
-                  <div className="text-xs text-[#788099]">
+                  <div className="text-xs text-gray-500 dark:text-[#788099]">
                     {formatDate(selectedTransaction.date)}
                   </div>
                 </div>
@@ -509,7 +506,10 @@ export const Table: React.FC<TableProps> = ({
                   </svg>
                 </button>
                 {/* Placeholder for Eye icon */}
-                <button className="text-[#788099]" title="Note">
+                <button
+                  className="text-gray-500 dark:text-[#788099]"
+                  title="Note"
+                >
                   <svg
                     width="18"
                     height="18"
@@ -527,27 +527,33 @@ export const Table: React.FC<TableProps> = ({
               </div>
             </div>
             {/* Amount and Fees */}
-            <div className="flex justify-between items-center border-b border-[#35353E] pb-4 mb-4">
+            <div className="flex justify-between items-center border-b border-gray-200 dark:border-[#35353E] pb-4 mb-4">
               <div>
-                <div className="text-[#8C8CA1] text-xs">Total Amount</div>
+                <div className="text-gray-400 dark:text-[#8C8CA1] text-xs">
+                  Total Amount
+                </div>
                 <div className="text-[#1D8751] text-2xl font-bold">
                   {formatNumber(Number(selectedTransaction?.amount ?? 0))} USD
                 </div>
               </div>
-              <div className="text-right text-xs text-[#8C8CA1]">
+              <div className="text-right text-xs text-gray-400 dark:text-[#8C8CA1]">
                 <div>
-                  Total Fee <span className="text-white">$3</span>
+                  Total Fee{" "}
+                  <span className="text-gray-900 dark:text-white">$3</span>
                 </div>
                 <div>
-                  Network Fee <span className="text-white">$2</span>
+                  Network Fee{" "}
+                  <span className="text-gray-900 dark:text-white">$2</span>
                 </div>
               </div>
             </div>
             {/* Payment Info */}
-            <div className="border-b border-[#35353E] pb-4 mb-4">
+            <div className="border-b border-gray-200 dark:border-[#35353E] pb-4 mb-4">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-[#8C8CA1]">Payment:</span>
-                <span className="text-[#788099] flex items-center gap-1">
+                <span className="text-gray-400 dark:text-[#8C8CA1]">
+                  Payment:
+                </span>
+                <span className="text-gray-500 dark:text-[#788099] flex items-center gap-1">
                   Salaam Bank{" "}
                   <img
                     src="https://upload.wikimedia.org/wikipedia/commons/6/6b/Bitmap_Icon_Bank.png"
@@ -557,22 +563,36 @@ export const Table: React.FC<TableProps> = ({
                 </span>
               </div>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-[#8C8CA1]">Account Number:</span>
-                <span className="text-[#788099]">485634612949050</span>
+                <span className="text-gray-400 dark:text-[#8C8CA1]">
+                  Account Number:
+                </span>
+                <span className="text-gray-500 dark:text-[#788099]">
+                  485634612949050
+                </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[#8C8CA1]">Account Name:</span>
-                <span className="text-[#788099]">Omar Ali Omar</span>
+                <span className="text-gray-400 dark:text-[#8C8CA1]">
+                  Account Name:
+                </span>
+                <span className="text-gray-500 dark:text-[#788099]">
+                  Omar Ali Omar
+                </span>
               </div>
             </div>
             {/* Deposit Sent To */}
-            <div className="border-b border-[#35353E] pb-4 mb-4">
+            <div className="border-b border-gray-200 dark:border-[#35353E] pb-4 mb-4">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-[#8C8CA1]">Deposit Sent to</span>
-                <span className="text-[#788099]">3434343233</span>
+                <span className="text-gray-400 dark:text-[#8C8CA1]">
+                  Deposit Sent to
+                </span>
+                <span className="text-gray-500 dark:text-[#788099]">
+                  3434343233
+                </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[#8C8CA1]">Transaction Hash:</span>
+                <span className="text-gray-400 dark:text-[#8C8CA1]">
+                  Transaction Hash:
+                </span>
                 <span className="text-[#1D8751] underline cursor-pointer">
                   4673u98948294r89589374933rq
                 </span>
@@ -581,13 +601,17 @@ export const Table: React.FC<TableProps> = ({
             {/* Status, Receipt, Rating */}
             <div>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-[#8C8CA1]">Status:</span>
+                <span className="text-gray-400 dark:text-[#8C8CA1]">
+                  Status:
+                </span>
                 <span className="text-[#1D8751] font-semibold">
                   {selectedTransaction.status || "Completed"}
                 </span>
               </div>
               <div className="flex justify-between items-center mb-2">
-                <span className="text-[#8C8CA1]">Receipt:</span>
+                <span className="text-gray-400 dark:text-[#8C8CA1]">
+                  Receipt:
+                </span>
                 <span className="text-[#1D8751]">
                   {/* Placeholder for Eye icon */}
                   <svg
@@ -606,7 +630,9 @@ export const Table: React.FC<TableProps> = ({
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[#8C8CA1]">Service Rating:</span>
+                <span className="text-gray-400 dark:text-[#8C8CA1]">
+                  Service Rating:
+                </span>
                 <span className="flex flex-row">
                   {[...Array(5)].map((_, i) => (
                     <svg

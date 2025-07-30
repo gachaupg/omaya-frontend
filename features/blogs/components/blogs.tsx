@@ -70,10 +70,12 @@ const BlogPage = () => {
 
   if (loading) {
     return (
-      <div className=" text-white min-h-screen p-4 sm:p-6 md:p-8 flex items-center justify-center">
+      <div className="bg-white dark:bg-[#0A0A0A] text-gray-900 dark:text-white min-h-screen p-4 sm:p-6 md:p-8 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1D8751] mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading blog posts...</p>
+          <p className="text-gray-600 dark:text-gray-400">
+            Loading blog posts...
+          </p>
         </div>
       </div>
     );
@@ -81,7 +83,7 @@ const BlogPage = () => {
 
   if (error) {
     return (
-      <div className=" text-white min-h-screen p-4 sm:p-6 md:p-8 flex items-center justify-center">
+      <div className="bg-white dark:bg-[#0A0A0A] text-gray-900 dark:text-white min-h-screen p-4 sm:p-6 md:p-8 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-400 mb-4">Error: {error}</p>
           <p className="text-gray-400 mb-4 text-sm">Please check your Sanity configuration and try again.</p>
@@ -97,7 +99,7 @@ const BlogPage = () => {
   }
 
   return (
-    <div className=" text-white min-h-screen p-4 sm:p-6 md:p-8">
+    <div className="bg-white dark:bg-[#0A0A0A] text-gray-900 dark:text-white min-h-screen p-4 sm:p-6 md:p-8">
       <div className="max-w-7xl mx-auto">
         <header className="mb-8 md:mb-12 text-center md:text-left">
           <h1 className="text-2xl mt-10 sm:text-2xl md:text-5xl font-bold leading-tight">
@@ -108,13 +110,13 @@ const BlogPage = () => {
         </header>
 
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-          <div className="flex items-center space-x-2 bg-[#161B22] p-1 rounded-full border border-[#30363D]">
+          <div className="flex items-center space-x-2 bg-gray-100 dark:bg-[#161B22] p-1 rounded-full border border-gray-300 dark:border-[#30363D]">
             <button
               onClick={() => setActiveTab("News")}
               className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-colors duration-300 ${
                 activeTab === "News"
                   ? "bg-[#1D8751] text-white"
-                  : "text-gray-400 hover:bg-gray-700"
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
               }`}
             >
               News
@@ -124,7 +126,7 @@ const BlogPage = () => {
               className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-colors duration-300 ${
                 activeTab === "Blog"
                   ? "bg-[#1D8751] text-white"
-                  : "text-gray-400 hover:bg-gray-700"
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
               }`}
             >
               Blog
@@ -133,13 +135,13 @@ const BlogPage = () => {
 
           <div className="relative w-full md:w-auto">
             <span className="absolute inset-y-0 left-0 flex items-center pl-4">
-              <FaSearch className="h-5 w-5 text-gray-400" />
+              <FaSearch className="h-5 w-5 text-gray-500 dark:text-gray-400" />
             </span>
             <input
               type="search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full md:w-72 bg-[#161B22] border border-[#30363D] rounded-full py-2.5 pl-11 pr-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
+              className="w-full md:w-72 bg-gray-50 dark:bg-[#161B22] border border-gray-300 dark:border-[#30363D] rounded-full py-2.5 pl-11 pr-4 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
               placeholder="Search"
             />
           </div>
@@ -147,7 +149,7 @@ const BlogPage = () => {
 
         {filteredPosts.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-400 text-lg">
+            <p className="text-gray-600 dark:text-gray-400 text-lg">
               {searchTerm
                 ? "No posts found matching your search."
                 : `No ${activeTab.toLowerCase()} posts available.`}
@@ -163,7 +165,7 @@ const BlogPage = () => {
             {filteredPosts.map((post: BlogPost) => (
               <article
                 key={getPostId(post)}
-                className="bg-[#161B22] border border-[#30363D] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-[#1D87514f] transition-shadow duration-300 flex flex-col"
+                className="bg-gray-50 dark:bg-[#161B22] border border-gray-200 dark:border-[#30363D] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-[#1D87514f] transition-shadow duration-300 flex flex-col"
               >
                 <div className="relative w-full h-56">
                   <Image
@@ -175,24 +177,24 @@ const BlogPage = () => {
                   />
                 </div>
                 <div className="p-6 flex flex-col flex-grow">
-                  <div className="flex justify-between items-center text-sm text-gray-400 mb-4">
+                  <div className="flex justify-between items-center text-sm text-gray-600 dark:text-gray-400 mb-4">
                     <span>{formatDate(post.created_at || post.createdAt || new Date().toISOString())}</span>
                     <div className="flex flex-wrap gap-2">
-                      <span className="text-xs font-semibold bg-[#30363D] text-gray-300 px-2 py-1 rounded-md">
+                      <span className="text-xs font-semibold bg-gray-200 dark:bg-[#30363D] text-gray-700 dark:text-gray-300 px-2 py-1 rounded-md">
                         {post.category}
                       </span>
                     </div>
                   </div>
-                  <h2 className="text-xl font-bold mb-3 flex-grow">
+                  <h2 className="text-xl font-bold mb-3 flex-grow text-gray-900 dark:text-white">
                     {post.title}
                   </h2>
-                  <p className="text-gray-400 mb-4 text-sm line-clamp-3">
+                  <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm line-clamp-3">
                     {post.description.length > 300 
                       ? post.description.substring(0, 300).trim() + '...'
                       : post.description
                     }
                   </p>
-                  <p className="text-xs text-gray-500 mb-6">
+                  <p className="text-xs text-gray-500 dark:text-gray-500 mb-6">
                     By {post.author_name || 'Anonymous'}
                   </p>
                   <button

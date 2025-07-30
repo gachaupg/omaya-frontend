@@ -148,8 +148,8 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-      <div className="bg-[#19191D] rounded-2xl p-6 w-full max-w-xs shadow-lg pointer-events-auto">
-        <div className="text-white text-base font-semibold mb-4">
+      <div className="bg-white dark:bg-[#19191D] rounded-2xl p-6 w-full max-w-xs shadow-lg pointer-events-auto">
+        <div className="text-gray-900 dark:text-white text-base font-semibold mb-4">
           Add payment details
         </div>
         <form
@@ -161,18 +161,18 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
         >
           {/* Payment Method Dropdown */}
           <div>
-            <label className="block text-[#788099] text-sm mb-1">
+            <label className="block text-gray-600 dark:text-[#788099] text-sm mb-1">
               Payment Method
             </label>
             <select
-              className="w-full p-3 rounded-[24px] bg-[#18181D] border border-[#35353E] text-white"
+              className="w-full p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] text-gray-900 dark:text-white"
               value={method}
               onChange={(e) => setMethod(e.target.value)}
               disabled={loading}
             >
               <option value="">Select Method</option>
-              {methodTypes.map((type) => (
-                <option key={type} value={type}>
+              {methodTypes.map((type, index: number) => (
+                <option key={`${type}-${index}`} value={type}>
                   {type}
                 </option>
               ))}
@@ -182,18 +182,21 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
           {/* Provider Dropdown */}
           {method && (
             <div>
-              <label className="block text-[#788099] text-sm mb-1">
+              <label className="block text-gray-600 dark:text-[#788099] text-sm mb-1">
                 Provider
               </label>
               <select
-                className="w-full p-3 rounded-[24px] bg-[#18181D] border border-[#35353E] text-white"
+                className="w-full p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] text-gray-900 dark:text-white"
                 value={provider}
                 onChange={(e) => setProvider(e.target.value)}
                 disabled={loading}
               >
                 <option value="">Select Provider</option>
-                {providers.map((p: any) => (
-                  <option key={p.provider_name} value={p.provider_name}>
+                {providers.map((p: any, index: number) => (
+                  <option
+                    key={`${p.provider_name}-${index}`}
+                    value={p.provider_name}
+                  >
                     {p.provider_name}
                   </option>
                 ))}
@@ -203,11 +206,11 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
 
           {/* Name Input */}
           <div>
-            <label className="block text-[#788099] text-sm mb-1">
+            <label className="block text-gray-600 dark:text-[#788099] text-sm mb-1">
               Account Name (Auto-filled)
             </label>
             <input
-              className="w-full bg-[#23232B] text-white rounded-lg px-4 py-3 focus:outline-none placeholder:text-[#788099]"
+              className="w-full bg-gray-50 dark:bg-[#23232B] text-gray-900 dark:text-white rounded-lg px-4 py-3 focus:outline-none placeholder:text-gray-400 dark:placeholder:text-[#788099]"
               placeholder="Your name will be auto-filled"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -216,11 +219,11 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
           </div>
           {/* Account Number Input */}
           <div>
-            <label className="block text-[#788099] text-sm mb-1">
+            <label className="block text-gray-600 dark:text-[#788099] text-sm mb-1">
               Account Number
             </label>
             <input
-              className="w-full bg-[#23232B] text-white rounded-lg px-4 py-3 focus:outline-none placeholder:text-[#788099]"
+              className="w-full bg-gray-50 dark:bg-[#23232B] text-gray-900 dark:text-white rounded-lg px-4 py-3 focus:outline-none placeholder:text-gray-400 dark:placeholder:text-[#788099]"
               placeholder="Enter account number"
               value={account}
               onChange={(e) => setAccount(e.target.value)}
@@ -239,7 +242,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
           {/* Buttons */}
           <div className="flex gap-4 mt-2">
             <button
-              className="flex-1 rounded-lg border border-[#35353E] bg-transparent text-white py-2 font-medium hover:bg-[#23232B] transition"
+              className="flex-1 rounded-lg border border-gray-200 dark:border-[#35353E] bg-transparent text-gray-700 dark:text-white py-2 font-medium hover:bg-gray-50 dark:hover:bg-[#23232B] transition"
               onClick={onClose}
               type="button"
               disabled={loading || postLoading}

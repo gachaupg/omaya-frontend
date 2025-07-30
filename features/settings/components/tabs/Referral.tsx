@@ -1,81 +1,90 @@
-import React, { useState, useEffect } from "react";
-import Withdraw from "./Withdraw";
+// src/features/p2p/components/ui/referral/Referral.tsx
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/store/rootReducer";
-import { useSelector, useDispatch } from "react-redux";
+
 import { fetchReferredUsers } from "../../slices/referralSlice";
 import { fetchReferralWallet } from "../../slices/referralWalletSlice";
+
 import ReferralTabs from "./sections/ReferralTabs";
 import ReferralMainCard from "./sections/ReferralMainCard";
 import ReferralUsersList from "./sections/ReferralUsersList";
+import Withdraw from "./Withdraw";
 
-const Referral = () => {
-  const [tab, setTab] = useState("Referral");
-  const [showWithdrawPage, setShowWithdrawPage] = useState(false);
-
-  const { user, isAuthenticated } = useSelector(
-    (state: RootState) => state.auth
+const Referral: React.FC = () => {
+  /* ───────────────────────────── state ───────────────────────────── */
+  const [activeTab, setActiveTab] = useState<"Referral" | "History">(
+    "Referral"
   );
-  const { referredUsers, loading } = useSelector(
-    (state: RootState) => state.referral
-  );
-  const {
-    data: walletData,
-    loading: walletLoading,
-    error: walletError,
-  } = useSelector((state: RootState) => state.referralWallet);
+  const [showWithdraw, setShowWithdraw] = useState(false);
 
   const dispatch = useDispatch<AppDispatch>();
 
+  const { isAuthenticated, user } = useSelector((s: RootState) => s.auth);
+  const { referredUsers, loading: usersLoading } = useSelector(
+    (s: RootState) => s.referral
+  );
+  const {
+    data: wallet,
+    loading: walletLoading,
+    error: walletError,
+  } = useSelector((s: RootState) => s.referralWallet);
+
+  /* ───────────────────────── fetch side-effects ───────────────────── */
+  const refCode = user?.referral_code;
+
   useEffect(() => {
-    const fetchData = async () => {
-      if (user?.referral_code && isAuthenticated) {
-        try {
-          // Fetch referred users
-          await dispatch(fetchReferredUsers(user.referral_code));
+    if (!isAuthenticated || !refCode) return;
 
-          // Fetch referral wallet only if on referral tab
-          if (tab === "Referral") {
-            try {
-              await dispatch(fetchReferralWallet());
-            } catch (error) {
-              console.warn("Referral wallet API not available:", error);
-            }
-          }
-        } catch (error) {
-          console.error("Error fetching referral data:", error);
-        }
-      }
-    };
-    fetchData();
-  }, [user?.referral_code, dispatch, isAuthenticated, tab]);
+    // always load referred users
+    dispatch(fetchReferredUsers(refCode));
 
-  if (showWithdrawPage) {
+    // only load wallet on the referral tab
+    if (activeTab === "Referral") {
+      dispatch(fetchReferralWallet()).catch((e) =>
+        console.warn("Referral wallet API not available:", e)
+      );
+    }
+  }, [activeTab, dispatch, isAuthenticated, refCode]);
+
+  /* ───────────────────────────── early exit ───────────────────────── */
+  if (showWithdraw) {
     return (
-      <div className="min-h-screen bg-[#18181B] text-white flex flex-col items-center ">
+      <div className="min-h-screen flex flex-col items-center bg-gray-50 text-gray-900 dark:bg-[#18181b] dark:text-white">
         <Withdraw />
       </div>
     );
   }
 
+  /* ─────────────────────────────── render ─────────────────────────── */
   return (
-    <div className="dark:text-white text-[#0D0D0D] dark:bg-[#18181B] bg-gray-100">
-      <ReferralTabs tab={tab} setTab={setTab} />
+    <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-[#18181b] dark:text-white">
+      <ReferralTabs
+        tab={activeTab}
+        setTab={setActiveTab as (tab: string) => void}
+      />
 
-      {/* Main Card & Users Section */}
-      {tab === "Referral" && (
+      {activeTab === "Referral" && (
         <>
           <ReferralMainCard
             user={user}
-            walletData={walletData}
+            walletData={wallet}
             walletLoading={walletLoading}
             walletError={walletError}
-            setShowWithdrawPage={setShowWithdrawPage}
+            setShowWithdrawPage={setShowWithdraw}
           />
-          <ReferralUsersList referredUsers={referredUsers} loading={loading} />
+
+          <ReferralUsersList
+            referredUsers={referredUsers}
+            loading={usersLoading}
+          />
         </>
       )}
-      {tab === "History" && (
-        <div className="text-center py-12 dark:text-[#A3A3A3] text-[#788099] text-lg">
+
+      {activeTab === "History" && (
+        <div className="py-12 text-center text-lg text-gray-500 dark:text-gray-400">
           History page content goes here.
         </div>
       )}

@@ -15,6 +15,11 @@ interface UserPaymentSelectorProps {
   selectedDetails: UserPaymentDetail[];
 }
 
+/**
+ * Dropdown-selector + card list for a user’s saved payment details.
+ * Pure UI – no business logic touched.  Added `dark:` utilities everywhere so the
+ * component looks correct in both light & dark themes.
+ */
 const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
   userPaymentDetails,
   onSelect,
@@ -24,7 +29,9 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
   const [selectedMethod, setSelectedMethod] = useState<string>("");
   const [selectedProvider, setSelectedProvider] = useState<string>("");
 
-  // Get unique payment methods from userPaymentDetails
+  // ──────────────────────────────────────────────────────────────────────────────
+  // memo helpers
+  // ──────────────────────────────────────────────────────────────────────────────
   const methodOptions = useMemo(() => {
     const seen = new Set();
     return userPaymentDetails.filter((d) => {
@@ -36,7 +43,6 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
     });
   }, [userPaymentDetails]);
 
-  // Get unique providers for the selected method from userPaymentDetails
   const providerOptions = useMemo(() => {
     const seen = new Set();
     return userPaymentDetails
@@ -50,98 +56,106 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
       });
   }, [userPaymentDetails, selectedMethod]);
 
-  // Filter user payment details by selected method and provider
-  const filteredDetails = useMemo(() => {
-    return userPaymentDetails.filter(
-      (d) =>
-        d.payment_method_name === selectedMethod &&
-        d.payment_provider_name === selectedProvider
-    );
-  }, [userPaymentDetails, selectedMethod, selectedProvider]);
+  const filteredDetails = useMemo(
+    () =>
+      userPaymentDetails.filter(
+        (d) =>
+          d.payment_method_name === selectedMethod &&
+          d.payment_provider_name === selectedProvider
+      ),
+    [userPaymentDetails, selectedMethod, selectedProvider]
+  );
 
-  // Helper to check if a detail is selected
   const isSelected = (detail: UserPaymentDetail) =>
     selectedDetails.some((d) => d.id === detail.id);
 
+  // ──────────────────────────────────────────────────────────────────────────────
+  // render
+  // ──────────────────────────────────────────────────────────────────────────────
   return (
     <div className="w-full">
-    <div className="flex items-center justify-between gap-2">
-        {/* Payment Method Dropdown */}
-        <div className="mb-4 w-full">
-        <label className="block text-[#788099] text-sm mb-1">Payment Method</label>
-        <select
-          className="w-full p-3 rounded-[24px] bg-[#18181D] border border-[#35353E] text-white"
-          value={selectedMethod}
-          onChange={(e) => {
-            setSelectedMethod(e.target.value);
-            setSelectedProvider("");
-          }}
-        >
-          <option value="">Select Method</option>
-          {methodOptions.map((d) => (
-            <option key={d.payment_method_name} value={d.payment_method_name}>
-              {d.payment_method_name}
-            </option>
-          ))}
-        </select>
-      </div>
-      {/* Provider Dropdown */}
-      {selectedMethod && (
-        <div className="mb-4 w-full">
-          <label className="block text-sm mb-1">Provider</label>
+      {/* dropdowns */}
+      <div className="flex flex-col sm:flex-row gap-2 mb-4 w-full">
+        {/* payment-method */}
+        <div className="flex-1">
+          <label className="block mb-1 text-sm text-gray-700 dark:text-[#788099]">
+            Payment Method
+          </label>
           <select
-            className="w-full p-3 rounded-[24px] bg-[#18181D] border border-[#35353E] text-white"
-            value={selectedProvider}
+            className="w-full p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none"
+            value={selectedMethod}
             onChange={(e) => {
-              setSelectedProvider(e.target.value);
+              setSelectedMethod(e.target.value);
+              setSelectedProvider("");
             }}
           >
-            <option value="">Select Provider</option>
-            {providerOptions.map((d) => (
-              <option
-                key={d.payment_provider_name}
-                value={d.payment_provider_name}
-              >
-                {d.payment_provider_name}
+            <option value="">Select Method</option>
+            {methodOptions.map((d) => (
+              <option key={d.payment_method_name} value={d.payment_method_name}>
+                {d.payment_method_name}
               </option>
             ))}
           </select>
         </div>
-      )}
 
-    </div>
-      {/* Payment Details Cards */}
+        {/* provider */}
+        {selectedMethod && (
+          <div className="flex-1">
+            <label className="block mb-1 text-sm text-gray-700 dark:text-[#788099]">
+              Provider
+            </label>
+            <select
+              className="w-full p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none"
+              value={selectedProvider}
+              onChange={(e) => setSelectedProvider(e.target.value)}
+            >
+              <option value="">Select Provider</option>
+              {providerOptions.map((d) => (
+                <option
+                  key={d.payment_provider_name}
+                  value={d.payment_provider_name}
+                >
+                  {d.payment_provider_name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
+      {/* detail cards */}
       {selectedMethod && selectedProvider && (
         <div className="space-y-2">
           {filteredDetails.map((detail) => (
             <div
               key={detail.id}
-              className="flex items-center justify-between bg-[#23232B] rounded-[24px] p-3 border border-[#35353E]"
+              className="flex items-center justify-between p-3 rounded-[24px] bg-gray-50 dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E]"
             >
               <div>
-                <div className="text-xs text-[#788099]">Account Name</div>
-                <div className="font-semibold text-white">
+                <p className="text-xs text-gray-500 dark:text-[#788099]">
+                  Account Name
+                </p>
+                <p className="font-semibold text-gray-900 dark:text-white">
                   {detail.account_name}
-                </div>
-                <div className="text-xs text-[#788099] mt-1">
+                </p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-[#788099]">
                   Account Number
-                </div>
-                <div className="font-semibold text-white">
+                </p>
+                <p className="font-semibold text-gray-900 dark:text-white">
                   {detail.account_number}
-                </div>
+                </p>
               </div>
+
               {isSelected(detail) ? (
                 <button
-                  className="px-4 py-2 ml-4 text-white"
-                  style={{ background: "#E23D3A", borderRadius: 16 }}
+                  className="px-4 py-2 ml-4 text-white rounded-[16px] bg-[#E23D3A] hover:opacity-90"
                   onClick={() => onRemove(detail)}
                 >
                   Remove
                 </button>
               ) : (
                 <button
-                  className="px-4 py-2 ml-4 text-white"
-                  style={{ background: "#1D8751", borderRadius: 16 }}
+                  className="px-4 py-2 ml-4 text-white rounded-[16px] bg-[#1D8751] hover:opacity-90"
                   onClick={() => onSelect(detail)}
                 >
                   Select

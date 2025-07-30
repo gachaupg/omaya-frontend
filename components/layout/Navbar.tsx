@@ -651,10 +651,10 @@ export default function Navbar() {
 
                 {/* Profile Modal */}
                 {profileModalOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-64 bg-[#1E2329] border border-[#35353E] rounded-lg shadow-xl z-[9999]">
+                  <div className="absolute top-full right-0 mt-2 w-64 dark:bg-[#1E2329] bg-white border dark:border-[#35353E] border-gray-200 rounded-lg shadow-xl z-[9999]">
                     <div className="p-4">
                       {/* User Info */}
-                      <div className="flex items-center mb-4 pb-4 border-b border-[#35353E]">
+                      <div className="flex items-center mb-4 pb-4 border-b dark:border-[#35353E] border-gray-200">
                         <div className="mr-3">
                           {userProfile?.photo ? (
                             <img
@@ -667,10 +667,12 @@ export default function Navbar() {
                           )}
                         </div>
                         <div>
-                          <h4 className="text-white font-medium text-sm">
+                          <h4 className="dark:text-white text-gray-800 font-medium text-sm">
                             {user?.first_name} {user?.last_name}
                           </h4>
-                          <p className="text-gray-400 text-xs">{user?.email}</p>
+                          <p className="dark:text-gray-400 text-gray-600 text-xs">
+                            {user?.email}
+                          </p>
                         </div>
                       </div>
 
@@ -678,7 +680,7 @@ export default function Navbar() {
                       <div className="space-y-2">
                         <Link
                           href="/dashboard/account"
-                          className="flex items-center w-full px-3 py-2 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-md transition-colors duration-200"
+                          className="flex items-center w-full px-3 py-2 dark:text-gray-300 text-gray-700 dark:hover:text-white hover:text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 rounded-md transition-colors duration-200"
                           onClick={() => setProfileModalOpen(false)}
                         >
                           <User size={16} className="mr-3" />
@@ -687,7 +689,7 @@ export default function Navbar() {
 
                         <Link
                           href="/dashboard/settings"
-                          className="flex items-center w-full px-3 py-2 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-md transition-colors duration-200"
+                          className="flex items-center w-full px-3 py-2 dark:text-gray-300 text-gray-700 dark:hover:text-white hover:text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 rounded-md transition-colors duration-200"
                           onClick={() => setProfileModalOpen(false)}
                         >
                           <Settings size={16} className="mr-3" />
@@ -696,7 +698,7 @@ export default function Navbar() {
 
                         <button
                           onClick={handleLogout}
-                          className="flex items-center w-full px-3 py-2 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-md transition-colors duration-200"
+                          className="flex items-center w-full px-3 py-2 dark:text-gray-300 text-gray-700 dark:hover:text-white hover:text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 rounded-md transition-colors duration-200"
                         >
                           <LogOut size={16} className="mr-3" />
                           <span className="text-sm">Logout</span>

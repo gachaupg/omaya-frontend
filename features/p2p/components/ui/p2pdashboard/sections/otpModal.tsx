@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useEffect, useRef } from "react";
 import Card from "../../../Common/Card";
 import Button from "../../../Common/Button";
@@ -6,7 +7,7 @@ import { showToast } from "@/lib/utils/toast";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
 import { verifyWithdrawal } from "@/features/p2p/slices/withdrawSlice";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 
 interface OTPModalProps {
   isOpen: boolean;
@@ -27,12 +28,6 @@ const OTPModal: React.FC<OTPModalProps> = ({
   const router = useRouter();
   const [isRouterReady, setIsRouterReady] = useState(false);
 
-  // Check if router is ready
-  useEffect(() => {
-    if (router.isReady) {
-      setIsRouterReady(true);
-    }
-  }, [router.isReady]);
   const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);

@@ -1,3 +1,4 @@
+/* src/components/Common/charts.tsx (or wherever you keep it) */
 import React, { useEffect, useState, useRef } from "react";
 import { tokens } from "@/styles/tokens";
 import Button from "./Button";
@@ -15,6 +16,9 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+/* ------------------------------------------------------------------ */
+/* Types                                                              */
+/* ------------------------------------------------------------------ */
 type TimeFilter =
   | "Today"
   | "Last Week"
@@ -22,15 +26,18 @@ type TimeFilter =
   | "Last 6 Months"
   | "All Time";
 
-type ChartProps = {
+interface ChartProps {
   title?: string;
   timeFrame?: string;
   data?: any[];
   onTimeFilterChange?: (filter: TimeFilter) => void;
   selectedTimeFilter?: TimeFilter;
   showTimeFilter?: boolean;
-};
+}
 
+/* ------------------------------------------------------------------ */
+/* Helpers                                                            */
+/* ------------------------------------------------------------------ */
 const months = [
   "Jan",
   "Feb",
@@ -46,6 +53,9 @@ const months = [
   "Dec",
 ];
 
+/* ------------------------------------------------------------------ */
+/* Component                                                          */
+/* ------------------------------------------------------------------ */
 const Charts: React.FC<ChartProps> = ({
   title = "P2P Overview (USD)",
   timeFrame = "Month",
@@ -55,142 +65,99 @@ const Charts: React.FC<ChartProps> = ({
   showTimeFilter = true,
 }) => {
   const dispatch = useDispatch<AppDispatch>();
+
   const [filter, setFilter] = useState<"All" | "Sells" | "Buys">("All");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { trades } = useSelector((state: RootState) => state.userTrades);
+
+  const { trades } = useSelector((s: RootState) => s.userTrades);
+
   const [chartData, setChartData] = useState<
-    Array<{ name: string; buyValue: number; sellValue: number }>
+    { name: string; buyValue: number; sellValue: number }[]
   >([]);
 
+  /* ------------------- Fetch trades once ------------------- */
   useEffect(() => {
     dispatch(fetchUserTrades({ page: 1, currency: "usdt" }));
   }, [dispatch]);
 
-  // Handle click outside dropdown
+  /* ------------------- Click-outside for dropdown ----------- */
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (e: MouseEvent) => {
       if (
         dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+        !dropdownRef.current.contains(e.target as Node)
+      )
         setIsDropdownOpen(false);
-      }
     };
-
-    if (isDropdownOpen) {
+    if (isDropdownOpen)
       document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isDropdownOpen]);
 
+  /* ------------------- Build chart data -------------------- */
   useEffect(() => {
-    if (data && data.length > 0) {
-      // Use the filtered data passed from P2PCharts
-      const monthlyData = Array(12)
-        .fill(0)
-        .map(() => ({ buyValue: 0, sellValue: 0 }));
-      const currentDate = new Date();
-
-      data.forEach((item: any) => {
-        if (!item.lastUpdate) return;
-
-        const itemDate = new Date(item.lastUpdate);
-        const monthDiff =
-          (currentDate.getFullYear() - itemDate.getFullYear()) * 12 +
-          (currentDate.getMonth() - itemDate.getMonth());
-
-        if (monthDiff < 12) {
-          const monthIndex = 11 - monthDiff;
-          if (item.type === "sell") {
-            monthlyData[monthIndex].sellValue += parseFloat(item.amount) || 0;
-          } else if (item.type === "buy") {
-            monthlyData[monthIndex].buyValue += parseFloat(item.amount) || 0;
-          }
-        }
-      });
-
-      const formattedData = monthlyData.map((data, index) => ({
-        name: months[index],
-        buyValue: data.buyValue,
-        sellValue: data.sellValue,
-      }));
-
-      setChartData(formattedData);
-    } else if (trades?.results) {
-      // Fallback to trades data if no filtered data is provided
-      const monthlyData = Array(12)
-        .fill(0)
-        .map(() => ({ buyValue: 0, sellValue: 0 }));
-      const currentDate = new Date();
-
-      trades.results.forEach((trade: any) => {
-        const tradeDate = new Date(trade.timestamp);
-        const monthDiff =
-          (currentDate.getFullYear() - tradeDate.getFullYear()) * 12 +
-          (currentDate.getMonth() - tradeDate.getMonth());
-
-        if (monthDiff < 12) {
-          const monthIndex = 11 - monthDiff;
-          if (trade.order_type === "sell") {
-            monthlyData[monthIndex].sellValue += parseFloat(trade.amount);
-          } else if (trade.order_type === "buy") {
-            monthlyData[monthIndex].buyValue += parseFloat(trade.amount);
-          }
-        }
-      });
-
-      const formattedData = monthlyData.map((data, index) => ({
-        name: months[index],
-        buyValue: data.buyValue,
-        sellValue: data.sellValue,
-      }));
-
-      setChartData(formattedData);
-    } else {
-      // If no data available, set empty chart
+    const src = data?.length ? data : trades?.results || [];
+    if (!src.length) {
       setChartData([]);
+      return;
     }
+
+    const monthly: { buyValue: number; sellValue: number }[] = Array(12)
+      .fill(0)
+      .map(() => ({ buyValue: 0, sellValue: 0 }));
+
+    const now = new Date();
+
+    src.forEach((item: any) => {
+      const ts = new Date(item.lastUpdate || item.timestamp);
+      if (isNaN(ts.getTime())) return;
+
+      const diff =
+        (now.getFullYear() - ts.getFullYear()) * 12 +
+        (now.getMonth() - ts.getMonth());
+
+      if (diff < 12) {
+        const idx = 11 - diff;
+        const amt = parseFloat(item.amount) || 0;
+        if ((item.type || item.order_type) === "sell")
+          monthly[idx].sellValue += amt;
+        else monthly[idx].buyValue += amt;
+      }
+    });
+
+    setChartData(
+      monthly.map((m, i) => ({
+        name: months[i],
+        buyValue: m.buyValue,
+        sellValue: m.sellValue,
+      }))
+    );
   }, [data, trades]);
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div
-          className={`bg-[${tokens.colors.dark.card}] p-2 border border-[${tokens.colors.dark.border}] rounded-lg`}
-        >
-          <p className={`text-[${tokens.colors.dark.textBody}]`}>
-            {`${label}:`}
+  /* ------------------- Tooltip ----------------------------- */
+  const CustomTooltip = ({ active, payload, label }: any) =>
+    active && payload?.length ? (
+      <div
+        className={`rounded-lg border p-2
+          bg-white border-gray-200 text-gray-800
+          dark:bg-[${tokens.colors.dark.card}] dark:border-[${tokens.colors.dark.border}] dark:text-[${tokens.colors.dark.textBody}]`}
+      >
+        <p className="font-medium">{label}</p>
+        {filter !== "Sells" && (
+          <p className="text-[#1D8751]">{`Buys: ${payload[0].value.toLocaleString()} USD`}</p>
+        )}
+        {filter !== "Buys" && (
+          <p className="text-[#FF4D4D]">
+            {`${filter === "All" ? "Sells" : "Sells"}: ${payload[
+              filter === "All" ? 1 : 0
+            ].value.toLocaleString()} USD`}
           </p>
-          {filter === "All" && (
-            <>
-              <p className={`text-[#1D8751]`}>
-                {`Buys: ${payload[0].value.toLocaleString()} USD`}
-              </p>
-              <p className={`text-[#FF4D4D]`}>
-                {`Sells: ${payload[1].value.toLocaleString()} USD`}
-              </p>
-            </>
-          )}
-          {filter === "Buys" && (
-            <p className={`text-[#1D8751]`}>
-              {`Buys: ${payload[0].value.toLocaleString()} USD`}
-            </p>
-          )}
-          {filter === "Sells" && (
-            <p className={`text-[#FF4D4D]`}>
-              {`Sells: ${payload[0].value.toLocaleString()} USD`}
-            </p>
-          )}
-        </div>
-      );
-    }
-    return null;
-  };
+        )}
+      </div>
+    ) : null;
 
+  /* ------------------- Time filter dropdown ---------------- */
   const timeFilterOptions: TimeFilter[] = [
     "Today",
     "Last Week",
@@ -198,76 +165,67 @@ const Charts: React.FC<ChartProps> = ({
     "Last 6 Months",
     "All Time",
   ];
-
-  const handleTimeFilterSelect = (filter: TimeFilter) => {
-    onTimeFilterChange?.(filter);
+  const handleTimeFilterSelect = (opt: TimeFilter) => {
+    onTimeFilterChange?.(opt);
     setIsDropdownOpen(false);
   };
 
+  /* ------------------------------------------------------------------ */
+  /* Render                                                              */
+  /* ------------------------------------------------------------------ */
   return (
     <div className="w-full">
+      {/* Header */}
       <div className="flex justify-between items-center mb-6">
+        {/* Title + buy/sell buttons */}
         <div className="flex items-center gap-6">
-          <h3 className={`text-[${tokens.colors.dark.textTitle}] font-medium`}>
+          <h3 className="text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] font-medium">
             {title}
           </h3>
 
           <div className="flex gap-2">
-            <Button
-              borderRadius={24}
-              height={36}
-              variant={filter === "All" ? "primary" : "outline"}
-              size="sm"
-              className={`border text-[#1D8751] border-[#1D8751] text-[${tokens.colors.dark.textBody}]`}
-              onClick={() => setFilter("All")}
-            >
-              All
-            </Button>
-            <Button
-              borderRadius={24}
-              variant={filter === "Sells" ? "primary" : "outline"}
-              size="sm"
-              className={`border text-[#1D8751] border-[#1D8751] text-[${tokens.colors.dark.textBody}]`}
-              onClick={() => setFilter("Sells")}
-            >
-              Sells
-            </Button>
-            <Button
-              borderRadius={24}
-              height={36}
-              variant={filter === "Buys" ? "primary" : "outline"}
-              size="sm"
-              className={`border text-[#1D8751] border-[#1D8751] text-[${tokens.colors.dark.textBody}]`}
-              onClick={() => setFilter("Buys")}
-            >
-              Buys
-            </Button>
+            {(["All", "Sells", "Buys"] as const).map((t) => (
+              <Button
+                key={t}
+                borderRadius={24}
+                height={36}
+                variant={filter === t ? "primary" : "outline"}
+                size="sm"
+                onClick={() => setFilter(t)}
+                className={`border border-[#1D8751]
+                  ${filter === t ? "bg-[#1D8751] text-white" : "text-[#1D8751]"}
+                  dark:text-[${tokens.colors.dark.textBody}]`}
+              >
+                {t}
+              </Button>
+            ))}
           </div>
         </div>
 
-        <div className="relative">
+        {/* Time-filter dropdown */}
+        <div className="relative" ref={dropdownRef}>
           {showTimeFilter ? (
-            <div className="relative" ref={dropdownRef}>
+            <>
               <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className={`flex items-center gap-1 px-4 py-1.5 text-[${tokens.colors.dark.textBody}] text-sm border border-[${tokens.colors.dark.border}] rounded-lg hover:bg-[${tokens.colors.dark.card}] transition-colors`}
+                onClick={() => setIsDropdownOpen((o) => !o)}
+                className="flex items-center gap-1 px-4 py-1.5 text-sm
+                  text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50
+                  dark:text-[${tokens.colors.dark.textBody}]
+                  dark:border-[${tokens.colors.dark.border}]
+                  dark:hover:bg-[${tokens.colors.dark.card}] transition"
               >
                 {selectedTimeFilter}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
+                  className={`w-4 h-4 transition-transform ${
+                    isDropdownOpen ? "rotate-180" : ""
+                  }`}
                   fill="none"
                   stroke="currentColor"
+                  viewBox="0 0 24 24"
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className={`text-[${
-                    tokens.colors.dark.textBody
-                  }] transition-transform ${
-                    isDropdownOpen ? "rotate-180" : ""
-                  }`}
                 >
                   <path d="m6 9 6 6 6-6" />
                 </svg>
@@ -275,49 +233,49 @@ const Charts: React.FC<ChartProps> = ({
 
               {isDropdownOpen && (
                 <div
-                  className={`absolute right-0 top-full mt-1 bg-[${tokens.colors.dark.card}] border border-[${tokens.colors.dark.border}] rounded-lg shadow-lg z-10 min-w-[140px]`}
+                  className="absolute right-0 mt-1 z-10 min-w-[140px]
+                    bg-white border border-gray-200 rounded-lg shadow-lg
+                    dark:bg-[${tokens.colors.dark.card}]
+                    dark:border-[${tokens.colors.dark.border}]"
                 >
-                  {timeFilterOptions.map((option) => (
+                  {timeFilterOptions.map((opt) => (
                     <button
-                      key={option}
-                      onClick={() => handleTimeFilterSelect(option)}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-[${
-                        tokens.colors.dark.border
-                      }] transition-colors ${
-                        selectedTimeFilter === option
-                          ? `text-[#1D8751] bg-[${tokens.colors.dark.border}]`
-                          : `text-[${tokens.colors.dark.textBody}]`
+                      key={opt}
+                      onClick={() => handleTimeFilterSelect(opt)}
+                      className={`block w-full text-left px-4 py-2 text-sm
+                        hover:bg-gray-100 dark:hover:bg-[${
+                          tokens.colors.dark.border
+                        }]
+                        ${
+                          selectedTimeFilter === opt
+                            ? "text-[#1D8751] dark:bg-[${tokens.colors.dark.border}]"
+                            : "text-gray-700 dark:text-[${tokens.colors.dark.textBody}]"
+                        } ${
+                        opt === timeFilterOptions[0] ? "rounded-t-lg" : ""
                       } ${
-                        option === timeFilterOptions[0] ? "rounded-t-lg" : ""
-                      } ${
-                        option ===
-                        timeFilterOptions[timeFilterOptions.length - 1]
+                        opt === timeFilterOptions[timeFilterOptions.length - 1]
                           ? "rounded-b-lg"
                           : ""
                       }`}
                     >
-                      {option}
+                      {opt}
                     </button>
                   ))}
                 </div>
               )}
-            </div>
+            </>
           ) : (
-            <button
-              className={`flex items-center gap-1 px-4 py-1.5 text-[${tokens.colors.dark.textBody}] text-sm`}
-            >
+            <button className="flex items-center gap-1 px-4 py-1.5 text-sm text-gray-700 dark:text-[${tokens.colors.dark.textBody}]">
               {timeFrame}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
+                className="w-4 h-4"
                 fill="none"
                 stroke="currentColor"
+                viewBox="0 0 24 24"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className={`text-[${tokens.colors.dark.textBody}]`}
               >
                 <path d="m6 9 6 6 6-6" />
               </svg>
@@ -326,8 +284,12 @@ const Charts: React.FC<ChartProps> = ({
         </div>
       </div>
 
+      {/* Chart card */}
       <div
-        className={`w-full rounded-2xl bg-[${tokens.colors.dark.card}] border-2 border-[${tokens.colors.dark.border}] p-6`}
+        className={`w-full rounded-2xl p-6 
+          bg-white border-2 border-gray-200
+          dark:bg-[${tokens.colors.dark.card}]
+          dark:border-[${tokens.colors.dark.border}]`}
       >
         <div className="h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
@@ -345,30 +307,33 @@ const Charts: React.FC<ChartProps> = ({
                   <stop offset="95%" stopColor="#FF4D4D" stopOpacity={0} />
                 </linearGradient>
               </defs>
+
               <CartesianGrid
-                strokeDasharray="3 3"
-                stroke={tokens.colors.dark.border}
+                strokeDasharray="8 4"
+                stroke="var(--tw-border-opacity)"
+                className="stroke-gray-200 dark:stroke-white/10"
                 vertical={false}
               />
+
               <XAxis
                 dataKey="name"
-                stroke={tokens.colors.dark.textBody}
-                tick={{ fill: tokens.colors.dark.textBody }}
+                className="text-gray-700 dark:text-[${tokens.colors.dark.textBody}]"
               />
               <YAxis
-                stroke={tokens.colors.dark.textBody}
-                tick={{ fill: tokens.colors.dark.textBody }}
-                tickFormatter={(value) => value.toLocaleString()}
+                className="text-gray-700 dark:text-[${tokens.colors.dark.textBody}]"
+                tickFormatter={(v) => v.toLocaleString()}
               />
+
               <Tooltip content={<CustomTooltip />} />
+
               {(filter === "All" || filter === "Buys") && (
                 <Area
                   type="monotone"
                   dataKey="buyValue"
                   stroke="#1D8751"
+                  strokeWidth={3}
                   fillOpacity={1}
                   fill="url(#colorBuy)"
-                  strokeWidth={3}
                 />
               )}
               {(filter === "All" || filter === "Sells") && (
@@ -376,9 +341,9 @@ const Charts: React.FC<ChartProps> = ({
                   type="monotone"
                   dataKey="sellValue"
                   stroke="#FF4D4D"
+                  strokeWidth={3}
                   fillOpacity={1}
                   fill="url(#colorSell)"
-                  strokeWidth={3}
                 />
               )}
             </AreaChart>

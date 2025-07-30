@@ -22,7 +22,7 @@ const RatesTransactionHistory = () => {
 
   if (loading) {
     return (
-      <div className="bg-[#1D1D23] p-6 rounded-lg">
+      <div className="bg-white dark:bg-[#1D1D23] p-6 rounded-lg">
         <div className="flex items-center justify-center h-32">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
         </div>
@@ -32,17 +32,17 @@ const RatesTransactionHistory = () => {
 
   if (error) {
     return (
-      <div className="bg-[#1D1D23] p-6 rounded-lg">
+      <div className="bg-white dark:bg-[#1D1D23] p-6 rounded-lg">
         <div className="text-red-500 text-center">Error: {error}</div>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#1D1D23] p-6 rounded-lg">
+    <div className="bg-white dark:bg-[#1D1D23] p-6 rounded-lg">
       <table className="w-full text-left">
         <thead>
-          <tr className="border-b border-[#35353E] text-[#788099]">
+          <tr className="border-b border-gray-200 dark:border-[#35353E] text-gray-600 dark:text-[#788099]">
             <th className="p-4 font-normal">Asset</th>
             <th className="p-4 font-normal">Transaction Type</th>
             <th className="p-4 font-normal">Amount</th>
@@ -54,18 +54,22 @@ const RatesTransactionHistory = () => {
           {transactions.map((tx, index) => (
             <tr
               key={tx.transaction_id}
-              className="border-b border-[#35353E] last:border-b-0"
+              className="border-b border-gray-200 dark:border-[#35353E] last:border-b-0"
             >
               <td className="p-4 flex items-center">
                 <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center mr-3 text-white text-xs font-bold">
                   {getCurrencyIcon(tx.currency)}
                 </div>
                 <div>
-                  <div>{tx.currency}</div>
-                  <div className="text-sm text-[#788099]">{tx.source}</div>
+                  <div className="text-gray-900 dark:text-white">
+                    {tx.currency}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-[#788099]">
+                    {tx.source}
+                  </div>
                 </div>
               </td>
-              <td className="p-4">
+              <td className="p-4 text-gray-900 dark:text-white">
                 {formatTransactionType(tx.transaction_type)}
               </td>
               <td className={`p-4 ${getStatusColor(tx.status)}`}>
@@ -80,7 +84,7 @@ const RatesTransactionHistory = () => {
                   {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
                 </span>
               </td>
-              <td className="p-4 text-[#788099]">
+              <td className="p-4 text-gray-600 dark:text-[#788099]">
                 {formatTimeAgo(tx.timestamp)}
               </td>
             </tr>

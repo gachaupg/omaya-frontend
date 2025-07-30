@@ -291,14 +291,14 @@ const RatesCalculator = () => {
   };
 
   return (
-    <div className=" p-6 rounded-lg">
+    <div className="bg-white dark:bg-[#1D1D23] p-6 rounded-lg">
       <div className="flex space-x-4 mb-6">
         <button
           onClick={() => setActiveTab("deposit")}
           className={`px-6 py-2 rounded-[18px] font-semibold flex items-center justify-center transition-colors ${
             activeTab === "deposit"
               ? "bg-[#1D8751] text-white"
-              : "bg-[#1D1D23] text-[#788099] hover:bg-[#1D8751]"
+              : "bg-gray-100 dark:bg-[#1D1D23] text-gray-700 dark:text-[#788099] hover:bg-gray-200 dark:hover:bg-[#1D8751]"
           }`}
         >
           <span className="mr-2">↑</span> Deposit
@@ -308,7 +308,7 @@ const RatesCalculator = () => {
           className={`px-6 py-2 rounded-[18px] font-semibold flex items-center justify-center transition-colors ${
             activeTab === "withdraw"
               ? "bg-red-500 text-white"
-              : "bg-[#1D1D23] text-[#788099] hover:bg-red-600"
+              : "bg-gray-100 dark:bg-[#1D1D23] text-gray-700 dark:text-[#788099] hover:bg-red-600"
           }`}
         >
           <span className="mr-2">↓</span> Withdraw
@@ -317,9 +317,11 @@ const RatesCalculator = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div className="relative" ref={dropdownRef}>
-          <label className="text-sm text-[#788099] mb-2 block">Asset</label>
+          <label className="text-sm text-gray-600 dark:text-[#788099] mb-2 block">
+            Asset
+          </label>
           <div
-            className="bg-[#1D1D23] p-3 rounded-[18px] flex items-center justify-between cursor-pointer hover:bg-[#35353E] transition-colors"
+            className="bg-gray-50 dark:bg-[#1D1D23] p-3 rounded-[18px] flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors"
             onClick={() => setIsAssetDropdownOpen(!isAssetDropdownOpen)}
           >
             <div className="flex items-center">
@@ -332,7 +334,7 @@ const RatesCalculator = () => {
               ) : (
                 <FaBitcoin className="text-yellow-500" />
               )}
-              <span className="ml-2">
+              <span className="ml-2 text-gray-900 dark:text-white">
                 {selectedAsset?.symbol || "Loading..."}
               </span>
             </div>
@@ -345,9 +347,9 @@ const RatesCalculator = () => {
 
           {/* Asset Dropdown */}
           {isAssetDropdownOpen && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-[#1D1D23] rounded-[18px] border border-gray-700 z-10 max-h-60 overflow-y-auto shadow-lg">
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1D1D23] rounded-[18px] border border-gray-200 dark:border-gray-700 z-10 max-h-60 overflow-y-auto shadow-lg">
               {assetsLoading && (
-                <div className="p-3 text-center text-[#788099]">
+                <div className="p-3 text-center text-gray-600 dark:text-[#788099]">
                   Loading assets...
                 </div>
               )}
@@ -363,7 +365,7 @@ const RatesCalculator = () => {
                 assetsData.assets.map((asset: Asset) => (
                   <div
                     key={asset.asset_id}
-                    className="p-3 flex items-center hover:bg-[#35353E] cursor-pointer transition-colors first:rounded-t-[18px] last:rounded-b-[18px]"
+                    className="p-3 flex items-center hover:bg-gray-100 dark:hover:bg-[#35353E] cursor-pointer transition-colors first:rounded-t-[18px] last:rounded-b-[18px]"
                     onClick={() => handleAssetSelect(asset)}
                   >
                     {asset.asset_image ? (
@@ -375,9 +377,11 @@ const RatesCalculator = () => {
                     ) : (
                       <FaBitcoin className="text-yellow-500" />
                     )}
-                    <span className="ml-2 font-medium">{asset.symbol}</span>
+                    <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                      {asset.symbol}
+                    </span>
                     {asset.description && (
-                      <span className="ml-2 text-sm text-[#788099]">
+                      <span className="ml-2 text-sm text-gray-600 dark:text-[#788099]">
                         ({asset.description})
                       </span>
                     )}
@@ -386,7 +390,7 @@ const RatesCalculator = () => {
               {!assetsLoading &&
                 !assetsError &&
                 (!assetsData?.assets || assetsData.assets.length === 0) && (
-                  <div className="p-3 text-center text-[#788099]">
+                  <div className="p-3 text-center text-gray-600 dark:text-[#788099]">
                     No assets available
                   </div>
                 )}
@@ -395,18 +399,18 @@ const RatesCalculator = () => {
         </div>
 
         <div>
-          <label className="text-sm text-[#788099] mb-2 block">
+          <label className="text-sm text-gray-600 dark:text-[#788099] mb-2 block">
             I want to recieve
           </label>
-          <div className="flex items-center bg-[#1D1D23] rounded-[18px]">
+          <div className="flex items-center bg-gray-50 dark:bg-[#1D1D23] rounded-[18px]">
             <span className="p-3 text-[#1D8751]">$</span>
             <input
               type="text"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="bg-transparent p-3 w-full focus:outline-none"
+              className="bg-transparent p-3 w-full focus:outline-none text-gray-900 dark:text-white"
             />
-            <div className="p-3 flex items-center">
+            <div className="p-3 flex items-center text-gray-900 dark:text-white">
               <span>USD</span>
               <FiChevronDown className="ml-1" />
             </div>
@@ -414,14 +418,16 @@ const RatesCalculator = () => {
         </div>
 
         <div className="relative" ref={methodDropdownRef}>
-          <label className="text-sm text-[#788099] mb-2 block">Method</label>
+          <label className="text-sm text-gray-600 dark:text-[#788099] mb-2 block">
+            Method
+          </label>
           <div
-            className="bg-[#1D1D23] p-3 rounded-[18px] flex items-center justify-between cursor-pointer hover:bg-[#35353E] transition-colors"
+            className="bg-gray-50 dark:bg-[#1D1D23] p-3 rounded-[18px] flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors"
             onClick={() => setIsMethodDropdownOpen(!isMethodDropdownOpen)}
           >
             <div className="flex items-center">
               <FaUniversity />
-              <span className="ml-2">
+              <span className="ml-2 text-gray-900 dark:text-white">
                 {selectedPaymentMethod || "Select Method"}
               </span>
             </div>
@@ -434,9 +440,9 @@ const RatesCalculator = () => {
 
           {/* Payment Method Dropdown */}
           {isMethodDropdownOpen && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-[#1D1D23] rounded-[18px] border border-gray-700 z-10 max-h-60 overflow-y-auto shadow-lg">
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1D1D23] rounded-[18px] border border-gray-200 dark:border-gray-700 z-10 max-h-60 overflow-y-auto shadow-lg">
               {userDetailsLoading ? (
-                <div className="p-3 text-center text-[#788099]">
+                <div className="p-3 text-center text-gray-600 dark:text-[#788099]">
                   Loading payment methods...
                 </div>
               ) : userDetailsError ? (
@@ -447,15 +453,17 @@ const RatesCalculator = () => {
                 allPaymentMethods.map((method: string) => (
                   <div
                     key={method}
-                    className="p-3 flex items-center hover:bg-[#35353E] cursor-pointer transition-colors first:rounded-t-[18px] last:rounded-b-[18px]"
+                    className="p-3 flex items-center hover:bg-gray-100 dark:hover:bg-[#35353E] cursor-pointer transition-colors first:rounded-t-[18px] last:rounded-b-[18px]"
                     onClick={() => handlePaymentMethodSelect(method)}
                   >
                     <FaUniversity />
-                    <span className="ml-2 font-medium">{method}</span>
+                    <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                      {method}
+                    </span>
                   </div>
                 ))
               ) : (
-                <div className="p-3 text-center text-[#788099]">
+                <div className="p-3 text-center text-gray-600 dark:text-[#788099]">
                   No payment methods available
                 </div>
               )}
@@ -464,11 +472,13 @@ const RatesCalculator = () => {
         </div>
 
         <div className="relative" ref={providerDropdownRef}>
-          <label className="text-sm text-[#788099] mb-2 block">Provider</label>
+          <label className="text-sm text-gray-600 dark:text-[#788099] mb-2 block">
+            Provider
+          </label>
           <div
-            className={`bg-[#1D1D23] p-3 rounded-[18px] flex items-center justify-between cursor-pointer transition-colors ${
+            className={`bg-gray-50 dark:bg-[#1D1D23] p-3 rounded-[18px] flex items-center justify-between cursor-pointer transition-colors ${
               selectedPaymentMethod
-                ? "hover:bg-[#35353E]"
+                ? "hover:bg-gray-100 dark:hover:bg-[#35353E]"
                 : "opacity-50 cursor-not-allowed"
             }`}
             onClick={() =>
@@ -486,7 +496,7 @@ const RatesCalculator = () => {
                   <span className="text-xs">?</span>
                 </div>
               )}
-              <span className="ml-2">
+              <span className="ml-2 text-gray-900 dark:text-white">
                 {selectedProvider || "Select Provider"}
               </span>
             </div>
@@ -499,22 +509,24 @@ const RatesCalculator = () => {
 
           {/* Provider Dropdown */}
           {isProviderDropdownOpen && selectedPaymentMethod && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-[#1D1D23] rounded-[18px] border border-gray-700 z-10 max-h-60 overflow-y-auto shadow-lg">
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1D1D23] rounded-[18px] border border-gray-200 dark:border-gray-700 z-10 max-h-60 overflow-y-auto shadow-lg">
               {uniqueProviders.length > 0 ? (
                 uniqueProviders.map((provider: string) => (
                   <div
                     key={provider}
-                    className="p-3 flex items-center hover:bg-[#35353E] cursor-pointer transition-colors first:rounded-t-[18px] last:rounded-b-[18px]"
+                    className="p-3 flex items-center hover:bg-gray-100 dark:hover:bg-[#35353E] cursor-pointer transition-colors first:rounded-t-[18px] last:rounded-b-[18px]"
                     onClick={() => handleProviderSelect(provider)}
                   >
                     <div className="w-6 h-6 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-bold">
                       {provider.charAt(0).toUpperCase()}
                     </div>
-                    <span className="ml-2 font-medium">{provider}</span>
+                    <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                      {provider}
+                    </span>
                   </div>
                 ))
               ) : (
-                <div className="p-3 text-center text-[#788099]">
+                <div className="p-3 text-center text-gray-600 dark:text-[#788099]">
                   No providers available for this method
                 </div>
               )}
@@ -528,23 +540,26 @@ const RatesCalculator = () => {
         <span className="text-2xl font-bold">$103</span>
       </div>
 
-      <div className="bg-[#1D1D23] p-3 rounded-[18px] flex items-center justify-center space-x-6 text-sm mb-6">
-        <span className="text-[#788099] bg-[#35353E] p-2 rounded-[18px]">
-          Commission: 3% <span className="text-[#788099]">$3</span>
+      <div className="bg-gray-50 dark:bg-[#1D1D23] p-3 rounded-[18px] flex items-center justify-center space-x-6 text-sm mb-6">
+        <span className="text-gray-700 dark:text-[#788099] bg-gray-200 dark:bg-[#35353E] p-2 rounded-[18px]">
+          Commission: 3%{" "}
+          <span className="text-gray-700 dark:text-[#788099]">$3</span>
         </span>
-        <span className="w-px h-4 bg-gray-600"></span>
-        <span className="text-[#788099] bg-[#35353E] p-2 rounded-[18px]">
-          Network Fee <span className="text-[#788099]">$3</span>
+        <span className="w-px h-4 bg-gray-300 dark:bg-gray-600"></span>
+        <span className="text-gray-700 dark:text-[#788099] bg-gray-200 dark:bg-[#35353E] p-2 rounded-[18px]">
+          Network Fee{" "}
+          <span className="text-gray-700 dark:text-[#788099]">$3</span>
         </span>
-        <span className="w-px h-4 bg-gray-600"></span>
-        <span className="text-[#788099] bg-[#35353E] p-2 rounded-[18px]">
-          Total Fees <span className="text-[#788099]">$3</span>
+        <span className="w-px h-4 bg-gray-300 dark:bg-gray-600"></span>
+        <span className="text-gray-700 dark:text-[#788099] bg-gray-200 dark:bg-[#35353E] p-2 rounded-[18px]">
+          Total Fees{" "}
+          <span className="text-gray-700 dark:text-[#788099]">$3</span>
         </span>
       </div>
 
       <div className="flex items-center text-yellow-500 text-sm mb-6 bg-yellow-500/10 p-3 rounded-md">
         <FiInfo className="text-yellow-500" />
-        <p className="ml-2 text-gray-300">
+        <p className="ml-2 text-gray-700 dark:text-gray-300">
           Transactions are subject to commission, above is the information on
           the commission rates
         </p>

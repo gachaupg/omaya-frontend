@@ -3,7 +3,6 @@ import Card from "../../../Common/Card";
 import Loader from "../../../Common/Loader";
 import Button from "../../../Common/Button";
 import Input from "../../../Common/Input";
-import { FaCheckCircle } from "react-icons/fa";
 import {
   validateWithdrawalForm,
   getFieldError,
@@ -15,9 +14,7 @@ import { createWithdrawal } from "@/features/p2p/slices/withdrawSlice";
 import { AppDispatch } from "@/store";
 import {
   type CreateP2PWithdrawRequest,
-  type Currency,
   type Network,
-  type WalletType,
   type AssetNetwork,
 } from "@/features/p2p/types";
 import Select from "../../../Common/Select";
@@ -29,33 +26,42 @@ import { FinancialCalculator } from "@/lib/utils/financial";
 import { useTransactionValidation } from "@/features/p2p/hooks/useTransactionValidation";
 import OTPModal from "./otpModal";
 
-const Withdraw = () => {
+const Withdraw: React.FC = () => {
+  /* --------------------------------------------------------------------- */
+  /*                             Redux + hooks                             */
+  /* --------------------------------------------------------------------- */
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const { loading: isSubmitting, error: submitError } = useSelector(
+  const { loading: isSubmitting } = useSelector(
     (state: RootState) => state.withdrawals
   );
   const { data: assetsData, loading: assetsLoading } = useSelector(
     (state: RootState) => state.assets
   );
   const { validateTransaction } = useTransactionValidation();
+
+  /* --------------------------------------------------------------------- */
+  /*                               Component state                         */
+  /* --------------------------------------------------------------------- */
   const [selectedAssetId, setSelectedAssetId] = useState("");
   const [selectedNetworkId, setSelectedNetworkId] = useState("");
   const [amount, setAmount] = useState("");
   const [usdtAddress, setUsdtAddress] = useState("");
-  const [binanceAddress, setBinanceAddress] = useState("");
   const [errors, setErrors] = useState<ValidationError[]>([]);
   const [confirmPayment, setConfirmPayment] = useState(false);
   const [showOTPModal, setShowOTPModal] = useState(false);
   const [withdrawalId, setWithdrawalId] = useState("");
 
+  /* --------------------------------------------------------------------- */
+  /*                                Effects                                */
+  /* --------------------------------------------------------------------- */
   useEffect(() => {
-    if (!assetsData && !assetsLoading) {
-      dispatch(fetchAssets());
-    }
+    if (!assetsData && !assetsLoading) dispatch(fetchAssets());
   }, [assetsData, assetsLoading, dispatch]);
 
-  // Asset options (only show USDT Tether)
+  /* --------------------------------------------------------------------- */
+  /*                           Derived select data                         */
+  /* --------------------------------------------------------------------- */
   const assetOptions =
     assetsData?.assets
       .filter((a: { symbol: string }) => a.symbol === "USDT Tether")
@@ -64,22 +70,23 @@ const Withdraw = () => {
         label: a.symbol,
       })) || [];
 
-  // Find selected asset and network
   const selectedAsset = assetsData?.assets.find(
     (a: { asset_id: string }) => a.asset_id === selectedAssetId
   );
+
   const networkOptions =
     selectedAsset?.networks.map((n: AssetNetwork) => ({
       value: n.network_id,
       label: n.network_type,
     })) || [];
+
   const selectedNetwork = selectedAsset?.networks.find(
     (n: AssetNetwork) => n.network_id === selectedNetworkId
   );
 
-  // console.log(assetsData);
-
-  // Withdrawal fee
+  /* --------------------------------------------------------------------- */
+  /*                        Fee + “receive amount” calc                     */
+  /* --------------------------------------------------------------------- */
   const withdrawalFee = selectedNetwork ? selectedNetwork.withdrawal_fee : "0";
   const { netAmount } = FinancialCalculator.calculateWithdrawalAmount(
     amount || "0",
@@ -87,27 +94,20 @@ const Withdraw = () => {
   );
   const receiveAmount = amount ? netAmount.toFixed(2) : "0.00";
 
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAmount(e.target.value);
-    setErrors(errors.filter((error) => error.field !== "amount"));
-  };
-
-  const handleUsdtAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setUsdtAddress(e.target.value);
-    setErrors(errors.filter((error) => error.field !== "walletAddress"));
-  };
-
-  const handleConfirmChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setConfirmPayment(e.target.checked);
-    setErrors(errors.filter((error) => error.field !== "confirmPayment"));
-  };
+  /* --------------------------------------------------------------------- */
+  /*                            Helper & handlers                          */
+  /* --------------------------------------------------------------------- */
+  const border = (field: string) =>
+    getFieldError(field, errors)
+      ? "border-red-500"
+      : "border-gray-300 dark:border-[#23232B]";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const formData: WithdrawalFormData = {
       amount,
-      file: null, // Not needed for withdrawal
+      file: null,
       confirmPayment,
       walletAddress: usdtAddress,
     };
@@ -115,46 +115,35 @@ const Withdraw = () => {
     const validationErrors = validateWithdrawalForm(
       formData,
       selectedNetwork?.network_type,
-      "USDT", // Use USDT instead of USDT Tether for validation
+      "USDT",
       validateTransaction
     );
 
-    if (validationErrors.length > 0) {
+    if (validationErrors.length) {
       setErrors(validationErrors);
       return;
     }
 
     try {
-      const withdrawalData: CreateP2PWithdrawRequest = {
+      const payload: CreateP2PWithdrawRequest = {
         amount: FinancialCalculator.toNumber(amount),
         currency: "USDT",
         network: selectedNetwork?.network_type as Network,
         wallet_type: "withdraw",
         receiver_wallet: usdtAddress,
-        // binance_address: "",
       };
 
-      const resultAction = await dispatch(createWithdrawal(withdrawalData));
-
-      if (createWithdrawal.rejected.match(resultAction)) {
-        throw new Error(
-          resultAction.error.message || "Failed to submit withdrawal"
-        );
+      const res = await dispatch(createWithdrawal(payload));
+      if (createWithdrawal.rejected.match(res)) {
+        throw new Error(res.error.message || "Failed to submit withdrawal");
       }
 
-      // Log the successful withdrawal response
-      if (createWithdrawal.fulfilled.match(resultAction)) {
-        console.log("Withdrawal Response:", resultAction.payload);
-        showToast.success("Withdrawal request submitted successfully!");
-
-        // Store withdrawal ID and show OTP modal
-        if (resultAction.payload.withdrawal_id) {
-          setWithdrawalId(resultAction.payload.withdrawal_id);
-          setShowOTPModal(true);
-        }
+      showToast.success("Withdrawal request submitted successfully!");
+      if ((res.payload as any).withdrawal_id) {
+        setWithdrawalId((res.payload as any).withdrawal_id);
+        setShowOTPModal(true);
       }
 
-      // Reset form
       setAmount("");
       setUsdtAddress("");
       setConfirmPayment(false);
@@ -169,19 +158,26 @@ const Withdraw = () => {
     }
   };
 
-  const getInputBorderColor = (field: string) => {
-    return getFieldError(field, errors) ? "border-red-500" : "border-[#23232B]";
-  };
-
+  /* --------------------------------------------------------------------- */
+  /*                                 JSX                                   */
+  /* --------------------------------------------------------------------- */
   return (
     <div className="flex justify-center items-center min-h-screen w-full pt-2">
-      <Card className="w-full h-full min-h-screen sm:min-h-[calc(100vh-2rem)] bg-[#1D1D23] px-4 sm:px-8 md:px-12 pt-4 p-0 border-1 border-[#35353E] shadow-xl rounded-[24px] flex flex-col mx-auto my-auto">
+      <Card
+        className="w-full h-full min-h-screen sm:min-h-[calc(100vh-2rem)]
+                       bg-white dark:bg-[#1D1D23]
+                       border border-gray-200 dark:border-[#35353E]
+                       shadow-xl rounded-[24px]
+                       px-4 sm:px-8 md:px-12 pt-4"
+      >
         <form onSubmit={handleSubmit}>
-          {/* Asset & Network Selectors */}
+          {/* ----------------------------------------------------------------- */}
+          {/*                       ASSET & NETWORK SELECTORS                    */}
+          {/* ----------------------------------------------------------------- */}
           <div className="flex flex-col sm:flex-row gap-4 mb-4">
-            {/* Asset Selector with Image inside */}
+            {/* Asset */}
             <div className="flex-1 flex flex-col">
-              <label className="block text-sm font-medium text-gray-400 mb-2">
+              <label className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                 Asset
               </label>
               <div className="relative w-full">
@@ -189,7 +185,7 @@ const Withdraw = () => {
                   <img
                     src={selectedAsset.asset_image}
                     alt={selectedAsset.symbol}
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-6 h-6 object-contain rounded-full"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full"
                   />
                 )}
                 <Select
@@ -200,65 +196,70 @@ const Withdraw = () => {
                     setSelectedNetworkId("");
                   }}
                   placeholder="Select Asset"
-                  className="w-full h-[46px] rounded-[19px] pl-10 text-base"
+                  className="w-full h-[46px] pl-10 rounded-[19px]"
                   style={{ minHeight: 46 }}
                 />
               </div>
             </div>
-            {/* Network Selector */}
+
+            {/* Network */}
             <div className="flex-1 flex flex-col">
-              <label className="block text-sm font-medium text-gray-400 mb-2">
+              <label className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                 Network
               </label>
-              <div className="relative  w-full">
-                <Select
-                  options={networkOptions}
-                  value={selectedNetworkId}
-                  onChange={(e) => setSelectedNetworkId(e.target.value)}
-                  placeholder="Select Network"
-                  className="w-full h-[46px] rounded-[19px] text-base"
-                  style={{ minHeight: 46 }}
-                  disabled={!selectedAssetId}
-                />
-              </div>
+              <Select
+                options={networkOptions}
+                value={selectedNetworkId}
+                onChange={(e) => setSelectedNetworkId(e.target.value)}
+                placeholder="Select Network"
+                className="w-full h-[46px] rounded-[19px]"
+                style={{ minHeight: 46 }}
+                disabled={!selectedAssetId}
+              />
             </div>
           </div>
-          {/* Address Type */}
+
+          {/* Wallet-type badge */}
           <div className="mb-2">
-            <div className="flex items-center border border-[#1D8751] rounded-[12px] px-3 py-2 w-fit bg-[#]">
+            <div className="flex items-center border border-[#1D8751] rounded-[12px] px-3 py-2 w-fit bg-gray-50 dark:bg-transparent">
               <img
                 src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
                 alt="USDT"
                 className="w-8 h-8 rounded-full mr-2"
               />
-              <span className="text-white font-medium text-base">
-                USDT Wallet Address
-              </span>
-              {/* Optionally add a TRC20 badge/icon here if needed */}
+              <span className="font-medium">USDT Wallet Address</span>
             </div>
           </div>
 
+          {/* ----------------------------------------------------------------- */}
+          {/*                      AMOUNT & RECEIVE SECTION                       */}
+          {/* ----------------------------------------------------------------- */}
           <div className="flex flex-col sm:flex-row gap-4 mb-4">
+            {/* Amount input */}
             <div className="flex-1 flex flex-col">
-              <label className="block text-xs font-medium text-gray-400 mb-1">
+              <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                 I want to withdraw
               </label>
               <div
-                className={`relative flex items-center py-3  pr-4 h-[46px] bg-[#35353E] border ${getInputBorderColor(
-                  "amount"
-                )} rounded-[19px] px-4`}
+                className={`flex items-center h-[46px]
+                            bg-gray-100 dark:bg-[#35353E]
+                            border ${border("amount")}
+                            rounded-[19px] px-4`}
               >
-                <span className="text-[#1D8751] text-lg font-semibold ">$</span>
+                <span className="text-[#1D8751] font-semibold mr-1">$</span>
                 <Input
                   type="number"
                   value={amount}
-                  onChange={handleAmountChange}
+                  onChange={(e) => {
+                    setAmount(e.target.value);
+                    setErrors(errors.filter((er) => er.field !== "amount"));
+                  }}
                   placeholder="0"
-                  className="w-full bg-transparent rounded-[19px] border-none text-white placeholder:text-gray-500 focus:ring-0 focus:outline-none shadow-none p-0 text-lg"
+                  className="w-full bg-transparent border-none focus:outline-none"
                   min="0"
                   disabled={!selectedAssetId || !selectedNetworkId}
                 />
-                <span className="ml-2 text-xs flex text-gray-400">
+                <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
                   <span className="text-[#1D8751]">Max.</span> USDT
                 </span>
               </div>
@@ -268,57 +269,69 @@ const Withdraw = () => {
                 </span>
               )}
             </div>
-            {/* Receive Calculation with Fee */}
+
+            {/* Receive calculation */}
             <div className="flex-1 flex flex-col">
-              <label className=" flex items-center justify-between text-xs font-medium text-gray-400 mb-1">
+              <label className="flex items-center justify-between text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
                 You will receive
-                <p>
-                  {selectedNetwork && (
-                    <span className="ml-4 text-xs text-[#F79330]">
-                      Fee: {selectedNetwork.withdrawal_fee} USDT
-                    </span>
-                  )}
-                </p>
+                {selectedNetwork && (
+                  <span className="ml-4 text-[#F79330]">
+                    Fee: {selectedNetwork.withdrawal_fee} USDT
+                  </span>
+                )}
               </label>
-              <div className="relative flex items-center py-3  pr-4 h-[46px] bg-[#35353E] border border-[#23232B] rounded-[19px] px-4">
-                <span className="text-[#1D8751] text-lg font-semibold mr-2">
-                  $
+              <div
+                className="flex items-center h-[46px]
+                              bg-gray-100 dark:bg-[#35353E]
+                              border border-gray-300 dark:border-[#23232B]
+                              rounded-[19px] px-4"
+              >
+                <span className="text-[#1D8751] font-semibold mr-1">$</span>
+                <span>{receiveAmount}</span>
+                <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                  USDT
                 </span>
-                <span className="text-white text-lg">{receiveAmount}</span>
-                <span className="ml-2 text-xs text-gray-400">USDT</span>
               </div>
             </div>
           </div>
 
-          {/* Wallet Address Input */}
+          {/* ----------------------------------------------------------------- */}
+          {/*                      USDT ADDRESS INPUT                            */}
+          {/* ----------------------------------------------------------------- */}
           <div className="mb-4">
-            <label className="block text-xs font-medium text-gray-400 mb-1">
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 block">
               USDT Address
             </label>
             <div
-              className={`relative flex items-center py-3 h-[46px] bg-[#35353E] border ${getInputBorderColor(
-                "walletAddress"
-              )} rounded-[19px] px-4`}
+              className={`relative h-[46px] flex items-center
+                          bg-gray-100 dark:bg-[#35353E]
+                          border ${border("walletAddress")}
+                          rounded-[19px] px-4`}
             >
               <Input
                 type="text"
                 value={usdtAddress}
-                onChange={handleUsdtAddressChange}
+                onChange={(e) => {
+                  setUsdtAddress(e.target.value);
+                  setErrors(
+                    errors.filter((er) => er.field !== "walletAddress")
+                  );
+                }}
                 placeholder="Paste your USDT address"
-                className="w-full bg-transparent border-none text-white placeholder:text-gray-500 focus:ring-0 focus:outline-none shadow-none p-0"
+                className="w-full bg-transparent border-none focus:outline-none"
               />
               <button
                 type="button"
-                className="absolute right-4 text-[#1D8751] font-medium px-2 py-1 rounded hover:bg-[#1D8751]/10 transition"
+                className="absolute right-4 text-[#1D8751] font-medium"
+                style={{ top: "50%", transform: "translateY(-50%)" }}
                 onClick={async () => {
                   try {
-                    const text = await navigator.clipboard.readText();
-                    setUsdtAddress(text);
-                  } catch (e) {
+                    const txt = await navigator.clipboard.readText();
+                    setUsdtAddress(txt);
+                  } catch {
                     showToast.error("Failed to paste from clipboard");
                   }
                 }}
-                style={{ top: "50%", transform: "translateY(-50%)" }}
               >
                 Paste
               </button>
@@ -330,50 +343,31 @@ const Withdraw = () => {
             )}
           </div>
 
-          {/* Confirmation Checkbox */}
-          <div className="flex items-center mb-8">
-            <div className="relative">
-              <input
-                type="checkbox"
-                id="confirm"
-                checked={confirmPayment}
-                onChange={handleConfirmChange}
-                className={`w-5 h-5 mr-2 appearance-none border-2 border-[#1D8751] bg-transparent checked:bg-[#1D8751] checked:border-[#1D8751] relative ${
-                  getFieldError("confirmPayment", errors)
-                    ? "border-red-500"
-                    : ""
-                }`}
-                style={{
-                  WebkitAppearance: "none",
-                  MozAppearance: "none",
-                  appearance: "none",
-                  background: "transparent",
-                  border: "2px solid #1D8751",
-                  borderRadius: "4px",
-                  width: "20px",
-                  height: "20px",
-                  cursor: "pointer",
-                  position: "relative",
-                }}
-              />
-              {confirmPayment && (
-                <svg
-                  className="absolute top-[2px] left-[2px] w-4 h-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M20 6L9 17L4 12"
-                    stroke="#1D8751"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              )}
-            </div>
-            <label htmlFor="confirm" className="text-white text-sm select-none">
+          {/* ----------------------------------------------------------------- */}
+          {/*                         CONFIRM CHECKBOX                           */}
+          {/* ----------------------------------------------------------------- */}
+          <div className="flex items-center mb-8 gap-2">
+            <input
+              type="checkbox"
+              id="confirm"
+              checked={confirmPayment}
+              onChange={(e) => {
+                setConfirmPayment(e.target.checked);
+                setErrors(errors.filter((er) => er.field !== "confirmPayment"));
+              }}
+              className={`w-5 h-5 border-2 rounded
+                          ${
+                            confirmPayment
+                              ? "bg-[#1D8751] border-[#1D8751]"
+                              : "bg-transparent border-[#1D8751]"
+                          }
+                          ${
+                            getFieldError("confirmPayment", errors)
+                              ? "border-red-500"
+                              : ""
+                          }`}
+            />
+            <label htmlFor="confirm" className="text-sm select-none">
               I confirm that I sent the payment
             </label>
             {getFieldError("confirmPayment", errors) && (
@@ -383,21 +377,23 @@ const Withdraw = () => {
             )}
           </div>
 
-          {/* General Error Message */}
+          {/* General submit error */}
           {getFieldError("submit", errors) && (
             <div className="text-red-500 text-sm mb-4">
               {getFieldError("submit", errors)}
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-8">
+          {/* ----------------------------------------------------------------- */}
+          {/*                           ACTION BUTTONS                           */}
+          {/* ----------------------------------------------------------------- */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-8">
             <Button
               borderRadius={18}
               type="button"
               variant="outline"
               borderColor="#788099"
-              className="w-full sm:flex-1 "
+              className="w-full sm:flex-1"
               height={45}
               onClick={() => {
                 setAmount("");
@@ -408,6 +404,7 @@ const Withdraw = () => {
             >
               Cancel
             </Button>
+
             <Button
               borderRadius={18}
               type="submit"
@@ -419,7 +416,7 @@ const Withdraw = () => {
               {isSubmitting ? (
                 <>
                   <Loader size="sm" className="mr-2" />
-                  Processing...
+                  Processing…
                 </>
               ) : (
                 "Withdraw"
@@ -429,16 +426,17 @@ const Withdraw = () => {
         </form>
       </Card>
 
-      {/* OTP Modal */}
+      {/* ------------------------------------------------------------------- */}
+      {/*                             OTP MODAL                               */}
+      {/* ------------------------------------------------------------------- */}
       <OTPModal
         isOpen={showOTPModal}
         onClose={() => setShowOTPModal(false)}
         withdrawalId={withdrawalId}
         amount={amount}
-        onSuccess={() => {
-          // Handle successful verification
-          showToast.success("Withdrawal completed successfully!");
-        }}
+        onSuccess={() =>
+          showToast.success("Withdrawal completed successfully!")
+        }
       />
     </div>
   );

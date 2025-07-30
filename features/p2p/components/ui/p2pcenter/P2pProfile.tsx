@@ -1,10 +1,5 @@
-import { fetchMatchedTrades } from "@/features/p2p/slices/matchedTradesSlice";
-import { selectTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
-import { fetchWallets } from "@/features/p2p/slices/walletSlice";
-import { AppDispatch, RootState } from "@/store/rootReducer";
+import React from "react";
 import { formatNumber } from "@/utils/formatters";
-import React, { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
 
 const P2pProfile = ({
   user,
@@ -18,7 +13,7 @@ const P2pProfile = ({
   loading: any;
 }) => {
   return (
-    <div className="w-full h-[130px] rounded-[24px] border-2 border-[#35353E] flex flex-col sm:flex-row justify-between items-start sm:items-center p-2 sm:p-4 bg-[#1D1D23] box-border gap-4 sm:gap-0">
+    <div className="w-full h-[130px] rounded-[24px] border-2 bg-white dark:bg-[#1D1D23] border-gray-200 dark:border-[#35353E] flex flex-col sm:flex-row justify-between items-start sm:items-center p-2 sm:p-4 box-border gap-4 sm:gap-0">
       {/* Left Section */}
       <div className="flex items-center gap-4 sm:gap-6">
         {/* Avatar */}
@@ -29,7 +24,7 @@ const P2pProfile = ({
         {/* User Info */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
-            <span className="text-white text-base sm:text-lg font-medium">
+            <span className="text-gray-900 dark:text-white text-base sm:text-lg font-medium">
               {user?.first_name}
             </span>
             {/* Edit Icon (simple pencil SVG) */}
@@ -48,7 +43,7 @@ const P2pProfile = ({
             </svg>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1">
-            <span className="flex items-center text-xs text-[#1D8751] bg-[#384B41] rounded-full px-3 py-1">
+            <span className="flex items-center text-xs text-[#1D8751] bg-[#E0F2E8] dark:bg-[#384B41] rounded-full px-3 py-1">
               <svg
                 className="w-3 h-3 mr-1"
                 fill="none"
@@ -64,7 +59,7 @@ const P2pProfile = ({
               </svg>
               Verified Merchant
             </span>
-            <button className="bg-[#1D8751] text-[#ffff] text-xs font-semibold rounded-full px-4 sm:px-5 py-2">
+            <button className="bg-[#1D8751] text-white text-xs font-semibold rounded-full px-4 sm:px-5 py-2">
               Become Merchant PRO
             </button>
           </div>
@@ -76,13 +71,13 @@ const P2pProfile = ({
           P2P Balance
         </span>
         <div className="flex items-end gap-2">
-          <span className="text-white text-lg sm:text-xl font-semibold">
+          <span className="text-gray-900 dark:text-white text-lg sm:text-xl font-semibold">
             {wallets && wallets.length > 0
               ? formatNumber(Number(wallets[0].balance)).toString()
               : "0"}{" "}
             USDT
           </span>
-          <span className="text-[#7B8191] text-base sm:text-lg">
+          <span className="text-gray-500 dark:text-[#7B8191] text-base sm:text-lg">
             ≈{" "}
             {wallets && wallets.length > 0
               ? formatNumber(Number(wallets[0].balance)).toString()
@@ -90,8 +85,11 @@ const P2pProfile = ({
             USD
           </span>
         </div>
-        <span className="text-[#7B8191] text-sm">
-          In escrow: <span className="text-white font-medium">800 USD</span>
+        <span className="text-gray-500 dark:text-[#7B8191] text-sm">
+          In escrow:{" "}
+          <span className="text-gray-900 dark:text-white font-medium">
+            800 USD
+          </span>
         </span>
       </div>
     </div>

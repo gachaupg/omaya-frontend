@@ -3,7 +3,6 @@ import Button from "@/features/p2p/components/Common/Button";
 import Select from "@/features/p2p/components/Common/Select";
 import {
   orderStatusTabs,
-  tokenOptions,
   currencyOptions,
   typeOptions,
   statusOptions,
@@ -28,6 +27,11 @@ interface FiltersProps {
   loading?: boolean;
 }
 
+/**
+ * Re-styled for **light ↔ dark** support.  All Tailwind dark-prefixed classes keep the
+ * previous colours, while the default (light) state now uses neutral greys & whites.
+ * No business logic touched.
+ */
 const Filters: React.FC<FiltersProps> = ({
   filters,
   onFilterChange,
@@ -55,7 +59,7 @@ const Filters: React.FC<FiltersProps> = ({
 
   return (
     <div className="w-full flex flex-col">
-      {/* Tabs */}
+      {/* ───────────────────────── Tabs */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-0 bg-transparent rounded-[10px] border border-[#1D8751] w-full sm:w-fit px-1 py-1 overflow-x-auto">
           {orderStatusTabs.map((tab) => (
@@ -74,13 +78,15 @@ const Filters: React.FC<FiltersProps> = ({
             >
               {tab.label}
               {tab.count && (
-                <span className="ml-1 text-xs bg-[#23272F] text-[#FBBF24] px-2 py-0.5 rounded-full">
+                <span className="ml-1 text-xs bg-gray-200 dark:bg-[#23272F] text-[#FBBF24] px-2 py-0.5 rounded-full">
                   {tab.count}
                 </span>
               )}
             </Button>
           ))}
         </div>
+
+        {/* unread button */}
         <button
           className={`w-full sm:w-auto rounded-[24px] flex items-center justify-center gap-2 border border-[#1D8751] text-[#1D8751] px-4 py-2 font-medium text-sm hover:bg-[#1D8751]/10 transition-all bg-transparent ${
             loading ? "opacity-50 cursor-not-allowed" : ""
@@ -105,112 +111,111 @@ const Filters: React.FC<FiltersProps> = ({
           <span className="text-[#1D8751]">Unread Message(s)</span>
         </button>
       </div>
-      {/* Filters Bar */}
+
+      {/* ───────────────────────── Filter bar */}
       <div className="flex w-full flex-wrap gap-4 items-center justify-between bg-transparent mt-4">
-        {/* Token Selector */}
+        {/* token selector */}
         <div
-          className={`flex items-center gap-2 bg-[#1D1D23] border border-[#444454] p-1 rounded-[24px] w-full sm:w-auto min-w-[200px] ${
+          className={`flex items-center gap-2 bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#444454] p-1 rounded-[24px] w-full sm:w-auto min-w-[200px] ${
             loading ? "opacity-50" : ""
           }`}
         >
-          <span className="flex items-center justify-center">
-            <Image
-              src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
-              alt="Tether"
-              width={20}
-              height={20}
-            />
+          <Image
+            src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
+            alt="Tether"
+            width={20}
+            height={20}
+          />
+          <span className="text-gray-900 dark:text-white font-medium text-sm">
+            Tether
           </span>
-          <span className="text-white font-medium text-sm">Tether</span>
           <Select
             options={currencyOptions}
             value={filters.currency}
             onChange={(e) => handleCurrencyChange(e.target.value)}
-            className="bg-transparent w-full border-none text-white text-sm focus:ring-0 focus:outline-none rounded-[24px]"
+            className="bg-transparent w-full border-none text-gray-900 dark:text-white text-sm focus:ring-0 focus:outline-none rounded-[24px]"
             borderColor="#444454"
             bgColor="#35353e"
             disabled={loading}
           />
         </div>
-        {/* Type Dropdown */}
+
+        {/* type selector */}
         <div
-          className={`flex items-center gap-2 bg-[#1D1D23] border border-[#444454] p-1 rounded-[24px] w-full sm:w-auto min-w-[200px] ${
+          className={`flex items-center gap-2 bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#444454] p-1 rounded-[24px] w-full sm:w-auto min-w-[200px] ${
             loading ? "opacity-50" : ""
           }`}
         >
-          <span className="text-[#1D8751]">
-            <Image
-              src="https://res.cloudinary.com/pitz/image/upload/v1746710370/coins-rotate_d278mb.png"
-              alt="Filter"
-              width={20}
-              height={20}
-            />
-          </span>
+          <Image
+            src="https://res.cloudinary.com/pitz/image/upload/v1746710370/coins-rotate_d278mb.png"
+            alt="Filter"
+            width={20}
+            height={20}
+            className="text-[#1D8751]"
+          />
           <Select
             options={typeOptions}
             value={filters.type}
             onChange={(e) => handleTypeChange(e.target.value)}
-            className="bg-transparent w-full border-none text-white text-sm focus:ring-0 focus:outline-none rounded-[24px]"
+            className="bg-transparent w-full border-none text-gray-900 dark:text-white text-sm focus:ring-0 focus:outline-none rounded-[24px]"
             borderColor="#444454"
             bgColor="#35353e"
             disabled={loading}
           />
         </div>
-        {/* Status Dropdown */}
+
+        {/* status selector */}
         <div
-          className={`flex items-center gap-2 bg-[#1D1D23] border border-[#444454] p-1 rounded-[24px] w-full sm:w-auto min-w-[200px] ${
+          className={`flex items-center gap-2 bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#444454] p-1 rounded-[24px] w-full sm:w-auto min-w-[200px] ${
             loading ? "opacity-50" : ""
           }`}
         >
-          <span className="text-[#1D8751]">
-            <GrStatusGood />
-          </span>
+          <GrStatusGood className="text-[#1D8751]" />
           <Select
             options={statusOptions}
             value={filters.status}
             onChange={(e) => handleStatusChange(e.target.value)}
-            className="bg-transparent border-none text-[#788099] text-sm w-full focus:ring-0 focus:outline-none rounded-[24px]"
+            className="bg-transparent w-full border-none text-gray-900 dark:text-[#788099] text-sm focus:ring-0 focus:outline-none rounded-[24px]"
             borderColor="#444454"
             bgColor="#35353e"
             disabled={loading}
           />
         </div>
-        {/* Date Dropdown */}
+
+        {/* date selector */}
         <div
-          className={`flex items-center gap-2 bg-[#1D1D23] border border-[#444454] p-1 rounded-[24px] w-full sm:w-auto min-w-[200px] ${
+          className={`flex items-center gap-2 bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#444454] p-1 rounded-[24px] w-full sm:w-auto min-w-[200px] ${
             loading ? "opacity-50" : ""
           }`}
         >
-          <span className="text-[#1D8751]">
-            <svg
-              width="20"
-              height="20"
-              fill="none"
-              viewBox="0 0 24 24"
+          <svg
+            width="20"
+            height="20"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="#1D8751"
+          >
+            <rect
+              x="3"
+              y="4"
+              width="18"
+              height="18"
+              rx="2"
               stroke="#1D8751"
-            >
-              <rect
-                x="3"
-                y="4"
-                width="18"
-                height="18"
-                rx="2"
-                stroke="#1D8751"
-                strokeWidth="2"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M16 2v4M8 2v4M3 10h18"
-              />
-            </svg>
-          </span>
+              strokeWidth="2"
+            />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M16 2v4M8 2v4M3 10h18"
+            />
+          </svg>
           <Select
             options={dateOptions}
             value={filters.date}
             onChange={(e) => handleDateChange(e.target.value)}
-            className="bg-transparent border-none text-[#788099] text-sm w-full focus:ring-0 focus:outline-none rounded-[24px]"
+            className="bg-transparent border-none text-gray-900 dark:text-[#788099] text-sm w-full focus:ring-0 focus:outline-none rounded-[24px]"
             borderColor="#444454"
             bgColor="#35353e"
             disabled={loading}

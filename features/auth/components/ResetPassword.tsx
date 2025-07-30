@@ -21,8 +21,8 @@ const PASSWORD_REQUIREMENTS = [
 const ResetPassword = () => {
   const dispatch = useDispatch<AppDispatch>();
   const searchParams = useSearchParams();
-  const email = searchParams.get("email") || "";
-  const token = searchParams.get("token") || "";
+  const email = searchParams?.get("email") || "";
+  const token = searchParams?.get("token") || "";
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");

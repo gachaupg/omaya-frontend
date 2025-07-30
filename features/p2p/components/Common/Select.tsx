@@ -1,5 +1,4 @@
 import React from "react";
-import { tokens } from "@/styles/tokens";
 
 interface Option {
   value: string;
@@ -10,22 +9,30 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   options: Option[];
   className?: string;
   placeholder?: string;
+  /** Tailwind / HEX color for dark-mode border */
   borderColor?: string;
+  /** Tailwind / HEX color for dark-mode background */
   bgColor?: string;
 }
 
+/**
+ * Generic `<select>` that now supports both light & dark themes.
+ *
+ * Light theme → white background, gray-300 border, gray-900 text.
+ * Dark theme → uses standard dark mode colors. No behaviour changed.
+ */
 const Select: React.FC<SelectProps> = ({
   options,
   className = "",
   placeholder,
-  borderColor = tokens.colors.dark.border,
-  bgColor = tokens.colors.dark.card,
+  borderColor = "#35353E",
+  bgColor = "#1D1D23",
   value,
   ...props
 }) => {
   return (
     <select
-      className={`bg-[#35353e] border border-[${borderColor}]  px-4 py-2 text-[${tokens.colors.dark.textTitle}] focus:outline-none focus:border-[${tokens.colors.brand.primary}] transition ${className}`}
+      className={`bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] text-gray-900 dark:text-white px-4 py-2 rounded focus:outline-none focus:border-[#1D8751] transition ${className}`}
       value={value}
       {...props}
     >
@@ -38,7 +45,7 @@ const Select: React.FC<SelectProps> = ({
         <option
           key={option.value}
           value={option.value}
-          className="bg-[#35353e]"
+          className="bg-white dark:bg-[#1D1D23]"
         >
           {option.label}
         </option>

@@ -116,10 +116,7 @@ const Notifications = () => {
     }
 
     const status = getStatus(trade, user?.email || "");
-    if (
-      status.text ===
-      `Pending ${trade.order_type} Trade`
-    ) {
+    if (status.text === `Pending ${trade.order_type} Trade`) {
       if (trade.owner === user?.email) {
         router.push(
           `/p2p/${trade.id}/matched?order_type=${
@@ -164,13 +161,13 @@ const Notifications = () => {
     return (
       <div className="max-w-5xl mx-auto px-4">
         <div className="flex items-center justify-between mb-6">
-          <h6 className="text-[#A3A3C2] text-xl font-semibold">
+          <h6 className="dark:text-[#A3A3C2] text-gray-800 text-xl font-semibold">
             Notifications Center
           </h6>
-          <span className="text-sm text-[#A3A3C2]">0 notifications</span>
+          <span className="text-sm dark:text-[#A3A3C2] text-gray-600">0 notifications</span>
         </div>
 
-        <div className="bg-[#23232B] rounded-xl p-8 text-center shadow-lg">
+        <div className="dark:bg-[#23232B] bg-white rounded-xl p-8 text-center shadow-lg border dark:border-[#35353E] border-gray-200">
           <div className="flex flex-col items-center justify-center min-h-[400px]">
             {/* Beautiful notification bell icon with gradient */}
             <div className="relative mb-6">
@@ -195,18 +192,18 @@ const Notifications = () => {
               <div className="absolute inset-0 w-24 h-24 bg-gradient-to-br from-[#1D8751] to-[#17693F] rounded-full opacity-20 animate-pulse"></div>
             </div>
 
-            <h3 className="text-2xl font-bold text-white mb-3">
+            <h3 className="text-2xl font-bold dark:text-white text-gray-800 mb-3">
               You have no notifications
             </h3>
 
-            <p className="text-[#A3A3C2] max-w-md mb-6 leading-relaxed">
+            <p className="dark:text-[#A3A3C2] text-gray-600 max-w-md mb-6 leading-relaxed">
               When you receive notifications about your trades, orders, or
               account updates, they will appear here. Stay tuned for important
               updates!
             </p>
 
             {/* Decorative elements */}
-            <div className="flex items-center space-x-2 text-[#A3A3C2] text-sm">
+            <div className="flex items-center space-x-2 dark:text-[#A3A3C2] text-gray-600 text-sm">
               <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
               <span>All caught up</span>
               <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
@@ -219,10 +216,10 @@ const Notifications = () => {
   return (
     <div className="max-w-5xl mx-auto px-4">
       <div className="flex items-center justify-between mb-6">
-        <h6 className="text-[#A3A3C2] text-xl font-semibold">
+        <h6 className="text-gray-700 dark:text-[#A3A3C2] text-xl font-semibold">
           Notifications Center
         </h6>
-        <span className="text-sm text-[#A3A3C2]">
+        <span className="text-sm text-gray-500 dark:text-[#A3A3C2]">
           {matchedTrades.count || matchedTrades.results.length}{" "}
           {(matchedTrades.count || matchedTrades.results.length) === 1
             ? "notification"
@@ -230,7 +227,7 @@ const Notifications = () => {
         </span>
       </div>
 
-      <div className="bg-[#23232B] rounded-xl p-4 text-white font-sans shadow-lg">
+      <div className="bg-white dark:bg-[#23232B] rounded-xl p-4 text-gray-900 dark:text-white font-sans shadow-lg">
         {matchedTrades.results.map((trade: any) => {
           const orderType = getOrderType(trade.order_type);
           const status = getStatus(trade, user?.email || "");
@@ -238,12 +235,15 @@ const Notifications = () => {
           return (
             <div
               key={trade.id}
-              className="flex items-center bg-[#23232B] rounded-lg py-3 px-4 mb-2 border-b border-[#31313C] hover:bg-[#2A2A33] transition-colors duration-200"
+              className="flex items-center bg-gray-50 dark:bg-[#23232B] rounded-lg py-3 px-4 mb-2 border-b border-gray-200 dark:border-[#31313C] hover:bg-gray-100 dark:hover:bg-[#2A2A33] transition-colors duration-200"
             >
               {/* Avatar and name/amount */}
               <div className="flex items-center min-w-[160px]">
                 <div className="relative">
-                  <FaUserCircle size={36} className="text-[#A3A3C2] mr-3" />
+                  <FaUserCircle
+                    size={36}
+                    className="text-gray-400 dark:text-[#A3A3C2] mr-3"
+                  />
                   <div
                     className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full ${
                       orderType.color === "text-[#1D8751]"
@@ -253,23 +253,23 @@ const Notifications = () => {
                   ></div>
                 </div>
                 <div>
-                  <div className="font-medium text-sm text-[#c7c7d9]">
+                  <div className="font-medium text-sm text-gray-700 dark:text-[#c7c7d9]">
                     {name}
                   </div>
-                  <div className="text-xs text-white font-semibold">
+                  <div className="text-xs text-gray-900 dark:text-white font-semibold">
                     {trade.amount} USDT
                   </div>
                 </div>
               </div>
               {/* Order type and time */}
               <div className="flex-1 ml-3">
-                <div className="text-sm">
+                <div className="text-sm text-gray-700 dark:text-white">
                   Order Type:{" "}
                   <span className={orderType.color + " font-semibold"}>
                     {orderType.label}
                   </span>
                 </div>
-                <div className="text-xs text-[#A3A3C2] mt-1">
+                <div className="text-xs text-gray-500 dark:text-[#A3A3C2] mt-1">
                   {new Date(trade.timestamp).toLocaleString()}
                 </div>
               </div>
@@ -307,7 +307,7 @@ const Notifications = () => {
             disabled={currentPage === totalPages}
             className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
               currentPage === totalPages
-                ? "bg-[#31313C] text-[#A3A3C2] cursor-not-allowed"
+                ? "bg-gray-200 dark:bg-[#31313C] text-gray-400 dark:text-[#A3A3C2] cursor-not-allowed"
                 : "bg-[#1D8751] text-white hover:bg-[#17693F]"
             }`}
           >
@@ -334,7 +334,7 @@ const Notifications = () => {
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
                     currentPage === pageNum
                       ? "bg-[#1D8751] text-white"
-                      : "bg-[#31313C] text-[#A3A3C2] hover:bg-[#2A2A33]"
+                      : "bg-gray-100 dark:bg-[#31313C] text-gray-600 dark:text-[#A3A3C2] hover:bg-gray-200 dark:hover:bg-[#2A2A33]"
                   }`}
                 >
                   {pageNum}
@@ -348,7 +348,7 @@ const Notifications = () => {
             disabled={currentPage === 1}
             className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
               currentPage === 1
-                ? "bg-[#31313C] text-[#A3A3C2] cursor-not-allowed"
+                ? "bg-gray-200 dark:bg-[#31313C] text-gray-400 dark:text-[#A3A3C2] cursor-not-allowed"
                 : "bg-[#1D8751] text-white hover:bg-[#17693F]"
             }`}
           >

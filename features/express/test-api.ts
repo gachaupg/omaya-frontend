@@ -11762,4 +11762,6 @@
     {
         "ticker": "pnk",
         "name": "Kleros",
-        "image": "https://content-api.ch
+        "image": "https://content-api.changelly.com"
+    }
+];

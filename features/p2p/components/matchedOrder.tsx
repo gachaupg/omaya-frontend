@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 
 const MatchedOrder = () => {
   const searchParams = useSearchParams();
-  const orderData = searchParams.get("orderData");
+  const orderData = searchParams?.get("orderData");
 
   return (
     <div className="p-4">

@@ -93,8 +93,6 @@ const Orders = () => {
         }
       }
 
-   
-
       return true;
     });
   }, [trades.results, filters]);

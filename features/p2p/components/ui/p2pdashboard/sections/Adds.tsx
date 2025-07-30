@@ -7,10 +7,7 @@ import { useRouter } from "next/navigation";
 import Button from "../../../Common/Button";
 import Card from "../../../Common/Card";
 import Loader from "../../../Common/Loader";
-import {
-  
-  postP2POrderThunk,
-} from "../../../../slices/adSlice";
+import { postP2POrderThunk } from "../../../../slices/adSlice";
 import {
   fetchUserPaymentDetails,
   fetchAdminPaymentMethods,
@@ -92,18 +89,16 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
     UserPaymentDetail[]
   >([]);
   const [isClient, setIsClient] = useState(false);
-  
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
   useEffect(() => {
-    if(isAuthenticated){
-     dispatch(fetchUserPaymentDetails() as any);
-    dispatch(fetchAdminPaymentMethods() as any); 
+    if (isAuthenticated) {
+      dispatch(fetchUserPaymentDetails() as any);
+      dispatch(fetchAdminPaymentMethods() as any);
     }
-    
   }, [dispatch]);
 
   useEffect(() => {
@@ -190,7 +185,6 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
     setErrors(newErrors);
     return isValid;
   };
-  
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
@@ -245,11 +239,13 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
   }
 
   return (
-    <div className="w-full p-0 sm:p-4 min-h-screen flex flex-col items-center justify-start">
+    <div className="w-full p-0 sm:p-4 min-h-screen flex flex-col items-center justify-start bg-white dark:bg-[#0A0A0A]">
       {loading && <Loader />}
       {/* Title and Buy/Sell Switch */}
       <div className="mb-1 w-full md:max-w-4xl md:mx-auto px-0 sm:px-0">
-        <div className="text-white text-lg mb-1">Post Ad</div>
+        <div className="text-gray-900 dark:text-white text-lg mb-1">
+          Post Ad
+        </div>
         <div
           className={`flex w-fit border-2 rounded-[8px] overflow-hidden ${
             type === "buy" ? "border-[#1D8751]" : "border-[#E23D3A]"
@@ -282,31 +278,41 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
 
       {/* Type & Price */}
       <div className="w-full md:max-w-4xl md:mx-auto px-0 sm:px-2 md:px-0">
-        <div className="text-sm text-[#788099] mb-2 mt-3">Type & Price</div>
-        <Card className="w-full mb-2 px-2 py-2 sm:px-2 sm:py-2 bg-[#1D1D23] border border-[#35353E] rounded-[24px]">
+        <div className="text-sm text-gray-600 dark:text-[#788099] mb-2 mt-3">
+          Type & Price
+        </div>
+        <Card className="w-full mb-2 px-2 py-2 sm:px-2 sm:py-2 bg-gray-50 dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E] rounded-[24px]">
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-end w-full">
             {/* Asset */}
             <div className="flex-1 flex flex-col">
-              <span className="text-xs text-[#788099] mb-2">Asset</span>
+              <span className="text-xs text-gray-600 dark:text-[#788099] mb-2">
+                Asset
+              </span>
               <div
                 className="flex w-full items-center
-               bg-[#18181D] border border-[#35353E] rounded-[19px] px-2 py-2 min-h-[40px]"
+               bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-[19px] px-2 py-2 min-h-[40px]"
               >
                 <img
                   src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
                   alt="USDT"
                   className="w-6 h-6 rounded-full"
                 />
-                <span className="text-white text-base ml-2">{asset}</span>
+                <span className="text-gray-900 dark:text-white text-base ml-2">
+                  {asset}
+                </span>
               </div>
             </div>
 
             {/* Commission */}
             <div className="flex-1 flex flex-col">
-              <span className="text-xs text-[#788099] mb-2">Commission</span>
+              <span className="text-xs text-gray-600 dark:text-[#788099] mb-2">
+                Commission
+              </span>
               <div
-                className={`flex w-full items-center justify-between bg-[#18181D] border ${
-                  errors.commission ? "border-red-500" : "border-[#35353E]"
+                className={`flex w-full items-center justify-between bg-white dark:bg-[#18181D] border ${
+                  errors.commission
+                    ? "border-red-500"
+                    : "border-gray-200 dark:border-[#35353E]"
                 } rounded-[19px] min-h-[40px]`}
               >
                 <div className="flex items-center">
@@ -321,7 +327,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                     <path d="M12 17v2a2 2 0 002 2h4a2 2 0 002-2v-2" />
                     <circle cx="12" cy="13" r="4" />
                   </svg>
-                  <span className="text-white text-base mr-4">
+                  <span className="text-gray-900 dark:text-white text-base mr-4">
                     {commission}%
                   </span>
                 </div>
@@ -360,17 +366,17 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
         </Card>
 
         {/* Amount & Payment Method */}
-        <div className="text-sm text-[#788099] mb-2 mt-3">
+        <div className="text-sm text-gray-600 dark:text-[#788099] mb-2 mt-3">
           Amount & Payment Method
         </div>
-        <Card className="w-full mb-4 px-2 py-2 sm:px-2 sm:py-2 bg-[#1D1D23] border border-[#35353E] rounded-[24px]">
+        <Card className="w-full mb-4 px-2 py-2 sm:px-2 sm:py-2 bg-gray-50 dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E] rounded-[24px]">
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             {/* I want to Buy */}
             <div className="flex-1 flex flex-col">
-              <label className="text-xs text-[#788099] mb-1">
+              <label className="text-xs text-gray-600 dark:text-[#788099] mb-1">
                 I want to {type.charAt(0).toUpperCase() + type.slice(1)}
               </label>
-              <div className="flex items-center bg-[#18181D] border border-[#35353E] rounded-[19px] px-2 py-2 min-h-[40px]">
+              <div className="flex items-center bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-[19px] px-2 py-2 min-h-[40px]">
                 <img
                   src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
                   alt="USDT"
@@ -383,14 +389,16 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                     setAmount(e.target.value);
                     setErrors((prev) => ({ ...prev, amount: undefined }));
                   }}
-                  className={`w-full bg-transparent border-none text-[#ffffff] text-base focus:outline-none ${
+                  className={`w-full bg-transparent border-none text-gray-900 dark:text-white text-base focus:outline-none ${
                     errors.amount
                       ? "border-2 border-red-500 rounded-[19px]"
                       : ""
                   }`}
                   placeholder="0.000"
                 />
-                <span className="text-[#788099] text-base ml-2">USDT</span>
+                <span className="text-gray-500 dark:text-[#788099] text-base ml-2">
+                  USDT
+                </span>
               </div>
               {errors.amount && (
                 <span className="text-red-500 text-sm mt-1">
@@ -401,8 +409,10 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
 
             {/* Order Min */}
             <div className="flex-1 flex flex-col">
-              <label className="text-xs text-[#788099] mb-1">Order Min.</label>
-              <div className="flex items-center bg-[#18181D] border border-[#35353E] rounded-[19px] px-2 py-2 min-h-[40px]">
+              <label className="text-xs text-gray-600 dark:text-[#788099] mb-1">
+                Order Min.
+              </label>
+              <div className="flex items-center bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-[19px] px-2 py-2 min-h-[40px]">
                 <span className="text-[#1D8751] text-lg mr-1">$</span>
                 <input
                   type="text"
@@ -411,10 +421,12 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                     setOrderMin(e.target.value);
                     setErrors((prev) => ({ ...prev, orderMin: undefined }));
                   }}
-                  className="w-full bg-transparent border-none text-white text-base focus:outline-none"
+                  className="w-full bg-transparent border-none text-gray-900 dark:text-white text-base focus:outline-none"
                   placeholder="20.00"
                 />
-                <span className="text-[#788099] text-base ml-2">USD</span>
+                <span className="text-gray-500 dark:text-[#788099] text-base ml-2">
+                  USD
+                </span>
               </div>
               {errors.orderMin && (
                 <span className="text-red-500 text-sm mt-1">
@@ -425,8 +437,10 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
 
             {/* Order Max */}
             <div className="flex-1 flex flex-col">
-              <label className="text-xs text-[#788099] mb-1">Order Max</label>
-              <div className="flex items-center bg-[#18181D] border border-[#35353E] rounded-[19px] px-2 py-2 min-h-[40px]">
+              <label className="text-xs text-gray-600 dark:text-[#788099] mb-1">
+                Order Max
+              </label>
+              <div className="flex items-center bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-[19px] px-2 py-2 min-h-[40px]">
                 <span className="text-[#1D8751] text-lg mr-1">$</span>
                 <input
                   type="text"
@@ -435,10 +449,12 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                     setOrderMax(e.target.value);
                     setErrors((prev) => ({ ...prev, orderMax: undefined }));
                   }}
-                  className="w-full bg-transparent border-none text-white text-base focus:outline-none"
+                  className="w-full bg-transparent border-none text-gray-900 dark:text-white text-base focus:outline-none"
                   placeholder="200.00"
                 />
-                <span className="text-[#788099] text-base ml-2">USD</span>
+                <span className="text-gray-500 dark:text-[#788099] text-base ml-2">
+                  USD
+                </span>
               </div>
               {errors.orderMax && (
                 <span className="text-red-500 text-sm mt-1">
@@ -461,13 +477,15 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               <div className="flex  flex-col md:flex-row gap-4 mb-4">
                 {/* Time Limit */}
                 <div className="flex-1 flex flex-col">
-                  <label className="text-sm text-[#788099] mb-1">
+                  <label className="text-sm text-gray-600 dark:text-[#788099] mb-1">
                     Time Limit
                   </label>
                   <select
-                    className={`bg-[#18181D] border ${
-                      errors.timeLimit ? "border-red-500" : "border-[#35353E]"
-                    } rounded-[20px] px-4 py-3 text-white text-base focus:outline-none`}
+                    className={`bg-white dark:bg-[#18181D] border ${
+                      errors.timeLimit
+                        ? "border-red-500"
+                        : "border-gray-200 dark:border-[#35353E]"
+                    } rounded-[20px] px-4 py-3 text-gray-900 dark:text-white text-base focus:outline-none`}
                     value={timeLimit}
                     onChange={(e) => {
                       setTimeLimit(Number(e.target.value));
@@ -506,18 +524,20 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
           }}
         />
         {/* Terms & Auto Reply */}
-        <div className="text-2xl text-[#788099] mb-2 mt-6">
+        <div className="text-2xl text-gray-600 dark:text-[#788099] mb-2 mt-6">
           Terms & Auto Reply
         </div>
-        <Card className="w-full mb-4 px-2 py-2 sm:px-4 sm:py-4 bg-[#1D1D23] border border-[#35353E] rounded-[24px]">
+        <Card className="w-full mb-4 px-2 py-2 sm:px-4 sm:py-4 bg-gray-50 dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E] rounded-[24px]">
           <div>
-            <label className="text-lg text-[#788099] mb-2 block">
+            <label className="text-lg text-gray-600 dark:text-[#788099] mb-2 block">
               Terms (Optional)
             </label>
             <textarea
-              className={`w-full bg-[#18181D] border ${
-                errors.terms ? "border-red-500" : "border-[#35353E]"
-              } rounded-[24px] px-6 py-5 text-[#788099] min-h-[120px] mb-6 resize-none`}
+              className={`w-full bg-white dark:bg-[#18181D] border ${
+                errors.terms
+                  ? "border-red-500"
+                  : "border-gray-200 dark:border-[#35353E]"
+              } rounded-[24px] px-6 py-5 text-gray-600 dark:text-[#788099] min-h-[120px] mb-6 resize-none`}
               placeholder="Enter terms..."
               value={terms}
               onChange={(e) => {
@@ -530,13 +550,15 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
             )}
           </div>
           <div>
-            <label className="text-lg text-[#788099] mb-2 block">
+            <label className="text-lg text-gray-600 dark:text-[#788099] mb-2 block">
               Auto Reply (Optional)
             </label>
             <textarea
-              className={`w-full bg-[#18181D] border ${
-                errors.autoReply ? "border-red-500" : "border-[#35353E]"
-              } rounded-[24px] px-6 py-5 text-[#788099] min-h-[120px] mb-6 resize-none`}
+              className={`w-full bg-white dark:bg-[#18181D] border ${
+                errors.autoReply
+                  ? "border-red-500"
+                  : "border-gray-200 dark:border-[#35353E]"
+              } rounded-[24px] px-6 py-5 text-gray-600 dark:text-[#788099] min-h-[120px] mb-6 resize-none`}
               placeholder="Enter auto-reply..."
               value={autoReply}
               onChange={(e) => {
