@@ -7,17 +7,22 @@ export interface BlogPost {
   title: string;
   description: string;
   category: string;
-  image?: {
-    asset: {
-      _ref: string;
-    };
-  } | string;
+  image?:
+    | {
+        asset: {
+          _ref: string;
+        };
+      }
+    | string;
   author_name?: string;
   createdAt?: string;
   // Legacy fields for UI compatibility
   id?: number;
   created_at?: string;
   updated_at?: string;
+  content?: string;
+  slug?: string;
+  tags?: string[];
 }
 
 export interface BlogResponse {

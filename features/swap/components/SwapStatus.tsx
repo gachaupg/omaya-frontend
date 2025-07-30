@@ -53,7 +53,7 @@ const SwapStatusComponent: React.FC<SwapStatusProps> = ({
       </div>
 
       {/* Transaction Details Card */}
-      <div className="w-full max-w-2xl bg-[#23232b] rounded-xl shadow-lg p-6 mb-6">
+      <div className="w-full max-w-2xl dark:bg-[#23232b] bg-white rounded-xl shadow-lg p-6 mb-6">
         <h2 className="text-xl font-semibold text-white mb-4">
           Transaction Details
         </h2>

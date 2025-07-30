@@ -64,7 +64,7 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep }) => {
             className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
               currentStep === "status"
                 ? "bg-[#1D8751] text-white"
-                : "bg-[#35353E] text-[#8C8CA1]"
+                : "dark:bg-[#35353E] bg-gray-300 dark:text-[#8C8CA1] text-gray-600"
             }`}
           >
             3

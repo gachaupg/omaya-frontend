@@ -183,7 +183,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           </button>
         </div>
         {/* Advertiser Info */}
-        <section className="advertiser-info rounded-[18px] p-2 flex items-center gap-4 border border-2 border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[#23232B]  ">
+        <section className="advertiser-info rounded-[18px] p-2 flex items-center gap-4 border-2 border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[#23232B]  ">
           <div className="icon rounded-full w-10 h-10 flex items-center justify-center text-xl font-bold bg-[#1D8751] text-white">
             {singleOrder?.advertiser_first_name?.[0] || "A"}
           </div>

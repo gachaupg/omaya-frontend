@@ -55,7 +55,7 @@ const ForgetPassword = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#18181D] flex-col md:flex-row items-start justify-center relative overflow-hidden px-6 py-8 md:pt-24">
+    <div className="flex min-h-screen dark:bg-[#18181D] bg-gray-50 flex-col md:flex-row items-start justify-center relative overflow-hidden px-6 py-8 md:pt-24">
       {/* Left Side - Mobile App Preview */}
       <div className="w-full md:w-1/2 flex justify-center mb-8 md:mb-0 relative z-10">
         {/* Background Glow Effect */}
@@ -108,10 +108,10 @@ const ForgetPassword = () => {
       {/* Right side - Forgot password flow */}
       <div className="w-1/2 p-8 flex flex-col justify-center">
         <div className="max-w-md mx-auto w-full 2xl:max-w-3/4">
-          <h1 className="text-2xl font-semibold text-white mb-2">
+          <h1 className="text-2xl font-semibold dark:text-white text-gray-900 mb-2">
             Forgot Password
           </h1>
-          <p className="text-[#788099] mb-1">
+          <p className="dark:text-[#788099] text-gray-600 mb-1">
             Enter your email to receive the instruction <br />
             to reset your password
           </p>
@@ -120,7 +120,7 @@ const ForgetPassword = () => {
               <div>
                 <label
                   htmlFor="email"
-                  className="block text-white text-sm mb-2"
+                  className="block dark:text-white text-gray-900 text-sm mb-2"
                 >
                   Email*
                 </label>
@@ -131,7 +131,7 @@ const ForgetPassword = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Email Address"
-                    className="w-full py-2 px-4 pl-9 bg-[#1D1D23] border border-[#35353E] rounded-full  text-[#788099] placeholder-[#788099] focus:outline-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent"
+                    className="w-full py-2 px-4 pl-9 dark:bg-[#1D1D23] bg-white border dark:border-[#35353E] border-gray-300 rounded-full dark:text-[#788099] text-gray-900 dark:placeholder-[#788099] placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent"
                   />
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <svg

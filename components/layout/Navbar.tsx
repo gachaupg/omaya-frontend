@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Menu, X, Check, Settings, LogOut, User } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "@/features/auth/store";
@@ -34,13 +34,19 @@ const DefaultProfileIcon = () => (
 const NavLink = ({
   href,
   children,
+  isTransparent = false,
 }: {
   href: string;
   children: React.ReactNode;
+  isTransparent?: boolean;
 }) => (
   <Link
     href={href}
-    className="dark:text-white   text-white  hover:text-[#1D8751] transition-colors duration-200 text-sm lg:text-base 2xl:text-lg"
+    className={`${
+      isTransparent
+        ? "text-white" // Always white when navbar is transparent
+        : "dark:text-white text-gray-900" // Theme-based when navbar has background
+    } hover:text-[#1D8751] transition-colors duration-200 text-sm lg:text-base 2xl:text-lg`}
   >
     {children}
   </Link>
@@ -57,7 +63,7 @@ const MobileNavLink = ({
 }) => (
   <Link
     href={href}
-    className="block text-white hover:text-[#1D8751] py-2 transition-colors duration-200 text-lg"
+    className="block dark:text-white text-gray-900 hover:text-[#1D8751] py-2 transition-colors duration-200 text-lg"
     onClick={onClick}
   >
     {children}
@@ -76,10 +82,10 @@ const AuthButton = ({
   <button
     className={`${
       variant === "primary"
-        ? "bg-[#0E5531] hover:bg-[#13B562]"
-        : "bg-transparent border border-[#1D8751]"
+        ? "bg-[#0E5531] hover:bg-[#13B562] text-white" // Primary button always has white text
+        : "bg-transparent border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white" // Secondary button with brand colors
     } 
-    text-white px-4 py-2 rounded-md transition-colors duration-200 text-sm md:text-base 2xl:text-lg
+    px-4 py-2 rounded-md transition-colors duration-200 text-sm md:text-base 2xl:text-lg
     ${fullWidth ? "w-full" : ""}`}
   >
     {children}
@@ -180,6 +186,7 @@ const LanguageSelector = () => {
 
 export default function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [depositDropdownOpen, setDepositDropdownOpen] = useState(false);
@@ -266,18 +273,44 @@ export default function Navbar() {
     };
   }, []);
 
+  // Smart navbar background logic based on page and scroll state
+  const getNavbarBackground = () => {
+    const isHomePage = pathname === "/";
+    const isDashboardPage = pathname?.startsWith("/dashboard") || false;
+
+    if (isHomePage) {
+      // Home page: transparent initially, dark on scroll (original behavior)
+      return scrolled
+        ? "dark:bg-[#1D1D23] bg-white/95 backdrop-blur-sm"
+        : "bg-transparent";
+    } else if (isDashboardPage) {
+      // Dashboard pages: always have solid background for visibility
+      return scrolled
+        ? "dark:bg-[#1D1D23] bg-white/95 backdrop-blur-sm shadow-sm"
+        : "dark:bg-[#1D1D23]/80 bg-white/80 backdrop-blur-sm";
+    } else {
+      // Other pages: smart background based on scroll
+      return scrolled
+        ? "dark:bg-[#1D1D23] bg-white/95 backdrop-blur-sm shadow-sm"
+        : "dark:bg-transparent bg-white/80 backdrop-blur-sm";
+    }
+  };
+
+  // Check if navbar should show white text (transparent on home page)
+  const isTransparentNavbar = pathname === "/" && !scrolled;
+
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-4 sm:px-6 md:px-12 2xl:px-20 transition-all duration-300  ${
-          scrolled ? "bg-[#1D1D23]" : "bg-transparent"
-        }`}
+        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-4 sm:px-6 md:px-12 2xl:px-20 transition-all duration-300 ${getNavbarBackground()}`}
       >
         <div className="flex items-center">
           <Link href="/" className="mr-4 md:mr-10">
-            {scrolled ? (
+            {/* Smart logo selection based on page, scroll state, and theme */}
+            {pathname === "/" && !scrolled ? (
+              // Home page, not scrolled: white logo for transparent background
               <Image
-                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747133499/Omaya_green-logo_yva2ah.png"
+                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746538269/Frame_q3pwt7.png"
                 alt="OMAYA Exchange"
                 width={150}
                 height={40}
@@ -285,8 +318,9 @@ export default function Navbar() {
                 priority
               />
             ) : (
+              // All other cases: green logo
               <Image
-                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746538269/Frame_q3pwt7.png"
+                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747133499/Omaya_green-logo_yva2ah.png"
                 alt="OMAYA Exchange"
                 width={150}
                 height={40}
@@ -298,11 +332,21 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex space-x-6 lg:space-x-8 2xl:space-x-12">
-            <NavLink href="/">Home</NavLink>
-            <NavLink href="/dashboard">Dashboard</NavLink>
-            <NavLink href="/market">Market</NavLink>
-            <NavLink href="/rates">Rates</NavLink>
-            <NavLink href="/blog">Blog</NavLink>
+            <NavLink href="/" isTransparent={isTransparentNavbar}>
+              Home
+            </NavLink>
+            <NavLink href="/dashboard" isTransparent={isTransparentNavbar}>
+              Dashboard
+            </NavLink>
+            <NavLink href="/market" isTransparent={isTransparentNavbar}>
+              Market
+            </NavLink>
+            <NavLink href="/rates" isTransparent={isTransparentNavbar}>
+              Rates
+            </NavLink>
+            <NavLink href="/blog" isTransparent={isTransparentNavbar}>
+              Blog
+            </NavLink>
           </div>
         </div>
 
@@ -335,7 +379,7 @@ export default function Navbar() {
 
                 {/* Deposit Dropdown */}
                 {depositDropdownOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-md bg-[#1E2329] border border-[#35353E] rounded shadow-xl z-[9999]">
+                  <div className="absolute top-full right-0 mt-2 w-md dark:bg-[#1E2329] bg-white dark:border-[#35353E] border-gray-200 border rounded shadow-xl z-[9999]">
                     <div className="p-6">
                       {/* Exchange Option */}
                       <Link
@@ -371,17 +415,17 @@ export default function Navbar() {
                             </svg>
                           </div>
                           <div className="flex-1">
-                            <h4 className="text-white font-medium text-base mb-1">
+                            <h4 className="dark:text-white text-gray-900 font-medium text-base mb-1">
                               Exchange
                             </h4>
-                            <p className="text-gray-400 text-sm">
+                            <p className="dark:text-gray-400 text-gray-600 text-sm">
                               Trade cryptocurrencies on the exchange with
                               advanced tools and features for optimal
                               transactions
                             </p>
                           </div>
                           <svg
-                            className="w-5 h-5 text-gray-400 group-hover:text-[#1D8751] transition-colors"
+                            className="w-5 h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -463,16 +507,16 @@ export default function Navbar() {
                             </svg>
                           </div>
                           <div className="flex-1">
-                            <h4 className="text-white font-medium text-base mb-1">
+                            <h4 className="dark:text-white text-gray-900 font-medium text-base mb-1">
                               P2P
                             </h4>
-                            <p className="text-gray-400 text-sm">
+                            <p className="dark:text-gray-400 text-gray-600 text-sm">
                               Buy and sell cryptocurrencies directly with
                               flexible payment methods
                             </p>
                           </div>
                           <svg
-                            className="w-5 h-5 text-gray-400 group-hover:text-[#1D8751] transition-colors"
+                            className="w-5 h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -530,16 +574,16 @@ export default function Navbar() {
                             </svg>
                           </div>
                           <div className="flex-1">
-                            <h4 className="text-white font-medium text-base mb-1">
+                            <h4 className="dark:text-white text-gray-900 font-medium text-base mb-1">
                               Swap
                             </h4>
-                            <p className="text-gray-400 text-sm">
+                            <p className="dark:text-gray-400 text-gray-600 text-sm">
                               Exchange one cryptocurrency for another instantly
                               and securely within your wallet
                             </p>
                           </div>
                           <svg
-                            className="w-5 h-5 text-gray-400 group-hover:text-[#1D8751] transition-colors"
+                            className="w-5 h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -593,16 +637,16 @@ export default function Navbar() {
                             </svg>
                           </div>
                           <div className="flex-1">
-                            <h4 className="text-white font-medium text-base mb-1">
+                            <h4 className="dark:text-white text-gray-900 font-medium text-base mb-1">
                               Buy
                             </h4>
-                            <p className="text-gray-400 text-sm">
+                            <p className="dark:text-gray-400 text-gray-600 text-sm">
                               Buy crypto directly with cash, hassle-free and
                               suggested for new users
                             </p>
                           </div>
                           <svg
-                            className="w-5 h-5 text-gray-400 group-hover:text-[#1D8751] transition-colors"
+                            className="w-5 h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -728,7 +772,11 @@ export default function Navbar() {
 
         {/* Mobile Menu Button */}
         <button
-          className="md:hidden text-white p-2 rounded-md focus:outline-none"
+          className={`md:hidden p-2 rounded-md focus:outline-none ${
+            isTransparentNavbar
+              ? "text-white" // White when navbar is transparent
+              : "dark:text-white text-gray-900" // Theme-based when navbar has background
+          }`}
           onClick={toggleMobileMenu}
         >
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -738,7 +786,7 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {mobileMenuOpen && (
         <div
-          className={`fixed top-16 left-0 right-0 z-40 md:hidden p-6 space-y-6 shadow-lg transition-all duration-300 bg-[#1D1D23]`}
+          className={`fixed top-16 left-0 right-0 z-40 md:hidden p-6 space-y-6 shadow-lg transition-all duration-300 dark:bg-[#1D1D23] bg-white`}
         >
           <MobileNavLink href="/" onClick={toggleMobileMenu}>
             Home

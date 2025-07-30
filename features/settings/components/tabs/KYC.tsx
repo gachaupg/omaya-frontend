@@ -43,87 +43,89 @@ const KYC = () => {
   return (
     <div className="p-3 dark:text-white text-[#0D0D0D] flex flex-col gap-2">
       <p className="text-base font-semibold">KYC Verification</p>
-      <div className="flex flex-col border-2 bg-[#1D1D23] border-[#35353E] rounded-xl p-3 gap-3">
-      <div className="flex flex-col border dark:bg-[#18181D] bg-[#F5F5F5] dark:border-[#35353E] border-gray-300 rounded-xl p-3 gap-3">
-        {/* Avatar, Name, and Status */}
-        {/* KYC Info */}
-        <p className="text-sm dark:text-[#808080] text-[#788099]">
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Ipsam
-          impedit, velit nemo doloremque, quae harum voluptatum cum eligendi
-          saepe unde excepturi repellat pariatur officiis culpa, fuga id quaerat
-          molestiae et! Magnam harum iste, consequuntur consequatur quasi saepe
-          sequi, illo eligendi laboriosam similique beatae quod quo, obcaecati
-          fugiat ea quia voluptas.
-        </p>
-        <div className="flex items-center gap-3">
-          <div
-            className="relative"
-            onClick={handleImageClick}
-            style={{ cursor: "pointer" }}
-          >
-            {!profileImage || profileImage === DEFAULT_AVATAR ? (
-              // Simple SVG avatar icon
-              <svg
-                width="48"
-                height="48"
-                viewBox="0 0 48 48"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="rounded-full bg-[#35353E]"
-              >
-                <circle cx="24" cy="24" r="24" fill="#35353E" />
-                <circle cx="24" cy="20" r="8" fill="#808080" />
-                <ellipse cx="24" cy="36" rx="12" ry="8" fill="#808080" />
-              </svg>
-            ) : (
-              <Image
-                src={profileImage}
-                alt="User avatar"
-                width={48}
-                height={48}
-                className="object-cover rounded-full"
-                unoptimized={true}
-                onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                  const target = e.currentTarget;
-                  target.onerror = null;
-                  target.src = DEFAULT_AVATAR;
-                }}
-              />
-            )}
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleImageChange}
-              accept="image/*"
-              className="hidden"
-            />
-          </div>
-          <div>
-            <div className="text-base font-semibold">
-              {user?.first_name} {user?.last_name}
-            </div>
-            <div className="flex items-center gap-2 text-[#1D8751] text-sm">
-              Verified Profile
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="#1D8751"
-                  strokeWidth="2"
-                />
-                <path
-                  d="M9 12l2 2 4-4"
-                  stroke="#1D8751"
-                  strokeWidth="2"
+      <div className="flex flex-col dark:bg-[#1D1D23] bg-gray-50 dark:border-[#35353E] border-gray-300 border-2 rounded-xl p-3 gap-3">
+        <div className="flex flex-col border dark:bg-[#18181D] bg-[#F5F5F5] dark:border-[#35353E] border-gray-300 rounded-xl p-3 gap-3">
+          {/* Avatar, Name, and Status */}
+          {/* KYC Info */}
+          <p className="text-sm dark:text-[#808080] text-gray-600">
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Ipsam
+            impedit, velit nemo doloremque, quae harum voluptatum cum eligendi
+            saepe unde excepturi repellat pariatur officiis culpa, fuga id
+            quaerat molestiae et! Magnam harum iste, consequuntur consequatur
+            quasi saepe sequi, illo eligendi laboriosam similique beatae quod
+            quo, obcaecati fugiat ea quia voluptas.
+          </p>
+          <div className="flex items-center gap-3">
+            <div
+              className="relative"
+              onClick={handleImageClick}
+              style={{ cursor: "pointer" }}
+            >
+              {!profileImage || profileImage === DEFAULT_AVATAR ? (
+                // Simple SVG avatar icon
+                <svg
+                  width="48"
+                  height="48"
+                  viewBox="0 0 48 48"
                   fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="rounded-full dark:bg-[#35353E] bg-gray-300"
+                >
+                  <circle cx="24" cy="24" r="24" fill="#35353E" />
+                  <circle cx="24" cy="20" r="8" fill="#808080" />
+                  <ellipse cx="24" cy="36" rx="12" ry="8" fill="#808080" />
+                </svg>
+              ) : (
+                <Image
+                  src={profileImage}
+                  alt="User avatar"
+                  width={48}
+                  height={48}
+                  className="object-cover rounded-full"
+                  unoptimized={true}
+                  onError={(
+                    e: React.SyntheticEvent<HTMLImageElement, Event>
+                  ) => {
+                    const target = e.currentTarget;
+                    target.onerror = null;
+                    target.src = DEFAULT_AVATAR;
+                  }}
                 />
-              </svg>
+              )}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageChange}
+                accept="image/*"
+                className="hidden"
+              />
+            </div>
+            <div>
+              <div className="text-base font-semibold">
+                {user?.first_name} {user?.last_name}
+              </div>
+              <div className="flex items-center gap-2 text-[#1D8751] text-sm">
+                Verified Profile
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="#1D8751"
+                    strokeWidth="2"
+                  />
+                  <path
+                    d="M9 12l2 2 4-4"
+                    stroke="#1D8751"
+                    strokeWidth="2"
+                    fill="none"
+                  />
+                </svg>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
     </div>
   );
 };

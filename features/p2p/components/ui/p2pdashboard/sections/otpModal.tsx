@@ -156,16 +156,18 @@ const OTPModal: React.FC<OTPModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-md bg-[#1D1D23] border border-[#35353E] rounded-[24px] p-6">
+      <Card className="w-full max-w-md dark:bg-[#1D1D23] bg-white dark:border-[#35353E] border-gray-200 rounded-[24px] p-6">
         <div className="text-center mb-6">
-          <h2 className="text-xl font-semibold text-white mb-2">
+          <h2 className="text-xl font-semibold dark:text-white text-gray-900 mb-2">
             Verify Withdrawal
           </h2>
           <p className="text-gray-400 text-sm">
             Enter the 6-digit code sent to your email/phone
           </p>
-          <div className="mt-3 p-3 bg-[#35353E] rounded-lg">
-            <span className="text-white font-medium">Amount: </span>
+          <div className="mt-3 p-3 dark:bg-[#35353E] bg-gray-100 rounded-lg">
+            <span className="dark:text-white text-gray-900 font-medium">
+              Amount:{" "}
+            </span>
             <span className="text-[#1D8751] font-semibold">${amount} USDT</span>
           </div>
         </div>
@@ -190,7 +192,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
                   onChange={(e) => handleOtpChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
                   onPaste={handlePaste}
-                  className="w-12 h-12 text-center text-lg font-semibold bg-[#35353E] border border-[#23232B] rounded-lg text-white focus:border-[#1D8751] focus:outline-none focus:ring-1 focus:ring-[#1D8751]"
+                  className="w-12 h-12 text-center text-lg font-semibold dark:bg-[#35353E] bg-gray-100 dark:border-[#23232B] border-gray-200 border rounded-lg dark:text-white text-gray-900 focus:border-[#1D8751] focus:outline-none focus:ring-1 focus:ring-[#1D8751]"
                   placeholder=""
                 />
               ))}

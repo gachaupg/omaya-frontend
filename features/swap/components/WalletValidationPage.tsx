@@ -175,22 +175,24 @@ const WalletValidationPage: React.FC<WalletValidationPageProps> = ({
   }, [selectedAsset, walletAddress, validateWalletAddressForAsset]);
 
   return (
-    <div className="mx-auto bg-[#181820] p-6 rounded-2xl text-white">
+    <div className="mx-auto dark:bg-[#181820] bg-gray-50 p-6 rounded-2xl dark:text-white text-gray-900">
       <div className="mb-6">
         <h2 className="text-lg font-semibold mb-2">
           Wallet Address Validation
         </h2>
-        <p className="text-sm text-[#8C8CA1]">
+        <p className="text-sm dark:text-[#8C8CA1] text-gray-600">
           Please enter and validate your wallet address for the selected
           cryptocurrency
         </p>
       </div>
 
-      <div className="bg-[#23232b] border border-[#35353E] rounded-xl p-5">
+      <div className="dark:bg-[#23232b] bg-white dark:border-[#35353E] border-gray-200 border rounded-xl p-5">
         {/* Selected Asset Info */}
         {selectedAsset && (
-          <div className="mb-6 bg-[#181820] border border-[#35353E] rounded-lg p-4">
-            <div className="text-xs text-[#8C8CA1] mb-2">Selected Asset:</div>
+          <div className="mb-6 dark:bg-[#181820] bg-gray-100 dark:border-[#35353E] border-gray-300 border rounded-lg p-4">
+            <div className="text-xs dark:text-[#8C8CA1] text-gray-600 mb-2">
+              Selected Asset:
+            </div>
             <div className="flex items-center">
               <img
                 src={selectedAsset.image || undefined}
@@ -211,7 +213,7 @@ const WalletValidationPage: React.FC<WalletValidationPageProps> = ({
 
         {/* Wallet Address Input */}
         <div className="mb-4">
-          <label className="block text-sm text-[#8C8CA1] mb-2">
+          <label className="block text-sm dark:text-[#8C8CA1] text-gray-600 mb-2">
             Wallet/Account Address
           </label>
           <div className="relative">
@@ -229,16 +231,16 @@ const WalletValidationPage: React.FC<WalletValidationPageProps> = ({
               placeholder="Paste here your Crypto address"
               value={walletAddress}
               onChange={handleWalletAddressChange}
-              className={`w-full bg-[#181820] border rounded-[18px] px-12 py-3 text-white outline-none placeholder-[#8C8CA1] text-base transition-colors ${
+              className={`w-full dark:bg-[#181820] bg-gray-100 border rounded-[18px] px-12 py-3 dark:text-white text-gray-900 outline-none dark:placeholder-[#8C8CA1] placeholder-gray-500 text-base transition-colors ${
                 validationError
                   ? "border-red-500 focus:border-red-400"
-                  : "border-[#35353E] focus:border-[#1D8751]"
+                  : "dark:border-[#35353E] border-gray-300 focus:border-[#1D8751]"
               }`}
             />
 
             {/* Paste Button */}
             <button
-              className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 bg-[#35353E] text-[#8C8CA1] px-4 py-2 rounded-[18px] font-medium hover:bg-[#45454E] transition-colors"
+              className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 dark:bg-[#35353E] bg-gray-200 dark:text-[#8C8CA1] text-gray-600 px-4 py-2 rounded-[18px] font-medium dark:hover:bg-[#45454E] hover:bg-gray-300 transition-colors"
               onClick={handlePasteAddress}
               type="button"
             >
@@ -276,18 +278,18 @@ const WalletValidationPage: React.FC<WalletValidationPageProps> = ({
 
         {/* Network Requirements */}
         {selectedAsset && (
-          <div className="mb-4 bg-[#181820] border border-[#35353E] rounded-lg p-3">
-            <div className="text-xs text-[#8C8CA1] mb-2">
+          <div className="mb-4 dark:bg-[#181820] bg-gray-100 dark:border-[#35353E] border-gray-300 border rounded-lg p-3">
+            <div className="text-xs dark:text-[#8C8CA1] text-gray-600 mb-2">
               Network Requirements:
             </div>
             <div className="space-y-1 text-sm">
               <div className="flex items-center">
-                <span className="text-white">Network:</span>
+                <span className="dark:text-white text-gray-900">Network:</span>
                 <span className="ml-2 text-[#1D8751] font-medium">
                   {selectedAsset.network}
                 </span>
               </div>
-              <div className="text-xs text-[#8C8CA1]">
+              <div className="text-xs dark:text-[#8C8CA1] text-gray-600">
                 {(() => {
                   const network = selectedAsset.network.toUpperCase();
                   if (network.includes("TRON") || network.includes("TRC")) {
@@ -325,12 +327,12 @@ const WalletValidationPage: React.FC<WalletValidationPageProps> = ({
               type="checkbox"
               checked={confirm}
               onChange={(e) => setConfirm(e.target.checked)}
-              className="mr-3 mt-1 accent-[#1D8751] w-5 h-5 rounded border border-[#F79330] cursor-pointer"
+              className="mr-3 mt-1 accent-[#1D8751] w-5 h-5 rounded dark:border-[#F79330] border-orange-400 border cursor-pointer"
               id="confirm-address"
             />
             <label
               htmlFor="confirm-address"
-              className="text-sm text-white leading-relaxed"
+              className="text-sm dark:text-white text-gray-900 leading-relaxed"
             >
               I confirm that the above submitted address is correct for the{" "}
               <span className="text-[#1D8751] font-medium">
@@ -345,7 +347,7 @@ const WalletValidationPage: React.FC<WalletValidationPageProps> = ({
         {/* Action Buttons */}
         <div className="flex justify-between">
           <button
-            className="bg-[#35353E] hover:bg-[#45454E] text-white px-6 py-3 rounded-[24px] font-semibold transition-colors"
+            className="dark:bg-[#35353E] bg-gray-400 dark:hover:bg-[#45454E] hover:bg-gray-500 text-white px-6 py-3 rounded-[24px] font-semibold transition-colors"
             onClick={onBack}
             disabled={isValidating}
           >
@@ -371,11 +373,11 @@ const WalletValidationPage: React.FC<WalletValidationPageProps> = ({
       </div>
 
       {/* Additional Information */}
-      <div className="mt-6 bg-[#23232b] border border-[#35353E] rounded-xl p-4">
+      <div className="mt-6 dark:bg-[#23232b] bg-gray-100 dark:border-[#35353E] border-gray-300 border rounded-xl p-4">
         <h3 className="text-sm font-semibold text-white mb-2">
           Important Notes:
         </h3>
-        <ul className="text-xs text-[#8C8CA1] space-y-1">
+        <ul className="text-xs dark:text-[#8C8CA1] text-gray-600 space-y-1">
           <li>• Always double-check the wallet address before confirming</li>
           <li>
             • Ensure you're using the correct network for your cryptocurrency

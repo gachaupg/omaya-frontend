@@ -106,7 +106,7 @@ const ChatBox: React.FC<{
         <button
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className="flex items-center justify-center w-6 h-6 bg-[#23232B] rounded hover:bg-[#35353E] transition-colors disabled:opacity-50"
+          className="flex items-center justify-center w-6 h-6 dark:bg-[#23232B] bg-gray-200 rounded dark:hover:bg-[#35353E] hover:bg-gray-300 transition-colors disabled:opacity-50"
           title="Refresh messages"
         >
           <svg
@@ -149,7 +149,7 @@ const ChatBox: React.FC<{
               className={
                 Number(msg.sender) === Number(userId)
                   ? "bg-[#1D8751] text-white rounded-lg p-2 self-end max-w-xs"
-                  : "bg-[#23232B] text-white rounded-lg p-2 self-start max-w-xs"
+                  : "dark:bg-[#23232B] bg-gray-200 dark:text-white text-gray-900 rounded-lg p-2 self-start max-w-xs"
               }
             >
               <div>{msg.message}</div>
@@ -182,7 +182,7 @@ const ChatBox: React.FC<{
           {/* Paperclip icon for image upload */}
           <button
             type="button"
-            className="flex items-center justify-center w-10 h-10 bg-[#23232B] rounded-lg"
+            className="flex items-center justify-center w-10 h-10 dark:bg-[#23232B] bg-gray-200 rounded-lg"
             onClick={() => fileInputRef.current && fileInputRef.current.click()}
             title="Attach image"
           >

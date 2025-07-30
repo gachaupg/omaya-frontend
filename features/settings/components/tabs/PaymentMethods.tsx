@@ -43,11 +43,11 @@ const PaymentMethods = () => {
   };
 
   return (
-    <div className="p-3 text-white">
+    <div className="p-3 dark:text-white text-gray-900">
       {/* Top Header Section */}
       <div className="flex items-center justify-between mb-4">
         <div>
-          <div className="text-sm font-semibold text-white mb-2">
+          <div className="text-sm font-semibold dark:text-white text-gray-900 mb-2">
             Wallet Address
           </div>
           <div className="flex gap-2">
@@ -60,7 +60,7 @@ const PaymentMethods = () => {
           </div>
         </div>
         <button
-          className="flex items-center gap-1 text-xs text-white font-medium hover:underline focus:outline-none"
+          className="flex items-center gap-1 text-xs dark:text-white text-gray-900 font-medium hover:underline focus:outline-none"
           onClick={() => setShowPaymentModal(true)}
         >
           Add Payment Method
@@ -68,21 +68,30 @@ const PaymentMethods = () => {
         </button>
       </div>
       <div className="flex flex-col gap-3">
-        <p className="text-base font-semibold"> Payment Methods</p>
+        <p className="text-base font-semibold dark:text-white text-gray-900">
+          {" "}
+          Payment Methods
+        </p>
         {userPaymentDetails.map((payment: UserPaymentDetail) => (
           <div
             key={payment.id}
-            className="flex bg-[#1D1D23] border-2 border-[#35353E] rounded-xl p-3 justify-between gap-3 items-center"
+            className="flex dark:bg-[#1D1D23] bg-gray-50 dark:border-[#35353E] border-gray-300 border-2 rounded-xl p-3 justify-between gap-3 items-center"
           >
             <div>
-              <p className="text-sm">{payment?.payment_method_name}</p>
-              <p className="text-xs text-[#808080]">
+              <p className="text-sm dark:text-white text-gray-900">
+                {payment?.payment_method_name}
+              </p>
+              <p className="text-xs dark:text-[#808080] text-gray-600">
                 {payment?.payment_provider_name}
               </p>
             </div>
             <div>
-              <p className="text-sm">{payment?.account_number}</p>
-              <p className="text-xs text-[#808080]">{payment?.account_name}</p>
+              <p className="text-sm dark:text-white text-gray-900">
+                {payment?.account_number}
+              </p>
+              <p className="text-xs dark:text-[#808080] text-gray-600">
+                {payment?.account_name}
+              </p>
             </div>
             <button
               className="ml-2 text-[#1D8751] hover:text-red-500"

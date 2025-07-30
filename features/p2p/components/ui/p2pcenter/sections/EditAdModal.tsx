@@ -91,13 +91,13 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
 
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="mx-auto w-full max-w-2xl rounded-xl bg-[#23232b] text-white max-h-[85vh] overflow-hidden">
+        <Dialog.Panel className="mx-auto w-full max-w-2xl rounded-xl dark:bg-[#23232b] bg-white dark:text-white text-gray-900 max-h-[85vh] overflow-hidden">
           <div className="p-6 overflow-y-auto max-h-[85vh]">
             <Dialog.Title className="text-xl font-semibold mb-4 flex items-center justify-between">
               <span>Edit Ad Details</span>
               <button
                 onClick={onClose}
-                className="text-[#8C8CA1] hover:text-white transition-colors"
+                className="dark:text-[#8C8CA1] text-gray-500 dark:hover:text-white hover:text-gray-700 transition-colors"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -121,7 +121,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
                 {/* Left Column */}
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm text-[#8C8CA1] mb-1.5">
+                    <label className="block text-sm dark:text-[#8C8CA1] text-gray-600 mb-1.5">
                       Amount
                     </label>
                     <input
@@ -131,13 +131,13 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
                       onChange={(e) =>
                         setFormData({ ...formData, amount: e.target.value })
                       }
-                      className="w-full px-3 py-2 bg-[#35353E] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm"
+                      className="w-full px-3 py-2 dark:bg-[#35353E] bg-gray-100 rounded-lg dark:text-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm text-[#8C8CA1] mb-1.5">
+                    <label className="block text-sm dark:text-[#8C8CA1] text-gray-600 mb-1.5">
                       Minimum Order
                     </label>
                     <input
@@ -150,13 +150,13 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
                           min_order_amount: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 bg-[#35353E] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm"
+                      className="w-full px-3 py-2 dark:bg-[#35353E] bg-gray-100 rounded-lg dark:text-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm text-[#8C8CA1] mb-1.5">
+                    <label className="block text-sm dark:text-[#8C8CA1] text-gray-600 mb-1.5">
                       Maximum Order
                     </label>
                     <input
@@ -169,7 +169,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
                           max_order_amount: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 bg-[#35353E] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm"
+                      className="w-full px-3 py-2 dark:bg-[#35353E] bg-gray-100 rounded-lg dark:text-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm"
                       required
                     />
                   </div>
@@ -178,7 +178,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
                 {/* Right Column */}
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm text-[#8C8CA1] mb-1.5">
+                    <label className="block text-sm dark:text-[#8C8CA1] text-gray-600 mb-1.5">
                       Commission Rate (%)
                     </label>
                     <input
@@ -193,11 +193,11 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
                           commission_rate: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 bg-[#35353E] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm"
+                      className="w-full px-3 py-2 dark:bg-[#35353E] bg-gray-100 rounded-lg dark:text-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-[#8C8CA1] mb-1.5">
+                    <label className="block text-sm dark:text-[#8C8CA1] text-gray-600 mb-1.5">
                       Order Type
                     </label>
                     <select
@@ -205,7 +205,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
                       onChange={(e) =>
                         setFormData({ ...formData, order_type: e.target.value })
                       }
-                      className="w-full px-3 py-2 bg-[#35353E] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm"
+                      className="w-full px-3 py-2 dark:bg-[#35353E] bg-gray-100 rounded-lg dark:text-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm"
                       required
                     >
                       <option value="">Select Type</option>
@@ -215,7 +215,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-sm text-[#8C8CA1] mb-1.5">
+                    <label className="block text-sm dark:text-[#8C8CA1] text-gray-600 mb-1.5">
                       Time Limit (minutes)
                     </label>
                     <input
@@ -228,7 +228,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
                           limit_duration: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 bg-[#35353E] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm"
+                      className="w-full px-3 py-2 dark:bg-[#35353E] bg-gray-100 rounded-lg dark:text-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm"
                     />
                   </div>
                 </div>
@@ -238,7 +238,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 text-sm font-medium text-[#8C8CA1] hover:text-white transition-colors"
+                  className="px-4 py-2 text-sm font-medium dark:text-[#8C8CA1] text-gray-600 dark:hover:text-white hover:text-gray-800 transition-colors"
                   disabled={isLoading}
                 >
                   Cancel

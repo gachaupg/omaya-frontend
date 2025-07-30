@@ -114,8 +114,8 @@ const AppealModal: React.FC<AppealModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-[#23232A] rounded-[24px] p-8 w-full max-w-md shadow-lg relative">
-        <h2 className="text-[13px] text-center text-white mb-6">
+      <div className="dark:bg-[#23232A] bg-white rounded-[24px] p-8 w-full max-w-md shadow-lg relative">
+        <h2 className="text-[13px] text-center dark:text-white text-gray-900 mb-6">
           Submit Appeal
         </h2>
         {/* Instruction Box */}
@@ -127,12 +127,12 @@ const AppealModal: React.FC<AppealModalProps> = ({
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           {/* Appeal Reason */}
           <div>
-            <label className="block text-white text-[13px] mb-2">
+            <label className="block dark:text-white text-gray-900 text-[13px] mb-2">
               Appeal Reason *
             </label>
             <div className="relative">
               <select
-                className="w-full rounded-xl px-4 py-3 bg-[#18181D] text-white border border-[#35353E] focus:outline-none appearance-none"
+                className="w-full rounded-xl px-4 py-3 dark:bg-[#18181D] bg-gray-100 dark:text-white text-gray-900 dark:border-[#35353E] border-gray-300 border focus:outline-none appearance-none"
                 value={reason}
                 onChange={handleReasonChange}
                 required
@@ -156,7 +156,7 @@ const AppealModal: React.FC<AppealModalProps> = ({
           </div>
           {/* Upload Proof */}
           <div>
-            <label className="block text-white text-[13px] mb-2">
+            <label className="block dark:text-white text-gray-900 text-[13px] mb-2">
               Upload Proof Documents (Optional)
             </label>
             <div className="text-[#888] text-[13px] mb-4">
@@ -169,7 +169,7 @@ const AppealModal: React.FC<AppealModalProps> = ({
                 onClick={() =>
                   fileInputRef.current && fileInputRef.current.click()
                 }
-                className="w-14 h-12 rounded-xl bg-[#35353E] flex items-center justify-center"
+                className="w-14 h-12 rounded-xl dark:bg-[#35353E] bg-gray-200 flex items-center justify-center"
               >
                 <svg width="28" height="28" fill="#1D8751" viewBox="0 0 24 24">
                   <path

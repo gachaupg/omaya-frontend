@@ -62,7 +62,7 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
             </tbody>
           </table>
         </div>
-        <div className="flex items-center justify-between px-4 py-3 bg-[#23232b] rounded-lg">
+        <div className="flex items-center justify-between px-4 py-3 dark:bg-[#23232b] bg-gray-100 rounded-lg">
           <div className="h-6 w-48 bg-[#35354a] rounded animate-pulse"></div>
           <div className="flex gap-2">
             <div className="h-8 w-24 bg-[#35354a] rounded animate-pulse"></div>
@@ -116,7 +116,9 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
                     alt={item.coin}
                     className="w-6 h-6 rounded-full"
                   />
-                  <span className="font-medium text-white">{item.coin}</span>
+                  <span className="font-medium dark:text-white text-gray-900">
+                    {item.coin}
+                  </span>
                 </td>
                 {/* Type */}
                 <td className="px-4 py-2">
@@ -131,17 +133,23 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
                   </span>
                 </td>
                 {/* Transaction ID */}
-                <td className="px-4 py-2 text-white">{item.transaction_id}</td>
+                <td className="px-4 py-2 dark:text-white text-gray-900">
+                  {item.transaction_id}
+                </td>
                 {/* User name */}
-                <td className="px-4 py-2 text-white">
+                <td className="px-4 py-2 dark:text-white text-gray-900">
                   {maskEmail(item.reviewer_email)}
                 </td>
                 {/* Amount */}
-                <td className="px-4 py-2 text-white">{item.amount}USD</td>
+                <td className="px-4 py-2 dark:text-white text-gray-900">
+                  {item.amount}USD
+                </td>
                 {/* Payment (bank name only, no image) */}
-                <td className="px-4 py-2 text-white">Salam Bank</td>
+                <td className="px-4 py-2 dark:text-white text-gray-900">
+                  Salam Bank
+                </td>
                 {/* Date */}
-                <td className="px-4 py-2 text-white">
+                <td className="px-4 py-2 dark:text-white text-gray-900">
                   {new Date(item.date).toLocaleString()}
                 </td>
                 {/* Rating */}
@@ -173,7 +181,7 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
 
       {/* Pagination Controls */}
       <div className="flex items-center justify-between px-4 py-3 bg-[#23232b] rounded-lg">
-        <div className="text-white">
+        <div className="dark:text-white text-gray-900">
           Showing {startIndex + 1} to {Math.min(endIndex, data.length)} of{" "}
           {data.length} entries
         </div>
@@ -185,7 +193,7 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
           >
             Previous
           </button>
-          <span className="px-3 py-1 text-white">
+          <span className="px-3 py-1 dark:text-white text-gray-900">
             Page {currentPage} of {totalPages}
           </span>
           <button

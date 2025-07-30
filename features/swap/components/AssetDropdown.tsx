@@ -48,7 +48,7 @@ const AssetDropdown: React.FC<AssetDropdownProps> = ({
         tabIndex={0}
         className={`w-full cursor-pointer flex items-center justify-between ${
           className ||
-          "bg-[#181820] border border-[#35353E] rounded-[18px] px-3 py-2 text-white"
+          "dark:bg-[#181820] bg-gray-100 dark:border-[#35353E] border-gray-300 border rounded-[18px] px-3 py-2 dark:text-white text-gray-900"
         }`}
       >
         {selectedAsset ? (
@@ -59,19 +59,21 @@ const AssetDropdown: React.FC<AssetDropdownProps> = ({
               className="w-6 h-6 mr-3"
             />
             <div className="flex flex-col">
-              <span className="text-white text-xs font-medium">
+              <span className="dark:text-white text-gray-900 text-xs font-medium">
                 {selectedAsset.ticker?.toUpperCase()}
               </span>
-              <span className="text-[#8C8CA1] text-xs">
+              <span className="dark:text-[#8C8CA1] text-gray-500 text-xs">
                 {selectedAsset.name}
               </span>
             </div>
           </div>
         ) : (
-          <span className="text-[#8C8CA1]">{placeholder}</span>
+          <span className="dark:text-[#8C8CA1] text-gray-500">
+            {placeholder}
+          </span>
         )}
         <svg
-          className={`w-4 h-4 text-[#8C8CA1] transition-transform ${
+          className={`w-4 h-4 dark:text-[#8C8CA1] text-gray-500 transition-transform ${
             isOpen ? "rotate-180" : ""
           }`}
           fill="none"
@@ -89,17 +91,17 @@ const AssetDropdown: React.FC<AssetDropdownProps> = ({
 
       {isOpen && (
         <div
-          className="absolute top-full left-0 right-0 mt-1 bg-[#23232b] border border-[#35353E] rounded-xl z-50 max-h-60 overflow-y-auto"
+          className="absolute top-full left-0 right-0 mt-1 dark:bg-[#23232b] bg-white dark:border-[#35353E] border-gray-300 border rounded-xl z-50 max-h-60 overflow-y-auto"
           role="listbox"
           aria-label={`${label} options`}
         >
-          <div className="p-3 border-b border-[#35353E]">
+          <div className="p-3 dark:border-[#35353E] border-gray-200 border-b">
             <input
               type="text"
               placeholder="Search assets..."
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full bg-[#181820] border border-[#35353E] rounded-lg px-3 py-2 text-white placeholder-[#8C8CA1] outline-none"
+              className="w-full dark:bg-[#181820] bg-gray-50 dark:border-[#35353E] border-gray-300 border rounded-lg px-3 py-2 dark:text-white text-gray-900 dark:placeholder-[#8C8CA1] placeholder-gray-500 outline-none"
               onClick={(e) => e.stopPropagation()}
             />
           </div>
@@ -133,10 +135,12 @@ const AssetDropdown: React.FC<AssetDropdownProps> = ({
                     className="w-6 h-6 mr-3"
                   />
                   <div className="flex flex-col">
-                    <span className="text-white text-xs font-medium">
+                    <span className="dark:text-white text-gray-900 text-xs font-medium">
                       {asset.ticker?.toUpperCase()}
                     </span>
-                    <span className="text-[#8C8CA1] text-xs">{asset.name}</span>
+                    <span className="dark:text-[#8C8CA1] text-gray-500 text-xs">
+                      {asset.name}
+                    </span>
                   </div>
                 </div>
               ))}

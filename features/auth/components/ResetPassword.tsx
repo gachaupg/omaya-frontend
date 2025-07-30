@@ -65,7 +65,7 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#18181D] flex-col md:flex-row items-start justify-center relative overflow-hidden px-6 py-8 md:pt-24">
+    <div className="flex min-h-screen dark:bg-[#18181D] bg-gray-50 flex-col md:flex-row items-start justify-center relative overflow-hidden px-6 py-8 md:pt-24">
       {/* Left Side - Mobile App Preview */}
       <div className="w-full md:w-1/2 flex justify-center mb-8 md:mb-0 relative z-10">
         {/* Background Glow Effect */}

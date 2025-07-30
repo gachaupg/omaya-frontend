@@ -6,8 +6,8 @@ const ForgotPassword = () => {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen bg-[#18181D] items-center justify-center">
-          <div className="text-white">Loading...</div>
+        <div className="flex min-h-screen dark:bg-[#18181D] bg-gray-50 items-center justify-center">
+          <div className="dark:text-white text-gray-900">Loading...</div>
         </div>
       }
     >

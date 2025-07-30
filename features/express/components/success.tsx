@@ -5,7 +5,7 @@ const GREEN = "#309A64";
 
 const SuccessPage = () => {
   return (
-    <div className="min-h-screen flex flex-col items-center py-12 px-2">
+    <div className="min-h-screen dark:bg-[#1D1D23] bg-white flex flex-col items-center py-12 px-2">
       {/* Success Icon and Message */}
       <div className="flex flex-col items-center mb-8">
         <div className="relative mb-4">
@@ -21,46 +21,58 @@ const SuccessPage = () => {
         <h1 className="text-3xl font-bold mb-2" style={{ color: GREEN }}>
           Swap Successful!
         </h1>
-        <p className="text-lg text-white/80">
+        <p className="text-lg dark:text-white/80 text-gray-600">
           Your Swap has been completed successfully
         </p>
       </div>
 
       {/* Transaction Details Card */}
-      <div className="w-full max-w-2xl bg-[#23232b] rounded-xl shadow-lg p-6 mb-6">
-        <h2 className="text-xl font-semibold text-white mb-4">
+      <div className="w-full max-w-2xl dark:bg-[#23232b] bg-white dark:border-[#35353E] border-gray-200 border rounded-xl shadow-lg p-6 mb-6">
+        <h2 className="text-xl font-semibold dark:text-white text-gray-900 mb-4">
           Transaction Details
         </h2>
-        <div className="flex flex-col md:flex-row md:justify-between text-white/80 text-sm mb-4">
+        <div className="flex flex-col md:flex-row md:justify-between dark:text-white/80 text-gray-600 text-sm mb-4">
           <div>
             <div className="mb-1">Transaction ID</div>
-            <div className="font-mono text-white">TXNWSU09E2DS</div>
+            <div className="font-mono dark:text-white text-gray-900">
+              TXNWSU09E2DS
+            </div>
           </div>
           <div className="md:text-right mt-2 md:mt-0">
             <div className="mb-1">Date & Time</div>
-            <div className="font-mono text-white">6/29/2025, 9:07:43 PM</div>
+            <div className="font-mono dark:text-white text-gray-900">
+              6/29/2025, 9:07:43 PM
+            </div>
           </div>
         </div>
-        <hr className="border-white/10 my-4" />
-        <h3 className="text-lg font-semibold text-white mb-2">Swap Summary</h3>
-        <div className="flex flex-col md:flex-row md:justify-between text-white/80 text-sm mb-4">
+        <hr className="dark:border-white/10 border-gray-200 my-4" />
+        <h3 className="text-lg font-semibold dark:text-white text-gray-900 mb-2">
+          Swap Summary
+        </h3>
+        <div className="flex flex-col md:flex-row md:justify-between dark:text-white/80 text-gray-600 text-sm mb-4">
           <div>
             <div className="mb-1">You Paid</div>
-            <div className="font-bold text-white">USD 1</div>
-            <div className="text-xs text-white/60">Via Salam Bank</div>
+            <div className="font-bold dark:text-white text-gray-900">USD 1</div>
+            <div className="text-xs dark:text-white/60 text-gray-500">
+              Via Salam Bank
+            </div>
           </div>
           <div className="md:text-right mt-2 md:mt-0">
             <div className="mb-1">You Received</div>
             <div className="font-bold" style={{ color: GREEN }}>
               .0035 USDT
             </div>
-            <div className="text-xs text-white/60">to usdt-erc20</div>
+            <div className="text-xs dark:text-white/60 text-gray-500">
+              to usdt-erc20
+            </div>
           </div>
         </div>
-        <div className="flex flex-col md:flex-row md:justify-between text-white/80 text-sm mb-4">
+        <div className="flex flex-col md:flex-row md:justify-between dark:text-white/80 text-gray-600 text-sm mb-4">
           <div>
             <div className="mb-1">Transaction Hash</div>
-            <div className="font-mono text-white">TXNWSU09E2DS</div>
+            <div className="font-mono dark:text-white text-gray-900">
+              TXNWSU09E2DS
+            </div>
           </div>
         </div>
         <div
@@ -88,7 +100,7 @@ const SuccessPage = () => {
       </div>
 
       {/* Support Footer */}
-      <div className="w-full max-w-2xl text-center text-xs text-white/40 mt-2">
+      <div className="w-full max-w-2xl text-center text-xs dark:text-white/40 text-gray-500 mt-2">
         Need help? Contact our support team at{" "}
         <a href="mailto:support@omayaexchange.com" className="underline">
           support@omayaexchange.com

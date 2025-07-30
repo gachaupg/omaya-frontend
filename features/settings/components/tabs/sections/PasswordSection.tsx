@@ -89,17 +89,17 @@ const PasswordSection: React.FC = () => {
 
   return (
     <>
-      <div className="text-base font-semibold text-[#788099] mb-0">
+      <div className="text-base font-semibold dark:text-[#788099] text-gray-600 mb-0">
         3-Password
       </div>
 
-      <section className="bg-[#1D1D23] rounded-xl border-2 border-[#35353E] p-3 shadow-lg">
+      <section className="dark:bg-[#1D1D23] bg-gray-50 rounded-xl dark:border-[#35353E] border-gray-300 border-2 p-3 shadow-lg">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
           <div>
-            <label className="block text-xs text-[#fff] mb-1">
+            <label className="block text-xs dark:text-[#fff] text-gray-700 mb-1">
               Current Password*
             </label>
-            <div className="flex items-center bg-[#23232B] rounded-lg px-3 py-2 border border-[#35353E]">
+            <div className="flex items-center dark:bg-[#23232B] bg-gray-100 rounded-lg px-3 py-2 dark:border-[#35353E] border-gray-300 border">
               <svg
                 width="16"
                 height="16"
@@ -130,7 +130,7 @@ const PasswordSection: React.FC = () => {
               <button
                 type="button"
                 onClick={() => togglePasswordVisibility("current")}
-                className="text-[#788099] hover:text-white transition-colors"
+                className="dark:text-[#788099] text-gray-500 dark:hover:text-white hover:text-gray-700 transition-colors"
               >
                 <svg
                   width="16"
@@ -160,10 +160,10 @@ const PasswordSection: React.FC = () => {
             )}
           </div>
           <div>
-            <label className="block text-xs text-[#fff] mb-1">
+            <label className="block text-xs dark:text-[#fff] text-gray-700 mb-1">
               New Password*
             </label>
-            <div className="flex items-center bg-[#23232B] rounded-lg px-3 py-2 border border-[#35353E]">
+            <div className="flex items-center dark:bg-[#23232B] bg-gray-100 rounded-lg px-3 py-2 dark:border-[#35353E] border-gray-300 border">
               <svg
                 width="16"
                 height="16"
@@ -194,7 +194,7 @@ const PasswordSection: React.FC = () => {
               <button
                 type="button"
                 onClick={() => togglePasswordVisibility("new")}
-                className="text-[#788099] hover:text-white transition-colors"
+                className="dark:text-[#788099] text-gray-500 dark:hover:text-white hover:text-gray-700 transition-colors"
               >
                 <svg
                   width="16"
@@ -224,10 +224,10 @@ const PasswordSection: React.FC = () => {
             )}
           </div>
           <div className="md:col-span-2">
-            <label className="block text-xs text-[#fff] mb-1">
+            <label className="block text-xs dark:text-[#fff] text-gray-700 mb-1">
               Confirm New Password*
             </label>
-            <div className="flex items-center bg-[#23232B] rounded-lg px-3 py-2 border border-[#35353E]">
+            <div className="flex items-center dark:bg-[#23232B] bg-gray-100 rounded-lg px-3 py-2 dark:border-[#35353E] border-gray-300 border">
               <svg
                 width="16"
                 height="16"
@@ -258,7 +258,7 @@ const PasswordSection: React.FC = () => {
               <button
                 type="button"
                 onClick={() => togglePasswordVisibility("confirm")}
-                className="text-[#788099] hover:text-white transition-colors"
+                className="dark:text-[#788099] text-gray-500 dark:hover:text-white hover:text-gray-700 transition-colors"
               >
                 <svg
                   width="16"

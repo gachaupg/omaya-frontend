@@ -45,10 +45,12 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
 
   return (
     <div className="mb-8">
-      <div className="mb-2 text-base font-semibold">3- Your Wallet Address</div>
+      <div className="mb-2 text-base font-semibold dark:text-white text-gray-900">
+        3- Your Wallet Address
+      </div>
 
       {/* Combined Wallet Address and Terms Card */}
-      <div className="bg-[#1D1D23] border-2 border-[#35353E] rounded-xl p-5">
+      <div className="dark:bg-[#1D1D23] bg-white dark:border-[#35353E] border-gray-200 border-2 rounded-xl p-5">
         <div className="flex flex-col gap-6">
           {/* Wallet Address Input Section */}
           <div className="flex flex-col gap-4">
@@ -157,7 +159,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
             </div>
 
             {/* Terms Box */}
-            <div className="dark:bg-[#181820] bg-white border border-[#1D8751] rounded-lg p-4">
+            <div className="dark:bg-[#181820] bg-gray-50 border border-[#1D8751] rounded-lg p-4">
               <div className="space-y-3">
                 {/* Term 1 */}
                 <div className="flex items-start gap-3">

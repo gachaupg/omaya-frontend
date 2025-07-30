@@ -585,16 +585,17 @@ export default function DepositForm({
   }, [selectedPaymentDetail]);
 
   return (
-    <div className="w-full min-h-screen flex flex-col justify- bg-[#18181f]">
-      <h2 className="text-xl font-bold  mb-2 text-[#788099]">
-        <span className="text-[#7e7e8f]">1-</span> Transaction Info
+    <div className="w-full min-h-screen flex flex-col justify- dark:bg-[#18181f] bg-white">
+      <h2 className="text-xl font-bold  mb-2 dark:text-[#788099] text-gray-600">
+        <span className="dark:text-[#7e7e8f] text-gray-500">1-</span>{" "}
+        Transaction Info
       </h2>
       <div className=" flex items-center justify-center ">
-        <div className="bg-[#23232b] border-2 border-[#35353E]  rounded-2xl p-3 shadow-lg w-full max-w-4xl mx-auto text-white">
+        <div className="dark:bg-[#23232b] bg-white dark:border-[#35353E] border-gray-200 border-2 rounded-2xl p-3 shadow-lg w-full max-w-4xl mx-auto dark:text-white text-gray-900">
           {/* First Row - Amount and Asset */}
           <div className="flex flex-col md:flex-row gap-3 mb-2">
             <div className="flex-1">
-              <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+              <label className="block text-[17px] dark:text-[#7e7e8f] text-gray-600 mb-2 font-semibold">
                 Amount
               </label>
               <input
@@ -606,16 +607,16 @@ export default function DepositForm({
                 }}
                 onFocus={() => setIsCalculatingFromPay(true)}
                 placeholder="Enter amount"
-                className="w-full bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg text-white focus:outline-none border border-[#39394a] appearance-none"
+                className="w-full !bg-white dark:!bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg dark:text-white text-gray-900 focus:outline-none dark:border-[#39394a] border-gray-300 border appearance-none"
               />
             </div>
             <div className="flex-1">
-              <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+              <label className="block text-[17px] dark:text-[#7e7e8f] text-gray-600 mb-2 font-semibold">
                 Asset
               </label>
               <div className="relative" ref={assetDropdownRef}>
                 <div
-                  className={`w-full bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg text-white focus:outline-none border border-[#39394a] flex items-center justify-between ${
+                  className={`w-full !bg-white dark:!bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg dark:text-white text-gray-900 focus:outline-none dark:border-[#39394a] border-gray-300 border flex items-center justify-between ${
                     !payAmount || payAmount <= 0
                       ? "opacity-50 cursor-not-allowed"
                       : "cursor-pointer"
@@ -638,7 +639,7 @@ export default function DepositForm({
                               "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                           }}
                         />
-                        <span className="text-white">
+                        <span className="dark:text-white text-gray-900">
                           {selectedAsset.ticker ||
                             selectedAsset.symbol ||
                             selectedAsset.name ||
@@ -655,18 +656,18 @@ export default function DepositForm({
                           alt="asset icon"
                           className="w-6 h-6"
                         />
-                        <span className="text-[#7e7e8f]">
+                        <span className="dark:text-[#7e7e8f] text-gray-600">
                           {swapAssetsLoading
                             ? "Loading assets..."
                             : !payAmount || payAmount <= 0
-                            ? "Enter amount first"
-                            : "Select Asset"}
+                              ? "Enter amount first"
+                              : "Select Asset"}
                         </span>
                       </>
                     )}
                   </div>
                   <svg
-                    className={`w-5 h-5 text-[#7e7e8f] transition-transform ${
+                    className={`w-5 h-5 dark:text-[#7e7e8f] text-gray-600 transition-transform ${
                       isAssetDropdownOpen ? "rotate-180" : ""
                     }`}
                     fill="none"
@@ -684,17 +685,17 @@ export default function DepositForm({
 
                 {/* Asset Dropdown */}
                 {isAssetDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#1D1D23] border border-[#39394a] rounded-2xl z-50 max-h-80 overflow-hidden">
+                  <div className="absolute top-full left-0 right-0 mt-1 dark:bg-[#1D1D23] bg-white dark:border-[#39394a] border-gray-300 border rounded-2xl z-50 max-h-80 overflow-hidden">
                     {/* Search Input */}
-                    <div className="p-3 border-b border-[#39394a]">
+                    <div className="p-3 dark:border-b dark:border-[#39394a] border-b border-gray-300">
                       <div className="relative">
-                        <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
+                        <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 dark:text-[#7e7e8f] text-gray-600 w-4 h-4" />
                         <input
                           type="text"
                           placeholder="Search assets..."
                           value={assetSearchTerm}
                           onChange={(e) => setAssetSearchTerm(e.target.value)}
-                          className="w-full bg-[#23232b] rounded-xl px-10 py-2 text-white text-sm focus:outline-none border border-[#39394a]"
+                          className="w-full dark:bg-[#23232b] bg-gray-50 rounded-xl px-10 py-2 dark:text-white text-gray-900 text-sm focus:outline-none dark:border-[#39394a] border-gray-300 border"
                         />
                       </div>
                     </div>
@@ -705,7 +706,7 @@ export default function DepositForm({
                         sortedSwapAssets.map((asset: SupportedAsset) => (
                           <div
                             key={asset.id}
-                            className="flex items-center gap-3 p-3 hover:bg-[#23232b] cursor-pointer border-b border-[#39394a] last:border-b-0"
+                            className="flex items-center gap-3 p-3 dark:hover:bg-[#23232b] hover:bg-gray-50 cursor-pointer dark:border-b dark:border-[#39394a] border-b border-gray-300 last:border-b-0"
                             onClick={() => {
                               setSelectedAsset(asset);
                               setIsAssetDropdownOpen(false);
@@ -722,7 +723,7 @@ export default function DepositForm({
                               }}
                             />
                             <div className="flex-1">
-                              <div className="text-white font-medium flex items-center gap-2">
+                              <div className="dark:text-white text-gray-900 font-medium flex items-center gap-2">
                                 {asset.ticker ||
                                   asset.symbol ||
                                   asset.name ||
@@ -731,7 +732,7 @@ export default function DepositForm({
                                   {asset.network || "Unknown"}
                                 </span>
                               </div>
-                              <div className="text-[#7e7e8f] text-sm">
+                              <div className="dark:text-[#7e7e8f] text-gray-600 text-sm">
                                 {asset.name ||
                                   asset.ticker ||
                                   asset.symbol ||
@@ -744,7 +745,7 @@ export default function DepositForm({
                           </div>
                         ))
                       ) : (
-                        <div className="p-4 text-center text-[#7e7e8f]">
+                        <div className="p-4 text-center dark:text-[#7e7e8f] text-gray-600">
                           {assetSearchTerm
                             ? "No assets found"
                             : "No assets available"}
@@ -757,7 +758,7 @@ export default function DepositForm({
             </div>
           </div>
           {/* Fee & Rate - Dynamic based on selected asset */}
-          <div className="flex items-center rounded-2xl border border-[#39394a] bg-[#23232b] px-2 py-2 mb-3">
+          <div className="flex items-center rounded-2xl dark:border-[#39394a] border-gray-300 border dark:bg-[#23232b] bg-gray-50 px-2 py-2 mb-3">
             <div className="flex flex-col gap-2 flex-1">
               <span className="flex items-center bg-[#F79330] text-white rounded-full px-5 py-1 text-sm font-medium w-fit">
                 <span className="w-2 h-2 bg-white rounded-full mr-2 inline-block"></span>
@@ -783,7 +784,7 @@ export default function DepositForm({
           {/* Second Row - You Get Amount and Bank/Payment Method */}
           <div className="flex flex-col md:flex-row gap-3 mb-2">
             <div className="flex-1">
-              <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+              <label className="block text-[17px] dark:text-[#7e7e8f] text-gray-600 mb-2 font-semibold">
                 You Recieve
               </label>
               <input
@@ -795,11 +796,11 @@ export default function DepositForm({
                 }}
                 onFocus={() => setIsCalculatingFromPay(false)}
                 placeholder="Enter amount"
-                className="w-full bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg text-white focus:outline-none border border-[#39394a] appearance-none"
+                className="w-full !bg-white dark:!bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg dark:text-white text-gray-900 focus:outline-none dark:border-[#39394a] border-gray-300 border appearance-none"
               />
             </div>
             <div className="flex-1">
-              <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+              <label className="block text-[17px] dark:text-[#7e7e8f] text-gray-600 mb-2 font-semibold">
                 Bank/Payment Method
               </label>
               <div className="relative">
@@ -818,7 +819,7 @@ export default function DepositForm({
                     setSelectedPaymentDetail(selectedPayment || null);
                   }}
                   disabled={loading}
-                  className="w-full bg-[#1D1D23] rounded-2xl px-9 py-2 text-lg text-white focus:outline-none border border-[#39394a] appearance-none disabled:opacity-50"
+                  className="w-full !bg-white dark:!bg-[#1D1D23] rounded-2xl px-9 py-2 text-lg dark:text-white text-gray-900 focus:outline-none dark:border-[#39394a] border-gray-300 border appearance-none disabled:opacity-50"
                 >
                   <option value="">
                     {loading
@@ -883,13 +884,14 @@ export default function DepositForm({
             ref={paymentDetailsRef}
             className="mt-1 mb-2 flex flex-col gap-3"
           >
-            <h2 className="text-xl font-bold mb-2 text-[#788099]">
-              <span className="text-[#7e7e8f]">2-</span> Payment Details
+            <h2 className="text-xl font-bold mb-2 dark:text-[#788099] text-gray-600">
+              <span className="dark:text-[#7e7e8f] text-gray-500">2-</span>{" "}
+              Payment Details
             </h2>
-            <div className="flex-1 bg-[#1D1D23] rounded-2xl border border-[#39394a] flex flex-col justify-between p-5 relative min-h-[120px]">
+            <div className="flex-1 dark:bg-[#1D1D23] bg-white rounded-2xl dark:border-[#39394a] border-gray-300 border flex flex-col justify-between p-5 relative min-h-[120px]">
               {/* Bank and logo */}
               <div className="flex items-center justify-between mb-4">
-                <span className="text-[#7e7e8f] text-base font-semibold">
+                <span className="dark:text-[#7e7e8f] text-gray-600 text-base font-semibold">
                   Bank:
                 </span>
                 <div className="flex items-center gap-2">
@@ -901,29 +903,29 @@ export default function DepositForm({
                     alt="Bank Logo"
                     className="w-8 h-8 rounded-full object-contain"
                   />
-                  <span className="text-white text-base font-semibold">
+                  <span className="dark:text-white text-gray-900 text-base font-semibold">
                     {selectedPaymentDetail.provider_name}
                   </span>
                 </div>
               </div>
-              <div className="border-t border-dashed border-[#39394a] mb-2"></div>
+              <div className="border-t border-dashed dark:border-[#39394a] border-gray-400 mb-2"></div>
               {/* Account Name */}
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[#7e7e8f] text-base font-medium">
+                <span className="dark:text-[#7e7e8f] text-gray-600 text-base font-medium">
                   Account Name :
                 </span>
-                <span className="text-white text-base font-medium">
+                <span className="dark:text-white text-gray-900 text-base font-medium">
                   {selectedPaymentDetail.account_name}
                 </span>
               </div>
-              <div className="border-t border-dashed border-[#39394a] mb-2"></div>
+              <div className="border-t border-dashed dark:border-[#39394a] border-gray-400 mb-2"></div>
               {/* Account Number */}
               <div className="flex items-center justify-between">
-                <span className="text-[#7e7e8f] text-base font-medium">
+                <span className="dark:text-[#7e7e8f] text-gray-600 text-base font-medium">
                   Account Number :
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="text-white text-base font-medium">
+                  <span className="dark:text-white text-gray-900 text-base font-medium">
                     {selectedPaymentDetail.account_number}
                   </span>
                   <button
@@ -965,17 +967,18 @@ export default function DepositForm({
           {/* All sections below are only shown after payment method is selected */}
           {/* Transaction Code Card - below Payment Details, before Wallet Address */}
           <div className="mb-6 flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
-            <h2 className="text-xl font-bold mb-2 text-[#788099]">
-              <span className="text-[#7e7e8f]">3-</span> Transaction Code
+            <h2 className="text-xl font-bold mb-2 dark:text-[#788099] text-gray-600">
+              <span className="dark:text-[#7e7e8f] text-gray-500">3-</span>{" "}
+              Transaction Code
             </h2>
-            <div className="bg-[#23232b] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full text-white">
+            <div className="dark:bg-[#23232b] bg-white dark:border-[#35353E] border-gray-200 border-2 rounded-2xl p-5 shadow-lg w-full dark:text-white text-gray-900">
               {/* Transaction Code Row */}
               <div className="flex items-center justify-center gap-2 mb-4">
                 {/* Example transaction code, replace with real code if available */}
                 {[...transactionCode].map((digit, idx) => (
                   <span
                     key={idx}
-                    className="bg-[#1D1D23] rounded-lg px-4 py-2 text-2xl font-bold border border-[#39394a] tracking-widest"
+                    className="dark:bg-[#1D1D23] bg-gray-50 rounded-lg px-4 py-2 text-2xl font-bold dark:border-[#39394a] border-gray-300 border tracking-widest"
                   >
                     {digit}
                   </span>
@@ -985,7 +988,7 @@ export default function DepositForm({
                     navigator.clipboard.writeText(transactionCode);
                     showToast.success("Transaction code copied!");
                   }}
-                  className="flex items-center gap-1 bg-[#23232b] border border-[#1D8751] text-[#1D8751] rounded-full px-4 py-1 ml-2 font-semibold text-base hover:bg-[#1D8751] hover:text-white transition-colors"
+                  className="flex items-center gap-1 dark:bg-[#23232b] bg-gray-50 border border-[#1D8751] text-[#1D8751] rounded-full px-4 py-1 ml-2 font-semibold text-base hover:bg-[#1D8751] hover:text-white transition-colors"
                 >
                   <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                     <rect
@@ -1034,22 +1037,22 @@ export default function DepositForm({
                       <circle cx="12" cy="16" r="1" fill="#1D8751" />
                     </svg>
                   </span>
-                  <span className="text-base font-semibold text-[#7e7e8f]">
+                  <span className="text-base font-semibold dark:text-[#7e7e8f] text-gray-600">
                     Note
                   </span>
                 </div>
-                <div className="bg-[#23232b] border border-[#1D8751] rounded-xl p-4">
+                <div className="dark:bg-[#23232b] bg-gray-50 border border-[#1D8751] rounded-xl p-4">
                   <ul className="list-none space-y-2">
                     <li className="flex items-start">
                       <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                      <span className="text-white text-sm">
+                      <span className="dark:text-white text-gray-900 text-sm">
                         Please write this Transaction Code in the bank message
                         or note section.
                       </span>
                     </li>
                     <li className="flex items-start">
                       <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                      <span className="text-white text-sm">
+                      <span className="dark:text-white text-gray-900 text-sm">
                         This helps us process your payment quickly and
                         accurately.
                       </span>
@@ -1061,16 +1064,17 @@ export default function DepositForm({
           </div>
 
           {/* Wallet Address Section */}
-          <h2 className="text-xl font-bold  mb-2 text-[#788099]">
-            <span className="text-[#7e7e8f]">4-</span> Wallet Address
+          <h2 className="text-xl font-bold  mb-2 dark:text-[#788099] text-gray-600">
+            <span className="dark:text-[#7e7e8f] text-gray-500">4-</span> Wallet
+            Address
           </h2>
-          <div className="flex flex-col bg-[#23232b] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full max-w-4xl mx-auto text-white mb-6">
+          <div className="flex flex-col dark:bg-[#23232b] bg-white dark:border-[#35353E] border-gray-200 border-2 rounded-2xl p-5 shadow-lg w-full max-w-4xl mx-auto dark:text-white text-gray-900 mb-6">
             {/* Wallet/Account Address Label */}
-            <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+            <label className="block text-[17px] dark:text-[#7e7e8f] text-gray-600 mb-2 font-semibold">
               Wallet/Account Address
             </label>
             {/* Input group */}
-            <div className="flex items-center bg-[#23232b] border border-[#39394a] rounded-2xl px-4 py-2 mb-4">
+            <div className="flex items-center dark:bg-[#23232b] bg-gray-50 dark:border-[#39394a] border-gray-300 border rounded-2xl px-4 py-2 mb-4">
               {/* Left icon */}
               <span className="mr-2 text-[#1D8751]">
                 <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
@@ -1121,20 +1125,20 @@ export default function DepositForm({
                   }
                 }}
                 placeholder="Paste here your Crypto address"
-                className={`flex-1 bg-transparent border-none outline-none text-white placeholder-[#788099] text-base ${
+                className={`flex-1 !bg-transparent border-none outline-none dark:text-white text-gray-900 dark:placeholder-[#788099] placeholder-gray-500 text-base ${
                   walletError
                     ? "border-red-500"
                     : walletAddress.trim() && !walletError
-                    ? "border-green-500"
-                    : ""
+                      ? "border-green-500"
+                      : ""
                 }`}
               />
               {/* Bookmark icon */}
-              <span className="mx-2 text-[#788099] cursor-pointer">
+              <span className="mx-2 dark:text-[#788099] text-gray-600 cursor-pointer">
                 <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                   <path
                     d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"
-                    stroke="#788099"
+                    stroke="currentColor"
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -1152,7 +1156,7 @@ export default function DepositForm({
                     showToast.error("Failed to paste from clipboard");
                   }
                 }}
-                className="flex items-center gap-1 bg-[#23232b] border border-[#1D8751] text-[#1D8751] rounded-full px-4 py-1 ml-2 font-semibold text-base hover:bg-[#1D8751] hover:text-white transition-colors"
+                className="flex items-center gap-1 dark:bg-[#23232b] bg-gray-50 border border-[#1D8751] text-[#1D8751] rounded-full px-4 py-1 ml-2 font-semibold text-base hover:bg-[#1D8751] hover:text-white transition-colors"
               >
                 <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
                   <path
@@ -1203,27 +1207,27 @@ export default function DepositForm({
                   <circle cx="12" cy="16" r="1" fill="#1D8751" />
                 </svg>
               </span>
-              <span className="text-base font-semibold text-[#7e7e8f]">
+              <span className="text-base font-semibold dark:text-[#7e7e8f] text-gray-600">
                 Terms and Conditions Summary
               </span>
             </div>
-            <div className="bg-[#23232b] border border-[#1D8751] rounded-xl p-4">
+            <div className="dark:bg-[#23232b] bg-gray-50 border border-[#1D8751] rounded-xl p-4">
               <ul className="list-none space-y-2">
                 <li className="flex items-start">
                   <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                  <span className="text-white text-sm">
+                  <span className="dark:text-white text-gray-900 text-sm">
                     Please send the money from your own account Only
                   </span>
                 </li>
                 <li className="flex items-start">
                   <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                  <span className="text-white text-sm">
+                  <span className="dark:text-white text-gray-900 text-sm">
                     Put transaction ID in the description field of the bank
                   </span>
                 </li>
                 <li className="flex items-start">
                   <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                  <span className="text-white text-sm">
+                  <span className="dark:text-white text-gray-900 text-sm">
                     Please note, If you do not follow above conditions, we will
                     reject your transaction and send you back your money.
                   </span>
@@ -1250,7 +1254,7 @@ export default function DepositForm({
 
           {/* Disclaimer and Button outside the card */}
           <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
-            <div className="flex items-center text-white text-[16px] font-semibold">
+            <div className="flex items-center dark:text-white text-gray-900 text-[16px] font-semibold">
               <FaExclamationCircle className="mr-2 text-red-500" />
               <span>
                 This is only an estimated price based on current market rates.

@@ -16,9 +16,9 @@ interface CardProps {
 
 const Card: React.FC<CardProps> = ({
   children,
-  borderColor = `border-[${tokens.colors.dark.border}]`,
-  width = "w-full",
-  bgColor = `bg-[${tokens.colors.dark.card}]`,
+  borderColor = "dark:border-[#35353E] border-gray-200",
+  width = "w-full", 
+  bgColor = "dark:bg-[#1D1D23] bg-white",
   borderRadius = "rounded-[20px]",
   className = "",
 }) => {

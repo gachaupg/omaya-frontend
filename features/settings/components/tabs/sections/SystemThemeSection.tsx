@@ -20,10 +20,10 @@ const SystemThemeSection: React.FC = () => {
 
   return (
     <>
-      <div className="text-base font-semibold text-[#788099] mb-0">
+      <div className="text-base font-semibold dark:text-[#788099] text-gray-600 mb-0">
         System Theme
       </div>
-      <section className="bg-[#1D1D23] rounded-xl border-2 border-[#35353E] p-4 shadow-lg">
+      <section className="dark:bg-[#1D1D23] bg-gray-50 rounded-xl dark:border-[#35353E] border-gray-300 border-2 p-4 shadow-lg">
         <div className="flex gap-3 mb-3">
           <button
             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-semibold text-sm transition-all ${
@@ -99,12 +99,12 @@ const SystemThemeSection: React.FC = () => {
         {updating && (
           <div className="text-center py-2">
             <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-[#1D8751] mx-auto"></div>
-            <span className="text-[#808080] text-xs ml-2">
+            <span className="dark:text-[#808080] text-gray-500 text-xs ml-2">
               Updating theme...
             </span>
           </div>
         )}
-        <div className="text-xs text-[#808080] mt-2">
+        <div className="text-xs dark:text-[#808080] text-gray-500 mt-2">
           Current theme: {currentTheme}{" "}
           {currentTheme === "system" && "(system)"}
         </div>

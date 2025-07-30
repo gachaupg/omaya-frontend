@@ -21,19 +21,19 @@ const FeeBreakdown: React.FC<FeeBreakdownProps> = ({
   return (
     <>
       {/* Estimated Rate */}
-      <div className="mt-2 flex items-center gap-2 border border-[#35353E] justify-center rounded-[24px] px-3 py-2">
-        <span className="text-[#8C8CA1] bg-[#35353E] text-xs px-3 py-1 rounded-full">
+      <div className="mt-2 flex items-center gap-2 dark:border-[#35353E] border-gray-300 border justify-center rounded-[24px] px-3 py-2">
+        <span className="dark:text-[#8C8CA1] text-gray-600 dark:bg-[#35353E] bg-gray-200 text-xs px-3 py-1 rounded-full">
           {estimateLoading
             ? "Calculating rate..."
             : estimate &&
-              fromAsset &&
-              toAsset &&
-              estimate.estimated_amount &&
-              fromAmount
-            ? `1 ${fromAsset.ticker} = ${(
-                estimate.estimated_amount / parseFloat(fromAmount || "1")
-              ).toFixed(6)} ${toAsset.ticker}`
-            : "Select assets and amount to see rate"}
+                fromAsset &&
+                toAsset &&
+                estimate.estimated_amount &&
+                fromAmount
+              ? `1 ${fromAsset.ticker} = ${(
+                  estimate.estimated_amount / parseFloat(fromAmount || "1")
+                ).toFixed(6)} ${toAsset.ticker}`
+              : "Select assets and amount to see rate"}
         </span>
       </div>
     </>

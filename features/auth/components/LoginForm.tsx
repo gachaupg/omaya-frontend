@@ -119,7 +119,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#18181D] flex flex-col md:flex-row items-start justify-center relative overflow-hidden px-6 py-16 md:pt-24 md:pb-24">
+    <div className="min-h-screen dark:bg-[#18181D] bg-gray-50 flex flex-col md:flex-row items-start justify-center relative overflow-hidden px-6 py-16 md:pt-24 md:pb-24">
       {/* Left Side - Mobile App Preview */}
       <div className="w-full md:w-1/2 flex justify-center mb-8 md:mb-0 relative z-10">
         {/* Background Glow Effect */}
@@ -173,14 +173,19 @@ export default function LoginPage() {
       <div className="w-full md:w-1/2 relative z-10">
         <div className="max-w-md mx-auto 2xl:max-w-3/4">
           <div className="mb-6">
-            <h1 className="text-white text-2xl font-semibold">Welcome</h1>
-            <p className="text-[#788099]">Please Login</p>
+            <h1 className="dark:text-white text-gray-900 text-2xl font-semibold">
+              Welcome
+            </h1>
+            <p className="dark:text-[#788099] text-gray-600">Please Login</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-white mb-2">
+              <label
+                htmlFor="email"
+                className="block dark:text-white text-gray-900 mb-2"
+              >
                 Email
               </label>
               <div className="relative">
@@ -189,9 +194,11 @@ export default function LoginPage() {
                   id="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className={`w-full py-3 px-4 pl-10 rounded-full bg-[#1D1D23] border ${
-                    errors.email ? "border-[#FDA29B]" : "border-gray-700"
-                  } text-white focus:outline-none focus:border-[#13B562]`}
+                  className={`w-full py-3 px-4 pl-10 rounded-full dark:bg-[#1D1D23] bg-white border ${
+                    errors.email
+                      ? "border-[#FDA29B]"
+                      : "dark:border-gray-700 border-gray-300"
+                  } dark:text-white text-gray-900 focus:outline-none focus:border-[#13B562]`}
                   placeholder="Email Address"
                 />
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -246,7 +253,7 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-white font-medium mb-2"
+                className="block dark:text-white text-gray-900 font-medium mb-2"
               >
                 Password
               </label>
@@ -256,9 +263,11 @@ export default function LoginPage() {
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className={`w-full py-3 px-4 pl-10 rounded-full bg-[#1D1D23] border ${
-                    errors.password ? "border-[#FDA29B]" : "border-gray-700"
-                  } text-white focus:outline-none focus:border-[#13B562]`}
+                  className={`w-full py-3 px-4 pl-10 rounded-full dark:bg-[#1D1D23] bg-white border ${
+                    errors.password
+                      ? "border-[#FDA29B]"
+                      : "dark:border-gray-700 border-gray-300"
+                  } dark:text-white text-gray-900 focus:outline-none focus:border-[#13B562]`}
                   placeholder="****************"
                 />
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -342,7 +351,9 @@ export default function LoginPage() {
                     <label
                       htmlFor="remember-me"
                       className={`text-sm cursor-pointer ${
-                        errors.rememberMe ? "text-[#F04438]" : "text-white"
+                        errors.rememberMe
+                          ? "text-[#F04438]"
+                          : "dark:text-white text-gray-900"
                       }`}
                     >
                       Remember me
@@ -386,7 +397,9 @@ export default function LoginPage() {
                     <label
                       htmlFor="not-robot"
                       className={`text-sm cursor-pointer ${
-                        errors.notRobot ? "text-[#F04438]" : "text-white"
+                        errors.notRobot
+                          ? "text-[#F04438]"
+                          : "dark:text-white text-gray-900"
                       }`}
                     >
                       I'm not a robot
@@ -477,7 +490,7 @@ export default function LoginPage() {
                 </Link>{" "}
                 now
               </p>
-              <div className="border-t border-gray-700 flex-grow mt-2"></div>
+              <div className="border-t dark:border-gray-700 border-gray-300 flex-grow mt-2"></div>
             </div>
 
             {/* Or Login With */}
@@ -491,7 +504,7 @@ export default function LoginPage() {
               <div className="grid grid-cols-2 gap-4 mt-4">
                 <button
                   type="button"
-                  className="flex items-center justify-center py-2 px-4 rounded-lg border border-gray-700 bg-[#1D1D23] text-white hover:bg-[#1a1a1a] transition-colors duration-300"
+                  className="flex items-center justify-center py-2 px-4 rounded-lg border dark:border-gray-700 border-gray-300 dark:bg-[#1D1D23] bg-white dark:text-white text-gray-900 dark:hover:bg-[#1a1a1a] hover:bg-gray-100 transition-colors duration-300"
                 >
                   <svg
                     className="w-5 h-5 mr-2"
@@ -519,7 +532,7 @@ export default function LoginPage() {
                 </button>
                 <button
                   type="button"
-                  className="flex items-center justify-center py-2 px-4 rounded-lg border border-gray-700 bg-[#1D1D23] text-white hover:bg-[#1a1a1a] transition-colors duration-300"
+                  className="flex items-center justify-center py-2 px-4 rounded-lg border dark:border-gray-700 border-gray-300 dark:bg-[#1D1D23] bg-white dark:text-white text-gray-900 dark:hover:bg-[#1a1a1a] hover:bg-gray-100 transition-colors duration-300"
                 >
                   <svg
                     className="w-6 h-6 mr-2"

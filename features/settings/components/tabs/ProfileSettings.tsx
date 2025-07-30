@@ -30,11 +30,11 @@ const ProfileSettings = () => {
         <SystemThemeSection />
 
         {/* Logout Section */}
-        <div className="mt-3 sm:mt-4 p-4 sm:p-6 bg-[#23232B] rounded-lg sm:rounded-xl border border-[#35353E]">
-          <h3 className="text-white text-base sm:text-lg font-semibold mb-2 sm:mb-3">
+        <div className="mt-3 sm:mt-4 p-4 sm:p-6 dark:bg-[#23232B] bg-gray-50 rounded-lg sm:rounded-xl dark:border-[#35353E] border-gray-200 border">
+          <h3 className="dark:text-white text-gray-900 text-base sm:text-lg font-semibold mb-2 sm:mb-3">
             Account Actions
           </h3>
-          <p className="text-[#788099] text-xs sm:text-sm mb-3 sm:mb-4 leading-relaxed">
+          <p className="dark:text-[#788099] text-gray-600 text-xs sm:text-sm mb-3 sm:mb-4 leading-relaxed">
             Sign out of your account. You will need to log in again to access
             your dashboard.
           </p>

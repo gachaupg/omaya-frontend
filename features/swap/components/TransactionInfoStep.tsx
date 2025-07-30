@@ -60,32 +60,36 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
 }) => {
   return (
     <div className="mb-2">
-      <div className="mb-1 text-base text-[#788099] font-semibold">
+      <div className="mb-1 text-base dark:text-[#788099] text-gray-600 font-semibold">
         1-Transaction Info
       </div>
-      <div className="bg-[#1D1D23] border-2 border-[#35353E] rounded-xl p-2 ">
+      <div className="dark:bg-[#1D1D23] bg-white dark:border-[#35353E] border-gray-200 border-2 rounded-xl p-2 ">
         <div className="flex flex-col gap-4">
           {/* You Send */}
           <div className="flex flex-col md:flex-row md:items-center gap-4">
             <div className="flex-1">
-              <div className="text-xs mb-1">You Send</div>
-              <div className="flex items-center border border-[#35353E] rounded-[13px] px-2 py-2">
+              <div className="text-xs mb-1 dark:text-white text-gray-900">
+                You Send
+              </div>
+              <div className="flex items-center dark:border-[#35353E] border-gray-300 border rounded-[13px] px-2 py-2">
                 <input
                   type="text"
                   value={fromAmount}
                   onChange={onFromAmountChange}
-                  className="bg-transparent outline-none w-full text-white"
+                  className="bg-transparent outline-none w-full dark:text-white text-gray-900"
                   placeholder="0.00"
                 />
-                <span className="ml-2 text-xs capitalize">
+                <span className="ml-2 text-xs capitalize dark:text-white text-gray-900">
                   {fromAsset?.ticker}
                 </span>
               </div>
             </div>
             <div className="flex-1">
-              <div className="text-xs mb-1">Asset</div>
+              <div className="text-xs mb-1 dark:text-white text-gray-900">
+                Asset
+              </div>
               <AssetDropdown
-                className="bg-transparent border border-[#35353E] rounded-[13px] px-2 py-2 text-white"
+                className="bg-transparent dark:border-[#35353E] border-gray-300 border rounded-[13px] px-2 py-2 dark:text-white text-gray-900"
                 assets={supportedAssets}
                 selectedAsset={fromAsset}
                 onAssetSelect={onFromAssetSelect}
@@ -114,7 +118,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                 d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <span className="text-xs text-[#ffff]">
+            <span className="text-xs dark:text-[#ffff] text-gray-700">
               This is only estimated price and its based on current Market
               Price. We will fix the price when we receive the funds.
             </span>
@@ -131,8 +135,10 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
           />
 
           <div className="text-xs flex items-center gap-2 justify-between">
-            <span className="text-[#ffff]">You will receive</span>
-            <span className="text-[#ffff]">
+            <span className="dark:text-[#ffff] text-gray-900">
+              You will receive
+            </span>
+            <span className="dark:text-[#ffff] text-gray-900">
               {toAsset && (
                 <img
                   src={toAsset.image || undefined}
@@ -144,17 +150,21 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
           </div>
           <div className="flex flex-col md:flex-row md:items-center gap-4">
             <div className="flex-1">
-              <div className="text-xs text-[#8C8CA1] ">I want to Receive</div>
-              <div className="flex items-center border border-[#35353E] rounded-[18px] px-4 py-3">
+              <div className="text-xs dark:text-[#8C8CA1] text-gray-600">
+                I want to Receive
+              </div>
+              <div className="flex items-center dark:border-[#35353E] border-gray-300 border rounded-[18px] px-4 py-3">
                 <input
                   type="text"
                   value={toAmount}
                   onChange={onToAmountChange}
-                  className="bg-transparent outline-none w-full text-white"
+                  className="bg-transparent outline-none w-full dark:text-white text-gray-900"
                   placeholder="0.00"
                   readOnly={estimateLoading}
                 />
-                <span className="ml-2 text-xs">{toAsset?.ticker}</span>
+                <span className="ml-2 text-xs dark:text-white text-gray-900">
+                  {toAsset?.ticker}
+                </span>
                 {estimateLoading && (
                   <div className="ml-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#1D8751]"></div>
@@ -163,7 +173,9 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
               </div>
             </div>
             <div className="flex-1">
-              <div className="text-xs text-[#8C8CA1] mb-1">Asset</div>
+              <div className="text-xs dark:text-[#8C8CA1] text-gray-600 mb-1">
+                Asset
+              </div>
               <AssetDropdown
                 assets={supportedAssets}
                 selectedAsset={toAsset}

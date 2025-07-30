@@ -22,18 +22,18 @@ export const useFAQ = (category?: string) => {
       try {
         setLoading(true);
         setError(null);
-        
-        const url = category 
+
+        const url = category
           ? `/api/faq/read?category=${encodeURIComponent(category)}`
-          : '/api/faq/read';
-        
+          : "/api/faq/read";
+
         const response = await fetch(url);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const data = await response.json();
-        
+
         // Transform Sanity data to match UI expectations
         const transformedFaqs = data.map((faq: FAQItem, index: number) => ({
           ...faq,
@@ -41,11 +41,31 @@ export const useFAQ = (category?: string) => {
           question: faq.title, // Map title to question
           answer: faq.content, // Map content to answer
         }));
-        
+
         setFaqs(transformedFaqs);
       } catch (err) {
-        console.error('Error fetching FAQs:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch FAQs');
+        console.error("Error fetching FAQs:", err);
+
+        // Provide fallback data instead of showing error to user
+        const fallbackFaqs: FAQItem[] = [
+          {
+            _id: "fallback-1",
+            id: 1,
+            title: "Service Temporarily Unavailable",
+            content:
+              "Our FAQ service is currently experiencing technical difficulties. Please try again later or contact support for assistance.",
+            question: "Service Temporarily Unavailable",
+            answer:
+              "Our FAQ service is currently experiencing technical difficulties. Please try again later or contact support for assistance.",
+            category: category || "general",
+          },
+        ];
+
+        setFaqs(fallbackFaqs);
+        // Set a user-friendly error message
+        setError(
+          "FAQ service is temporarily unavailable. Please try again later."
+        );
       } finally {
         setLoading(false);
       }
@@ -59,4 +79,4 @@ export const useFAQ = (category?: string) => {
     loading,
     error,
   };
-}; 
+};

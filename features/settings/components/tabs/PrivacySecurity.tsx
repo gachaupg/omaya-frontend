@@ -323,8 +323,8 @@ const PrivacySecurity = () => {
     <>
       {show2FAModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-[#23232B] p-6 rounded-xl w-full max-w-sm">
-            <h3 className="text-lg font-semibold mb-2 text-white">
+          <div className="dark:bg-[#23232B] bg-white p-6 rounded-xl w-full max-w-sm">
+            <h3 className="text-lg font-semibold mb-2 dark:text-white text-gray-900">
               Enable 2FA
             </h3>
             {qrData && (
@@ -334,14 +334,14 @@ const PrivacySecurity = () => {
                   alt="2FA QR Code"
                   className="w-40 h-40 mb-2"
                 />
-                <div className="text-xs text-[#8C8CA1] break-all">
+                <div className="text-xs dark:text-[#8C8CA1] text-gray-600 break-all">
                   Scan this QR code with your authenticator app.
                 </div>
               </div>
             )}
             <input
               type="text"
-              className="w-full p-2 rounded border border-[#35353E] mb-2 bg-[#18181D] text-white"
+              className="w-full p-2 rounded dark:border-[#35353E] border-gray-300 border mb-2 dark:bg-[#18181D] bg-gray-100 dark:text-white text-gray-900"
               placeholder="Enter code from app"
               value={verifyCode}
               onChange={(e) => setVerifyCode(e.target.value)}
@@ -359,7 +359,7 @@ const PrivacySecurity = () => {
                 {verifyLoading ? "Verifying..." : "Verify"}
               </button>
               <button
-                className="flex-1 bg-[#35353E] text-white rounded px-4 py-2 font-semibold"
+                className="flex-1 dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 rounded px-4 py-2 font-semibold"
                 onClick={() => setShow2FAModal(false)}
                 disabled={verifyLoading}
               >
@@ -373,14 +373,14 @@ const PrivacySecurity = () => {
       {/* Enhanced Logout Modal */}
       {showLogoutModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-[#23232B] p-6 rounded-xl w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4 text-white">
+          <div className="dark:bg-[#23232B] bg-white p-6 rounded-xl w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4 dark:text-white text-gray-900">
               Sign Out Options
             </h3>
 
             {!logoutLoading ? (
               <>
-                <div className="text-[#8C8CA1] text-sm mb-4">
+                <div className="dark:text-[#8C8CA1] text-gray-600 text-sm mb-4">
                   Choose how you want to sign out from your devices:
                 </div>
 
@@ -422,7 +422,7 @@ const PrivacySecurity = () => {
                 </div>
 
                 <button
-                  className="w-full py-2 rounded-xl bg-[#35353E] text-white font-semibold text-sm"
+                  className="w-full py-2 rounded-xl dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 font-semibold text-sm"
                   onClick={handleCancelLogout}
                 >
                   Cancel
@@ -430,14 +430,14 @@ const PrivacySecurity = () => {
               </>
             ) : (
               <>
-                <div className="text-[#8C8CA1] text-sm mb-4">
+                <div className="dark:text-[#8C8CA1] text-gray-600 text-sm mb-4">
                   {logoutMode === "all"
                     ? "Signing out from all devices..."
                     : "Signing out from other devices..."}
                 </div>
 
                 {/* Progress bar */}
-                <div className="w-full bg-[#35353E] rounded-full h-2 mb-4">
+                <div className="w-full dark:bg-[#35353E] bg-gray-300 rounded-full h-2 mb-4">
                   <div
                     className="bg-[#1D8751] h-2 rounded-full transition-all duration-300"
                     style={{ width: `${logoutProgress}%` }}
@@ -445,7 +445,7 @@ const PrivacySecurity = () => {
                 </div>
 
                 {logoutMode === "one-by-one" && currentLogoutSession && (
-                  <div className="text-[#8C8CA1] text-xs mb-4">
+                  <div className="dark:text-[#8C8CA1] text-gray-600 text-xs mb-4">
                     Currently signing out: {currentLogoutSession.browser} -{" "}
                     {currentLogoutSession.location}
                   </div>
@@ -453,7 +453,7 @@ const PrivacySecurity = () => {
 
                 <div className="flex items-center justify-center">
                   <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#1D8751]"></div>
-                  <span className="ml-3 text-[#8C8CA1] text-sm">
+                  <span className="ml-3 dark:text-[#8C8CA1] text-gray-600 text-sm">
                     {Math.round(logoutProgress)}% Complete
                   </span>
                 </div>
@@ -463,10 +463,10 @@ const PrivacySecurity = () => {
         </div>
       )}
 
-      <div className="p-3 text-white flex flex-col gap-4">
+      <div className="p-3 dark:text-white text-gray-900 flex flex-col gap-4">
         {/* 2 Factor Authentication */}
-        <div className="w-full border-2 border-[#35353E] rounded-2xl p-4 flex flex-col gap-4 max-w-none mx-auto bg-[#1D1D23]">
-          <div className="text-base font-semibold mb-2">
+        <div className="w-full dark:border-[#35353E] border-gray-300 border-2 rounded-2xl p-4 flex flex-col gap-4 max-w-none mx-auto dark:bg-[#1D1D23] bg-gray-50">
+          <div className="text-base font-semibold mb-2 dark:text-white text-gray-900">
             2 Factor Authentication
           </div>
           <div className="flex gap-3 mb-2">
@@ -474,7 +474,7 @@ const PrivacySecurity = () => {
               className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold border transition-all ${
                 twoFA
                   ? "bg-[#1D8751] text-white border-[#1D8751]"
-                  : "bg-transparent text-[#808080] border-[#35353E]"
+                  : "bg-transparent dark:text-[#808080] text-gray-600 dark:border-[#35353E] border-gray-300"
               }`}
               onClick={() => handleTwoFactorToggle(true)}
               disabled={updating}
@@ -502,7 +502,7 @@ const PrivacySecurity = () => {
               className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold border transition-all ${
                 !twoFA
                   ? "bg-[#E23D3A] text-white border-[#E23D3A]"
-                  : "bg-transparent text-[#808080] border-[#35353E]"
+                  : "bg-transparent dark:text-[#808080] text-gray-600 dark:border-[#35353E] border-gray-300"
               }`}
               onClick={() => handleTwoFactorToggle(false)}
               disabled={updating}
@@ -530,7 +530,7 @@ const PrivacySecurity = () => {
           {updating && (
             <div className="text-center py-2">
               <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-[#1D8751] mx-auto"></div>
-              <span className="text-[#808080] text-xs ml-2">
+              <span className="dark:text-[#808080] text-gray-500 text-xs ml-2">
                 Updating 2FA...
               </span>
             </div>
@@ -553,7 +553,7 @@ const PrivacySecurity = () => {
         </div>
 
         {/* Active Device Sessions */}
-        <div className="w-full border-2 border-[#35353E] rounded-2xl p-4 max-w-none mx-auto bg-[#1D1D23]">
+        <div className="w-full dark:border-[#35353E] border-gray-300 border-2 rounded-2xl p-4 max-w-none mx-auto dark:bg-[#1D1D23] bg-gray-50">
           <div className="flex items-center justify-between mb-2">
             <div className="text-base font-semibold">
               Active Device Sessions
@@ -585,7 +585,7 @@ const PrivacySecurity = () => {
             </button> */}
             </div>
           </div>
-          <div className="text-[#808080] text-sm mb-3">
+          <div className="dark:text-[#808080] text-gray-600 text-sm mb-3">
             These Devices Are Currently Signed In To Your Account
             {/* <div className="text-[#1D8751] text-xs mt-1">
             Total Sessions: {allSessions.length}
@@ -611,12 +611,12 @@ const PrivacySecurity = () => {
           {deviceSessionsLoading ? (
             <div className="flex items-center justify-center py-6">
               <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#1D8751]"></div>
-              <span className="ml-3 text-[#808080] text-sm">
+              <span className="ml-3 dark:text-[#808080] text-gray-600 text-sm">
                 Loading device sessions...
               </span>
             </div>
           ) : paginatedSessions.length === 0 ? (
-            <div className="text-center py-6 text-[#808080] text-sm">
+            <div className="text-center py-6 dark:text-[#808080] text-gray-600 text-sm">
               No active device sessions found
               {deviceSessionsError && (
                 <div className="mt-2 text-xs text-red-400">
@@ -632,7 +632,7 @@ const PrivacySecurity = () => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-6 text-[#808080] text-xs font-medium border-b border-[#35353E] pb-2 mb-2">
+              <div className="grid grid-cols-6 dark:text-[#808080] text-gray-600 text-xs font-medium dark:border-[#35353E] border-gray-300 border-b pb-2 mb-2">
                 <div>Session ID</div>
                 <div>Signed In</div>
                 <div>Location</div>
@@ -644,9 +644,9 @@ const PrivacySecurity = () => {
                 {paginatedSessions.map((session: DeviceSession) => (
                   <div
                     key={session.session_id}
-                    className="grid grid-cols-6 text-sm text-white border-b border-[#35353E] pb-2 relative group"
+                    className="grid grid-cols-6 text-sm dark:text-white text-gray-900 dark:border-[#35353E] border-gray-300 border-b pb-2 relative group"
                   >
-                    <div className="text-xs text-[#808080] font-mono">
+                    <div className="text-xs dark:text-[#808080] text-gray-600 font-mono">
                       {session.session_id.substring(0, 8)}...
                     </div>
                     <div>{formatDate(session.sign_in_time)}</div>
@@ -660,7 +660,7 @@ const PrivacySecurity = () => {
                         className={
                           session.is_active
                             ? "text-[#1D8751]"
-                            : "text-[#808080]"
+                            : "dark:text-[#808080] text-gray-600"
                         }
                       >
                         {session.is_active ? "Active" : "Inactive"}
@@ -696,7 +696,7 @@ const PrivacySecurity = () => {
           {totalPages > 1 && (
             <div className="flex justify-center items-center gap-2 mt-4">
               <button
-                className="px-2 py-1 rounded bg-[#35353E] text-white disabled:opacity-50"
+                className="px-2 py-1 rounded dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 disabled:opacity-50"
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
               >
@@ -708,7 +708,7 @@ const PrivacySecurity = () => {
                   className={`px-2 py-1 rounded ${
                     currentPage === idx + 1
                       ? "bg-[#1D8751] text-white"
-                      : "bg-[#35353E] text-[#8C8CA1]"
+                      : "dark:bg-[#35353E] bg-gray-400 dark:text-[#8C8CA1] text-gray-600"
                   }`}
                   onClick={() => setCurrentPage(idx + 1)}
                 >
@@ -716,7 +716,7 @@ const PrivacySecurity = () => {
                 </button>
               ))}
               <button
-                className="px-2 py-1 rounded bg-[#35353E] text-white disabled:opacity-50"
+                className="px-2 py-1 rounded dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 disabled:opacity-50"
                 onClick={() =>
                   setCurrentPage((p) => Math.min(totalPages, p + 1))
                 }

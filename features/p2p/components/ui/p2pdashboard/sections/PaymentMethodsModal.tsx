@@ -137,8 +137,8 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   if (!isClient) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-        <div className="bg-[#19191D] rounded-2xl p-6 w-full max-w-xs shadow-lg pointer-events-auto">
-          <div className="text-white text-base font-semibold mb-4">
+        <div className="dark:bg-[#19191D] bg-white rounded-2xl p-6 w-full max-w-xs shadow-lg pointer-events-auto">
+          <div className="dark:text-white text-gray-900 text-base font-semibold mb-4">
             Loading...
           </div>
         </div>

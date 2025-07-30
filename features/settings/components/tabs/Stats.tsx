@@ -111,7 +111,7 @@ const Stats = () => {
   }, [dispatch, isAuthenticated]);
 
   return (
-    <Card className="w-full p-2 bg-[#1D1D23] rounded-2xl border-2 border-[#35353E] text-white shadow-lg">
+    <Card className="w-full p-2 dark:bg-[#1D1D23] bg-gray-50 rounded-2xl dark:border-[#35353E] border-gray-300 border-2 dark:text-white text-gray-900 shadow-lg">
       {/* Header */}
       <div className="flex w-full items-center justify-between mb-6">
         <div className="flex items-center gap-4">
@@ -180,7 +180,7 @@ const Stats = () => {
 
       {/* Total Transactions */}
       <div className="mb-6">
-        <div className="dark:text-[#788099] text-[#788099] text-sm font-medium">
+        <div className="dark:text-[#788099] text-gray-600 text-sm font-medium">
           Total Transactions
         </div>
         <div className="text-[15px] font-semibold mt-1 mb-2">
@@ -196,10 +196,12 @@ const Stats = () => {
         {/* Deposits */}
         <div className="mb-4">
           <div className="flex w-full items-center justify-between mb-2">
-            <div className="text-[#788099] font-medium">Deposits</div>
+            <div className="dark:text-[#788099] text-gray-600 font-medium">
+              Deposits
+            </div>
             <div className="relative w-32" ref={depositsDropdownRef}>
               <span
-                className="text-[#788099] text-sm cursor-pointer flex items-center gap-1 w-full justify-between"
+                className="dark:text-[#788099] text-gray-600 text-sm cursor-pointer flex items-center gap-1 w-full justify-between"
                 onClick={() => setShowDepositsDropdown(!showDepositsDropdown)}
               >
                 {depositsTimeFilter}{" "}
@@ -222,11 +224,11 @@ const Stats = () => {
                 </svg>
               </span>
               {showDepositsDropdown && (
-                <div className="absolute top-6 right-0 bg-[#2A2A35] border border-[#35353E] rounded-lg shadow-lg z-10 w-full">
+                <div className="absolute top-6 right-0 dark:bg-[#2A2A35] bg-white dark:border-[#35353E] border-gray-300 rounded-lg shadow-lg z-10 w-full border">
                   {timeFilterOptions.map((option) => (
                     <div
                       key={option}
-                      className="px-3 py-2 text-sm text-white hover:bg-[#35353E] cursor-pointer"
+                      className="px-3 py-2 text-sm dark:text-white text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 cursor-pointer"
                       onClick={() => {
                         setDepositsTimeFilter(option);
                         setShowDepositsDropdown(false);
@@ -239,7 +241,7 @@ const Stats = () => {
               )}
             </div>
           </div>
-          <div className="text-white font-medium mb-2">
+          <div className="dark:text-white text-gray-900 font-medium mb-2">
             {formatNumber(
               getFilteredAmount(
                 summary?.total_approved_p2p_deposits || 0,
@@ -269,10 +271,12 @@ const Stats = () => {
         {/* Withdrawals */}
         <div className="mb-4">
           <div className="flex w-full items-center justify-between mb-2">
-            <div className="text-[#788099] font-medium">Withdrawals</div>
+            <div className="dark:text-[#788099] text-gray-600 font-medium">
+              Withdrawals
+            </div>
             <div className="relative w-32" ref={withdrawalsDropdownRef}>
               <span
-                className="text-[#788099] text-sm cursor-pointer flex items-center gap-1 w-full justify-between"
+                className="dark:text-[#788099] text-gray-600 text-sm cursor-pointer flex items-center gap-1 w-full justify-between"
                 onClick={() =>
                   setShowWithdrawalsDropdown(!showWithdrawalsDropdown)
                 }
@@ -297,11 +301,11 @@ const Stats = () => {
                 </svg>
               </span>
               {showWithdrawalsDropdown && (
-                <div className="absolute top-6 right-0 bg-[#2A2A35] border border-[#35353E] rounded-lg shadow-lg z-10 w-full">
+                <div className="absolute top-6 right-0 dark:bg-[#2A2A35] bg-white dark:border-[#35353E] border-gray-300 rounded-lg shadow-lg z-10 w-full border">
                   {timeFilterOptions.map((option) => (
                     <div
                       key={option}
-                      className="px-3 py-2 text-sm text-white hover:bg-[#35353E] cursor-pointer"
+                      className="px-3 py-2 text-sm dark:text-white text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 cursor-pointer"
                       onClick={() => {
                         setWithdrawalsTimeFilter(option);
                         setShowWithdrawalsDropdown(false);
@@ -314,7 +318,7 @@ const Stats = () => {
               )}
             </div>
           </div>
-          <div className="text-white font-medium mb-2">
+          <div className="dark:text-white text-gray-900 font-medium mb-2">
             {formatNumber(
               getFilteredAmount(
                 summary?.total_approved_p2p_withdrawals || 0,
@@ -347,12 +351,12 @@ const Stats = () => {
       {/* Referral Section */}
       <div className="mb-2">
         <div className="text-lg font-semibold mb-1">Referral</div>
-        <div className="dark:text-[#788099] text-[#788099] text-sm mb-3">
+        <div className="dark:text-[#788099] text-gray-600 text-sm mb-3">
           Invite friends to earn commission money
         </div>
         <div className="border-b dark:border-[#35353E] border-gray-300 mb-3" />
         <div className="flex items-center justify-between mb-2">
-          <span className="dark:text-[#788099] text-[#788099] text-sm">
+          <span className="dark:text-[#788099] text-gray-600 text-sm">
             Users Invited:
           </span>
           <span className="text-[#1D8751] font-semibold">0 Users</span>
