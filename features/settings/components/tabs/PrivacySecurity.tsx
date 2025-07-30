@@ -7,6 +7,7 @@ import {
   logoutAllDevices,
   toggleTwoFactor,
 } from "../../slices/settingsSlice";
+import { logout } from "../../../auth/slices/authSlice";
 import { DeviceSession } from "../../types";
 import { showToast } from "../../../../lib/utils/toast";
 import {
@@ -34,6 +35,16 @@ const PrivacySecurity = () => {
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const sessionsPerPage = 5;
+
+  // Enhanced logout states
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [logoutMode, setLogoutMode] = useState<"all" | "one-by-one" | null>(
+    null
+  );
+  const [logoutLoading, setLogoutLoading] = useState(false);
+  const [logoutProgress, setLogoutProgress] = useState(0);
+  const [currentLogoutSession, setCurrentLogoutSession] =
+    useState<DeviceSession | null>(null);
 
   // Convert browser sessions to device sessions format
   const convertBrowserSessionsToDeviceSessions = (
@@ -123,10 +134,21 @@ const PrivacySecurity = () => {
   };
 
   const handleSignOutAllDevices = async () => {
+    setShowLogoutModal(true);
+  };
+
+  const handleLogoutAllDevices = async () => {
+    setLogoutLoading(true);
+    setLogoutMode("all");
+    setLogoutProgress(0);
+
     try {
       await dispatch(logoutAllDevices()).unwrap();
+      setLogoutProgress(100);
       showToast.success("All devices logged out successfully");
+
       // Log out locally and redirect to login page
+      dispatch(logout());
       if (typeof window !== "undefined") {
         localStorage.clear();
         document.cookie =
@@ -135,7 +157,61 @@ const PrivacySecurity = () => {
       }
     } catch (error) {
       console.error("Failed to logout all devices:", error);
+      showToast.error("Failed to logout all devices");
+    } finally {
+      setLogoutLoading(false);
+      setShowLogoutModal(false);
+      setLogoutMode(null);
+      setLogoutProgress(0);
     }
+  };
+
+  const handleLogoutOneByOne = async () => {
+    setLogoutLoading(true);
+    setLogoutMode("one-by-one");
+    setLogoutProgress(0);
+
+    const activeSessions = allSessions.filter(
+      (session: DeviceSession) => session.is_active && !session.is_current
+    );
+    const totalSessions = activeSessions.length;
+
+    if (totalSessions === 0) {
+      showToast.info("No other active sessions to logout");
+      setLogoutLoading(false);
+      setShowLogoutModal(false);
+      setLogoutMode(null);
+      return;
+    }
+
+    try {
+      for (let i = 0; i < activeSessions.length; i++) {
+        const session: DeviceSession = activeSessions[i];
+        setCurrentLogoutSession(session);
+        setLogoutProgress(((i + 1) / totalSessions) * 100);
+
+        await dispatch(logoutDevice(session.session_id)).unwrap();
+        await new Promise((resolve) => setTimeout(resolve, 500)); // Small delay for UX
+      }
+
+      showToast.success("All other devices logged out successfully");
+    } catch (error) {
+      console.error("Failed to logout devices one by one:", error);
+      showToast.error("Failed to logout some devices");
+    } finally {
+      setLogoutLoading(false);
+      setShowLogoutModal(false);
+      setLogoutMode(null);
+      setLogoutProgress(0);
+      setCurrentLogoutSession(null);
+    }
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutModal(false);
+    setLogoutMode(null);
+    setLogoutProgress(0);
+    setCurrentLogoutSession(null);
   };
 
   const handleRemoveSession = async (sessionToRemove: DeviceSession) => {
@@ -182,6 +258,50 @@ const PrivacySecurity = () => {
   // Use API sessions if available, otherwise use fallback sessions
   const allSessions =
     validDeviceSessions.length > 0 ? validDeviceSessions : fallbackSessions;
+
+  // Check if there are any signed-in devices (excluding current device)
+  const hasOtherActiveSessions = allSessions.some(
+    (session: DeviceSession) => session.is_active && !session.is_current
+  );
+
+  // Check if there are any signed-in devices at all
+  const hasAnyActiveSessions = allSessions.some(
+    (session: DeviceSession) => session.is_active
+  );
+
+  // Auto logout if no devices are signed in
+  useEffect(() => {
+    const checkAndAutoLogout = () => {
+      const hasAnyActiveSessions = allSessions.some(
+        (session: DeviceSession) => session.is_active
+      );
+
+      if (
+        !deviceSessionsLoading &&
+        !hasAnyActiveSessions &&
+        allSessions.length > 0
+      ) {
+        console.log("No active devices detected, auto logging out...");
+        showToast.info("No active devices detected, logging out automatically");
+
+        // Auto logout after a short delay
+        setTimeout(() => {
+          dispatch(logout());
+          if (typeof window !== "undefined") {
+            localStorage.clear();
+            document.cookie =
+              "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict";
+            window.location.href = "/auth/login";
+          }
+        }, 2000);
+      }
+    };
+
+    // Check after sessions are loaded
+    if (!deviceSessionsLoading) {
+      checkAndAutoLogout();
+    }
+  }, [deviceSessionsLoading, allSessions, dispatch]);
 
   const totalPages = Math.ceil(allSessions.length / sessionsPerPage);
   const paginatedSessions = allSessions.slice(
@@ -249,6 +369,100 @@ const PrivacySecurity = () => {
           </div>
         </div>
       )}
+
+      {/* Enhanced Logout Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-[#23232B] p-6 rounded-xl w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4 text-white">
+              Sign Out Options
+            </h3>
+
+            {!logoutLoading ? (
+              <>
+                <div className="text-[#8C8CA1] text-sm mb-4">
+                  Choose how you want to sign out from your devices:
+                </div>
+
+                <div className="flex flex-col gap-3 mb-4">
+                  <button
+                    className="w-full py-3 px-4 rounded-xl border border-[#E23D3A] text-[#E23D3A] hover:bg-[#E23D3A] hover:text-white transition font-semibold text-sm"
+                    onClick={handleLogoutAllDevices}
+                  >
+                    Sign out from ALL devices (including this one)
+                    <div className="text-xs mt-1 opacity-75">
+                      {
+                        allSessions.filter((s: DeviceSession) => s.is_active)
+                          .length
+                      }{" "}
+                      active sessions
+                    </div>
+                  </button>
+
+                  <button
+                    className={`w-full py-3 px-4 rounded-xl border transition font-semibold text-sm ${
+                      hasOtherActiveSessions
+                        ? "border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white"
+                        : "border-[#808080] text-[#808080] cursor-not-allowed"
+                    }`}
+                    onClick={handleLogoutOneByOne}
+                    disabled={!hasOtherActiveSessions}
+                  >
+                    Sign out from other devices only
+                    <div className="text-xs mt-1 opacity-75">
+                      {hasOtherActiveSessions
+                        ? `${
+                            allSessions.filter(
+                              (s: DeviceSession) => s.is_active && !s.is_current
+                            ).length
+                          } other active sessions`
+                        : "No other active sessions"}
+                    </div>
+                  </button>
+                </div>
+
+                <button
+                  className="w-full py-2 rounded-xl bg-[#35353E] text-white font-semibold text-sm"
+                  onClick={handleCancelLogout}
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="text-[#8C8CA1] text-sm mb-4">
+                  {logoutMode === "all"
+                    ? "Signing out from all devices..."
+                    : "Signing out from other devices..."}
+                </div>
+
+                {/* Progress bar */}
+                <div className="w-full bg-[#35353E] rounded-full h-2 mb-4">
+                  <div
+                    className="bg-[#1D8751] h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${logoutProgress}%` }}
+                  ></div>
+                </div>
+
+                {logoutMode === "one-by-one" && currentLogoutSession && (
+                  <div className="text-[#8C8CA1] text-xs mb-4">
+                    Currently signing out: {currentLogoutSession.browser} -{" "}
+                    {currentLogoutSession.location}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#1D8751]"></div>
+                  <span className="ml-3 text-[#8C8CA1] text-sm">
+                    {Math.round(logoutProgress)}% Complete
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="p-3 text-white flex flex-col gap-4">
         {/* 2 Factor Authentication */}
         <div className="w-full border-2 border-[#35353E] rounded-2xl p-4 flex flex-col gap-4 max-w-none mx-auto bg-[#1D1D23]">
@@ -322,10 +536,19 @@ const PrivacySecurity = () => {
             </div>
           )}
           <button
-            className="w-full py-2 rounded-xl border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition font-semibold text-sm"
+            className={`w-full py-2 rounded-xl border font-semibold text-sm transition ${
+              hasAnyActiveSessions
+                ? "border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white"
+                : "border-[#808080] text-[#808080] cursor-not-allowed"
+            }`}
             onClick={handleSignOutAllDevices}
+            disabled={!hasAnyActiveSessions}
           >
-            Sign out from all devices
+            {hasAnyActiveSessions
+              ? `Sign out from all devices (${
+                  allSessions.filter((s: DeviceSession) => s.is_active).length
+                } active)`
+              : "No active sessions to sign out from"}
           </button>
         </div>
 

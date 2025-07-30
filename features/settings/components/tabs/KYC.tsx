@@ -90,20 +90,6 @@ const KYC = () => {
                 }}
               />
             )}
-          <div className="relative">
-            <Image
-              src={profileImage}
-              alt="User avatar"
-              width={48}
-              height={48}
-              className="object-cover rounded-full"
-              unoptimized={true}
-              onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                const target = e.currentTarget;
-                target.onerror = null;
-                target.src = DEFAULT_AVATAR;
-              }}
-            />
             <input
               type="file"
               ref={fileInputRef}
@@ -137,6 +123,7 @@ const KYC = () => {
           </div>
         </div>
       </div>
+    </div>
     </div>
   );
 };

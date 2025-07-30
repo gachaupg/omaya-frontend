@@ -89,7 +89,7 @@ const PasswordSection: React.FC = () => {
 
   return (
     <>
-      <div className="text-base font-semibold text-[#788099] mb-2">
+      <div className="text-base font-semibold text-[#788099] mb-0">
         3-Password
       </div>
 
@@ -125,6 +125,7 @@ const PasswordSection: React.FC = () => {
                 onChange={(e) =>
                   handleInputChange("current_password", e.target.value)
                 }
+                autoComplete="off"
               />
               <button
                 type="button"
@@ -188,6 +189,7 @@ const PasswordSection: React.FC = () => {
                 onChange={(e) =>
                   handleInputChange("new_password", e.target.value)
                 }
+                autoComplete="off"
               />
               <button
                 type="button"
@@ -251,6 +253,7 @@ const PasswordSection: React.FC = () => {
                 onChange={(e) =>
                   handleInputChange("confirm_password", e.target.value)
                 }
+                autoComplete="off"
               />
               <button
                 type="button"

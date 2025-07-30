@@ -118,8 +118,10 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
       showToast.success("Payment method added!");
       if (onAdd) onAdd();
       onClose();
+      // Clear the success state to prevent multiple toasts
+      dispatch(clearPostStatus());
     }
-  }, [postSuccess, onAdd, onClose]);
+  }, [postSuccess, onAdd, onClose, dispatch]);
 
   // Handle errors
   useEffect(() => {

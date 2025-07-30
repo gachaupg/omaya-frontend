@@ -56,12 +56,6 @@ const OrdersTransactions = ({
         title="No Orders Found"
         message="There are currently no orders to display. Try adjusting your filters or check back later."
       />
-      <div className="w-full text-center py-8">
-        <p className="dark:text-gray-400 text-gray-500 mb-2">No orders found</p>
-        <p className="dark:text-[#788099] text-gray-400 text-sm">
-          Try adjusting your filters
-        </p>
-      </div>
     );
   }
 

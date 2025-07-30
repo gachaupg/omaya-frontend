@@ -59,7 +59,6 @@ export const API_CONFIG = {
     WITHDRAWAL_OTP: "/trading_engine/p2pwithdraw-otp/",
     WITHDRAWAL_ADDRESSES: "/trading_engine/withdrawal/addresses/",
     MATCHED_TRADE: "/trading_engine/p2p/trades/",
-
   },
   SWAP: {
     SUPPORTED_ASSETS: "/api/changenow/supported-tokens/",
@@ -82,5 +81,18 @@ export const API_CONFIG = {
   EXCHANGE: {
     DEPOSIT: "/trading_engine/deposit/",
     WITHDRAW: "/trading_engine/withdraw/",
+    SOCKETS: {
+      TRANSACTION_STATUS: (txHash: string) =>
+        `${getWebSocketBaseUrl()}/ws/withdrawal-status/${txHash}/`,
+      DEPOSIT_STATUS: (transactionId: string) =>
+        `${getWebSocketBaseUrl()}/ws/deposit-status/${transactionId}/`,
+    },
+  },
+  EXPRESS: {
+    WITHDRAW: "/trading_engine/withdraw/",
+    SOCKETS: {
+      WITHDRAWAL_STATUS: (transactionId: string) =>
+        `${getWebSocketBaseUrl()}/ws/withdrawal-status/${transactionId}/`,
+    },
   },
 };

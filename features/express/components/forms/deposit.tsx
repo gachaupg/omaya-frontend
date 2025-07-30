@@ -6,8 +6,15 @@ import { AppDispatch } from "../../../../store";
 import { fetchAdminPaymentDetails } from "../../../exchange/slices/paymentSlice";
 import { fetchAssets } from "../../../exchange/slices/exchangeSlice";
 import { createDeposit } from "../../../exchange/slices/exchangeSlice";
+import {
+  fetchSupportedAssets,
+  fetchSwapEstimate,
+} from "../../../swap/slices/swapSlice";
 import { validateWalletAddress } from "../../../../lib/addressValidaion";
 import { showToast } from "../../../../lib/utils/toast";
+import { DepositResponse } from "../../../exchange/types";
+import { SupportedAsset } from "../../../swap/types";
+import { FaSearch } from "react-icons/fa";
 
 interface DepositFormProps {
   onExchange?: (transactionData: {
@@ -34,9 +41,14 @@ export default function DepositForm({
   const { assets, loading: assetsLoading } = useSelector(
     (state: any) => state.exchange
   );
-  const [payAmount, setPayAmount] = useState(10);
+
+  // Add swap assets state
+  const { supportedAssets: swapAssets, loading: swapAssetsLoading } =
+    useSelector((state: any) => state.swap);
+
+  const [payAmount, setPayAmount] = useState(0);
   const [payBank, setPayBank] = useState("");
-  const [getAmount, setGetAmount] = useState(0.9);
+  const [getAmount, setGetAmount] = useState(0);
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const [selectedNetwork, setSelectedNetwork] = useState<any>(null);
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
@@ -49,6 +61,19 @@ export default function DepositForm({
   // Add transaction code state
   const [transactionCode, setTransactionCode] = useState<string>("");
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
+
+  // Asset selection state for search functionality
+  const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
+  const [assetSearchTerm, setAssetSearchTerm] = useState("");
+  const assetDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Estimate calculation state
+  const [estimate, setEstimate] = useState<any>(null);
+  const [estimateLoading, setEstimateLoading] = useState(false);
+  const [estimateError, setEstimateError] = useState<string | null>(null);
+
+  // First card submission state
+  const [isFirstCardSubmitted, setIsFirstCardSubmitted] = useState(false);
 
   // Generate transaction code on mount
   useEffect(() => {
@@ -73,36 +98,234 @@ export default function DepositForm({
       });
   }, [dispatch]);
 
+  // Fetch swap assets
+  useEffect(() => {
+    dispatch(fetchSupportedAssets())
+      .unwrap()
+      .catch((error: unknown) => {
+        showToast.error(`Failed to fetch swap assets: ${error}`);
+      });
+  }, [dispatch]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        assetDropdownRef.current &&
+        !assetDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsAssetDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Check if asset is USDT or USDC (should use simple calculation)
+  const isSimpleCalculationAsset = (asset: any) => {
+    if (!asset) return false;
+    const ticker = (asset.ticker || asset.symbol || "").toLowerCase();
+    return ticker === "usdt" || ticker === "usdc";
+  };
+
+  // Fetch estimate for non-USDT/USDC assets - triggers immediately on asset or amount change
+  useEffect(() => {
+    if (
+      selectedAsset &&
+      !isSimpleCalculationAsset(selectedAsset) &&
+      payAmount &&
+      payAmount > 0
+    ) {
+      setEstimateLoading(true);
+      setEstimateError(null);
+
+      // Use the actual fetchSwapEstimate API call for deposit
+      // Note: fromCurrency is the selected asset, toCurrency is always "USDT" for deposits
+      console.log("Fetching estimate for deposit:", {
+        fromCurrency: selectedAsset.ticker,
+        fromNetwork: selectedAsset.network,
+        toCurrency: "USDT",
+        toNetwork: "BSC",
+        amount: payAmount,
+      });
+
+      dispatch(
+        fetchSwapEstimate({
+          fromCurrency: selectedAsset.ticker,
+          fromNetwork: selectedAsset.network,
+          toCurrency: "USDT", // Always USDT for deposits
+          toNetwork: "BSC", // Always BSC for deposits
+          amount: payAmount,
+        })
+      )
+        .then((result) => {
+          console.log("Estimate result:", result);
+          if (result.payload) {
+            setEstimate(result.payload);
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to fetch swap estimate:", error);
+          setEstimateError("Failed to calculate estimate");
+        })
+        .finally(() => {
+          setEstimateLoading(false);
+        });
+    } else {
+      // Clear estimate for USDT/USDC or when conditions not met
+      setEstimate(null);
+      setEstimateError(null);
+    }
+  }, [selectedAsset, payAmount]);
+
+  // Filter swap assets based on search term
+  const filteredSwapAssets =
+    swapAssets?.filter((asset: SupportedAsset) => {
+      const name = asset.name?.toLowerCase() || "";
+      const symbol = asset.symbol?.toLowerCase() || "";
+      const ticker = asset.ticker?.toLowerCase() || "";
+      const searchTerm = assetSearchTerm.toLowerCase();
+
+      return (
+        name.includes(searchTerm) ||
+        symbol.includes(searchTerm) ||
+        ticker.includes(searchTerm)
+      );
+    }) || [];
+
+  // Sort assets: USDT on BSC, USDC on BSC, then rest in original order
+  const sortedSwapAssets = [...filteredSwapAssets].sort((a, b) => {
+    // Ensure tickers exist and are strings (using ticker as primary, fallback to symbol/name)
+    const tickerA = (a.ticker || a.symbol || a.name || "")
+      .toString()
+      .toLowerCase();
+    const tickerB = (b.ticker || b.symbol || b.name || "")
+      .toString()
+      .toLowerCase();
+    const networkA = (a.network || "").toString().toLowerCase();
+    const networkB = (b.network || "").toString().toLowerCase();
+
+    // Priority 1: USDT on BSC
+    if (
+      tickerA === "usdt" &&
+      networkA === "bsc" &&
+      !(tickerB === "usdt" && networkB === "bsc")
+    ) {
+      return -1;
+    }
+    if (
+      tickerB === "usdt" &&
+      networkB === "bsc" &&
+      !(tickerA === "usdt" && networkA === "bsc")
+    ) {
+      return 1;
+    }
+    // Priority 2: USDC on BSC
+    if (
+      tickerA === "usdc" &&
+      networkA === "bsc" &&
+      !(tickerB === "usdc" && networkB === "bsc")
+    ) {
+      return -1;
+    }
+    if (
+      tickerB === "usdc" &&
+      networkB === "bsc" &&
+      !(tickerA === "usdc" && networkA === "bsc")
+    ) {
+      return 1;
+    }
+    // Default: preserve original order (no change)
+    return 0;
+  });
+
   // Calculate fees and amounts - Network fee is always 0 for BEP20
   const networkFee = 0;
+  // Use default commission rate for swap assets (can be updated based on asset type)
   const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
     ? parseFloat(selectedAsset.range_commissions[0].commission)
-    : 0;
+    : 2; // Default 2% commission for swap assets
   const commissionAmount = (payAmount * commissionRate) / 100;
   const totalFees = networkFee + commissionAmount;
-  const calculatedGetAmount = payAmount - totalFees;
 
   // Debug logging
   console.log("Selected Asset:", selectedAsset);
   console.log("Commission Rate:", commissionRate);
   console.log("Commission Amount:", commissionAmount);
   console.log("Pay Amount:", payAmount);
-  console.log("Calculated Get Amount:", calculatedGetAmount);
+  console.log("Estimate:", estimate);
 
-  // Update getAmount when payAmount changes (if calculating from pay)
+  // Update getAmount when estimate is received or for simple calculation assets
   useEffect(() => {
-    if (isCalculatingFromPay) {
-      setGetAmount(calculatedGetAmount);
+    if (selectedAsset && payAmount > 0) {
+      if (isSimpleCalculationAsset(selectedAsset)) {
+        // Simple calculation for USDT/USDC
+        const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
+          ? parseFloat(selectedAsset.range_commissions[0].commission)
+          : 2;
+        const commissionAmount = (payAmount * commissionRate) / 100;
+        const networkFee = 0;
+        const totalFees = networkFee + commissionAmount;
+        const calculatedGetAmount = payAmount - totalFees;
+
+        // Auto-populate for simple calculation assets
+        if (isCalculatingFromPay) {
+          setGetAmount(calculatedGetAmount);
+        }
+      } else if (
+        estimate &&
+        !estimateLoading &&
+        estimate.estimated_amount !== undefined
+      ) {
+        // Auto-populate for other assets using estimate
+        if (isCalculatingFromPay) {
+          setGetAmount(estimate.estimated_amount);
+        }
+      }
     }
-  }, [payAmount, networkFee, commissionAmount, isCalculatingFromPay]);
+  }, [
+    selectedAsset,
+    payAmount,
+    estimate,
+    estimateLoading,
+    isCalculatingFromPay,
+  ]);
 
   // Update payAmount when getAmount changes (if calculating from get)
   useEffect(() => {
-    if (!isCalculatingFromPay) {
-      const newPayAmount = getAmount + totalFees;
-      setPayAmount(newPayAmount);
+    if (!isCalculatingFromPay && selectedAsset) {
+      if (isSimpleCalculationAsset(selectedAsset)) {
+        // Simple calculation for USDT/USDC
+        const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
+          ? parseFloat(selectedAsset.range_commissions[0].commission)
+          : 2;
+        const commissionAmount = (getAmount * commissionRate) / 100;
+        const networkFee = 0;
+        const totalFees = networkFee + commissionAmount;
+        const newPayAmount = getAmount + totalFees;
+        setPayAmount(newPayAmount);
+      } else if (estimate && !estimateLoading) {
+        // For other assets, we would need to reverse calculate from estimate
+        // This is more complex and may require a separate API call
+        // For now, we'll use the simple calculation as fallback
+        const commissionRate = 2; // Default commission
+        const commissionAmount = (getAmount * commissionRate) / 100;
+        const networkFee = 0;
+        const totalFees = networkFee + commissionAmount;
+        const newPayAmount = getAmount + totalFees;
+        setPayAmount(newPayAmount);
+      }
     }
-  }, [getAmount, totalFees, isCalculatingFromPay]);
+  }, [
+    getAmount,
+    selectedAsset,
+    estimate,
+    estimateLoading,
+    isCalculatingFromPay,
+  ]);
 
   // Re-validate wallet address when asset changes (always BEP20)
   useEffect(() => {
@@ -115,6 +338,41 @@ export default function DepositForm({
       }
     }
   }, [selectedAsset, walletAddress]);
+
+  // Validate first card data
+  const validateFirstCard = () => {
+    const errors: string[] = [];
+
+    if (!payAmount || payAmount <= 0) {
+      errors.push("Please enter a valid amount");
+    }
+
+    if (!selectedAsset) {
+      errors.push("Please select an asset");
+    }
+
+    if (!selectedPaymentDetail) {
+      errors.push("Please select a payment method");
+    }
+
+    setValidationErrors(errors);
+    return errors.length === 0;
+  };
+
+  const handleFirstCardSubmit = async () => {
+    if (validateFirstCard()) {
+      setIsFirstCardSubmitted(true);
+      // Scroll to the next section
+      setTimeout(() => {
+        if (paymentDetailsRef.current) {
+          paymentDetailsRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }
+      }, 100);
+    }
+  };
 
   // Validate form data
   const validateForm = () => {
@@ -142,6 +400,11 @@ export default function DepositForm({
 
     if (!selectedNetwork) {
       errors.push("Please select a network");
+    } else {
+      // Validate that network has required fields
+      if (!selectedNetwork.network_id && !selectedNetwork.network_type) {
+        errors.push("Selected network is missing required information");
+      }
     }
 
     return errors;
@@ -163,48 +426,145 @@ export default function DepositForm({
     setIsSubmitting(true);
 
     try {
+      // Debug logging
+      console.log("DEBUG: Form data being submitted:", {
+        payAmount,
+        walletAddress,
+        selectedPaymentDetail,
+        selectedAsset,
+        selectedNetwork,
+      });
+
       // Create FormData for API submission
       const depositPayload = new FormData();
+      // Validate and append required fields
+      if (!payAmount || payAmount <= 0) {
+        throw new Error("Invalid amount");
+      }
       depositPayload.append("requested_amount", payAmount.toString());
+
+      if (!walletAddress.trim()) {
+        throw new Error("Wallet address is required");
+      }
       depositPayload.append("deposit_address", walletAddress);
+
+      if (!selectedPaymentDetail.provider_name) {
+        throw new Error("Payment provider is missing");
+      }
       depositPayload.append(
         "payment_provider",
         selectedPaymentDetail.provider_name
       );
+
+      if (!selectedPaymentDetail.payment_method_type) {
+        throw new Error("Payment method is missing");
+      }
       depositPayload.append(
         "payment_method",
         selectedPaymentDetail.payment_method_type
       );
-      depositPayload.append(
-        "currency",
-        selectedAsset.symbol === "USDT Tether" ? "USDT" : selectedAsset.symbol
-      );
-      depositPayload.append("network", selectedNetwork.network_id);
+      // Handle currency field
+      const currencyValue =
+        selectedAsset.symbol === "USDT Tether" ? "USDT" : selectedAsset.symbol;
+      if (!currencyValue) {
+        throw new Error("Currency information is missing");
+      }
+      depositPayload.append("currency", currencyValue);
+
+      // Handle network field more carefully
+      const networkValue =
+        selectedNetwork?.network_id || selectedNetwork?.network_type || "";
+      if (!networkValue) {
+        throw new Error("Network information is missing");
+      }
+      depositPayload.append("network", networkValue);
+
+      // Ensure asset_id is present
+      if (!selectedAsset.asset_id) {
+        throw new Error("Asset ID is missing");
+      }
       depositPayload.append("asset", selectedAsset.asset_id);
       depositPayload.append(
         "additional_info",
         `Account: ${selectedPaymentDetail.account_name}, Account Number: ${selectedPaymentDetail.account_number}`
       );
 
-      // Submit to API
-      await dispatch(createDeposit({ payload: depositPayload })).unwrap();
+      // Log the complete FormData for debugging
+      console.log("DEBUG: Complete FormData entries:");
+      for (let [key, value] of depositPayload.entries()) {
+        console.log(`${key}:`, value);
+      }
+
+      // Submit to API - let axios set the correct Content-Type for FormData
+      const depositResponse = (await dispatch(
+        createDeposit({
+          payload: depositPayload,
+          config: {
+            // Don't set Content-Type manually for FormData - let axios handle it
+          },
+        })
+      ).unwrap()) as unknown as DepositResponse;
+
+      console.log("DEBUG: Deposit response:", depositResponse);
+      console.log(
+        "DEBUG: Transaction ID from response:",
+        depositResponse.transaction_id
+      );
+      console.log(
+        "DEBUG: WebSocket URL from response:",
+        depositResponse.websocket?.url
+      );
+      console.log(
+        "DEBUG: Deposit code from response:",
+        depositResponse.deposit_code
+      );
 
       // Show success message
       showToast.success("Deposit request submitted successfully!");
 
       // Proceed to next page only after successful submission
       if (onExchange) {
-        onExchange({
-          type: "deposit",
+        const transactionData = {
+          type: "deposit" as const,
           amount: payAmount,
           asset: selectedAsset,
           paymentDetail: selectedPaymentDetail,
           walletAddress: walletAddress,
           network: selectedNetwork,
-        });
+          transactionId: depositResponse.transaction_id,
+          depositCode: depositResponse.deposit_code,
+          totalAmountDue: depositResponse.total_amount_due,
+          commission: depositResponse.commission,
+          networkFee: depositResponse.network_fee,
+          currency: depositResponse.currency,
+          websocketUrl: depositResponse.websocket?.url,
+        };
+        console.log("DEBUG: Calling onExchange with:", transactionData);
+        onExchange(transactionData);
       }
     } catch (error: any) {
-      const errorMessage = error?.message || "Failed to submit deposit request";
+      console.error("DEBUG: Deposit submission error:", error);
+      console.error("DEBUG: Error response:", error.response?.data);
+      console.error("DEBUG: Error status:", error.response?.status);
+
+      let errorMessage = "Failed to submit deposit request";
+
+      if (error.response?.data) {
+        // Try to extract specific error message from response
+        const responseData = error.response.data;
+        if (responseData.message) {
+          errorMessage = responseData.message;
+        } else if (responseData.error) {
+          errorMessage = responseData.error;
+        } else if (responseData.details) {
+          errorMessage = responseData.details;
+        } else if (typeof responseData === "string") {
+          errorMessage = responseData;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
       showToast.error(errorMessage);
       setValidationErrors([errorMessage]);
     } finally {
@@ -239,12 +599,13 @@ export default function DepositForm({
               </label>
               <input
                 type="number"
-                value={payAmount}
+                value={payAmount || ""}
                 onChange={(e) => {
                   setPayAmount(Number(e.target.value));
                   setIsCalculatingFromPay(true);
                 }}
                 onFocus={() => setIsCalculatingFromPay(true)}
+                placeholder="Enter amount"
                 className="w-full bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg text-white focus:outline-none border border-[#39394a] appearance-none"
               />
             </div>
@@ -252,39 +613,146 @@ export default function DepositForm({
               <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
                 Asset
               </label>
-              <div className="relative">
-                <img
-                  src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                  alt="asset icon"
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 pointer-events-none"
-                />
-                <select
-                  value={selectedAsset?.asset_id || ""}
-                  onChange={(e) => {
-                    const asset = assets?.assets?.find(
-                      (a: any) => a.asset_id === e.target.value
-                    );
-                    setSelectedAsset(asset || null);
-                    // Auto-select BEP20 network when asset is selected
-                    if (asset && asset.networks) {
-                      const bep20Network = asset.networks.find(
-                        (n: any) => n.network_type === "BEP20"
-                      );
-                      setSelectedNetwork(bep20Network || null);
+              <div className="relative" ref={assetDropdownRef}>
+                <div
+                  className={`w-full bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg text-white focus:outline-none border border-[#39394a] flex items-center justify-between ${
+                    !payAmount || payAmount <= 0
+                      ? "opacity-50 cursor-not-allowed"
+                      : "cursor-pointer"
+                  }`}
+                  onClick={() => {
+                    if (payAmount && payAmount > 0) {
+                      setIsAssetDropdownOpen(!isAssetDropdownOpen);
                     }
                   }}
-                  disabled={assetsLoading}
-                  className="w-full bg-[#1D1D23] rounded-2xl px-9 py-2 text-lg text-white focus:outline-none border border-[#39394a] appearance-none disabled:opacity-50"
                 >
-                  <option value="">
-                    {assetsLoading ? "Loading assets..." : "Select Asset"}
-                  </option>
-                  {assets?.assets?.map((asset: any) => (
-                    <option key={asset.asset_id} value={asset.asset_id}>
-                      {asset.symbol} - {asset.description}
-                    </option>
-                  ))}
-                </select>
+                  <div className="flex items-center gap-3">
+                    {selectedAsset ? (
+                      <>
+                        <img
+                          src={selectedAsset.icon_url || selectedAsset.image}
+                          alt={selectedAsset.name}
+                          className="w-6 h-6 rounded-full"
+                          onError={(e) => {
+                            e.currentTarget.src =
+                              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                          }}
+                        />
+                        <span className="text-white">
+                          {selectedAsset.ticker ||
+                            selectedAsset.symbol ||
+                            selectedAsset.name ||
+                            "Unknown"}
+                        </span>
+                        <span className="ml-2 bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                          {selectedAsset.network || "Unknown"}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <img
+                          src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                          alt="asset icon"
+                          className="w-6 h-6"
+                        />
+                        <span className="text-[#7e7e8f]">
+                          {swapAssetsLoading
+                            ? "Loading assets..."
+                            : !payAmount || payAmount <= 0
+                            ? "Enter amount first"
+                            : "Select Asset"}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <svg
+                    className={`w-5 h-5 text-[#7e7e8f] transition-transform ${
+                      isAssetDropdownOpen ? "rotate-180" : ""
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+
+                {/* Asset Dropdown */}
+                {isAssetDropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#1D1D23] border border-[#39394a] rounded-2xl z-50 max-h-80 overflow-hidden">
+                    {/* Search Input */}
+                    <div className="p-3 border-b border-[#39394a]">
+                      <div className="relative">
+                        <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
+                        <input
+                          type="text"
+                          placeholder="Search assets..."
+                          value={assetSearchTerm}
+                          onChange={(e) => setAssetSearchTerm(e.target.value)}
+                          className="w-full bg-[#23232b] rounded-xl px-10 py-2 text-white text-sm focus:outline-none border border-[#39394a]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Asset List */}
+                    <div className="max-h-60 overflow-y-auto">
+                      {sortedSwapAssets.length > 0 ? (
+                        sortedSwapAssets.map((asset: SupportedAsset) => (
+                          <div
+                            key={asset.id}
+                            className="flex items-center gap-3 p-3 hover:bg-[#23232b] cursor-pointer border-b border-[#39394a] last:border-b-0"
+                            onClick={() => {
+                              setSelectedAsset(asset);
+                              setIsAssetDropdownOpen(false);
+                              setAssetSearchTerm("");
+                            }}
+                          >
+                            <img
+                              src={asset.icon_url || asset.image}
+                              alt={asset.name}
+                              className="w-6 h-6 rounded-full"
+                              onError={(e) => {
+                                e.currentTarget.src =
+                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                              }}
+                            />
+                            <div className="flex-1">
+                              <div className="text-white font-medium flex items-center gap-2">
+                                {asset.ticker ||
+                                  asset.symbol ||
+                                  asset.name ||
+                                  "Unknown"}
+                                <span className="bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                                  {asset.network || "Unknown"}
+                                </span>
+                              </div>
+                              <div className="text-[#7e7e8f] text-sm">
+                                {asset.name ||
+                                  asset.ticker ||
+                                  asset.symbol ||
+                                  "Unknown Asset"}
+                              </div>
+                            </div>
+                            {selectedAsset?.id === asset.id && (
+                              <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-4 text-center text-[#7e7e8f]">
+                          {assetSearchTerm
+                            ? "No assets found"
+                            : "No assets available"}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -293,7 +761,7 @@ export default function DepositForm({
             <div className="flex flex-col gap-2 flex-1">
               <span className="flex items-center bg-[#F79330] text-white rounded-full px-5 py-1 text-sm font-medium w-fit">
                 <span className="w-2 h-2 bg-white rounded-full mr-2 inline-block"></span>
-                Network fee: $0 USD (BEP20)
+                Network fee: $0
               </span>
 
               <span className="flex items-center bg-[#1D8751] text-white rounded-full px-5 py-1 text-sm font-medium w-fit">
@@ -303,7 +771,7 @@ export default function DepositForm({
               </span>
             </div>
             <img
-              src="https://res.cloudinary.com/pitz/image/upload/v1752910494/swap_rgi057.png"
+              src="https://res.cloudinary.com/pitz/image/upload/v1753424863/Screenshot_2025-07-25_092724_rjinec.png"
               alt=""
               style={{ cursor: "pointer" }}
               onClick={() =>
@@ -320,12 +788,13 @@ export default function DepositForm({
               </label>
               <input
                 type="number"
-                value={getAmount}
+                value={getAmount || ""}
                 onChange={(e) => {
                   setGetAmount(Number(e.target.value));
                   setIsCalculatingFromPay(false);
                 }}
                 onFocus={() => setIsCalculatingFromPay(false)}
+                placeholder="Enter amount"
                 className="w-full bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg text-white focus:outline-none border border-[#39394a] appearance-none"
               />
             </div>
@@ -366,10 +835,48 @@ export default function DepositForm({
               {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
             </div>
           </div>
+
+          {/* Submit Button for First Card */}
+          {!isFirstCardSubmitted && (
+            <div className="mt-4">
+              <button
+                className="w-full text-white text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors bg-[#1D8751] hover:bg-[#166b3e] disabled:opacity-50"
+                onClick={handleFirstCardSubmit}
+                disabled={
+                  isSubmitting ||
+                  !selectedAsset ||
+                  !payAmount ||
+                  !selectedPaymentDetail ||
+                  (selectedAsset &&
+                    !isSimpleCalculationAsset(selectedAsset) &&
+                    estimateLoading)
+                }
+              >
+                {isSubmitting ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <span>Submitting...</span>
+                  </div>
+                ) : (
+                  <span className="flex items-center justify-center">
+                    <img
+                      src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
+                      alt=""
+                    />
+                    <img
+                      className="mt-2"
+                      src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                      alt=""
+                    />
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {selectedPaymentDetail && (
+      {selectedPaymentDetail && isFirstCardSubmitted && (
         <>
           {/* Payment Details Card */}
           <div
@@ -751,11 +1258,7 @@ export default function DepositForm({
               </span>
             </div>
             <button
-              className={`w-full text-white text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
-                isSubmitting
-                  ? "bg-gray-500 cursor-not-allowed"
-                  : "bg-[#1D8751] hover:bg-[#166b3e]"
-              }`}
+              className="w-full text-white text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors bg-[#1D8751] hover:bg-[#166b3e] disabled:opacity-50"
               onClick={handleSubmit}
               disabled={isSubmitting}
             >

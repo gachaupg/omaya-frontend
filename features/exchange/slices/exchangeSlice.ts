@@ -51,11 +51,51 @@ const initialState: ExchangeState = {
 const handleApiError = (error: unknown): string => {
   let errorMessage = "An unexpected error occurred";
   if (error instanceof AxiosError) {
-    errorMessage =
-      error.response?.data?.message ||
-      error.response?.data?.error ||
-      error.response?.data?.details ||
-      "An error occurred";
+    console.error("DEBUG: API Error details:", {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message,
+    });
+
+    // Handle specific status codes
+    if (error.response?.status === 400) {
+      const responseData = error.response.data;
+      if (responseData && typeof responseData === "object") {
+        // Try to extract field-specific errors
+        const fieldErrors = Object.entries(responseData)
+          .filter(
+            ([key, value]) =>
+              key !== "message" && key !== "error" && Array.isArray(value)
+          )
+          .map(
+            ([key, value]) =>
+              `${key}: ${
+                Array.isArray(value) ? value.join(", ") : String(value)
+              }`
+          )
+          .join("; ");
+
+        if (fieldErrors) {
+          errorMessage = `Validation errors: ${fieldErrors}`;
+        } else {
+          errorMessage =
+            responseData.message ||
+            responseData.error ||
+            responseData.details ||
+            "Bad request - please check your input";
+        }
+      } else if (typeof responseData === "string") {
+        errorMessage = responseData;
+      } else {
+        errorMessage = "Bad request - please check your input";
+      }
+    } else {
+      errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.response?.data?.details ||
+        "An error occurred";
+    }
   }
 
   // Always remove "Withdrawal failed: " prefix if present

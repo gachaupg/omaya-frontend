@@ -309,8 +309,7 @@ const Overview = () => {
             </svg>
           )}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-[15px] font-bold text-white">
-              {hasNoData ? "0 USD" : transactionTotal.toLocaleString() + " USD"}
+           
             <span className="text-[15px] font-bold dark:text-white text-[#0D0D0D]">
               {transactionTotal.toLocaleString()} USD
             </span>

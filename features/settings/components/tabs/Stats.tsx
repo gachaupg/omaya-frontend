@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -13,15 +13,78 @@ import {
   selectTransactionSummary,
   selectTransactionSummaryLoading,
 } from "@/features/p2p/slices/transactionSummarySlice";
+import { fetchMatchedTrades } from "@/features/p2p/slices/matchedTradesSlice";
 import { formatNumber } from "@/utils/formatters";
+import { useRouter } from "next/navigation";
+
 const Stats = () => {
+  const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
   const summary = useSelector(selectTransactionSummary);
+  const { data: matchedTrades } = useSelector(
+    (state: RootState) => state.matchedTrades
+  );
   console.log("summary", summary);
   const [profileImage, setProfileImage] = useState("");
+  const [depositsTimeFilter, setDepositsTimeFilter] = useState("Month");
+  const [withdrawalsTimeFilter, setWithdrawalsTimeFilter] = useState("Month");
+  const [showDepositsDropdown, setShowDepositsDropdown] = useState(false);
+  const [showWithdrawalsDropdown, setShowWithdrawalsDropdown] = useState(false);
+
+  const depositsDropdownRef = useRef<HTMLDivElement>(null);
+  const withdrawalsDropdownRef = useRef<HTMLDivElement>(null);
+
+  const timeFilterOptions = [
+    "All",
+    "Today",
+    "Last Week",
+    "Last Month",
+    "Last 6 Months",
+  ];
+
+  // Calculate filtered amounts based on time period
+  const getFilteredAmount = (baseAmount: number, timeFilter: string) => {
+    switch (timeFilter) {
+      case "All":
+        return baseAmount;
+      case "Today":
+        return baseAmount * 0.1; // Example: 10% of total for today
+      case "Last Week":
+        return baseAmount * 0.3; // Example: 30% of total for last week
+      case "Last Month":
+        return baseAmount; // Current implementation shows monthly data
+      case "Last 6 Months":
+        return baseAmount * 2; // Example: 2x for 6 months
+      default:
+        return baseAmount;
+    }
+  };
+
+  // Handle click outside dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        depositsDropdownRef.current &&
+        !depositsDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowDepositsDropdown(false);
+      }
+      if (
+        withdrawalsDropdownRef.current &&
+        !withdrawalsDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowWithdrawalsDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -43,13 +106,12 @@ const Stats = () => {
     if (isAuthenticated) {
       dispatch(fetchTransactionSummary());
       dispatch(fetchWallets());
+      dispatch(fetchMatchedTrades(1));
     }
   }, [dispatch, isAuthenticated]);
 
   return (
     <Card className="w-full p-2 bg-[#1D1D23] rounded-2xl border-2 border-[#35353E] text-white shadow-lg">
-
-    <Card className="w-full p-2 dark:bg-[#18181D] bg-[#F5F5F5] rounded-2xl border dark:border-[#35353E] border-gray-300 dark:text-white text-[#0D0D0D] shadow-lg">
       {/* Header */}
       <div className="flex w-full items-center justify-between mb-6">
         <div className="flex items-center gap-4">
@@ -98,11 +160,21 @@ const Stats = () => {
           </div>
         </div>
         <div className="flex gap-3">
-          <img
-            src="https://res.cloudinary.com/pitz/image/upload/v1750165834/Frame_34659_2_gmkz6l.png"
-            alt="notifications"
-            width={80}
-          />
+          <div
+            className="relative cursor-pointer"
+            onClick={() => router.push("/dashboard/notifications")}
+          >
+            <img
+              src="https://res.cloudinary.com/pitz/image/upload/v1750165834/Frame_34659_2_gmkz6l.png"
+              alt="notifications"
+              width={80}
+            />
+            {matchedTrades?.results && matchedTrades.results.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-[#E23D3A] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {matchedTrades.results.length}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -122,16 +194,19 @@ const Stats = () => {
       {/* Deposits & Withdrawals */}
       <div className="mb-6">
         {/* Deposits */}
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <span className="dark:text-[#788099] text-[#788099] font-medium">
-                Deposits
-              </span>
-              <span className="dark:text-[#788099] text-[#788099] text-sm">
-                Month{" "}
+        <div className="mb-4">
+          <div className="flex w-full items-center justify-between mb-2">
+            <div className="text-[#788099] font-medium">Deposits</div>
+            <div className="relative w-32" ref={depositsDropdownRef}>
+              <span
+                className="text-[#788099] text-sm cursor-pointer flex items-center gap-1 w-full justify-between"
+                onClick={() => setShowDepositsDropdown(!showDepositsDropdown)}
+              >
+                {depositsTimeFilter}{" "}
                 <svg
-                  className="inline ml-1"
+                  className={`inline ml-1 transition-transform duration-200 ${
+                    showDepositsDropdown ? "rotate-180" : ""
+                  }`}
                   width="12"
                   height="12"
                   viewBox="0 0 20 20"
@@ -146,10 +221,32 @@ const Stats = () => {
                   />
                 </svg>
               </span>
+              {showDepositsDropdown && (
+                <div className="absolute top-6 right-0 bg-[#2A2A35] border border-[#35353E] rounded-lg shadow-lg z-10 w-full">
+                  {timeFilterOptions.map((option) => (
+                    <div
+                      key={option}
+                      className="px-3 py-2 text-sm text-white hover:bg-[#35353E] cursor-pointer"
+                      onClick={() => {
+                        setDepositsTimeFilter(option);
+                        setShowDepositsDropdown(false);
+                      }}
+                    >
+                      {option}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <span className="dark:text-white text-[#0D0D0D] font-medium">
-              {formatNumber(summary?.total_approved_p2p_deposits || 0)} USD
-            </span>
+          </div>
+          <div className="text-white font-medium mb-2">
+            {formatNumber(
+              getFilteredAmount(
+                summary?.total_approved_p2p_deposits || 0,
+                depositsTimeFilter
+              )
+            )}{" "}
+            USD
           </div>
         </div>
         <div className="w-full h-3 dark:bg-[#35353E] bg-gray-300 rounded-full mb-4">
@@ -170,17 +267,21 @@ const Stats = () => {
           />
         </div>
         {/* Withdrawals */}
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center flex-col gap-2">
-            <div className="flex items-center gap-2 justify-between">
-              <span className="dark:text-[#788099] text-[#788099] font-medium">
-                Withdrawals
-              </span>
-
-              <span className="dark:text-[#788099] text-[#788099] text-sm">
-                Month{" "}
+        <div className="mb-4">
+          <div className="flex w-full items-center justify-between mb-2">
+            <div className="text-[#788099] font-medium">Withdrawals</div>
+            <div className="relative w-32" ref={withdrawalsDropdownRef}>
+              <span
+                className="text-[#788099] text-sm cursor-pointer flex items-center gap-1 w-full justify-between"
+                onClick={() =>
+                  setShowWithdrawalsDropdown(!showWithdrawalsDropdown)
+                }
+              >
+                {withdrawalsTimeFilter}{" "}
                 <svg
-                  className="inline ml-1"
+                  className={`inline ml-1 transition-transform duration-200 ${
+                    showWithdrawalsDropdown ? "rotate-180" : ""
+                  }`}
                   width="12"
                   height="12"
                   viewBox="0 0 20 20"
@@ -195,10 +296,32 @@ const Stats = () => {
                   />
                 </svg>
               </span>
+              {showWithdrawalsDropdown && (
+                <div className="absolute top-6 right-0 bg-[#2A2A35] border border-[#35353E] rounded-lg shadow-lg z-10 w-full">
+                  {timeFilterOptions.map((option) => (
+                    <div
+                      key={option}
+                      className="px-3 py-2 text-sm text-white hover:bg-[#35353E] cursor-pointer"
+                      onClick={() => {
+                        setWithdrawalsTimeFilter(option);
+                        setShowWithdrawalsDropdown(false);
+                      }}
+                    >
+                      {option}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <span className="dark:text-white text-[#0D0D0D] font-medium">
-              {formatNumber(summary?.total_approved_p2p_withdrawals || 0)} USD
-            </span>
+          </div>
+          <div className="text-white font-medium mb-2">
+            {formatNumber(
+              getFilteredAmount(
+                summary?.total_approved_p2p_withdrawals || 0,
+                withdrawalsTimeFilter
+              )
+            )}{" "}
+            USD
           </div>
         </div>
         <div className="w-full h-3 dark:bg-[#35353E] bg-gray-300 rounded-full mb-4">

@@ -385,6 +385,7 @@ const Withdraw = () => {
         </form>
       </div>
     </div>
+    </div>
   );
 };
 

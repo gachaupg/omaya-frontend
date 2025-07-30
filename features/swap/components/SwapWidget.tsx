@@ -9,6 +9,7 @@ import {
   setToAsset,
   setFromAmount,
   setToAmount,
+  swapAssets,
   fetchSupportedAssets,
   fetchSwapEstimate,
   clearEstimate,
@@ -324,6 +325,12 @@ const SwapWidget = () => {
     setCurrentStep("wallet-address");
   };
 
+  const handleSwapAssets = () => {
+    dispatch(swapAssets());
+    // Clear the estimate when swapping assets
+    dispatch(clearEstimate());
+  };
+
   if (error) {
     return (
       <div className="mx-auto dark:text-white text-[#0D0D0D]">
@@ -342,81 +349,15 @@ const SwapWidget = () => {
       </div>
     );
   }
-
-  // if (showStatus && swapResponse?.id) {
-  //   return (
-  //     <SwapStatusComponent
-  //       swapId={swapResponse.id}
-  //       swapResponse={swapResponse}
-  //       onBack={() => {
-  //         setShowStatus(false);
-  //         dispatch(clearSwapResponse());
-  //         setCurrentStep("transaction-info");
-  //       }}
-  //     />
-  //   );
-  // }
-
-  // Show status page if we're on status step and have a swap response
-  // if (currentStep === "status" && swapResponse?.id) {
-  //   return (
-  //     <SwapStatusComponent
-  //       // swapId={swapResponse.id}
-  //       // swapResponse={swapResponse}
-  //       // onBack={() => {
-  //       //   dispatch(clearSwapResponse());
-  //       //   setCurrentStep("transaction-info");
-  //       // }}
-  //     />
-  //   );
-  // }
-
-  return (
-    <div className="mx-auto text-white">
-      <h2 className="text-lg font-semibold mb-2">Swap Crypto</h2>
+  
+ return (
     <div className="mx-auto dark:text-white text-[#0D0D0D]">
       <h2 className="text-lg font-semibold mb-6">Swap Crypto</h2>
 
       {/* Step Indicator */}
       {/* <StepIndicator currentStep={currentStep} /> */}
 
-      {/* Step 1: Transaction Info */}
-      {currentStep === "transaction-info" && (
-        <TransactionInfoStep
-          fromAsset={fromAsset}
-          toAsset={toAsset}
-          fromAmount={fromAmount}
-          toAmount={toAmount}
-          supportedAssets={supportedAssets}
-          estimate={estimate}
-          estimateLoading={estimateLoading}
-          estimateError={estimateError}
-          localSwapError={localSwapError}
-          isFromAssetOpen={isFromAssetOpen}
-          isToAssetOpen={isToAssetOpen}
-          searchTerm={searchTerm}
-          toSearchTerm={toSearchTerm}
-          onFromAssetSelect={(asset) => dispatch(setFromAsset(asset))}
-          onToAssetSelect={(asset) => dispatch(setToAsset(asset))}
-          onFromAmountChange={handleFromAmountChange}
-          onToAmountChange={handleToAmountChange}
-          onFromAssetToggle={() => setIsFromAssetOpen(!isFromAssetOpen)}
-          onToAssetToggle={() => setIsToAssetOpen(!isToAssetOpen)}
-          onSearchTermChange={setSearchTerm}
-          onToSearchTermChange={setToSearchTerm}
-          onSubmit={handleNextStep}
-          swapLoading={swapLoading}
-        />
-      )}
-
-      {/* Show error message if swapError exists */}
-      {swapError && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-4">
-          <h3 className="text-red-400 font-semibold mb-2">Swap Error</h3>
-          <p className="text-red-300 text-sm">{swapError}</p>
-        </div>
-      )}
-
+    
       {/* Only render CopyAddressStep as a new page when currentStep is 'copy-address' */}
       {currentStep === "copy-address" ? (
         <CopyAddressStep
@@ -453,6 +394,7 @@ const SwapWidget = () => {
             onSubmit={showWalletAddress ? () => {} : handleNextStep}
             swapLoading={swapLoading}
             hideContinueButton={showWalletAddress}
+            onSwapAssets={handleSwapAssets}
           />
           {showWalletAddress && (
             <WalletAddressStep
@@ -468,7 +410,7 @@ const SwapWidget = () => {
           )}
         </>
       )}
-        {/* <SwapStatusComponent transactionId={""} date={""} paidAmount={""} paidCurrency={""} receivedAmount={""} receivedCurrency={""}        */}
+      {/* <SwapStatusComponent transactionId={""} date={""} paidAmount={""} paidCurrency={""} receivedAmount={""} receivedCurrency={""}        */}
       {/* /> */}
     </div>
   );

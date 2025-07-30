@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X, Check } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Menu, X, Check, Settings, LogOut, User } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "@/features/auth/store";
 import {
@@ -30,10 +31,160 @@ const DefaultProfileIcon = () => (
   />
 );
 
+const NavLink = ({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) => (
+  <Link
+    href={href}
+    className="dark:text-white   text-white  hover:text-[#1D8751] transition-colors duration-200 text-sm lg:text-base 2xl:text-lg"
+  >
+    {children}
+  </Link>
+);
+
+const MobileNavLink = ({
+  href,
+  children,
+  onClick,
+}: {
+  href: string;
+  children: React.ReactNode;
+  onClick: () => void;
+}) => (
+  <Link
+    href={href}
+    className="block text-white hover:text-[#1D8751] py-2 transition-colors duration-200 text-lg"
+    onClick={onClick}
+  >
+    {children}
+  </Link>
+);
+
+const AuthButton = ({
+  variant,
+  children,
+  fullWidth = false,
+}: {
+  variant: "primary" | "secondary";
+  children: React.ReactNode;
+  fullWidth?: boolean;
+}) => (
+  <button
+    className={`${
+      variant === "primary"
+        ? "bg-[#0E5531] hover:bg-[#13B562]"
+        : "bg-transparent border border-[#1D8751]"
+    } 
+    text-white px-4 py-2 rounded-md transition-colors duration-200 text-sm md:text-base 2xl:text-lg
+    ${fullWidth ? "w-full" : ""}`}
+  >
+    {children}
+  </button>
+);
+
+const LanguageSelector = () => {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState("English");
+
+  const toggleDropdown = () => {
+    setDropdownOpen(!dropdownOpen);
+  };
+
+  const selectLanguage = (language: string) => {
+    setSelectedLanguage(language);
+    setDropdownOpen(false);
+  };
+
+  return (
+    <div className="relative ">
+      <div
+        className="flex items-center justify-center cursor-pointer"
+        onClick={toggleDropdown}
+      >
+        <Image
+          src={
+            selectedLanguage === "English"
+              ? "https://res.cloudinary.com/dam1sxczj/image/upload/v1746538734/united_kingdom_zud79x.png"
+              : "https://res.cloudinary.com/dam1sxczj/image/upload/v1747216099/somali_jq5e97.png"
+          }
+          alt={selectedLanguage}
+          width={32}
+          height={32}
+          className="rounded-full"
+        />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          className="fill-white"
+          viewBox="0 0 16 16"
+        >
+          <path d="M1.5 6.5l6 6 6-6h-12z" />
+        </svg>
+      </div>
+      {dropdownOpen && (
+        <div className="absolute right-0 mt-2 w-[300px] bg-[#18181D] border border-[#35353E] rounded-lg shadow-lg z-50">
+          <button
+            className="block w-full text-left px-4 py-2 text-white hover:bg-[#35353E]"
+            onClick={() => selectLanguage("English")}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Image
+                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746538734/united_kingdom_zud79x.png"
+                  alt="English"
+                  width={20}
+                  height={20}
+                  className="rounded-full"
+                />
+                <span className="text-sm">English</span>
+              </div>
+              {selectedLanguage === "English" && (
+                <div className="w-4 h-4 rounded-full flex items-center justify-center">
+                  <Check size={16} className="text-[#1D8751]" />
+                </div>
+              )}
+            </div>
+          </button>
+          <button
+            className="block w-full text-left px-4 py-2 text-white hover:bg-[#35353E]"
+            onClick={() => selectLanguage("Somali")}
+          >
+            <div className="flex items-center justify-between gap-8">
+              <div className="flex items-center space-x-2">
+                <Image
+                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747216099/somali_jq5e97.png"
+                  alt="Somali"
+                  width={20}
+                  height={20}
+                  className="rounded-full"
+                />
+                <span className="text-sm">Somali</span>
+              </div>
+              {selectedLanguage === "Somali" && (
+                <div className="w-4 h-4 rounded-full flex items-center justify-center">
+                  <span className="text-[10px] text-[#1D8751]">✓</span>
+                </div>
+              )}
+            </div>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function Navbar() {
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [depositDropdownOpen, setDepositDropdownOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+
   const {
     isAuthenticated,
     profile: userProfile,
@@ -41,6 +192,7 @@ export default function Navbar() {
   } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch<AppDispatch>();
   const depositDropdownRef = useRef<HTMLDivElement>(null);
+  const profileModalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     dispatch(initializeAuth());
@@ -62,10 +214,15 @@ export default function Navbar() {
     setDepositDropdownOpen(!depositDropdownOpen);
   };
 
-  const handleSignOut = () => {
+  const toggleProfileModal = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setProfileModalOpen(!profileModalOpen);
+  };
+
+  const handleLogout = () => {
     dispatch(logout());
-    // Redirect to login page after logout
-    window.location.href = "/auth/login";
+    setProfileModalOpen(false);
+    router.push("/auth/login");
   };
 
   //Close dropdown when clicking outside
@@ -76,6 +233,13 @@ export default function Navbar() {
         !depositDropdownRef.current.contains(event.target as Node)
       ) {
         setDepositDropdownOpen(false); // Close deposit dropdown
+      }
+
+      if (
+        profileModalRef.current &&
+        !profileModalRef.current.contains(event.target as Node)
+      ) {
+        setProfileModalOpen(false);
       }
     };
 
@@ -175,7 +339,7 @@ export default function Navbar() {
                     <div className="p-6">
                       {/* Exchange Option */}
                       <Link
-                        href="/dashboard/exchange"
+                        href="/dashboard/express-exchange"
                         className="block mb-3"
                         onClick={() => {
                           setDepositDropdownOpen(false);
@@ -457,28 +621,90 @@ export default function Navbar() {
                 )}
               </div>
 
-              <div className="relative">
-                <Link
-                  href="/dashboard/account"
-                  className="flex items-center bg-transparent border border-[#1D8751] text-white px-6 py-2 rounded-full transition-colors duration-200 text-sm md:text-base 2xl:text-lg"
+              <div className="relative" ref={profileModalRef}>
+                <button
+                  onClick={toggleProfileModal}
+                  className="text-white focus:outline-none"
                 >
-                  <svg
-                    className="mr-2"
-                    width="20"
-                    height="20"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
+                  {userProfile?.photo ? (
+                    <img
+                      src={userProfile.photo}
+                      alt="Profile"
+                      className="w-10 h-10 rounded-full border-2 border-white object-cover"
+                    />
+                  ) : (
+                    <DefaultProfileIcon />
+                  )}
+                </button>
+                <span className="absolute bottom-0 right-0 w-5 h-5 bg-[#1D8751] rounded-full flex items-center justify-center border-2 border-white">
+                  <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+                    <circle cx="10" cy="10" r="10" fill="#1D8751" />
                     <path
-                      d="M12 3v14m0 0l-5-5m5 5l5-5"
-                      stroke="#FFB800"
+                      d="M6 10.5L9 13.5L14 8.5"
+                      stroke="white"
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
                   </svg>
-                  Profile
-                </Link>
+                </span>
+
+                {/* Profile Modal */}
+                {profileModalOpen && (
+                  <div className="absolute top-full right-0 mt-2 w-64 bg-[#1E2329] border border-[#35353E] rounded-lg shadow-xl z-[9999]">
+                    <div className="p-4">
+                      {/* User Info */}
+                      <div className="flex items-center mb-4 pb-4 border-b border-[#35353E]">
+                        <div className="mr-3">
+                          {userProfile?.photo ? (
+                            <img
+                              src={userProfile.photo}
+                              alt="Profile"
+                              className="w-12 h-12 rounded-full object-cover"
+                            />
+                          ) : (
+                            <DefaultProfileIcon />
+                          )}
+                        </div>
+                        <div>
+                          <h4 className="text-white font-medium text-sm">
+                            {user?.first_name} {user?.last_name}
+                          </h4>
+                          <p className="text-gray-400 text-xs">{user?.email}</p>
+                        </div>
+                      </div>
+
+                      {/* Menu Items */}
+                      <div className="space-y-2">
+                        <Link
+                          href="/dashboard/account"
+                          className="flex items-center w-full px-3 py-2 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-md transition-colors duration-200"
+                          onClick={() => setProfileModalOpen(false)}
+                        >
+                          <User size={16} className="mr-3" />
+                          <span className="text-sm">Account</span>
+                        </Link>
+
+                        <Link
+                          href="/dashboard/settings"
+                          className="flex items-center w-full px-3 py-2 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-md transition-colors duration-200"
+                          onClick={() => setProfileModalOpen(false)}
+                        >
+                          <Settings size={16} className="mr-3" />
+                          <span className="text-sm">Settings</span>
+                        </Link>
+
+                        <button
+                          onClick={handleLogout}
+                          className="flex items-center w-full px-3 py-2 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-md transition-colors duration-200"
+                        >
+                          <LogOut size={16} className="mr-3" />
+                          <span className="text-sm">Logout</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           ) : (
@@ -540,6 +766,34 @@ export default function Navbar() {
                     Deposit
                   </button>
                 </Link>
+                <div className="relative mt-4 flex justify-center">
+                  <button
+                    onClick={toggleProfileModal}
+                    className="text-white focus:outline-none"
+                  >
+                    {userProfile?.photo ? (
+                      <img
+                        src={userProfile.photo}
+                        alt="Profile"
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <DefaultProfileIcon />
+                    )}
+                  </button>
+                  <span className="absolute bottom-0 right-0 w-5 h-5 bg-[#1D8751] rounded-full flex items-center justify-center border-2 border-white">
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+                      <circle cx="10" cy="10" r="10" fill="#1D8751" />
+                      <path
+                        d="M6 10.5L9 13.5L14 8.5"
+                        stroke="white"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                </div>
                 <div className="flex flex-col items-center space-y-3 mt-4">
                   <div className="flex items-center space-x-3">
                     <Link
@@ -567,6 +821,71 @@ export default function Navbar() {
                     </div>
                   </div>
                 </div>
+
+                {/* Mobile Profile Modal */}
+                {profileModalOpen && (
+                  <div className="fixed inset-0 z-[9999] md:hidden">
+                    <div
+                      className="absolute inset-0 bg-black bg-opacity-50"
+                      onClick={() => setProfileModalOpen(false)}
+                    />
+                    <div className="absolute bottom-0 left-0 right-0 bg-[#1E2329] border-t border-[#35353E] rounded-t-lg">
+                      <div className="p-6">
+                        {/* User Info */}
+                        <div className="flex items-center mb-6">
+                          <div className="mr-4">
+                            {userProfile?.photo ? (
+                              <img
+                                src={userProfile.photo}
+                                alt="Profile"
+                                className="w-16 h-16 rounded-full object-cover"
+                              />
+                            ) : (
+                              <DefaultProfileIcon />
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="text-white font-medium text-lg">
+                              {user?.first_name} {user?.last_name}
+                            </h4>
+                            <p className="text-gray-400 text-sm">
+                              {user?.email}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Menu Items */}
+                        <div className="space-y-4">
+                          <Link
+                            href="/dashboard/account"
+                            className="flex items-center w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-lg transition-colors duration-200"
+                            onClick={() => setProfileModalOpen(false)}
+                          >
+                            <User size={20} className="mr-4" />
+                            <span className="text-base">Account</span>
+                          </Link>
+
+                          <Link
+                            href="/dashboard/settings"
+                            className="flex items-center w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-lg transition-colors duration-200"
+                            onClick={() => setProfileModalOpen(false)}
+                          >
+                            <Settings size={20} className="mr-4" />
+                            <span className="text-base">Settings</span>
+                          </Link>
+
+                          <button
+                            onClick={handleLogout}
+                            className="flex items-center w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-lg transition-colors duration-200"
+                          >
+                            <LogOut size={20} className="mr-4" />
+                            <span className="text-base">Logout</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </>
             ) : (
               <>
@@ -589,149 +908,3 @@ export default function Navbar() {
     </>
   );
 }
-const NavLink = ({
-  href,
-  children,
-}: {
-  href: string;
-  children: React.ReactNode;
-}) => (
-  <Link
-    href={href}
-    className="dark:text-white   text-white  hover:text-[#1D8751] transition-colors duration-200 text-sm lg:text-base 2xl:text-lg"
-  >
-    {children}
-  </Link>
-);
-
-const MobileNavLink = ({
-  href,
-  children,
-  onClick,
-}: {
-  href: string;
-  children: React.ReactNode;
-  onClick: () => void;
-}) => (
-  <Link
-    href={href}
-    className="block text-white hover:text-[#1D8751] py-2 transition-colors duration-200 text-lg"
-    onClick={onClick}
-  >
-    {children}
-  </Link>
-);
-
-const AuthButton = ({
-  variant,
-  children,
-  fullWidth = false,
-}: {
-  variant: "primary" | "secondary";
-  children: React.ReactNode;
-  fullWidth?: boolean;
-}) => (
-  <button
-    className={`${
-      variant === "primary"
-        ? "bg-[#0E5531] hover:bg-[#13B562]"
-        : "bg-transparent border border-[#1D8751]"
-    } 
-    text-white px-4 py-2 rounded-md transition-colors duration-200 text-sm md:text-base 2xl:text-lg
-    ${fullWidth ? "w-full" : ""}`}
-  >
-    {children}
-  </button>
-);
-
-const LanguageSelector = () => {
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState("English");
-
-  const toggleDropdown = () => {
-    setDropdownOpen(!dropdownOpen);
-  };
-
-  const selectLanguage = (language: string) => {
-    setSelectedLanguage(language);
-    setDropdownOpen(false);
-  };
-
-  return (
-    <div className="relative ">
-      <div
-        className="flex items-center justify-center cursor-pointer"
-        onClick={toggleDropdown}
-      >
-        <Image
-          src={
-            selectedLanguage === "English"
-              ? "https://res.cloudinary.com/dam1sxczj/image/upload/v1746538734/united_kingdom_zud79x.png"
-              : "https://res.cloudinary.com/dam1sxczj/image/upload/v1747216099/somali_jq5e97.png"
-          }
-          alt={selectedLanguage}
-          width={32}
-          height={32}
-          className="rounded-full"
-        />
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          className="fill-white"
-          viewBox="0 0 16 16"
-        >
-          <path d="M1.5 6.5l6 6 6-6h-12z" />
-        </svg>
-      </div>
-      {dropdownOpen && (
-        <div className="absolute right-0 mt-2 w-[300px] bg-[#18181D] border border-[#35353E] rounded-lg shadow-lg z-50">
-          <button
-            className="block w-full text-left px-4 py-2 text-white hover:bg-[#35353E]"
-            onClick={() => selectLanguage("English")}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746538734/united_kingdom_zud79x.png"
-                  alt="English"
-                  width={20}
-                  height={20}
-                  className="rounded-full"
-                />
-                <span className="text-sm">English</span>
-              </div>
-              {selectedLanguage === "English" && (
-                <div className="w-4 h-4 rounded-full flex items-center justify-center">
-                  <Check size={16} className="text-[#1D8751]" />
-                </div>
-              )}
-            </div>
-          </button>
-          <button
-            className="block w-full text-left px-4 py-2 text-white hover:bg-[#35353E]"
-            onClick={() => selectLanguage("Somali")}
-          >
-            <div className="flex items-center justify-between gap-8">
-              <div className="flex items-center space-x-2">
-                <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747216099/somali_jq5e97.png"
-                  alt="Somali"
-                  width={20}
-                  height={20}
-                  className="rounded-full"
-                />
-                <span className="text-sm">Somali</span>
-              </div>
-              {selectedLanguage === "Somali" && (
-                <div className="w-4 h-4 rounded-full flex items-center justify-center">
-                  <span className="text-[10px] text-[#1D8751]">✓</span>
-                </div>
-              )}
-            </div>
-          </button>
-        </div>
-      )}
-    </div>
-  );
-};
