@@ -224,10 +224,22 @@ export const getAllP2POrders = async (
 export const getAllP2PBuyandSell = async (
   page: number = 1
 ): Promise<P2PBuySellResponse> => {
+  console.log("API call getAllP2PBuyandSell with page:", page);
   return withRetry(async () => {
-    const response = await get<P2PBuySellResponse>(
-      `${API_CONFIG.P2P.BUY_SELL_ORDERS}?page=${page}&my_orders=true`
-    );
+    const url = `${API_CONFIG.P2P.BUY_SELL_ORDERS}&page=${page}`;
+    console.log("Making API request to:", url);
+    const response = await get<P2PBuySellResponse>(url);
+    console.log("API response for page", page, ":", {
+      count: response.data.count,
+      resultsCount: response.data.results?.results?.length,
+      totalOrdersCount: response.data.results?.total_orders_count,
+      // Add debugging for the actual data
+      firstItemId: response.data.results?.results?.[0]?.id,
+      lastItemId:
+        response.data.results?.results?.[
+          response.data.results?.results?.length - 1
+        ]?.id,
+    });
     return response.data;
   });
 };

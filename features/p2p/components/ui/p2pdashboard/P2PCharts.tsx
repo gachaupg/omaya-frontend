@@ -4,7 +4,10 @@ import Charts from "../../Common/charts";
 import { Table } from "../../Common/Table";
 import { AppDispatch } from "@/store";
 import { RootState } from "@/store/rootReducer";
-import { p2pBuyandSell } from "@/features/p2p/slices/p2pbuysell";
+import {
+  p2pBuyandSell,
+  setCurrentPage,
+} from "@/features/p2p/slices/p2pbuysell";
 import { P2POrder, TransactionType } from "@/features/p2p/types";
 import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
@@ -26,12 +29,20 @@ const P2PCharts = () => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const [searchQuery, setSearchQuery] = useState("");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("Last Month");
+  const [dataKey, setDataKey] = useState(0);
 
   useEffect(() => {
     if (isAuthenticated) {
       dispatch(p2pBuyandSell(currentPage));
     }
   }, [dispatch, currentPage, isAuthenticated]);
+
+  // Reset to first page when component mounts or authentication changes
+  useEffect(() => {
+    if (isAuthenticated && currentPage !== 1) {
+      dispatch(setCurrentPage(1));
+    }
+  }, [isAuthenticated, dispatch]);
 
   // Filter data based on time filter
   const filterDataByTime = (
@@ -111,25 +122,70 @@ const P2PCharts = () => {
   }));
 
   // Apply time filter to transformed data
-  const timeFilteredData = filterDataByTime(transformedData, timeFilter);
+  const timeFilteredData = transformedData.filter((item) => {
+    const itemDate = new Date(item.date);
+    const now = new Date();
+    const diffInHours = (now.getTime() - itemDate.getTime()) / (1000 * 60 * 60);
 
-  // Filter data based on search query
+    switch (timeFilter) {
+      case "Today":
+        return diffInHours <= 24;
+      case "Last Week":
+        return diffInHours <= 24 * 7;
+      case "Last Month":
+        return diffInHours <= 24 * 30;
+      case "Last 6 Months":
+        return diffInHours <= 24 * 180;
+      case "All Time":
+        return true;
+      default:
+        return true;
+    }
+  });
+
+  // Apply search filter to time filtered data
   const filteredData = searchQuery.trim()
     ? timeFilteredData.filter(
         (item) =>
-          String(item.id).toLowerCase().includes(searchQuery.toLowerCase()) ||
-          String(item.type).toLowerCase().includes(searchQuery.toLowerCase()) ||
-          String(item.status)
+          item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (item.username || "")
             .toLowerCase()
             .includes(searchQuery.toLowerCase()) ||
-          String(item.asset)
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          String(item.username)
+          item.asset.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          String(item.status || "")
             .toLowerCase()
             .includes(searchQuery.toLowerCase())
       )
     : timeFilteredData;
+
+  // Use filtered data for display, but ensure we're showing the correct data for current page
+  const displayData = searchQuery.trim() ? filteredData : transformedData;
+
+  // Calculate total pages based on actual count from API
+  const totalOrders = orders?.count || 0;
+  const pageSize = 10; // Default page size, should match backend
+  const totalPages = Math.ceil(totalOrders / pageSize);
+
+ 
+ 
+
+  // Force re-render when orders data changes
+  useEffect(() => {
+    if (orders?.results?.results) {
+     
+      setDataKey((prev) => prev + 1);
+    }
+  }, [orders?.results?.results]);
+
+  // Check if data is actually different
+  useEffect(() => {
+    if (orders?.results?.results) {
+      const currentDataIds = orders.results.results
+        .map((item) => item.id)
+        .join(",");
+     
+    }
+  }, [orders?.results?.results, dataKey]);
 
   // Handlers for table functionality
   const handleExport = (format: "csv" | "pdf") => {
@@ -185,19 +241,37 @@ const P2PCharts = () => {
     }
   };
 
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
+  const handlePageChange = (page: number) => {
+    console.log("Page change requested:", page, "Current page:", currentPage);
+
+    // Clear search when changing pages to avoid confusion
+    if (searchQuery.trim()) {
+      setSearchQuery("");
+    }
+
+    // Only update if the page is actually different
+    if (page !== currentPage) {
+      // Update the current page in Redux store
+      dispatch(setCurrentPage(page));
+      // Fetch data for the new page
+      dispatch(p2pBuyandSell(page));
+    }
   };
 
-  const handlePageChange = (page: number) => {
-    dispatch(p2pBuyandSell(page));
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    // Reset to first page when searching
+    if (query.trim() !== searchQuery.trim()) {
+      if (currentPage !== 1) {
+        dispatch(setCurrentPage(1));
+        dispatch(p2pBuyandSell(1));
+      }
+    }
   };
 
   const handleTimeFilterChange = (filter: TimeFilter) => {
     setTimeFilter(filter);
   };
-
-  const totalOrders = orders?.results?.total_orders_count || 0;
 
   return (
     <div className="w-full pt-4">
@@ -212,7 +286,7 @@ const P2PCharts = () => {
 
       {/* Orders Table */}
       <div className="mt-8">
-        {!filteredData || filteredData.length === 0 ? (
+        {!displayData || displayData.length === 0 ? (
           <div className="text-center py-12 px-4">
             <NoDataFound
               title="No Orders Found"
@@ -249,13 +323,14 @@ const P2PCharts = () => {
           </div>
         ) : (
           <Table
+            key={`p2p-table-${currentPage}-${dataKey}`}
             type="p2p"
             title="P2P Orders"
-            data={filteredData}
+            data={displayData}
             loading={loading}
             error={error}
             currentPage={currentPage}
-            totalPages={Math.ceil(totalOrders / 10)}
+            totalPages={totalPages}
             onPageChange={handlePageChange}
             onExport={handleExport}
             onSearch={handleSearch}

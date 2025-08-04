@@ -47,6 +47,10 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ transactionSummary }) => {
           transactionSummary.total_pending_p2p_withdrawals
       ),
     },
+    {
+      title: "Swap ",
+      value: '00',
+    },
   ];
 
   return (

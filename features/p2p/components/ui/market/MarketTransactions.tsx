@@ -49,6 +49,39 @@ const getProviderOptions = (orders: any): Option[] => {
   ];
 };
 
+const getPaymentMethodOptions = (orders: any): Option[] => {
+  if (!orders?.buy_orders?.results && !orders?.sell_orders?.results)
+    return [{ label: "All Types", value: "" }];
+
+  const paymentMethods = new Set<string>();
+
+  // Check buy orders
+  if (orders?.buy_orders?.results) {
+    orders.buy_orders.results.forEach((order: any) => {
+      order.payment_details.forEach((detail: any) => {
+        paymentMethods.add(detail.payment_method);
+      });
+    });
+  }
+
+  // Check sell orders
+  if (orders?.sell_orders?.results) {
+    orders.sell_orders.results.forEach((order: any) => {
+      order.payment_details.forEach((detail: any) => {
+        paymentMethods.add(detail.payment_method);
+      });
+    });
+  }
+
+  return [
+    { label: "All Types", value: "" },
+    ...Array.from(paymentMethods).map((method) => ({
+      label: method,
+      value: method,
+    })),
+  ];
+};
+
 interface MarketRow {
   id: string;
   advertiser: string;
@@ -105,6 +138,10 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
 
   const currencyOptions = useMemo(() => getCurrencyOptions(orders), [orders]);
   const providerOptions = useMemo(() => getProviderOptions(orders), [orders]);
+  const paymentMethodOptions = useMemo(
+    () => getPaymentMethodOptions(orders),
+    [orders]
+  );
 
   const getActiveOrders = useMemo(() => {
     if (!orders) {
@@ -113,13 +150,6 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
     const orderType = activeTab === "buy" ? "sell_orders" : "buy_orders";
     return orders[orderType]?.results || [];
   }, [orders, activeTab]);
-
-  const paymentTypeOptions = [
-    { label: "All Types", value: "" },
-    { label: "Bank Transfer", value: "Bank Transfer" },
-    { label: "Mobile Money", value: "Mobile Money" },
-    { label: "Merchant", value: "Merchant" },
-  ];
 
   const transformedData: MarketRow[] = useMemo(() => {
     if (!getActiveOrders) {
@@ -153,7 +183,9 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
             order.currency
           }`,
           payment: order.payment_details.map((detail: any) => detail.provider),
-          paymentType: order.payment_details[0]?.type || "",
+          paymentType: order.payment_details.map(
+            (detail: any) => detail.payment_method
+          ),
           minAmount: parseFloat(order.min_order_amount),
           maxAmount: parseFloat(order.max_order_amount),
           currency: order.currency,
@@ -166,8 +198,23 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
       })
       .filter((row: MarketRow) => {
         if (currency && row.currency !== currency) return false;
-        if (paymentType && row.paymentType !== paymentType) return false;
-        if (provider && !row.payment.includes(provider)) return false;
+
+        // Filter by payment method - check if any payment detail has the selected payment method
+        if (paymentType && paymentType !== "") {
+          const hasPaymentMethod = row.payment_details?.some(
+            (detail: any) => detail.payment_method === paymentType
+          );
+          if (!hasPaymentMethod) return false;
+        }
+
+        // Filter by provider - check if any payment detail has the selected provider
+        if (provider && provider !== "") {
+          const hasProvider = row.payment_details?.some(
+            (detail: any) => detail.provider === provider
+          );
+          if (!hasProvider) return false;
+        }
+
         if (amount) {
           const amountValue = parseFloat(amount);
           if (amountValue < row.minAmount || amountValue > row.maxAmount)
@@ -240,7 +287,7 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
             borderColor="border-gray-300 dark:border-[#35353E]"
             value={paymentType}
             onChange={(e) => setPaymentType(e.target.value)}
-            options={paymentTypeOptions}
+            options={paymentMethodOptions}
             placeholder="Payment Type"
             className="bg-gray-100 dark:bg-[#23232B] border border-gray-300 dark:border-[#35353E] rounded-lg text-gray-900 dark:text-white w-full sm:w-40"
           />

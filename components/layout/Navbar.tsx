@@ -85,7 +85,7 @@ const AuthButton = ({
         ? "bg-[#0E5531] hover:bg-[#13B562] text-white" // Primary button always has white text
         : "bg-transparent border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white" // Secondary button with brand colors
     } 
-    px-4 py-2 rounded-md transition-colors duration-200 text-sm md:text-base 2xl:text-lg
+    px-3 py-1 rounded-[22px] transition-colors duration-200 text-sm md:text-base 2xl:text-lg
     ${fullWidth ? "w-full" : ""}`}
   >
     {children}
@@ -357,7 +357,7 @@ export default function Navbar() {
               <div className="" ref={depositDropdownRef}>
                 <button
                   onClick={toggleDepositDropdown}
-                  className="flex items-center bg-[#1D8751] hover:bg-[#13B562] text-white px-6 py-2 rounded-full transition-colors duration-200 text-sm md:text-base 2xl:text-lg"
+                  className="flex items-center bg-[#1D8751] hover:bg-[#13B562] text-white px-6 py-2 rounded-[10px] transition-colors duration-200 text-sm md:text-base 2xl:text-lg"
                 >
                   <svg
                     className="mr-2"
@@ -367,7 +367,21 @@ export default function Navbar() {
                     viewBox="0 0 24 24"
                   >
                     <path
-                      d="M12 3v14m0 0l-5-5m5 5l5-5"
+                      d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+                      stroke="#FFB800"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M7 10l5 5 5-5"
+                      stroke="#FFB800"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M12 15V3"
                       stroke="#FFB800"
                       strokeWidth="2"
                       strokeLinecap="round"

@@ -36,6 +36,8 @@ export const Table: React.FC<TableProps> = ({
   const [showExportOptions, setShowExportOptions] = useState(false);
   const [selectedTransaction, setSelectedTransaction] =
     useState<TransactionType | null>(null);
+  const [tooltipId, setTooltipId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -294,7 +296,7 @@ export const Table: React.FC<TableProps> = ({
               {data.map((row, idx) => (
                 <div
                   key={idx}
-                  className={`w-full grid grid-cols-6 md:grid-cols-7 py-4 px-4 border-b last:border-b-0 items-center hover:bg-gray-100 dark:hover:bg-opacity-80 transition-colors border-gray-200 dark:border-[${tokens.colors.dark.border}] bg-white dark:bg-[${tokens.colors.dark.background}]`}
+                  className={`w-full grid grid-cols-6 md:grid-cols-7 py-4 px-4 border-b last:border-b-0 items-center hover:bg-gray-50 dark:hover:bg-[#2A2A35] transition-colors duration-200 border-gray-200 dark:border-[${tokens.colors.dark.border}] bg-white dark:bg-[${tokens.colors.dark.background}]`}
                 >
                   <div className="flex items-center gap-2">
                     <img
@@ -305,11 +307,43 @@ export const Table: React.FC<TableProps> = ({
                   </div>
                   {type === "p2p" && (
                     <div
-                      className={`text-sm text-gray-500 dark:text-[${tokens.colors.dark.textBody}]`}
+                      className={`text-sm text-gray-500 dark:text-[${tokens.colors.dark.textBody}] cursor-pointer relative`}
+                      onMouseEnter={() => setTooltipId(row.id || "")}
+                      onMouseLeave={() => setTooltipId(null)}
+                      onClick={() => {
+                        if (row.id) {
+                          navigator.clipboard.writeText(row.id);
+                          setCopiedId(row.id);
+                          setTimeout(() => setCopiedId(null), 2000);
+                        }
+                      }}
+                      title={`Click to copy full ID: ${row.id || ""}`}
                     >
                       {row.id
                         ? `${row.id.slice(0, 3)}...${row.id.slice(-3)}`
                         : ""}
+                      {tooltipId === row.id && row.id && (
+                        <div className="absolute z-50 px-3 py-2 text-xs text-white bg-gray-900 rounded-lg shadow-xl whitespace-nowrap -top-10 left-1/2 transform -translate-x-1/2 border border-gray-700">
+                          <div className="flex items-center gap-2">
+                            <span>{row.id}</span>
+                            <svg
+                              className="w-3 h-3"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                              <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                            </svg>
+                          </div>
+                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                        </div>
+                      )}
+                      {copiedId === row.id && (
+                        <div className="absolute z-50 px-2 py-1 text-xs text-white bg-green-600 rounded shadow-lg whitespace-nowrap -top-8 left-1/2 transform -translate-x-1/2">
+                          Copied!
+                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-green-600"></div>
+                        </div>
+                      )}
                     </div>
                   )}
                   <div>
@@ -353,7 +387,18 @@ export const Table: React.FC<TableProps> = ({
             {totalPages > 1 && (
               <div className="flex justify-center items-center gap-2 py-4 bg-transparent rounded-b-[24px]">
                 <button
-                  onClick={() => onPageChange?.(currentPage - 1)}
+                  onClick={() => {
+                    console.log("Previous page clicked, current:", currentPage);
+                    if (onPageChange) {
+                      console.log(
+                        "Calling onPageChange with:",
+                        currentPage - 1
+                      );
+                      onPageChange(currentPage - 1);
+                    } else {
+                      console.log("onPageChange is not provided");
+                    }
+                  }}
                   disabled={currentPage === 1}
                   className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#23232B] text-gray-400 dark:text-[#8C8CA1] ${
                     currentPage === 1
@@ -361,14 +406,27 @@ export const Table: React.FC<TableProps> = ({
                       : "hover:bg-gray-100 dark:hover:bg-[#35353E]"
                   }`}
                 >
-                  &lt;
+                  Previous
                 </button>
                 {totalPages <= 10 ? (
                   // Show all pages if total pages is 10 or less
                   Array.from({ length: totalPages }, (_, i) => (
                     <button
                       key={i}
-                      onClick={() => onPageChange?.(i + 1)}
+                      onClick={() => {
+                        console.log(
+                          "Page number clicked:",
+                          i + 1,
+                          "Current page:",
+                          currentPage
+                        );
+                        if (onPageChange) {
+                          console.log("Calling onPageChange with:", i + 1);
+                          onPageChange(i + 1);
+                        } else {
+                          console.log("onPageChange is not provided");
+                        }
+                      }}
                       className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
                         currentPage === i + 1
                           ? "bg-[#1D8751] text-white"
@@ -385,7 +443,15 @@ export const Table: React.FC<TableProps> = ({
                     {Array.from({ length: 5 }, (_, i) => (
                       <button
                         key={i}
-                        onClick={() => onPageChange?.(i + 1)}
+                        onClick={() => {
+                          console.log(
+                            "First 5 page clicked:",
+                            i + 1,
+                            "Current:",
+                            currentPage
+                          );
+                          onPageChange?.(i + 1);
+                        }}
                         className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
                           currentPage === i + 1
                             ? "bg-[#1D8751] text-white"
@@ -407,7 +473,15 @@ export const Table: React.FC<TableProps> = ({
                       return (
                         <button
                           key={pageNum}
-                          onClick={() => onPageChange?.(pageNum)}
+                          onClick={() => {
+                            console.log(
+                              "Last 5 page clicked:",
+                              pageNum,
+                              "Current:",
+                              currentPage
+                            );
+                            onPageChange?.(pageNum);
+                          }}
                           className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
                             currentPage === pageNum
                               ? "bg-[#1D8751] text-white"
@@ -421,7 +495,18 @@ export const Table: React.FC<TableProps> = ({
                   </>
                 )}
                 <button
-                  onClick={() => onPageChange?.(currentPage + 1)}
+                  onClick={() => {
+                    console.log("Next page clicked, current:", currentPage);
+                    if (onPageChange) {
+                      console.log(
+                        "Calling onPageChange with:",
+                        currentPage + 1
+                      );
+                      onPageChange(currentPage + 1);
+                    } else {
+                      console.log("onPageChange is not provided");
+                    }
+                  }}
                   disabled={currentPage === totalPages}
                   className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#23232B] text-gray-400 dark:text-[#8C8CA1] ${
                     currentPage === totalPages
@@ -429,7 +514,7 @@ export const Table: React.FC<TableProps> = ({
                       : "hover:bg-gray-100 dark:hover:bg-[#35353E]"
                   }`}
                 >
-                  &gt;
+                  Next
                 </button>
               </div>
             )}
@@ -473,8 +558,8 @@ export const Table: React.FC<TableProps> = ({
                         selectedTransaction.type === "buy"
                           ? "text-[#1D8751]"
                           : selectedTransaction.type === "sell"
-                          ? "text-[#FF4D4D]"
-                          : "text-gray-500 dark:text-[#788099]"
+                            ? "text-[#FF4D4D]"
+                            : "text-gray-500 dark:text-[#788099]"
                       }
                     >
                       {selectedTransaction.type}

@@ -197,22 +197,22 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   }
 
   return (
-    <div className="w-full min-h-screen dark:bg-[#1D1D23] bg-white flex flex-col items-center pt-2 ">
+    <div className="w-full min-h-screen  flex flex-col items-center pt-2 ">
       {/* Top Card */}
-      <div className="flex flex-col md:flex-row justify-between items-stretch dark:bg-[#23232B] bg-white dark:border-[#35353E] border-gray-200 border-2 rounded-2xl p-4 shadow-lg w-full max-w-4xl mb-4 min-h-[180px]">
+      <div className="flex flex-col md:flex-row justify-between items-stretch bg-[#23232B] border-2 border-[#35353E] rounded-2xl p-4 shadow-lg w-full max-w-4xl mb-4 min-h-[180px]">
         <div className="flex-1 flex flex-col justify-between py-2 pr-2">
           <div>
-            <div className="dark:text-[#7B7B7B] text-gray-600 text-xs font-semibold mb-0.5">
+            <div className="text-[#7B7B7B] text-xs font-semibold mb-0.5">
               Amount:
             </div>
-            <div className="dark:text-white text-gray-900 text-base font-semibold mb-1">
+            <div className="text-white text-base font-semibold mb-1">
               {effectiveTransactionData?.amount || 0}{" "}
               {effectiveTransactionData?.asset?.symbol || "USDT"}
             </div>
             {effectiveTransactionData?.type === "deposit" &&
               effectiveTransactionData?.paymentDetail && (
                 <>
-                  <div className="dark:text-[#7B7B7B] text-gray-600 text-xs font-semibold mb-0.5">
+                  <div className="text-[#7B7B7B] text-xs font-semibold mb-0.5">
                     Bank:
                   </div>
                   <div className="flex items-center mb-1">
@@ -221,30 +221,30 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                       alt={effectiveTransactionData.paymentDetail.provider_name}
                       className="w-6 h-6 rounded-full mr-2"
                     />
-                    <span className="dark:text-white text-gray-900 text-sm font-semibold">
+                    <span className="text-white text-sm font-semibold">
                       {effectiveTransactionData.paymentDetail.provider_name}
                     </span>
                   </div>
-                  <div className="dark:text-[#7B7B7B] text-gray-600 text-xs font-semibold mb-0.5">
+                  <div className="text-[#7B7B7B] text-xs font-semibold mb-0.5">
                     Account Name:
                   </div>
-                  <div className="dark:text-white text-gray-900 text-sm mb-1">
+                  <div className="text-white text-sm mb-1">
                     {effectiveTransactionData.paymentDetail.account_name}
                   </div>
-                  <div className="dark:text-[#7B7B7B] text-gray-600 text-xs font-semibold mb-0.5">
+                  <div className="text-[#7B7B7B] text-xs font-semibold mb-0.5">
                     Account Number:
                   </div>
-                  <div className="dark:text-white text-gray-900 text-sm font-mono">
+                  <div className="text-white text-sm font-mono">
                     {effectiveTransactionData.paymentDetail.account_number}
                   </div>
                 </>
               )}
             {effectiveTransactionData?.type === "withdrawal" && (
               <>
-                <div className="dark:text-[#7B7B7B] text-gray-600 text-xs font-semibold mb-0.5">
+                <div className="text-[#7B7B7B] text-xs font-semibold mb-0.5">
                   Wallet Address:
                 </div>
-                <div className="dark:text-white text-gray-900 text-sm font-mono break-all">
+                <div className="text-white text-sm font-mono break-all">
                   {effectiveTransactionData.walletAddress}
                 </div>
               </>
@@ -314,7 +314,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               className={`font-semibold text-base ${
                 currentStatus === "pending" || !shouldUseWebSocket
                   ? "text-[#FF9500]"
-                  : "dark:text-[#7B7B7B] text-gray-600"
+                  : "text-[#7B7B7B]"
               }`}
             >
               Awaiting Deposit
@@ -368,7 +368,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               className={`font-semibold text-base ${
                 currentStatus === "confirming"
                   ? "text-[#FF9500]"
-                  : "dark:text-[#7B7B7B] text-gray-600"
+                  : "text-[#7B7B7B]"
               }`}
             >
               Confirming
@@ -421,7 +421,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               className={`font-semibold text-base ${
                 currentStatus === "exchanging"
                   ? "text-[#FF9500]"
-                  : "dark:text-[#7B7B7B] text-gray-600"
+                  : "text-[#7B7B7B]"
               }`}
             >
               Exchanging
@@ -474,7 +474,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               className={`font-semibold text-base ${
                 currentStatus === "sending"
                   ? "text-[#FF9500]"
-                  : "dark:text-[#7B7B7B] text-gray-600"
+                  : "text-[#7B7B7B]"
               }`}
             >
               Sending to you
@@ -500,18 +500,18 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       </div>
 
       {/* Transaction Details Card */}
-      <div className="dark:bg-[#23232B] bg-white dark:border-[#35353E] border-gray-200 border-2 rounded-2xl p-6 shadow-lg w-full max-w-4xl mb-4">
+      <div className="bg-[#23232B] border-2 border-[#35353E] rounded-2xl p-6 shadow-lg w-full max-w-4xl mb-4">
         {/* Title */}
-        <div className="dark:text-white text-gray-900 text-2xl font-semibold mb-4">
+        <div className="text-white text-2xl font-semibold mb-4">
           Transaction Details
         </div>
         {/* Transaction ID Row */}
         <div className="flex items-center justify-between mb-1">
-          <div className="dark:text-[#7B7B7B] text-gray-600 text-base font-medium">
+          <div className="text-[#7B7B7B] text-base font-medium">
             Transaction ID
           </div>
           <div className="flex items-center gap-2">
-            <span className="dark:text-white text-gray-900 text-base font-mono font-semibold">
+            <span className="text-white text-base font-mono font-semibold">
               TXNWSU09E2DS
             </span>
             <span className="text-[#FFA200] cursor-pointer flex items-center">
@@ -539,15 +539,11 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           </div>
         </div>
         {/* Dashed Divider */}
-        <div className="border-t border-dashed dark:border-[#7B7B7B] border-gray-400 mb-4"></div>
+        <div className="border-t border-dashed border-[#7B7B7B] mb-4"></div>
         {/* From/To Labels Row */}
         <div className="flex items-center justify-between mb-2">
-          <div className="dark:text-[#7B7B7B] text-gray-600 text-base font-medium">
-            From
-          </div>
-          <div className="dark:text-[#7B7B7B] text-gray-600 text-base font-medium">
-            To
-          </div>
+          <div className="text-[#7B7B7B] text-base font-medium">From</div>
+          <div className="text-[#7B7B7B] text-base font-medium">To</div>
         </div>
         {/* From/To Content Row */}
         <div className="flex items-center justify-between mt-2">
@@ -562,10 +558,10 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   className="w-8 h-8 rounded-full"
                 />
                 <div>
-                  <div className="dark:text-white text-gray-900 text-base font-semibold">
+                  <div className="text-white text-base font-semibold">
                     {effectiveTransactionData.paymentDetail.provider_name}
                   </div>
-                  <div className="dark:text-[#7B7B7B] text-gray-600 text-sm font-mono">
+                  <div className="text-[#7B7B7B] text-sm font-mono">
                     {effectiveTransactionData.paymentDetail.account_number}
                   </div>
                 </div>
@@ -578,10 +574,10 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   className="w-8 h-8 rounded-full"
                 />
                 <div>
-                  <div className="dark:text-white text-gray-900 text-base font-semibold">
+                  <div className="text-white text-base font-semibold">
                     {effectiveTransactionData?.asset?.symbol || "USDT"}
                   </div>
-                  <div className="dark:text-[#7B7B7B] text-gray-600 text-sm font-mono">
+                  <div className="text-[#7B7B7B] text-sm font-mono">
                     {effectiveTransactionData?.walletAddress ||
                       "TQn9Y2khEsLJW1ChVWFM...RDow5oRP7bX"}
                   </div>
@@ -599,14 +595,14 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   className="w-8 h-8 rounded-full"
                 />
                 <div className="text-right">
-                  <div className="dark:text-white text-gray-900 text-base font-semibold inline-block align-middle">
+                  <div className="text-white text-base font-semibold inline-block align-middle">
                     {effectiveTransactionData?.asset?.symbol || "USDT"}
                   </div>
-                  <span className="dark:text-[#7B7B7B] text-gray-600 text-base font-normal ml-1 align-middle">
+                  <span className="text-[#7B7B7B] text-base font-normal ml-1 align-middle">
                     {effectiveTransactionData?.asset?.description ||
                       "Tether US"}
                   </span>
-                  <div className="dark:text-[#7B7B7B] text-gray-600 text-sm font-mono">
+                  <div className="text-[#7B7B7B] text-sm font-mono">
                     {effectiveTransactionData?.walletAddress ||
                       "TQn9Y2khEsLJW1ChVWFM...RDow5oRP7bX"}
                   </div>
@@ -620,13 +616,13 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   className="w-8 h-8 rounded-full"
                 />
                 <div className="text-right">
-                  <div className="dark:text-white text-gray-900 text-base font-semibold inline-block align-middle">
+                  <div className="text-white text-base font-semibold inline-block align-middle">
                     Bank Transfer
                   </div>
-                  <span className="dark:text-[#7B7B7B] text-gray-600 text-base font-normal ml-1 align-middle">
+                  <span className="text-[#7B7B7B] text-base font-normal ml-1 align-middle">
                     To your account
                   </span>
-                  <div className="dark:text-[#7B7B7B] text-gray-600 text-sm font-mono">
+                  <div className="text-[#7B7B7B] text-sm font-mono">
                     {effectiveTransactionData?.paymentDetails?.[0]
                       ?.account_number || "Account Number"}
                   </div>

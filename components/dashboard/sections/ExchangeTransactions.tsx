@@ -219,7 +219,7 @@ const P2PTransactions = () => {
               {/* Amount */}
               <td
                 className={`px-6 py-4 whitespace-nowrap text-sm ${
-                  tx.amount > 0
+                  tx.transaction_type === "deposit"
                     ? "text-[#1D8751]"
                     : "text-red-500 dark:text-red-400"
                 }`}
@@ -228,7 +228,12 @@ const P2PTransactions = () => {
               </td>
 
               {/* Method */}
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+              <td className="px-6 py-4 gap-2 flex items-center whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                <img
+                className="h-4"
+                  src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                  alt=""
+                />{" "}
                 {tx.payment_provider}
               </td>
 

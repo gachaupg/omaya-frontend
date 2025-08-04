@@ -31,14 +31,24 @@ const Button: React.FC<ButtonProps> = ({
   };
 
   const sizeClasses = {
-    sm: "px-3 py-1.5 text-sm rounded-lg",
-    md: "px-4 py-2 text-base rounded-lg",
-    lg: "px-6 py-3 text-lg rounded-xl",
+    sm: "px-3 py-1.5 text-sm",
+    md: "px-4 py-2 text-base",
+    lg: "px-6 py-3 text-lg",
   };
+
+  const defaultRadiusClasses = {
+    sm: "rounded-lg",
+    md: "rounded-lg",
+    lg: "rounded-xl",
+  };
+
+  // Check if className contains any border radius classes
+  const hasCustomRadius = className.includes("rounded-");
+  const radiusClass = hasCustomRadius ? "" : defaultRadiusClasses[size];
 
   return (
     <button
-      className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${radiusClass} ${className}`}
       {...props}
     >
       {icon && <span className="mr-2">{icon}</span>}

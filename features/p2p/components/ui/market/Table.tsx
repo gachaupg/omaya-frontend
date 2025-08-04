@@ -1,10 +1,26 @@
 import React, { useState } from "react";
 import Button from "../../Common/Button";
-import { FaCheckCircle, FaRegClock, FaUniversity } from "react-icons/fa";
+import { FaCheckCircle, FaRegClock } from "react-icons/fa";
 import { ThumbsUp } from "lucide-react";
+import { TiArrowUnsorted } from "react-icons/ti";
 import { MarketTableProps } from "./types";
 import TradePreview from "./sections/tradePreview";
 import Loader from "../../Common/Loader";
+
+// Bank icons mapping
+const BANK_ICONS: Record<string, string> = {
+  "Salam Bank":
+    "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png",
+  "Premier Bank":
+    "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png",
+  "Dahabshiil Bank":
+    "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png",
+  "Salaam Bank":
+    "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png",
+  Bank: "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png",
+  "Bank Transfer":
+    "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png",
+};
 
 const MarketTable: React.FC<MarketTableProps> = ({
   data = [],
@@ -15,8 +31,23 @@ const MarketTable: React.FC<MarketTableProps> = ({
   activeTab = "buy",
 }) => {
   const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: "asc" | "desc";
+  } | null>(null);
 
   const handleTradeClick = (i: number) => setSelectedRowIndex(i);
+
+  const handleSort = (key: string) => {
+    setSortConfig((prev) => ({
+      key,
+      direction: prev?.key === key && prev.direction === "asc" ? "desc" : "asc",
+    }));
+  };
+
+  const getSortIcon = (key: string) => {
+    return <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />;
+  };
 
   /* ------------------------------------------------------------------ */
   /* Loading state                                                      */
@@ -32,10 +63,30 @@ const MarketTable: React.FC<MarketTableProps> = ({
         <div className="min-w-[800px] w-full overflow-hidden border bg-white border-gray-200 rounded-2xl dark:bg-[#1D1D23] dark:border-[#35353E]">
           {/* ---------------- header row ---------------- */}
           <div className="grid grid-cols-5 py-3 px-4 border-b bg-gray-50 border-gray-200 text-xs font-semibold text-gray-500 dark:bg-[#35353E] dark:border-[#35353E] dark:text-[#788099]">
-            <div className="min-w-[200px]">Advertiser</div>
-            <div className="min-w-[120px]">Commission</div>
-            <div className="min-w-[180px]">Available/Order Limit</div>
-            <div className="min-w-[200px]">Payment</div>
+            <div
+              className="min-w-[200px] flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
+              onClick={() => handleSort("advertiser")}
+            >
+              Advertiser {getSortIcon("advertiser")}
+            </div>
+            <div
+              className="min-w-[120px] flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
+              onClick={() => handleSort("commission")}
+            >
+              Commission {getSortIcon("commission")}
+            </div>
+            <div
+              className="min-w-[180px] flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
+              onClick={() => handleSort("available")}
+            >
+              Available/Order Limit {getSortIcon("available")}
+            </div>
+            <div
+              className="min-w-[200px] flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
+              onClick={() => handleSort("payment")}
+            >
+              Payment {getSortIcon("payment")}
+            </div>
             <div className="min-w-[120px] text-right">Trade</div>
           </div>
 
@@ -77,10 +128,10 @@ const MarketTable: React.FC<MarketTableProps> = ({
                       Completion
                     </span>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="flex items-center gap-1 text-xs text-[#1D8751] font-semibold bg-[#1D8751]/10 px-2 py-0.5 rounded">
+                      <span className="flex items-center gap-1 text-xs text-[#1D8751] font-semibold">
                         <ThumbsUp height={10} /> 95%
                       </span>
-                      <span className="flex items-center gap-1 text-xs text-[#1D8751] font-semibold bg-[#1D8751]/10 px-2 py-0.5 rounded">
+                      <span className="flex items-center gap-1 text-xs text-[#1D8751] font-semibold">
                         <FaRegClock className="text-xs" /> 20 min
                       </span>
                     </div>
@@ -105,7 +156,11 @@ const MarketTable: React.FC<MarketTableProps> = ({
                         key={i}
                         className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-white w-1/2"
                       >
-                        <FaUniversity className="text-[#1D8751] text-xs" />{" "}
+                        <img
+                          src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                          alt={method}
+                          className="w-4 h-4 rounded"
+                        />
                         {method}
                       </span>
                     ))}

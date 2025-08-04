@@ -28,8 +28,21 @@ interface FeedbackTableProps {
 
 const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
   const [currentPage, setCurrentPage] = useState(1);
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   const itemsPerPage = 10;
   const totalPages = Math.ceil(data?.length / itemsPerPage) || 1;
+
+  const toggleRowExpansion = (tradeId: number) => {
+    setExpandedRows((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(tradeId)) {
+        newSet.delete(tradeId);
+      } else {
+        newSet.add(tradeId);
+      }
+      return newSet;
+    });
+  };
 
   if (loading) {
     return (
@@ -105,75 +118,92 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
           </thead>
           <tbody>
             {currentItems.map((item) => (
-              <tr
-                key={item.trade_id}
-                className="border-b border-[#35354a] hover:bg-[#28293d]"
-              >
-                {/* Coin */}
-                <td className="px-4 py-2 flex items-center gap-2">
-                  <img
-                    src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
-                    alt={item.coin}
-                    className="w-6 h-6 rounded-full"
-                  />
-                  <span className="font-medium dark:text-white text-gray-900">
-                    {item.coin}
-                  </span>
-                </td>
-                {/* Type */}
-                <td className="px-4 py-2">
-                  <span
-                    className={
-                      item.type === "buy"
-                        ? "text-[#1D8751] font-semibold"
-                        : "text-[#E23D3A] font-semibold"
-                    }
-                  >
-                    {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
-                  </span>
-                </td>
-                {/* Transaction ID */}
-                <td className="px-4 py-2 dark:text-white text-gray-900">
-                  {item.transaction_id}
-                </td>
-                {/* User name */}
-                <td className="px-4 py-2 dark:text-white text-gray-900">
-                  {maskEmail(item.reviewer_email)}
-                </td>
-                {/* Amount */}
-                <td className="px-4 py-2 dark:text-white text-gray-900">
-                  {item.amount}USD
-                </td>
-                {/* Payment (bank name only, no image) */}
-                <td className="px-4 py-2 dark:text-white text-gray-900">
-                  Salam Bank
-                </td>
-                {/* Date */}
-                <td className="px-4 py-2 dark:text-white text-gray-900">
-                  {new Date(item.date).toLocaleString()}
-                </td>
-                {/* Rating */}
-                <td className="px-4 py-2">
-                  <span
-                    className={
-                      item.is_positive
-                        ? "text-[#1D8751] font-semibold"
-                        : "text-[#E23D3A] font-semibold"
-                    }
-                  >
-                    {item.is_positive ? "Positive" : "Negative"}
-                  </span>
-                </td>
-                {/* Comment */}
-                <td className="px-4 py-2">
-                  <a
-                    href="#"
-                    className="text-[#1D8751] hover:underline font-medium"
-                  >
-                    View
-                  </a>
-                </td>
-              </tr>
+              <React.Fragment key={item.trade_id}>
+                <tr className="border-b border-[#35354a] hover:bg-[#28293d] transition-colors duration-200">
+                  {/* Coin */}
+                  <td className="px-4 py-2 flex items-center gap-2">
+                    <img
+                      src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
+                      alt={item.coin}
+                      className="w-6 h-6 rounded-full"
+                    />
+                    <span className="font-medium dark:text-white text-gray-900">
+                      {item.coin}
+                    </span>
+                  </td>
+                  {/* Type */}
+                  <td className="px-4 py-2">
+                    <span
+                      className={
+                        item.type === "buy"
+                          ? "text-[#1D8751] font-semibold"
+                          : "text-[#E23D3A] font-semibold"
+                      }
+                    >
+                      {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+                    </span>
+                  </td>
+                  {/* Transaction ID */}
+                  <td className="px-4 py-2 dark:text-white text-gray-900">
+                    {item.transaction_id}
+                  </td>
+                  {/* User name */}
+                  <td className="px-4 py-2 dark:text-white text-gray-900">
+                    {maskEmail(item.reviewer_email)}
+                  </td>
+                  {/* Amount */}
+                  <td className="px-4 py-2 dark:text-white text-gray-900">
+                    {item.amount}USD
+                  </td>
+                  {/* Payment (bank name only, no image) */}
+                  <td className="px-4 py-2 dark:text-white text-gray-900">
+                    Salam Bank
+                  </td>
+                  {/* Date */}
+                  <td className="px-4 py-2 dark:text-white text-gray-900">
+                    {new Date(item.date).toLocaleString()}
+                  </td>
+                  {/* Rating */}
+                  <td className="px-4 py-2">
+                    <span
+                      className={
+                        item.is_positive
+                          ? "text-[#1D8751] font-semibold"
+                          : "text-[#E23D3A] font-semibold"
+                      }
+                    >
+                      {item.is_positive ? "Positive" : "Negative"}
+                    </span>
+                  </td>
+                  {/* Comment */}
+                  <td className="px-4 py-2">
+                    <button
+                      onClick={() => toggleRowExpansion(item.trade_id)}
+                      className="text-[#1D8751] hover:underline font-medium transition-colors duration-200 hover:text-[#16a34a]"
+                    >
+                      {expandedRows.has(item.trade_id) ? "Hide" : "View"}
+                    </button>
+                  </td>
+                </tr>
+                {/* Expandable Comment Row */}
+                {expandedRows.has(item.trade_id) && (
+                  <tr className="border-b border-[#35354a] bg-[#1a1a1f]">
+                    <td colSpan={9} className="px-4 py-3">
+                      <div className="flex items-start gap-3">
+                        <div className="w-2 h-2 bg-[#1D8751] rounded-full mt-2 flex-shrink-0"></div>
+                        <div className="flex-1">
+                          <div className="text-sm text-[#A0A3BC] mb-1">
+                            Comment:
+                          </div>
+                          <div className="text-sm dark:text-white text-gray-900 bg-[#23232b] rounded-lg p-3 border border-[#35354a]">
+                            {item.comment || "No comment provided"}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
             ))}
           </tbody>
         </table>

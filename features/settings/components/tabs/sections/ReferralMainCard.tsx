@@ -171,7 +171,7 @@ const ReferralMainCard: React.FC<Props> = ({
               {/* stats */}
               <div className="space-y-1">
                 <StatRow label="Total Earned" value={deposits} />
-                <StatRow label="Total Withdrawn" value={withdrawals} />
+                <StatRow label="Total Withdrawals" value={withdrawals} />
                 <StatRow label="Available Balance" value={balance} highlight />
               </div>
             </>

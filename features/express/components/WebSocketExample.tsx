@@ -65,7 +65,7 @@ const WebSocketExample: React.FC<WebSocketExampleProps> = ({
     transactionType === "deposit" ? depositMessage : withdrawalMessage;
 
   return (
-    <div className="dark:bg-[#23232b] bg-white dark:border-[#35353E] border-gray-200 border rounded-2xl p-6 dark:text-white text-gray-900">
+    <div className="bg-[#23232b] border border-[#35353E] rounded-2xl p-6 text-white">
       <h3 className="text-xl font-bold mb-4">
         WebSocket Status - {transactionType.toUpperCase()}
       </h3>
@@ -82,7 +82,7 @@ const WebSocketExample: React.FC<WebSocketExampleProps> = ({
             {isConnected ? "Connected" : "Disconnected"}
           </span>
         </div>
-        <div className="text-xs dark:text-gray-400 text-gray-600">
+        <div className="text-xs text-gray-400">
           Transaction ID: {transactionId}
         </div>
       </div>
@@ -90,7 +90,7 @@ const WebSocketExample: React.FC<WebSocketExampleProps> = ({
       {/* Current Status */}
       <div className="mb-4">
         <h4 className="font-semibold mb-2">Current Status</h4>
-        <div className="dark:bg-[#1D1D23] bg-gray-50 rounded-lg p-3">
+        <div className="bg-[#1D1D23] rounded-lg p-3">
           <span className="text-lg font-mono">{status}</span>
         </div>
       </div>
@@ -99,7 +99,7 @@ const WebSocketExample: React.FC<WebSocketExampleProps> = ({
       {currentMessage && (
         <div className="mb-4">
           <h4 className="font-semibold mb-2">Last Message</h4>
-          <div className="dark:bg-[#1D1D23] bg-gray-50 rounded-lg p-3 text-sm">
+          <div className="bg-[#1D1D23] rounded-lg p-3 text-sm">
             <pre className="whitespace-pre-wrap">
               {JSON.stringify(currentMessage, null, 2)}
             </pre>
@@ -124,7 +124,7 @@ const WebSocketExample: React.FC<WebSocketExampleProps> = ({
               className={`flex items-center gap-2 p-2 rounded ${
                 status === step
                   ? "bg-[#1D8751] text-white"
-                  : "dark:bg-[#1D1D23] bg-gray-50 dark:text-gray-400 text-gray-600"
+                  : "bg-[#1D1D23] text-gray-400"
               }`}
             >
               <div
@@ -139,7 +139,7 @@ const WebSocketExample: React.FC<WebSocketExampleProps> = ({
       </div>
 
       {/* Debug Info */}
-      <div className="text-xs dark:text-gray-400 text-gray-600">
+      <div className="text-xs text-gray-400">
         <div>Generic Hook Connected: {isGenericConnected ? "Yes" : "No"}</div>
         <div>Specific Hook Connected: {isConnected ? "Yes" : "No"}</div>
       </div>

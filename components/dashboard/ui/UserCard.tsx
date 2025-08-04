@@ -2,6 +2,7 @@
 
 import Button from "@/features/p2p/components/Common/Button";
 import Card from "@/features/p2p/components/Common/Card";
+import CopyButton from "@/components/ui/CopyButton";
 import Image from "next/image";
 import React, { useEffect, useRef, useState } from "react";
 import { showToast } from "@/lib/utils/toast";
@@ -17,7 +18,6 @@ import {
 
 function UserCard() {
   const router = useRouter();
-  const [isCopying, setIsCopying] = useState(false);
   const dispatch = useDispatch<AppDispatch>();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [profileImage, setProfileImage] = useState<string | null>(null);
@@ -82,21 +82,6 @@ function UserCard() {
         }
       };
       reader.readAsDataURL(file);
-    }
-  };
-
-  const handleCopyUserId = async () => {
-    try {
-      setIsCopying(true);
-      await navigator.clipboard.writeText(user?.user_id || "");
-      showToast.success(
-        "User ID copied successfully!",
-        "You can now paste it anywhere"
-      );
-    } catch (error) {
-      showToast.error("Failed to copy User ID", "Please try again");
-    } finally {
-      setIsCopying(false);
     }
   };
 
@@ -195,29 +180,12 @@ function UserCard() {
               <span className="text-[#1D8751] text-[14px]">
                 Verified Profile
               </span>
-              <div className="rounded-full p-0.5 bg-[#1D8751]">
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M9 12L11 14L15 10"
-                    className="stroke-[#FFFFFF]"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="9"
-                    className="stroke-[#FFFFFF]"
-                    strokeWidth="2"
-                  />
-                </svg>
+              <div className="rounded-full p-0.5 ">
+                <img
+                className="h-4 w-4 bg-amber-50 rounded-full"
+                  src="https://res.cloudinary.com/pitz/image/upload/v1753946849/download__3_-removebg-preview_1_clnjwy.png"
+                  alt=""
+                />
               </div>
             </div>
           </div>
@@ -230,59 +198,11 @@ function UserCard() {
             <p className="text-xs text-[#788099]">User ID</p>
             <div className="flex items-center gap-2">
               <p className="text-base dark:text-[#FFFFFF]">{user?.user_id}</p>
-              <button
-                onClick={handleCopyUserId}
-                disabled={isCopying}
-                className={`cursor-pointer transition-all duration-200 ${
-                  isCopying
-                    ? "opacity-50 cursor-not-allowed"
-                    : "hover:opacity-80 hover:scale-110"
-                }`}
-                title="Copy User ID"
-              >
-                {isCopying ? (
-                  <svg
-                    className="animate-spin"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                ) : (
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <rect
-                      x="5"
-                      y="5"
-                      width="14"
-                      height="14"
-                      rx="2"
-                      className="stroke-[#E23D3A]"
-                      strokeWidth="2"
-                    />
-                  </svg>
-                )}
-              </button>
+              <CopyButton
+                value={user?.user_id || ""}
+                className="cursor-pointer transition-all duration-200 hover:opacity-80 hover:scale-110 text-[#F79330]"
+                showIcon={true}
+              />
             </div>
           </div>
 

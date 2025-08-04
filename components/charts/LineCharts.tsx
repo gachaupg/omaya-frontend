@@ -370,7 +370,7 @@ const Dropdown = ({
 }) => (
   <div className="relative ml-4">
     <select
-      className="appearance-none bg-transparent text-[#A3A3A3] border border-[#44454A] rounded-full px-5 py-1.5 text-base pr-8 focus:outline-none"
+      className="appearance-none bg-transparent text-[#A3A3A3] rounded-full px-5 py-1.5 text-base pr-8 focus:outline-none"
       value={value}
       onChange={(e) => onChange(e.target.value)}
       style={{ minWidth: 90 }}
@@ -441,6 +441,7 @@ const LineCharts = ({
   );
   const [p2pFilter, setP2pFilter] = useState<"All" | "Sells" | "Buys">("Sells");
   const [period, setPeriod] = useState("Month");
+  const [selectedTimePeriod, setSelectedTimePeriod] = useState("All");
   const [activeTab, setActiveTab] = useState<
     "exchange" | "p2p" | "buy" | "swap"
   >("exchange");
@@ -471,6 +472,71 @@ const LineCharts = ({
       data: Array(12).fill(0),
     },
   });
+
+  // Filter data based on selected time period
+  const getFilteredChartData = (data: LineChartData) => {
+    if (selectedTimePeriod === "All") {
+      return data;
+    }
+
+    const currentDate = new Date();
+    const filteredData = Array(12).fill(0);
+
+    switch (selectedTimePeriod) {
+      case "Last Week":
+        // Show only the last week data (last 7 days)
+        const lastWeekIndex = 11; // Most recent month
+        filteredData[lastWeekIndex] = data.data[lastWeekIndex];
+        break;
+      case "Month":
+        // Show only the current month data
+        const currentMonthIndex = 11; // Most recent month
+        filteredData[currentMonthIndex] = data.data[currentMonthIndex];
+        break;
+      case "One Year":
+        // Show all 12 months data
+        return data;
+      default:
+        return data;
+    }
+
+    return {
+      ...data,
+      data: filteredData,
+    };
+  };
+
+  const getFilteredP2PChartData = (data: LineChartData) => {
+    if (selectedTimePeriod === "All") {
+      return data;
+    }
+
+    const currentDate = new Date();
+    const filteredData = Array(12).fill(0);
+
+    switch (selectedTimePeriod) {
+      case "Last Week":
+        // Show only the last week data (last 7 days)
+        const lastWeekIndex = 11; // Most recent month
+        filteredData[lastWeekIndex] = data.data[lastWeekIndex];
+        break;
+      case "Month":
+        // Show only the current month data
+        const currentMonthIndex = 11; // Most recent month
+        filteredData[currentMonthIndex] = data.data[currentMonthIndex];
+        break;
+      case "One Year":
+        // Show all 12 months data
+        return data;
+      default:
+        return data;
+    }
+
+    return {
+      ...data,
+      data: filteredData,
+    };
+  };
 
   // Get user email from storage
   useEffect(() => {
@@ -657,17 +723,19 @@ const LineCharts = ({
               >
                 Withdrawals
               </Button>
-              <Dropdown
-                value={period}
-                options={["Month", "Week", "Year"]}
-                onChange={setPeriod}
-              />
+              <div className="ml-6">
+                <Dropdown
+                  value={selectedTimePeriod}
+                  options={["All", "Last Week", "Month", "One Year"]}
+                  onChange={setSelectedTimePeriod}
+                />
+              </div>
             </div>
           </div>
           <div className="w-full">
             <GradientLineChart
-              data1={chartData.depositData}
-              data2={chartData.withdrawalData}
+              data1={getFilteredChartData(chartData.depositData)}
+              data2={getFilteredChartData(chartData.withdrawalData)}
               showData1={filter === "All" || filter === "Deposits"}
               showData2={filter === "All" || filter === "Withdrawals"}
             />
@@ -675,16 +743,16 @@ const LineCharts = ({
         </Card>
         {/* P2P Overview */}
         <Card className="w-full rounded-none lg:rounded-2xl dark:bg-[#1D1D23] bg-[#F5F5F5]">
-          <h3 className="dark:text-white text-[14px] mb-2 font-semibold">
+          <h3 className="dark:text-wh text-white text-[14px] mb-2 font-semibold">
             P2P Overview (USD)
           </h3>
           <div className="flex flex-wrap justify-between items-center mb-6 gap-2">
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <Button
                 size="sm"
                 variant={p2pFilter === "All" ? "primary" : "outline"}
                 onClick={() => setP2pFilter("All")}
-                className="whitespace-nowrap"
+                className="whitespace-nowrap rounded-3xl"
               >
                 All
               </Button>
@@ -692,7 +760,7 @@ const LineCharts = ({
                 size="sm"
                 variant={p2pFilter === "Sells" ? "primary" : "outline"}
                 onClick={() => setP2pFilter("Sells")}
-                className="whitespace-nowrap"
+                className="whitespace-nowrap rounded-3xl"
               >
                 Sells
               </Button>
@@ -700,21 +768,23 @@ const LineCharts = ({
                 size="sm"
                 variant={p2pFilter === "Buys" ? "primary" : "outline"}
                 onClick={() => setP2pFilter("Buys")}
-                className="whitespace-nowrap"
+                className="whitespace-nowrap rounded-3xl"
               >
                 Buys
               </Button>
-              <Dropdown
-                value={period}
-                options={["Month", "Week", "Year"]}
-                onChange={setPeriod}
-              />
+              <div className="ml-6">
+                <Dropdown
+                  value={selectedTimePeriod}
+                  options={["All", "Last Week", "Month", "One Year"]}
+                  onChange={setSelectedTimePeriod}
+                />
+              </div>
             </div>
           </div>
           <div className="w-full">
             <GradientLineChart
-              data1={p2pChartData.buyData}
-              data2={p2pChartData.sellData}
+              data1={getFilteredP2PChartData(p2pChartData.buyData)}
+              data2={getFilteredP2PChartData(p2pChartData.sellData)}
               showData1={p2pFilter === "All" || p2pFilter === "Buys"}
               showData2={p2pFilter === "All" || p2pFilter === "Sells"}
             />
@@ -839,9 +909,9 @@ const LineCharts = ({
               Your Referral Commissions
             </h3>
             <Dropdown
-              value={period}
-              options={["Month", "Week", "Year"]}
-              onChange={setPeriod}
+              value={selectedTimePeriod}
+              options={["All", "Last Week", "Month", "One Year"]}
+              onChange={setSelectedTimePeriod}
             />
           </div>
           <div className="flex flex-col lg:flex-row w-full pt-10">
