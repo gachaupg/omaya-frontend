@@ -100,7 +100,7 @@ export const referralCommissionsData = (
         color: "#3b82f6",
       },
       {
-        label: "Total Withdrawn",
+        label: "Total Withdrawals",
         value: walletData.total_withdrawn || 0,
         color: "#ef4444",
       },

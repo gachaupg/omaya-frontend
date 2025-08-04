@@ -72,14 +72,14 @@ const Filters: React.FC<FiltersProps> = ({
               className={`px-4 py-2 font-medium text-sm transition-all flex items-center gap-1 shadow-none border-none min-w-[100px] ${
                 filters.status === tab.id
                   ? "bg-[#1D8751] text-white"
-                  : "bg-transparent text-[#1D8751] hover:bg-[#1D8751]/10"
+                  : "bg-transparent text-[#788099] hover:bg-[#788099]/10"
               } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
               onClick={() => handleStatusChange(tab.id)}
             >
               {tab.label}
               {tab.count && (
-                <span className="ml-1 text-xs bg-gray-200 dark:bg-[#23272F] text-[#FBBF24] px-2 py-0.5 rounded-full">
-                  {tab.count}
+                <span className="ml-1 text-xs text-[#F79330] px-2 py-0.5 rounded-full">
+                  ({tab.count})
                 </span>
               )}
             </Button>
@@ -93,21 +93,13 @@ const Filters: React.FC<FiltersProps> = ({
           }`}
           disabled={loading}
         >
-          <svg
-            width="18"
-            height="18"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="#FBBF24"
-            className="mr-1"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8s-9-3.582-9-8 4.03-8 9-8 9 3.582 9 8z"
-            />
+          <svg width="28" height="19" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className="mr-1">
+            <rect width="100" height="100" fill="#1A1A1D"/>
+            <path d="M20 10 H80 V70 H35 L25 95 L25 70 H20 Z" fill="#F79330"/>
+            <rect x="35" y="25" width="40" height="10" fill="#1A1A1D"/>
+            <rect x="35" y="45" width="40" height="10" fill="#1A1A1D"/>
           </svg>
+
           <span className="text-[#1D8751]">Unread Message(s)</span>
         </button>
       </div>

@@ -804,8 +804,8 @@ export default function MarketingPage() {
           {/* Header section */}
           <div className="mb-10">
             <h2 className="text-center text-2xl 2xl:text-3xl font-semibold   dark:text-white text-[#0D0D0D] ">
-              Enjoy Our <span className="text-[#1D8751] mr-2">Blog</span>On the{" "}
-              <span className="text-[#1D8751]">Latest Company Updates</span>
+              Enjoy Our <span className="text-[#1D8751] mr-2">Blog</span> & News On the{" "}
+              <span className="text-[#1D8751]">Latest Updates</span>
             </h2>
 
             {/* Category toggle buttons */}

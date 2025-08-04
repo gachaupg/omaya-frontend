@@ -109,36 +109,62 @@ const BlogPage = () => {
   return (
     <div className="bg-white dark:bg-[#0A0A0A] text-gray-900 dark:text-white min-h-screen p-4 sm:p-6 md:p-8  mt-20">
       <div className="max-w-7xl mx-auto">
-        <header className="mb-8 md:mb-12 text-center md:text-left">
-          <h1 className="text-2xl mt-10 sm:text-2xl md:text-5xl font-bold leading-tight">
-            Enjoy Our Blog On the <span className="text-[#1D8751]">Latest</span>
+        <header className="mb-4 md:mb-6 text-center md:text-left">
+          <h1 className="text-2xl sm:text-2xl md:text-3xl font-bold leading-tight">
+            Enjoy Our <span className="text-[#1D8751]">Blog</span> On the <span className="text-[#1D8751]">Latest</span>
             <br />
-            Company Updates
+            <span className="text-[#1D8751]">Company Updates</span>
           </h1>
         </header>
 
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
           <div className="flex items-center space-x-2 bg-gray-100 dark:bg-[#161B22] p-1 rounded-full border border-gray-300 dark:border-[#30363D]">
-            <button
-              onClick={() => setActiveTab("News")}
-              className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-colors duration-300 ${
-                activeTab === "News"
-                  ? "bg-[#1D8751] text-white"
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
-              }`}
-            >
-              News
-            </button>
-            <button
-              onClick={() => setActiveTab("Blog")}
-              className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-colors duration-300 ${
-                activeTab === "Blog"
-                  ? "bg-[#1D8751] text-white"
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
-              }`}
-            >
-              Blog
-            </button>
+          <button
+                onClick={() => setActiveTab("News")}
+                className={`px-6 py-2 rounded-full text-sm font-medium flex 2xl:text-lg items-center gap-2 transition-colors ${
+                  activeTab === "News"
+                    ? "bg-[#1D8751] text-white"
+                    : "text-gray-300"
+                }`}
+              >
+                <span
+                  className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${
+                    activeTab === "News"
+                      ? "border-white"
+                      : "border-gray-400"
+                  }`}
+                >
+                  <span
+                    className={`w-3 h-3 rounded-full ${
+                      activeTab === "News" ? "bg-white" : "bg-transparent"
+                    }`}
+                  ></span>
+                </span>
+                News
+              </button>
+              <button
+                onClick={() => setActiveTab("Blog")}
+                className={`px-6 py-2 rounded-full text-sm 2xl:text-lg font-medium flex items-center gap-2 transition-colors ${
+                  activeTab === "Blog"
+                    ? "bg-[#1D8751] text-white"
+                    : "text-gray-300"
+                }`}
+              >
+                <span
+                  className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${
+                    activeTab === "Blog"
+                      ? "border-white"
+                      : "border-gray-400"
+                  }`}
+                >
+                  <span
+                    className={`w-3 h-3 rounded-full ${
+                      activeTab === "Blog" ? "bg-white" : "bg-transparent"
+                    }`}
+                  ></span>
+                </span>
+                Blog
+              </button>
           </div>
 
           <div className="relative w-full md:w-auto">

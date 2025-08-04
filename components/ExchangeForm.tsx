@@ -86,13 +86,13 @@ export default function ExchangeForm() {
       value={amount}
       onChange={(e) => onChange(e.target.value)}
       placeholder="0"
-      className="border border-gray-300 dark:border-gray-300/20 text-gray-900 dark:text-white w-full px-5 py-4 rounded-full"
+      className="border border-gray-300 dark:border-gray-300/20 text-gray-900 dark:text-white w-full px-5 py-4 rounded-3xl"
     />
   );
 
   /* ------------------- UI ------------------- */
   return (
-    <div className="w-full bg-white dark:bg-[#1D1D23] rounded-3xl p-10">
+    <div className="w-full bg-white dark:bg-[#1D1D23] rounded-3xl px-6 py-2 shadow-lg mr-8 ml-4">
       {/* Tabs */}
       <div className="w-full flex justify-between">
         <TabButton id="express">
@@ -115,7 +115,7 @@ export default function ExchangeForm() {
                 : "text-gray-500 dark:text-white/50"
             }`}
           >
-            Swap crypto
+            Swap Crypto
           </h3>
         </TabButton>
       </div>
@@ -202,7 +202,7 @@ export default function ExchangeForm() {
           </p>
         </div>
 
-        <button className="w-full bg-[#1D8751] flex items-center justify-center p-5 rounded-full">
+        <button className="w-full bg-[#1D8751] flex items-center justify-center p-3 rounded-full">
           <Image
             src="/images/Express Excahnge.svg"
             alt="express exchange button"

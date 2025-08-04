@@ -17,7 +17,7 @@ import AppealModal from "./appeal";
 import ChatBox from "./ChatBox";
 import { showToast } from "@/lib/utils/toast";
 import { handleCopy } from "@/features/p2p/components/Common/utils";
-import { RefreshCw } from "lucide-react";
+import { AlertCircle, Copy, RefreshCw } from "lucide-react";
 import { Dialog } from "@headlessui/react";
 
 interface FinalBuyProps {
@@ -214,9 +214,9 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
         <div className="flex items-center justify-between">
           <p
             className="text-gray-900 dark:text-white text-[13px]"
-            style={{ fontSize: "13px" }}
+            style={{ fontSize: "16px" }}
           >
-            Advertiser Informations
+            Advertiser Info
           </p>
           <button
             onClick={handleRefresh}
@@ -226,12 +226,6 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
             <RefreshCw size={14} />
           </button>
         </div>
-        <p
-          className="text-gray-900 dark:text-white text-[13px]"
-          style={{ fontSize: "13px" }}
-        >
-          Advertiser Informations
-        </p>
         {/* Advertiser Info */}
         <section className=" rounded-[18px] p-2 flex items-center gap-4  border-2 border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[#23232B]  ">
           <div className="icon rounded-full w-10 h-10 flex items-center justify-center text-xl font-bold bg-[#1D8751] text-white">
@@ -414,16 +408,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
                         }
                       >
                         Copy
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          viewBox="0 0 24 24"
-                        >
-                          <rect x="9" y="9" width="13" height="13" rx="2" />
-                          <rect x="3" y="3" width="13" height="13" rx="2" />
-                        </svg>
+                        <Copy className="w-4 h-4" />
                       </button>
                     </div>
                     {/* Account Number */}
@@ -444,16 +429,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
                         }
                       >
                         Copy
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          viewBox="0 0 24 24"
-                        >
-                          <rect x="9" y="9" width="13" height="13" rx="2" />
-                          <rect x="3" y="3" width="13" height="13" rx="2" />
-                        </svg>
+                        <Copy className="w-4 h-4" />
                       </button>
                     </div>
                     {/* Transaction ID */}
@@ -471,16 +447,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
                         onClick={() => handleCopy(singleOrder?.id || "")}
                       >
                         Copy
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          viewBox="0 0 24 24"
-                        >
-                          <rect x="9" y="9" width="13" height="13" rx="2" />
-                          <rect x="3" y="3" width="13" height="13" rx="2" />
-                        </svg>
+                        <Copy className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
@@ -571,8 +538,9 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
         />
         {/* Advertiser's Terms */}
         <section className="advertiser-terms rounded-lg p-4 bg-gray-50 dark:bg-[#23232B]">
-          <div className="font-semibold text-lg mb-2 text-gray-900 dark:text-white">
-            Advertiser's Terms <span className="text-[#E23D3A]">⦿</span>
+          <div className="font-semibold text-lg mb-2 text-gray-900 dark:text-white flex gap-4 items-center">
+            Advertiser's Terms
+            <AlertCircle className="w-5 h-5 text-[#E23D3A]" />
           </div>
           <div className="text-xs flex flex-col gap-2">
             <div className="text-[#1D8751]">

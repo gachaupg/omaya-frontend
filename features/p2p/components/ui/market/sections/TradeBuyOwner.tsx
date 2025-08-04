@@ -13,7 +13,7 @@ import {
   cancelP2POrderThunk,
   completeP2PTradeThunk,
 } from "@/features/p2p/slices/orderSlice";
-import { FileIcon, SendIcon, RefreshCw } from "lucide-react";
+import { FileIcon, SendIcon, RefreshCw, CopyIcon } from "lucide-react";
 import AppealModal from "./appeal";
 import ChatBox from "./ChatBox";
 import { showToast } from "@/lib/utils/toast";
@@ -190,7 +190,21 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             <span className="text-gray-900 dark:text-white font-semibold text-lg">
               Order Created
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
+            <svg width="24" height="24" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+              <rect width="64" height="64" fill="#1A1A1D"/>
+              <path 
+                d="M22 8h20a2 2 0 0 1 2 2v40l-4-3.5-4 3.5-4-3.5-4 3.5-4-3.5-4 3.5V10a2 2 0 0 1 2-2z" 
+                fill="none" 
+                stroke="#1D8751" 
+                stroke-width="4" 
+                stroke-linejoin="round"
+              />
+              <line x1="24" y1="20" x2="40" y2="20" stroke="#1D8751" stroke-width="4" stroke-linecap="round"/>
+              <line x1="24" y1="28" x2="40" y2="28" stroke="#1D8751" stroke-width="4" stroke-linecap="round"/>
+              <line x1="24" y1="36" x2="32" y2="36" stroke="#1D8751" stroke-width="4" stroke-linecap="round"/>
+            </svg>
+
               <span className="text-[14px] text-gray-500 dark:text-[#A3A3C2]">
                 Order Number :
                 <button
@@ -200,8 +214,8 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                   {singleOrder?.id}
                 </button>
               </span>
+              <CopyIcon className="w-4 h-4 text-[#1D8751] ml-1"  onClick={() => handleCopy(singleOrder?.id)}/>
               <span className="text-[14px] text-gray-500 dark:text-[#A3A3C2]">
-                Order Number :
                 <button
                   onClick={handleRefresh}
                   className="flex items-center gap-1 bg-gray-100 dark:bg-[#23232A] text-[#1D8751] rounded-lg px-2 py-1 border border-gray-200 dark:border-[#35353E] hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors"

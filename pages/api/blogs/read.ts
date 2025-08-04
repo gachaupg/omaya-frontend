@@ -25,10 +25,8 @@ export const fetchBlogs = async (): Promise<Blog[]> => {
           image
         }`
     );
-    console.log("Fetched blogs:", data);
     return data || [];
   } catch (err) {
-    console.error("Sanity fetch error:", err);
     throw new Error("Failed to load blogs from Sanity");
   }
 };
@@ -45,7 +43,6 @@ export default async function handler(
     const blogs = await fetchBlogs();
     res.status(200).json(blogs);
   } catch (error) {
-    console.error("API Error:", error);
 
     // Return fallback data instead of 500 error
     const fallbackBlogs = [
@@ -60,8 +57,6 @@ export default async function handler(
         image: null,
       },
     ];
-
-    console.log("Returning fallback blog data due to error");
     res.status(200).json(fallbackBlogs);
   }
 }

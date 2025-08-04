@@ -14,16 +14,10 @@ export const useBlog = () => {
   );
 
   useEffect(() => {
-    console.log('useBlog hook: Dispatching fetch actions...');
-    dispatch(fetchBlogs()).catch(err => {
-      console.error('Error dispatching fetchBlogs:', err);
-    });
-    dispatch(fetchNews()).catch(err => {
-      console.error('Error dispatching fetchNews:', err);
-    });
+    dispatch(fetchBlogs()).catch(err => {});
+    dispatch(fetchNews()).catch(err => {});
   }, [dispatch]);
 
-  console.log('useBlog hook state:', { blogs: blogs.length, news: news.length, loading, error });
 
   return {
     blogs,

@@ -25,6 +25,7 @@ import { RootState } from "@/store/rootReducer";
 import { FinancialCalculator } from "@/lib/utils/financial";
 import { useTransactionValidation } from "@/features/p2p/hooks/useTransactionValidation";
 import OTPModal from "./otpModal";
+import { Copy } from "lucide-react";
 
 const Withdraw: React.FC = () => {
   /* --------------------------------------------------------------------- */
@@ -303,14 +304,14 @@ const Withdraw: React.FC = () => {
               USDT Address
             </label>
             <div
-              className={`relative h-[46px] flex items-center
-                          bg-gray-100 dark:bg-[#35353E]
-                          border ${border("walletAddress")}
-                          rounded-[19px] px-4`}
+              className={"relative flex items-center gap-4"}
             >
-              <Input
-                type="text"
-                value={usdtAddress}
+              <div
+                className={` w-full h-[46px] bg-gray-100 dark:bg-[#35353E]  border ${border("walletAddress")} rounded-[19px] px-4`}
+              >
+                <Input
+                  type="text"
+                  value={usdtAddress}
                 onChange={(e) => {
                   setUsdtAddress(e.target.value);
                   setErrors(
@@ -318,12 +319,12 @@ const Withdraw: React.FC = () => {
                   );
                 }}
                 placeholder="Paste your USDT address"
-                className="w-full bg-transparent border-none focus:outline-none"
+                className="w-4/5 bg-transparent border-none focus:outline-none placeholder:text-gray-600 dark:placeholder:text-gray-400"
               />
+              </div>
               <button
                 type="button"
-                className="absolute right-4 text-[#1D8751] font-medium"
-                style={{ top: "50%", transform: "translateY(-50%)" }}
+                className="h-full px-2 py-2 text-[#1D8751] bg-gray-100 dark:bg-[#35353E] font-medium rounded-[19px] flex items-center gap-2"
                 onClick={async () => {
                   try {
                     const txt = await navigator.clipboard.readText();
@@ -333,7 +334,8 @@ const Withdraw: React.FC = () => {
                   }
                 }}
               >
-                Paste
+                Paste 
+                <Copy className="w-4 h-4" />
               </button>
             </div>
             {getFieldError("walletAddress", errors) && (

@@ -25,7 +25,13 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
   /** Tabs */
   const tabList = [
     { label: "Payment Methods" },
-    { label: "Feedback (0)" },
+    { 
+      label: (
+        <>
+          Feedback <span className="text-[#F79330]">(0)</span>
+        </>
+      )
+    },
     {
       label: "My Ads",
       extra: (
@@ -178,7 +184,7 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
         <div className="flex flex-wrap gap-4 w-full sm:w-auto">
           {tabList.map((tab, idx) => (
             <Button
-              key={tab.label}
+              key={typeof tab.label === 'string' ? tab.label : `tab-${idx}`}
               variant={activeTab === idx ? "primary" : "outline"}
               width={172}
               height={44}

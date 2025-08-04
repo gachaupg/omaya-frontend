@@ -16,6 +16,7 @@ import {
   LineChartData,
   DonutChartData,
 } from "../../utils/chartData";
+import { formatLargeNumber } from "@/utils/formatters";
 import Button from "../ui/Button";
 import { TransactionSummary } from "../types";
 import { fetchUserTrades } from "@/features/p2p/slices/userTradesSlice";
@@ -343,7 +344,7 @@ function DonutChartWithCenter({
         fontSize="13"
         fontWeight="bold"
       >
-        {allZero ? "00" : `${(actualTotal || 0).toLocaleString()} USD`}
+        {allZero ? "00" : `${formatLargeNumber(actualTotal)} USD`}
       </text>
       <text
         x={center}

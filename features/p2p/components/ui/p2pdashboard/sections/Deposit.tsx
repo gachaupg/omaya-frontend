@@ -25,6 +25,7 @@ import { RootState } from "@/store/rootReducer";
 import { useRouter } from "next/navigation";
 import { FinancialCalculator } from "@/lib/utils/financial";
 import { useTransactionValidation } from "@/features/p2p/hooks/useTransactionValidation";
+import { AlertCircle } from "lucide-react";
 
 const Deposit: React.FC = () => {
   const router = useRouter();
@@ -249,9 +250,12 @@ const Deposit: React.FC = () => {
 
           {/* -------------------- Transfer rules ------------------- */}
           <div className="mt-4">
-            <span className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2 inline-block">
-              Transfer Details
-            </span>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Transfer Details
+              </span>{" "}
+              <AlertCircle className="w-4 h-4 text-[#1D8751]" />
+            </div>
             <div className="border border-[#1D8751] rounded-[16px] bg-gray-50 dark:bg-[#23232B] px-4 py-4 mb-6 text-sm">
               {[
                 "Please send the money from your own account only.",
