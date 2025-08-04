@@ -90,8 +90,8 @@ export default function Sidebar() {
 
       {/* Mobile Top Navigation */}
       <div className="md:hidden w-full overflow-x-auto bg-[#1D1D23] sticky top-0 z-40">
-        <nav className="px-4">
-          <ul className="flex space-x-2 py-3">
+        <nav className="px-6">
+          <ul className="flex space-x-4 py-3">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
@@ -99,7 +99,7 @@ export default function Sidebar() {
                   <Link
                     href={item.href}
                     className={clsx(
-                      "flex items-center px-1 py-2 rounded-lg text-sm font-medium gap-2 whitespace-nowrap transition",
+                      "flex items-center px-3 py-2 rounded-lg text-sm font-medium gap-2 whitespace-nowrap transition",
                       isActive
                         ? "bg-[#303038] text-white"
                         : "text-[#727272] hover:text-white hover:bg-[#23262F]"
