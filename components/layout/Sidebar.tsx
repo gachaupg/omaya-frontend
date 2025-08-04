@@ -53,29 +53,31 @@ export default function Sidebar() {
                             : "font-normal text-[#727272] text-sm uppercase"
                         )}
                       >
-                       {
-                        isActive? <span className="flex items-center justify-center">
-                          <img
-                            src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
-                            alt=""
-                          />
-                          <img
-                            className="mt-2"
-                            src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                            alt=""
-                          />
-                        </span>:<span className="flex items-center justify-center">
-                          <img
-                            src="https://res.cloudinary.com/pitz/image/upload/v1752429831/Express_vkggc2.png"
-                            alt=""
-                          />
-                          <img
-                            className="mt-2"
-                            src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
-                            alt=""
-                          />
-                        </span>
-                       }
+                        {isActive ? (
+                          <span className="flex items-center justify-center">
+                            <img
+                              src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
+                              alt=""
+                            />
+                            <img
+                              className="mt-2"
+                              src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                              alt=""
+                            />
+                          </span>
+                        ) : (
+                          <span className="flex items-center justify-center">
+                            <img
+                              src="https://res.cloudinary.com/pitz/image/upload/v1752429831/Express_vkggc2.png"
+                              alt=""
+                            />
+                            <img
+                              className="mt-2"
+                              src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
+                              alt=""
+                            />
+                          </span>
+                        )}
                       </span>
                     ) : (
                       item.label
@@ -91,7 +93,7 @@ export default function Sidebar() {
       {/* Mobile Top Navigation */}
       <div className="md:hidden w-full overflow-x-auto bg-[#1D1D23] sticky top-0 z-40">
         <nav className="px-6">
-          <ul className="flex space-x-4 py-3">
+          <ul className="flex items-center space-x-4 py-3">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
               return (
@@ -99,7 +101,7 @@ export default function Sidebar() {
                   <Link
                     href={item.href}
                     className={clsx(
-                      "flex items-center px-3 py-2 rounded-lg text-sm font-medium gap-2 whitespace-nowrap transition",
+                      "flex items-center justify-center px-3 py-2 rounded-lg text-sm font-medium gap-2 whitespace-nowrap transition",
                       isActive
                         ? "bg-[#303038] text-white"
                         : "text-[#727272] hover:text-white hover:bg-[#23262F]"
@@ -113,7 +115,7 @@ export default function Sidebar() {
                     {item.label === "Express" ? (
                       <span
                         className={clsx(
-                          "flex items-center justify-center gap-1",
+                          "flex items-center justify-center gap-1 min-h-[20px]",
                           isActive
                             ? "font-bold text-white text-base"
                             : "font-normal text-[#727272] text-sm uppercase"
@@ -128,7 +130,7 @@ export default function Sidebar() {
                           width="28"
                           height="32"
                           viewBox="0 0 32 32"
-                          className="mx-0"
+                          className="mx-0 flex-shrink-0"
                           style={{ minWidth: 28, verticalAlign: "middle" }}
                         >
                           {/* Left stroke (upper, green) */}
