@@ -803,6 +803,11 @@ export default function MarketingPage() {
         <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto">
           {/* Header section */}
           <div className="mb-10">
+            <h2 className="text- text-2xl 2xl:text-3xl font-semibold   dark:text-white text-[#0D0D0D] ">
+              Enjoy Our <span className="text-] mr-2">Blog</span>On Latest Company the{" "}
+              <br />
+              <span className="text-[#]"> Updates</span>
+
             <h2 className="text-center text-2xl 2xl:text-3xl font-semibold   dark:text-white text-[#0D0D0D] ">
               Enjoy Our <span className="text-[#1D8751] mr-2">Blog</span> & News On the{" "}
               <span className="text-[#1D8751]">Latest Updates</span>

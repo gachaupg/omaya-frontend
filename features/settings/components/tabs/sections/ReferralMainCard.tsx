@@ -43,131 +43,149 @@ const ReferralMainCard: React.FC<Props> = ({
 
   /* ───────────── render ───────────── */
   return (
-    <div
-      className="w-full rounded-2xl p-3 mb-4 flex flex-col lg:flex-row gap-4
-                    shadow-lg border bg-white border-gray-200
-                    dark:bg-[#23232B] dark:border-[#35353F]"
-    >
-      {/* ───────── left column ───────── */}
-      <div className="flex-1 flex flex-col justify-between gap-4">
-        {/* copy blurb */}
-        <div>
-          <p className="text-sm leading-relaxed text-gray-600 dark:text-[#A3A3A3] mb-2">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-            eiusmod tempor…
-          </p>
-          <p className="text-sm leading-relaxed text-gray-600 dark:text-[#A3A3A3] mb-2">
-            …incididunt ut labore et dolore magna aliqua. Ut enim ad minim
-            veniam.
-          </p>
-          <p className="text-sm leading-relaxed text-gray-600 dark:text-[#A3A3A3]">
-            Do eiusmod tempor incididunt ut labore.
-          </p>
+    <>
+      <div
+        className="w-full rounded-2xl p-3 mb-4 flex flex-col lg:flex-row gap-4
+                    shadow-lg  bg- border--200
+                    dark:bg-[#] dark:border-[#3535F]"
+      >
+        {/* ───────── left column ───────── */}
+        <div className="flex-1 flex flex-col justify-between gap-4">
+          {/* copy blurb */}
+          <div>
+            <p className="text-sm leading-relaxed text-gray-600 dark:text-[#A3A3A3] mb-2">
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+              eiusmod tempor…
+            </p>
+            <p className="text-sm leading-relaxed text-gray-600 dark:text-[#A3A3A3] mb-2">
+              …incididunt ut labore et dolore magna aliqua. Ut enim ad minim
+              veniam.
+            </p>
+            <p className="text-sm leading-relaxed text-gray-600 dark:text-[#A3A3A3]">
+              Do eiusmod tempor incididunt ut labore.
+            </p>
+          </div>
+
+          {/* withdraw btn */}
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={() => setShowWithdrawPage(true)}
+            className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl py-2 flex items-center justify-center gap-2"
+          >
+            <svg
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="4" />
+              <path d="M8 12h8M12 8v8" />
+            </svg>
+            Withdraw
+          </Button>
+
+          {/* referral code */}
         </div>
 
-        {/* withdraw btn */}
-        <Button
-          variant="primary"
-          size="lg"
-          onClick={() => setShowWithdrawPage(true)}
-          className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl py-2 flex items-center justify-center gap-2"
-        >
-          <svg
-            width="20"
-            height="20"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <rect x="3" y="3" width="18" height="18" rx="4" />
-            <path d="M8 12h8M12 8v8" />
-          </svg>
-          Withdraw
-        </Button>
-
-        {/* referral code */}
-        <div>
-          <div className="text-sm font-medium text-[#1D8751] mb-1">
-            Your Referral Code
-          </div>
+        {/* ───────── right column ───────── */}
+        <div className="flex-1 flex items-center justify-center">
           <div
-            className="flex items-center gap-2 w-full rounded-lg border px-3 py-2
-                          border-[#1D8751] overflow-hidden"
+            className="w-full max-w-[370px] rounded-2xl px-4 sm:px-6 py-4
+                        border bg-gray-50 border-gray-200
+                        dark:bg-transparent dark:border-[#35353F]"
           >
-            <span className="w-3 h-3 rounded-full bg-[#1D8751] flex-shrink-0" />
-            <span className="font-mono text-sm tracking-widest text-[#1D8751] truncate">
-              {user?.referral_code}
-            </span>
-            <QrCode size={18} className="text-[#1D8751] flex-shrink-0" />
-            <CopyButton
-              value={user?.referral_code ?? ""}
-              className="border border-[#1D8751] text-[#1D8751] hover:text-white
-                         hover:bg-[#1D8751] rounded-[18px] px-2 py-1 text-sm"
-              showIcon={false}
-            >
-              Copy
-            </CopyButton>
+            {walletError && (
+              <p className="text-center text-red-500">
+                Failed to load wallet data
+              </p>
+            )}
+
+            {walletLoading && !walletError && (
+              <p className="text-center text-gray-500 dark:text-[#A3A3A3]">
+                Loading…
+              </p>
+            )}
+
+            {!walletLoading && !walletError && (
+              <>
+                {/* donut */}
+                <div className="flex flex-col items-center mb-4">
+                  <DonutChartWithCenter
+                    data={chartData}
+                    total={total}
+                    label="Commissions"
+                  />
+
+                  {/* legend */}
+                  <div className="flex flex-col gap-2 mt-4 w-full">
+                    {chartData.map(({ label, value, color }) => (
+                      <div
+                        key={label}
+                        className="flex items-center justify-between w-full"
+                      >
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <span
+                            className="w-4 h-4 rounded inline-block flex-shrink-0"
+                            style={{ background: color }}
+                          />
+                          <span className="text-xs sm:text-sm truncate text-gray-600 dark:text-[#A3A3A3]">
+                            {label}
+                          </span>
+                        </div>
+                        <span
+                          className={`${
+                            value ? "text-white" : "text-gray-500"
+                          } font-semibold text-sm sm:text-base ml-2`}
+                        >
+                          {value.toLocaleString()} USD
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* stats */}
+                <div className="space-y-1">
+                  <StatRow label="Total Earned" value={deposits} />
+                  <StatRow label="Total Withdrawals" value={withdrawals} />
+                  <StatRow
+                    label="Available Balance"
+                    value={balance}
+                    highlight
+                  />
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
-
-      {/* ───────── right column ───────── */}
-      <div className="flex-1 flex items-center justify-center">
-        <div
-          className="w-full max-w-[370px] rounded-2xl px-4 sm:px-6 py-4
-                        border bg-gray-50 border-gray-200
-                        dark:bg-transparent dark:border-[#35353F]"
-        >
-          {walletError && (
-            <p className="text-center text-red-500">
-              Failed to load wallet data
-            </p>
-          )}
-
-          {walletLoading && !walletError && (
-            <p className="text-center text-gray-500 dark:text-[#A3A3A3]">
-              Loading…
-            </p>
-          )}
-
-          {!walletLoading && !walletError && (
-            <>
-              {/* donut */}
-              <div className="flex flex-col items-center mb-4">
-                <DonutChartWithCenter
-                  data={chartData}
-                  total={total}
-                  label="Commissions"
-                />
-
-                {/* legend */}
-                <div className="flex flex-col gap-2 mt-4 w-full">
-                  {chartData.map(({ label, value, color }) => (
-                    <div
-                      key={label}
-                      className="flex items-center justify-between w-full"
-                    >
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <span
-                          className="w-4 h-4 rounded inline-block flex-shrink-0"
-                          style={{ background: color }}
-                        />
-                        <span className="text-xs sm:text-sm truncate text-gray-600 dark:text-[#A3A3A3]">
-                          {label}
-                        </span>
-                      </div>
-                      <span
-                        className={`${
-                          value ? "text-white" : "text-gray-500"
-                        } font-semibold text-sm sm:text-base ml-2`}
-                      >
-                        {value.toLocaleString()} USD
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
+      <div>
+        <div className="text-sm font-medium text-[#1D8751] mb-1">
+          Your Referral Code
+        </div>
+        <div className="flex items-center gap-2">
+          <div
+            className="flex items-center gap-2 w-full justify-between rounded-[24px] border px-3 py-2
+                    border-[#1D8751] overflow-hidden"
+          >
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-[#1D8751] flex-shrink-0" />
+              <span className="font-mono text-sm tracking-widest text-[#1D8751] truncate">
+                {user?.referral_code}
+              </span>
+              <QrCode size={18} className="text-[#1D8751] flex-shrink-0" />
+            </div>
+          </div>{" "}
+          <CopyButton
+            value={user?.referral_code ?? ""}
+            className=" bg-[#35353E] border-[#1D8751] text-[#1D8751] hover:text-white
+                   hover:bg-[#1D8751] rounded-[18px] px-2 py-1 text-sm"
+            showIcon={true}
+          >
+            Copy
+          </CopyButton>
               {/* stats */}
               <div className="space-y-1">
                 <StatRow label="Total Earned" value={deposits} />
@@ -178,7 +196,7 @@ const ReferralMainCard: React.FC<Props> = ({
           )}
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

@@ -566,6 +566,15 @@ export default function DepositForm({
 
       // Create FormData for API submission
       const depositPayload = new FormData();
+
+      // Check if asset is USDT or USDC for different payload structure
+      const isUSDToken =
+        selectedAsset &&
+        (selectedAsset.ticker?.toLowerCase() === "usdt" ||
+          selectedAsset.ticker?.toLowerCase() === "usdc" ||
+          selectedAsset.symbol?.toLowerCase() === "usdt" ||
+          selectedAsset.symbol?.toLowerCase() === "usdc");
+
       // Validate and append required fields
       if (!payAmount || payAmount <= 0) {
         throw new Error("Invalid amount");
@@ -592,27 +601,59 @@ export default function DepositForm({
         "payment_method",
         selectedPaymentDetail.payment_method_type
       );
-      // Handle currency field
-      const currencyValue =
-        selectedAsset.symbol === "USDT Tether" ? "USDT" : selectedAsset.symbol;
+
+      // Handle currency field based on asset type
+      let currencyValue;
+      if (isUSDToken) {
+        // For USDT/USDC, use the asset ticker/symbol directly
+        currencyValue = selectedAsset.ticker || selectedAsset.symbol || "USDT";
+      } else {
+        // For other assets, use the asset ticker/symbol
+        currencyValue =
+          selectedAsset.ticker || selectedAsset.symbol || selectedAsset.name;
+      }
+
       if (!currencyValue) {
         throw new Error("Currency information is missing");
       }
       depositPayload.append("currency", currencyValue);
 
-      // Handle network field more carefully
-      const networkValue =
-        selectedNetwork?.network_id || selectedNetwork?.network_type || "";
+      // Handle network field based on asset type
+      let networkValue;
+      if (isUSDToken) {
+        // For USDT/USDC, always use BSC
+        networkValue = "BSC";
+      } else {
+        // For other assets, use the selected network
+        networkValue =
+          selectedNetwork?.network_id ||
+          selectedNetwork?.network_type ||
+          selectedAsset?.network ||
+          "";
+      }
+
       if (!networkValue) {
         throw new Error("Network information is missing");
       }
       depositPayload.append("network", networkValue);
 
-      // Ensure asset_id is present
-      if (!selectedAsset.asset_id) {
-        throw new Error("Asset ID is missing");
+      // Handle asset field based on asset type
+      let assetValue;
+      if (isUSDToken) {
+        // For USDT/USDC, use the asset ticker/symbol
+        assetValue = selectedAsset.ticker || selectedAsset.symbol || "USDT";
+      } else {
+        // For other assets, use the asset ticker/symbol
+        assetValue =
+          selectedAsset.ticker || selectedAsset.symbol || selectedAsset.name;
       }
-      depositPayload.append("asset", selectedAsset.asset_id);
+
+      if (!assetValue) {
+        throw new Error("Asset information is missing");
+      }
+      depositPayload.append("asset", assetValue);
+
+      // Add additional info
       depositPayload.append(
         "additional_info",
         `Account: ${selectedPaymentDetail.account_name}, Account Number: ${selectedPaymentDetail.account_number}`

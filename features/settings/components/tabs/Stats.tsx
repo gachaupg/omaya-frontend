@@ -116,14 +116,16 @@ const Stats = () => {
       <div className="flex w-full items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           {profileImage ? (
-            <Image
-              src={profileImage}
-              alt="User avatar"
-              width={56}
-              height={56}
-              className="object-cover rounded-full"
-              unoptimized={true}
-            />
+            <div className="w-14 h-14 rounded-full overflow-hidden">
+              <Image
+                src={profileImage}
+                alt="User avatar"
+                width={56}
+                height={56}
+                className="object-cover w-full h-full"
+                unoptimized={true}
+              />
+            </div>
           ) : (
             <div className="w-14 h-14 dark:bg-[#35353E] bg-gray-300 rounded-full flex items-center justify-center">
               <svg
@@ -199,14 +201,17 @@ const Stats = () => {
             <div className="dark:text-[#788099] text-gray-600 font-medium">
               Deposits
             </div>
-            <div className="relative w-32" ref={depositsDropdownRef}>
+            <div
+              className="relative w-32 flex justify-end"
+              ref={depositsDropdownRef}
+            >
               <span
-                className="dark:text-[#788099] text-gray-600 text-sm cursor-pointer flex items-center gap-1 w-full justify-between"
+                className="dark:text-[#788099] text-gray-600 text-sm cursor-pointer flex items-center gap-1"
                 onClick={() => setShowDepositsDropdown(!showDepositsDropdown)}
               >
-                {depositsTimeFilter}{" "}
+                <span>{depositsTimeFilter}</span>
                 <svg
-                  className={`inline ml-1 transition-transform duration-200 ${
+                  className={`transition-transform duration-200 ${
                     showDepositsDropdown ? "rotate-180" : ""
                   }`}
                   width="12"
@@ -274,16 +279,19 @@ const Stats = () => {
             <div className="dark:text-[#788099] text-gray-600 font-medium">
               Withdrawals
             </div>
-            <div className="relative w-32" ref={withdrawalsDropdownRef}>
+            <div
+              className="relative w-32 flex justify-end"
+              ref={withdrawalsDropdownRef}
+            >
               <span
-                className="dark:text-[#788099] text-gray-600 text-sm cursor-pointer flex items-center gap-1 w-full justify-between"
+                className="dark:text-[#788099] text-gray-600 text-sm cursor-pointer flex items-center gap-1"
                 onClick={() =>
                   setShowWithdrawalsDropdown(!showWithdrawalsDropdown)
                 }
               >
-                {withdrawalsTimeFilter}{" "}
+                <span>{withdrawalsTimeFilter}</span>
                 <svg
-                  className={`inline ml-1 transition-transform duration-200 ${
+                  className={`transition-transform duration-200 ${
                     showWithdrawalsDropdown ? "rotate-180" : ""
                   }`}
                   width="12"

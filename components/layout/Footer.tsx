@@ -1,32 +1,121 @@
-import Link from "next/link"
-import Image from "next/image"
-import { tokens } from "@/styles/tokens"
+import Link from "next/link";
+import Image from "next/image";
+import { tokens } from "@/styles/tokens";
 import {
-  TextIcon as Telegram,
   Youtube,
   Facebook,
   Instagram,
   PhoneIcon as WhatsApp,
   Twitter,
-  InstagramIcon as TiktokIcon,
-} from "lucide-react"
+} from "lucide-react";
+
+// Custom Telegram Icon Component
+const TelegramIcon = ({
+  size = 20,
+  className = "",
+}: {
+  size?: number;
+  className?: string;
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={className}
+  >
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.11 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06-.01.13-.02.2z" />
+  </svg>
+);
+
+// Custom TikTok Icon Component
+const TikTokIcon = ({
+  size = 20,
+  className = "",
+}: {
+  size?: number;
+  className?: string;
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={className}
+  >
+    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.35V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-.88-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" />
+  </svg>
+);
+
+// Custom Snapchat Icon Component
+const SnapchatIcon = ({
+  size = 20,
+  className = "",
+}: {
+  size?: number;
+  className?: string;
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={className}
+  >
+    <path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.174-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024 0 1.518.769 1.518 1.688 0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741.099.12.112.225.085.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.402.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.92-7.252 4.158 0 7.392 2.967 7.392 6.923 0 4.135-2.607 7.462-6.233 7.462-1.214 0-2.357-.629-2.746-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24.009 12.017 24.009c6.624 0 11.99-5.367 11.99-11.988C24.007 5.367 18.641.001 12.017.001z" />
+  </svg>
+);
 
 export default function Footer() {
   const { primary } = tokens.colors.brand;
-  const { textTitle, textBody, background, card } = tokens.colors.dark
-  
+  const { textTitle, textBody, background, card } = tokens.colors.dark;
+
   return (
-    <footer
-      className="pt-10 pb-4 bg-[#18181D] text-[#788099]"
-    >
+    <footer className="pt-10 pb-4 bg-[#18181D] text-[#788099]">
       <div className="container mx-auto px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 pb-8 border-b border-gray-700">
           {/* Logo and Social Media Column */}
           <div className="lg:col-span-2 space-y-6">
             <Link href="/">
-              <Image src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746548004/Omaya-green_g7uk8r.png" alt="OMAYA Exchange" width={150} height={40} className="h-auto" />
+              <Image
+                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746548004/Omaya-green_g7uk8r.png"
+                alt="OMAYA Exchange"
+                width={150}
+                height={40}
+                className="h-auto"
+              />
             </Link>
             <div className="space-y-4 mt-4">
+              <p className="text-sm text-white">Follow us on:</p>
+              <div className="flex space-x-4">
+                <Link href="#" className="hover:text-[#1D8751] text-white">
+                  <TelegramIcon size={20} />
+                </Link>
+                <Link href="#" className="hover:text-[#1D8751] text-white">
+                  <Youtube size={20} />
+                </Link>
+                <Link href="#" className="hover:text-[#1D8751] text-white">
+                  <Facebook size={20} />
+                </Link>
+                <Link href="#" className="hover:text-[#1D8751] text-white">
+                  <Instagram size={20} />
+                </Link>
+              </div>
+              <div className="flex space-x-4">
+                <Link href="#" className="hover:text-[#1D8751] text-white">
+                  <WhatsApp size={20} />
+                </Link>
+                <Link href="#" className="hover:text-[#1D8751] text-white">
+                  <Twitter size={20} />
+                </Link>
+                <Link href="#" className="hover:text-[#1D8751] text-white">
+                  <TikTokIcon size={20} />
+                </Link>
+                <Link href="#" className="hover:text-[#1D8751] text-white">
+                  <SnapchatIcon size={20} />
+                </Link>
+              </div>
+
             <p className="text-sm text-white">Follow us on:</p>
             <div className="flex space-x-4">
               <Link href="#" className="hover:text-[#1D8751] text-white">
@@ -80,7 +169,7 @@ export default function Footer() {
             <h3 className="text-lg font-medium mb-4 text-white">Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="#" className="hover:text-[#1D8751] text-white" >
+                <Link href="#" className="hover:text-[#1D8751] text-white">
                   Support center
                 </Link>
               </li>
@@ -102,7 +191,7 @@ export default function Footer() {
             <h3 className="text-lg font-medium mb-4 text-white">Company</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="#" className="hover:text-[#1D8751] text-white" >
+                <Link href="#" className="hover:text-[#1D8751] text-white">
                   Blog
                 </Link>
               </li>
@@ -121,7 +210,9 @@ export default function Footer() {
 
           {/* Legal Policies Column */}
           <div className="lg:col-span-2">
-            <h3 className="text-lg font-medium mb-4 text-white">Legal Policies</h3>
+            <h3 className="text-lg font-medium mb-4 text-white">
+              Legal Policies
+            </h3>
             <ul className="space-y-2">
               <li>
                 <Link href="#" className="hover:text-[#1D8751] text-white">
@@ -166,6 +257,7 @@ export default function Footer() {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  style={{ color: textTitle }}
                   className="flex-shrink-0"
                   style={{color :textTitle}}
                 >
@@ -197,13 +289,18 @@ export default function Footer() {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  className="text-white"
+
                   className="text-white flex-shrink-0"
                   
+
                 >
                   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
                   <polyline points="22,6 12,13 2,6"></polyline>
                 </svg>
-                <span className="text-sm text-white">info@OMAYAExpress.com</span>
+                <span className="text-sm text-white">
+                  info@OMAYAExpress.com
+                </span>
               </div>
               <div className="flex items-center space-x-2">
                 <svg
@@ -216,43 +313,45 @@ export default function Footer() {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  style={{ color: textTitle }}
                   className="flex-shrink-0"
                   style={{color :textTitle}}
                 >
                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                   <circle cx="12" cy="10" r="3"></circle>
                 </svg>
-                <span className="text-sm text-white">KM4, Mogadishu, Somalia</span>
+                <span className="text-sm text-white">
+                  KM4, Mogadishu, Somalia
+                </span>
               </div>
             </div>
           </div>
 
-        <div className="flex flex-col mb-4">
-          {/* App Download Section */}
-          <div className="lg:col-span-2 flex flex-col items-center justify-center">
-            <div className="flex items-center gap-2">
-              <Image
-                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539125/Appstore_nqe65y.png"
-                alt="App Store QR Code"
-                width={100}
-                height={100}
-                className="mb-2"
-              />
-              
-              <Image
-                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746551283/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
-                alt="Play Store QR Code"
-                width={100}
-                height={100}
-                className="mb-2"
-              />
-              
-            </div>
-          </div>
+          <div className="flex flex-col mb-4">
+            {/* App Download Section */}
+            <div className="lg:col-span-2 flex flex-col items-center justify-center">
+              <div className="flex items-center gap-2">
+                <Image
+                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539125/Appstore_nqe65y.png"
+                  alt="App Store QR Code"
+                  width={100}
+                  height={100}
+                  className="mb-2"
+                />
 
-          {/* Google Play Download */}
-          <div className="lg:col-span-2 flex flex-col items-center justify-center">
-          <div className="flex items-center gap-2">
+                <Image
+                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746551283/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
+                  alt="Play Store QR Code"
+                  width={100}
+                  height={100}
+                  className="mb-2"
+                />
+              </div>
+            </div>
+
+            {/* Google Play Download */}
+            <div className="lg:col-span-2 flex flex-col items-center justify-center">
+              <div className="flex items-center gap-2">
                 <Image
                   src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539313/googleplay_1_w8djf0.png"
                   alt="Play Store QR Code"
@@ -268,9 +367,7 @@ export default function Footer() {
                   className="mb-2"
                 />
               </div>
-          </div>
-
-          
+            </div>
           </div>
         </div>
 
@@ -280,18 +377,17 @@ export default function Footer() {
           <div className="flex justify-center items-center mt-2">
             <span className="text-xs text-white">Powered by</span>
             <div className="ml-2 text-green-500 font-bold">
-            <Image
+              <Image
                 src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746548004/Omaya-green_g7uk8r.png"
                 alt="Play Store QR Code"
                 width={100}
                 height={100}
                 className="mb-2"
               />
-              
             </div>
           </div>
         </div>
       </div>
     </footer>
-  )
+  );
 }
