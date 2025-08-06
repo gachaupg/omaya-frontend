@@ -347,6 +347,15 @@ export default function Navbar() {
             <NavLink href="/blog" isTransparent={isTransparentNavbar}>
               Blog
             </NavLink>
+            {/* Show Contact us only on auth pages */}
+            {(pathname?.startsWith("/auth/login") || 
+              pathname?.startsWith("/auth/register") || 
+              pathname?.startsWith("/auth/forgotPassword") ||
+              pathname?.startsWith("/auth/resetPassword")) && (
+              <NavLink href="#" isTransparent={isTransparentNavbar}>
+                Contact us
+              </NavLink>
+            )}
           </div>
         </div>
 
@@ -817,6 +826,15 @@ export default function Navbar() {
           <MobileNavLink href="/blog" onClick={toggleMobileMenu}>
             Blog
           </MobileNavLink>
+          {/* Show Contact us only on auth pages */}
+          {(pathname?.startsWith("/auth/login") || 
+            pathname?.startsWith("/auth/register") || 
+            pathname?.startsWith("/auth/forgotPassword") ||
+            pathname?.startsWith("/auth/resetPassword")) && (
+            <MobileNavLink href="#" onClick={toggleMobileMenu}>
+              Contact us
+            </MobileNavLink>
+          )}
 
           <div className="flex flex-col space-y-4 pt-4">
             {isAuthenticated ? (
