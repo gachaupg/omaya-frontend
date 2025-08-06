@@ -37,6 +37,7 @@ export type TransactionType = {
   price?: string;
   commission?: string;
   lastUpdate?: string;
+  payment_details?: Array<any>;
 };
 
 export interface TransactionType1 {}

@@ -239,7 +239,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
   }
 
   return (
-    <div className="w-full p-0 sm:p-4 min-h-screen flex flex-col items-center justify-start bg-white dark:bg-[#0A0A0A]">
+    <div className="w-full p-0 sm:p-4 min-h-screen flex flex-col items-center justify-start bg-white dark:bg-[#18181D]">
       {loading && <Loader />}
       {/* Title and Buy/Sell Switch */}
       <div className="mb-1 w-full md:max-w-4xl md:mx-auto px-0 sm:px-0">
@@ -252,7 +252,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
           }`}
         >
           <button
-            className={`px-2 py-1 text-sm transition rounded-l-[6px] ${
+            className={`px-2 py-1.5 text-sm transition rounded-l-[6px] ${
               type === "buy"
                 ? "bg-[#1D8751] text-white"
                 : "bg-transparent text-white"
@@ -263,7 +263,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
             Buy
           </button>
           <button
-            className={`px-4 py-1 text-sm transition rounded-r-[6px] ${
+            className={`px-4 py-1.5 text-sm transition rounded-r-[6px] ${
               type === "sell"
                 ? "bg-[#E23D3A] text-white"
                 : "bg-transparent text-white"
@@ -370,7 +370,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
           Amount & Payment Method
         </div>
         <Card className="w-full mb-4 px-2 py-2 sm:px-2 sm:py-2 bg-gray-50 dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E] rounded-[24px]">
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div className="flex flex-col md:flex-row gap-4 mb-6 p-2">
             {/* I want to Buy */}
             <div className="flex-1 flex flex-col">
               <label className="text-xs text-gray-600 dark:text-[#788099] mb-1">
@@ -380,7 +380,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                 <img
                   src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
                   alt="USDT"
-                  className="w-6 h-6 rounded-full"
+                  className="w-6 h-6 rounded-full mr-2"
                 />
                 <input
                   type="text"
@@ -466,7 +466,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
 
           {/* Replace old payment method/provider dropdowns with UserPaymentSelector */}
           {isClient && (
-            <div className="my-6  gap-10 flex flex-row">
+            <div className="my-6  gap-10 flex flex-row p-2">
               <UserPaymentSelector
                 userPaymentDetails={userPaymentDetails || []}
                 onSelect={handleSelectPaymentDetail}

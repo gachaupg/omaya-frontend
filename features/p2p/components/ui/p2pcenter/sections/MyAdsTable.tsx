@@ -135,7 +135,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
     );
   }
   return (
-    <div className="w-full min-h-[600px] bg-white dark:bg-[#23232b] rounded-2xl p-4 text-gray-900 dark:text-white">
+    <div className="w-full min-h-[600px] bg-white dark:bg-[#18181D] rounded-2xl p-4 text-gray-900 dark:text-white">
       <div className="overflow-x-auto rounded-[16px]">
         <table className="w-full text-left">
           <thead>

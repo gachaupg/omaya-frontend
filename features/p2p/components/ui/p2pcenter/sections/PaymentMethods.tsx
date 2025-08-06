@@ -19,6 +19,7 @@ interface PaymentMethod {
   account_number: string;
   wallet_address: string | null;
   editable?: boolean;
+  provider_logo?: string;
 }
 
 const ITEMS_PER_PAGE = 5;
@@ -74,7 +75,7 @@ const PaymentMethods = () => {
     <div key={method.id} className="mb-4">
       <div className="flex items-center mb-2">
         <img
-          src="https://res.cloudinary.com/pitz/image/upload/v1746705424/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg"
+          src={method.provider_logo || "https://res.cloudinary.com/pitz/image/upload/v1746705424/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg"}
           alt={`${method.payment_provider_name} Icon`}
           className="w-8 h-8 sm:w-10 sm:h-10 rounded-full mr-2 object-cover"
         />
@@ -231,7 +232,7 @@ const PaymentMethods = () => {
 
   /** Render */
   return (
-    <div className="w-full min-h-[600px] bg-white dark:bg-[#23232B] rounded-2xl p-4 text-gray-900 dark:text-white">
+    <div className="w-full min-h-[600px] bg-white dark:bg-[#18181D] rounded-2xl p-4 text-gray-900 dark:text-white border-2 border-gray-200 dark:border-[#35353E]">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4">
         <span className="text-[18px] sm:text-[22px] font-semibold">
@@ -246,7 +247,7 @@ const PaymentMethods = () => {
             size="md"
             onClick={() => setShowPaymentModal(true)}
           >
-            <p>+ Add Method</p>
+            <p className="flex items-center gap-2"> <span className="text-[#1D8751] text-2xl">+</span> Add Method</p>
           </Button>
         </div>
       </div>

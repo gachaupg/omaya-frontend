@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { tokens } from "@/styles/tokens";
 import { TransactionType } from "@/features/p2p/types";
 import Button from "./Button";
-import { MoreHorizontal, Download, Search, X } from "lucide-react";
+import { MoreHorizontal, Download, Search, X, ArrowLeft, Pointer } from "lucide-react";
 import { formatDate, formatNumber } from "@/utils/formatters";
 
 type TableProps = {
@@ -406,7 +406,7 @@ export const Table: React.FC<TableProps> = ({
                       : "hover:bg-gray-100 dark:hover:bg-[#35353E]"
                   }`}
                 >
-                  Previous
+                    &lt;
                 </button>
                 {totalPages <= 10 ? (
                   // Show all pages if total pages is 10 or less
@@ -514,7 +514,7 @@ export const Table: React.FC<TableProps> = ({
                       : "hover:bg-gray-100 dark:hover:bg-[#35353E]"
                   }`}
                 >
-                  Next
+                   &gt;
                 </button>
               </div>
             )}

@@ -831,7 +831,7 @@ export default function Navbar() {
                   </button>
                 </Link>
                 <div className="relative mt-4 flex justify-center">
-                  <button
+                  {/* <button
                     onClick={toggleProfileModal}
                     className="text-white focus:outline-none"
                   >
@@ -856,25 +856,27 @@ export default function Navbar() {
                         strokeLinejoin="round"
                       />
                     </svg>
-                  </span>
+                  </span> */}
                 </div>
                 <div className="flex flex-col items-center space-y-3 mt-4">
-                  <div className="flex items-center space-x-3">
-                    <Link
-                      href="/dashboard/account"
-                      onClick={toggleMobileMenu}
-                      className="text-white"
-                    >
-                      {userProfile?.photo ? (
-                        <img
-                          src={userProfile.photo}
-                          alt="Profile"
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                      ) : (
-                        <DefaultProfileIcon />
-                      )}
-                    </Link>
+                  <div className="flex items-center space-x-3 justify-between w-full">
+                    <div>
+                      <Link
+                        href="/dashboard/account"
+                        onClick={toggleMobileMenu}
+                        className="text-white"
+                      >
+                        {userProfile?.photo ? (
+                          <img
+                            src={userProfile.photo}
+                            alt="Profile"
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <DefaultProfileIcon />
+                        )}
+                      </Link>
+                    </div>
                     <div className="text-left">
                       <h4 className="text-white font-medium text-sm">
                         {user?.first_name && user?.last_name

@@ -6,6 +6,7 @@ export interface UserPaymentDetail {
   payment_provider_name: string;
   account_name: string;
   account_number: string;
+  provider_logo?: string;
 }
 
 interface UserPaymentSelectorProps {

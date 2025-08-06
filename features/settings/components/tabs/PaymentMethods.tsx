@@ -81,7 +81,14 @@ const PaymentMethods = () => {
               <p className="text-sm dark:text-white text-gray-900">
                 {payment?.payment_method_name}
               </p>
-              <p className="text-xs dark:text-[#808080] text-gray-600">
+              <p className="text-xs dark:text-[#808080] text-gray-600 mt-1">
+                <img
+                  src={payment?.provider_logo || "/default-provider-logo.png"}
+                  alt={payment?.payment_provider_name}
+                  width={20}
+                  height={20}
+                  className="inline-block mr-1"
+                />
                 {payment?.payment_provider_name}
               </p>
             </div>
@@ -89,7 +96,7 @@ const PaymentMethods = () => {
               <p className="text-sm dark:text-white text-gray-900">
                 {payment?.account_number}
               </p>
-              <p className="text-xs dark:text-[#808080] text-gray-600">
+              <p className="text-xs dark:text-[#808080] text-gray-600 mt-1">
                 {payment?.account_name}
               </p>
             </div>

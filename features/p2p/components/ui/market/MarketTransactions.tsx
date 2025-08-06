@@ -4,6 +4,7 @@ import Input from "../../Common/Input";
 import Select from "../../Common/Select";
 import Button from "../../Common/Button";
 import { FaFilter, FaSyncAlt } from "react-icons/fa";
+import Image from "next/image";
 import { tokens } from "@/styles/tokens";
 import MarketTable from "./Table";
 import {
@@ -260,7 +261,7 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
     <div className="flex flex-col gap-4 w-full">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
-          <div className="flex items-center w-full sm:w-auto bg-gray-100 dark:bg-[#23232B] border border-gray-300 dark:border-[#35353E] rounded-lg px-2 py-1 gap-2">
+          <div className="flex items-center w-full sm:w-auto bg-gray-100 dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] rounded-lg px-2 py-1 gap-2">
             <div className="">
               <Input
                 bgColor="transparent"
@@ -269,7 +270,7 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="Enter amount"
-                className="bg-transparent h-[8px]  border-none focus:ring-0 text-gray-900 dark:text-white w-full sm:w-28"
+                className="bg-transparent h-[8px]  border-none focus:ring-0 text-gray-900 dark:text-white w-full sm:w-36"
               />
             </div>
             <Select
@@ -279,37 +280,42 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
               onChange={(e) => setCurrency(e.target.value)}
               options={currencyOptions}
               placeholder="USDT"
-              className="bg-transparent border-none  dark:bg-[#23232B] focus:ring-0 text-gray-900 dark:text-white w-full sm:w-16"
+              className="bg-transparent border-none  dark:bg-[#18181D] focus:ring-0 text-gray-900 dark:text-white w-full sm:w-16"
             />
           </div>
-          <Select
-            bgColor="bg-gray-100 dark:bg-[#23232B]"
-            borderColor="border-gray-300 dark:border-[#35353E]"
-            value={paymentType}
-            onChange={(e) => setPaymentType(e.target.value)}
-            options={paymentMethodOptions}
-            placeholder="Payment Type"
-            className="bg-gray-100 dark:bg-[#23232B] border border-gray-300 dark:border-[#35353E] rounded-lg text-gray-900 dark:text-white w-full sm:w-40"
-          />
-          <Select
-            bgColor="bg-gray-100 dark:bg-[#23232B]"
-            borderColor="border-gray-300 dark:border-[#35353E]"
-            value={provider}
-            onChange={(e) => setProvider(e.target.value)}
-            options={providerOptions}
-            placeholder="Select Provider"
-            className="bg-gray-100 dark:bg-[#23232B] border border-gray-300 dark:border-[#35353E] rounded-lg text-gray-900 dark:text-white w-full sm:w-40"
-          />
-          <Button
-            borderColor="border-gray-300 dark:border-[#35353E]"
-            width={44}
-            height={40}
-            borderRadius={10}
-            variant="outline"
-            size="md"
-            className="!bg-gray-100 !dark:bg-[#23232B] !border-gray-300 !dark:border-[#35353E] border rounded-lg"
-            icon={<FaFilter className="text-[#1D8751]" size={26} />}
-          />
+          <div className="flex items-center gap-2 bg-gray-100 dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] rounded-lg px-2 py-1">
+            <Image
+              src="https://res.cloudinary.com/pitz/image/upload/v1746710370/coins-rotate_d278mb.png"
+              alt="Filter"
+              width={20}
+              height={20}
+              className="text-[#1D8751]"
+            />
+            <Select
+              bgColor="bg-gray-100 dark:bg-[#23232B]"
+              borderColor="border-gray-300 dark:border-[#35353E]"
+              value={paymentType}
+              onChange={(e) => setPaymentType(e.target.value)}
+              options={providerOptions}
+              placeholder="Payment Type"
+              className="text-gray-900 dark:text-white w-full sm:w-40 bg-[#18181D] border-none focus:ring-0"
+            />
+          </div>
+
+          <div className="px-2 py-1">
+            <Select
+              bgColor="bg-gray-100 dark:bg-[#23232B]"
+              borderColor="border-gray-300 dark:border-[#35353E]"
+              value={provider}
+              onChange={(e) => setProvider(e.target.value)}
+              options={providerOptions}
+              placeholder="Select Provider"
+              className="bg-gray-100 dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] rounded-lg text-gray-900 dark:text-white w-full sm:w-40"
+            />
+          </div>
+          <button className="w-11 h-10 bg-gray-100 dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] rounded-lg flex items-center justify-center">
+             <FaFilter className="text-[#1D8751]" size={22} />
+           </button>
         </div>
 
         <Button
