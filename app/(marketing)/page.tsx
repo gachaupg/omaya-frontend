@@ -1,5 +1,5 @@
 "use client";
-import React, { use, useState } from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { tokens } from "@/styles/tokens";
@@ -104,18 +104,23 @@ export default function MarketingPage() {
   const transformBlogToArticle = (blog: BlogPost, index: number): Article => {
     // Get image URL from Sanity data
     const getImageUrl = (post: BlogPost) => {
-      if (typeof post.image === 'string') {
+      if (typeof post.image === "string") {
         return post.image;
       }
-      
+
       if (post.image?.asset?._ref) {
-        const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || 'your-project-id';
-        const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || 'production';
-        const imageId = post.image.asset._ref.replace('image-', '').replace('-jpg', '.jpg').replace('-png', '.png').replace('-webp', '.webp');
+        const projectId =
+          process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || "your-project-id";
+        const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
+        const imageId = post.image.asset._ref
+          .replace("image-", "")
+          .replace("-jpg", ".jpg")
+          .replace("-png", ".png")
+          .replace("-webp", ".webp");
         return `https://cdn.sanity.io/images/${projectId}/${dataset}/${imageId}`;
       }
-      
-      return '/images/placeholder.jpg';
+
+      return "/images/placeholder.jpg";
     };
 
     // Format date
@@ -130,7 +135,10 @@ export default function MarketingPage() {
 
     // Create slug from title
     const createSlug = (title: string) => {
-      return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      return title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "");
     };
 
     // Truncate description to 300 characters with ellipses
@@ -138,7 +146,7 @@ export default function MarketingPage() {
       if (description.length <= 300) {
         return description;
       }
-      return description.substring(0, 300).trim() + '...';
+      return description.substring(0, 300).trim() + "...";
     };
 
     return {
@@ -146,17 +154,21 @@ export default function MarketingPage() {
       title: blog.title,
       excerpt: truncateDescription(blog.description),
       image: getImageUrl(blog),
-      category: blog.category === 'news' ? 'News' : 'Blog' as Category,
+      category: blog.category === "news" ? "News" : ("Blog" as Category),
       tags: [tags[0], tags[1]], // Default tags
       slug: createSlug(blog.title),
-      createdAt: formatDate(blog.created_at || blog.createdAt || new Date().toISOString()),
+      createdAt: formatDate(
+        blog.created_at || blog.createdAt || new Date().toISOString()
+      ),
     };
   };
 
   // Get articles based on active category
   const getArticles = (): Article[] => {
     const posts = activeCategory === "News" ? news : blogs;
-    return posts.slice(0, 6).map((post, index) => transformBlogToArticle(post, index));
+    return posts
+      .slice(0, 6)
+      .map((post, index) => transformBlogToArticle(post, index));
   };
 
   const articles = getArticles();
@@ -803,14 +815,9 @@ export default function MarketingPage() {
         <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto">
           {/* Header section */}
           <div className="mb-10">
-            <h2 className="text- text-2xl 2xl:text-3xl font-semibold   dark:text-white text-[#0D0D0D] ">
-              Enjoy Our <span className="text-] mr-2">Blog</span>On Latest Company the{" "}
-              <br />
-              <span className="text-[#]"> Updates</span>
-
-            <h2 className="text-center text-2xl 2xl:text-3xl font-semibold   dark:text-white text-[#0D0D0D] ">
-              Enjoy Our <span className="text-[#1D8751] mr-2">Blog</span> & News On the{" "}
-              <span className="text-[#1D8751]">Latest Updates</span>
+            <h2 className="text-center text-2xl 2xl:text-3xl font-semibold dark:text-white text-[#0D0D0D]">
+              Enjoy Our <span className="text-[#1D8751] mr-2">Blog</span> & News
+              On the <span className="text-[#1D8751]">Latest Updates</span>
             </h2>
 
             {/* Category toggle buttons */}
@@ -884,7 +891,9 @@ export default function MarketingPage() {
             ) : error ? (
               // Error state
               <div className="col-span-full text-center py-12">
-                <p className="text-red-400 mb-4">Error loading blog posts: {error}</p>
+                <p className="text-red-400 mb-4">
+                  Error loading blog posts: {error}
+                </p>
                 <button
                   onClick={() => window.location.reload()}
                   className="bg-[#1D8751] text-white px-4 py-2 rounded-lg hover:bg-[#167a47] transition-colors"
@@ -1113,7 +1122,9 @@ export default function MarketingPage() {
                 ) : faqError ? (
                   // Error state
                   <div className="text-center py-8">
-                    <p className="text-red-400 mb-4">Error loading FAQs: {faqError}</p>
+                    <p className="text-red-400 mb-4">
+                      Error loading FAQs: {faqError}
+                    </p>
                     <button
                       onClick={() => window.location.reload()}
                       className="bg-[#1D8751] text-white px-4 py-2 rounded-lg hover:bg-[#167a47] transition-colors"

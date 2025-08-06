@@ -46,8 +46,8 @@ const ReferralMainCard: React.FC<Props> = ({
     <>
       <div
         className="w-full rounded-2xl p-3 mb-4 flex flex-col lg:flex-row gap-4
-                    shadow-lg  bg- border--200
-                    dark:bg-[#] dark:border-[#3535F]"
+                    shadow-lg bg-white border-gray-200
+                    dark:bg-[#1E2329] dark:border-[#35353E]"
       >
         {/* ───────── left column ───────── */}
         <div className="flex-1 flex flex-col justify-between gap-4">
@@ -85,8 +85,6 @@ const ReferralMainCard: React.FC<Props> = ({
             </svg>
             Withdraw
           </Button>
-
-          {/* referral code */}
         </div>
 
         {/* ───────── right column ───────── */}
@@ -161,6 +159,7 @@ const ReferralMainCard: React.FC<Props> = ({
           </div>
         </div>
       </div>
+
       <div>
         <div className="text-sm font-medium text-[#1D8751] mb-1">
           Your Referral Code
@@ -177,23 +176,15 @@ const ReferralMainCard: React.FC<Props> = ({
               </span>
               <QrCode size={18} className="text-[#1D8751] flex-shrink-0" />
             </div>
-          </div>{" "}
+          </div>
           <CopyButton
             value={user?.referral_code ?? ""}
-            className=" bg-[#35353E] border-[#1D8751] text-[#1D8751] hover:text-white
+            className="bg-[#35353E] border-[#1D8751] text-[#1D8751] hover:text-white
                    hover:bg-[#1D8751] rounded-[18px] px-2 py-1 text-sm"
             showIcon={true}
           >
             Copy
           </CopyButton>
-              {/* stats */}
-              <div className="space-y-1">
-                <StatRow label="Total Earned" value={deposits} />
-                <StatRow label="Total Withdrawals" value={withdrawals} />
-                <StatRow label="Available Balance" value={balance} highlight />
-              </div>
-            </>
-          )}
         </div>
       </div>
     </>
@@ -205,8 +196,8 @@ const StatRow: React.FC<{
   label: string;
   value: number;
   highlight?: boolean;
-}> = ({ label, value, highlight }) => (
-  <div className="flex items-center justify-between">
+}> = ({ label, value, highlight = false }) => (
+  <div className="flex justify-between items-center py-1">
     <span className="text-sm sm:text-base text-gray-600 dark:text-[#A3A3A3]">
       {label}
     </span>
