@@ -25,7 +25,7 @@ import { RootState } from "@/store/rootReducer";
 import { FinancialCalculator } from "@/lib/utils/financial";
 import { useTransactionValidation } from "@/features/p2p/hooks/useTransactionValidation";
 import OTPModal from "./otpModal";
-import { Copy } from "lucide-react";
+import { Copy, HelpCircle } from "lucide-react";
 
 const Withdraw: React.FC = () => {
   /* --------------------------------------------------------------------- */
@@ -52,6 +52,7 @@ const Withdraw: React.FC = () => {
   const [confirmPayment, setConfirmPayment] = useState(false);
   const [showOTPModal, setShowOTPModal] = useState(false);
   const [withdrawalId, setWithdrawalId] = useState("");
+  const [showInfoDropdown, setShowInfoDropdown] = useState(false);
 
   /* --------------------------------------------------------------------- */
   /*                                Effects                                */
@@ -281,18 +282,39 @@ const Withdraw: React.FC = () => {
                   </span>
                 )}
               </label>
-              <div
+                <div
                 className="flex items-center h-[46px]
-                              bg-gray-100 dark:bg-[#35353E]
-                              border border-gray-300 dark:border-[#23232B]
-                              rounded-[19px] px-4"
-              >
-                <span className="text-[#1D8751] font-semibold mr-1">$</span>
-                <span>{receiveAmount}</span>
-                <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                        bg-gray-100 dark:bg-[#35353E]
+                        border border-gray-300 dark:border-[#23232B]
+                        rounded-[19px] px-4 justify-between relative"
+                >
+                <div className="relative">
+                  <span className="text-[#1D8751] font-semibold mr-1">$</span>
+                  <span>{receiveAmount}</span>
+                  <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
                   USDT
-                </span>
-              </div>
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                  e.preventDefault();
+                  setShowInfoDropdown(!showInfoDropdown);
+                  }}
+                  className="text-gray-500 hover:text-gray-700 focus:outline-none"
+                >
+                  <HelpCircle className="w-4 h-4 text-[#98A2B3] cursor-pointer" />
+                </button>
+                {showInfoDropdown && (
+                  <div className="absolute bg-white dark:bg-[#35353E] border
+                  border-gray-300 dark:border-[#1D8751] rounded-lg p-4 mt-1 shadow-lg z-30  right-2  top-12"
+                  >
+                  <p className="text-xs text-gray-600 dark:text-white">
+                    A network fee will be deducted from withdrawals, <br /> covering the cost of Blockchain transactions.
+                  </p>
+                  </div>
+                )}
+                </div>
             </div>
           </div>
 

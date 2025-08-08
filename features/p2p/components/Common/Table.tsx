@@ -4,6 +4,7 @@ import { TransactionType } from "@/features/p2p/types";
 import Button from "./Button";
 import { MoreHorizontal, Download, Search, X, ArrowLeft, Pointer } from "lucide-react";
 import { formatDate, formatNumber } from "@/utils/formatters";
+import { TiArrowUnsorted } from "react-icons/ti";
 
 type TableProps = {
   title?: string;
@@ -247,7 +248,7 @@ export const Table: React.FC<TableProps> = ({
           >
             {/* Table Header */}
             <div
-              className={`grid grid-cols-6 md:grid-cols-7 py-3 px-4 border-b bg-gray-50 dark:bg-[${tokens.colors.dark.card}] border-gray-200 dark:border-[${tokens.colors.dark.border}] rounded-t-[24px]`}
+              className={`grid grid-cols-6 md:grid-cols-7 py-3 px-4 border-b bg-gray-50 dark:bg-[#35353E] border-gray-200 dark:border-[${tokens.colors.dark.border}] rounded-t-[24px]`}
             >
               <div
                 className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
@@ -256,38 +257,44 @@ export const Table: React.FC<TableProps> = ({
               </div>
               {type === "p2p" && (
                 <div
-                  className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
+                  className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] flex items-center`}
                 >
                   ID
+                  <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
                 </div>
               )}
               <div>
                 <div
-                  className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
+                  className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] flex items-center`}
                 >
                   Type
+                  <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
                 </div>
               </div>
               <div
-                className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
+                className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] flex items-center`}
               >
                 Amount
+                <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
               </div>
 
               <div
-                className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
+                className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] flex items-center`}
               >
                 Date
+                <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
               </div>
               <div
-                className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
+                className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] flex items-center`}
               >
                 Status
+                <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
               </div>
               <div
-                className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
+                className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] flex items-center`}
               >
                 Receipt
+                <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
               </div>
             </div>
 

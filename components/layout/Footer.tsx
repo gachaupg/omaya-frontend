@@ -89,36 +89,6 @@ export default function Footer() {
               <p className="text-sm text-white">Follow us on:</p>
               <div className="flex space-x-4">
                 <Link href="#" className="hover:text-[#1D8751] text-white">
-                  <TelegramIcon size={20} />
-                </Link>
-                <Link href="#" className="hover:text-[#1D8751] text-white">
-                  <Youtube size={20} />
-                </Link>
-                <Link href="#" className="hover:text-[#1D8751] text-white">
-                  <Facebook size={20} />
-                </Link>
-                <Link href="#" className="hover:text-[#1D8751] text-white">
-                  <Instagram size={20} />
-                </Link>
-              </div>
-              <div className="flex space-x-4">
-                <Link href="#" className="hover:text-[#1D8751] text-white">
-                  <WhatsApp size={20} />
-                </Link>
-                <Link href="#" className="hover:text-[#1D8751] text-white">
-                  <Twitter size={20} />
-                </Link>
-                <Link href="#" className="hover:text-[#1D8751] text-white">
-                  <TikTokIcon size={20} />
-                </Link>
-                <Link href="#" className="hover:text-[#1D8751] text-white">
-                  <SnapchatIcon size={20} />
-                </Link>
-              </div>
-
-              <p className="text-sm text-white">Follow us on:</p>
-              <div className="flex space-x-4">
-                <Link href="#" className="hover:text-[#1D8751] text-white">
                   <svg
                     width={20}
                     height={20}

@@ -40,11 +40,26 @@ const initialState: AuthState = {
 // Helper to handle API errors
 const handleApiError = (error: unknown): string => {
   if (error instanceof AxiosError) {
+    const data = error.response?.data;
+    if (data && typeof data === "object") {
+      const messages: string[] = [];
+      Object.entries(data).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+          messages.push(...value);
+        } else if (typeof value === "string") {
+          messages.push(value);
+        }
+      });
+      if (messages.length > 0) {
+        return messages.join("\n");
+      }
+    }
     return (
-      error.response?.data?.message ||
-      error.response?.data?.error ||
-      error.response?.data?.details ||
-      error.response?.data?.email ||
+      data?.message ||
+      data?.error ||
+      data?.details ||
+      data?.non_field_errors ||
+      error.message ||
       "An error occurred"
     );
   }

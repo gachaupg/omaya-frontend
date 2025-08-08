@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import EditAdModal from "./EditAdModal";
 import { formatDate, formatNumber } from "@/utils/formatters";
 import { NoDataFound } from "@/components/dashboard/ui/Transactions";
+import { ArrowUpCircle, MoreVertical, Pencil, Upload, XCircle } from "lucide-react";
 
 const columns = [
   "Asset",
@@ -202,40 +203,56 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                 {/* Status */}
                 <td className="px-4 py-3">
                   <span
-                    className={
-                      trade.status === "Published"
-                        ? "text-[#1D8751]"
-                        : "text-[#FF4D4D]"
-                    }
+                  className={
+                    trade.status === "published"
+                    ? "text-[#1D8751]": 
+                    trade.status === "pending"
+                    ? "text-[#FFB800]":
+                    trade.status === "completed"
+                    ? "text-[#1D8751]"
+                    : "text-[#FF4D4D]"
+                  }
                   >
-                    {trade.status}
+                  {trade.status}
                   </span>
                 </td>
                 {/* Action */}
                 <td className="px-4 py-3 relative">
                   <button
-                    className="text-[#1D8751] px-2 py-1 text-xs"
-                    onClick={() => handleMenuToggle(idx)}
+                  className="bg-[#1D8751] p-2 text-xs rounded-full"
+                  onClick={() => handleMenuToggle(idx)}
                   >
-                    •••
+                  <MoreVertical className="w-4 h-4 text-white" />
                   </button>
                   {openMenuIdx === idx && (
-                    <div
-                      ref={menuRef}
-                      className="absolute right-0 mt-2 w-32 rounded-md shadow-lg bg-white dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E] z-10"
-                    >
-                      <ul className="py-1">
-                        {getActionOptions(trade).map((option) => (
-                          <li
-                            key={option}
-                            className="px-4 py-2 text-sm text-gray-500 dark:text-[#8C8CA1] hover:bg-gray-100 dark:hover:bg-[#35353E] cursor-pointer"
-                            onClick={() => handleMenuAction(option, trade)}
-                          >
-                            {option}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                  <div
+                    ref={menuRef}
+                    className="absolute right-0 mt-2 w-32 rounded-md shadow-lg bg-white dark:bg-[#18181D] border border-[#1D8751] dark:border-[#1D8751] z-10"
+                  >
+                    <ul className="py-1">
+                    {getActionOptions(trade).map((option) => (
+                        <li
+                        key={option}
+                        className="px-4 py-2 text-sm text-gray-500 dark:text-[#8C8CA1] hover:bg-gray-100 dark:hover:bg-[#35353E] cursor-pointer flex items-center gap-2"
+                        onClick={() => handleMenuAction(option, trade)}
+                        >
+                        {(option === "Put Offline" || option === "Publish") && (
+                          <ArrowUpCircle size={18} className="text-[#1D8751]" />
+                        )}
+                        {option === "Edit" && (
+                          <Pencil size={18} className="text-[#1D8751]" />
+                        )}
+                        {option === "Delete" && (
+                          <XCircle size={18} className="text-[#1D8751]" />
+                        )}
+                        {option === "Duplicate" && (
+                          <Upload size={18} className="text-[#1D8751] rotate-90" />
+                        )}
+                        {option}
+                        </li>
+                    ))}
+                    </ul>
+                  </div>
                   )}
                 </td>
               </tr>

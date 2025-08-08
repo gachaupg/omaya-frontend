@@ -123,6 +123,7 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
   const [paymentType, setPaymentType] = useState("");
   const [provider, setProvider] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -313,9 +314,24 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
               className="bg-gray-100 dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] rounded-lg text-gray-900 dark:text-white w-full sm:w-40"
             />
           </div>
-          <button className="w-11 h-10 bg-gray-100 dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] rounded-lg flex items-center justify-center">
-             <FaFilter className="text-[#1D8751]" size={22} />
-           </button>
+            <button
+            className="w-11 h-10 bg-gray-100 dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] rounded-lg flex items-center justify-center"
+            onClick={() => setShowSearch((prev) => !prev)}
+            type="button"
+            >
+            <FaFilter className="text-[#1D8751]" size={22} />
+            </button>
+            {showSearch && (
+            <Input
+              bgColor="transparent"
+              borderColor="transparent"
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search advertiser"
+              className="bg-transparent h-[8px] border-none focus:ring-0 text-gray-900 dark:text-white w-full sm:w-36"
+            />
+            )}
         </div>
 
         <Button

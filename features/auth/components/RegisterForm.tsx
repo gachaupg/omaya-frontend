@@ -10,6 +10,7 @@ import { useDispatch } from "react-redux";
 import { registerUser, verifyOTP } from "@/features/auth/slices/authSlice";
 import { AppDispatch } from "@/features/auth/store";
 import { useRouter } from "next/navigation";
+import { showToast } from "@/lib/utils/toast";
 
 // Email Verification Modal Component
 interface EmailVerificationModalProps {
@@ -400,11 +401,9 @@ export default function RegistrationPage() {
       } else {
         // Handle API errors
         if (result.payload) {
-          const apiErrors = result.payload as unknown as Record<string, string>;
-          setErrors((prev) => ({
-            ...prev,
-            ...apiErrors,
-          }));
+            if (result.payload) {
+            showToast.error(result.payload as string); // <-- Show all errors in a toast
+          }
         }
       }
     } catch (error) {

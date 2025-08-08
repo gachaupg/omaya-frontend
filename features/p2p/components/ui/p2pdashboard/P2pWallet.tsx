@@ -9,6 +9,7 @@ import { fetchWallets } from "@/features/p2p/slices/walletSlice";
 import { fetchMatchedTrades } from "@/features/p2p/slices/matchedTradesSlice";
 import { FinancialCalculator } from "@/lib/utils/financial";
 import { toNumber } from "@/lib/finanacial";
+import { fetchTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
 
 interface Wallet {
   currency: string;
@@ -45,11 +46,18 @@ const P2pWallet = ({
   const { data: matchedTrades, loading: matchedTradesLoading } = useSelector(
     (state: RootState) => state.matchedTrades
   );
+
+  const transactionSummaryState = useSelector(
+    (state: RootState) => state.transactionSummary
+  );
+  const summary = transactionSummaryState.summary;
+  const summaryLoading = transactionSummaryState.loading;
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   useEffect(() => {
     if (isAuthenticated) {
       dispatch(fetchWallets());
       dispatch(fetchMatchedTrades(1));
+      dispatch(fetchTransactionSummary())
     }
   }, [dispatch, isAuthenticated]);
 
@@ -57,7 +65,8 @@ const P2pWallet = ({
   const usdtWallet = Array.isArray(wallets)
     ? wallets.find((wallet: Wallet) => wallet.currency === "USDT")
     : null;
-  const balance = usdtWallet ? toNumber(usdtWallet.balance) : 0;
+  // const balance = usdtWallet ? toNumber(usdtWallet.balance) : 0;
+  const balance = summary && summary.total_approved_p2p_combined
   const usdValue = balance;
 
   return (
@@ -86,13 +95,13 @@ const P2pWallet = ({
                 <span
                   className={`text-lg font-bold dark:text-[${tokens.colors.dark.textTitle}] text-gray-900`}
                 >
-                  {`${formatBalance(balance, true)} USDT`}
+                  {`${formatBalance(balance ?? 0, true)} USDT`}
                 </span>
                 <span
                   className={`text-base font-semibold dark:text-[${tokens.colors.dark.textBody}] text-gray-600 opacity-80 flex items-center`}
                 >
                   <span className="mx-1 opacity-50 text-lg">≈</span>
-                  {loading ? "..." : formatBalance(usdValue)}
+                  {loading ? "..." : formatBalance(usdValue ?? 0)}
                 </span>
               </div>
             </div>

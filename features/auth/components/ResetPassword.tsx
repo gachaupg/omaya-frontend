@@ -309,7 +309,7 @@ const ResetPassword = () => {
               <div className="flex items-center space-x-2">
                 <div
                   className={`h-2 w-2 rounded-full ${
-                    hasMinChars ? "bg-[#1D8751]" : "bg-[#F04438]"
+                    hasMinChars ? "bg-[#1D8751]" : "bg-[#1D8751]"
                   }`}
                 ></div>
                 <span className="text-sm text-white">
@@ -319,7 +319,7 @@ const ResetPassword = () => {
               <div className="flex items-center space-x-2">
                 <div
                   className={`h-2 w-2 rounded-full ${
-                    hasNumberOrSymbol ? "bg-[#1D8751]" : "bg-[#F04438]"
+                    hasNumberOrSymbol ? "bg-[#1D8751]" : "bg-[#1D8751]"
                   }`}
                 ></div>
                 <span className="text-sm text-white">
@@ -329,7 +329,7 @@ const ResetPassword = () => {
               <div className="flex items-center space-x-2">
                 <div
                   className={`h-2 w-2 rounded-full ${
-                    hasMixedCase ? "bg-[#1D8751]" : "bg-[#F04438]"
+                    hasMixedCase ? "bg-[#1D8751]" : "bg-[#1D8751]"
                   }`}
                 ></div>
                 <span className="text-sm text-white">
