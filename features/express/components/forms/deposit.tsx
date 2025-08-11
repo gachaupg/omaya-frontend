@@ -1020,9 +1020,9 @@ export default function DepositForm({
                     {/* Asset List */}
                     <div className="max-h-60 overflow-y-auto">
                       {sortedSwapAssets.length > 0 ? (
-                        sortedSwapAssets.map((asset: SupportedAsset) => (
+                        sortedSwapAssets.map((asset: SupportedAsset, index: number) => (
                           <div
-                            key={asset.id}
+                            key={`${asset.id || 'asset'}-${asset.symbol || asset.ticker || asset.name}-${asset.network}-${index}`}
                             className="flex items-center gap-3 p-3 hover:bg-[#23232b] cursor-pointer border-b border-[#39394a] last:border-b-0"
                             onClick={() => {
                               setSelectedAsset(asset);
