@@ -23,9 +23,6 @@ const ClientIdSection: React.FC<ClientIdSectionProps> = ({ user }) => {
         1-Client ID
       </div>
       <section className="dark:bg-[#1D1D23] bg-gray-50 rounded-xl dark:border-[#35353E] border-gray-300 border-2 p-3 shadow-lg">
-        <label className="dark:text-[#fff] text-gray-700 text-xs mb-1 block">
-          Your unique ID
-        </label>
         <div className="text-base font-semibold dark:text-white text-[#0D0D0D]">
           Client ID
         </div>

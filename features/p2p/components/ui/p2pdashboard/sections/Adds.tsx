@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Button from "../../../Common/Button";
 import Card from "../../../Common/Card";
 import Loader from "../../../Common/Loader";
@@ -72,7 +72,11 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
     (state: RootState) => state.p2pAds
   );
 
-  const [type, setType] = useState(filterType);
+  const searchParams = useSearchParams();
+  const queryType = searchParams ? (searchParams.get("type") as "buy" | "sell" | null) : null;
+
+
+  const [type, setType] = useState<"buy" | "sell">(queryType || filterType);
   const [asset] = useState("Tether USDT TRC20");
   const [commission, setCommission] = useState(0.1);
   const [amount, setAmount] = useState("");
@@ -123,6 +127,12 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       dispatch({ type: "p2pAds/clearPostOrderStatus" });
     }
   }, [postOrderError, postOrderSuccess, router, dispatch]);
+
+    useEffect(() => {
+    if (queryType && queryType !== type) {
+      setType(queryType);
+    }
+  }, [queryType]);
 
   const validateForm = () => {
     const newErrors: ValidationErrors = {};

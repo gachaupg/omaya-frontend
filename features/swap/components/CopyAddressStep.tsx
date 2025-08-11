@@ -3,6 +3,7 @@ import { CreateSwapResponse } from "../types";
 import { connectSwapStatusWebSocket } from "./websocket";
 import { API_CONFIG } from "@/lib/appConfig";
 import SwapStatusComponent from "./SwapStatus";
+import { Copy } from "lucide-react";
 
 interface CopyAddressStepProps {
   swapResponse: CreateSwapResponse | null;
@@ -20,6 +21,72 @@ const statusSteps = [
   { key: "sending", label: "Sending to you" },
   { key: "finished", label: "Completed" },
 ];
+
+const StatusIcons = {
+  pending: (
+    <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+      <circle
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="#ffffff"
+        strokeWidth="2"
+        className="z-10"
+      />
+      <path
+        d="M12 8v4l2 2"
+        stroke="#ffffff"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ),
+  confirming: (
+    <svg xmlns="http://www.w3.org/2000/svg" 
+      width="24" 
+      height="24" 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="#ffffff" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+    >
+      <path d="M20 6 9 17l-5-5"/>
+    </svg>
+  ),
+  exchanging: (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-down-up-icon lucide-arrow-down-up">
+      <path d="m3 16 4 4 4-4"/>
+      <path d="M7 20V4"/>
+      <path d="m21 8-4-4-4 4"/>
+      <path d="M17 4v16"/>
+    </svg>
+  ),
+  sending: (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-left-right-icon lucide-arrow-left-right">
+      <path d="M8 3 4 7l4 4"/>
+      <path d="M4 7h16"/>
+      <path d="m16 21 4-4-4-4"/>
+      <path d="M20 17H4"/>
+    </svg>
+  ),
+  finished: (
+    <svg xmlns="http://www.w3.org/2000/svg" 
+      width="24" 
+      height="24" 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="#ffffff" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+    >
+      <path d="M20 6 9 17l-5-5"/>
+    </svg>
+  )
+};
 
 const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
   swapResponse,
@@ -99,7 +166,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
           console.log("WebSocket message received:", event.data);
           try {
             const msg = JSON.parse(event.data);
-            const sts = msg.data.status;
+            const sts = msg.data?.status;
             console.log("new data check", sts, msg);
 
             if (msg.type === "status_update" && msg.data) {
@@ -229,73 +296,50 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
 
       {/* Stepper */}
       <div className="flex items-center justify-between w-full max-w-4xl mb-3">
-        {statusSteps.map((step, idx) => (
-          <div
-            key={step.key}
-            className="flex flex-col items-center flex-1 relative"
-          >
+        {statusSteps.map((step, idx) => {
+          const isActive = idx === currentStepIndex;
+          const isCompleted = idx < currentStepIndex;
+          
+          return (
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${
-                idx === currentStepIndex
-                  ? "bg-yellow-400 border-yellow-200"
-                  : "dark:bg-gray-800 bg-gray-300 dark:border-gray-700 border-gray-400"
-              }`}
+              key={step.key}
+              className="flex flex-col items-center flex-1 relative"
             >
-              {/* Icon for each step */}
-              {idx === currentStepIndex ? (
-                <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="#facc15" // Tailwind yellow-400
-                    strokeWidth="2"
-                  />
-                  <path
-                    d="M12 8v4l2 2"
-                    stroke="#facc15" // Tailwind yellow-400
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              ) : (
-                <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="#7B7B7B"
-                    strokeWidth="2"
-                  />
-                  <path
-                    d="M9 12l2 2 4-4"
-                    stroke="#7B7B7B"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 b p-1 ${
+                  isActive
+                    ? "bg-[#F79330] dark:bg-[#F79330]"
+                    : isCompleted
+                    ? "bg-[#1D8751] dark:bg-[#1D8751] border-green-200"
+                    : "dark:bg-[#7B7B7B] bg-gray-300  border-gray-400"
+                }`}
+              >
+                {/* Always show the step's icon, colored appropriately */}
+                <span className={isActive ? "text-white" : isCompleted ? "text-white" : "text-white"}>
+                  {StatusIcons[step.key as keyof typeof StatusIcons]}
+                </span>
+              </div>
+              <span
+                className={`font-semibold text-base ${
+                  isActive
+                    ? "text-[#F79330]"
+                    : isCompleted
+                    ? "text-[#1D8751]"
+                    : "dark:text-[#7B7B7B] text-gray-600"
+                }`}
+              >
+                {step.label}
+              </span>
+              {isActive && (
+                <div className="flex gap-1 mt-1">
+                  <span className="w-2 h-2 bg-yellow-400 rounded-full inline-block"></span>
+                  <span className="w-2 h-2 bg-yellow-400 rounded-full inline-block"></span>
+                  <span className="w-2 h-2 bg-yellow-400 rounded-full inline-block"></span>
+                </div>
               )}
             </div>
-            <span
-              className={`font-semibold text-base ${
-                idx === currentStepIndex
-                  ? "text-yellow-400"
-                  : "dark:text-[#7B7B7B] text-gray-600"
-              }`}
-            >
-              {step.label}
-            </span>
-            {idx === currentStepIndex && (
-              <div className="flex gap-1 mt-1">
-                <span className="w-2 h-2 bg-yellow-400 rounded-full inline-block"></span>
-                <span className="w-2 h-2 bg-yellow-400 rounded-full inline-block"></span>
-                <span className="w-2 h-2 bg-yellow-400 rounded-full inline-block"></span>
-              </div>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Transaction Details Card */}
@@ -314,30 +358,11 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
               {swapResponse.id}
             </span>
             <button
-              className="ml-2 bg-[#FFA200] hover:bg-[#FF9500] p-1 rounded transition"
+              className="ml-2 p-1 rounded transition"
               onClick={() => navigator.clipboard.writeText(swapResponse.id)}
               title="Copy Transaction ID"
             >
-              <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
-                <rect
-                  x="9"
-                  y="9"
-                  width="13"
-                  height="13"
-                  rx="2"
-                  stroke="#FFA200"
-                  strokeWidth="2"
-                />
-                <rect
-                  x="3"
-                  y="3"
-                  width="13"
-                  height="13"
-                  rx="2"
-                  stroke="#FFA200"
-                  strokeWidth="2"
-                />
-              </svg>
+            <Copy className="w-4 h-4 text-[#F79330]" />
             </button>
           </div>
         </div>
@@ -360,34 +385,6 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
             <span className="dark:text-[#7B7B7B] text-gray-600 text-sm font-mono">
               {swapResponse.payoutAddress}
             </span>
-            <button
-              className="ml-2 bg-[#FFA200] hover:bg-[#FF9500] p-1 rounded transition"
-              onClick={() =>
-                navigator.clipboard.writeText(swapResponse.payoutAddress)
-              }
-              title="Copy Recipient Wallet"
-            >
-              <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
-                <rect
-                  x="9"
-                  y="9"
-                  width="13"
-                  height="13"
-                  rx="2"
-                  stroke="#FFA200"
-                  strokeWidth="2"
-                />
-                <rect
-                  x="3"
-                  y="3"
-                  width="13"
-                  height="13"
-                  rx="2"
-                  stroke="#FFA200"
-                  strokeWidth="2"
-                />
-              </svg>
-            </button>
           </div>
         </div>
       </div>
