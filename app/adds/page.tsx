@@ -1,7 +1,7 @@
 // app/adds/page.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Adds from "@/features/p2p/components/ui/p2pdashboard/sections/Adds";
 import Sidebar from "@/components/layout/Sidebar";
 
@@ -24,7 +24,15 @@ export default function AddsPage() {
 
       {/* Main Adds section */}
       <div className="flex-1 md:ml-24 w-full">
-        <Adds filterType={filterType} />
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center min-h-[200px]">
+              Loading...
+            </div>
+          }
+        >
+          <Adds filterType={filterType} />
+        </Suspense>
       </div>
     </div>
   );
