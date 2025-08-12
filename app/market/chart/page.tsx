@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   LineChart,
@@ -30,7 +30,7 @@ const formatPercentage = (percentage: number): string => {
   return `${sign}${percentage.toFixed(2)}%`;
 };
 
-const MarketChartPage = () => {
+const MarketChartContent = () => {
   const searchParams = useSearchParams();
   const coinId = searchParams?.get("id");
   
@@ -271,6 +271,21 @@ const MarketChartPage = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+const MarketChartPage = () => {
+  return (
+    <Suspense fallback={
+      <div className="bg-white dark:bg-[#18181D] min-h-screen py-8 flex items-center justify-center">
+        <div className="flex items-center gap-2 text-[#13B562]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#13B562]"></div>
+          Loading chart...
+        </div>
+      </div>
+    }>
+      <MarketChartContent />
+    </Suspense>
   );
 };
 
