@@ -20,7 +20,7 @@ const Stats = ({ summary = {} }: { summary?: any }) => {
       ),
       label: "Avg. pay time",
     },
-    { value: `${summary?.rating || 0}%`, label: "Rating" },
+    { value: `${summary?.rating || 0}`, label: "Rating" },
     {
       value: (
         <>

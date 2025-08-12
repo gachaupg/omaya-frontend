@@ -3,6 +3,7 @@ import Button from "../../Common/Button";
 import PaymentMethods from "./sections/PaymentMethods";
 import Feedback from "./sections/Feedback";
 import MyAdsTable from "./sections/MyAdsTable";
+import { ThumbsDown, ThumbsUp } from "lucide-react";
 
 interface FilterTabsProps {
   transformedTrades: any[];
@@ -199,16 +200,25 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
             </Button>
           ))}
         </div>
-        <div className="flex flex-col gap-2 w-full sm:w-auto">
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block"></span>
-            <span className="text-[#A3A3C2]">Live Ads Exist</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#E23D3A] inline-block"></span>
-            <span className="text-[#A3A3C2]">Offline Ads Exist</span>
-          </div>
+    <div className="flex flex-col gap-3 w-full sm:w-auto">
+      {/* Live Ads Status */}
+      <div className="flex items-center gap-3">
+        <ThumbsUp className="w-4 h-4 text-[#1D8751]" />
+        <div className="flex-1 bg-gray-700 rounded-full h-2 min-w-[120px]">
+          <div className="bg-[#1D8751] h-2 rounded-full w-[85%]"></div>
         </div>
+        <span className="text-[#1D8751] text-sm font-medium">(7)</span>
+      </div>
+      
+      {/* Offline Ads Status */}
+      <div className="flex items-center gap-3">
+        <ThumbsDown className="w-4 h-4 text-[#FA615F]" />
+        <div className="flex-1 bg-gray-700 rounded-full h-2 min-w-[120px]">
+          <div className="bg-[#FA615F] h-2 rounded-full w-[15%]"></div>
+        </div>
+        <span className="text-[#FA615F] text-sm font-medium">(1)</span>
+      </div>
+    </div>
       </div>
 
       <div className="w-full overflow-x-auto">

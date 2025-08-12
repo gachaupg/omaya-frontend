@@ -8,6 +8,9 @@ import { RootState } from "../../../store/rootReducer";
 import { fetchAssets } from "../../p2p/slices/assetsSlice";
 import { fetchUserPaymentDetails } from "../../p2p/slices/paymentMethodsSlice";
 import { Asset } from "../../p2p/types";
+import { AlertCircle } from "lucide-react";
+import { calculateCommission } from "@/features/exchange/components/utils/calculations/commissionCalculator";
+import { calculateNetworkFee, calculateTotalFees } from "@/features/exchange/components/utils/calculations/feeCalculator";
 
 interface UserPaymentDetail {
   id: number;
@@ -290,38 +293,50 @@ const RatesCalculator = () => {
     }
   };
 
-  return (
-    <div className="bg-white dark:bg-[#1D1D23] p-6 rounded-lg">
-      <div className="flex space-x-4 mb-6">
-        <button
-          onClick={() => setActiveTab("deposit")}
-          className={`px-6 py-2 rounded-[18px] font-semibold flex items-center justify-center transition-colors ${
-            activeTab === "deposit"
-              ? "bg-[#1D8751] text-white"
-              : "bg-gray-100 dark:bg-[#1D1D23] text-gray-700 dark:text-[#788099] hover:bg-gray-200 dark:hover:bg-[#1D8751]"
-          }`}
-        >
-          <span className="mr-2">↑</span> Deposit
-        </button>
-        <button
-          onClick={() => setActiveTab("withdraw")}
-          className={`px-6 py-2 rounded-[18px] font-semibold flex items-center justify-center transition-colors ${
-            activeTab === "withdraw"
-              ? "bg-red-500 text-white"
-              : "bg-gray-100 dark:bg-[#1D1D23] text-gray-700 dark:text-[#788099] hover:bg-red-600"
-          }`}
-        >
-          <span className="mr-2">↓</span> Withdraw
-        </button>
-      </div>
+  function mapP2PAssetToExchangeAsset(asset: Asset): any {
+  return {
+    ...asset,
+    name: asset.symbol, // fallback if name missing
+    // Add any other required fields with sensible defaults if missing
+  };
+}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+// Helper to map P2P Network to Exchange Network type
+function mapP2PNetworkToExchangeNetwork(network: any): any {
+  if (!network) return null;
+  return {
+    ...network,
+    // Add/rename properties as needed to match the expected Network type
+  };
+}
+
+const mappedAsset = selectedAsset ? mapP2PAssetToExchangeAsset(selectedAsset) : null;
+const mappedNetwork = selectedAsset?.networks?.[0]
+  ? mapP2PNetworkToExchangeNetwork(selectedAsset.networks[0])
+  : null;
+
+  
+const amountNum = parseFloat(amount) || 0;
+
+const { commission, commissionRate } = mappedAsset
+  ? calculateCommission(mappedAsset, amountNum)
+  : { commission: 0, commissionRate: 0 };
+
+const networkFee = calculateNetworkFee("Crypto", mappedNetwork, amountNum);
+
+const totalFees = calculateTotalFees(commission, networkFee);
+
+const assetAmount = amountNum + totalFees;
+
+  return (
+    <div className="bg-white dark:bg-[#18181D] p-6 rounded-2xl border border-gray-200 dark:border-[#35353E] shadow-md">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4 items-stretch">
         <div className="relative" ref={dropdownRef}>
           <label className="text-sm text-gray-600 dark:text-[#788099] mb-2 block">
             Asset
           </label>
           <div
-            className="bg-gray-50 dark:bg-[#1D1D23] p-3 rounded-[18px] flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors"
+            className="border border-[#E8EFF5] dark:border-[#35353E] p-3 rounded-[18px] flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors"
             onClick={() => setIsAssetDropdownOpen(!isAssetDropdownOpen)}
           >
             <div className="flex items-center">
@@ -402,7 +417,7 @@ const RatesCalculator = () => {
           <label className="text-sm text-gray-600 dark:text-[#788099] mb-2 block">
             I want to recieve
           </label>
-          <div className="flex items-center bg-gray-50 dark:bg-[#1D1D23] rounded-[18px]">
+          <div className="flex items-center border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px]">
             <span className="p-3 text-[#1D8751]">$</span>
             <input
               type="text"
@@ -422,7 +437,7 @@ const RatesCalculator = () => {
             Method
           </label>
           <div
-            className="bg-gray-50 dark:bg-[#1D1D23] p-3 rounded-[18px] flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors"
+            className="border border-[#E8EFF5] dark:border-[#35353E] p-3 rounded-[18px] flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors"
             onClick={() => setIsMethodDropdownOpen(!isMethodDropdownOpen)}
           >
             <div className="flex items-center">
@@ -476,7 +491,7 @@ const RatesCalculator = () => {
             Provider
           </label>
           <div
-            className={`bg-gray-50 dark:bg-[#1D1D23] p-3 rounded-[18px] flex items-center justify-between cursor-pointer transition-colors ${
+            className={`border border-[#E8EFF5] dark:border-[#35353E] p-3 rounded-[18px] flex items-center justify-between cursor-pointer transition-colors ${
               selectedPaymentMethod
                 ? "hover:bg-gray-100 dark:hover:bg-[#35353E]"
                 : "opacity-50 cursor-not-allowed"
@@ -534,39 +549,88 @@ const RatesCalculator = () => {
           )}
         </div>
       </div>
+   
+        {/* Info Row */}
+        <div className="flex items-start text-white text-sm mt-2 mb-4">
+          <AlertCircle className="w-4 h-4 text-[#E23D3A] mr-2 mt-0.5 flex-shrink-0" />
+          <span>This is only estimated price and its based on current Market Price. We will fix the price when we receive the funds.</span>
+        </div>
 
-      <div className="bg-[#1D8751] text-white p-4 rounded-[18px] flex justify-between items-center mb-4">
-        <span className="font-semibold">Amount including total fees</span>
-        <span className="text-2xl font-bold">$103</span>
-      </div>
+        {/* Mode Selection */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-8 mb-4 mt-4">
+          <h1 className="text-white text-sm font-medium">Mode</h1>
+          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+            <div className="flex flex-col items-start sm:items-center gap-2">
+              <div className="flex items-center gap-2 border-b border-[#1D8751] pb-2 w-full">
+                <input type="radio" checked readOnly className="accent-[#1D8751] w-4 h-4" />
+                <span className="text-white text-sm font-medium">Normal</span>
+              </div>
+              <span className="text-xs text-[#1D8751] px-2">Can take 1 hour</span>
+            </div>
+            <div className="flex flex-col items-start sm:items-center gap-2">
+              <div className="flex items-center gap-2 border-b border-white pb-2 w-full">
+                <input type="radio" readOnly className="accent-[#35353E] w-4 h-4" />
+                <span className="text-white text-sm font-medium">Express</span>
+              </div>
+              <span className="text-xs text-[#F79330] px-2">In 5 Minutes</span>
+            </div>
+          </div>
+        </div>
 
-      <div className="bg-gray-50 dark:bg-[#1D1D23] p-3 rounded-[18px] flex items-center justify-center space-x-6 text-sm mb-6">
-        <span className="text-gray-700 dark:text-[#788099] bg-gray-200 dark:bg-[#35353E] p-2 rounded-[18px]">
-          Commission: 3%{" "}
-          <span className="text-gray-700 dark:text-[#788099]">$3</span>
-        </span>
-        <span className="w-px h-4 bg-gray-300 dark:bg-gray-600"></span>
-        <span className="text-gray-700 dark:text-[#788099] bg-gray-200 dark:bg-[#35353E] p-2 rounded-[18px]">
-          Network Fee{" "}
-          <span className="text-gray-700 dark:text-[#788099]">$3</span>
-        </span>
-        <span className="w-px h-4 bg-gray-300 dark:bg-gray-600"></span>
-        <span className="text-gray-700 dark:text-[#788099] bg-gray-200 dark:bg-[#35353E] p-2 rounded-[18px]">
-          Total Fees{" "}
-          <span className="text-gray-700 dark:text-[#788099]">$3</span>
-        </span>
-      </div>
+        {/* Amount & Fees */}
+        <div className="border border-[#35353E] rounded-xl p-4 bg-transparent mb-4">
+          <p className="text-[#788099] text-sm font-medium mb-2">Amount & Fees</p>
+          <div className="flex flex-col lg:flex-row gap-4 items-stretch">
+            <div className="flex-1 flex flex-col justify-start">
+              <span className="text-white text-sm mb-2">Net Amount to Transfer</span>
+              <div className="w-full">
+                <div className="w-full bg-[#35353E] rounded-2xl flex items-center px-2 py-2">
+                  <button className="flex-1 flex items-center justify-center bg-transparent">
+                    <span className="text-[#BDF4D8] text-sm ml-4">Amount including Total Fees</span>
+                    <span className="bg-[#1D8751] text-white text-lg font-semibold rounded-full px-8 py-1 ml-2">
+                      ${amountNum > 0 ? assetAmount.toFixed(2) : '0.00'}
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+            {/* Right: Fee Breakdown */}
+            <div className="flex flex-col justify-between min-w-[220px] bg-[#1D1D23] border border-[#35353E] rounded-lg px-4 py-3">
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-[#E8EFF5]">
+                  Commission: {amountNum > 0 ? `${commissionRate}%` : '0%'}
+                </span>
+                <span className="text-[#1D8751]">
+                  {amountNum > 0 ? `$${commission.toFixed(2)}` : '$0.00'}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-[#E8EFF5]">Network Fee:</span>
+                <span className="text-[#1D8751]">
+                  {amountNum > 0 ? `$${networkFee.toFixed(2)}` : '$0.00'}
+                </span>
+              </div>
+              <div className="border-t border-[#35353E] mt-2 pt-2 flex justify-between text-sm">
+                <span className="text-[#F79330] font-semibold">Total Fees</span>
+                <span className="text-[#F79330] font-semibold">
+                  {amountNum > 0 ? `$${totalFees.toFixed(2)}` : '$0.00'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
 
-      <div className="flex items-center text-yellow-500 text-sm mb-6 bg-yellow-500/10 p-3 rounded-md">
-        <FiInfo className="text-yellow-500" />
+      <div className="flex items-center text-[#F79330] text-lg mb-6 p-3 rounded-md">
+        <FiInfo className="text-[#F79330]" />
         <p className="ml-2 text-gray-700 dark:text-gray-300">
           Transactions are subject to commission, above is the information on
           the commission rates
         </p>
       </div>
 
+      <div className="flex justify-center">
       <button
-        className={`w-full py-3 rounded-[18px] font-semibold transition-colors ${
+        className={`py-3 px-12 rounded-full font-semibold transition-colors ${
           isSubmitting
             ? "bg-gray-500 cursor-not-allowed"
             : activeTab === "deposit"
@@ -579,9 +643,11 @@ const RatesCalculator = () => {
         {isSubmitting
           ? "Processing..."
           : activeTab === "deposit"
-          ? "Deposit Now"
-          : "Withdraw Now"}
+          ? "Exchange Now"
+          : "Exchange Now"}
       </button>
+
+      </div>
     </div>
   );
 };
