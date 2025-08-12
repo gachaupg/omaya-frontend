@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from "react";
 import Button from "@/features/p2p/components/Common/Button";
 import Input from "@/features/p2p/components/Common/Input";
-import Select from "@/features/p2p/components/Common/Select";
-import PaymentMethodsModal from "../../p2pdashboard/sections/PaymentMethodsModal";
 import {
   fetchUserPaymentDetails,
   deleteUserPaymentDetail,
+  fetchAdminPaymentMethods,
+  postUserPaymentDetail,
+  clearPostStatus,
 } from "@/features/p2p/slices/paymentMethodsSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store/rootReducer";
+import { showToast } from "@/lib/utils/toast";
+import { Trash } from "lucide-react";
 
 // Types
 interface PaymentMethod {
@@ -26,24 +29,61 @@ const ITEMS_PER_PAGE = 5;
 
 const PaymentMethods = () => {
   /** Local state */
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [deletingMethodId, setDeletingMethodId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteSuccess, setDeleteSuccess] = useState(false);
 
+  // Inline add method states
+  const [showAddDropdown, setShowAddDropdown] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState<string>("");
+  const [selectedProvider, setSelectedProvider] = useState<string>("");
+  const [accountName, setAccountName] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [isClient, setIsClient] = useState(false);
+
   /** Store */
   const dispatch = useDispatch<AppDispatch>();
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-  const { userPaymentDetails, loading: userPaymentDetailsLoading } =
-    useSelector((state: RootState) => state.paymentMethods);
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
+  const {
+    userPaymentDetails,
+    loading: userPaymentDetailsLoading,
+    adminMethods,
+    loading: adminLoading,
+    postLoading,
+    postError,
+    postSuccess,
+  } = useSelector((state: RootState) => state.paymentMethods);
 
   /** Effects */
   useEffect(() => {
+    setIsClient(true);
     if (isAuthenticated) {
       dispatch(fetchUserPaymentDetails() as any);
     }
+    dispatch(fetchAdminPaymentMethods() as any);
   }, [dispatch, isAuthenticated]);
+
+  // Reset add form on dropdown open
+  useEffect(() => {
+    if (showAddDropdown) {
+      setSelectedMethod("");
+      setSelectedProvider("");
+      setAccountName(user ? `${user.first_name || ""} ${user.last_name || ""}`.trim() : "");
+      setAccountNumber("");
+      dispatch(clearPostStatus());
+    }
+  }, [showAddDropdown, user, dispatch]);
+
+  // Providers for selected method
+  const providers = (adminMethods || []).filter(
+    (m: any) => m.payment_method_type === selectedMethod
+  );
+
+  // Unique method types for dropdown
+  const methodTypes = Array.from(
+    new Set((adminMethods || []).map((m: any) => m.payment_method_type))
+  ) as string[];
 
   /** Handlers */
   const handleDeleteMethod = async (methodId: string) => {
@@ -70,12 +110,56 @@ const PaymentMethods = () => {
     console.log("Input change:", methodId, field, value);
   };
 
+  // Handle Add
+  const handleAdd = () => {
+    if (!isAuthenticated) {
+      showToast.error("Please log in to add payment methods");
+      return;
+    }
+    if (!selectedMethod || !selectedProvider || !accountName || !accountNumber) {
+      showToast.error("Please fill all required fields");
+      return;
+    }
+    const selectedProviderObj = providers.find(
+      (p: any) => p.provider_name === selectedProvider
+    );
+    const payload = {
+      account_name: accountName,
+      account_number: accountNumber,
+      payment_method_name: selectedMethod,
+      payment_provider_name: selectedProvider,
+      provider_name: selectedProvider,
+      wallet_address: selectedProviderObj?.wallet_address || null,
+    };
+    dispatch(postUserPaymentDetail(payload));
+  };
+
+  // Close dropdown on success
+  useEffect(() => {
+    if (postSuccess) {
+      showToast.success("Payment method added!");
+      setShowAddDropdown(false);
+      dispatch(fetchUserPaymentDetails() as any);
+      dispatch(clearPostStatus());
+    }
+  }, [postSuccess, dispatch]);
+
+  // Handle errors
+  useEffect(() => {
+    if (postError) {
+      showToast.error(postError);
+    }
+  }, [postError]);
+
   /** Render helpers */
   const renderPaymentMethod = (method: PaymentMethod) => (
     <div key={method.id} className="mb-4">
       <div className="flex items-center mb-2">
         <img
-          src={method.provider_logo || "https://res.cloudinary.com/pitz/image/upload/v1746705424/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg"}
+          src={
+            method.provider_logo ||
+            "https://res.cloudinary.com/pitz/image/upload/v1746705424/1d80d34ccb0f17b03572fe01e820f090edc3e463_y13v5u.jpg"
+          }
           alt={`${method.payment_provider_name} Icon`}
           className="w-8 h-8 sm:w-10 sm:h-10 rounded-full mr-2 object-cover"
         />
@@ -175,7 +259,7 @@ const PaymentMethods = () => {
         to start accepting payments.
       </p>
       <Button
-        onClick={() => setShowPaymentModal(true)}
+        onClick={() => setShowAddDropdown(true)}
         className="bg-[#1D8751] hover:bg-[#176e43] text-white px-6 py-2 rounded-full"
       >
         Add Payment Method
@@ -230,11 +314,130 @@ const PaymentMethods = () => {
     currentPage * ITEMS_PER_PAGE
   );
 
+  // Inline Add Method Dropdown
+const renderAddMethodDropdown = () => (
+  <div
+    className={`
+      absolute z-[1000] mt-8 w-full max-w-xs rounded-xl right-4
+      border-2 border-[#1D8751]
+      ${showAddDropdown ? "" : "hidden"}
+      bg-white dark:bg-black
+      shadow-lg
+    `}
+  >
+    <div className="p-4">
+      {/* Payment Methods List */}
+      <div className="mb-3">
+        <label className="block text-gray-600 dark:text-[#788099] text-sm mb-2">
+          Payment Method
+        </label>
+        <div className="flex flex-col gap-3">
+          {methodTypes.map((type, idx) => (
+            <label
+              key={type + idx}
+              className="flex items-center justify-between p-2 rounded-lg border border-[#1D8751] cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  value={type}
+                  checked={selectedMethod === type}
+                  onChange={() => {
+                    setSelectedMethod(type);
+                    setSelectedProvider("");
+                  }}
+                  disabled={adminLoading}
+                  className="accent-[#1D8751] w-5 h-5 rounded border-2 border-[#1D8751] focus:ring-0"
+                />
+                <span className="text-gray-900 dark:text-white">{type}</span>
+              </div>
+              <button
+                type="button"
+                className="text-[#1D8751] hover:text-red-500"
+                onClick={() => handleDeleteMethod(type)}
+              >
+                <Trash className="w-5 h-5" />
+              </button>
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Provider Dropdown */}
+      {selectedMethod && (
+        <div className="mb-3">
+          <label className="block text-gray-600 dark:text-[#788099] text-sm mb-1">
+            Provider
+          </label>
+          <select
+            className="w-full bg-white dark:bg-black text-gray-900 dark:text-white"
+            value={selectedProvider}
+            onChange={e => setSelectedProvider(e.target.value)}
+            disabled={adminLoading}
+          >
+            <option value="">Select Provider</option>
+            {providers.map((p: any, idx: number) => (
+              <option key={p.provider_name + idx} value={p.provider_name}>
+                {p.provider_name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* Checkbox for confirming selection */}
+      {selectedProvider && (
+        <label
+          className="flex items-center gap-2 mb-3 p-2 rounded-lg border-2 border-[#1D8751] bg-white dark:bg-black"
+        >
+          <input
+            type="checkbox"
+            checked={!!selectedProvider}
+            readOnly
+            className="accent-[#1D8751] w-5 h-5 rounded border-2 border-[#1D8751] focus:ring-0"
+          />
+          <span className="text-gray-900 dark:text-white">
+            Add details for this method
+          </span>
+        </label>
+      )}
+
+      {/* Input fields */}
+      {selectedProvider && (
+        <div className="flex flex-col gap-3">
+          <Input
+            placeholder="Account Name"
+            value={accountName}
+            onChange={e => setAccountName(e.target.value)}
+            className="w-full"
+          />
+          <Input
+            placeholder="Account Number"
+            value={accountNumber}
+            onChange={e => setAccountNumber(e.target.value)}
+            className="w-full"
+          />
+          <Button
+            className="bg-[#1D8751] text-white w-full mt-2"
+            onClick={handleAdd}
+            disabled={!accountName || !accountNumber || postLoading}
+            height={40}
+            borderRadius={10}
+          >
+            {postLoading ? "Adding..." : "Add"}
+          </Button>
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+
   /** Render */
   return (
-    <div className="w-full min-h-[600px] bg-white dark:bg-[#18181D] rounded-2xl p-4 text-gray-900 dark:text-white border-2 border-gray-200 dark:border-[#35353E]">
+    <div className="w-full min-h-[600px] bg-white dark:bg-[#18181D] rounded-2xl p-4 text-gray-900 dark:text-white border-2 border-gray-200 dark:border-[#35353E] overflow-x-hidden">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4 ">
         <span className="text-[18px] sm:text-[22px] font-semibold">
           Payment Methods
         </span>
@@ -243,21 +446,17 @@ const PaymentMethods = () => {
             height={40}
             borderRadius={10}
             variant="outline"
-            className="border-1 border-[#1D8751] w-full text-gray-900 dark:text-white"
+            className="border-1 border-[#1D8751] w-full text-gray-900 dark:text-white relative"
             size="md"
-            onClick={() => setShowPaymentModal(true)}
+            onClick={() => setShowAddDropdown(prev => !prev)}
           >
-            <p className="flex items-center gap-2"> <span className="text-[#1D8751] text-2xl">+</span> Add Method</p>
+            <p className="flex items-center gap-2">
+              <span className="text-[#1D8751] text-2xl">+</span> Add Method
+            </p>
           </Button>
+          {renderAddMethodDropdown()}
         </div>
       </div>
-
-      {/* Modal */}
-      <PaymentMethodsModal
-        open={showPaymentModal}
-        onClose={() => setShowPaymentModal(false)}
-        onAdd={() => setShowPaymentModal(false)}
-      />
 
       {/* Content */}
       {userPaymentDetailsLoading ? (

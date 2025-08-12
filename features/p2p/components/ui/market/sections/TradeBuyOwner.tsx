@@ -198,11 +198,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 fill="none" 
                 stroke="#1D8751" 
                 strokeWidth="4" 
-                stroke-linejoin="round"
+                strokeLinejoin="round"
               />
-              <line x1="24" y1="20" x2="40" y2="20" stroke="#1D8751" strokeWidth="4" stroke-linecap="round"/>
-              <line x1="24" y1="28" x2="40" y2="28" stroke="#1D8751" strokeWidth="4" stroke-linecap="round"/>
-              <line x1="24" y1="36" x2="32" y2="36" stroke="#1D8751" strokeWidth="4" stroke-linecap="round"/>
+              <line x1="24" y1="20" x2="40" y2="20" stroke="#1D8751" strokeWidth="4" strokeLinecap="round"/>
+              <line x1="24" y1="28" x2="40" y2="28" stroke="#1D8751" strokeWidth="4" strokeLinecap="round"/>
+              <line x1="24" y1="36" x2="32" y2="36" stroke="#1D8751" strokeWidth="4" strokeLinecap="round"/>
             </svg>
 
               <span className="text-[14px] text-gray-500 dark:text-[#A3A3C2]">

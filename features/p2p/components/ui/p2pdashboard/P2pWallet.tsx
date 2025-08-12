@@ -130,8 +130,8 @@ const P2pWallet = ({
                   fill="none" 
                   stroke="currentColor" 
                   strokeWidth="2" 
-                  stroke-linecap="round" 
-                  stroke-linejoin="round"
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
                   className="text-white"
                   >
                   <path d="M12 18H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5"/>
