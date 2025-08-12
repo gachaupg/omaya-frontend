@@ -1,22 +1,20 @@
-import React, { useState } from "react";
+import React from "react";
+import { useThemeToggle } from "../../../hooks/useThemeToggle";
 
 const SystemThemeSection: React.FC = () => {
-  const [currentTheme, setCurrentTheme] = useState<"light" | "dark" | "system">(
-    "dark"
-  );
-  const [updating, setUpdating] = useState(false);
+  const {
+    theme,
+    currentTheme,
+    isDark,
+    isLight,
+    isSystem,
+    updating,
+    toggleTheme,
+  } = useThemeToggle();
 
-  const handleThemeChange = async (mode: "light" | "dark" | "system") => {
-    setUpdating(true);
-    // Simulate API call
-    setTimeout(() => {
-      setCurrentTheme(mode);
-      setUpdating(false);
-    }, 1000);
+  const handleThemeChange = (mode: "light" | "dark" | "system") => {
+    toggleTheme(mode);
   };
-
-  const isDark = currentTheme === "dark";
-  const isLight = currentTheme === "light";
 
   return (
     <>
@@ -32,6 +30,7 @@ const SystemThemeSection: React.FC = () => {
                 : "bg-[#23232B] text-[#788099] hover:bg-[#2A2A32]"
             }`}
             onClick={() => handleThemeChange("light")}
+            aria-pressed={isLight}
             disabled={updating}
           >
             <svg
@@ -56,6 +55,7 @@ const SystemThemeSection: React.FC = () => {
                 : "bg-[#23232B] text-[#788099] hover:bg-[#2A2A32]"
             }`}
             onClick={() => handleThemeChange("dark")}
+            aria-pressed={isDark}
             disabled={updating}
           >
             <svg
@@ -74,11 +74,12 @@ const SystemThemeSection: React.FC = () => {
           </button>
           <button
             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-semibold text-sm transition-all ${
-              currentTheme === "system"
+              isSystem
                 ? "bg-[#1D8751] text-white"
                 : "bg-[#23232B] text-[#788099] hover:bg-[#2A2A32]"
             }`}
             onClick={() => handleThemeChange("system")}
+            aria-pressed={isSystem}
             disabled={updating}
           >
             <svg
@@ -105,8 +106,8 @@ const SystemThemeSection: React.FC = () => {
           </div>
         )}
         <div className="text-xs dark:text-[#808080] text-gray-500 mt-2">
-          Current theme: {currentTheme}{" "}
-          {currentTheme === "system" && "(system)"}
+          Current theme: {theme.mode}
+          {isSystem && " (system)"}
         </div>
       </section>
     </>
