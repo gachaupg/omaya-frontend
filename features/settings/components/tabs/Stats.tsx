@@ -162,20 +162,45 @@ const Stats = () => {
           </div>
         </div>
         <div className="flex gap-3">
-          <div
-            className="relative cursor-pointer"
+          <div 
+            className="p-2 rounded-full border border-[#1D8751] flex items-center justify-center relative cursor-pointer"
             onClick={() => router.push("/dashboard/notifications")}
-          >
-            <img
-              src="https://res.cloudinary.com/pitz/image/upload/v1750165834/Frame_34659_2_gmkz6l.png"
-              alt="notifications"
-              width={80}
-            />
+            >
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              width="18" 
+              height="18" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="1" 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              className="text-[#1D8751]"
+              >
+              <path d="M10.268 21a2 2 0 0 0 3.464 0"/>
+              <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>
+            </svg>
             {matchedTrades?.results && matchedTrades.results.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-[#E23D3A] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              <span className="absolute -top-1 -right-2 bg-[#E23D3A] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                 {matchedTrades.results.length}
               </span>
             )}
+          </div>
+          <div className="p-2 rounded-full border border-[#1D8751] flex items-center justify-center cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg"
+             width="18" 
+             height="18" 
+             viewBox="0 0 24 24" 
+             fill="none" 
+             stroke="currentColor" 
+             strokeWidth="1" 
+             strokeLinecap="round" 
+             strokeLinejoin="round" 
+             className="text-[#1D8751]"
+            >
+              <path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/>
+              </svg>
           </div>
         </div>
       </div>

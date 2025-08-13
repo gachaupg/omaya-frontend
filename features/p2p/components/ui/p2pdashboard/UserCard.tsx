@@ -212,27 +212,24 @@ const UserCard = () => {
             <div className="flex items-center gap-2">
               <p className="text-base dark:text-[#FFFFFF]">{user?.user_id}</p>
               <button className="cursor-pointer">
-                <svg
+                <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="20" 
+                height="20" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className="text-[#F79330] cursor-pointer"
                   onClick={() => {
                     navigator.clipboard.writeText(user?.user_id || "");
                     toast.success("Copied to clipboard");
                   }}
-                  className="cursor-pointer"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
                 >
-                  <rect
-                    x="5"
-                    y="5"
-                    width="14"
-                    height="14"
-                    rx="2"
-                    className="stroke-[#E23D3A]"
-                    strokeWidth="2"
-                  />
+                <rect width="14" height="14" x="8" y="8" rx="2" ry="2"/>
+                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
                 </svg>
               </button>
             </div>
