@@ -198,9 +198,15 @@ const Withdraw: React.FC = () => {
                     setSelectedNetworkId("");
                   }}
                   placeholder="Select Asset"
-                  className="w-full h-[46px] pl-10 rounded-[19px]"
-                  style={{ minHeight: 46 }}
+                  className="w-full h-[46px] pl-10 rounded-[19px] pr-10"
+                  style={{ minHeight: 46, appearance: "none", background: "transparent" }}
                 />
+                {/* Custom filled arrow */}
+                <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
+                  <svg width="20" height="20" fill="#ACACAC" viewBox="0 0 24 24">
+                    <path d="M7 10l5 5 5-5" />
+                  </svg>
+                </span>
               </div>
             </div>
 
@@ -209,15 +215,24 @@ const Withdraw: React.FC = () => {
               <label className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                 Network
               </label>
-              <Select
+              <div className="relative w-full">
+                <Select
                 options={networkOptions}
                 value={selectedNetworkId}
                 onChange={(e) => setSelectedNetworkId(e.target.value)}
                 placeholder="Select Network"
-                className="w-full h-[46px] rounded-[19px]"
-                style={{ minHeight: 46 }}
+                className="w-full h-[46px] rounded-[19px] pr-10"
+                style={{ minHeight: 46, appearance: "none", background: "transparent" }}
                 disabled={!selectedAssetId}
               />
+                  {/* Custom filled arrow */}
+              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
+                <svg width="20" height="20" fill="#ACACAC" viewBox="0 0 24 24">
+                  <path d="M7 10l5 5 5-5" />
+                </svg>
+              </span>
+
+              </div>
             </div>
           </div>
 
