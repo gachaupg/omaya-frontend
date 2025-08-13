@@ -416,7 +416,7 @@ const Legend = ({ data }: { data: DonutChartData[] }) => (
             minWidth: 13,
             minHeight: 13,
             display: "inline-block",
-            borderRadius: "50%",
+            borderRadius: "20%",
           }}
         ></span>
         <span className="dark:text-[#A3A3A3] font-medium flex-1">
