@@ -101,7 +101,7 @@ const Stats = () => {
     }
   }, [dispatch, user]);
 
-  // Format numbers with commas and 2 decimal places
+
   useEffect(() => {
     if (isAuthenticated) {
       dispatch(fetchTransactionSummary());
@@ -110,7 +110,7 @@ const Stats = () => {
     }
   }, [dispatch, isAuthenticated]);
 
-  return (
+ return (
     <Card className="w-full p-2 dark:bg-[#1D1D23] bg-gray-50 rounded-2xl dark:border-[#35353E] border-gray-300 border-2 dark:text-white text-gray-900 shadow-lg">
       {/* Header */}
       <div className="flex w-full items-center justify-between mb-6">

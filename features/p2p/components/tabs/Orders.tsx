@@ -6,6 +6,7 @@ import { TransactionType } from "../../types";
 import { setCurrentPage } from "../../slices/userTradesSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
+import { orderStatusTabs as staticOrderStatusTabs } from "../../data";
 import { RootState } from "@/store/rootReducer";
 
 const Orders = () => {
@@ -43,6 +44,16 @@ const Orders = () => {
     dispatch(setCurrentPage(1)); // Reset to first page when filters change
   };
 
+  const processingCount = trades.results.filter(
+  trade => trade.status.toLowerCase() === "matched"
+).length;
+
+const orderStatusTabs = staticOrderStatusTabs.map(tab =>
+  tab.id === "processing"
+    ? { ...tab, count: processingCount }
+    : tab
+);
+
   // Apply client-side filtering to the data
   const filteredData = useMemo(() => {
     return trades.results.filter((trade) => {
@@ -55,11 +66,20 @@ const Orders = () => {
       }
 
       // Status filter
-      if (
-        filters.status !== "all" &&
-        trade.status.toLowerCase() !== filters.status
-      ) {
-        return false;
+      if (filters.status !== "all") {
+        if (
+          filters.status === "processing" &&
+          trade.status.toLowerCase() !== "matched"
+        ) {
+          return false;
+        }
+
+        if (
+          filters.status !== "processing" &&
+          trade.status.toLowerCase() !== filters.status
+        ) {
+          return false;
+        }
       }
 
       // Date filter
@@ -120,6 +140,7 @@ const Orders = () => {
         filters={filters}
         onFilterChange={handleFilterChange}
         loading={loading}
+        orderStatusTabs={orderStatusTabs}
       />
       <div className="flex flex-col w-full">
         <OrdersTransactions

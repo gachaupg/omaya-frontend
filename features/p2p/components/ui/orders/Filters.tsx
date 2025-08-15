@@ -25,6 +25,7 @@ interface FiltersProps {
     currency: string;
   }) => void;
   loading?: boolean;
+  orderStatusTabs: typeof orderStatusTabs;
 }
 
 /**
@@ -57,6 +58,8 @@ const Filters: React.FC<FiltersProps> = ({
     onFilterChange({ ...filters, currency: value });
   };
 
+  console.log("Order Status Tabs:", orderStatusTabs
+  );
   return (
     <div className="w-full flex flex-col">
       {/* ───────────────────────── Tabs */}

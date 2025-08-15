@@ -213,7 +213,7 @@ const Overview = () => {
       <Card
         borderColor="border-[#35353E]"
         width="w-full"
-        bgColor="dark:bg-[#23232B] bg-[#F5F5F5]"
+        bgColor="dark:bg-[#18181D] bg-[#F5F5F5]"
         borderRadius="rounded-[20px]"
         className="p-6 flex flex-col items-center justify-center"
       >
@@ -355,7 +355,7 @@ const Overview = () => {
         <Card
           borderColor="border-[#35353E]"
           width="w-full"
-          bgColor="dark:bg-[#23232B] bg-[#F5F5F5]"
+          bgColor="dark:bg-[#18181D] bg-[#F5F5F5]"
           borderRadius="rounded-[14px]"
           className="p-3"
         >
@@ -366,7 +366,7 @@ const Overview = () => {
               </h3>
               <div className="relative">
                 <select
-                  className="px-2 py-1 rounded text-xs appearance-none pr-8 dark:bg-[#35353E] bg-white border dark:border-[#35353E] border-gray-300 dark:text-white text-[#0D0D0D]"
+                  className="px-2 py-1 rounded text-xs appearance-none pr-8 dark:bg-[#18181D] bg-white border dark:border-[#35353E] border-gray-300 dark:text-white text-[#0D0D0D]"
                   value={buyDateFilter}
                   onChange={(e) => setBuyDateFilter(e.target.value)}
                   disabled={loading}
@@ -435,7 +435,7 @@ const Overview = () => {
         <Card
           borderColor="border-[#35353E]"
           width="w-full"
-          bgColor="dark:bg-[#23232B] bg-[#F5F5F5]"
+          bgColor="dark:bg-[#18181D] bg-[#F5F5F5]"
           borderRadius="rounded-[14px]"
           className="p-3"
         >
@@ -446,7 +446,7 @@ const Overview = () => {
               </h3>
               <div className="relative">
                 <select
-                  className="px-2 py-1 rounded text-xs appearance-none pr-8 dark:bg-[#35353E] bg-white border dark:border-[#35353E] border-gray-300 dark:text-white text-[#0D0D0D]"
+                  className="px-2 py-1 rounded text-xs appearance-none pr-8 dark:bg-[#18181D] bg-white border dark:border-[#35353E] border-gray-300 dark:text-white text-[#0D0D0D]"
                   value={sellDateFilter}
                   onChange={(e) => setSellDateFilter(e.target.value)}
                   disabled={loading}

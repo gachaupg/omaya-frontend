@@ -81,7 +81,7 @@ const P2pWallet = ({
         width="w-full"
         bgColor={`bg-[${tokens.colors.dark.card}]`}
         borderRadius="rounded-[24px]"
-        className="p-0 mb-2 shadow-none dark:bg-[#1D1D23] bg-white"
+        className="p-0 mb-2 shadow-none dark:bg-[#18181D] bg-white"
       >
         <div className="flex flex-col gap-3 pl-4 py-2 px-2">
           <div className="flex flex-wrap justify-between items-center w-full">

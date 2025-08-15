@@ -20,6 +20,7 @@ import {
 import { Button } from "@headlessui/react";
 import { ArrowLeftRight, Repeat, Users } from "lucide-react";
 import Link from "next/link";
+import { TiArrowUnsorted } from "react-icons/ti";
 
 // Utility functions for formatting
 const formatPrice = (price: number): string => {
@@ -354,44 +355,57 @@ const MarketTable = () => {
           </div>
           <div className="flex items-center text-gray-900 dark:text-[#fff] font-medium text-base cursor-pointer gap-1">
             Add Asset{" "}
-            <span className="text-lg font-bold ml-1 flex items-center">+</span>
+            <span className="text-lg font-bold ml-1 flex items-center text-[#1D8751]">+</span>
           </div>
         </div>
 
         {/* Favourite Assets Cards Row */}
         <div className="flex gap-4 mb-1">
-          <div className="flex gap-4 mb-8">
+         <div
+            className="
+              grid grid-cols-3 gap-4 mb-8 w-full
+              sm:grid-cols-3
+              sm:overflow-x-visible
+              overflow-x-auto flex-nowrap flex sm:grid
+              scrollbar-hide
+              "
+            style={{ WebkitOverflowScrolling: "touch" }}
+          >
             {favoriteAssets.map((asset) => (
               <div
                 key={asset.id}
-                className="bg-gray-50 dark:bg-[#1D1D23] rounded-xl px-2 py-2 min-w-[160px] min-h-[56px] flex flex-col items-start shadow-sm border border-gray-200 dark:border-[#35353E] gap-0.5"
+                className="bg-gray-50 dark:bg-[#1D1D23] rounded-xl px-2 py-2 min-w-[160px] min-h-[56px] flex  items-center justify-between shadow-sm border border-gray-200 dark:border-[#35353E] gap-0.5"
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="w-7 h-7 flex items-center">
+                  <div className="w-7 h-7 flex items-center">
                     <CoinIcon
                       image={asset.image}
                       symbol={asset.symbol}
                       size={28}
                     />
-                  </span>
-                  <span className="font-semibold text-gray-900 dark:text-[#fff] text-base">
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-[#fff] text-base">
                     {asset.symbol.toUpperCase()}
-                  </span>
+                    </p>
+                    <div className="text-xs text-gray-600 dark:text-[#788099] mb-0.5">
+                      {asset.name}
+                    </div>
+                  </div>
                 </div>
-                <div className="text-xs text-gray-600 dark:text-[#788099] mb-0.5">
-                  {asset.name}
-                </div>
-                <div className="font-semibold text-gray-900 dark:text-[#fff] text-sm">
-                  {formatPrice(asset.current_price)}
-                </div>
-                <div
-                  className={`text-xs font-medium ${
-                    asset.price_change_percentage_24h >= 0
-                      ? "text-[#13B562]"
-                      : "text-[#FF6B6B]"
-                  }`}
-                >
-                  {formatPercentage(asset.price_change_percentage_24h)}
+                <div className="flex flex-col gap-2">
+                  <div className="font-semibold text-gray-900 dark:text-[#fff] text-sm">
+                    {formatPrice(asset.current_price)}
+                  </div>
+                  <div
+                    className={`text-xs font-medium ${
+                      asset.price_change_percentage_24h >= 0
+                        ? "text-[#13B562]"
+                        : "text-[#FF6B6B]"
+                    }`}
+                  >
+                    {formatPercentage(asset.price_change_percentage_24h)}
+                  </div>
                 </div>
               </div>
             ))}
@@ -411,12 +425,17 @@ const MarketTable = () => {
             <table className="w-full border-separate border-spacing-0">
               <thead>
                 <tr>
-                  {tableHeaders.map((header) => (
+                  {tableHeaders.map((header, idx) => (
                     <th
                       key={header}
-                      className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#1D1D23] px-2 py-4 text-left font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-base"
+                      className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 py-4 text-left font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-base"
                     >
-                      {header}
+                      <div className="flex items-center gap-1">
+                        {header}
+                        {idx !== 0 && idx !== tableHeaders.length - 1 && (
+                          <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
+                          )}
+                      </div>
                     </th>
                   ))}
                 </tr>

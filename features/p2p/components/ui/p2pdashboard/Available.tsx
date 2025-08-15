@@ -53,7 +53,7 @@ const Available = () => {
   return (
     <div className="mt-3">
       <div
-        className="rounded-[24px] border dark:border-[#35353E] border-gray-300 overflow-hidden dark:bg-[#23232B] bg-[#F5F5F5]"
+        className="rounded-[24px] border dark:border-[#35353E] border-gray-300 overflow-hidden dark:bg-[#35353E] bg-[#F5F5F5]"
         style={{ height: 110 }}
       >
         <div className="w-full h-full">
@@ -72,7 +72,7 @@ const Available = () => {
 
           {/* Asset Row */}
           <div
-            className="grid grid-cols-3 px-6 py-4 dark:bg-[#23232B] bg-[#F5F5F5]"
+            className="grid grid-cols-3 px-6 py-4 dark:bg-[#18181D] bg-[#FFFFFF]"
             style={{ minHeight: 70 }}
           >
             {/* Asset */}

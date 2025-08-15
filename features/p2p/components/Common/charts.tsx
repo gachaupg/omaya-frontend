@@ -141,7 +141,7 @@ const Charts: React.FC<ChartProps> = ({
       <div
         className={`rounded-lg border p-2
           bg-white border-gray-200 text-gray-800
-          dark:bg-[${tokens.colors.dark.card}] dark:border-[${tokens.colors.dark.border}] dark:text-[${tokens.colors.dark.textBody}]`}
+          dark:bg-[#18181D] dark:border-[${tokens.colors.dark.border}] dark:text-[${tokens.colors.dark.textBody}]`}
       >
         <p className="font-medium">{label}</p>
         {filter !== "Sells" && (
@@ -179,7 +179,7 @@ const Charts: React.FC<ChartProps> = ({
       <div className="flex justify-between items-center mb-6">
         {/* Title + buy/sell buttons */}
         <div className="flex items-center gap-6">
-          <h3 className="text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] font-medium">
+          <h3 className="text-gray-900 dark:text-white font-medium">
             {title}
           </h3>
 
@@ -194,7 +194,7 @@ const Charts: React.FC<ChartProps> = ({
                 onClick={() => setFilter(t)}
                 className={`border border-[#1D8751]
                   ${filter === t ? "bg-[#1D8751] text-white" : "text-[#1D8751]"}
-                  dark:text-[${tokens.colors.dark.textBody}]`}
+                  dark:text-[#1D8751]}]`}
               >
                 {t}
               </Button>
@@ -287,8 +287,8 @@ const Charts: React.FC<ChartProps> = ({
       {/* Chart card */}
       <div
         className={`w-full rounded-2xl p-6 
-          bg-white border-2 border-gray-200
-          dark:bg-[${tokens.colors.dark.card}]
+          bg-white border-2 border-[#35353E]
+          dark:bg-[#18181D]
           dark:border-[${tokens.colors.dark.border}]`}
       >
         <div className="h-[320px]">

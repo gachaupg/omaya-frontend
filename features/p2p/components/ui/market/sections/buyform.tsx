@@ -198,7 +198,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
   };
 
   return (
-    <div className="final-buy-container grid grid-cols-1 md:grid-cols-3 gap-6 p-2 md:p-6 min-h-screen bg-white dark:bg-[#0A0A0A]">
+    <div className="final-buy-container grid grid-cols-1 md:grid-cols-3 gap-6 p-2 md:p-6 min-h-screen bg-white dark:bg-[#18181D]">
       {/* Left Column: Main Info */}
       <div className="md:col-span-2 flex flex-col mt-6  gap-1">
         {confirmOrderError && (
@@ -211,7 +211,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
             {singleOrderError}
           </div>
         )}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-2">
           <p
             className="text-gray-900 dark:text-white text-[13px]"
             style={{ fontSize: "16px" }}
@@ -220,38 +220,44 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
           </p>
           <button
             onClick={handleRefresh}
-            className="flex items-center gap-1 bg-gray-100 dark:bg-[#23232A] text-[#1D8751] rounded-lg px-2 py-1 border border-gray-200 dark:border-[#35353E] hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors"
+            className="flex items-center gap-1 bg-gray-100 dark:bg-[#18181D] text-[#1D8751] rounded-lg px-2 py-1 border border-gray-200 dark:border-[#35353E] hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors"
             title="Refresh"
           >
             <RefreshCw size={14} />
           </button>
         </div>
         {/* Advertiser Info */}
-        <section className=" rounded-[18px] p-2 flex items-center gap-4  border-2 border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[#23232B]  ">
-          <div className="icon rounded-full w-10 h-10 flex items-center justify-center text-xl font-bold bg-[#1D8751] text-white">
-            {singleOrder?.advertiser_first_name?.[0] || "A"}
-          </div>
-          <div>
-            <div
-              className="text-gray-900 dark:text-white text-[13px]"
-              style={{ fontSize: "13px" }}
-            >
-              {singleOrder
-                ? `${singleOrder.advertiser_first_name} ${singleOrder.advertiser_last_name}`
-                : "Advertiser User Name"}
-              <span className="text-[#E23D3A]">✔️</span>
+        <section className=" rounded-[18px] p-4 flex items-center gap-4  border-2 border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[#18181D] mb-2 ">
+          <div className="flex flex-col justify-start gap-2">
+            <div className="flex items-center gap-2">
+              <div className="icon rounded-full w-8 h-8 flex items-center justify-center text-lg font-bold bg-[#1D8751] text-white">
+                {singleOrder?.advertiser_first_name?.[0] || "A"}
+              </div>
+              <div
+                className="text-gray-900 dark:text-white text-sm"
+              >
+                {singleOrder
+                  ? `${singleOrder.advertiser_first_name} ${singleOrder.advertiser_last_name}`
+                  : "Advertiser User Name"}
+                <span className="text-[#E23D3A]">✔️</span>
+              </div>
             </div>
-            <div className="text-xs text-gray-500 dark:text-[#788099]">
-              {singleOrder?.user_total_buy_orders || 120} Orders |{" "}
-              {singleOrder?.completion_rate || "99.20"}% Completion
-            </div>
-            <div className="text-xs text-[#1D8751]">
-              Rating: 99% | Commission: {singleOrder?.commission_rate || "0.5"}%
-            </div>
-          </div>
-          <div className="ml-auto flex gap-8 text-xs">
+
             <div>
-              <span className="text-[13px] text-gray-900 dark:text-white">
+              <div className="text-sm text-gray-500 dark:text-[#788099]">
+                {singleOrder?.user_total_buy_orders || 120} Orders |{" "}
+                {singleOrder?.completion_rate || "99.20"}% Completion
+              </div>
+              <div className="text-sm text-[#1D8751]">
+                Rating: 99% | Commission: {singleOrder?.commission_rate || "0.5"}%
+              </div>
+            </div>
+
+          </div>
+
+          <div className="ml-auto flex gap-8 text-md">
+            <div>
+              <span className="text-sm text-gray-900 dark:text-white mb-2">
                 {singleOrder?.limit_duration || "10 Minutes"}
               </span>
               <br />
@@ -260,7 +266,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
               </span>
             </div>
             <div>
-              <span className="text-[13px] text-gray-900 dark:text-white">
+              <span className="text-sm text-gray-900 dark:text-white mb-2">
                 {singleOrder?.completion_time || "2 Minutes"}
               </span>
               <br />
@@ -269,7 +275,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
               </span>
             </div>
             <div>
-              <span className="text-[13px] text-gray-900 dark:text-white">
+              <span className="text-sm text-gray-900 dark:text-white mb-2">
                 {singleOrder?.amount || "1,200"}{" "}
                 {singleOrder?.currency || "USDT"}
               </span>
@@ -282,7 +288,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
         </section>
 
         {/* Order Info */}
-        <div className="flex items-center justify-between ">
+        <div className="flex items-center justify-between mb-2">
           <div className="text-[13px] text-base text-gray-900 dark:text-white">
             Order Info
           </div>
@@ -296,14 +302,14 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
             </span>
           </div>
         </div>
-        <section className="order-info rounded-[18px] p-2 border-2 border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[#23232B] ">
+        <section className="order-info rounded-[18px] p-4 border-2 border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[#18181D] ">
           <div className="flex flex-col md:flex-row gap-4">
             {/* I want to Send */}
             <div className="flex-1 flex flex-col mb-2 md:mb-0">
               <div className="mb-1 text-gray-600 dark:text-[#788099] text-[0.95rem] font-medium">
                 I want to Send
               </div>
-              <div className="flex items-center h-[46px] rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#23232A] px-2">
+              <div className="flex items-center h-[46px] rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#18181D] px-2">
                 <span className="text-[#1D8751] text-2xl mr-2">$</span>
                 <span className="text-[#1D8751] text-xl font-semibold">
                   {formatAmount(sendAmount)}
@@ -318,7 +324,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
               <div className="mb-1 text-gray-600 dark:text-[#788099] text-[0.95rem] font-medium">
                 I want to Receive
               </div>
-              <div className="flex items-center h-[46px] rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#23232A] px-2">
+              <div className="flex items-center h-[46px] rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#18181D] px-2">
                 {/* Placeholder for Tether/USDT icon */}
                 <span className="text-[#1D8751] text-2xl mr-2">
                   <img
@@ -373,7 +379,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
               )}
             </div>
           </div>
-          <div className="rounded-[18px] flex flex-col p-2 md:p-4 gap-4 bg-gray-50 dark:bg-[#1D1D23]">
+          <div className="rounded-[18px] flex flex-col p-2 md:p-4 gap-4 bg-gray-50 dark:bg-[#18181D] border-1 border-gray-200 dark:border-[#35353E]">
             {/* Left: Bank Info */}
             <div className="flex flex-col gap-4">
               <div className="flex flex-col md:flex-row gap-4">
@@ -391,18 +397,17 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
                 <div className="flex flex-col gap-4 w-full">
                   <div className="flex flex-col gap-4">
                     {/* Account Name */}
-                    <div className="flex flex-col md:flex-row w-full items-center gap-3">
-                      <div className="w-full flex flex-col">
-                        <span className="text-[#788099] w-32">
+                    <div>
+                        <p className="text-[#788099] w-32 mb-2">
                           Account Name
-                        </span>
-                        <span className="flex-1 px-6 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-transparent font-semibold text-lg flex items-center">
+                        </p>
+                      <div className="w-full flex gap-4">
+                        <p className="flex-1 px-6 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-[#35353E] font-semibold text-lg flex items-center">
                           <span className="w-3 h-3 font-[13px] rounded-full bg-[#1D8751] inline-block mr-2"></span>
                           {paymentDetails?.account_name}
-                        </span>
-                      </div>
-                      <button
-                        className="w-full md:w-auto mt-2 md:mt-0 px-5 py-2 rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[#23232A] font-semibold flex items-center justify-center gap-2"
+                        </p>
+                        <button
+                        className="w-full md:w-auto mt-2 md:mt-0 px-5 py-2 rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[#35353E] font-semibold flex items-center justify-center gap-2"
                         onClick={() =>
                           handleCopy(paymentDetails?.account_name || "")
                         }
@@ -410,45 +415,46 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
                         Copy
                         <Copy className="w-4 h-4" />
                       </button>
+                      </div>
                     </div>
                     {/* Account Number */}
-                    <div className="flex flex-col md:flex-row w-full items-center gap-3">
-                      <div className="w-full flex flex-col">
-                        <span className="text-[#788099] w-32">
+                    <div>
+                        <p className="text-[#788099] w-32 mb-2">
                           Account Number
-                        </span>
-                        <span className="flex-1 px-6 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-transparent font-semibold text-lg flex items-center">
+                        </p>
+                      <div className="w-full flex gap-4">
+                        <p className="flex-1 px-6 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-[#35353E] font-semibold text-lg flex items-center">
                           <span className="w-3 h-3 font-[13px] rounded-full bg-[#1D8751] inline-block mr-2"></span>
                           {paymentDetails?.account_number}
-                        </span>
+                        </p>
+                        <button
+                          className="w-full md:w-auto mt-2 md:mt-0 px-5 py-2 rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[#35353E] font-semibold flex items-center justify-center gap-2"
+                          onClick={() =>
+                            handleCopy(paymentDetails?.account_number || "")
+                          }
+                        >
+                          Copy
+                          <Copy className="w-4 h-4" />
+                        </button>
                       </div>
-                      <button
-                        className="w-full md:w-auto mt-2 md:mt-0 px-5 py-2 rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[#23232A] font-semibold flex items-center justify-center gap-2"
-                        onClick={() =>
-                          handleCopy(paymentDetails?.account_number || "")
-                        }
-                      >
-                        Copy
-                        <Copy className="w-4 h-4" />
-                      </button>
                     </div>
                     {/* Transaction ID */}
-                    <div className="flex flex-col md:flex-row items-center gap-3">
-                      <div className="w-full flex flex-col">
-                        <span className="text-[#788099] w-32">
+                    <div>
+                        <p className="text-[#788099] w-32 text mb-2">
                           Transaction ID
-                        </span>
-                        <span className="flex-1 font-[13px] px-6 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-transparent flex items-center">
+                        </p>
+                      <div className="w-full flex gap-4">
+                        <p className="flex-1 font-[13px] px-6 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-[#35353E] flex items-center">
                           {singleOrder?.id}
-                        </span>
+                        </p>
+                        <button
+                          className="w-full md:w-auto mt-2 md:mt-0 px-5 py-2 font-[13px] rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[#35353E] flex items-center justify-center gap-2"
+                          onClick={() => handleCopy(singleOrder?.id || "")}
+                        >
+                          Copy
+                          <Copy className="w-4 h-4" />
+                        </button>
                       </div>
-                      <button
-                        className="w-full md:w-auto mt-2 md:mt-0 px-5 py-2 font-[13px] rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[#23232A] flex items-center justify-center gap-2"
-                        onClick={() => handleCopy(singleOrder?.id || "")}
-                      >
-                        Copy
-                        <Copy className="w-4 h-4" />
-                      </button>
                     </div>
                   </div>
                 </div>

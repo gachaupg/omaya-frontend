@@ -109,7 +109,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
             /* ---------------- table rows --------------- */
             data.map((row, idx) => (
               <React.Fragment key={idx}>
-                <div className="grid grid-cols-5 items-center py-4 px-4 border-b last:border-b-0 bg-white hover:bg-gray-50 border-gray-200 dark:bg-[#23232B] dark:hover:bg-[#2d2d36] dark:border-[#35353E]">
+                <div className="grid grid-cols-5 items-center py-4 px-4 border-b last:border-b-0 bg-white hover:bg-gray-50 border-gray-200 dark:bg-[#18181D] dark:hover:bg-[#2d2d36] dark:border-[#35353E]">
                   {/* Advertiser */}
                   <div className="flex flex-col gap-1 min-w-[200px]">
                     <div className="flex items-center gap-2">

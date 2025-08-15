@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Card from "../../Common/Card";
 import Button from "../../Common/Button";
@@ -13,8 +13,10 @@ import {
   updateProfileThunk,
   getP2PProfileThunk,
 } from "../../../slices/orderSlice";
+import useSound from "use-sound";
 
 const UserCard = () => {
+
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -25,6 +27,9 @@ const UserCard = () => {
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
+const audioRef = useRef<HTMLAudioElement | null>(null);
+const [audioEnabled, setAudioEnabled] = useState(false);
+const [prevMatchedCount, setPrevMatchedCount] = useState(0);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -41,6 +46,34 @@ const UserCard = () => {
         });
     }
   }, [dispatch, isAuthenticated]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      audioRef.current = new Audio('/sounds/notification.mp3');
+      audioRef.current.volume = 0.3;
+    }
+  }, []);
+
+  // Enable audio after first user interaction
+  useEffect(() => {
+    const enableAudio = () => setAudioEnabled(true);
+    window.addEventListener('click', enableAudio, { once: true });
+    return () => window.removeEventListener('click', enableAudio);
+  }, []);
+
+  // Play when matchedTrades increases
+  useEffect(() => {
+    if (!audioEnabled || !audioRef.current) return;
+    const currentCount = matchedTrades?.results?.length || 0;
+
+    if (currentCount > prevMatchedCount) {
+      audioRef.current.play().catch(err => {
+        console.log('🔕 Play blocked:', err);
+      });
+    }
+    setPrevMatchedCount(currentCount);
+  }, [matchedTrades, audioEnabled]);
+
 
   const handleImageClick = () => {
     fileInputRef.current?.click();
@@ -88,9 +121,9 @@ const UserCard = () => {
     <Card
       borderColor="border-[#35353E]"
       width="w-full"
-      bgColor="bg-[#1D1D23]"
+      bgColor="bg-[#18D181]"
       borderRadius="rounded-[20px]"
-      className="p-2 dark:bg-[#1D1D23] bg-white"
+      className="p-2 dark:bg-[#18181D] bg-white"
     >
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between w-full gap-3 md:gap-0">
         <div className="flex items-center gap-2">
