@@ -294,7 +294,7 @@ const MarketTable = () => {
   return (
     <div className="bg-white dark:bg-[#18181D] min-h-screen py-8 text-gray-900 dark:text-[#788099] font-sans">
       {/* Top Section */}
-      <div className="max-w-[1000px] mx-auto mb-6 px-6">
+      <div className="container mx-auto mb-6 px-6">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-gray-900 dark:text-[#fff] text-2xl font-bold">
             Market Review
@@ -413,7 +413,7 @@ const MarketTable = () => {
         </div>
 
         {/* Table Section with rounded border */}
-        <div className="rounded-2xl border border-gray-200 dark:border-[#35353E] overflow-hidden bg-white dark:bg-[#18181D] shadow-lg max-w-[1000px] mx-auto">
+        <div className="rounded-2xl border border-gray-200 dark:border-[#35353E] overflow-hidden bg-white dark:bg-[#18181D] shadow-lg container mx-auto">
           {loading && markets.length === 0 ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#13B562]"></div>

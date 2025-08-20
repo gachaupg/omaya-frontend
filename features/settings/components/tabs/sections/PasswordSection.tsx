@@ -93,13 +93,13 @@ const PasswordSection: React.FC = () => {
         3-Password
       </div>
 
-      <section className="dark:bg-[#1D1D23] bg-gray-50 rounded-xl dark:border-[#35353E] border-gray-300 border-2 p-3 shadow-lg">
+      <section className="dark:bg-[#1D1D23] bg-white rounded-xl dark:border-[#35353E] border-[#E8EFF5] border-2 p-3 shadow-lg">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
           <div>
-            <label className="block text-xs dark:text-[#fff] text-gray-700 mb-1">
+            <label className="block text-xs dark:text-[#fff] text-[#051015] mb-1">
               Current Password*
             </label>
-            <div className="flex items-center dark:bg-[#23232B] bg-gray-100 rounded-lg px-3 py-2 dark:border-[#35353E] border-gray-300 border">
+            <div className="flex items-center dark:bg-[#23232B] bg-gray-100 rounded-lg px-3 py-2 dark:border-[#35353E] border-[#E8EFF5] border">
               <svg
                 width="16"
                 height="16"
@@ -119,7 +119,7 @@ const PasswordSection: React.FC = () => {
               </svg>
               <input
                 type={showPasswords.current ? "text" : "password"}
-                className="bg-transparent flex-1 ml-2 outline-none text-sm text-white"
+                className="bg-transparent flex-1 ml-2 outline-none text-sm text-[#788099] dark:text-white"
                 placeholder="Enter current password"
                 value={formData.current_password}
                 onChange={(e) =>
@@ -160,7 +160,7 @@ const PasswordSection: React.FC = () => {
             )}
           </div>
           <div>
-            <label className="block text-xs dark:text-[#fff] text-gray-700 mb-1">
+            <label className="block text-xs dark:text-[#fff] text-[#051015] mb-1">
               New Password*
             </label>
             <div className="flex items-center dark:bg-[#23232B] bg-gray-100 rounded-lg px-3 py-2 dark:border-[#35353E] border-gray-300 border">
@@ -183,7 +183,7 @@ const PasswordSection: React.FC = () => {
               </svg>
               <input
                 type={showPasswords.new ? "text" : "password"}
-                className="bg-transparent flex-1 ml-2 outline-none text-sm text-white"
+                className="bg-transparent flex-1 ml-2 outline-none text-sm text-[#788099] dark:text-white"
                 placeholder="Enter new password"
                 value={formData.new_password}
                 onChange={(e) =>
@@ -224,7 +224,7 @@ const PasswordSection: React.FC = () => {
             )}
           </div>
           <div className="md:col-span-2">
-            <label className="block text-xs dark:text-[#fff] text-gray-700 mb-1">
+            <label className="block text-xs dark:text-[#fff] text-[#051015] mb-1">
               Confirm New Password*
             </label>
             <div className="flex items-center dark:bg-[#23232B] bg-gray-100 rounded-lg px-3 py-2 dark:border-[#35353E] border-gray-300 border">
@@ -247,7 +247,7 @@ const PasswordSection: React.FC = () => {
               </svg>
               <input
                 type={showPasswords.confirm ? "text" : "password"}
-                className="bg-transparent flex-1 ml-2 outline-none text-sm text-white"
+                className="bg-transparent flex-1 ml-2 outline-none text-sm text-[#788099] dark:text-white"
                 placeholder="Confirm new password"
                 value={formData.confirm_password}
                 onChange={(e) =>
@@ -258,7 +258,7 @@ const PasswordSection: React.FC = () => {
               <button
                 type="button"
                 onClick={() => togglePasswordVisibility("confirm")}
-                className="dark:text-[#788099] text-gray-500 dark:hover:text-white hover:text-gray-700 transition-colors"
+                className="dark:text-[#788099] text-[#788099] dark:hover:text-white hover:text-gray-700 transition-colors"
               >
                 <svg
                   width="16"

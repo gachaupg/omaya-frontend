@@ -821,13 +821,13 @@ export default function MarketingPage() {
             </h2>
 
             {/* Category toggle buttons */}
-            <div className="mt-6 inline-flex bg-[#1D1D23] rounded-full p-1">
+            <div className="mt-6 inline-flex bg-white dark:bg-[#1D1D23] rounded-full">
               <button
                 onClick={() => setActiveCategory("News")}
                 className={`px-6 py-2 rounded-full text-sm font-medium flex 2xl:text-lg items-center gap-2 transition-colors ${
                   activeCategory === "News"
                     ? "bg-[#1D8751] text-white"
-                    : "text-gray-300"
+                    : "text-[#788099]"
                 }`}
               >
                 <span
@@ -850,7 +850,7 @@ export default function MarketingPage() {
                 className={`px-6 py-2 rounded-full text-sm 2xl:text-lg font-medium flex items-center gap-2 transition-colors ${
                   activeCategory === "Blog"
                     ? "bg-[#1D8751] text-white"
-                    : "text-gray-300"
+                    : "text-[#788099]"
                 }`}
               >
                 <span

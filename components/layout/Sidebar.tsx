@@ -18,7 +18,7 @@ export default function Sidebar() {
       {/* Desktop Sidebar */}
       <aside
         className={clsx(
-          "hidden md:block  left-0 rounded-xl shadow-lg",
+          "hidden md:block  left-0  ",
           "w-[222.28px]"
         )}
       >
@@ -35,8 +35,8 @@ export default function Sidebar() {
                       "flex items-center px-6 py-3 rounded-lg text-base font-medium gap-4 transition",
                       "w-full sm:w-auto",
                       isActive
-                        ? "bg-[#303038] text-white"
-                        : "text-[#727272] hover:text-white hover:bg-[#23262F]"
+                        ? "bg-[#E1E1E1] dark:bg-[#303038] text-[#051015] dark:text-white"
+                        : "text-[#727272] dark:hover:text-white hover:bg-white dark:hover:bg-[#23262F]"
                     )}
                   >
                     <img

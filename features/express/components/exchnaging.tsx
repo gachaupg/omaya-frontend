@@ -199,7 +199,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   return (
     <div className="w-full min-h-screen  flex flex-col items-center pt-2 ">
       {/* Top Card */}
-      <div className="flex flex-col md:flex-row justify-between items-stretch bg-[#23232B] border-2 border-[#35353E] rounded-2xl p-4 shadow-lg w-full max-w-4xl mb-4 min-h-[180px]">
+      <div className="flex flex-col md:flex-row justify-between items-stretch bg-[#FFFFFF] dark:bg-[#23232B]  border-2 border:[#E8EFF5] dark:border-[#35353E] rounded-2xl p-4 shadow-lg w-full max-w-4xl mb-4 min-h-[180px]">
         <div className="flex-1 flex flex-col justify-between py-2 pr-2">
           <div>
             <div className="text-[#7B7B7B] text-xs font-semibold mb-0.5">

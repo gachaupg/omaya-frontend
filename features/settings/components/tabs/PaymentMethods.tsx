@@ -24,6 +24,7 @@ const PaymentMethods = () => {
   );
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [deletingMethodId, setDeletingMethodId] = useState<string | null>(null);
+  const [activeButton, setActiveButton] = useState("Approved");
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -51,10 +52,10 @@ const PaymentMethods = () => {
             Wallet Address
           </div>
           <div className="flex gap-2">
-            <button className="px-3 py-1 rounded-full bg-[#1D8751] text-white text-xs font-semibold focus:outline-none">
+            <button className={`px-3 py-1 rounded-full border border-[#1D8751] text-[#1D8751] text-xs font-semibold focus:outline-none ${activeButton === "Approved" ? "bg-[#1D8751] text-white" : "bg-transparent"}`} onClick={() => setActiveButton("Approved")} >
               Approved
             </button>
-            <button className="px-3 py-1 rounded-full border border-[#1D8751] text-[#1D8751] text-xs font-semibold focus:outline-none bg-transparent">
+            <button className={`px-3 py-1 rounded-full border border-[#1D8751] text-[#1D8751] text-xs font-semibold focus:outline-none ${activeButton === "Pending"? "bg-[#1D8751] text-white" : "bg-transparent"}` } onClick={() => setActiveButton("Pending")}>
               Pending
             </button>
           </div>

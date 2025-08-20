@@ -52,7 +52,7 @@ const SystemThemeSection: React.FC = () => {
             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-semibold text-sm transition-all ${
               isDark
                 ? "bg-[#1D8751] text-white"
-                : "bg-[#23232B] text-[#788099] hover:bg-[#2A2A32]"
+                : "border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white"
             }`}
             onClick={() => handleThemeChange("dark")}
             aria-pressed={isDark}
@@ -76,7 +76,7 @@ const SystemThemeSection: React.FC = () => {
             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-semibold text-sm transition-all ${
               isSystem
                 ? "bg-[#1D8751] text-white"
-                : "bg-[#23232B] text-[#788099] hover:bg-[#2A2A32]"
+                : "border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white"
             }`}
             onClick={() => handleThemeChange("system")}
             aria-pressed={isSystem}

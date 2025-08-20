@@ -77,7 +77,7 @@ const P2pWallet = ({
         P2P Balance
       </p>
       <Card
-        borderColor={`border-[${tokens.colors.dark.border}]`}
+        borderColor={`border-[#E8EFF5] dark:border-[${tokens.colors.dark.border}]`}
         width="w-full"
         bgColor={`bg-[${tokens.colors.dark.card}]`}
         borderRadius="rounded-[24px]"
@@ -128,7 +128,11 @@ const P2pWallet = ({
                   height="24" 
                   viewBox="0 0 24 24" 
                   fill="none" 
-                  stroke="currentColor" 
+                  stroke={
+                    isOpenForm === "deposit"
+                      ? "white"
+                      : '#1D8751'
+                  }
                   strokeWidth="2" 
                   strokeLinecap="round" 
                   strokeLinejoin="round"
@@ -174,7 +178,11 @@ const P2pWallet = ({
                   height="24" 
                   viewBox="0 0 24 24" 
                   fill="none" 
-                  stroke="currentColor" 
+                  stroke={
+                    isOpenForm === "withdraw"
+                      ? "white"
+                      : "#E23D3A"
+                  }
                   strokeWidth="2" 
                   strokeLinecap="round" 
                   strokeLinejoin="round" 

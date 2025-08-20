@@ -50,7 +50,7 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
         <div className="overflow-x-auto rounded-2xl">
           <table className="min-w-full text-sm text-left">
             <thead>
-              <tr className="bg-[#23232b] text-[#A0A3BC]">
+              <tr className="bg-[#E8EFF5] dark:bg-[#23232b] text-[#788099] dark:text-[#A0A3BC]">
                 <th className="px-4 py-3 font-medium">Coin</th>
                 <th className="px-4 py-3 font-medium">Type</th>
                 <th className="px-4 py-3 font-medium">Transaction ID</th>
@@ -64,10 +64,10 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
             </thead>
             <tbody>
               {[...Array(5)].map((_, index) => (
-                <tr key={index} className="border-b border-[#35354a]">
+                <tr key={index} className="border-b border-[#E8EFF5] dark:border-[#35354a]">
                   {[...Array(9)].map((_, cellIndex) => (
                     <td key={cellIndex} className="px-4 py-2">
-                      <div className="h-6 bg-[#35354a] rounded animate-pulse"></div>
+                      <div className="h-6 bg-[#E8EFF5] dark:bg-[#35354a] rounded animate-pulse"></div>
                     </td>
                   ))}
                 </tr>
@@ -104,7 +104,7 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
       <div className="overflow-x-auto rounded-2xl">
         <table className="min-w-full text-sm text-left">
           <thead>
-            <tr className="bg-[#23232b] text-[#A0A3BC]">
+            <tr className="bg-[#E8EFF5] dark:bg-[#23232b] text-[#A0A3BC]">
               <th className="px-4 py-3 font-medium">Coin</th>
               <th className="px-4 py-3 font-medium">Type</th>
               <th className="px-4 py-3 font-medium">Transaction ID</th>
@@ -119,7 +119,7 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
           <tbody>
             {currentItems.map((item) => (
               <React.Fragment key={item.trade_id}>
-                <tr className="border-b border-[#35354a] hover:bg-[#28293d] transition-colors duration-200">
+                <tr className="border-b border-[#E8EFF5] dark:border-[#35354a] dark:hover:bg-[#28293d] transition-colors duration-200">
                   {/* Coin */}
                   <td className="px-4 py-2 flex items-center gap-2">
                     <img

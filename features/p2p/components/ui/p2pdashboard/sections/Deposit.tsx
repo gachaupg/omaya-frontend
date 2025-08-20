@@ -192,39 +192,39 @@ const Deposit: React.FC = () => {
           </div>
 
           {/* ----------------------- Amount ---------------------- */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+            <div className="mb-4">
+            <label className="block text-sm font-medium text-black dark:text-gray-400 mb-2">
               Amount
             </label>
             <div
-              className={`flex items-center px-3 py-4 h-[46px] rounded-[19px] bg-gray-100 dark:bg-[#35353E] border ${borderColor(
-                "amount"
+              className={`flex items-center px-3 py-4 h-[46px] rounded-[19px] bg-white dark:bg-[#35353E] border ${borderColor(
+              "amount"
               )}`}
             >
               {selectedAsset?.asset_image && (
-                <img
-                  src={selectedAsset.asset_image}
-                  alt={selectedAsset.symbol}
-                  className="w-6 h-6 mr-3"
-                />
+              <img
+                src={selectedAsset.asset_image}
+                alt={selectedAsset.symbol}
+                className="w-6 h-6 mr-3"
+              />
               )}
               <Input
-                type="number"
-                value={amount}
-                onChange={(e) => {
-                  setAmount(e.target.value);
-                  setErrors(errors.filter((err) => err.field !== "amount"));
-                }}
-                placeholder="Enter Amount"
-                className="w-full bg-transparent border-none focus:ring-0 focus:outline-none"
-                disabled={!selectedAssetId || !selectedNetworkId}
-                step="0.01"
-                min="0"
+              type="number"
+              value={amount}
+              onChange={(e) => {
+                setAmount(e.target.value);
+                setErrors(errors.filter((err) => err.field !== "amount"));
+              }}
+              placeholder="Enter Amount"
+              className="w-full bg-transparent border-none focus:ring-0 focus:outline-none text-[#727272] dark:text-gray-400 placeholder-black dark:placeholder-gray-400"
+              disabled={!selectedAssetId || !selectedNetworkId}
+              step="0.01"
+              min="0"
               />
             </div>
             {getFieldError("amount", errors) && (
               <span className="text-red-500 text-sm mt-1">
-                {getFieldError("amount", errors)}
+              {getFieldError("amount", errors)}
               </span>
             )}
           </div>

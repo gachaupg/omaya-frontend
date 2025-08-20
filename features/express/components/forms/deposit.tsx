@@ -759,16 +759,16 @@ export default function DepositForm({
   }, [selectedPaymentDetail]);
 
   return (
-    <div className="w-full min-h-screen flex flex-col justify- bg-[#18181f]">
+    <div className="w-full min-h-screen flex flex-col justify- bg-[#FFFFFF] dark:bg-[#18181D]">
       <h2 className="text-xl font-bold  mb-2 text-[#788099]">
         <span className="text-[#7e7e8f]">1-</span> Transaction Info
       </h2>
       <div className=" flex items-center justify-center ">
-        <div className="bg-[#23232b] border-2 border-[#35353E]  rounded-2xl p-3 shadow-lg w-full max-w-4xl mx-auto text-white">
+        <div className="bg-[FFFFFF] dark:bg-[#23232b] border-2 border-[#E8EFF5] dark:border-[#35353E]  rounded-2xl p-3 shadow-lg w-full max-w-4xl mx-auto text-white">
           {/* First Row - Amount and Bank/Payment Method */}
           <div className="flex flex-col md:flex-row gap-3 mb-2">
             <div className="flex-1">
-              <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+              <label className="block text-[17px] text-[#051015] dark:text-[#7e7e8f] mb-2 font-medium">
                 Amount
               </label>
               <div className="relative">
@@ -807,7 +807,7 @@ export default function DepositForm({
                   }}
                   onFocus={() => setIsCalculatingFromPay(true)}
                   placeholder="Enter amount"
-                  className="w-full bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg text-white focus:outline-none border border-[#39394a] appearance-none"
+                  className="w-full bg-[#EEF1F4] dark:bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg text-[#051015] dark:text-white focus:outline-none border border-[#E8EFF5]  dark:border-[#39394a] appearance-none"
                 />
                 {isCalculatingReceive && isCalculatingFromPay && (
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -817,7 +817,7 @@ export default function DepositForm({
               </div>
             </div>
             <div className="flex-1">
-              <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+              <label className="block text-[17px] text-[#051015] dark:text-[#7e7e8f] mb-2 font-medium">
                 Bank/Payment Method
               </label>
               <div className="relative">
@@ -836,7 +836,7 @@ export default function DepositForm({
                     setSelectedPaymentDetail(selectedPayment || null);
                   }}
                   disabled={loading}
-                  className="w-full bg-[#1D1D23] rounded-2xl px-9 py-2 text-lg text-white focus:outline-none border border-[#39394a] appearance-none disabled:opacity-50"
+                  className="w-full bg-white dark:bg-[#1D1D23] rounded-2xl px-9 py-2 text-lg text-[#051015] bg:text-white focus:outline-none border border-[#E8EFF5] dark:border-[#39394a] appearance-none disabled:opacity-50"
                 >
                   <option value="">
                     {loading
@@ -854,7 +854,7 @@ export default function DepositForm({
             </div>
           </div>
           {/* Fee & Rate - Dynamic based on selected asset */}
-          <div className="flex items-center rounded-2xl border border-[#39394a] bg-[#23232b] px-2 py-2 mb-3">
+          <div className="flex items-center rounded-2xl border border-[#E8EFF5] dark:border-[#39394a] bg-white dark:bg-[#23232b] px-2 py-2 mb-3">
             <div className="flex flex-col gap-2 flex-1">
               <span className="flex items-center bg-[#F79330] text-white rounded-full px-5 py-1 text-sm font-medium w-fit">
                 <span className="w-2 h-2 bg-white rounded-full mr-2 inline-block"></span>
@@ -880,7 +880,7 @@ export default function DepositForm({
           {/* Second Row - You Get Amount and Asset */}
           <div className="flex flex-col md:flex-row gap-3 mb-2">
             <div className="flex-1">
-              <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+              <label className="block text-md text-[#051015] dark:text-[#7e7e8f] mb-2 font-medium">
                 You Recieve
               </label>
               <div className="relative">
@@ -914,7 +914,7 @@ export default function DepositForm({
                   }}
                   onFocus={() => setIsCalculatingFromPay(false)}
                   placeholder="Enter amount"
-                  className="w-full bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg text-white focus:outline-none border border-[#39394a] appearance-none"
+                  className="w-full bg-white dark:bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg  text-[#051015] bg:text-white focus:outline-none border border-[#E8EFF5] dark:border-[#39394a] appearance-none"
                 />
                 {isCalculatingReceive && (
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -924,12 +924,12 @@ export default function DepositForm({
               </div>
             </div>
             <div className="flex-1">
-              <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+              <label className="block text-[17px] text-[#051015] dark:text-[#7e7e8f] mb-2 font-medium">
                 Asset
               </label>
               <div className="relative" ref={assetDropdownRef}>
                 <div
-                  className={`w-full bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg text-white focus:outline-none border border-[#39394a] flex items-center justify-between ${
+                  className={`w-full bg-[#E8EFF5] dark:bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg text-[#051015] dark:text-white  focus:outline-none border border-[#E8EFF5] dark:border-[#39394a] flex items-center justify-between ${
                     !payAmount || payAmount <= 0
                       ? "opacity-50 cursor-not-allowed"
                       : "cursor-pointer"
