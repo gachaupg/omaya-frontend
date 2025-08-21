@@ -87,11 +87,11 @@ function UserCard() {
 
   return (
     <Card
-      borderColor="border-[#35353E]"
+      borderColor="border-[#E8EFF5] dark:border-[#35353E]"
       width="w-full"
       bgColor="bg-[#1D1D23]"
       borderRadius="rounded-[20px]"
-      className="p-2 dark:bg-[#1D1D23] bg-[#F5F5F5]"
+      className="p-2 dark:bg-[#1D1D23] bg-white"
     >
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between w-full gap-3 md:gap-0">
         <div className="flex items-center gap-2">

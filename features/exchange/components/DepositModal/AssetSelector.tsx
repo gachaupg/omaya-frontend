@@ -76,7 +76,7 @@ const AssetSelector: React.FC<AssetSelectorProps> = ({
       </div>
       {/* Transaction Info Fields */}
       <div>
-        <h2 className="text-lg font-semibold mb-4 text-white">1- Transaction Info</h2>
+        <h2 className="text-lg font-semibold mb-4 text-white">1- Transaction Info---</h2>
         <div className='mb-8 bg-[#1D1D23] border border-[#35353E] p-4 rounded-xl'>
         {currentAssetType === 'Crypto' ? (
           <>

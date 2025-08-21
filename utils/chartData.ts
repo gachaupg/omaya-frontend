@@ -31,7 +31,7 @@ export const p2pOverviewData: LineChartData = {
 // Dummy data for Overview Total (Donut)
 export const overviewTotalData = (
   transactionSummary: TransactionSummary,
-  type: "exchange" | "p2p" | "buy" | "swap" = "exchange"
+  type: "exchange" | "p2p" |"swap" = "exchange"
 ): DonutChartData[] => {
   if (type === "p2p") {
     return [
@@ -54,7 +54,7 @@ export const overviewTotalData = (
       },
     ];
   }
-  if (type === "buy" || type === "swap") {
+  if (type === "swap") {
     return [];
   }
   return [
@@ -125,7 +125,7 @@ export const referralCommissionsData = (
 // Summary values
 export const overviewTotalSummary = (
   transactionSummary: TransactionSummary,
-  type: "exchange" | "p2p" | "buy" | "swap" = "exchange"
+  type: "exchange" | "p2p" | "swap" = "exchange"
 ) => {
   if (type === "p2p") {
     return {
@@ -133,7 +133,7 @@ export const overviewTotalSummary = (
       currency: "USD",
     };
   }
-  if (type === "buy" || type === "swap") {
+  if (type === "swap") {
     return {
       total: 0,
       currency: "USD",

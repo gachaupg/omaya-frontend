@@ -141,20 +141,20 @@ const Withdraw = () => {
             <div className="flex gap-2 mb-6 border border-[#EF4444] rounded-lg p-1 w-fit">
               <button className="px-6 py-2 rounded-lg bg-[#EF4444] text-white font-semibold text-base">
                 USDT TRC20
-              </button>
-              <button className="px-6 py-2 rounded-lg bg-[#23232B] text-[#A3A3A3] font-semibold text-base">
+              </button>:
+              <button className="px-6 py-2 rounded-lg dark:bg-[#23232B] text-[#A3A3A3] font-semibold text-base">
                 Cash
               </button>
             </div>
             {/* 1- Transaction Info */}
-            <div className="text-xs font-bold mb-2">1- Transaction Info</div>
+            <div className="text-md font-bold mb-2">1- Transaction Info</div>
 
-            <div className="mb-3 p-3 border border-[#35353F] bg-[#1D1D23] rounded-lg">
+            <div className="mb-3 p-3 border border-[#E8EFF5] dark:border-[#35353F] bg-white dark:bg-[#1D1D23] rounded-lg">
               <div className="flex  flex-col md:flex-row gap-4 mb-2">
                 <div className="flex-1">
-                  <label className="block text-[#A3A3A3] mb-1">Amount</label>
+                  <label className="block text-sm text-[#788099] dark:text-[#A3A3A3] mb-1">Amount</label>
                   <input
-                    className={`w-full bg-[#18181B] border border-[#35353F] rounded-[18px] px-1 py-1 text-white text-lg focus:outline-none ${
+                    className={`w-full  bg-white dark:bg-[#18181B] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-1 py-1 text-[#788099] dark:text-white text-lg focus:outline-none ${
                       errors.amount ? "border-red-500" : ""
                     }`}
                     placeholder="102"
@@ -162,16 +162,16 @@ const Withdraw = () => {
                     onChange={(e) => setAmount(e.target.value)}
                   />
                   {errors.amount && (
-                    <div className="text-red-500 text-xs mt-1">
+                    <div className="text-red-500 text-xs mt-1 ml-2">
                       {errors.amount}
                     </div>
                   )}
                 </div>
                 <div className="flex-1">
-                  <label className="block text-[#A3A3A3] mb-1">
+                  <label className="block text-sm text-[#788099] dark:text-[#A3A3A3] mb-1">
                     I want to Recieve Net
                   </label>
-                  <div className="flex items-center bg-[#18181B] border border-[#35353F] rounded-[18px] px-1 py-1">
+                  <div className="flex items-center bg-white dark:bg-[#18181B] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-1 py-1">
                     <span className="text-[#1D8751] text-2xl font-bold mr-2">
                       $ {netAmount || "0"}
                     </span>
@@ -223,33 +223,33 @@ const Withdraw = () => {
                 </span>
               </div>
               {/* Amount & Fees */}
-              <div className=" border border-[#35353F] rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center mb-2">
+              <div className=" border border-[#E8EFF5] dark:border-[#35353F] rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center mb-2">
                 <div className="flex-1 flex flex-col ">
-                  <div className="text-[#A3A3A3] mb-1">
+                  <div className="text-[#051015] dark:text-[#A3A3A3] mb-1 text-sm">
                     Net Amount to Transfer
                   </div>
-                  <button className="w-full bg-[#35353F] text-white font-bold text-[14px] rounded-[18px] px-2 py-2">
+                  <button className="w-full bg-[#EEF1F4] dark:bg-[#35353F] text-[#051015] dark:text-white font-medium text-sm rounded-[18px] px-2 py-2">
                     Amount including Total Fees{" "}
-                    <span className="bg-[#1D8751] rounded-lg px-2 py-1 text-white text-12">
+                    <span className="bg-[#1D8751] rounded-full px-4 py-1 text-white text-12">
                       ${totalWithFees}
                     </span>
                   </button>
                 </div>
-                <div className="flex-1 border rounded-lg border-[#35353F]  p-3 flex flex-col gap-1 text-sm">
+                <div className="flex-1 border rounded-lg border-[#E8EFF5] dark:border-[#35353F] p-3 flex flex-col gap-1 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-[#A3A3A3]">Commission:</span>
+                    <span className="text-[#051015] dark:text-[#A3A3A3]">Commission:</span>
                     <span className="text-[#1D8751]">$0</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[#A3A3A3]">Network Fee:</span>
+                    <span className="text-[#051015] dark:text-[#A3A3A3]">Network Fee:</span>
                     <span className="text-[#1D8751]">$0</span>
                   </div>
 
                   {/* Divider line between Network Fee and Total Fees */}
-                  <div className="border-t border-[#35353F] my-2"></div>
+                  <div className="border-t border-[#E8EFF5] dark:border-[#35353F] my-2"></div>
 
                   <div className="flex justify-between font-bold">
-                    <span className="text-[#A3A3A3]">Total Fees</span>
+                    <span className="text:[#051015] dark:text-[#A3A3A3]">Total Fees</span>
                     <span className="text-[#EF4444]">${totalFees}</span>
                   </div>
                 </div>
@@ -284,30 +284,27 @@ const Withdraw = () => {
               </div>
             </div>
 
-            {/* Divider Line */}
-            <div className="border-t border-[#35353F] my-6"></div>
-
             {/* 2- Wallet Address */}
             <div>
-              <div className="text-[14px]  font-bold mb-2">
+              <div className="text-md font-bold mb-2">
                 2- Your Wallet Address
               </div>
-              <div className="mb-2 border border-[#35353F]  bg-[#1D1D23] p-3 rounded-[18px]">
+              <div className="mb-2 border border-[#E8EFF5] dark:border-[#35353F] text_highbg-dark bg-[white] dark:bg-[#1D1D23] p-3 rounded-[18px]">
                 <label className="block text-[#A3A3A3] mb-1">
                   Wallet/Account Address
                 </label>
-                <div className="flex gap-2">
-                  <div className="flex items-center bg-[#18181B] border border-[#35353F] rounded-[18px] px-4 py-2 flex-1">
+                <div className="flex gap-2 mb-2">
+                  <div className="flex items-center dark:bg-[#18181B] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-4 py-2 flex-1">
                     <span className="text-[#1D8751] mr-2">📋</span>
                     <input
-                      className="flex-1 bg-transparent text-white text-lg focus:outline-none"
+                      className="flex-1 bg-transparent text:dark:text-white text-lg focus:outline-none"
                       placeholder="Paste here your Crypto address"
                       value={walletAddress}
                       onChange={(e) => setWalletAddress(e.target.value)}
                     />
                   </div>
                   <button
-                    className="text-[#1D8751] px-4 py-2 rounded-[18px] bg-[#35353F] text-sm border border-[#35353F] hover:bg-[#2A2A32] transition-colors"
+                    className="text-[#1D8751] px-4 py-2 rounded-[18px] bg-white dark:bg-[#35353F] text-sm border border:[#E8EFF5] dark:border-[#35353F] dark:hover:bg-[#2A2A32] transition-colors"
                     type="button"
                     onClick={handlePaste}
                   >
@@ -321,7 +318,7 @@ const Withdraw = () => {
                     checked={confirmAddress}
                     onChange={(e) => setConfirmAddress(e.target.checked)}
                   />
-                  <span className="text-[#A3A3A3]">
+                  <span className="text-[#051015] dark:text-[#A3A3A3]">
                     I confirm that the above submitted address is correct
                     Address for the Cryptocurrency I chose, and not other Crypto
                     *
@@ -332,9 +329,9 @@ const Withdraw = () => {
                     {errors.confirmAddress}
                   </div>
                 )}
-                <div className="bg-[#18181B] border border-[#1D8751] rounded-xl p-4 mb-4">
+                <div className= "bg-white dark:bg-[#18181B] border border-[#1D8751] rounded-xl p-4 mb-4">
                   <div className="flex items-center mb-2 text-[#1D8751] font-semibold text-base">
-                    <span className="text-[#A3A3A3]">Transfer Details</span>{" "}
+                    <span className="text-[#051015] dark:text-[#A3A3A3] ml-2 text-sm">Transfer Details</span>{" "}
                     <svg
                       width="18"
                       height="18"
@@ -358,8 +355,8 @@ const Withdraw = () => {
                       <circle cx="12" cy="16" r="1" fill="#1D8751" />
                     </svg>
                   </div>
-                  <ul className="list-disc pl-6 text-[#A3A3A3] text-sm space-y-1">
-                    <li className="text-[#1D8751]">
+                  <ul className="list-disc pl-6 text-[#051015] dark:text-[#A3A3A3] text-sm space-y-1">
+                    <li className="dark:text-[#1D8751]">
                       Please send the money from your own account Only
                     </li>
                     <li>

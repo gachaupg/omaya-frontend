@@ -119,7 +119,7 @@ const [prevMatchedCount, setPrevMatchedCount] = useState(0);
 
   return (
     <Card
-      borderColor="border-[#35353E]"
+      borderColor="border-[#E8EFF5] dark:border-[#35353E]"
       width="w-full"
       bgColor="bg-[#18D181]"
       borderRadius="rounded-[20px]"

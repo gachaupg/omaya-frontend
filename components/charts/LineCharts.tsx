@@ -340,9 +340,10 @@ function DonutChartWithCenter({
         x={center}
         y={center - 2}
         textAnchor="middle"
-        fill="#fff"
+        fill="currentColor"
         fontSize="13"
         fontWeight="bold"
+        className="dark:fill-white fill-black"
       >
         {allZero ? "00" : `${formatLargeNumber(actualTotal)} USD`}
       </text>
@@ -443,7 +444,7 @@ const LineCharts = ({
   const [period, setPeriod] = useState("Month");
   const [selectedTimePeriod, setSelectedTimePeriod] = useState("All");
   const [activeTab, setActiveTab] = useState<
-    "exchange" | "p2p" | "buy" | "swap"
+    "exchange" | "p2p" | "swap"
   >("exchange");
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [chartData, setChartData] = useState<{
@@ -693,8 +694,8 @@ const LineCharts = ({
     <div className="w-full">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 w-full">
         {/* Exchange Overview */}
-        <Card className="w-full rounded-none lg:rounded-2xl dark:bg-[#1D1D23] bg-[#F5F5F5]">
-          <h3 className="dark:text-white text-[14px] mb-2 font-semibold">
+        <Card className="w-full rounded-none lg:rounded-2xl dark:bg-[#1D1D23] bg-white">
+          <h3 className="text-black dark:text-white text-[14px] mb-2 font-semibold">
             Exchange Overview (USD)
           </h3>
           <div className="flex flex-wrap justify-between items-center mb-6 gap-2">
@@ -742,8 +743,8 @@ const LineCharts = ({
           </div>
         </Card>
         {/* P2P Overview */}
-        <Card className="w-full rounded-none lg:rounded-2xl dark:bg-[#1D1D23] bg-[#F5F5F5]">
-          <h3 className="dark:text-wh text-white text-[14px] mb-2 font-semibold">
+        <Card className="w-full rounded-none lg:rounded-2xl dark:bg-[#1D1D23] bg-white">
+          <h3 className="dark:text-wh text-[#051015] dark:text-white text-[14px] mb-2 font-semibold">
             P2P Overview (USD)
           </h3>
           <div className="flex flex-wrap justify-between items-center mb-6 gap-2">
@@ -791,7 +792,7 @@ const LineCharts = ({
           </div>
         </Card>
         {/* Overview Total */}
-        <Card className="w-full rounded-none lg:rounded-2xl flex flex-col lg:flex-row items-center h-full relative dark:bg-[#1D1D23] bg-[#F5F5F5]">
+        <Card className="w-full rounded-none lg:rounded-2xl flex flex-col lg:flex-row items-center h-full relative dark:bg-[#1D1D23] bg-white">
           <div className="absolute left-0 top-0 px-2 pt-2 flex flex-wrap w-full justify-between items-center gap-2">
             <h3 className="dark:text-white text-[18px] font-semibold">
               Overview Total
@@ -827,22 +828,12 @@ const LineCharts = ({
               >
                 Swap
               </button>
-              <button
-                className={`${
-                  activeTab === "buy"
-                    ? "bg-[#1D8751] text-white"
-                    : "bg-transparent border border-[#1D8751] text-[#1D8751]"
-                } px-3 py-1 rounded-full text-[13px] font-semibold whitespace-nowrap`}
-                onClick={() => setActiveTab("buy")}
-              >
-                Buy
-              </button>
             </div>
           </div>
           <div className="flex flex-col lg:flex-row w-full pt-10">
-            {activeTab === "buy" || activeTab === "swap" ? (
+            {activeTab === "swap" ? (
               <div className="w-full text-center py-8">
-                <div className="flex flex-col items-center justify-center border border-[#35353E] rounded-[24px] p-8 bg-[#23232B]">
+                <div className="flex flex-col items-center justify-center border border-[#E8EFF5] dark:border-[#35353E] rounded-[24px] p-8 bg-[#23232B]">
                   <div className="w-16 h-16 mb-4 rounded-full bg-[#35353E] flex items-center justify-center">
                     <svg
                       width="24"
@@ -903,7 +894,7 @@ const LineCharts = ({
           </div>
         </Card>
         {/* Referral Commissions */}
-        <Card className="w-full rounded-none lg:rounded-2xl flex flex-col lg:flex-row items-center h-full relative dark:bg-[#1D1D23] bg-[#F5F5F5]">
+        <Card className="w-full rounded-none lg:rounded-2xl flex flex-col lg:flex-row items-center h-full relative dark:bg-[#1D1D23] bg-white">
           <div className="absolute left-0 top-0 px-2 pt-2 flex flex-wrap w-full justify-between items-center gap-2">
             <h3 className="dark:text-white text-[14px] mb-2 font-semibold">
               Your Referral Commissions

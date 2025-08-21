@@ -51,7 +51,7 @@ export const DonutChartWithCenter: React.FC<DonutChartWithCenterProps> = ({
         x={center}
         y={center - 2}
         textAnchor="middle"
-        fill="#fff"
+        className="fill-black dark:fill-white"
         fontSize="13"
         fontWeight="bold"
       >

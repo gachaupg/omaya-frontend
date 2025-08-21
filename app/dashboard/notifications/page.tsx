@@ -232,6 +232,7 @@ const Notifications = () => {
           const orderType = getOrderType(trade.order_type);
           const status = getStatus(trade, user?.email || "");
           const name = truncate(trade.advertiser_name || trade.owner || "", 14);
+          const profileImage = trade.buyer_photo
           return (
             <div
               key={trade.id}
@@ -240,16 +241,24 @@ const Notifications = () => {
               {/* Avatar and name/amount */}
               <div className="flex items-center min-w-[160px]">
                 <div className="relative">
+                  {profileImage ? (
+                  <img
+                    src={profileImage}
+                    alt=""
+                    className="w-9 h-9 rounded-full object-cover mr-3"
+                  />
+                  ) : (
                   <FaUserCircle
                     size={36}
                     className="text-gray-400 dark:text-[#A3A3C2] mr-3"
                   />
+                  )}
                   <div
-                    className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full ${
-                      orderType.color === "text-[#1D8751]"
-                        ? "bg-[#1D8751]"
-                        : "bg-red-400"
-                    }`}
+                  className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full ${
+                    orderType.color === "text-[#1D8751]"
+                    ? "bg-[#1D8751]"
+                    : "bg-red-400"
+                  }`}
                   ></div>
                 </div>
                 <div>

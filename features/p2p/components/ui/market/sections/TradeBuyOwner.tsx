@@ -13,7 +13,7 @@ import {
   cancelP2POrderThunk,
   completeP2PTradeThunk,
 } from "@/features/p2p/slices/orderSlice";
-import { FileIcon, SendIcon, RefreshCw, CopyIcon } from "lucide-react";
+import { FileIcon, SendIcon, RefreshCw, CopyIcon, AlertCircle } from "lucide-react";
 import AppealModal from "./appeal";
 import ChatBox from "./ChatBox";
 import { showToast } from "@/lib/utils/toast";
@@ -178,7 +178,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
   console.log(confirmOrder);
   return (
-    <div className="grid grid-cols-1 mt-10 md:grid-cols-3 gap-6 p-6 min-h-screen bg-white dark:bg-[#18181D]">
+    <div className="grid grid-cols-1 mt-10 md:grid-cols-3 gap-6 p-6 min-h-screen bg-[#EEF1F4] dark:bg-[#18181D]">
       {/* Left: Timeline/Steps */}
       <div className="md:col-span-2 flex flex-col gap-4">
         {/* Step 1: Order Created */}
@@ -192,7 +192,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             </span>
             <div className="flex items-center gap-1.5">
             <svg width="24" height="24" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-              <rect width="64" height="64" fill="#1A1A1D"/>
+              <rect width="64" height="64" fill="none"/>
               <path 
                 d="M22 8h20a2 2 0 0 1 2 2v40l-4-3.5-4 3.5-4-3.5-4 3.5-4-3.5-4 3.5V10a2 2 0 0 1 2-2z" 
                 fill="none" 
@@ -226,39 +226,48 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               </span>
             </div>
           </div>
-          <div className="flex gap-4 border-2 border-gray-200 dark:border-[#35353E] p-2 rounded-xl mt-4 bg-gray-50 dark:bg-[#23232B]">
-            <div className="flex flex-row items-center justify-between w-full  bg-gray-100 dark:bg-[#35353E] rounded-xl px-6 py-2">
-              <span className="text-[#F79330] text-lg font-bold">
-                <span className="text-[#1D8751] text-xl">$</span>{" "}
-                {formatAmount(sendAmount)}
-              </span>
-              <span className="text-xs text-[#F79330]">USD</span>
-            </div>
-            <div className="flex f w-full flex-row  justify-between items-center bg-gray-100 dark:bg-[#35353E] rounded-xl px-6 py-2">
-              <span className="text-[#1D8751] text-xl">$</span>{" "}
-              <span className="text-[#F79330] text-lg font-bold">
-                {saveOrder?.commission_rate ?? commissionRate}%
-              </span>
-              <span className="text-xs text-[#F79330]">Commission</span>
-            </div>
-            <div className="flex flex-row justify-between w-full items-center bg-gray-100 dark:bg-[#35353E] rounded-xl px-6 py-2">
-              <div className="flex flex-row items-center gap-2">
-                <Image
-                  src="https://res.cloudinary.com/pitz/image/upload/v1750918504/tether_1_yim48g.png"
-                  alt="USDT"
-                  width={20}
-                  height={20}
-                />
-                <span className="text-[#1D8751] text-lg font-bold">
-                  {formatAmount(saveOrder?.amount)}
-
-                  {formatAmount(receiveAmount)}
+          <div className="flex gap-4 border border-gray-200 dark:border-[#35353E] p-4 rounded-xl mt-4 bg-white dark:bg-[#18181D]">
+            <div className="flex flex-col gap-2 w-full">
+              <p className="text-[#788099] text-sm">Fiat USD</p>
+              <div className="flex flex-row items-center justify-between w-full  bg-[#EEF1F4] dark:bg-[#35353E] rounded-xl px-6 py-2">
+                <span className="text-[#F79330] text-lg font-bold">
+                  <span className="text-[#1D8751] text-xl">$</span>{" "}
+                  {formatAmount(sendAmount)}
                 </span>
+                <span className="text-xs text-[#F79330]">USD</span>
               </div>
-              <span className="text-xs text-gray-500 dark:text-[#A3A3C2]">
-                USDT
-              </span>
             </div>
+
+            <div className="flex flex-col gap-2 w-full">
+              <p className="text-[#788099] text-sm">Commission</p>
+              <div className="flex f w-full flex-row  justify-between items-center bg-[#EEF1F4] dark:bg-[#35353E] rounded-xl px-6 py-2">
+                <span className="text-[#1D8751] text-xl">$ {saveOrder?.commission_rate ?? commissionRate}%</span>
+                <span className="text-sm text-[#051015] dark:text-[#F79330]">USD</span>
+              </div>             
+            </div>
+
+            <div className="flex flex-col gap-2 w-full">
+              <p className="text-[#788099] text-sm">Total Quantity</p>
+              <div className="flex flex-row justify-between w-full items-center bg-[#EEF1F4] dark:bg-[#35353E] rounded-xl px-6 py-2">
+                <div className="flex flex-row items-center gap-2">
+                  <Image
+                    src="https://res.cloudinary.com/pitz/image/upload/v1750918504/tether_1_yim48g.png"
+                    alt="USDT"
+                    width={20}
+                    height={20}
+                  />
+                  <span className="text-[#1D8751] text-lg font-bold">
+                    {formatAmount(saveOrder?.amount)}
+
+                    {formatAmount(receiveAmount)}
+                  </span>
+                </div>
+                <span className="text-xs text-[#F79330] dark:text-[#A3A3C2]">
+                  USDT
+                </span>
+              </div>             
+            </div>
+
           </div>
         </div>
 
@@ -268,9 +277,12 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             2
           </div>
           <span className="text-gray-900 dark:text-white font-semibold text-lg">
-            Confirm Payment From Buyer
+            Confirm Payment is from {singleOrder?.advertiser_first_name || user?.first_name}{" "}
+                {singleOrder?.advertiser_last_name ||
+                  user?.last_name ||
+                  "Mohammed Zyad Yousef"}
           </span>
-          <div className="bg-gray-50 dark:bg-[#23232A] rounded-2xl p-6 mt-4 flex flex-col gap-6 border border-gray-200 dark:border-[#31313C]">
+          <div className="bg-white dark:bg-[#18181D] rounded-2xl p-6 mt-4 flex flex-col gap-6 border border-gray-200 dark:border-[#31313C]">
             {/* Bank Info */}
             <div className="flex items-center bg-white dark:bg-[#18181D] gap-4 border border-gray-200 dark:border-[#35353E] rounded-xl px-4 py-3 w-fit mb-2">
               <div className="w-10 h-10 rounded-full text-black bg-white flex items-center justify-center overflow-hidden">
@@ -282,11 +294,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               </span>
             </div>
             {/* Account Name */}
-            <div>
-              <div className="text-gray-600 dark:text-[#A3A3C2] text-base mb-1">
+            <div className="flex items-center gap-4">
+              <div className="text-gray-600 dark:text-[#A3A3C2] text-base mb-1 w-1/4 min-w-[100px]">
                 Account Name
               </div>
-              <div className="flex items-center bg-gray-100 dark:bg-[#35353E] rounded-full px-6 py-3">
+              <div className="flex items-center bg-gray-100 dark:bg-[#35353E] border border-[#1D8751] rounded-full px-6 py-2 flex-1">
                 <span className="w-3 h-3 rounded-full bg-[#1D8751] mr-3 inline-block"></span>
                 <span className="text-[#1D8751] font-semibold text-lg">
                   {paymentDetails?.account_name || "Omar Ali"}
@@ -304,11 +316,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               </div>
             </div>
             {/* Account Number */}
-            <div>
-              <div className="text-gray-600 dark:text-[#A3A3C2] text-base mb-1">
+            <div className="flex items-center gap-4">
+              <div className="text-gray-600 dark:text-[#A3A3C2] text-base mb-1 w-1/4 min-w-[100px]">
                 Account Number
               </div>
-              <div className="flex items-center bg-gray-100 dark:bg-[#35353E] rounded-full px-6 py-3">
+              <div className="flex items-center bg-gray-100 dark:bg-[#35353E] border border-[#1D8751] rounded-full px-6 py-2 flex-1">
                 <span className="w-3 h-3 rounded-full bg-[#1D8751] mr-3 inline-block"></span>
                 <span className="text-[#1D8751] font-semibold text-lg">
                   {paymentDetails?.account_number || "123456789"}
@@ -326,17 +338,20 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               </div>
             </div>
             {/* Buyer's Name */}
-            <div className="border-2 border-[#F6A948] rounded-xl px-2 md:px-2 py-2 flex items-center mt-2 bg-gray-100 dark:bg-[#23232A]">
-              <span className="text-[#F6A948] font-semibold text-xl mr-6">
+            <div className="border border-[#F79330] rounded-2xl px-2 md:px-8 py-6 flex items-center justify-between mt-2 bg-white dark:bg-[#23232A]">
+              <p className="text-[#F79330] font-semibold text-lg mr-6">
                 Buyer&apos;s Name
-              </span>
-              <span className="w-3 h-3 rounded-full bg-white mr-3 inline-block"></span>
-              <span className="text-gray-900 dark:text-white font-semibold text-lg">
-                {singleOrder?.advertiser_first_name || user?.first_name}{" "}
-                {singleOrder?.advertiser_last_name ||
-                  user?.last_name ||
-                  "Mohammed Zyad Yousef"}
-              </span>
+              </p>
+              <div>
+               <span className="w-3 h-3 rounded-full bg-[#051015] dark:bg-white mr-3 inline-block"></span>
+                <span className="text-gray-900 dark:text-white font-semibold text-lg">
+                  {singleOrder?.advertiser_first_name || user?.first_name}{" "}
+                  {singleOrder?.advertiser_last_name ||
+                    user?.last_name ||
+                    "Mohammed Zyad Yousef"}
+                </span>
+
+              </div>
             </div>
           </div>
         </div>
@@ -349,7 +364,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           <span className="text-gray-900 dark:text-white font-semibold text-lg">
             Confirm payment is received.
           </span>
-          <div className="text-xs text-gray-500 dark:text-[#A3A3C2] mt-2">
+          <div className="text-md text-gray-500 dark:text-[#A3A3C2] mt-2">
             After confirming the payment, be sure to click Payment Received
             button below
           </div>
@@ -361,8 +376,8 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               className={`${
                 confirmOrder?.status === "matched"
                   ? "bg-gray-100 dark:bg-[#23232A]"
-                  : "bg-[#1D8751]"
-              } text-gray-900 dark:text-white rounded-lg px-6 py-2 font-semibold ${
+                  : "bg-[#1D8751] text-white"
+              }  dark:text-white rounded-lg px-6 py-2 font-semibold ${
                 confirmTradeLoading ||
                 !confirmOrder?.id ||
                 confirmOrder?.status === "matched"
@@ -392,8 +407,9 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
         />
         {/* Advertiser's Terms */}
         <section className="advertiser-terms rounded-lg p-4 bg-gray-50 dark:bg-[#23232B]">
-          <div className="font-semibold text-lg mb-2 text-gray-900 dark:text-white">
-            Advertiser's Terms <span className="text-[#E23D3A]">⦿</span>
+          <div className="font-semibold text-lg mb-2 text-gray-900 dark:text-white flex items-center gap-2">
+            Advertiser's Terms
+            <AlertCircle className="w-5 h-5 text-[#E23D3A]" />
           </div>
           <div className="text-xs flex flex-col gap-2">
             <div className="text-[#1D8751]">

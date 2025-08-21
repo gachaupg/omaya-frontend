@@ -3,9 +3,9 @@ import React, { useState } from "react";
 import ExchangeTransactions from "../sections/ExchangeTransactions";
 import P2PTransactions from "../sections/P2PTransactions";
 import SwapTransactions from "../sections/SwapTransactions";
-import BuyTransactions from "../sections/BuyTransactions";
 
-type TabType = "exchange" | "p2p" | "swap" | "buy";
+
+type TabType = "exchange" | "p2p" | "swap";
 
 // Reusable NoDataFound component
 export const NoDataFound = ({
@@ -70,15 +70,13 @@ const Transactions = () => {
         return <P2PTransactions />;
       case "swap":
         return <SwapTransactions />;
-      case "buy":
-        return <BuyTransactions />;
       default:
         return <ExchangeTransactions />;
     }
   };
 
   return (
-    <div className="dark:bg-[#1D1D23] bg-[#F5F5F5] border-2 border-[#35353E] rounded-2xl p-4">
+    <div className="dark:bg-[#1D1D23] bg-white border border-[#E8EFF5] dark:border-[#35353E] rounded-2xl p-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4">
         <h2 className="text-xl sm:text-2xl font-semibold dark:text-white text-[#0D0D0D]">
           My Transactions
@@ -113,16 +111,6 @@ const Transactions = () => {
             } px-4 sm:px-6 py-2 rounded-full font-medium text-sm sm:text-base`}
           >
             Swap
-          </button>
-          <button
-            onClick={() => setActiveTab("buy")}
-            className={`${
-              activeTab === "buy"
-                ? "bg-[#1D8751] text-white"
-                : "border border-[#1D8751] text-[#1D8751]"
-            } px-4 sm:px-6 py-2 rounded-full font-medium text-sm sm:text-base`}
-          >
-            Buy
           </button>
         </div>
       </div>
