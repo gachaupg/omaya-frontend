@@ -1,59 +1,77 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DepositForm from "./forms/deposit";
 import WithdrawalForm from "./forms/withdrwal";
 
 interface ExpressExchangeFormProps {
-  onExchange?: (transactionData: any) => void;
+  onExchange: (transactionData: {
+    type: "deposit" | "withdrawal";
+    amount: number;
+    asset: any;
+    paymentDetail?: any;
+    paymentDetails?: any[];
+    walletAddress: string;
+    network: any;
+    transactionId?: string;
+    depositCode?: string;
+    totalAmountDue?: string;
+    commission?: string;
+    networkFee?: string;
+    currency?: string;
+    websocketUrl?: string;
+    websocket_url?: string;
+    status?: string;
+    message?: string;
+    withdrawalAddress?: string;
+    details?: {
+      withdrawal_address?: string;
+      payout_address?: string;
+      from_currency?: string;
+      to_currency?: string;
+      to_network?: string;
+      estimated_amount?: number;
+      changenow_id?: string;
+    };
+  }) => void;
+  initialMode?: "deposit" | "withdrawal";
 }
 
-export default function ExpressExchangeForm({
+const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
   onExchange,
-}: ExpressExchangeFormProps) {
-  const [mode, setMode] = useState<"deposit" | "withdrawal">("deposit");
+  initialMode = "deposit",
+}) => {
+  const [mode, setMode] = useState<"deposit" | "withdrawal">(initialMode);
+
+  const handleModeChange = (newMode: "deposit" | "withdrawal") => {
+    setMode(newMode);
+  };
+
+  // Update mode when initialMode prop changes
+  useEffect(() => {
+    setMode(initialMode);
+  }, [initialMode]);
 
   return (
-    <div className="w-full min-h-screen flex flex-col justify-center bg-[#18181f]">
-      {/* Mode Toggle Button */}
-      {/* <div className="flex">
-        <div className="bg-[#23232b] border border-[#39394a] rounded-2xl p-1 flex">
-          <button
-            onClick={() => setMode("deposit")}
-            className={`px-6 py-2 rounded-xl font-medium transition-colors ${
-              mode === "deposit"
-                ? "bg-[#1D8751] text-white"
-                : "text-[#788099] hover:text-white"
-            }`}
-          >
-            Deposit
-          </button>
-          <button
-            onClick={() => setMode("withdrawal")}
-            className={`px-6 py-2 rounded-xl font-medium transition-colors ${
-              mode === "withdrawal"
-                ? "bg-[#dc2626] text-white"
-                : "text-[#788099] hover:text-white"
-            }`}
-          >
-            Withdrawal
-          </button>
-        </div>
-      </div> */}
+    <div className="max-w-4xl w-full mx-auto p-0">
+      {/* Mode Selection */}
+      
 
-      {/* Render the appropriate form based on mode */}
+      {/* Form Component */}
       {mode === "deposit" ? (
         <DepositForm
           onExchange={onExchange}
           mode={mode}
-          onModeChange={setMode}
+          onModeChange={handleModeChange}
         />
       ) : (
         <WithdrawalForm
           onExchange={onExchange}
           mode={mode}
-          onModeChange={setMode}
+          onModeChange={handleModeChange}
         />
       )}
     </div>
   );
-}
+};
+
+export default ExpressExchangeForm;

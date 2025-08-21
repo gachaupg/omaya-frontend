@@ -141,7 +141,7 @@ interface DepositFormProps {
   onModeChange?: (mode: "deposit" | "withdrawal") => void;
 }
 
-export default function DepositForm({
+export default function WithdrawalForm({
   onExchange,
   mode,
   onModeChange,
