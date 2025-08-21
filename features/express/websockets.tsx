@@ -58,12 +58,14 @@ export class BaseTransactionStatusWebSocket {
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        console.log(
-          "DEBUG: WebSocket connecting with transactionId:",
-          this.transactionId
-        );
-        console.log("DEBUG: WebSocket URL:", this.wsUrl);
-        this.ws = new WebSocket(this.wsUrl);
+                 console.log(
+           "DEBUG: WebSocket connecting with transactionId:",
+           this.transactionId
+         );
+         console.log("DEBUG: WebSocket URL:", this.wsUrl);
+         console.log("DEBUG: WebSocket URL type:", this.wsUrl.includes("changenow.io") ? "ChangeNow" : "Backend");
+         console.log("DEBUG: WebSocket protocol:", this.wsUrl.startsWith('ws://') ? 'ws://' : this.wsUrl.startsWith('wss://') ? 'wss://' : 'unknown');
+         this.ws = new WebSocket(this.wsUrl);
 
         // Add connection timeout
         const connectionTimeout = setTimeout(() => {
@@ -185,6 +187,7 @@ export class BaseTransactionStatusWebSocket {
 export class WithdrawalStatusWebSocket extends BaseTransactionStatusWebSocket {
   constructor(
     transactionId: string,
+    wsUrl?: string,
     options: {
       onMessage?: (data: TransactionStatusMessage) => void;
       onError?: (error: Event) => void;
@@ -192,8 +195,17 @@ export class WithdrawalStatusWebSocket extends BaseTransactionStatusWebSocket {
       autoReconnect?: boolean;
     } = {}
   ) {
-    const wsUrl = API_CONFIG.EXCHANGE.SOCKETS.TRANSACTION_STATUS(transactionId);
-    super(transactionId, wsUrl, options);
+    // Use provided WebSocket URL or fall back to default
+    // Only use provided URL if it's not empty or undefined
+    const finalWsUrl = (wsUrl && wsUrl.trim() !== "") 
+      ? wsUrl 
+      : API_CONFIG.EXCHANGE.SOCKETS.TRANSACTION_STATUS(transactionId);
+    
+    console.log("DEBUG: WithdrawalStatusWebSocket constructor - wsUrl:", wsUrl);
+    console.log("DEBUG: WithdrawalStatusWebSocket constructor - finalWsUrl:", finalWsUrl);
+    console.log("DEBUG: Using provided URL:", !!wsUrl);
+    console.log("DEBUG: URL is empty/undefined:", !wsUrl || wsUrl.trim() === "");
+    super(transactionId, finalWsUrl, options);
   }
 }
 
@@ -222,6 +234,7 @@ export class TransactionStatusWebSocket extends WithdrawalStatusWebSocket {
 export const useTransactionStatusWebSocket = (
   transactionId: string,
   transactionType: "deposit" | "withdrawal" = "withdrawal",
+  wsUrl?: string,
   options: {
     onMessage?: (data: TransactionStatusMessage) => void;
     onError?: (error: Event) => void;
@@ -237,13 +250,17 @@ export const useTransactionStatusWebSocket = (
   React.useEffect(() => {
     if (!transactionId) return;
 
+    console.log("DEBUG: useTransactionStatusWebSocket - transactionId:", transactionId);
+    console.log("DEBUG: useTransactionStatusWebSocket - wsUrl:", wsUrl);
+    console.log("DEBUG: useTransactionStatusWebSocket - transactionType:", transactionType);
+
     // Create appropriate WebSocket class based on transaction type
     const WebSocketClass =
       transactionType === "deposit"
         ? DepositStatusWebSocket
         : WithdrawalStatusWebSocket;
 
-    const ws = new WebSocketClass(transactionId, {
+    const ws = new WebSocketClass(transactionId, wsUrl, {
       ...options,
       onMessage: (data) => {
         setLastMessage(data);
@@ -269,7 +286,7 @@ export const useTransactionStatusWebSocket = (
       ws.disconnect();
       wsRef.current = null;
     };
-  }, [transactionId, transactionType]);
+  }, [transactionId, transactionType, wsUrl]);
 
   const sendMessage = React.useCallback((message: any) => {
     wsRef.current?.send(message);
@@ -290,6 +307,7 @@ export const useTransactionStatusWebSocket = (
 // Specific hooks for deposit and withdrawal
 export const useDepositStatusWebSocket = (
   transactionId: string,
+  wsUrl?: string,
   options: {
     onMessage?: (data: TransactionStatusMessage) => void;
     onError?: (error: Event) => void;
@@ -297,11 +315,12 @@ export const useDepositStatusWebSocket = (
     autoReconnect?: boolean;
   } = {}
 ) => {
-  return useTransactionStatusWebSocket(transactionId, "deposit", options);
+  return useTransactionStatusWebSocket(transactionId, "deposit", wsUrl, options);
 };
 
 export const useWithdrawalStatusWebSocket = (
   transactionId: string,
+  wsUrl?: string,
   options: {
     onMessage?: (data: TransactionStatusMessage) => void;
     onError?: (error: Event) => void;
@@ -309,5 +328,5 @@ export const useWithdrawalStatusWebSocket = (
     autoReconnect?: boolean;
   } = {}
 ) => {
-  return useTransactionStatusWebSocket(transactionId, "withdrawal", options);
+  return useTransactionStatusWebSocket(transactionId, "withdrawal", wsUrl, options);
 };

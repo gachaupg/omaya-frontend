@@ -4,6 +4,7 @@ import {
   useTransactionStatusWebSocket,
   TransactionStatusMessage,
 } from "../websockets";
+import { API_CONFIG } from "@/lib/appConfig";
 
 interface ExchangingProps {
   transactionData?: {
@@ -22,6 +23,20 @@ interface ExchangingProps {
     networkFee?: string;
     currency?: string;
     websocketUrl?: string;
+    websocket_url?: string; // API response uses snake_case
+    // Additional fields for different transaction types
+    status?: string;
+    message?: string;
+    withdrawalAddress?: string;
+    details?: {
+      withdrawal_address?: string;
+      payout_address?: string;
+      from_currency?: string;
+      to_currency?: string;
+      to_network?: string;
+      estimated_amount?: number;
+      changenow_id?: string;
+    };
   };
 }
 
@@ -85,20 +100,100 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     effectiveTransactionData?.transactionId
   );
   console.log("DEBUG: transaction type:", effectiveTransactionData?.type);
+  console.log("DEBUG: WebSocket URL (camelCase):", effectiveTransactionData?.websocketUrl);
+  console.log("DEBUG: WebSocket URL (snake_case):", effectiveTransactionData?.websocket_url);
 
-  const { isConnected, lastMessage } = useTransactionStatusWebSocket(
+  // Extract WebSocket URL from transaction data (handle both camelCase and snake_case)
+  let websocketUrl = effectiveTransactionData?.websocketUrl || effectiveTransactionData?.websocket_url || undefined;
+  
+  // Fix protocol mismatch: ensure WebSocket URL matches the API base URL protocol
+  if (websocketUrl) {
+    const apiBaseUrl = API_CONFIG.BASE_URL;
+    const apiIsSecure = apiBaseUrl.startsWith('https://');
+    const wsIsSecure = websocketUrl.startsWith('wss://');
+    
+    console.log("DEBUG: API base URL:", apiBaseUrl);
+    console.log("DEBUG: API is secure:", apiIsSecure);
+    console.log("DEBUG: WebSocket is secure:", wsIsSecure);
+    
+    if (apiIsSecure && !wsIsSecure) {
+      // API is HTTPS but WebSocket is WS - convert to WSS
+      websocketUrl = websocketUrl.replace('ws://', 'wss://');
+      console.log("DEBUG: Converted WebSocket URL from ws:// to wss://:", websocketUrl);
+    } else if (!apiIsSecure && wsIsSecure) {
+      // API is HTTP but WebSocket is WSS - convert to WS (for local development)
+      websocketUrl = websocketUrl.replace('wss://', 'ws://');
+      console.log("DEBUG: Converted WebSocket URL from wss:// to ws://:", websocketUrl);
+    }
+  }
+  
+  console.log("DEBUG: Extracted websocketUrl:", websocketUrl);
+  console.log("DEBUG: effectiveTransactionData?.websocketUrl:", effectiveTransactionData?.websocketUrl);
+  console.log("DEBUG: effectiveTransactionData type:", typeof effectiveTransactionData?.websocketUrl);
+  console.log("DEBUG: websocketUrl type:", typeof websocketUrl);
+  console.log("DEBUG: Full effectiveTransactionData:", effectiveTransactionData);
+  
+  // Check if websocketUrl is valid
+  if (websocketUrl) {
+    console.log("DEBUG: websocketUrl is valid:", websocketUrl);
+    console.log("DEBUG: websocketUrl length:", websocketUrl.length);
+    console.log("DEBUG: websocketUrl starts with ws:// or wss://:", websocketUrl.startsWith('ws://') || websocketUrl.startsWith('wss://'));
+  } else {
+    console.log("DEBUG: websocketUrl is invalid or undefined");
+  }
+  
+  // Check if this is a USDT/USDC transaction (should use backend WebSocket)
+  const isUSDTCurrency = effectiveTransactionData?.asset?.ticker?.toLowerCase() === 'usdt' || 
+                        effectiveTransactionData?.asset?.ticker?.toLowerCase() === 'usdc' ||
+                        effectiveTransactionData?.asset?.symbol?.toLowerCase().includes('usdt') ||
+                        effectiveTransactionData?.asset?.symbol?.toLowerCase().includes('usdc');
+  
+  console.log("DEBUG: Is USDT/USDC transaction:", isUSDTCurrency);
+  console.log("DEBUG: Asset ticker:", effectiveTransactionData?.asset?.ticker);
+  console.log("DEBUG: Asset symbol:", effectiveTransactionData?.asset?.symbol);
+  
+  // Always use the WebSocket URL provided in the API response
+  // This ensures we use the correct protocol (ws:// vs wss://) as specified by the backend
+  const finalWebsocketUrl = websocketUrl;
+  
+  console.log("DEBUG: Final websocketUrl to use:", finalWebsocketUrl);
+  console.log("DEBUG: Using WebSocket URL from API response:", !!websocketUrl);
+  console.log("DEBUG: Current page protocol:", typeof window !== 'undefined' ? window.location.protocol : 'server-side');
+  console.log("DEBUG: WebSocket URL protocol:", finalWebsocketUrl ? (finalWebsocketUrl.startsWith('wss://') ? 'WSS' : 'WS') : 'undefined');
+
+  const { isConnected, lastMessage, disconnect, sendMessage } = useTransactionStatusWebSocket(
     effectiveTransactionData?.transactionId || "",
     effectiveTransactionData?.type || "withdrawal",
+    finalWebsocketUrl,
     {
-      onMessage: (data: TransactionStatusMessage) => {
-        console.log("Transaction status update:", data);
+             onMessage: (data: TransactionStatusMessage) => {
+         console.log("Transaction status update:", data);
+         console.log("Raw WebSocket message received:", JSON.stringify(data, null, 2));
 
         // Clear any WebSocket errors when we receive a message
         setWsError(null);
         setConnectionAttempts(0); // Reset connection attempts on successful message
 
-        // Handle the new message structure
-        const status = data.data?.status || data.status;
+        // Handle different WebSocket message formats
+        let status: string | undefined;
+        let message: string | undefined;
+
+        // Check if it's a ChangeNow WebSocket message (different format)
+        if (data.status && typeof data.status === 'string') {
+          // ChangeNow format
+          status = data.status;
+          message = data.message;
+        } else if (data.data?.status) {
+          // Backend format
+          status = data.data.status;
+          message = data.data.message;
+        } else if (data.status) {
+          // Legacy format
+          status = data.status;
+          message = data.message;
+        }
+
+        console.log("Extracted status:", status, "message:", message);
 
         // Process statuses for both deposit and withdrawal
         const validStatuses = [
@@ -109,13 +204,17 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           "awaiting_payment",
           "exchanging",
           "sending",
+          "finished", // ChangeNow uses "finished" instead of "completed"
+          "confirming",
+          "exchanging",
+          "sending",
         ];
 
         if (status && validStatuses.includes(status)) {
           setCurrentStatus(status);
 
           // Auto-navigate to success page when transaction is completed
-          if (status === "completed" || status === "confirmed") {
+          if (status === "completed" || status === "confirmed" || status === "finished") {
             setShowSuccess(true);
             // Auto-redirect after 1 second
             setTimeout(() => {
@@ -268,7 +367,123 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
         </div>
       </div>
 
-      {/* WebSocket Connection Status */}
+             {/* WebSocket Connection Status */}
+       {shouldUseWebSocket && (
+         <div className="w-full max-w-4xl mb-4">
+           <div className={`bg-[#23232B] border-2 rounded-2xl p-4 shadow-lg ${
+             isConnected 
+               ? 'border-green-500' 
+               : wsError 
+                 ? 'border-red-500' 
+                 : 'border-yellow-500'
+           }`}>
+             <div className="flex items-center justify-between">
+               <div className="flex items-center gap-3">
+                 <div className={`w-3 h-3 rounded-full ${
+                   isConnected 
+                     ? 'bg-green-500 animate-pulse' 
+                     : wsError 
+                       ? 'bg-red-500' 
+                       : 'bg-yellow-500 animate-pulse'
+                 }`}></div>
+                 <span className={`font-semibold text-base ${
+                   isConnected 
+                     ? 'text-green-400' 
+                     : wsError 
+                       ? 'text-red-400' 
+                       : 'text-yellow-400'
+                 }`}>
+                   {isConnected 
+                     ? 'WebSocket Connected' 
+                     : wsError 
+                       ? 'WebSocket Error' 
+                       : 'Connecting...'}
+                 </span>
+               </div>
+               <div className="text-right">
+                 <div className="text-[#7B7B7B] text-sm">
+                   Transaction ID: {effectiveTransactionData?.transactionId?.slice(0, 8)}...
+                 </div>
+                 {connectionAttempts > 0 && (
+                   <div className="text-[#7B7B7B] text-xs">
+                     Attempts: {connectionAttempts}
+                   </div>
+                 )}
+                 {wsError && (
+                   <button
+                     onClick={() => {
+                       disconnect();
+                       setWsError(null);
+                       setConnectionAttempts(0);
+                       // Force reconnection by updating the component
+                       setTimeout(() => {
+                         window.location.reload();
+                       }, 100);
+                     }}
+                     className="mt-2 px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded-lg transition-colors"
+                   >
+                     Reconnect
+                   </button>
+                 )}
+               </div>
+             </div>
+             {wsError && (
+               <div className="mt-2 text-red-400 text-sm">
+                 {wsError}
+               </div>
+             )}
+             {isConnected && lastMessage && (
+               <div className="mt-2 text-green-400 text-sm">
+                 Last update: {new Date().toLocaleTimeString()}
+               </div>
+             )}
+             {lastMessage && (
+               <div className="mt-3 p-3 bg-[#1A1A1A] rounded-lg border border-[#35353E]">
+                 <div className="text-[#7B7B7B] text-xs font-semibold mb-2">WebSocket Status Data:</div>
+                 
+                 {/* User-friendly status display */}
+                 <div className="mb-3 p-2 bg-[#23232B] rounded border border-[#35353E]">
+                   <div className="flex items-center justify-between mb-1">
+                     <span className="text-[#7B7B7B] text-xs">Status:</span>
+                     <span className={`text-xs font-semibold px-2 py-1 rounded ${
+                       lastMessage.data?.status === 'completed' || lastMessage.data?.status === 'confirmed'
+                         ? 'bg-green-500/20 text-green-400'
+                         : lastMessage.data?.status === 'failed'
+                         ? 'bg-red-500/20 text-red-400'
+                         : 'bg-yellow-500/20 text-yellow-400'
+                     }`}>
+                       {lastMessage.data?.status?.toUpperCase() || lastMessage.status?.toUpperCase() || 'UNKNOWN'}
+                     </span>
+                   </div>
+                   {lastMessage.data?.message && (
+                     <div className="text-white text-xs mt-1">
+                       {lastMessage.data.message}
+                     </div>
+                   )}
+                   {lastMessage.data?.timestamp && (
+                     <div className="text-[#7B7B7B] text-xs mt-1">
+                       Time: {new Date(lastMessage.data.timestamp).toLocaleString()}
+                     </div>
+                   )}
+                 </div>
+                 
+                 {/* Raw JSON data */}
+                 <details className="text-[#7B7B7B] text-xs">
+                   <summary className="cursor-pointer hover:text-white">Show Raw Data</summary>
+                   <div className="text-white text-xs font-mono break-all mt-2">
+                     <pre className="whitespace-pre-wrap">
+                       {JSON.stringify(lastMessage, null, 2)}
+                     </pre>
+                   </div>
+                 </details>
+               </div>
+             )}
+             <div className="mt-2 text-[#7B7B7B] text-xs break-all">
+               URL: {finalWebsocketUrl}
+             </div>
+           </div>
+         </div>
+       )}
 
       {/* Stepper */}
       <div className="flex items-center justify-between w-full max-w-4xl mb-4 relative">

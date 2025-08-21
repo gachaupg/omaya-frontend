@@ -54,7 +54,7 @@ const AssetDropdown: React.FC<AssetDropdownProps> = ({
         {selectedAsset ? (
           <div className="flex items-center">
             <img
-              src={selectedAsset.image || undefined}
+              src={selectedAsset.image_url || selectedAsset.asset_image || undefined}
               alt={selectedAsset.name || "Asset"}
               className="w-6 h-6 mr-3"
             />
@@ -118,7 +118,7 @@ const AssetDropdown: React.FC<AssetDropdownProps> = ({
               )
               .map((asset, index) => (
                 <div
-                  key={asset.id || `asset-${index}`}
+                  key={asset.asset_id || `asset-${index}`}
                   onClick={() => handleAssetSelect(asset)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
@@ -130,7 +130,7 @@ const AssetDropdown: React.FC<AssetDropdownProps> = ({
                   className="flex items-center px-3 py-2 hover:bg-[#35353E] cursor-pointer"
                 >
                   <img
-                    src={asset.image || undefined}
+                    src={asset.image_url || asset.asset_image || undefined}
                     alt={asset.name || "Asset"}
                     className="w-6 h-6 mr-3"
                   />

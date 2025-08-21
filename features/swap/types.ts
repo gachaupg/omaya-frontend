@@ -3,14 +3,25 @@
  */
 
 export interface SupportedAsset {
-  id: string;
-  name: string;
+  asset_id: string;
   symbol: string;
+  name: string;
+  description: string | null;
+  asset_image: string | null;
+  image_url: string;
   ticker: string;
-  network: string;
-  icon_url: string;
-  image: string;
+  has_external_id: boolean;
+  is_extra_id_supported: boolean;
   is_fiat: boolean;
+  featured: boolean;
+  is_stable: boolean;
+  supports_fixed_rate: boolean;
+  network: string;
+  token_contract: string;
+  can_buy: boolean;
+  can_sell: boolean;
+  legacy_ticker: string;
+  is_changenow_asset: boolean;
 }
 
 export interface SwapEstimate {

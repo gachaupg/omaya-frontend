@@ -228,21 +228,21 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
   }
 
   return (
-    <div className="min-h-screen dark:bg-[#1D1D23] bg-white flex flex-col items-center py-8 w-full">
+    <div className="min-h-screen bg-[#18181f] flex flex-col items-center py-8 w-full">
       {/* Top Card */}
-      <div className="flex flex-col md:flex-row justify-between items-stretch dark:bg-[#1D1D23] bg-white dark:border-[#35353E] border-gray-200 border-2 rounded-2xl p-3 shadow-lg w-full max-w-4xl mb-4 min-h-[180px]">
+      <div className="flex flex-col md:flex-row justify-between items-stretch bg-[#23232b] border-2 border-[#35353E] rounded-2xl p-3 shadow-lg w-full max-w-4xl mb-4 min-h-[180px]">
         <div className="flex-1 flex flex-col justify-between py-2 pr-2">
-          <div>
-            <div className="dark:text-[#7B7B7B] text-gray-600 text-xs font-semibold mb-0.5">
-              Amount:
-            </div>
-            <div className="dark:text-white text-gray-900 text-base font-semibold mb-1">
-              {swapResponse.fromAmount} {swapResponse.fromCurrency}
-            </div>
-            <div className="mt-4">
-              <div className="dark:text-[#7B7B7B] text-gray-600 text-xs font-semibold mb-1">
-                To this address:
+                      <div>
+              <div className="text-[#7e7e8f] text-xs font-semibold mb-0.5">
+                Amount:
               </div>
+              <div className="text-white text-base font-semibold mb-1">
+                {swapResponse.fromAmount} {swapResponse.fromCurrency}
+              </div>
+              <div className="mt-4">
+                <div className="text-[#7e7e8f] text-xs font-semibold mb-1">
+                  To this address:
+                </div>
               <div className="flex items-center gap-2">
                 <span className="text-[#1D8751] font-mono text-base truncate">
                   {swapResponse.payinAddress}
@@ -274,7 +274,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
                       wsConnected ? "bg-green-500" : "bg-red-500"
                     }`}
                   ></span>
-                  <span className="text-xs dark:text-[#8C8CA1] text-gray-600">
+                  <span className="text-xs text-[#7e7e8f]">
                     {wsConnected ? "Connected" : "Disconnected"}
                   </span>
                 </span>
@@ -343,18 +343,18 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
       </div>
 
       {/* Transaction Details Card */}
-      <div className="dark:bg-[#23232B] bg-white dark:border-[#35353E] border-gray-200 border-2 rounded-2xl p-6 shadow-lg w-full max-w-4xl mb-3">
+      <div className="bg-[#23232b] border-2 border-[#35353E] rounded-2xl p-6 shadow-lg w-full max-w-4xl mb-3">
         {/* Title */}
-        <div className="dark:text-white text-gray-900 text-2xl font-semibold mb-4">
+        <div className="text-white text-2xl font-semibold mb-4">
           Transaction Details
         </div>
         {/* Transaction ID Row */}
         <div className="flex items-center justify-between mb-1">
-          <div className="dark:text-[#7B7B7B] text-gray-600 text-base font-medium">
+          <div className="text-[#7e7e8f] text-base font-medium">
             Transaction ID
           </div>
           <div className="flex items-center gap-2">
-            <span className="dark:text-white text-gray-900 text-base font-mono font-semibold">
+            <span className="text-white text-base font-mono font-semibold">
               {swapResponse.id}
             </span>
             <button
@@ -367,22 +367,22 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
           </div>
         </div>
         {/* Dashed Divider */}
-        <div className="border-t border-dashed dark:border-[#7B7B7B] border-gray-400 mb-4"></div>
+        <div className="border-t border-dashed border-[#7e7e8f] mb-4"></div>
         {/* You Get and Recipient Wallet */}
         <div className="flex items-center justify-between mb-2">
-          <div className="dark:text-[#7B7B7B] text-gray-600 text-base font-medium">
+          <div className="text-[#7e7e8f] text-base font-medium">
             You Get
           </div>
-          <div className="dark:text-[#7B7B7B] text-gray-600 text-base font-medium">
+          <div className="text-[#7e7e8f] text-base font-medium">
             Recipient Wallet
           </div>
         </div>
         <div className="flex items-center justify-between mt-2">
-          <div className="dark:text-white text-gray-900 text-base font-mono font-semibold">
+          <div className="text-white text-base font-mono font-semibold">
             {swapResponse.toAmount} {swapResponse.toCurrency}
           </div>
           <div className="flex items-center gap-2">
-            <span className="dark:text-[#7B7B7B] text-gray-600 text-sm font-mono">
+            <span className="text-[#7e7e8f] text-sm font-mono">
               {swapResponse.payoutAddress}
             </span>
           </div>

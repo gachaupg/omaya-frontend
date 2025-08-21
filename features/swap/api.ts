@@ -15,10 +15,24 @@ import {
 export const getSupportedAssets = async (): Promise<SupportedAsset[]> => {
   return withRetry(async () => {
     try {
-      const response = await get<SupportedAsset[]>(
+      const response = await get<{ message: string; total_changenow_tokens: number; results: SupportedAsset[] }>(
         API_CONFIG.SWAP.SUPPORTED_ASSETS
       );
-      return response.data;
+      
+      // Extract the results array from the ChangeNow response
+      if (response.data && response.data.results) {
+        console.log(`Successfully retrieved ${response.data.total_changenow_tokens} ChangeNow tokens`);
+        return response.data.results;
+      }
+      
+      // Fallback: if response is directly an array (backward compatibility)
+      if (Array.isArray(response.data)) {
+        console.log(`Retrieved ${response.data.length} supported assets`);
+        return response.data;
+      }
+      
+      console.warn("Unexpected response format, returning empty array");
+      return [];
     } catch (error: any) {
       console.error("Failed to fetch supported assets:", error);
 
@@ -162,4 +176,40 @@ export const getSwapStatus = async (swapId: string): Promise<SwapStatus> => {
       throw error;
     }
   });
+};
+
+// Helper functions for processing ChangeNow assets
+export const getFilteredAssets = async (options?: {
+  canBuy?: boolean;
+  canSell?: boolean;
+  network?: string;
+  isFiat?: boolean;
+  featured?: boolean;
+}): Promise<SupportedAsset[]> => {
+  const allAssets = await getSupportedAssets();
+  
+  return allAssets.filter(asset => {
+    if (options?.canBuy !== undefined && asset.can_buy !== options.canBuy) return false;
+    if (options?.canSell !== undefined && asset.can_sell !== options.canSell) return false;
+    if (options?.network && asset.network !== options.network) return false;
+    if (options?.isFiat !== undefined && asset.is_fiat !== options.isFiat) return false;
+    if (options?.featured !== undefined && asset.featured !== options.featured) return false;
+    return true;
+  });
+};
+
+export const getAssetsByNetwork = async (network: string): Promise<SupportedAsset[]> => {
+  return getFilteredAssets({ network });
+};
+
+export const getBuyableAssets = async (): Promise<SupportedAsset[]> => {
+  return getFilteredAssets({ canBuy: true });
+};
+
+export const getSellableAssets = async (): Promise<SupportedAsset[]> => {
+  return getFilteredAssets({ canSell: true });
+};
+
+export const getFeaturedAssets = async (): Promise<SupportedAsset[]> => {
+  return getFilteredAssets({ featured: true });
 };

@@ -3,6 +3,7 @@
  */
 export const API_ENDPOINTS = {
   LOGIN: "/api/login/",
+  LOGIN_2FA: "/api/login-2fa/",
   REGISTER: "/api/register/",
   FORGOT_PASSWORD: "/api/forget-password/",
   RESET_PASSWORD: "/api/reset-password/",

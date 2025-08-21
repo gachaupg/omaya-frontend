@@ -292,7 +292,7 @@ const MarketTable = () => {
   }
 
   return (
-    <div className="bg-white dark:bg-[#18181D] min-h-screen py-8 text-gray-900 dark:text-[#788099] font-sans">
+    <div className="bg-white dark:bg-[#18181D] min-h-screen py-5 text-gray-900 dark:text-[#788099] font-sans">
       {/* Top Section */}
       <div className="max-w-[1000px] mx-auto mb-6 px-6">
         <div className="flex items-center justify-between mb-4">

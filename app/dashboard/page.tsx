@@ -13,9 +13,12 @@ import {
 import { AppDispatch } from "@/store";
 import { emptyTransactionSummary } from "@/components/types";
 
+
 export default function DashboardPage() {
   const dispatch = useDispatch<AppDispatch>();
   const transactionSummary = useSelector(selectTransactionSummary);
+
+
 
   useEffect(() => {
     dispatch(fetchTransactionSummary());

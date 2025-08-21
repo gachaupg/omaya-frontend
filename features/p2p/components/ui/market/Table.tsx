@@ -194,43 +194,45 @@ const MarketTable: React.FC<MarketTableProps> = ({
           )}
 
           {/* ---------------- pagination --------------- */}
-          <div className="flex justify-center items-center gap-2 py-4 bg-gray-50 dark:bg-transparent">
-            <button
-              onClick={() => onPageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className={`px-3 py-1 rounded-md text-sm font-medium border bg-white border-gray-200 text-gray-500 ${
-                currentPage === 1
-                  ? "opacity-50 cursor-not-allowed"
-                  : "hover:bg-gray-100"
-              } dark:bg-[#23232B] dark:border-[#35353E] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]`}
-            >
-              &lt;
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => (
+          {data.length > 0 && (
+            <div className="flex justify-center items-center gap-2 py-4 bg-gray-50 dark:bg-transparent">
               <button
-                key={i}
-                onClick={() => onPageChange(i + 1)}
-                className={`px-3 py-1 rounded-md text-sm font-medium border ${
-                  currentPage === i + 1
-                    ? "bg-[#1D8751] text-white border-[#1D8751]"
-                    : "bg-white text-gray-500 border-gray-200 hover:bg-gray-100 dark:bg-[#23232B] dark:text-[#8C8CA1] dark:border-[#35353E] dark:hover:bg-[#35353E]"
-                }`}
+                onClick={() => onPageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={`px-3 py-1 rounded-md text-sm font-medium border bg-white border-gray-200 text-gray-500 ${
+                  currentPage === 1
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:bg-gray-100"
+                } dark:bg-[#23232B] dark:border-[#35353E] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]`}
               >
-                {i + 1}
+                &lt;
               </button>
-            ))}
-            <button
-              onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className={`px-3 py-1 rounded-md text-sm font-medium border bg-white border-gray-200 text-gray-500 ${
-                currentPage === totalPages
-                  ? "opacity-50 cursor-not-allowed"
-                  : "hover:bg-gray-100"
-              } dark:bg-[#23232B] dark:border-[#35353E] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]`}
-            >
-              &gt;
-            </button>
-          </div>
+              {Array.from({ length: totalPages }, (_, i) => (
+                <button
+                  key={i}
+                  onClick={() => onPageChange(i + 1)}
+                  className={`px-3 py-1 rounded-md text-sm font-medium border ${
+                    currentPage === i + 1
+                      ? "bg-[#1D8751] text-white border-[#1D8751]"
+                      : "bg-white text-gray-500 border-gray-200 hover:bg-gray-100 dark:bg-[#23232B] dark:text-[#8C8CA1] dark:border-[#35353E] dark:hover:bg-[#35353E]"
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+              <button
+                onClick={() => onPageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className={`px-3 py-1 rounded-md text-sm font-medium border bg-white border-gray-200 text-gray-500 ${
+                  currentPage === totalPages
+                    ? "opacity-50 cursor-not-allowed"
+                    : "hover:bg-gray-100"
+                } dark:bg-[#23232B] dark:border-[#35353E] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]`}
+              >
+                &gt;
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

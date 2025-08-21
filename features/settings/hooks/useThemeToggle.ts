@@ -98,6 +98,9 @@ export const useThemeToggle = () => {
         mode,
       };
       localStorage.setItem("theme", JSON.stringify(updatedTheme));
+      
+      // Dispatch custom event for same-tab theme changes
+      window.dispatchEvent(new CustomEvent("themeChange"));
 
       // No server API calls - using client-side only
     } catch (error) {

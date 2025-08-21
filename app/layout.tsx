@@ -7,6 +7,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import Providers from "./providers";
 import { Toaster } from "@/components/ui/Toast";
+import GlobalSessionManager from "@/components/GlobalSessionManager";
 
 // Load all three fonts with CSS-variable support
 const geistSans = Geist({
@@ -40,6 +41,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <Providers>
+          <GlobalSessionManager />
           <Navbar />
           {children}
           <Footer />

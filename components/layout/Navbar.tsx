@@ -298,7 +298,39 @@ export default function Navbar() {
 
   // Check if navbar should show white text (transparent on home page)
   const isTransparentNavbar = pathname === "/" && !scrolled;
+  const [theme, setTheme] = useState<{ mode: string } | null>(null);
 
+  useEffect(() => {
+    const getTheme = () => {
+      const themeString = localStorage.getItem("theme");
+      return themeString ? JSON.parse(themeString) : null;
+    };
+
+    // Set initial theme
+    setTheme(getTheme());
+
+    // Listen for theme changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "theme") {
+        setTheme(getTheme());
+      }
+    };
+
+    // Listen for custom theme change events
+    const handleThemeChange = () => {
+      setTheme(getTheme());
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("themeChange", handleThemeChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("themeChange", handleThemeChange);
+    };
+  }, []);
+
+  console.log("theme", theme?.mode)
   return (
     <>
       <nav
@@ -319,8 +351,17 @@ export default function Navbar() {
               />
             ) : (
               // All other cases: green logo
-              <Image
+           theme?.mode === "dark" ?   <Image
                 src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747133499/Omaya_green-logo_yva2ah.png"
+                alt="OMAYA Exchange"
+                width={150}
+                height={40}
+                className="h-auto w-32 md:w-40 2xl:w-48"
+                priority
+              />
+              :
+              <Image
+                src="https://res.cloudinary.com/pitz/image/upload/v1750838143/1446599b0a50473eb54aaee7c59988ecc0856b10_mmmmcl.png"
                 alt="OMAYA Exchange"
                 width={150}
                 height={40}
