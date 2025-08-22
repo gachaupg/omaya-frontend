@@ -41,8 +41,9 @@ export interface AssetsResponse {
 
 export interface FavoriteAsset {
   favorite_asset_id: string;
-  asset_name: string;
-  added_on: string;
+  asset_symbol: string;
+  asset_image: string;
+  added_on: string; 
 }
 
 export interface ManageFavoritePayload {

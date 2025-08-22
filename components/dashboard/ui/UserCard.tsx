@@ -15,8 +15,10 @@ import {
   updateProfileThunk,
   getP2PProfileThunk,
 } from "@/features/p2p/slices/orderSlice";
+import HelpSupportForm from "@/features/settings/components/HelpSupportForm";
 
 function UserCard() {
+  const [showHelpSupport, setShowHelpSupport] = useState(false);
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -93,6 +95,17 @@ function UserCard() {
       borderRadius="rounded-[20px]"
       className="p-2 dark:bg-[#1D1D23] bg-white"
     >
+      {showHelpSupport ? (
+        <div className="w-full mt-2">
+          <button
+            className="mb-4 px-4 py-2 bg-gray-200 rounded"
+            onClick={() => setShowHelpSupport(false)}
+          >
+            Back
+          </button>
+          <HelpSupportForm />
+        </div>
+      ) : (
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between w-full gap-3 md:gap-0">
         <div className="flex items-center gap-2">
           {/* User Avatar with Edit Button */}
@@ -256,6 +269,7 @@ function UserCard() {
               variant="ghost"
               size="sm"
               className=" flex items-center justify-center p-0"
+              onClick={() => setShowHelpSupport(true)}
               icon={
                 <div className="w-10 h-10 rounded-[50%] border border-[#1D8751] flex items-center justify-center p-0">
                   <svg
@@ -286,6 +300,7 @@ function UserCard() {
           </div>
         </div>
       </div>
+      )}
     </Card>
   );
 }

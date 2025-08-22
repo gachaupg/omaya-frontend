@@ -126,6 +126,7 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, void>(
       });
 
       CircuitBreaker.onSuccess(endpoint);
+      console.log("Fetched Assets:", response.data);
       return response.data;
     } catch (error: any) {
       CircuitBreaker.onFailure(endpoint, error);

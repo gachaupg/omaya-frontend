@@ -40,7 +40,8 @@ const RatesTransactionHistory = () => {
 
   return (
     <div className="bg-white dark:bg-[#1D1D23] p-6 rounded-lg">
-      <table className="w-full text-left">
+      <div className="w-full overflow-x-auto">
+        <table className="min-w-max w-full text-left">
         <thead>
           <tr className="border-b border-gray-200 dark:border-[#35353E] text-gray-600 dark:text-[#788099]">
             <th className="p-4 font-normal">Asset</th>
@@ -91,6 +92,8 @@ const RatesTransactionHistory = () => {
           ))}
         </tbody>
       </table>
+        
+      </div>
     </div>
   );
 };

@@ -18,9 +18,15 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Button } from "@headlessui/react";
-import { ArrowLeftRight, Repeat, Users } from "lucide-react";
+import { ArrowLeftRight, Plus, Repeat, Search, Users, X } from "lucide-react";
 import Link from "next/link";
 import { TiArrowUnsorted } from "react-icons/ti";
+import { fetchAssets, addFavoriteAsset, removeFavoriteAsset, getFavoriteAssets } from '../../exchange/slices/exchangeSlice'
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "@/store";
+import { toast } from "sonner"
+import { Asset, FavoriteAsset } from "../../exchange/types";
+
 
 // Utility functions for formatting
 const formatPrice = (price: number): string => {
@@ -67,13 +73,13 @@ const CoinIcon = ({
   symbol,
   size = 32,
 }: {
-  image: string;
+  image: string | null | undefined;
   symbol: string;
   size?: number;
 }) => {
   const [imageError, setImageError] = useState(false);
 
-  if (imageError) {
+  if (!image || imageError) {
     // Fallback to a generic coin icon
     return (
       <div
@@ -160,6 +166,12 @@ const tableHeaders = [
 const filterTags = ["Hot", "Gainers", "Losers", "New", "Market Cap"];
 
 const MarketTable = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const {
+    assets: allAvailableAssets,
+    favoriteAssets,
+    loading : loadingAssets,
+  } = useSelector((state: RootState) => state.exchange);
   const { markets, loading, error, lastUpdated, refetch, clearError } =
     useSimpleMarkets(100);
 
@@ -167,6 +179,18 @@ const MarketTable = () => {
   const [selectedCoinId, setSelectedCoinId] = useState<string | null>(null);
   const [coinDetails, setCoinDetails] = useState<any>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingRemoveAsset, setPendingRemoveAsset] = useState<FavoriteAsset | null>(null);
+
+  useEffect(() => {
+    if (!allAvailableAssets) {
+      dispatch(fetchAssets());
+    }
+    dispatch(getFavoriteAssets());
+    // eslint-disable-next-line
+  }, []);
 
   // Make debug functions available globally for testing
   useEffect(() => {
@@ -216,9 +240,68 @@ const MarketTable = () => {
   }, [markets, activeFilter]);
 
   // Get top 3 markets for favorite assets - memoized
-  const favoriteAssets = useMemo(() => {
-    return markets.slice(0, 3);
-  }, [markets]);
+  // const favoriteAssets = useMemo(() => {
+  //   return markets.slice(0, 3);
+  // }, [markets]);
+
+    const toggleDropdown = () => {
+    setShowDropdown(!showDropdown);
+    setSearchTerm("");
+  };
+
+  const handleAddToFavorites = async (assetId: string) => {
+    try {
+      await dispatch(addFavoriteAsset({ asset_id: assetId })).unwrap();
+      toast.success("Asset added to favorites!");
+      setShowDropdown(false);
+      dispatch(fetchAssets());
+    } catch (error: any) {
+      toast.error(
+        `Failed to add asset to favorites: ${
+          error || "Unknown error" || "unexpected error occured"
+        }`
+      );
+    }
+  };
+
+  const handleRemoveFromFavorites = async (assetId: string) => {
+    try {
+      await dispatch(removeFavoriteAsset({ asset_id: assetId })).unwrap();
+      toast.success("Asset removed from favorites!");
+      dispatch(getFavoriteAssets()); // Refresh the favorites list
+    } catch (error: any) {
+      toast.error(
+        `Failed to remove asset from favorites: ${
+          error || "Unknown error" || "unexpected error occured"
+        }`
+      );
+    }
+  };
+
+    // Helper function to find asset ID from asset name
+    const getAssetIdFromName = (assetName: string): string | null => {
+      const asset = allAvailableAssets?.assets?.find(
+        (asset: Asset) => asset.name === assetName || asset.symbol === assetName
+      );
+      return asset?.asset_id || null;
+    };
+
+    const filteredAvailableAssets =
+      allAvailableAssets?.assets?.filter(
+        (asset: Asset) =>
+          asset.symbol.toLowerCase().includes(searchTerm.toLowerCase())
+    ) || [];
+
+    // Dummy data for missing fields
+    const DUMMY_ASSET_DATA: Record<
+      string,
+      { symbol: string; price: number; change: string }
+    > = {
+      "USDT Tether": { symbol: "USDT", price: 0.99, change: "+0.01%" },
+      "USD Coin": { symbol: "USDC", price: 1.0, change: "+0.02%" },
+      FXPRIMUS: { symbol: "FXP", price: 1.0, change: "+0.00%" },
+    };
+
 
   const handleFilterClick = useCallback((filter: string) => {
     setActiveFilter(filter);
@@ -346,70 +429,161 @@ const MarketTable = () => {
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2 font-semibold text-gray-900 dark:text-[#fff] text-lg">
             Top Assets Favourite Assets
-            <button className="bg-none border-none text-gray-600 dark:text-[#788099] text-xl cursor-pointer p-0 ml-2">
+            <button className="bg-none border-none text-[#1D8751] text-xl cursor-pointer p-0 ml-2"  
+               onClick={() => {
+                document.getElementById("fav-scroll")?.scrollBy({ left: -300, behavior: "smooth" });
+              }}>
               &lt;
             </button>
-            <button className="bg-none border-none text-gray-600 dark:text-[#788099] text-xl cursor-pointer p-0 ml-1">
+            <button className="bg-none border-none text-[#1D8751] text-xl cursor-pointer p-0 ml-1"
+              onClick={() => {
+                document.getElementById("fav-scroll")?.scrollBy({ left: 300, behavior: "smooth" });
+              }}>
               &gt;
             </button>
           </div>
-          <div className="flex items-center text-gray-900 dark:text-[#fff] font-medium text-base cursor-pointer gap-1">
-            Add Asset{" "}
-            <span className="text-lg font-bold ml-1 flex items-center text-[#1D8751]">+</span>
+          <div className="relative">
+            <button
+              className="flex items-center text-gray-900 dark:text-[#fff] font-medium text-base cursor-pointer gap-1"
+              onClick={toggleDropdown}
+            >
+              Add Asset
+              <Plus className="w-3 h-3 text-[#1D8751]" />
+            </button>
+            {/* Dropdown Content */}
+            {showDropdown && (
+              <div className="absolute top-full right-0 mt-2 w-48 bg-[#23242B] rounded-md shadow-lg z-10 max-h-64 overflow-y-auto">
+                <div className="relative mt-2 item-center ml-2">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1D8751] w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="Search"
+                    className="bg-transparent border border-[#2D2E3A] rounded-full pl-10 pr-4 py-2.5 text-sm text-white placeholder-[#9CA3AF] focus:outline-none focus:border-[#10B981] w-44"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <ul className="py-1">
+                  {filteredAvailableAssets?.length > 0 ? (
+                    filteredAvailableAssets?.map((asset: Asset) => (
+                      <li
+                        key={asset.asset_id}
+                        className="px-4 py-2 text-sm text-[#9CA3AF] hover:bg-[#35353E] cursor-pointer"
+                        onClick={() => handleAddToFavorites(asset.asset_id)}
+                      >
+                        <span className="text-white mr-2">{asset.symbol}</span>
+                        {asset.name}
+                      </li>
+                    ))
+                  ) : (
+                    <li className="px-4 py-2 text-sm text-[#9CA3AF]">
+                      No assets found
+                    </li>
+                  )}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Favourite Assets Cards Row */}
-        <div className="flex gap-4 mb-1">
-         <div
-            className="
-              grid grid-cols-3 gap-4 mb-8 w-full
-              sm:grid-cols-3
-              sm:overflow-x-visible
-              overflow-x-auto flex-nowrap flex sm:grid
-              scrollbar-hide
-              "
-            style={{ WebkitOverflowScrolling: "touch" }}
-          >
-            {favoriteAssets.map((asset) => (
+        <div     
+          id="fav-scroll"
+          className="
+            flex gap-4 mb-8 w-full overflow-x-auto scrollbar-hide scroll-smooth
+          "
+          style={{ WebkitOverflowScrolling: "touch" }}
+        >
+
+            {loadingAssets ? (
+              <div className="flex items-center justify-center min-w-[250px]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#13B562]"></div>
+              </div>
+            ) : favoriteAssets?.length === 0 ? (
+              <div className="col-span-3 text-center text-gray-500">
+                No favorite assets found. Add some to see them here.
+              </div>
+            ) : (
+
+            favoriteAssets?.map((asset: FavoriteAsset) => {
+            const dummyData = DUMMY_ASSET_DATA[asset.asset_symbol] || {
+              symbol: (asset.asset_symbol ?? "").split(" ")[0],
+              price: 0,
+              change: "+0.00%",
+            };
+
+            return (
               <div
-                key={asset.id}
-                className="bg-gray-50 dark:bg-[#1D1D23] rounded-xl px-2 py-2 min-w-[160px] min-h-[56px] flex  items-center justify-between shadow-sm border border-gray-200 dark:border-[#35353E] gap-0.5"
+                key={asset.favorite_asset_id}
+                className="bg-[#1D1D23] rounded-2xl p-4 flex items-center gap-3 border border-[#35353E] relative flex-shrink-0 w-[80%] sm:w-[45%] md:w-[30%]"
               >
-                <div className="flex items-center gap-2 mb-1">
-                  <div className="w-7 h-7 flex items-center">
-                    <CoinIcon
-                      image={asset.image}
-                      symbol={asset.symbol}
-                      size={28}
+                <button
+                  // onClick={() => {
+                  //   const assetId = getAssetIdFromName(asset.asset_symbol);
+                  //   if (assetId) {
+                  //     handleRemoveFromFavorites(assetId);
+                  //   } else {
+                  //     toast.error("Could not find asset ID for removal");
+                  //   }
+                  // }}
+                  onClick={() => {
+                    setPendingRemoveAsset(asset);
+                    setShowConfirmModal(true);
+                  }}
+                  className="absolute top-0 right-2 p-1 rounded-full hover:bg-[#35353E] transition-colors"
+                  title="Remove from favorites"
+                >
+                  <X className="w-3 h-3 text-[#9CA3AF] hover:text-white" />
+                </button>
+                <div className="w-8 h-8 rounded-full">
+                  {asset.asset_image && typeof asset.asset_image === "string" && asset.asset_image.trim() !== "" ? (
+                    <img
+                      src={asset.asset_image}
+                      alt={asset.asset_symbol}
+                      className="object-cover w-8 h-8 rounded-full"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display = "none";
+                      }}
                     />
+                  ) : (
+                    <CoinIcon
+                      image={null}
+                      symbol={asset.asset_symbol || ""}
+                      size={32}
+                    />
+                  )}
+              
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-white truncate">
+                    {dummyData.symbol}
                   </div>
-                  <div>
-                    <p className="font-semibold text-gray-900 dark:text-[#fff] text-base">
-                    {asset.symbol.toUpperCase()}
-                    </p>
-                    <div className="text-xs text-gray-600 dark:text-[#788099] mb-0.5">
-                      {asset.name}
-                    </div>
+                  <div className="text-xs text-[#788099] truncate">
+                    {asset.asset_symbol}
                   </div>
                 </div>
-                <div className="flex flex-col gap-2">
-                  <div className="font-semibold text-gray-900 dark:text-[#fff] text-sm">
-                    {formatPrice(asset.current_price)}
+                <div className="text-right flex-shrink-0">
+                  <div className="font-bold text-white whitespace-nowrap">
+                    $
+                    {dummyData.price.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 8,
+                    })}
                   </div>
                   <div
-                    className={`text-xs font-medium ${
-                      asset.price_change_percentage_24h >= 0
-                        ? "text-[#13B562]"
-                        : "text-[#FF6B6B]"
+                    className={`text-xs whitespace-nowrap ${
+                      dummyData.change.startsWith("+")
+                        ? "text-[#1D8751]"
+                        : "text-[#1D8751]"
                     }`}
                   >
-                    {formatPercentage(asset.price_change_percentage_24h)}
+                    {dummyData.change}
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+            );
+          })
+          )}
         </div>
 
         {/* Table Section with rounded border */}
@@ -559,6 +733,47 @@ const MarketTable = () => {
           )}
         </div>
       </div>
+      {showConfirmModal && pendingRemoveAsset && (
+        <>
+          {/* Overlay */}
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-[999]" style={{background: "rgba(0,0,0,0.6)"}} />
+          {/* Modal */}
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center">
+            <div className="bg-[#23242B] rounded-xl p-6 shadow-lg w-full max-w-sm">
+              <h2 className="text-lg font-semibold text-white mb-2">Remove Favorite</h2>
+              <p className="text-[#9CA3AF] mb-4">
+                Are you sure you want to remove <span className="font-bold text-white">{pendingRemoveAsset.asset_symbol}</span> from your favorites?
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  className="px-4 py-2 rounded bg-gray-700 text-white hover:bg-gray-600"
+                  onClick={() => {
+                    setShowConfirmModal(false);
+                    setPendingRemoveAsset(null);
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="px-4 py-2 rounded bg-[#1D8751] text-white hover:bg-[#166c3a]"
+                  onClick={() => {
+                    const assetId = getAssetIdFromName(pendingRemoveAsset.asset_symbol);
+                    if (assetId) {
+                      handleRemoveFromFavorites(assetId);
+                    } else {
+                      toast.error("Could not find asset ID for removal");
+                    }
+                    setShowConfirmModal(false);
+                    setPendingRemoveAsset(null);
+                  }}
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

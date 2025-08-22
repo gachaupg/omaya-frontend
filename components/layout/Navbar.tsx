@@ -359,14 +359,18 @@ export default function Navbar() {
               Blog
             </NavLink>
             {/* Show Contact us only on auth pages */}
-            {(pathname?.startsWith("/auth/login") || 
+            {/* {(pathname?.startsWith("/auth/login") || 
               pathname?.startsWith("/auth/register") || 
               pathname?.startsWith("/auth/forgotPassword") ||
               pathname?.startsWith("/auth/resetPassword")) && (
               <NavLink href="#" isTransparent={isTransparentNavbar}>
                 Contact us
               </NavLink>
-            )}
+            )} */}
+
+            <NavLink href="/contactUs" isTransparent={isTransparentNavbar}>
+              Contact us
+            </NavLink>
           </div>
         </div>
 

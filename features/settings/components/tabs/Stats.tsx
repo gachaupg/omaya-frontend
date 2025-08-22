@@ -17,7 +17,11 @@ import { fetchMatchedTrades } from "@/features/p2p/slices/matchedTradesSlice";
 import { formatNumber } from "@/utils/formatters";
 import { useRouter } from "next/navigation";
 
-const Stats = () => {
+interface StatsProps {
+  onSupportClick: () => void;
+}
+
+const Stats = ({ onSupportClick }: StatsProps) => {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { user, isAuthenticated } = useSelector(
@@ -187,7 +191,10 @@ const Stats = () => {
               </span>
             )}
           </div>
-          <div className="p-2 rounded-full border border-[#1D8751] flex items-center justify-center cursor-pointer">
+          <div
+            className="p-2 rounded-full border border-[#1D8751] flex items-center justify-center cursor-pointer"
+            onClick={onSupportClick}
+          >
             <svg xmlns="http://www.w3.org/2000/svg"
              width="18" 
              height="18" 

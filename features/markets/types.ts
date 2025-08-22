@@ -79,3 +79,10 @@ export interface MarketDataState {
   error: string | null;
   lastUpdated: string | null;
 }
+
+export interface FavoriteAsset {
+  favorite_asset_id: string;
+  asset_symbol: string;
+  asset_image: string;
+  added_on: string; 
+}
