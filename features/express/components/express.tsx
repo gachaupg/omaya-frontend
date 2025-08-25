@@ -8,7 +8,7 @@ const Express = () => {
   const [transactionData, setTransactionData] = useState<any>(null);
 
   return (
-    <div className="max-w-4xl w-full mx-auto">
+    <div className="container w-full mx-auto">
       <button>
         <span className="flex items-center justify-center">
           <img

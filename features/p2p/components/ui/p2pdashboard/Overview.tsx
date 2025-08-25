@@ -211,9 +211,9 @@ const Overview = () => {
         Overview Total
       </h3>
       <Card
-        borderColor="border-[#35353E]"
+        borderColor="border-[#E8EFF5] dark:border-[#35353E]"
         width="w-full"
-        bgColor="dark:bg-[#18181D] bg-[#F5F5F5]"
+        bgColor="dark:bg-[#18181D] bg-white"
         borderRadius="rounded-[20px]"
         className="p-6 flex flex-col items-center justify-center"
       >
@@ -353,9 +353,9 @@ const Overview = () => {
       <div className="flex gap-4 flex-col mt-4">
         {/* P2P Buys Card */}
         <Card
-          borderColor="border-[#35353E]"
+          borderColor="border-[#E8EFF5] dark:border-[#35353E]"
           width="w-full"
-          bgColor="dark:bg-[#18181D] bg-[#F5F5F5]"
+          bgColor="dark:bg-[#18181D] bg-white"
           borderRadius="rounded-[14px]"
           className="p-3"
         >
@@ -433,9 +433,9 @@ const Overview = () => {
 
         {/* P2P Sells Card */}
         <Card
-          borderColor="border-[#35353E]"
+          borderColor="border-[#E8EFF5] dark:border-[#35353E]"
           width="w-full"
-          bgColor="dark:bg-[#18181D] bg-[#F5F5F5]"
+          bgColor="dark:bg-[#18181D] bg-white"
           borderRadius="rounded-[14px]"
           className="p-3"
         >

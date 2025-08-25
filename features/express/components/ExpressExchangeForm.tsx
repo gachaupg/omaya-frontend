@@ -13,7 +13,7 @@ export default function ExpressExchangeForm({
   const [mode, setMode] = useState<"deposit" | "withdrawal">("deposit");
 
   return (
-    <div className="w-full min-h-screen flex flex-col justify-center bg-[#18181f]">
+    <div className="w-full min-h-screen flex flex-col justify-center bg-[#18181f] container mx-auto ">
       {/* Mode Toggle Button */}
       {/* <div className="flex">
         <div className="bg-[#23232b] border border-[#39394a] rounded-2xl p-1 flex">

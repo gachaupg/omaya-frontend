@@ -12,10 +12,9 @@ import {
 import { fetchCoinDetailsPublic, fetchCoinMarketChartPublic } from "../../../features/markets/api";
 import Link from "next/link";
 import { ArrowLeft, ArrowLeftRight, Repeat, Users } from "lucide-react";
-import { div } from "framer-motion/client";
 import { Button } from "@headlessui/react";
 
-// Utility functions for formatting (copied from MarketTable)
+// Utility functions for formatting
 const formatPrice = (price: number): string => {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -35,9 +34,8 @@ const MarketChartContent = () => {
   const coinId = searchParams?.get("id");
   
   const [coinDetails, setCoinDetails] = useState<any>(null);
-  const [loadingDetails, setLoadingDetails] = useState(false);
   const [chartData, setChartData] = useState<any[]>([]);
-  const [loadingChart, setLoadingChart] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<string>("1");
 
@@ -46,34 +44,47 @@ const MarketChartContent = () => {
 
     const loadData = async () => {
       try {
-        setLoadingDetails(true);
-        setLoadingChart(true);
-        
+        setLoading(true);
+        setError(null);
+
         const [details, chart] = await Promise.all([
-          fetchCoinDetailsPublic(coinId),
-          fetchCoinMarketChartPublic(coinId, Number(timeRange))
+          fetchCoinDetailsPublic(coinId).catch(e => {
+            console.warn("Failed to fetch details:", e);
+            return null;
+          }),
+          fetchCoinMarketChartPublic(coinId, Number(timeRange)).catch(e => {
+            console.error("Failed to fetch chart:", e);
+            throw e;
+          })
         ]);
 
         setCoinDetails(details);
         
-        if (chart.prices && Array.isArray(chart.prices)) {
+        if (chart?.prices && Array.isArray(chart.prices)) {
           const processedChartData = chart.prices.map(
             ([timestamp, price]: [number, number]) => ({
-              time: new Date(timestamp).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              }),
+              time: Number(timeRange) === 1 
+                ? new Date(timestamp).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : new Date(timestamp).toLocaleDateString([], {
+                    month: "short",
+                    day: "numeric",
+                  }),
               price: Number(price),
+              fullTime: new Date(timestamp).toLocaleString(),
             })
           );
           setChartData(processedChartData);
+        } else {
+          throw new Error("No chart data received from API");
         }
       } catch (err) {
-        setError("Failed to load data. Please try again.");
-        console.error(err);
+        const errorMessage = err instanceof Error ? err.message : "Failed to load data";
+        setError(errorMessage);
       } finally {
-        setLoadingDetails(false);
-        setLoadingChart(false);
+        setLoading(false);
       }
     };
 
@@ -88,186 +99,202 @@ const MarketChartContent = () => {
     );
   }
 
+  if (loading) {
+    return (
+      <div className="bg-white dark:bg-[#18181D] min-h-screen py-8">
+        <div className="max-w-[1000px] mx-auto px-6">
+          <div className="flex items-center gap-2 text-[#13B562] mb-6">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#13B562]"></div>
+            Loading chart data...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (error) {
     return (
-      <div className="p-4 text-red-500">
-        {error}
+      <div className="bg-white dark:bg-[#18181D] min-h-screen py-8">
+        <div className="max-w-[1000px] mx-auto px-6">
+          <div className="text-red-500 mb-4">{error}</div>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-[#13B562] text-white rounded hover:bg-[#0f8f4d]"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="bg-white dark:bg-[#18181D] min-h-screen py-8 text-gray-900 dark:text-[#788099]">
-      <div className="max-w-[1000px] mx-auto px-6">
+      <div className="container mx-auto px-6">
         <Link 
-          href="/dashboard/market" 
-          className="flex items-center gap-2 text-[#13B562] mb-6"
+          href="/market" 
+          className="flex items-center gap-2 text-[#13B562] mb-6 hover:underline"
         >
           <ArrowLeft size={18} />
+          Back to Markets
         </Link>
 
-        <h1 className="text-2xl text-[#051015] dark:text-white">Asset Details</h1>
+        <h1 className="text-2xl font-bold text-[#051015] dark:text-white mb-6">Asset Overview</h1>
 
-        {loadingDetails ? (
-          <div className="flex items-center gap-2 text-[#13B562]">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#13B562]"></div>
-            Loading details...
-          </div>
-        ) : coinDetails && (
-          <div className="mb-8">
-            <div className="flex items-center gap-4 mb-4">
-              <img
-                src={coinDetails.image?.large}
-                alt={coinDetails.name}
-                className="w-16 h-16 rounded-full"
-              />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {coinDetails.name} ({coinDetails.symbol.toUpperCase()})
-                </h1>
-                <div className="text-sm text-[#13B562]">
-                  Rank #{coinDetails.market_cap_rank}
+        {coinDetails && (
+          <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-2xl p-6 mb-8 border border-[#E8EFF5] dark:border-[#35353E]">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-4">
+                <img
+                  src={coinDetails.image?.large}
+                  alt={coinDetails.name}
+                  className="w-12 h-12 rounded-full"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/api/placeholder/48/48';
+                  }}
+                />
+                <div>
+                  <h2 className="font-bold text-[#051015] dark:text-white text-lg">
+                    {coinDetails.name} ({coinDetails.symbol.toUpperCase()})
+                  </h2>
+                  <div className="text-sm text-[#13B562]">
+                    Rank #{coinDetails.market_cap_rank}
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-gray-50 dark:bg-[#1D1D23] p-4 rounded-lg">
-                <div className="text-gray-600 dark:text-[#788099] text-sm">Current Price</div>
-                <div className="text-xl font-bold text-[#13B562]">
-                  {formatPrice(coinDetails.market_data?.current_price?.usd || 0)}
-                </div>
-              </div>
-              
-              <div className="bg-gray-50 dark:bg-[#1D1D23] p-4 rounded-lg">
-                <div className="text-gray-600 dark:text-[#788099] text-sm">24h Change</div>
-                <div className={`text-xl font-bold ${
-                  coinDetails.market_data?.price_change_percentage_24h >= 0 
-                    ? "text-[#13B562]" 
-                    : "text-[#FF6B6B]"
-                }`}>
-                  {formatPercentage(coinDetails.market_data?.price_change_percentage_24h || 0)}
-                </div>
-              </div>
-              
-              <div className="bg-gray-50 dark:bg-[#1D1D23] p-4 rounded-lg">
-                <div className="text-gray-600 dark:text-[#788099] text-sm">Market Cap</div>
-                <div className="text-xl font-bold">
-                  {new Intl.NumberFormat("en-US", {
-                    style: "currency",
-                    currency: "USD",
-                    maximumFractionDigits: 0,
-                  }).format(coinDetails.market_data?.market_cap?.usd || 0)}
-                </div>
-              </div>
-              
-              <div className="bg-gray-50 dark:bg-[#1D1D23] p-4 rounded-lg">
-                <div className="text-gray-600 dark:text-[#788099] text-sm">24h Volume</div>
-                <div className="text-xl font-bold">
-                  {new Intl.NumberFormat("en-US", {
-                    style: "currency",
-                    currency: "USD",
-                    maximumFractionDigits: 0,
-                  }).format(coinDetails.market_data?.total_volume?.usd || 0)}
-                </div>
-              </div>
-            </div>
 
-            {/* Time range selector */}
-            <div className="flex gap-2 mb-4">
-              {["1", "7", "30", "90", "365"].map((range) => (
-                <button
-                  key={range}
-                  onClick={() => setTimeRange(range)}
-                  className={`px-3 py-1 rounded-md text-sm ${
-                    timeRange === range
-                      ? "bg-[#13B562] text-white"
-                      : "bg-gray-100 dark:bg-[#1D1D23] text-gray-700 dark:text-[#788099]"
-                  }`}
-                >
-                  {range === "1" ? "24h" : `${range}d`}
-                </button>
-              ))}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div>
+                  <p className="text-gray-600 dark:text-[#788099] text-sm">Price</p>
+                  <p className="font-bold text-[#13B562]">
+                    {formatPrice(coinDetails.market_data?.current_price?.usd || 0)}
+                  </p>
+                </div>
+                
+                <div>
+                  <p className="text-gray-600 dark:text-[#788099] text-sm">24h Change</p>
+                  <p className={`font-bold ${
+                    coinDetails.market_data?.price_change_percentage_24h >= 0 
+                      ? "text-[#13B562]" 
+                      : "text-[#FF6B6B]"
+                  }`}>
+                    {formatPercentage(coinDetails.market_data?.price_change_percentage_24h || 0)}
+                  </p>
+                </div>
+                
+                <div>
+                  <p className="text-gray-600 dark:text-[#788099] text-sm">Market Cap</p>
+                  <p className="font-bold">
+                    {new Intl.NumberFormat("en-US", {
+                      style: "currency",
+                      currency: "USD",
+                      maximumFractionDigits: 0,
+                    }).format(coinDetails.market_data?.market_cap?.usd || 0)}
+                  </p>
+                </div>
+                
+                <div>
+                  <p className="text-gray-600 dark:text-[#788099] text-sm">24h Volume</p>
+                  <p className="font-bold">
+                    {new Intl.NumberFormat("en-US", {
+                      style: "currency",
+                      currency: "USD",
+                      maximumFractionDigits: 0,
+                    }).format(coinDetails.market_data?.total_volume?.usd || 0)}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        <div className="bg-gray-50 dark:bg-[#1D1D23] p-4 rounded-lg" style={{ height: "500px" }}>
-          {loadingChart ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="flex items-center gap-2 text-[#13B562]">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#13B562]"></div>
-                Loading chart...
-              </div>
-            </div>
-          ) : chartData.length > 0 ? (
-            <div>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={chartData}
-                margin={{
-                  top: 10,
-                  right: 30,
-                  left: 0,
-                  bottom: 0,
-                }}
+        <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-6 border border-[#E8EFF5] dark:border-[#35353E]">
+          <div className="flex gap-2 mb-6">
+            {["1", "7", "30", "90", "365"].map((range) => (
+              <button
+                key={range}
+                onClick={() => setTimeRange(range)}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  timeRange === range
+                    ? "bg-[#13B562] text-white"
+                    : "bg-gray-100 dark:bg-[#2D2D33] text-gray-700 dark:text-[#788099] hover:bg-gray-200 dark:hover:bg-[#3D3D43]"
+                }`}
               >
-                <XAxis
-                  dataKey="time"
-                  tick={{ fill: "#788099", fontSize: 12 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  domain={["auto", "auto"]}
-                  tick={{ fill: "#788099", fontSize: 12 }}
-                  axisLine={false}
-                  tickLine={false}
-                  width={70}
-                />
-                <Tooltip
-                  contentStyle={{
-                    background: "#23232a",
-                    border: "none",
-                    color: "#fff",
+                {range === "1" ? "24h" : `${range}d`}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ height: "400px" }}>
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={chartData}
+                  margin={{
+                    top: 10,
+                    right: 30,
+                    left: 0,
+                    bottom: 0,
                   }}
-                  labelStyle={{ color: "#13B562" }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="price"
-                  stroke="#13B562"
-                  strokeWidth={2}
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-            <div className="flex items-center gap-2 mt-4">
-          <Link href="/dashboard/express-exchange">
-          <Button className="border border-[#1D8751] rounded-full p-2 px-4 text-[#1D8751] flex gap-2 items-center cursor-pointer">
-            <ArrowLeftRight className="w-4 h-5"/>
-              <p>Exchange</p>
-            </Button>
-          </Link>
-          <Link href="/dashboard/p2p">
-            <Button className="border border-[#1D8751] rounded-full p-2 px-4 text-[#1D8751] flex gap-2 items-center cursor-pointer">
-            <Users className="w-4 h-5"/>
-              <p>P2P</p>
-            </Button>
-          </Link>
-            <Link href="/dashboard/swap">
-            <Button className="border border-[#1D8751] rounded-full p-2 px-4 text-[#1D8751] flex gap-2 items-center cursor-pointer">
-            <Repeat className="w-4 h-5"/>
-              <p>Swap</p>
-            </Button>
+                >
+                  <XAxis
+                    dataKey="time"
+                    tick={{ fill: "#788099", fontSize: 12 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    domain={["auto", "auto"]}
+                    tick={{ fill: "#788099", fontSize: 12 }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={70}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: "#23232a",
+                      border: "none",
+                      color: "#fff",
+                    }}
+                    labelStyle={{ color: "#13B562" }}
+                    formatter={(value: number) => [formatPrice(value), "Price"]}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="price"
+                    stroke="#13B562"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                No chart data available
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-4 justify-center mt-8">
+            <Link href="/dashboard/express-exchange">
+              <Button className="border border-[#1D8751] rounded-full p-3 px-6 text-[#1D8751] flex gap-2 items-center cursor-pointer hover:bg-[#1D8751] hover:text-white transition-colors">
+                <ArrowLeftRight className="w-5 h-5"/>
+                <span>Exchange</span>
+              </Button>
             </Link>
-            </div>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-full text-red-500">
-              No chart data available
-            </div>
-          )}
+            <Link href="/dashboard/p2p">
+              <Button className="border border-[#1D8751] rounded-full p-3 px-6 text-[#1D8751] flex gap-2 items-center cursor-pointer hover:bg-[#1D8751] hover:text-white transition-colors">
+                <Users className="w-5 h-5"/>
+                <span>P2P</span>
+              </Button>
+            </Link>
+            <Link href="/dashboard/swap">
+              <Button className="border border-[#1D8751] rounded-full p-3 px-6 text-[#1D8751] flex gap-2 items-center cursor-pointer hover:bg-[#1D8751] hover:text-white transition-colors">
+                <Repeat className="w-5 h-5"/>
+                <span>Swap</span>
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     </div>
@@ -277,7 +304,7 @@ const MarketChartContent = () => {
 const MarketChartPage = () => {
   return (
     <Suspense fallback={
-      <div className="bg-white dark:bg-[#18181D] min-h-screen py-8 flex items-center justify-center">
+      <div className="bg-white dark:bg-[#18181D] min-h-screen flex items-center justify-center">
         <div className="flex items-center gap-2 text-[#13B562]">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#13B562]"></div>
           Loading chart...

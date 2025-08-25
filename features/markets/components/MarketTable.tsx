@@ -21,16 +21,12 @@ import { Button } from "@headlessui/react";
 import { ArrowLeftRight, Plus, Repeat, Search, Users, X } from "lucide-react";
 import Link from "next/link";
 import { TiArrowUnsorted } from "react-icons/ti";
-import {
-  fetchAssets,
-  addFavoriteAsset,
-  removeFavoriteAsset,
-  getFavoriteAssets,
-} from "../../exchange/slices/exchangeSlice";
+import { fetchAssets, addFavoriteAsset, removeFavoriteAsset, getFavoriteAssets } from '../../exchange/slices/exchangeSlice'
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
-import { toast } from "sonner";
+import { toast } from "sonner"
 import { Asset, FavoriteAsset } from "../../exchange/types";
+
 
 // Utility functions for formatting
 const formatPrice = (price: number): string => {
@@ -174,7 +170,7 @@ const MarketTable = () => {
   const {
     assets: allAvailableAssets,
     favoriteAssets,
-    loading: loadingAssets,
+    loading : loadingAssets,
   } = useSelector((state: RootState) => state.exchange);
   const { markets, loading, error, lastUpdated, refetch, clearError } =
     useSimpleMarkets(100);
@@ -186,8 +182,7 @@ const MarketTable = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [pendingRemoveAsset, setPendingRemoveAsset] =
-    useState<FavoriteAsset | null>(null);
+  const [pendingRemoveAsset, setPendingRemoveAsset] = useState<FavoriteAsset | null>(null);
 
   useEffect(() => {
     if (!allAvailableAssets) {
@@ -249,7 +244,7 @@ const MarketTable = () => {
   //   return markets.slice(0, 3);
   // }, [markets]);
 
-  const toggleDropdown = () => {
+    const toggleDropdown = () => {
     setShowDropdown(!showDropdown);
     setSearchTerm("");
   };
@@ -283,28 +278,30 @@ const MarketTable = () => {
     }
   };
 
-  // Helper function to find asset ID from asset name
-  const getAssetIdFromName = (assetName: string): string | null => {
-    const asset = allAvailableAssets?.assets?.find(
-      (asset: Asset) => asset.name === assetName || asset.symbol === assetName
-    );
-    return asset?.asset_id || null;
-  };
+    // Helper function to find asset ID from asset name
+    const getAssetIdFromName = (assetName: string): string | null => {
+      const asset = allAvailableAssets?.assets?.find(
+        (asset: Asset) => asset.name === assetName || asset.symbol === assetName
+      );
+      return asset?.asset_id || null;
+    };
 
-  const filteredAvailableAssets =
-    allAvailableAssets?.assets?.filter((asset: Asset) =>
-      asset.symbol.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredAvailableAssets =
+      allAvailableAssets?.assets?.filter(
+        (asset: Asset) =>
+          asset.symbol.toLowerCase().includes(searchTerm.toLowerCase())
     ) || [];
 
-  // Dummy data for missing fields
-  const DUMMY_ASSET_DATA: Record<
-    string,
-    { symbol: string; price: number; change: string }
-  > = {
-    "USDT Tether": { symbol: "USDT", price: 0.99, change: "+0.01%" },
-    "USD Coin": { symbol: "USDC", price: 1.0, change: "+0.02%" },
-    FXPRIMUS: { symbol: "FXP", price: 1.0, change: "+0.00%" },
-  };
+    // Dummy data for missing fields
+    const DUMMY_ASSET_DATA: Record<
+      string,
+      { symbol: string; price: number; change: string }
+    > = {
+      "USDT Tether": { symbol: "USDT", price: 0.99, change: "+0.01%" },
+      "USD Coin": { symbol: "USDC", price: 1.0, change: "+0.02%" },
+      FXPRIMUS: { symbol: "FXP", price: 1.0, change: "+0.00%" },
+    };
+
 
   const handleFilterClick = useCallback((filter: string) => {
     setActiveFilter(filter);
@@ -378,7 +375,7 @@ const MarketTable = () => {
   }
 
   return (
-    <div className="bg-white dark:bg-[#18181D] min-h-screen py-8 text-gray-900 dark:text-[#788099] font-sans">
+    <div className="bg-[#EEF1F4] dark:bg-[#18181D] min-h-screen py-8 text-gray-900 dark:text-[#788099] font-sans">
       {/* Top Section */}
       <div className="container mx-auto mb-6 px-6">
         <div className="flex items-center justify-between mb-4">
@@ -432,24 +429,16 @@ const MarketTable = () => {
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2 font-semibold text-gray-900 dark:text-[#fff] text-lg">
             Top Assets Favourite Assets
-            <button
-              className="bg-none border-none text-[#1D8751] text-xl cursor-pointer p-0 ml-2"
-              onClick={() => {
-                document
-                  .getElementById("fav-scroll")
-                  ?.scrollBy({ left: -300, behavior: "smooth" });
-              }}
-            >
+            <button className="bg-none border-none text-[#1D8751] text-xl cursor-pointer p-0 ml-2"  
+               onClick={() => {
+                document.getElementById("fav-scroll")?.scrollBy({ left: -300, behavior: "smooth" });
+              }}>
               &lt;
             </button>
-            <button
-              className="bg-none border-none text-[#1D8751] text-xl cursor-pointer p-0 ml-1"
+            <button className="bg-none border-none text-[#1D8751] text-xl cursor-pointer p-0 ml-1"
               onClick={() => {
-                document
-                  .getElementById("fav-scroll")
-                  ?.scrollBy({ left: 300, behavior: "smooth" });
-              }}
-            >
+                document.getElementById("fav-scroll")?.scrollBy({ left: 300, behavior: "smooth" });
+              }}>
               &gt;
             </button>
           </div>
@@ -463,7 +452,7 @@ const MarketTable = () => {
             </button>
             {/* Dropdown Content */}
             {showDropdown && (
-              <div className="absolute top-full right-0 mt-2 w-48 bg-[#23242B] rounded-md shadow-lg z-10 max-h-64 overflow-y-auto">
+              <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-[#23242B] rounded-md shadow-lg z-10 max-h-64 overflow-y-auto">
                 <div className="relative mt-2 item-center ml-2">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1D8751] w-4 h-4" />
                   <input
@@ -498,102 +487,94 @@ const MarketTable = () => {
         </div>
 
         {/* Favourite Assets Cards Row */}
-        <div
+        <div     
           id="fav-scroll"
           className="
             flex gap-4 mb-8 w-full overflow-x-auto scrollbar-hide scroll-smooth
           "
           style={{ WebkitOverflowScrolling: "touch" }}
         >
-          {loadingAssets ? (
-            <div className="flex items-center justify-center min-w-[250px]">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#13B562]"></div>
-            </div>
-          ) : favoriteAssets?.length === 0 ? (
-            <div className="col-span-3 text-center text-gray-500">
-              No favorite assets found. Add some to see them here.
-            </div>
-          ) : (
-            favoriteAssets?.map((asset: FavoriteAsset) => {
-              const dummyData = DUMMY_ASSET_DATA[asset.asset_symbol] || {
-                symbol: (asset.asset_symbol ?? "").split(" ")[0],
-                price: 0,
-                change: "+0.00%",
-              };
 
-              return (
-                <div
-                  key={asset.favorite_asset_id}
-                  className="dark:bg-[#1D1D23] rounded-2xl p-4 flex items-center gap-3 border dark:border-[#35353E]  relative flex-shrink-0 w-[80%] sm:w-[45%] md:w-[30%]"
+            {loadingAssets ? (
+              <div className="flex items-center justify-center min-w-[250px]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#13B562]"></div>
+              </div>
+            ) : favoriteAssets?.length === 0 ? (
+              <div className="col-span-3 text-center text-gray-500">
+                No favorite assets found. Add some to see them here.
+              </div>
+            ) : (
+
+            favoriteAssets?.map((asset: FavoriteAsset) => {
+            const dummyData = DUMMY_ASSET_DATA[asset.asset_symbol] || {
+              symbol: (asset.asset_symbol ?? "").split(" ")[0],
+              price: 0,
+              change: "+0.00%",
+            };
+
+            return (
+              <div
+                key={asset.favorite_asset_id}
+                className="bg-white dark:bg-[#1D1D23] rounded-2xl p-4 flex items-center gap-3 border border-[#E8EFF5] dark:border-[#35353E] relative flex-shrink-0 w-[80%] sm:w-[45%] md:w-[30%]"
+              >
+                <button
+                  onClick={() => {
+                    setPendingRemoveAsset(asset);
+                    setShowConfirmModal(true);
+                  }}
+                  className="absolute top-0 right-2 p-1 rounded-full hover:[#E8EFF5] dark:hover:bg-[#35353E] transition-colors"
+                  title="Remove from favorites"
                 >
-                  <button
-                    // onClick={() => {
-                    //   const assetId = getAssetIdFromName(asset.asset_symbol);
-                    //   if (assetId) {
-                    //     handleRemoveFromFavorites(assetId);
-                    //   } else {
-                    //     toast.error("Could not find asset ID for removal");
-                    //   }
-                    // }}
-                    onClick={() => {
-                      setPendingRemoveAsset(asset);
-                      setShowConfirmModal(true);
-                    }}
-                    className="absolute top-0 right-2 p-1 rounded-full hover:bg-[#35353E] transition-colors"
-                    title="Remove from favorites"
-                  >
-                    <X className="w-3 h-3 text-[#9CA3AF] hover:text-white" />
-                  </button>
-                  <div className="w-8 h-8 rounded-full">
-                    {asset.asset_image &&
-                    typeof asset.asset_image === "string" &&
-                    asset.asset_image.trim() !== "" ? (
-                      <img
-                        src={asset.asset_image}
-                        alt={asset.asset_symbol}
-                        className="object-cover w-8 h-8 rounded-full"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).style.display =
-                            "none";
-                        }}
-                      />
-                    ) : (
-                      <CoinIcon
-                        image={null}
-                        symbol={asset.asset_symbol || ""}
-                        size={32}
-                      />
-                    )}
+                  <X className="w-3 h-3 text-[#9CA3AF] hover:text-white" />
+                </button>
+                <div className="w-8 h-8 rounded-full">
+                  {asset.asset_image && typeof asset.asset_image === "string" && asset.asset_image.trim() !== "" ? (
+                    <img
+                      src={asset.asset_image}
+                      alt={asset.asset_symbol}
+                      className="object-cover w-8 h-8 rounded-full"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <CoinIcon
+                      image={null}
+                      symbol={asset.asset_symbol || ""}
+                      size={32}
+                    />
+                  )}
+              
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-[#051015] dark:text-white truncate">
+                    {dummyData.symbol}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium dark:text-white text-black truncate">
-                      {dummyData.symbol}
-                    </div>
-                    <div className="text-xs text-[#788099] truncate">
-                      {asset.asset_symbol}
-                    </div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <div className="font-bold dark:text-white text-black whitespace-nowrap">
-                      $
-                      {dummyData.price.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 8,
-                      })}
-                    </div>
-                    <div
-                      className={`text-xs whitespace-nowrap ${
-                        dummyData.change.startsWith("+")
-                          ? "text-[#1D8751]"
-                          : "text-[#1D8751]"
-                      }`}
-                    >
-                      {dummyData.change}
-                    </div>
+                  <div className="text-xs text-[#788099] dark:text-[#788099] truncate">
+                    {asset.asset_symbol}
                   </div>
                 </div>
-              );
-            })
+                <div className="text-right flex-shrink-0">
+                  <div className="font-bold text:[#051015] dark:text-white whitespace-nowrap">
+                    $
+                    {dummyData.price.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 8,
+                    })}
+                  </div>
+                  <div
+                    className={`text-xs whitespace-nowrap ${
+                      dummyData.change.startsWith("+")
+                        ? "text-[#1D8751]"
+                        : "text-[#1D8751]"
+                    }`}
+                  >
+                    {dummyData.change}
+                  </div>
+                </div>
+              </div>
+            );
+          })
           )}
         </div>
 
@@ -747,22 +728,13 @@ const MarketTable = () => {
       {showConfirmModal && pendingRemoveAsset && (
         <>
           {/* Overlay */}
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-[999]"
-            style={{ background: "rgba(0,0,0,0.6)" }}
-          />
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-[999]" style={{background: "rgba(0,0,0,0.6)"}} />
           {/* Modal */}
           <div className="fixed inset-0 z-[1000] flex items-center justify-center">
             <div className="bg-[#23242B] rounded-xl p-6 shadow-lg w-full max-w-sm">
-              <h2 className="text-lg font-semibold text-white mb-2">
-                Remove Favorite
-              </h2>
+              <h2 className="text-lg font-semibold text-white mb-2">Remove Favorite</h2>
               <p className="text-[#9CA3AF] mb-4">
-                Are you sure you want to remove{" "}
-                <span className="font-bold text-white">
-                  {pendingRemoveAsset.asset_symbol}
-                </span>{" "}
-                from your favorites?
+                Are you sure you want to remove <span className="font-bold text-white">{pendingRemoveAsset.asset_symbol}</span> from your favorites?
               </p>
               <div className="flex justify-end gap-3">
                 <button
@@ -777,9 +749,7 @@ const MarketTable = () => {
                 <button
                   className="px-4 py-2 rounded bg-[#1D8751] text-white hover:bg-[#166c3a]"
                   onClick={() => {
-                    const assetId = getAssetIdFromName(
-                      pendingRemoveAsset.asset_symbol
-                    );
+                    const assetId = getAssetIdFromName(pendingRemoveAsset.asset_symbol);
                     if (assetId) {
                       handleRemoveFromFavorites(assetId);
                     } else {

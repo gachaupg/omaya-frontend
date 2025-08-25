@@ -5,6 +5,34 @@ import axios from "axios";
 import { MarketData, MarketDataParams, MarketDataResponse } from "./types";
 import { logger } from "@/lib/utils/logger";
 
+const RATE_LIMIT_DELAY = 10000; 
+const MAX_RETRIES = 2;
+let lastRequestTime = 0;
+let requestCount = 0;
+const REQUEST_WINDOW = 60000; 
+
+// Add this helper function for rate limiting
+const delayIfNeeded = async () => {
+  const now = Date.now();
+  const timeSinceLastRequest = now - lastRequestTime;
+  
+  // If we've made more than 10 requests in the last minute, delay
+  if (requestCount > 10 && timeSinceLastRequest < REQUEST_WINDOW) {
+    const delay = REQUEST_WINDOW - timeSinceLastRequest;
+    console.warn(`Rate limiting: delaying request by ${delay}ms`);
+    await new Promise(resolve => setTimeout(resolve, delay));
+    requestCount = 0;
+  }
+  
+  // Always wait at least 1 second between requests
+  if (timeSinceLastRequest < 1000) {
+    await new Promise(resolve => setTimeout(resolve, 1000 - timeSinceLastRequest));
+  }
+  
+  lastRequestTime = Date.now();
+  requestCount++;
+};
+
 // CoinGecko API configuration
 const COINGECKO_BASE_URL = "https://api.coingecko.com/api/v3";
 const COINGECKO_API_KEY =
@@ -283,7 +311,7 @@ export const fetchCoinMarketChart = async (
       response = await axios.get(
         `https://api.coingecko.com/api/v3/coins/${id}/market_chart`,
         {
-          params: { vs_currency, days, interval: "hourly" },
+          params: { vs_currency, days }, // REMOVED interval parameter
           headers: {
             "x-cg-demo-api-key": COINGECKO_API_KEY,
             Accept: "application/json",
@@ -297,7 +325,7 @@ export const fetchCoinMarketChart = async (
       response = await axios.get(
         `https://api.coingecko.com/api/v3/coins/${id}/market_chart`,
         {
-          params: { vs_currency, days, interval: "hourly" },
+          params: { vs_currency, days }, // REMOVED interval parameter
           headers: { Accept: "application/json" },
           timeout: 10000,
         }
@@ -308,7 +336,7 @@ export const fetchCoinMarketChart = async (
       throw new Error("Invalid chart data format received from API");
     }
 
-    return response.data.prices; // [[timestamp, price], ...]
+    return response.data.prices;
   } catch (error) {
     logger.error("Failed to fetch coin market chart", {
       id,
@@ -329,6 +357,41 @@ export const fetchCoinMarketChart = async (
       );
     }
     throw new Error("Failed to fetch chart data: Unknown error");
+  }
+};
+
+// Add this fallback function
+export const fetchCoinMarketChartFallback = async (
+  id: string,
+  days: number = 1,
+  vs_currency: string = "usd"
+) => {
+  try {
+    // Try a different approach - use simple fetch without axios
+    const response = await fetch(
+      `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=${vs_currency}&days=${days}`,
+      {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.prices || !Array.isArray(data.prices)) {
+      throw new Error("Invalid chart data format");
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Fallback API call failed:", error);
+    throw error;
   }
 };
 
@@ -376,39 +439,50 @@ export const fetchCoinMarketChartPublic = async (
   days: number = 1,
   vs_currency: string = "usd"
 ) => {
-  try {
-    // Use the public endpoint directly
-    const response = await axios.get(
-      `https://api.coingecko.com/api/v3/coins/${id}/market_chart`,
-      {
-        params: { vs_currency, days, interval: "hourly" },
-        timeout: 15000, // Longer timeout for public endpoint
-      }
-    );
-
-    if (!response.data.prices || !Array.isArray(response.data.prices)) {
-      throw new Error("Invalid chart data format received from API");
-    }
-
-    return response.data.prices; // [[timestamp, price], ...]
-  } catch (error) {
-    logger.error("Failed to fetch coin market chart (public)", {
-      id,
-      days,
-      vs_currency,
-      error,
-    });
-    if (axios.isAxiosError(error)) {
-      if (error.response?.status === 429) {
-        throw new Error("Rate limit exceeded. Please try again later.");
-      }
-      throw new Error(
-        `Failed to fetch chart data: ${
-          error.response?.data?.error || error.message
-        }`
+  let retries = 0;
+  
+  while (retries <= MAX_RETRIES) {
+    try {
+      await delayIfNeeded();
+      
+      // Remove the interval parameter - let CoinGecko auto-determine based on days
+      const response = await axios.get(
+        `https://api.coingecko.com/api/v3/coins/${id}/market_chart`,
+        {
+          params: { 
+            vs_currency, 
+            days
+            // REMOVED: interval: days === 1 ? "hourly" : "daily" 
+          },
+          timeout: 15000,
+        }
       );
+
+      if (!response.data.prices || !Array.isArray(response.data.prices)) {
+        throw new Error("Invalid chart data format received from API");
+      }
+
+      return response.data;
+    } catch (error) {
+      retries++;
+      
+      if (retries > MAX_RETRIES) {
+        if (axios.isAxiosError(error)) {
+          if (error.response?.status === 429) {
+            throw new Error("Rate limit exceeded. Please try again in a few minutes.");
+          }
+          throw new Error(
+            `Failed to fetch chart data: ${
+              error.response?.data?.error || error.message
+            }`
+          );
+        }
+        throw new Error("Failed to fetch chart data: Unknown error");
+      }
+      
+      // Wait before retrying
+      await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY * retries));
     }
-    throw new Error("Failed to fetch chart data: Unknown error");
   }
 };
 
@@ -417,28 +491,38 @@ export const fetchCoinMarketChartPublic = async (
  * This should work without API key restrictions
  */
 export const fetchCoinDetailsPublic = async (id: string) => {
-  try {
-    // Use the public endpoint directly
-    const response = await axios.get(
-      `https://api.coingecko.com/api/v3/coins/${id}`,
-      {
-        timeout: 15000, // Longer timeout for public endpoint
-      }
-    );
-
-    return response.data;
-  } catch (error) {
-    logger.error("Failed to fetch coin details (public)", { id, error });
-    if (axios.isAxiosError(error)) {
-      if (error.response?.status === 429) {
-        throw new Error("Rate limit exceeded. Please try again later.");
-      }
-      throw new Error(
-        `Failed to fetch coin details: ${
-          error.response?.data?.error || error.message
-        }`
+  let retries = 0;
+  
+  while (retries <= MAX_RETRIES) {
+    try {
+      await delayIfNeeded();
+      
+      const response = await axios.get(
+        `https://api.coingecko.com/api/v3/coins/${id}`,
+        {
+          timeout: 15000,
+        }
       );
+
+      return response.data;
+    } catch (error) {
+      retries++;
+      
+      if (retries > MAX_RETRIES) {
+        if (axios.isAxiosError(error)) {
+          if (error.response?.status === 429) {
+            throw new Error("Rate limit exceeded. Please try again in a few minutes.");
+          }
+          throw new Error(
+            `Failed to fetch coin details: ${
+              error.response?.data?.error || error.message
+            }`
+          );
+        }
+        throw new Error("Failed to fetch coin details: Unknown error");
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY * retries));
     }
-    throw new Error("Failed to fetch coin details: Unknown error");
   }
 };

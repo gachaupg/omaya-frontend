@@ -108,7 +108,7 @@ const BlogPage = () => {
 
   return (
     <div className="bg-white dark:bg-[#0A0A0A] text-gray-900 dark:text-white min-h-screen p-4 sm:p-6 md:p-8  mt-20">
-      <div className="max-w-7xl mx-auto">
+      <div className="container mx-auto">
         <header className="mb-4 md:mb-6 text-center md:text-left">
           <h1 className="text-2xl sm:text-2xl md:text-3xl font-bold leading-tight">
             Enjoy Our <span className="text-[#1D8751]">Blog</span> On the <span className="text-[#1D8751]">Latest</span>

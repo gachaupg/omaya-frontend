@@ -287,7 +287,7 @@ const Charts: React.FC<ChartProps> = ({
       {/* Chart card */}
       <div
         className={`w-full rounded-2xl p-6 
-          bg-white border-2 border-[#35353E]
+          bg-white border border-[#E8EFF5] dark:border-[#35353E]
           dark:bg-[#18181D]
           dark:border-[${tokens.colors.dark.border}]`}
       >

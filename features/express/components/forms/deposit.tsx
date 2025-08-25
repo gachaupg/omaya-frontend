@@ -759,12 +759,12 @@ export default function DepositForm({
   }, [selectedPaymentDetail]);
 
   return (
-    <div className="w-full min-h-screen flex flex-col justify- bg-[#FFFFFF] dark:bg-[#18181D]">
+    <div className="w-full min-h-screen flex flex-col justify- bg-[#FFFFFF] dark:bg-[#18181D]"> 
       <h2 className="text-xl font-bold  mb-2 text-[#788099]">
         <span className="text-[#7e7e8f]">1-</span> Transaction Info
       </h2>
-      <div className=" flex items-center justify-center ">
-        <div className="bg-[FFFFFF] dark:bg-[#23232b] border-2 border-[#E8EFF5] dark:border-[#35353E]  rounded-2xl p-3 shadow-lg w-full max-w-4xl mx-auto text-white">
+      <div className="flex items-center justify-center ">
+        <div className="bg-[FFFFFF] dark:bg-[#23232b] border-2 border-[#E8EFF5] dark:border-[#35353E]  rounded-2xl p-3 shadow-lg w-full container mx-auto text-white">
           {/* First Row - Amount and Bank/Payment Method */}
           <div className="flex flex-col md:flex-row gap-3 mb-2">
             <div className="flex-1">
@@ -1212,7 +1212,7 @@ export default function DepositForm({
 
           {/* Transaction Code Card - below Payment Details, before Wallet Address */}
           {apiResponse && apiResponse.deposit_code && (
-            <div className="mb-6 flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
+            <div className="mb-6 flex flex-col gap-3 container mx-auto w-full px-2">
               <h2 className="text-xl font-bold mb-2 text-[#788099]">
                 <span className="text-[#7e7e8f]">3-</span> Transaction Code
               </h2>
@@ -1318,7 +1318,7 @@ export default function DepositForm({
           <h2 className="text-xl font-bold  mb-2 text-[#788099]">
             <span className="text-[#7e7e8f]">4-</span> Wallet Address
           </h2>
-          <div className="flex flex-col bg-[#23232b] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full max-w-4xl mx-auto text-white mb-6">
+          <div className="flex flex-col bg-[#23232b] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full container mx-auto text-white mb-6">
             {/* Wallet/Account Address Label */}
             <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
               Wallet/Account Address
@@ -1488,7 +1488,7 @@ export default function DepositForm({
 
           {/* Validation Errors Display */}
           {validationErrors.length > 0 && (
-            <div className="max-w-4xl mx-auto w-full px-2 mb-4">
+            <div className="container mx-auto w-full px-2 mb-4">
               <div className="bg-red-500/10 border border-red-500 rounded-2xl p-4">
                 <h3 className="text-red-500 font-semibold mb-2">
                   Please fix the following errors:
@@ -1503,7 +1503,7 @@ export default function DepositForm({
           )}
 
           {/* Disclaimer and Button outside the card */}
-          <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
+          <div className="flex flex-col gap-3 container mx-auto w-full px-2">
             <div className="flex items-center text-white text-[16px] font-semibold">
               <FaExclamationCircle className="mr-2 text-red-500" />
               <span>
