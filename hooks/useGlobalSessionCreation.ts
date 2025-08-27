@@ -112,7 +112,7 @@ export const useGlobalSessionCreation = () => {
       if (existingSessionWithSameIP) {
         console.log("Global: Session with IP address already exists:", existingSessionWithSameIP);
         console.log("Global: Skipping session creation to avoid duplicates");
-        showToast.info("Session already exists for this device");
+        // Removed toast to prevent showing "Session already exists for this device" to users
         return; // Don't create a new session if one with the same IP already exists
       }
 

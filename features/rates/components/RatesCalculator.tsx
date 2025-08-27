@@ -226,7 +226,7 @@ const RatesCalculator = () => {
         formData.append("sent_from", selectedPaymentDetail.account_name);
 
         // Make the API call to trading engine deposit
-        const response = await fetch("/trading_engine/deposit/", {
+        const response = await fetch("/trading_engine/deposits/", {
           method: "POST",
           body: formData,
         });
@@ -329,7 +329,7 @@ const totalFees = calculateTotalFees(commission, networkFee);
 const assetAmount = amountNum + totalFees;
 
   return (
-    <div className="bg-white dark:bg-[#18181D] p-6 rounded-2xl border border-gray-200 dark:border-[#35353E] shadow-md">
+    <div className="bg-white dark:bg-[#18181D] dark:border-[#35353E]  p-6 rounded-2xl border border-gray-200 shadow-md">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4 items-stretch">
         <div className="relative" ref={dropdownRef}>
           <label className="text-sm text-gray-600 dark:text-[#788099] mb-2 block">

@@ -208,7 +208,7 @@ const PaymentMethods = () => {
       <div className="flex flex-col sm:flex-row gap-2">
         {/* Account Name */}
         <Input
-          placeholder="Account Name"
+          placeholder="Accounthhhh Name"
           value={method.account_name}
           className="w-full sm:w-[539px] h-[52px] rounded-3xl border border-gray-300 dark:border-[#353535] bg-white dark:bg-[#353535] text-gray-900 dark:text-white px-[14px] py-[10px] text-base"
           bgColor="#ffffff"

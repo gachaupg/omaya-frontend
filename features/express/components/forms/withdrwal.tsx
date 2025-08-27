@@ -215,6 +215,9 @@ export default function WithdrawalForm({
   const [isCalculating, setIsCalculating] = useState(false);
   const [calculationTimeout, setCalculationTimeout] = useState<NodeJS.Timeout | null>(null);
   const [calculationComplete, setCalculationComplete] = useState(false);
+  const [estimateTimeout, setEstimateTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [previousValidAmount, setPreviousValidAmount] = useState<string>("");
+  const [isUserModifiedAmount, setIsUserModifiedAmount] = useState(false);
 
   // Add PaymentMethodsModal state
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -222,11 +225,12 @@ export default function WithdrawalForm({
   // Add InfoModal state
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   
-  // Add state to track if user has acknowledged the $5,000+ limit warning
-  const [hasAcknowledgedLimit, setHasAcknowledgedLimit] = useState(false);
+
 
   // Add validation state for minimum receive amount
   const [receiveAmountError, setReceiveAmountError] = useState<string | null>(null);
+
+
 
   // Filter user payment details based on selected payment method
   const filteredUserPaymentDetails = payBank
@@ -357,8 +361,15 @@ export default function WithdrawalForm({
       const firstAsset = sortedAssets[0];
       console.log("Auto-selecting first asset:", firstAsset);
       setSelectedAsset(firstAsset);
+      
+      // Only set default amount if user hasn't manually modified the amount
+      if (!isUserModifiedAmount) {
+        const defaultAmount = getDefaultAmount(firstAsset);
+        setPayAmount(defaultAmount);
+        setPayAmountInput(defaultAmount.toString());
+      }
     }
-  }, [swapAssets, selectedAsset]);
+  }, [swapAssets, selectedAsset, isUserModifiedAmount]);
 
   // Recalculate when asset changes
   useEffect(() => {
@@ -384,30 +395,53 @@ export default function WithdrawalForm({
     
     if (estimate && !estimateLoading && isCalculatingFromPay && payAmount > 0) {
       console.log("Estimate received, updating receive amount:", estimate.estimated_amount);
-      // Estimate has been received, update the receive amount
-      const finalAmount = Math.max(0, estimate.estimated_amount);
-      setGetAmount(finalAmount);
-      setGetAmountInput(finalAmount.toString());
       
-      const validationError = validateReceiveAmount(finalAmount, selectedAsset);
-      setReceiveAmountError(validationError);
-      
-      if (finalAmount > 5000) {
-        setIsInfoModalOpen(true);
-        setHasAcknowledgedLimit(false);
+      // Check if estimate has a valid amount
+      if (estimate.estimated_amount !== undefined && estimate.estimated_amount !== null && !isNaN(estimate.estimated_amount)) {
+        // Estimate has been received, update the receive amount
+        const finalAmount = Math.max(0, estimate.estimated_amount);
+        setGetAmount(finalAmount);
+        setGetAmountInput(finalAmount.toString());
+        
+        const validationError = validateReceiveAmount(finalAmount, selectedAsset);
+        setReceiveAmountError(validationError);
+        
+        if (finalAmount > 15000) {
+          setIsInfoModalOpen(true);
+        }
+        
+        // Clear loading states
+        setIsCalculating(false);
+        setIsCalculatingReceive(false);
+      } else {
+        // Estimate is invalid, fall back to rough calculation
+        console.log("DEBUG: Invalid estimate received, using fallback calculation");
+        const fallbackAmount = payAmount * 0.98; // Rough 2% fee estimate
+        setGetAmount(fallbackAmount);
+        setGetAmountInput(fallbackAmount.toString());
+        setReceiveAmountError("Using estimated rate. For accurate rates, please try again.");
+        setIsCalculating(false);
+        setIsCalculatingReceive(false);
       }
-      
-      // Clear loading states
-      setIsCalculating(false);
-      setIsCalculatingReceive(false);
     } else if (estimateLoading && isCalculatingFromPay && payAmount > 0) {
-      // Show loading state while estimate is being fetched
+      // Keep field empty during loading - no intermediate estimates
+      if (selectedAsset && !isSimpleCalculationAsset(selectedAsset)) {
+        // Keep field completely empty during calculation
+        setGetAmount(0);
+        setGetAmountInput("");
+        setReceiveAmountError("Calculating precise rate...");
+      }
       setIsCalculating(true);
       setIsCalculatingReceive(true);
     } else if (!estimate && !estimateLoading && isCalculatingFromPay && payAmount > 0 && selectedAsset && !isSimpleCalculationAsset(selectedAsset)) {
-      // No estimate available but we're calculating from pay - show loading
-      setIsCalculating(true);
-      setIsCalculatingReceive(true);
+      // No estimate available but we're calculating from pay - use fallback
+      console.log("DEBUG: No estimate available, using fallback calculation");
+      const fallbackAmount = payAmount * 0.98; // Rough 2% fee estimate
+      setGetAmount(fallbackAmount);
+      setGetAmountInput(fallbackAmount.toString());
+      setReceiveAmountError("Using estimated rate. For accurate rates, please try again.");
+      setIsCalculating(false);
+      setIsCalculatingReceive(false);
     }
   }, [estimate, estimateLoading, isCalculatingFromPay, payAmount, selectedAsset]);
 
@@ -435,6 +469,13 @@ export default function WithdrawalForm({
     return ticker === "usdt" || ticker === "usdc";
   };
 
+  // Get default amount based on asset type
+  const getDefaultAmount = (asset: any) => {
+    if (!asset) return 100;
+    const ticker = (asset.ticker || asset.symbol || "").toLowerCase();
+    return ticker === "usdt" || ticker === "usdc" ? 100 : 0.001;
+  };
+
   // Get minimum amount based on asset type
   const getMinimumAmount = (asset: any) => {
     if (!asset) return 10; // Default minimum
@@ -448,70 +489,198 @@ export default function WithdrawalForm({
     return null; // No error
   };
 
-  // Fetch estimate for non-USDT/USDC assets - triggers immediately on asset or amount change
+  // Fetch estimate for non-USDT/USDC assets with debouncing for better performance
   useEffect(() => {
+    // Clear any existing estimate timeout
+    if (estimateTimeout) {
+      clearTimeout(estimateTimeout);
+    }
+
     if (
       selectedAsset &&
       !isSimpleCalculationAsset(selectedAsset) &&
       payAmount &&
-      payAmount > 0
+      payAmount > 0 &&
+      isCalculatingFromPay // Only fetch estimate when calculating from pay amount
     ) {
+      // Set loading state immediately for responsiveness
       setEstimateLoading(true);
       setEstimateError(null);
 
-      // Use the actual fetchSwapEstimate API call for deposit
-      // Note: fromCurrency is the selected asset, toCurrency is always "USDT" for deposits
-      console.log("Fetching estimate for deposit:", {
-       toCurrency : "USDT",
-       toNetwork : "BSC",
-     fromCurrency   : selectedAsset.ticker?.toUpperCase(),
-       fromNetwork : selectedAsset.network,
-        amount: payAmount,
-      });
-
-      dispatch(
-        fetchSwapEstimate({
-          toCurrency : "USDT",
-          toNetwork : "BSC",
-        fromCurrency   : selectedAsset.ticker?.toUpperCase(),
-          fromNetwork : selectedAsset.network,
-           amount: payAmount,
-        })
-      )
-        .then((result) => {
-          console.log("Estimate result:", result);
-          if (result.payload) {
-            console.log("Setting new estimate:", result.payload);
-            setEstimate(result.payload);
-          }
-        })
-        .catch((error) => {
-          console.error("Failed to fetch swap estimate:", error);
-          setEstimateError("Failed to calculate estimate");
-        })
-        .finally(() => {
+      // Debounce the API call to prevent too many requests
+      const debounceTimeout = setTimeout(() => {
+        // Set a timeout to prevent infinite loading
+        const timeoutId = setTimeout(() => {
+          console.log("DEBUG: Estimate request timed out, using fallback");
           setEstimateLoading(false);
+          setEstimateError("Request timed out");
+          
+          // Use fallback calculation
+          const fallbackAmount = payAmount * 0.98; // Rough 2% fee estimate
+          setGetAmount(fallbackAmount);
+          setGetAmountInput(fallbackAmount.toString());
+          setReceiveAmountError("Using estimated rate due to timeout. For accurate rates, please try again.");
+          setIsCalculating(false);
+          setIsCalculatingReceive(false);
+        }, 8000); // 8 second timeout
+
+        // Use the actual fetchSwapEstimate API call for deposit
+        // Note: fromCurrency is the selected asset, toCurrency is always "USDT" for deposits
+        console.log("Fetching estimate for deposit:", {
+         toCurrency : "USDT",
+         toNetwork : "BSC",
+       fromCurrency   : selectedAsset.ticker?.toUpperCase(),
+         fromNetwork : selectedAsset.network,
+          amount: payAmount,
         });
-    } else {
-      // Clear estimate for USDT/USDC or when conditions not met
+
+        dispatch(
+          fetchSwapEstimate({
+            toCurrency : "USDT",
+            toNetwork : "BSC",
+          fromCurrency   : selectedAsset.ticker?.toUpperCase(),
+            fromNetwork : selectedAsset.network,
+             amount: payAmount,
+          })
+        )
+          .then((result) => {
+            clearTimeout(timeoutId); // Clear timeout on success
+            console.log("Estimate result:", result);
+            if (result.payload) {
+              console.log("Setting new estimate:", result.payload);
+              setEstimate(result.payload);
+            }
+          })
+          .catch((error) => {
+            clearTimeout(timeoutId); // Clear timeout on error
+            console.error("Failed to fetch swap estimate:", error);
+            setEstimateError("Failed to calculate estimate");
+            
+            // Use fallback calculation on error
+            const fallbackAmount = payAmount * 0.98; // Rough 2% fee estimate
+            setGetAmount(fallbackAmount);
+            setGetAmountInput(fallbackAmount.toString());
+            setReceiveAmountError("Using estimated rate due to API error. For accurate rates, please try again.");
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
+          })
+          .finally(() => {
+            setEstimateLoading(false);
+          });
+      }, 150); // 150ms debounce for API calls
+
+      setEstimateTimeout(debounceTimeout);
+    } else if (!isCalculatingFromPay && selectedAsset && !isSimpleCalculationAsset(selectedAsset)) {
+      // Clear estimate when calculating from receive amount for non-simple assets
       setEstimate(null);
       setEstimateError(null);
     }
-  }, [selectedAsset, payAmount]);
+  }, [selectedAsset, payAmount, isCalculatingFromPay]);
 
-  // Filter swap assets based on search term
+  // Reverse calculation effect for non-simple assets when user types in "You Receive"
+  useEffect(() => {
+    if (
+      selectedAsset &&
+      getAmount > 0 &&
+      !isCalculatingFromPay // Only when calculating from receive amount
+    ) {
+      if (isSimpleCalculationAsset(selectedAsset)) {
+        // For USDT/USDC, use simple reverse calculation
+        let calculatedPayAmount = 0;
+        if (getAmount < 2) {
+          calculatedPayAmount = getAmount;
+        } else {
+          const commissionAmount = 2;
+          const networkFee = 0;
+          const totalFees = networkFee + commissionAmount;
+          calculatedPayAmount = getAmount + totalFees;
+        }
+        
+        // Validate the calculated amount
+        if (isNaN(calculatedPayAmount) || calculatedPayAmount <= 0) {
+          setReceiveAmountError("Unable to calculate. Please use 'You Send' field for accurate rates.");
+          setIsCalculating(false);
+          setIsCalculatingReceive(false);
+          return;
+        }
+        
+        // Update the pay amount with the calculated amount
+        setPayAmount(calculatedPayAmount);
+        setPayAmountInput(calculatedPayAmount.toFixed(6));
+        
+        // Show info modal if receive amount exceeds $15,000
+        if (getAmount > 15000) {
+          setIsInfoModalOpen(true);
+        }
+        
+        // Clear any errors and loading states
+        setReceiveAmountError(null);
+        setIsCalculating(false);
+        setIsCalculatingReceive(false);
+      } else {
+        // For other assets, use API to get reverse calculation
+        // We need to find how much of the selected asset we need to send to get the desired USDT amount
+        setEstimateLoading(true);
+        setEstimateError(null);
+        
+        console.log("DEBUG: Fetching reverse estimate:", {
+          fromCurrency: "USDT",
+          fromNetwork: "BSC",
+          toCurrency: selectedAsset.ticker?.toUpperCase(),
+          toNetwork: selectedAsset.network,
+          amount: getAmount
+        });
+
+        dispatch(
+          fetchSwapEstimate({
+            fromCurrency: "USDT",
+            fromNetwork: "BSC",
+            toCurrency: selectedAsset.ticker?.toUpperCase(),
+            toNetwork: selectedAsset.network,
+            amount: getAmount,
+          })
+        )
+          .then((result: any) => {
+            console.log("DEBUG: Reverse estimate result:", result);
+            const estimatedAmount = result?.payload?.estimated_amount || result?.estimated_amount;
+            if (estimatedAmount !== undefined && !isNaN(estimatedAmount)) {
+              const calculatedPayAmount = estimatedAmount;
+              setPayAmount(calculatedPayAmount);
+              setPayAmountInput(calculatedPayAmount.toFixed(6));
+              setReceiveAmountError(null);
+              
+              // Show info modal if receive amount exceeds $15,000
+              if (getAmount > 15000) {
+                setIsInfoModalOpen(true);
+              }
+            } else {
+              setReceiveAmountError("Unable to get accurate rate. Please use 'You Send' field.");
+            }
+          })
+          .catch((error) => {
+            console.error("Failed to fetch reverse estimate:", error);
+            setReceiveAmountError("Unable to get accurate rate. Please use 'You Send' field.");
+          })
+          .finally(() => {
+            setEstimateLoading(false);
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
+          });
+      }
+      
+      // Clear the estimate since we're calculating in reverse
+      setEstimate(null);
+      setEstimateError(null);
+    }
+  }, [selectedAsset, getAmount, isCalculatingFromPay, dispatch]);
+
+  // Filter swap assets based on search term - search by ticker only
   const filteredSwapAssets =
     swapAssets?.filter((asset: SupportedAsset) => {
-      const name = asset.name?.toLowerCase() || "";
-      const symbol = asset.symbol?.toLowerCase() || "";
       const ticker = asset.ticker?.toUpperCase() || "";
-      const searchTerm = assetSearchTerm.toLowerCase();
+      const searchTerm = assetSearchTerm.toUpperCase();
 
-      return (
-        name.includes(searchTerm) ||
-        symbol.includes(searchTerm) ||
-        ticker.toLowerCase().includes(searchTerm)
-      );
+      return ticker.includes(searchTerm);
     }) || [];
 
   // Sort assets: USDT on BSC, USDC on BSC, then rest in original order
@@ -609,79 +778,90 @@ export default function WithdrawalForm({
       try {
         if (fromPay) {
           // Calculate from pay amount to receive amount
-      if (isSimpleCalculationAsset(selectedAsset)) {
-        // Simple calculation for USDT/USDC
-        let calculatedGetAmount;
+          if (isSimpleCalculationAsset(selectedAsset)) {
+            // Simple calculation for USDT/USDC
+            let calculatedGetAmount;
             if (fromAmount < 2) {
               calculatedGetAmount = fromAmount;
-        } else {
+            } else {
               const commissionAmount = 2;
-          const networkFee = 0;
-          const totalFees = networkFee + commissionAmount;
+              const networkFee = 0;
+              const totalFees = networkFee + commissionAmount;
               calculatedGetAmount = Math.max(0, fromAmount - totalFees);
             }
             
-            setGetAmount(calculatedGetAmount);
-            setGetAmountInput(calculatedGetAmount.toString());
+            // Only show calculated amount if it's meaningful (> 0.01), otherwise show empty
+            if (calculatedGetAmount >= 0.01) {
+              setGetAmount(calculatedGetAmount);
+              setGetAmountInput(calculatedGetAmount.toString());
+              // Store this as a valid previous amount
+              setPreviousValidAmount(calculatedGetAmount.toString());
+            } else {
+              // For very small amounts, keep field empty
+              setGetAmount(0);
+              setGetAmountInput("");
+              setPreviousValidAmount("");
+            }
             
             // Validate the calculated amount
             const validationError = validateReceiveAmount(calculatedGetAmount, selectedAsset);
-        setReceiveAmountError(validationError);
-        
-        // Show info modal if receive amount exceeds $5,000
-            if (calculatedGetAmount > 5000) {
-          setIsInfoModalOpen(true);
-              setHasAcknowledgedLimit(false);
+            setReceiveAmountError(validationError);
+            
+            // Show info modal if receive amount exceeds $15,000
+            if (calculatedGetAmount > 15000) {
+              setIsInfoModalOpen(true);
+            }
+          } else {
+            // For other assets, ONLY use API estimate - no manual calculations
+            if (estimate && !estimateLoading && estimate.estimated_amount !== undefined) {
+              const finalAmount = Math.max(0, estimate.estimated_amount);
+              setGetAmount(finalAmount);
+              setGetAmountInput(finalAmount.toString());
+              
+              // Store this as a valid previous amount
+              setPreviousValidAmount(finalAmount.toString());
+              
+              const validationError = validateReceiveAmount(finalAmount, selectedAsset);
+              setReceiveAmountError(validationError);
+              
+              if (finalAmount > 15000) {
+                setIsInfoModalOpen(true);
+              }
+            } else if (estimateLoading) {
+              // Show loading state while estimate is being fetched
+              setIsCalculating(true);
+              setIsCalculatingReceive(true);
+              // Don't update amounts yet, wait for estimate
+            } else {
+              // For non-USDT/USDC assets, only show loading until API estimate is available
+              // Don't do manual calculations - wait for API
+              setIsCalculating(true);
+              setIsCalculatingReceive(true);
+            }
+          }
+        } else {
+          // Calculate from receive amount to pay amount
+          if (isSimpleCalculationAsset(selectedAsset)) {
+            let newPayAmount;
+            if (fromAmount < 2) {
+              newPayAmount = fromAmount;
+            } else {
+              const commissionAmount = 2;
+              const networkFee = 0;
+              const totalFees = networkFee + commissionAmount;
+              newPayAmount = Math.max(0, fromAmount + totalFees);
+            }
+            setPayAmount(newPayAmount);
+            setPayAmountInput(newPayAmount.toString());
+          } else {
+            // For non-USDT/USDC assets, we need to fetch estimate for reverse calculation
+            // This is more complex as we need to find the pay amount that gives us the desired receive amount
+            // For now, show loading state and let user adjust the pay amount instead
+            setIsCalculating(true);
+            setIsCalculatingReceive(true);
+            // Don't update payAmountInput to avoid reloading the input field
+          }
         }
-               } else {
-           // For other assets, ONLY use API estimate - no manual calculations
-           if (estimate && !estimateLoading && estimate.estimated_amount !== undefined) {
-             const finalAmount = Math.max(0, estimate.estimated_amount);
-             setGetAmount(finalAmount);
-             setGetAmountInput(finalAmount.toString());
-             
-             const validationError = validateReceiveAmount(finalAmount, selectedAsset);
-             setReceiveAmountError(validationError);
-             
-             if (finalAmount > 5000) {
-               setIsInfoModalOpen(true);
-               setHasAcknowledgedLimit(false);
-             }
-           } else if (estimateLoading) {
-             // Show loading state while estimate is being fetched
-             setIsCalculating(true);
-             setIsCalculatingReceive(true);
-             // Don't update amounts yet, wait for estimate
-           } else {
-             // For non-USDT/USDC assets, only show loading until API estimate is available
-             // Don't do manual calculations - wait for API
-             setIsCalculating(true);
-             setIsCalculatingReceive(true);
-           }
-         }
-                             } else {
-             // Calculate from receive amount to pay amount - ONLY update pay amount, don't reload input
-             if (isSimpleCalculationAsset(selectedAsset)) {
-               let newPayAmount;
-               if (fromAmount < 2) {
-                 newPayAmount = fromAmount;
-               } else {
-                 const commissionAmount = 2;
-                 const networkFee = 0;
-                 const totalFees = networkFee + commissionAmount;
-                 newPayAmount = Math.max(0, fromAmount + totalFees);
-               }
-               setPayAmount(newPayAmount);
-               // Don't update payAmountInput to avoid reloading the input field
-             } else {
-               // For non-USDT/USDC assets, we need to fetch estimate for reverse calculation
-               // This is more complex as we need to find the pay amount that gives us the desired receive amount
-               // For now, show loading state and let user adjust the pay amount instead
-               setIsCalculating(true);
-               setIsCalculatingReceive(true);
-               // Don't update payAmountInput to avoid reloading the input field
-             }
-           }
       } catch (error) {
         console.error("Calculation error:", error);
         setReceiveAmountError("Calculation error occurred");
@@ -695,7 +875,7 @@ export default function WithdrawalForm({
           setCalculationComplete(false);
         }, 2000);
       }
-    }, 300); // 300ms debounce
+    }, 100); // 100ms debounce for faster response
 
     setCalculationTimeout(timeout);
   };
@@ -716,14 +896,17 @@ export default function WithdrawalForm({
     }
   }, [getAmount, selectedAsset]);
 
-  // Cleanup timeout on unmount
+  // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
       if (calculationTimeout) {
         clearTimeout(calculationTimeout);
       }
+      if (estimateTimeout) {
+        clearTimeout(estimateTimeout);
+      }
     };
-  }, [calculationTimeout]);
+  }, [calculationTimeout, estimateTimeout]);
 
   // Re-validate wallet address when asset changes (always BEP20)
   useEffect(() => {
@@ -841,7 +1024,6 @@ export default function WithdrawalForm({
            
             setIsTransactionSubmitted(true);
             setForceUpdate((prev) => prev + 1); // Force re-render
-            showToast.success("Withdrawal request submitted successfully!");
            
 
             // Small delay to ensure state updates are processed
@@ -874,7 +1056,6 @@ export default function WithdrawalForm({
             );
             setIsTransactionSubmitted(true);
             setForceUpdate((prev) => prev + 1);
-            showToast.success("Withdrawal request submitted successfully!");
 
             // Small delay to ensure state updates are processed
             setTimeout(() => {
@@ -915,7 +1096,6 @@ export default function WithdrawalForm({
            
             setIsTransactionSubmitted(true);
             setForceUpdate((prev) => prev + 1); // Force re-render
-            showToast.success("Withdrawal request submitted successfully!");
 
             // Small delay to ensure state updates are processed
             setTimeout(() => {
@@ -948,7 +1128,6 @@ export default function WithdrawalForm({
             );
             setIsTransactionSubmitted(true);
             setForceUpdate((prev) => prev + 1);
-            showToast.success("Withdrawal request submitted successfully!");
 
             // Small delay to ensure state updates are processed
             setTimeout(() => {
@@ -1002,7 +1181,6 @@ export default function WithdrawalForm({
           setResponseMessage("Transaction submitted successfully");
           setIsTransactionSubmitted(true);
           setForceUpdate((prev) => prev + 1);
-          showToast.success("Withdrawal request submitted successfully!");
 
           // Small delay to ensure state updates are processed
           setTimeout(() => {
@@ -1123,7 +1301,6 @@ export default function WithdrawalForm({
          
 
           if (directTransferResponse.type === "direct_transfer") {
-            showToast.success("Withdrawal request submitted successfully!");
 
             if (onExchange) {
               const transactionData = {
@@ -1144,7 +1321,6 @@ export default function WithdrawalForm({
               onExchange(transactionData);
               setIsTransactionSubmitted(true);
               setForceUpdate((prev) => prev + 1); // Force re-render
-              showToast.success("Withdrawal request submitted successfully!");
             }
           }
         } else {
@@ -1153,7 +1329,6 @@ export default function WithdrawalForm({
          
 
           if (changeNowResponse.data?.type === "changenow_swap") {
-            showToast.success("Withdrawal request submitted successfully!");
 
             if (onExchange) {
               const transactionData = {
@@ -1182,7 +1357,6 @@ export default function WithdrawalForm({
               onExchange(transactionData);
               setIsTransactionSubmitted(true);
               setForceUpdate((prev) => prev + 1); // Force re-render
-              showToast.success("Withdrawal request submitted successfully!");
             }
           }
         }
@@ -1341,7 +1515,7 @@ export default function WithdrawalForm({
   }, [selectedPaymentDetail]);
 
   return (
-    <div className="w-full min-h-screen flex flex-col justify- bg-[#18181f]">
+    <div className="w-full min-h-screen flex flex-col dark:bg-[#18181D]  ">
       <h2 className="text-xl font-bold mb-2 text-[#788099]">
         <span className="text-[#7e7e8f]">1-</span> Transaction Info
       </h2>
@@ -1349,11 +1523,14 @@ export default function WithdrawalForm({
         {/* Top Section - You Send and You Get in one card */}
         <div className="relative mb-4">
           {/* Top Card Container */}
-          <div className="flex border border-[#39394a] rounded-2xl p-4">
+          <div className="flex border border-[#39394a] dark:border-[#35353E] rounded-2xl p-4">
             {/* You Send Section */}
             <div className="flex-1 pr-4">
-              <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 You Send
+                {isCalculatingFromPay && (isCalculating || isCalculatingReceive) && (
+                  <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
+                )}
               </label>
               <div className="relative">
                 <input
@@ -1374,23 +1551,47 @@ export default function WithdrawalForm({
                       setPayAmount(newValue);
                       setIsCalculatingFromPay(true);
                       
+                      // Mark that user has manually modified the amount
+                      setIsUserModifiedAmount(true);
+                      
+                      // Clear any previous errors when user starts typing
+                      setReceiveAmountError(null);
+                      
                       // Only calculate if we have a valid amount and asset
                       if (selectedAsset && newValue >= 0) {
-                        // For estimate-based assets, ensure estimate is fetched
-                        if (!isSimpleCalculationAsset(selectedAsset) && newValue > 0) {
-                          // Set pay amount to trigger estimate fetch
-                          setPayAmount(newValue);
-                          // Show loading state immediately
+                        if (isSimpleCalculationAsset(selectedAsset)) {
+                          // For simple assets (USDT/USDC), calculate immediately
+                          calculateAmounts(newValue, true);
+                        } else if (newValue > 0) {
+                          // For estimate-based assets, keep field empty during loading
+                          
+                          // Store current value as previous valid amount before showing loading
+                          if (getAmountInput && getAmountInput !== "0" && !isCalculating) {
+                            setPreviousValidAmount(getAmountInput);
+                          }
+                          
+                          // Keep field empty during calculation - no intermediate values
+                          setGetAmount(0);
+                          setGetAmountInput("");
+                          setReceiveAmountError("Calculating precise rate...");
+                          
+                          // Set loading state for API call
                           setIsCalculating(true);
                           setIsCalculatingReceive(true);
+                          
+                          // The estimate useEffect will handle the API call with debouncing
                         } else {
-                          // For simple assets, calculate immediately
-                          calculateAmounts(newValue, true);
+                          // For zero/negative values, clear the receive amount but don't show "0"
+                          setGetAmount(0);
+                          setGetAmountInput("");
+                          setReceiveAmountError(null);
+                          setIsCalculating(false);
+                          setIsCalculatingReceive(false);
                         }
                       } else {
-                        // Clear receive amount if no valid input
+                        // For invalid input, clear the receive amount but don't show "0"
                         setGetAmount(0);
-                        setGetAmountInput("0");
+                        setGetAmountInput("");
                         setReceiveAmountError(null);
                         setIsCalculating(false);
                         setIsCalculatingReceive(false);
@@ -1405,16 +1606,16 @@ export default function WithdrawalForm({
                     // Allow any value on blur
                   }}
                   placeholder={(isCalculating || isCalculatingReceive) ? "Calculating..." : "Enter amount"}
-                  className={`w-full bg-[#1D1D23] rounded-2xl px-4 py-2 pr-16 text-lg text-white focus:outline-none border appearance-none ${
+                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg  focus:outline-none border appearance-none ${
                     (isCalculating || isCalculatingReceive) ? 'border-[#1D8751]' : 'border-[#39394a]'
                   }`}
                 />
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                  <span className="text-white text-sm font-medium">
+                  <span className="text-[#35353e] dark:text-[#ffffff] text-sm font-medium">
                     {selectedAsset ? ((selectedAsset.ticker || selectedAsset.symbol || "USDT").toUpperCase()) : "USDT"}
                   </span>
                 </div>
-                {(isCalculatingReceive || isCalculating) && isCalculatingFromPay && (
+                {(isCalculatingReceive || isCalculating) && (
                   <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
                   </div>
@@ -1424,12 +1625,12 @@ export default function WithdrawalForm({
 
             {/* You Get Section */}
             <div className="flex-1 pl-4">
-              <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                 Asset
               </label>
               <div className="relative" ref={assetDropdownRef}>
                 <div
-                  className={`w-full bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg text-white focus:outline-none border border-[#39394a] flex items-center justify-between cursor-pointer`}
+                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 text-lg  focus:outline-none border border-[#39394a] dark:border-[#35353E] flex items-center justify-between cursor-pointer`}
                   onClick={() => {
                     setIsAssetDropdownOpen(!isAssetDropdownOpen);
                   }}
@@ -1453,13 +1654,13 @@ export default function WithdrawalForm({
                               "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                           }}
                         />
-                        <span className="text-white">
+                        <span className="text-[#35353e] dark:text-[#788099]">
                           {(selectedAsset.ticker ||
                             selectedAsset.symbol ||
                             selectedAsset.name ||
                             "Unknown").toUpperCase()}
                         </span>
-                        <span className="ml-2 bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                        <span className="ml-2 bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
                           {selectedAsset.network || "Unknown"}
                         </span>
                       </>
@@ -1470,7 +1671,7 @@ export default function WithdrawalForm({
                           alt="asset icon"
                           className="w-6 h-6"
                         />
-                        <span className="text-[#7e7e8f]">
+                        <span className="text-[#7e7e8f] dark:text-[#788099]">
                           {swapAssetsLoading
                             ? "Loading assets..."
                             : "Select Asset"}
@@ -1497,17 +1698,18 @@ export default function WithdrawalForm({
 
                 {/* Asset Dropdown */}
                 {isAssetDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#1D1D23] border border-[#39394a] rounded-2xl z-50 max-h-80 overflow-hidden">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#39394a] dark:border-[#35353E] rounded-2xl z-50 max-h-80 overflow-hidden">
                     {/* Search Input */}
-                    <div className="p-3 border-b border-[#39394a]">
+                    <div className="p-3 border-b border-[#39394a] dark:border-[#35353E]">
                       <div className="relative">
                         <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
                         <input
                           type="text"
                           placeholder="Search assets..."
+                          className="w-full text-gray-900 dark:text-white dark:bg-[#1D1D23] bg-white rounded-xl px-10 py-2 text-sm focus:outline-none border dark:border-[#35353E] border-[#39394a] placeholder-gray-500 dark:placeholder-gray-400"
                           value={assetSearchTerm}
                           onChange={(e) => setAssetSearchTerm(e.target.value)}
-                          className="w-full bg-[#23232b] rounded-xl px-10 py-2 text-white text-sm focus:outline-none border border-[#39394a]"
+                          
                         />
                       </div>
                     </div>
@@ -1518,15 +1720,30 @@ export default function WithdrawalForm({
                         sortedSwapAssets.map((asset: SupportedAsset, index: number) => (
                           <div
                             key={`${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
-                            className="flex items-center gap-3 p-3 hover:bg-[#23232b] cursor-pointer border-b border-[#39394a] last:border-b-0"
+                            className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#39394a] dark:border-[#35353E] last:border-b-0"
                             onClick={() => {
                               console.log("Asset selected:", asset);
                               setSelectedAsset(asset);
                               setIsAssetDropdownOpen(false);
                               setAssetSearchTerm("");
                               
-                              // Trigger recalculation if there's an existing pay amount
-                              if (payAmount > 0) {
+                              // Only set default amount if user hasn't manually modified the amount
+                              if (!isUserModifiedAmount) {
+                                const defaultAmount = getDefaultAmount(asset);
+                                setPayAmount(defaultAmount);
+                                setPayAmountInput(defaultAmount.toString());
+                                
+                                // Trigger recalculation with new default amount
+                                setIsCalculatingFromPay(true);
+                                if (isSimpleCalculationAsset(asset)) {
+                                  calculateAmounts(defaultAmount, true);
+                                } else {
+                                  // For estimate-based assets, the estimate useEffect will handle it
+                                  setIsCalculating(true);
+                                  setIsCalculatingReceive(true);
+                                }
+                              } else {
+                                // User has custom amount, just recalculate with existing amount
                                 setIsCalculatingFromPay(true);
                                 if (isSimpleCalculationAsset(asset)) {
                                   calculateAmounts(payAmount, true);
@@ -1552,22 +1769,22 @@ export default function WithdrawalForm({
                               }}
                             />
                             <div className="flex-1">
-                              <div className="text-white font-medium flex items-center gap-2">
+                              <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
                                 {(asset.ticker ||
                                   asset.symbol ||
                                   asset.name ||
                                   "Unknown").toUpperCase()}
-                                <span className="bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                                <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
                                   {asset.network || "Unknown"}
                                 </span>
                               </div>
-                              <div className="text-[#7e7e8f] text-sm">
+                              <div className="text-[#35353e] dark:text-[#788099] text-sm">
                                 {asset.name ||
                                   (asset.ticker || "").toUpperCase() ||
                                   (asset.symbol || "").toUpperCase() ||
                                   "Unknown Asset"} 
                                   {asset.legacy_ticker && (
-                                    <span className="text-xs text-[#f7c624] bg-[#f7c6241a] px-1 py-0.5 rounded-full">
+                                    <span className="text-xs text-[#f7c624] dark:text-[#f7c624] bg-[#f7c6241a] px-1 py-0.5 rounded-full">
                                       {asset.legacy_ticker}
                                     </span>
                                   )}
@@ -1579,7 +1796,7 @@ export default function WithdrawalForm({
                           </div>
                         ))
                       ) : (
-                        <div className="p-4 text-center text-[#7e7e8f]">
+                        <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
                           {assetSearchTerm
                             ? "No assets found"
                             : "No assets available"}
@@ -1612,13 +1829,18 @@ export default function WithdrawalForm({
           </div>
         </div>
 
+
+
         {/* Bottom Section - You Receive and Bank/Payment Method in one card */}
         <div className="relative mb-3">
-          <div className="flex border border-[#39394a] rounded-2xl p-4">
+          <div className="flex border border-[#39394a] dark:border-[#35353E] rounded-2xl p-4">
             {/* You Receive Section */}
-            <div className="flex-1 pr-4">
-              <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+            <div className="flex-1 pr-4"> 
+              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 You Receive
+                {!isCalculatingFromPay && (isCalculating || isCalculatingReceive) && (
+                  <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
+                )}
               </label>
               <div className="relative">
                 <input
@@ -1639,23 +1861,27 @@ export default function WithdrawalForm({
                       setGetAmount(newValue);
                       setIsCalculatingFromPay(false);
                       
+                      // Clear any previous errors when user starts typing
+                      setReceiveAmountError(null);
+                      
                       // Only calculate if we have a valid amount and asset
                       if (selectedAsset && newValue >= 0) {
-                        // For non-USDT/USDC assets, reverse calculation is complex
-                        // We should encourage users to adjust the "You Send" amount instead
+                        // For simple assets (USDT/USDC), calculate reverse immediately
                         if (isSimpleCalculationAsset(selectedAsset)) {
                           calculateAmounts(newValue, false);
                         } else {
-                          // For estimate-based assets, show message that they should adjust "You Send"
-                          setReceiveAmountError("Please adjust the 'You Send' amount for accurate calculations");
+                          // For other assets, trigger the reverse calculation effect
+                          // The useEffect will handle the API call
                           setIsCalculating(true);
                           setIsCalculatingReceive(true);
                         }
                       } else {
-                        // Clear pay amount if no valid input
+                        // For invalid input, clear the pay amount but don't show "0"
                         setPayAmount(0);
-                        setPayAmountInput("0");
+                        setPayAmountInput("");
                         setReceiveAmountError(null);
+                        setIsCalculating(false);
+                        setIsCalculatingReceive(false);
                       }
                     }
                   }}
@@ -1671,13 +1897,19 @@ export default function WithdrawalForm({
                       setReceiveAmountError(validationError);
                     }
                   }}
-                  placeholder={(isCalculating || isCalculatingReceive) ? "Calculating..." : "Enter amount"}
-                  className={`w-full bg-[#1D1D23] rounded-2xl px-4 py-2 pr-16 text-lg text-white focus:outline-none border appearance-none ${
-                    receiveAmountError ? 'border-red-500' : (isCalculating || isCalculatingReceive) ? 'border-[#1D8751]' : 'border-[#39394a]'
+                  placeholder={
+                    (isCalculating || isCalculatingReceive) 
+                      ? "Calculating..." 
+                      : "Enter amount"
+                  }
+                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg  focus:outline-none border appearance-none ${
+                    receiveAmountError && (receiveAmountError.includes('Rough estimate') || receiveAmountError.includes('Using estimated rate')) ? 'border-[#F79330]' : 
+                    receiveAmountError && !receiveAmountError.includes('Rough estimate') && !receiveAmountError.includes('Using estimated rate') ? 'border-red-500' :
+                    (isCalculating || isCalculatingReceive) ? 'border-[#1D8751]' : 'border-[#39394a]'
                   }`}
                 />
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                  <span className="text-white text-sm font-medium">
+                  <span className="text-[#35353e] dark:text-[#ffffff] text-sm font-medium">
                     USD
                   </span>
                 </div>
@@ -1686,7 +1918,7 @@ export default function WithdrawalForm({
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
                   </div>
                 )}
-                {receiveAmountError && (
+                {receiveAmountError && !receiveAmountError.includes('Rough estimate') && !receiveAmountError.includes('Using estimated rate') && (
                   <div className="absolute right-16 top-1/2 transform -translate-y-1/2">
                     <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                       <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" className="text-red-500"/>
@@ -1695,15 +1927,27 @@ export default function WithdrawalForm({
                     </svg>
                   </div>
                 )}
+                {receiveAmountError && (receiveAmountError.includes('Rough estimate') || receiveAmountError.includes('Using estimated rate')) && (
+                  <div className="absolute right-16 top-1/2 transform -translate-y-1/2">
+                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                      <path d="M12 8v4m0 4h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#F79330]"/>
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" className="text-[#F79330]"/>
+                    </svg>
+                  </div>
+                )}
               </div>
               {receiveAmountError && (
-                <p className="text-red-500 text-sm mt-1">{receiveAmountError}</p>
+                <p className={`text-sm mt-1 ${
+                  receiveAmountError.includes('Rough estimate') || receiveAmountError.includes('Using estimated rate') ? 'text-[#F79330]' : 'text-red-500'
+                }`}>
+                  {receiveAmountError}
+                </p>
               )}
             </div>
 
             {/* Bank/Payment Method Section */}
             <div className="flex-1 pl-4">
-              <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                 Bank/Payment Method
               </label>
               <div className="relative">
@@ -1729,7 +1973,7 @@ export default function WithdrawalForm({
                     // Clear selected payment details when changing bank
                     setSelectedPaymentDetails([]);
                   }}
-                  className="w-full bg-[#1D1D23] rounded-2xl px-9 py-2 text-lg text-white focus:outline-none border border-[#39394a] appearance-none cursor-pointer relative"
+                  className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-9 py-2 text-lg  focus:outline-none border border-[#39394a] dark:border-[#35353E] appearance-none cursor-pointer relative"
                   style={{
                     backgroundImage:
                       'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22/%3E%3C/svg%3E")',
@@ -1786,7 +2030,7 @@ export default function WithdrawalForm({
                             setSelectedPaymentDetails([selectedDetail]);
                           }
                         }}
-                        className="w-full bg-[#1D1D23] rounded-2xl px-9 py-2 text-lg text-white focus:outline-none border border-[#39394a] appearance-none cursor-pointer relative"
+                        className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#788099] rounded-2xl px-9 py-2 text-lg  focus:outline-none border border-[#39394a] dark:border-[#35353E] appearance-none cursor-pointer relative"
                         style={{
                           backgroundImage:
                             'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22/%3E%3C/svg%3E")',
@@ -1855,15 +2099,15 @@ export default function WithdrawalForm({
 
 
           {/* Disclaimer Banner */}
-          <div className="flex items-center rounded-2xl px-4 py-3 mb-4">
+          <div className="flex items-center rounded-2xl px-4 py-3 mb-4 dark:bg-[#1D1D23]">
             <div className="flex items-center gap-3">
-              <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <div className="w-6 h-6 bg-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0">
                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
                   <path d="M12 8v4m0 4h.01" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2"/>
                 </svg>
               </div>
-              <span className="text-white text-sm font-medium">
+              <span className="text-[#35353e] dark:text-[#788099] text-sm font-medium">
                 This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds.
               </span>
             </div>
@@ -1871,31 +2115,23 @@ export default function WithdrawalForm({
 
 
 
-          {/* Warning message for amounts over $5,000 */}
-          {getAmount > 5000 && !hasAcknowledgedLimit && (
-            <div className="flex items-center text-yellow-400 text-[14px] font-medium bg-yellow-400/10 border border-yellow-400/20 rounded-xl p-3 mb-4">
-              <FaExclamationCircle className="mr-2 text-yellow-400" />
-              <span>
-                Amount exceeds $5,000. Please review the information above and acknowledge to proceed.
-              </span>
-            </div>
-          )}
+      
 
           {/* Submit Button for First Card */}
           <div className="mt-4">
          { isTransactionSubmitted ? "":
           <button
-                     className={`w-full text-white text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
-             isSubmitting || isTransactionSubmitted || isInfoModalOpen || (getAmount > 5000 && !hasAcknowledgedLimit)
+                     className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
+             isSubmitting || isTransactionSubmitted || isInfoModalOpen || getAmount > 15000
                ? "bg-gray-500 cursor-not-allowed"
                : "bg-[#1D8751] hover:bg-[#166b3e]"
            }`}
            onClick={handleFirstCardSubmit}
-           disabled={isSubmitting || isTransactionSubmitted || isInfoModalOpen || (getAmount > 5000 && !hasAcknowledgedLimit)}
+           disabled={isSubmitting || isTransactionSubmitted || isInfoModalOpen || getAmount > 15000}
         >
           {isSubmitting ? (
             <div className="flex items-center gap-2">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#35353e] dark:border-[#35353E]"></div>
               <span>Getting Withdrawal Addresses...</span>
             </div>
           ) : isTransactionSubmitted ? (
@@ -1935,51 +2171,29 @@ export default function WithdrawalForm({
             key={`wallet-section-${forceUpdate}`}
             className="mb-6 flex flex-col gap-3 max-w-4xl mx-auto w-full px-2"
           >
-            <h2 className="text-xl font-bold mb-2 text-[#788099]">
-              <span className="text-[#7e7e8f]">2-</span> Wallet Address
+            <h2 className="text-xl font-bold mb-2  text-[#7e7e8f] dark:text-[#788099]">
+              <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span> Wallet Address
             </h2>
-            <div className="bg-[#23232b] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full text-white">
+            <div className="dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
               {/* USDT Wallet Address */}
               <div className="mb-4">
-                <h3 className="text-white font-semibold mb-2">
+                <h3 className="text-[#35353e] dark:text-[#788099] font-semibold mb-2">
                   USDT Wallet Address
                 </h3>
                 {withdrawalAddress ? (
-                  <div className="bg-[#1D1D23] border border-[#1D8751] rounded-xl p-4">
+                  <div className=" dark:bg-[#1D1D23]  border border-[#1D8751] rounded-xl p-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-white text-sm font-mono break-all">
+                      <span className="text-[#35353e] dark:text-[#788099] text-sm font-mono break-all">
                         {withdrawalAddress}
                       </span>
                       <div className="flex items-center gap-2">
-                        <button className="text-[#788099] hover:text-white transition-colors">
-                          <svg
-                            width="18"
-                            height="18"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-3"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                            <path
-                              d="M12 3v12l4-4-4-4"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                        </button>
+                       
                         <button
                           onClick={() => {
                             navigator.clipboard.writeText(withdrawalAddress);
-                            showToast.success("Wallet address copied!");
+                            // showToast.success("Wallet address copied!");
                           }}
-                          className="flex items-center gap-1 bg-[#23232b] border border-[#1D8751] text-[#1D8751] rounded-full px-4 py-1 font-semibold text-base hover:bg-[#1D8751] hover:text-white transition-colors"
+                          className="flex items-center gap-1 bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] text-[#1D8751] rounded-full px-4 py-1 font-semibold text-base hover:bg-[#1D8751] hover:text-[#35353e] transition-colors"
                         >
                           <svg
                             width="16"
@@ -2012,7 +2226,7 @@ export default function WithdrawalForm({
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-[#1D8751]/10 border border-[#1D8751] rounded-xl p-4">
+                  <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-4">
                     <div className="flex items-center gap-3">
                       <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                         <path
@@ -2034,11 +2248,11 @@ export default function WithdrawalForm({
 
               {/* QR Code */}
               <div className="mb-4">
-                <div className="bg-[#1D1D23] border border-[#39394a] rounded-xl p-4 flex justify-center">
+                <div className=" dark:bg-[#1D1D23] border border-[#39394a] dark:border-[#35353E] rounded-xl p-4 flex justify-center">
                   {qrCodeUrl ? (
                     <img src={qrCodeUrl} alt="QR Code" className="w-48 h-48" />
                   ) : (
-                    <div className="flex flex-col items-center justify-center w-48 h-48 text-[#788099]">
+                    <div className="flex flex-col items-center justify-center w-48 h-48 text-[#7e7e8f] dark:text-[#788099]">
                       <svg width="48" height="48" fill="none" viewBox="0 0 24 24">
                         <path
                           d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z"
@@ -2061,7 +2275,7 @@ export default function WithdrawalForm({
                     </div>
                   )}
                 </div>
-                <p className="text-center text-[#788099] text-sm mt-2">
+                <p className="text-center text-[#7e7e8f] dark:text-[#788099] text-sm mt-2">
                   {qrCodeUrl
                     ? `Scan QR code to send ${selectedAsset?.ticker?.toUpperCase()}`
                     : "Please wait for further instructions"}
@@ -2092,27 +2306,27 @@ export default function WithdrawalForm({
                       <circle cx="12" cy="16" r="1" fill="#1D8751" />
                     </svg>
                   </span>
-                  <span className="text-base font-semibold text-[#7e7e8f]">
+                  <span className="text-base font-semibold text-[#7e7e8f] dark:text-[#788099]">
                     Terms and Conditions Summary
                   </span>
                 </div>
-                <div className="bg-[#23232b] border border-[#1D8751] rounded-xl p-4">
+                <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-4">
                   <ul className="list-none space-y-2">
                     <li className="flex items-start">
-                      <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                      <span className="text-white text-sm">
+                      <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] dark:bg-[#1D8751] inline-block mr-3"></span>
+                      <span className="text-[#35353e] dark:text-[#788099] text-sm">
                         Please send the money from your own account Only
                       </span>
                     </li>
                     <li className="flex items-start">
-                      <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                      <span className="text-white text-sm">
+                      <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] dark:bg-[#1D8751] inline-block mr-3"></span>
+                      <span className="text-[#35353e] dark:text-[#788099] text-sm">
                         Put transaction ID in the description field of the bank
                       </span>
                     </li>
                     <li className="flex items-start">
-                      <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                      <span className="text-white text-sm">
+                      <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] dark:bg-[#1D8751] inline-block mr-3"></span>
+                      <span className="text-[#35353e] dark:text-[#788099] text-sm">
                         Please note, If you do not follow above conditions, we
                         will reject your transaction and send you back your money.
                       </span>
@@ -2126,9 +2340,9 @@ export default function WithdrawalForm({
                 <label className="flex items-start cursor-pointer">
                   <input
                     type="checkbox"
-                    className="mt-1 mr-3 w-4 h-4 text-[#1D8751] bg-[#1D1D23] border-[#39394a] rounded focus:ring-[#1D8751] focus:ring-2"
+                    className="mt-1 mr-3 w-4 h-4 text-[#1D8751] bg-[#1D1D23] dark:bg-[#35353E] border-[#39394a] dark:border-[#35353E ] rounded focus:ring-[#1D8751] focus:ring-2"
                   />
-                  <span className="text-white text-sm">
+                  <span className="text-[#35353e] dark:text-[#788099] text-sm">
                     I've read and agree to the{" "}
                     <span className="text-[#1D8751] cursor-pointer hover:underline">
                       Terms of Use
@@ -2155,26 +2369,26 @@ export default function WithdrawalForm({
             </div>
             {/* Disclaimer and Button outside the card */}
             <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
-              <div className="flex items-center text-white text-[16px] font-semibold">
-                <FaExclamationCircle className="mr-2 text-red-500" />
+              <div className="flex items-center text-[#35353e] dark:text-[#788099] text-[16px] font-semibold">
+                <FaExclamationCircle className="mr-2 text-[#1D8751]" />
                 <span>
                   This is only an estimated price based on current market rates.
                   The final price will be confirmed when we receive the funds.
                 </span>
               </div>
               
-              {/* Warning message for amounts over $5,000 */}
-              {getAmount > 5000 && !hasAcknowledgedLimit && (
-                <div className="flex items-center text-yellow-400 text-[14px] font-medium bg-yellow-400/10 border border-yellow-400/20 rounded-xl p-3">
-                  <FaExclamationCircle className="mr-2 text-yellow-400" />
+              {/* Warning message for amounts over $15,000 */}
+              {getAmount > 15000 && (
+                  <div className="flex items-center text-[#1D8751] text-[14px] font-medium bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] rounded-xl p-3">
+                  <FaExclamationCircle className="mr-2 text-[#1D8751]" />
                   <span>
-                    Amount exceeds $5,000. Please review the information above and acknowledge to proceed.
+                    Amount exceeds $15,000. Please reduce the amount or contact our OTC Desk for better rates.
                   </span>
                 </div>
               )}
               <button
-                className={`w-full text-white text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
-                  isSubmitting || isInfoModalOpen || (getAmount > 5000 && !hasAcknowledgedLimit)
+                className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
+                  isSubmitting || isInfoModalOpen || getAmount > 15000
                     ? "bg-gray-500 cursor-not-allowed"
                     : "bg-[#1D8751] hover:bg-[#166b3e]"
                 }`}
@@ -2197,11 +2411,11 @@ export default function WithdrawalForm({
                     onExchange(transactionData);
                   }
                 }}
-                disabled={isSubmitting || isInfoModalOpen || (getAmount > 5000 && !hasAcknowledgedLimit)}
+                disabled={isSubmitting || isInfoModalOpen || getAmount > 15000}
               >
                 {isSubmitting ? (
                   <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#35353e] dark:border-[#35353E]"></div>
                     <span>Submitting...</span>
                   </div>
                 ) : (
@@ -2225,11 +2439,11 @@ export default function WithdrawalForm({
         {/* Validation Errors Display */}
         {validationErrors.length > 0 && (
           <div className="max-w-4xl mx-auto w-full px-2 mb-4">
-            <div className="bg-red-500/10 border border-red-500 rounded-2xl p-4">
-              <h3 className="text-red-500 font-semibold mb-2">
+              <div className="bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] rounded-2xl p-4">
+              <h3 className="text-[#1D8751] font-semibold mb-2">
                 Please fix the following errors:
               </h3>
-              <ul className="list-disc list-inside text-red-400 space-y-1">
+              <ul className="list-disc list-inside text-[#1D8751] space-y-1">
                 {validationErrors.map((error, index) => (
                   <li key={index}>{error}</li>
                 ))}
@@ -2254,13 +2468,12 @@ export default function WithdrawalForm({
           isOpen={isInfoModalOpen}
           onClose={() => {
             setIsInfoModalOpen(false);
-            setHasAcknowledgedLimit(true); // User has seen the warning
+            // Don't automatically acknowledge when just closing - user must reduce amount
           }}
           onContactUs={() => {
             // Handle contact us action - you can customize this
             window.open('https://wa.me/your-whatsapp-number', '_blank');
             setIsInfoModalOpen(false);
-            setHasAcknowledgedLimit(true); // User has seen the warning
           }}
         />
       </div>

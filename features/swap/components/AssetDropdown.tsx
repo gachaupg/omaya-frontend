@@ -109,11 +109,8 @@ const AssetDropdown: React.FC<AssetDropdownProps> = ({
             {assets
               .filter(
                 (asset) =>
-                  (asset.name?.toLowerCase() || "").includes(
-                    searchTerm.toLowerCase()
-                  ) ||
-                  (asset.ticker?.toLowerCase() || "").includes(
-                    searchTerm.toLowerCase()
+                  (asset.ticker?.toUpperCase() || "").includes(
+                    searchTerm.toUpperCase()
                   )
               )
               .map((asset, index) => (

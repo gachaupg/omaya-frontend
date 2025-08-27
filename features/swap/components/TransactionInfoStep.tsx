@@ -59,15 +59,15 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
   onSwapAssets,
 }) => {
   return (
-    <div className="w-full min-h-screen flex flex-col justify- bg-[#18181f]">
+    <div className="w-full flex flex-col ">
       <h2 className="text-xl font-bold mb-2 text-[#788099]">
         <span className="text-[#7e7e8f]">1-</span> Transaction Info
       </h2>
-      <div className="w-full max-w-4xl mx-auto text-white">
+      <div className="w-full max-w-4xl mx-auto text-gray-900 dark:text-white">
         {/* Top Section - You Send and You Get in one card */}
         <div className="relative mb-4">
           {/* Top Card Container */}
-          <div className="flex border border-[#39394a] rounded-2xl p-4">
+          <div className="flex border-2 border-gray-200 dark:border-[#39394a] bg-white dark:bg-transparent rounded-2xl p-4">
             {/* You Send Section */}
             <div className="flex-1 pr-4">
               <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
@@ -80,10 +80,10 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   value={fromAmount}
                   onChange={onFromAmountChange}
                   placeholder="Enter amount"
-                  className="w-full bg-[#1D1D23] rounded-2xl px-4 py-2 pr-16 text-lg text-white focus:outline-none border border-[#39394a] appearance-none"
+                  className="w-full bg-white dark:bg-[#1D1D23] rounded-2xl px-4 py-2 pr-16 text-lg text-gray-900 dark:text-white focus:outline-none border border-gray-300 dark:border-[#39394a] appearance-none placeholder-gray-400 dark:placeholder-[#7e7e8f]"
                 />
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                  <span className="text-white text-sm font-medium">
+                  <span className="text-gray-600 dark:text-white text-sm font-medium">
                     {fromAsset ? (fromAsset.ticker?.toUpperCase() || fromAsset.symbol?.toUpperCase() || "USDT") : "USDT"}
                   </span>
                 </div>
@@ -97,7 +97,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
               </label>
               <div className="relative">
                 <div
-                  className={`w-full bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg text-white focus:outline-none border border-[#39394a] flex items-center justify-between cursor-pointer`}
+                  className={`w-full bg-white dark:bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg text-gray-900 dark:text-white focus:outline-none border border-gray-300 dark:border-[#39394a] flex items-center justify-between cursor-pointer`}
                   onClick={onFromAssetToggle}
                 >
                   <div className="flex items-center gap-3">
@@ -116,7 +116,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                               "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                           }}
                         />
-                        <span className="text-white">
+                        <span className="text-gray-900 dark:text-white">
                           {fromAsset.ticker?.toUpperCase() ||
                             fromAsset.symbol?.toUpperCase() ||
                             fromAsset.name ||
@@ -158,9 +158,9 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
 
                 {/* Asset Dropdown */}
                 {isFromAssetOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#1D1D23] border border-[#39394a] rounded-2xl z-50 max-h-80 overflow-hidden">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1D1D23] border border-gray-200 dark:border-[#39394a] rounded-2xl z-50 max-h-80 overflow-hidden">
                     {/* Search Input */}
-                    <div className="p-3 border-b border-[#39394a]">
+                    <div className="p-3 border-b border-gray-200 dark:border-[#39394a]">
                       <div className="relative">
                         <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -170,65 +170,76 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                           placeholder="Search assets..."
                           value={searchTerm}
                           onChange={(e) => onSearchTermChange(e.target.value)}
-                          className="w-full bg-[#23232b] rounded-xl px-10 py-2 text-white text-sm focus:outline-none border border-[#39394a]"
+                          className="w-full bg-white dark:bg-[#23232b] rounded-xl px-10 py-2 text-gray-900 dark:text-white text-sm focus:outline-none border border-gray-300 dark:border-[#39394a] placeholder-gray-400 dark:placeholder-[#7e7e8f]"
                         />
                       </div>
                     </div>
 
                     {/* Asset List */}
                     <div className="max-h-60 overflow-y-auto">
-                      {supportedAssets.length > 0 ? (
-                        supportedAssets.map((asset: SupportedAsset) => (
-                          <div
-                            key={asset.asset_id}
-                            className="flex items-center gap-3 p-3 hover:bg-[#23232b] cursor-pointer border-b border-[#39394a] last:border-b-0"
-                            onClick={() => {
-                              onFromAssetSelect(asset);
-                              onFromAssetToggle();
-                            }}
-                          >
-                            <img
-                              src={
-                                asset.image_url ||
-                                asset.asset_image ||
-                                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                              }
-                              alt={asset.name}
-                              className="w-6 h-6 rounded-full"
-                              onError={(e) => {
-                                e.currentTarget.src =
-                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                      {(() => {
+                        const filteredAssets = supportedAssets.filter((asset: SupportedAsset) => {
+                          if (!searchTerm) return true;
+                          
+                          const searchLower = searchTerm.toLowerCase();
+                          const ticker = asset.ticker?.toLowerCase() || '';
+                          
+                          return ticker.includes(searchLower);
+                        });
+                        
+                        return filteredAssets.length > 0 ? (
+                          filteredAssets.map((asset: SupportedAsset) => (
+                            <div
+                              key={asset.asset_id}
+                              className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-[#23232b] cursor-pointer border-b border-gray-200 dark:border-[#39394a] last:border-b-0"
+                              onClick={() => {
+                                onFromAssetSelect(asset);
+                                onFromAssetToggle();
                               }}
-                            />
-                            <div className="flex-1">
-                              <div className="text-white font-medium flex items-center gap-2">
-                                {asset.ticker?.toUpperCase() ||
-                                  asset.symbol?.toUpperCase() ||
-                                  asset.name ||
-                                  "Unknown"}
-                                <span className="bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-                                  {asset.network || "Unknown"}
-                                </span>
+                            >
+                              <img
+                                src={
+                                  asset.image_url ||
+                                  asset.asset_image ||
+                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                                }
+                                alt={asset.name}
+                                className="w-6 h-6 rounded-full"
+                                onError={(e) => {
+                                  e.currentTarget.src =
+                                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                                }}
+                              />
+                              <div className="flex-1">
+                                <div className="text-gray-900 dark:text-white font-medium flex items-center gap-2">
+                                  {asset.ticker?.toUpperCase() ||
+                                    asset.symbol?.toUpperCase() ||
+                                    asset.name ||
+                                    "Unknown"}
+                                  <span className="bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                                    {asset.network || "Unknown"}
+                                  </span>
+                                </div>
+                                <div className="text-[#7e7e8f] text-sm">
+                                  {asset.name ||
+                                    asset.ticker?.toUpperCase() ||
+                                    asset.symbol?.toUpperCase() ||
+                                    "Unknown Asset"}
+                                </div>
                               </div>
-                              <div className="text-[#7e7e8f] text-sm">
-                                {asset.name ||
-                                  asset.ticker?.toUpperCase() ||
-                                  asset.symbol?.toUpperCase() ||
-                                  "Unknown Asset"}
-                              </div>
+                              {fromAsset?.asset_id === asset.asset_id && (
+                                <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                              )}
                             </div>
-                            {fromAsset?.asset_id === asset.asset_id && (
-                              <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                            )}
+                          ))
+                        ) : (
+                          <div className="p-4 text-center text-[#7e7e8f]">
+                            {searchTerm
+                              ? "No assets found"
+                              : "No assets available"}
                           </div>
-                        ))
-                      ) : (
-                        <div className="p-4 text-center text-[#7e7e8f]">
-                          {searchTerm
-                            ? "No assets found"
-                            : "No assets available"}
-                        </div>
-                      )}
+                        );
+                      })()}
                     </div>
                   </div>
                 )}
@@ -253,7 +264,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
 
         {/* Bottom Section - You Receive and Asset in one card */}
         <div className="relative mb-3">
-          <div className="flex border border-[#39394a] rounded-2xl p-4">
+          <div className="flex border-2 border-gray-200 dark:border-[#39394a] bg-white dark:bg-transparent rounded-2xl p-4">
             {/* You Receive Section */}
             <div className="flex-1 pr-4">
               <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
@@ -266,11 +277,11 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   value={toAmount}
                   onChange={onToAmountChange}
                   placeholder="Enter amount"
-                  className="w-full bg-[#1D1D23] rounded-2xl px-4 py-2 pr-16 text-lg text-white focus:outline-none border border-[#39394a] appearance-none"
+                  className="w-full bg-white dark:bg-[#1D1D23] rounded-2xl px-4 py-2 pr-16 text-lg text-gray-900 dark:text-white focus:outline-none border border-gray-300 dark:border-[#39394a] appearance-none placeholder-gray-400 dark:placeholder-[#7e7e8f]"
                   readOnly={estimateLoading}
                 />
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                  <span className="text-white text-sm font-medium">
+                  <span className="text-gray-600 dark:text-white text-sm font-medium">
                     {toAsset ? (toAsset.ticker?.toUpperCase() || toAsset.symbol?.toUpperCase() || "USDT") : "USDT"}
                   </span>
                 </div>
@@ -289,7 +300,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
               </label>
               <div className="relative">
                 <div
-                  className={`w-full bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg text-white focus:outline-none border border-[#39394a] flex items-center justify-between cursor-pointer`}
+                  className={`w-full bg-white dark:bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg text-gray-900 dark:text-white focus:outline-none border border-gray-300 dark:border-[#39394a] flex items-center justify-between cursor-pointer`}
                   onClick={onToAssetToggle}
                 >
                   <div className="flex items-center gap-3">
@@ -308,7 +319,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                               "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                           }}
                         />
-                        <span className="text-white">
+                        <span className="text-gray-900 dark:text-white">
                           {toAsset.ticker?.toUpperCase() ||
                             toAsset.symbol?.toUpperCase() ||
                             toAsset.name ||
@@ -350,9 +361,9 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
 
                 {/* Asset Dropdown */}
                 {isToAssetOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#1D1D23] border border-[#39394a] rounded-2xl z-50 max-h-80 overflow-hidden">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1D1D23] border border-gray-200 dark:border-[#39394a] rounded-2xl z-50 max-h-80 overflow-hidden">
                     {/* Search Input */}
-                    <div className="p-3 border-b border-[#39394a]">
+                    <div className="p-3 border-b border-gray-200 dark:border-[#39394a]">
                       <div className="relative">
                         <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -362,65 +373,76 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                           placeholder="Search assets..."
                           value={toSearchTerm}
                           onChange={(e) => onToSearchTermChange(e.target.value)}
-                          className="w-full bg-[#23232b] rounded-xl px-10 py-2 text-white text-sm focus:outline-none border border-[#39394a]"
+                          className="w-full bg-white dark:bg-[#23232b] rounded-xl px-10 py-2 text-gray-900 dark:text-white text-sm focus:outline-none border border-gray-300 dark:border-[#39394a] placeholder-gray-400 dark:placeholder-[#7e7e8f]"
                         />
                       </div>
                     </div>
 
                     {/* Asset List */}
                     <div className="max-h-60 overflow-y-auto">
-                      {supportedAssets.length > 0 ? (
-                        supportedAssets.map((asset: SupportedAsset) => (
-                          <div
-                            key={asset.asset_id}
-                            className="flex items-center gap-3 p-3 hover:bg-[#23232b] cursor-pointer border-b border-[#39394a] last:border-b-0"
-                            onClick={() => {
-                              onToAssetSelect(asset);
-                              onToAssetToggle();
-                            }}
-                          >
-                            <img
-                              src={
-                                asset.image_url ||
-                                asset.asset_image ||
-                                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                              }
-                              alt={asset.name}
-                              className="w-6 h-6 rounded-full"
-                              onError={(e) => {
-                                e.currentTarget.src =
-                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                      {(() => {
+                        const filteredAssets = supportedAssets.filter((asset: SupportedAsset) => {
+                          if (!toSearchTerm) return true;
+                          
+                          const searchLower = toSearchTerm.toLowerCase();
+                          const ticker = asset.ticker?.toLowerCase() || '';
+                          
+                          return ticker.includes(searchLower);
+                        });
+                        
+                        return filteredAssets.length > 0 ? (
+                          filteredAssets.map((asset: SupportedAsset) => (
+                            <div
+                              key={asset.asset_id}
+                              className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-[#23232b] cursor-pointer border-b border-gray-200 dark:border-[#39394a] last:border-b-0"
+                              onClick={() => {
+                                onToAssetSelect(asset);
+                                onToAssetToggle();
                               }}
-                            />
-                            <div className="flex-1">
-                              <div className="text-white font-medium flex items-center gap-2">
-                                {asset.ticker?.toUpperCase() ||
-                                  asset.symbol?.toUpperCase() ||
-                                  asset.name ||
-                                  "Unknown"}
-                                <span className="bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-                                  {asset.network || "Unknown"}
-                                </span>
+                            >
+                              <img
+                                src={
+                                  asset.image_url ||
+                                  asset.asset_image ||
+                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                                }
+                                alt={asset.name}
+                                className="w-6 h-6 rounded-full"
+                                onError={(e) => {
+                                  e.currentTarget.src =
+                                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                                }}
+                              />
+                              <div className="flex-1">
+                                <div className="text-gray-900 dark:text-white font-medium flex items-center gap-2">
+                                  {asset.ticker?.toUpperCase() ||
+                                    asset.symbol?.toUpperCase() ||
+                                    asset.name ||
+                                    "Unknown"}
+                                  <span className="bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                                    {asset.network || "Unknown"}
+                                  </span>
+                                </div>
+                                <div className="text-[#7e7e8f] text-sm">
+                                  {asset.name ||
+                                    asset.ticker?.toUpperCase() ||
+                                    asset.symbol?.toUpperCase() ||
+                                    "Unknown Asset"}
+                                </div>
                               </div>
-                              <div className="text-[#7e7e8f] text-sm">
-                                {asset.name ||
-                                  asset.ticker?.toUpperCase() ||
-                                  asset.symbol?.toUpperCase() ||
-                                  "Unknown Asset"}
-                              </div>
+                              {toAsset?.asset_id === asset.asset_id && (
+                                <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                              )}
                             </div>
-                            {toAsset?.asset_id === asset.asset_id && (
-                              <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                            )}
+                          ))
+                        ) : (
+                          <div className="p-4 text-center text-[#7e7e8f]">
+                            {toSearchTerm
+                              ? "No assets found"
+                              : "No assets available"}
                           </div>
-                        ))
-                      ) : (
-                        <div className="p-4 text-center text-[#7e7e8f]">
-                          {toSearchTerm
-                            ? "No assets found"
-                            : "No assets available"}
-                        </div>
-                      )}
+                        );
+                      })()}
                     </div>
                   </div>
                 )}
@@ -438,7 +460,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                 <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2"/>
               </svg>
             </div>
-            <span className="text-white text-sm font-medium">
+            <span className="text-gray-700 dark:text-white text-sm font-medium">
               This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds.
             </span>
           </div>
@@ -448,7 +470,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
         {!hideContinueButton && (
           <div className="mt-4">
             <button
-              className={`w-full text-white text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
+              className={`w-full text-white dark:text-white text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
                 !fromAsset ||
                 !toAsset ||
                 !fromAmount ||

@@ -24,7 +24,7 @@ export const API_CONFIG = {
   },
   P2P: {
     WALLETS: "/wallet/wallets/",
-    DEPOSITS: "/trading_engine/p2p/deposit/",
+    DEPOSITS: "/trading_engine/p2p/deposits/",
     WITHDRAWS: "trading_engine/p2p-withdraw/",
     BUY_ADS: "/ads/buy/",
     SELL_ADS: "/ads/sell/",
@@ -79,7 +79,7 @@ export const API_CONFIG = {
     LOGOUT_ALL_DEVICES: "/api/device-sessions/logout-all/",
   },
   EXCHANGE: {
-    DEPOSIT: "/trading_engine/deposit/",
+    DEPOSIT: "/trading_engine/deposits/",
     WITHDRAW: "/trading_engine/withdraw/",
     SOCKETS: {
       TRANSACTION_STATUS: (txHash: string) =>

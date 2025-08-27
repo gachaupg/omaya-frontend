@@ -126,13 +126,6 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
        return;
      }
      
-     // For now, just show success and close modal
-     showToast.success("Payment method added successfully!");
-     if (onAdd) onAdd();
-     onClose();
-     
-     // TODO: Uncomment when Redux is working properly
-     /*
      const selectedProvider = providers.find(
        (p: any) => p.provider_name === provider
      );
@@ -147,7 +140,6 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
      };
      console.log("Dispatching payload", payload);
      dispatch(postUserPaymentDetail(payload));
-     */
    };
 
   // Close modal on success

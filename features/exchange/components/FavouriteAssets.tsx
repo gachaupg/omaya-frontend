@@ -85,8 +85,7 @@ const FavouriteAssets: React.FC = () => {
   const filteredAvailableAssets =
     allAvailableAssets?.assets?.filter(
       (asset: Asset) =>
-        asset.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        asset.name.toLowerCase().includes(searchTerm.toLowerCase())
+        asset.symbol.toUpperCase().includes(searchTerm.toUpperCase())
     ) || [];
 
   return (
