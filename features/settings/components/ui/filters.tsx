@@ -7,6 +7,7 @@ import PaymentMethods from "../tabs/PaymentMethods";
 import Referral from "../tabs/Referral";
 import Stats from "../tabs/Stats";
 import { Settings, ShieldCheck, Key } from "lucide-react";
+import HelpSupportForm from "../HelpSupportForm";
 
 const tabs = [
   {
@@ -111,6 +112,7 @@ const tabs = [
 
 const Filters = () => {
   const [activeIdx, setActiveIdx] = useState(0);
+  const [showHelpSupport, setShowHelpSupport] = useState(false);
 
   return (
     <div className="flex flex-col">
@@ -127,7 +129,10 @@ const Filters = () => {
                     : "bg-transparent dark:text-white text-[#0D0D0D] hover:dark:bg-[#23232a] hover:bg-gray-100"
                 }
               `}
-              onClick={() => setActiveIdx(idx)}
+              onClick={() => {
+                setActiveIdx(idx);
+                setShowHelpSupport(false);
+              }}
               type="button"
             >
               <span className="flex items-center justify-center">
@@ -162,9 +167,13 @@ const Filters = () => {
 
       {/* Content area */}
       <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 mt-4 lg:mt-6">
-        <div className="flex-1">{tabs[activeIdx].component}</div>
+            {showHelpSupport ? (
+      <HelpSupportForm />
+        ) : (
+          tabs[activeIdx].component
+        )}
         <div className="lg:w-[300px] lg:flex-shrink-0">
-          <Stats />
+         <Stats onSupportClick={() => setShowHelpSupport((prev) => !prev)} />
         </div>
       </div>
     </div>
