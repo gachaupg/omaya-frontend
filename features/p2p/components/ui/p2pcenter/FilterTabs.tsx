@@ -166,14 +166,14 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
         <option>Last 180 Days</option>
       </select>
       {/* Actions */}
-      <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+      {/* <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
         <button className="w-full sm:w-auto px-4 py-2 rounded-full bg-[#1D8751] text-white">
           Publish
         </button>
         <button className="w-full sm:w-auto px-4 py-2 rounded-full border border-[#788099] text-[#788099] bg-transparent">
           Put Offline
         </button>
-      </div>
+      </div> */}
     </div>
   );
 

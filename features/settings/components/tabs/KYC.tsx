@@ -81,7 +81,7 @@ const KYC = () => {
                   alt="User avatar"
                   width={48}
                   height={48}
-                  className="object-cover rounded-full"
+                  className="object-cover rounded-full aspect-square"
                   unoptimized={true}
                   onError={(
                     e: React.SyntheticEvent<HTMLImageElement, Event>

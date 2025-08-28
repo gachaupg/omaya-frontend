@@ -118,13 +118,13 @@ const BlogPage = () => {
         </header>
 
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-          <div className="flex items-center space-x-2 bg-gray-100 dark:bg-[#161B22] p-1 rounded-full border border-gray-300 dark:border-[#30363D]">
+          <div className="flex items-center space-x-2 bg-gray-100 dark:bg-[#161B22] rounded-full border border-gray-300 dark:border-[#30363D]">
           <button
                 onClick={() => setActiveTab("News")}
                 className={`px-6 py-2 rounded-full text-sm font-medium flex 2xl:text-lg items-center gap-2 transition-colors ${
                   activeTab === "News"
                     ? "bg-[#1D8751] text-white"
-                    : "text-gray-300"
+                    : "text-[#788099]"
                 }`}
               >
                 <span
@@ -147,7 +147,7 @@ const BlogPage = () => {
                 className={`px-6 py-2 rounded-full text-sm 2xl:text-lg font-medium flex items-center gap-2 transition-colors ${
                   activeTab === "Blog"
                     ? "bg-[#1D8751] text-white"
-                    : "text-gray-300"
+                    : "text-[#788099]"
                 }`}
               >
                 <span

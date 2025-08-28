@@ -249,7 +249,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
   }
 
   return (
-    <div className="w-full p-0 sm:p-4 min-h-screen flex flex-col items-center justify-start bg-white dark:bg-[#18181D]">
+    <div className="w-full p-0 sm:p-4 min-h-screen flex flex-col items-center justify-start bg-[#EEF1F4] dark:bg-[#18181D]">
       {loading && <Loader />}
       {/* Title and Buy/Sell Switch */}
       <div className="mb-1 w-full md:max-w-4xl md:mx-auto px-0 sm:px-0">
@@ -265,7 +265,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
             className={`px-2 py-1.5 text-sm transition rounded-l-[6px] ${
               type === "buy"
                 ? "bg-[#1D8751] text-white"
-                : "bg-transparent text-white"
+                : "bg-transparent text-[#051015] dark:text-white"
             }`}
             onClick={() => setType("buy")}
             type="button"
@@ -276,7 +276,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
             className={`px-4 py-1.5 text-sm transition rounded-r-[6px] ${
               type === "sell"
                 ? "bg-[#E23D3A] text-white"
-                : "bg-transparent text-white"
+                : "bg-transparent text-[#051015] dark:text-white"
             }`}
             onClick={() => setType("sell")}
             type="button"
@@ -291,7 +291,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
         <div className="text-sm text-gray-600 dark:text-[#788099] mb-2 mt-3">
           Type & Price
         </div>
-        <Card className="w-full mb-2 px-2 py-2 sm:px-2 sm:py-2 bg-gray-50 dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E] rounded-[24px]">
+        <Card className="w-full mb-2 p-9 sm:px-2 sm:py-2 bg-gray-50 dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E] rounded-[24px]">
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-end w-full">
             {/* Asset */}
             <div className="flex-1 flex flex-col">

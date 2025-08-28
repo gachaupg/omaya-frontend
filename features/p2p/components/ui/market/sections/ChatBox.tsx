@@ -131,24 +131,24 @@ const ChatBox: React.FC<{
           </svg>
         </button>
       </div>
-      <div className="chat-container mt-6 flex flex-col pr-10 mb-2 h-96 border border-[#35353E] rounded-[18px] p-2 md:p-4">
+      <div className="chat-container mt-6 flex flex-col pr-10 mb-2 h-96 bg-white dark:bg-[#18181D] border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px] p-2 md:p-4">
         <div>
           <div className="flex items-center justify-center gap-2">
-            <MdAccountCircle />
+            <MdAccountCircle  className="w-6 h-6 text-[#1D8751]"/>
             <div className="flex-1">
-              <div className="font-semibold text-xs">{userName}</div>
+              <div className="font-semibold text-md">{userName}</div>
             </div>
           </div>
         </div>
-        <hr className="border-[#35353E] mt-2" />
+        <hr className="border-[#E8EFF5] dark:border-[#35353E] mt-2" />
         <div className="messages-list flex-1 flex flex-col gap-2 overflow-y-auto mb-2">
-          <p className="text-white">{autoreply}</p>
+          <p className="text-[#051015] dark:text-white">{autoreply}</p>
           {messages.results.map((msg) => (
             <div
               key={msg.id}
               className={
                 Number(msg.sender) === Number(userId)
-                  ? "bg-[#1D8751] text-white rounded-lg p-2 self-end max-w-xs"
+                  ? "bg-[#1D8751] text-[#051015] dark:text-white rounded-lg p-2 self-end max-w-xs"
                   : "dark:bg-[#23232B] bg-gray-200 dark:text-white text-gray-900 rounded-lg p-2 self-start max-w-xs"
               }
             >
@@ -171,10 +171,10 @@ const ChatBox: React.FC<{
             </div>
           ))}
         </div>
-        <hr className="border-[#35353E] mt-2" />
+        <hr className="border-[#E8EFF5] dark:border-[#35353E] mt-2" />
         <div className="flex gap-2 mt-2">
           <input
-            className="flex-1 rounded px-2 py-1  text-white border-none outline-none"
+            className="flex-1 rounded px-2 py-1 text-[#788099] dark:text-white border-none outline-none"
             value={message}
             onChange={(e) => dispatch(setMessage(e.target.value))}
             placeholder="Enter your message"
@@ -182,7 +182,7 @@ const ChatBox: React.FC<{
           {/* Paperclip icon for image upload */}
           <button
             type="button"
-            className="flex items-center justify-center w-10 h-10 dark:bg-[#23232B] bg-gray-200 rounded-lg"
+            className="flex items-center justify-center w-10 h-10 dark:bg-[#23232B] bg-gray-100 rounded-lg"
             onClick={() => fileInputRef.current && fileInputRef.current.click()}
             title="Attach image"
           >

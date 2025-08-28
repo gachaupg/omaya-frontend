@@ -1,46 +1,56 @@
 import React from "react";
 import { formatNumber } from "@/utils/formatters";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store";
 
 const P2pProfile = ({
-  user,
   wallets,
   summary,
   loading,
 }: {
-  user: any;
   wallets: any;
   summary: any;
   loading: any;
 }) => {
+    const { user, isAuthenticated, profile:userProfile} = useSelector(
+    (state: RootState) => state.auth
+  );
+  console.log("P2pProfile user:", user);
   return (
     <div className="w-full h-[130px] rounded-[24px] border-2 bg-white dark:bg-[#18181D] border-gray-200 dark:border-[#35353E] flex flex-col sm:flex-row justify-between items-start sm:items-center p-2 sm:p-4 box-border gap-4 sm:gap-0">
       {/* Left Section */}
       <div className="flex items-center gap-4 sm:gap-6">
-        {/* Avatar */}
-        <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xl sm:text-2xl font-bold">
-          {user?.first_name?.charAt(0)}
-          {user?.last_name?.charAt(0)}
-        </div>
         {/* User Info */}
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <span className="text-gray-900 dark:text-white text-base sm:text-lg font-medium">
-              {user?.first_name}
-            </span>
-            {/* Edit Icon (simple pencil SVG) */}
-            <svg
-              className="w-4 h-4 text-[#1D8751] cursor-pointer"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828A2 2 0 019 17H7v-2a2 2 0 01.586-1.414z"
+          <div className="flex items-center gap-3 sm:gap-4">
+            {/* User Avatar */}
+            <div className="w-12 h-12 rounded-full overflow-hidden">
+              <img  
+                src={userProfile?.photo || "/default-avatar.png"}
+                alt="User Avatar"
+                className="w-full h-full object-cover"
               />
-            </svg>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-gray-900 dark:text-white text-base sm:text-lg font-medium">
+                {user?.first_name}
+              </span>
+              {/* Edit Icon (simple pencil SVG) */}
+              <svg
+                className="w-6 h-6 text-[#1D8751] cursor-pointer"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828A2 2 0 019 17H7v-2a2 2 0 01.586-1.414z"
+                />
+              </svg>
+            </div>
+
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1">
             <span className="flex items-center text-xs text-[#1D8751] bg-[#E0F2E8] dark:bg-[#384B41] rounded-full px-3 py-1">
