@@ -329,7 +329,7 @@ const totalFees = calculateTotalFees(commission, networkFee);
 const assetAmount = amountNum + totalFees;
 
   return (
-    <div className="bg-white dark:bg-[#18181D] p-6 rounded-2xl border border-gray-200 dark:border-[#35353E] shadow-md">
+    <div className="bg-white dark:bg-[#18181D] p-6 rounded-2xl border border-gray-200 dark:border-[#35353E] shadow-md container mx-auto">
       <div className="relative flex flex-col gap-2">
         <div className="p-2 border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px]">
           <p className="mb-2">You send</p>

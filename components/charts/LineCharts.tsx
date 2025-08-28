@@ -76,8 +76,8 @@ function GradientLineChart({
   const min = 0;
   const chartWidth = "100%";
   const chartHeight = 240;
-  const chartLeft = 40;
-  const chartRight = 360;
+  const chartLeft = 60;
+  const chartRight = 400;
   const chartTop = 40;
   const chartBottom = 200;
   const yTicks = getDynamicYTicks([...data1.data, ...data2.data]);
@@ -123,12 +123,12 @@ function GradientLineChart({
   return (
     <div className="w-full overflow-x-auto">
       <svg
-        width={chartWidth}
-        height={chartHeight}
-        className="block w-full min-w-[400px]"
-        viewBox={`0 0 ${400} ${chartHeight}`}
-        preserveAspectRatio="xMidYMid meet"
-        style={{ maxWidth: "100%" }}
+      width="100%"
+      height="100%"
+      viewBox="0 0 440 240" 
+      preserveAspectRatio="none"
+      className="block w-full h-full"
+      style={{ display: "block" }}
       >
         <defs>
           <linearGradient

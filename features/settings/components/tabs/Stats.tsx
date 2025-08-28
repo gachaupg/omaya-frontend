@@ -17,81 +17,11 @@ import { fetchMatchedTrades } from "@/features/p2p/slices/matchedTradesSlice";
 import { formatNumber } from "@/utils/formatters";
 import { useRouter } from "next/navigation";
 
-// Date filtering utility functions
-const getDateRange = (filterType: string) => {
-  const now = new Date();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  
-  switch (filterType) {
-    case "Today":
-      return {
-        start: startOfDay,
-        end: now
-      };
-    case "Last Week":
-      const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      return {
-        start: lastWeek,
-        end: now
-      };
-    case "Last Month":
-      const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-      return {
-        start: lastMonth,
-        end: now
-      };
-    case "Last 6 Months":
-      const last6Months = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
-      return {
-        start: last6Months,
-        end: now
-      };
-    case "All":
-    default:
-      return {
-        start: new Date(0), // Beginning of time
-        end: now
-      };
-  }
-};
-
-const isDateInRange = (dateString: string, startDate: Date, endDate: Date) => {
-  try {
-    // Handle different date formats
-    let date: Date;
-    
-    // Try parsing ISO format first (e.g., "2025-03-07T18:46:11.173201+00:00")
-    if (dateString.includes('T')) {
-      date = new Date(dateString);
-    } else {
-      // Try parsing other formats
-      date = new Date(dateString);
-    }
-    
-    // Check if date is valid
-    if (isNaN(date.getTime())) {
-      return false;
-    }
-    
-    return date >= startDate && date <= endDate;
-  } catch (error) {
-    console.warn('Error parsing date:', dateString, error);
-    return false;
-  }
-};
-
-// Mock transaction data structure for demonstration
-interface TransactionData {
-  id: string;
-  amount: number;
-  type: 'deposit' | 'withdrawal';
-  created: string;
-  status: string;
+interface StatsProps {
+  onSupportClick: () => void;
 }
 
-
-
-const Stats = () => {
+const Stats = ({ onSupportClick }: StatsProps) => {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { user, isAuthenticated } = useSelector(
@@ -103,13 +33,10 @@ const Stats = () => {
   );
   console.log("summary", summary);
   const [profileImage, setProfileImage] = useState("");
-  const [depositsTimeFilter, setDepositsTimeFilter] = useState("All");
-  const [withdrawalsTimeFilter, setWithdrawalsTimeFilter] = useState("All");
+  const [depositsTimeFilter, setDepositsTimeFilter] = useState("Month");
+  const [withdrawalsTimeFilter, setWithdrawalsTimeFilter] = useState("Month");
   const [showDepositsDropdown, setShowDepositsDropdown] = useState(false);
   const [showWithdrawalsDropdown, setShowWithdrawalsDropdown] = useState(false);
-
-  // Mock transaction data - replace with actual API data
-  const [transactionData, setTransactionData] = useState<TransactionData[]>([]);
 
   const depositsDropdownRef = useRef<HTMLDivElement>(null);
   const withdrawalsDropdownRef = useRef<HTMLDivElement>(null);
@@ -122,72 +49,23 @@ const Stats = () => {
     "Last 6 Months",
   ];
 
-  // Calculate filtered amounts based on time period and actual transaction data
-  const getFilteredAmount = (transactionType: 'deposit' | 'withdrawal', timeFilter: string) => {
-    if (timeFilter === "All") {
-      // Return total from summary for "All" filter
-      if (transactionType === 'deposit') {
-        return summary?.total_approved_p2p_deposits || 0;
-      } else {
-        return summary?.total_approved_p2p_withdrawals || 0;
-      }
+  // Calculate filtered amounts based on time period
+  const getFilteredAmount = (baseAmount: number, timeFilter: string) => {
+    switch (timeFilter) {
+      case "All":
+        return baseAmount;
+      case "Today":
+        return baseAmount * 0.1; // Example: 10% of total for today
+      case "Last Week":
+        return baseAmount * 0.3; // Example: 30% of total for last week
+      case "Last Month":
+        return baseAmount; // Current implementation shows monthly data
+      case "Last 6 Months":
+        return baseAmount * 2; // Example: 2x for 6 months
+      default:
+        return baseAmount;
     }
-
-    // Filter transactions by date range
-    const { start, end } = getDateRange(timeFilter);
-    
-    const filteredTransactions = transactionData.filter(transaction => 
-      transaction.type === transactionType && 
-      isDateInRange(transaction.created, start, end)
-    );
-
-    // Sum the amounts of filtered transactions
-    return filteredTransactions.reduce((sum, transaction) => sum + transaction.amount, 0);
   };
-
-  // Load mock transaction data (replace with actual API call)
-  useEffect(() => {
-    // Mock data - replace with actual API call to get transactions with "created" field
-    const mockTransactions: TransactionData[] = [
-      {
-        id: "1",
-        amount: 1000,
-        type: "deposit",
-        created: "2025-03-07T18:46:11.173201+00:00",
-        status: "approved"
-      },
-      {
-        id: "2",
-        amount: 500,
-        type: "withdrawal",
-        created: "2025-03-06T10:30:00.000000+00:00",
-        status: "approved"
-      },
-      {
-        id: "3",
-        amount: 750,
-        type: "deposit",
-        created: "2025-02-28T15:20:00.000000+00:00",
-        status: "approved"
-      },
-      {
-        id: "4",
-        amount: 300,
-        type: "withdrawal",
-        created: "2025-02-25T09:15:00.000000+00:00",
-        status: "approved"
-      },
-      {
-        id: "5",
-        amount: 1200,
-        type: "deposit",
-        created: "2025-01-15T14:45:00.000000+00:00",
-        status: "approved"
-      }
-    ];
-    
-    setTransactionData(mockTransactions);
-  }, []);
 
   // Handle click outside dropdowns
   useEffect(() => {
@@ -227,6 +105,7 @@ const Stats = () => {
     }
   }, [dispatch, user]);
 
+
   useEffect(() => {
     if (isAuthenticated) {
       dispatch(fetchTransactionSummary());
@@ -235,12 +114,7 @@ const Stats = () => {
     }
   }, [dispatch, isAuthenticated]);
 
-  // Get filtered amounts for display
-  const filteredDeposits = getFilteredAmount('deposit', depositsTimeFilter);
-  const filteredWithdrawals = getFilteredAmount('withdrawal', withdrawalsTimeFilter);
-  const totalFiltered = filteredDeposits + filteredWithdrawals;
-
-  return (
+ return (
     <Card className="w-full p-2 dark:bg-[#1D1D23] bg-gray-50 rounded-2xl dark:border-[#35353E] border-gray-300 border-2 dark:text-white text-gray-900 shadow-lg">
       {/* Header */}
       <div className="flex w-full items-center justify-between mb-6">
@@ -317,7 +191,10 @@ const Stats = () => {
               </span>
             )}
           </div>
-          <div className="p-2 rounded-full border border-[#1D8751] flex items-center justify-center cursor-pointer">
+          <div
+            className="p-2 rounded-full border border-[#1D8751] flex items-center justify-center cursor-pointer"
+            onClick={onSupportClick}
+          >
             <svg xmlns="http://www.w3.org/2000/svg"
              width="18" 
              height="18" 
@@ -338,10 +215,12 @@ const Stats = () => {
       {/* Total Transactions */}
       <div className="mb-6">
         <div className="dark:text-[#788099] text-gray-600 text-sm font-medium">
-          Total Transactions ({depositsTimeFilter === withdrawalsTimeFilter ? depositsTimeFilter : 'Mixed'})
+          Total Transactions
         </div>
         <div className="text-[15px] font-semibold mt-1 mb-2">
-          {formatNumber(totalFiltered)} USDT
+          {(summary?.total_approved_p2p_combined || 0) +
+            (summary?.total_p2p_orders || 0)}{" "}
+          USDT
         </div>
         <div className="border-b dark:border-[#35353E] border-gray-300 mt-2" />
       </div>
@@ -400,21 +279,28 @@ const Stats = () => {
             </div>
           </div>
           <div className="dark:text-white text-gray-900 font-medium mb-2">
-            {formatNumber(filteredDeposits)} USD
+            {formatNumber(
+              getFilteredAmount(
+                summary?.total_approved_p2p_deposits || 0,
+                depositsTimeFilter
+              )
+            )}{" "}
+            USD
           </div>
         </div>
         <div className="w-full h-3 dark:bg-[#35353E] bg-gray-300 rounded-full mb-4">
           <div
             className={`h-3 rounded-full ${
-              filteredDeposits > 0
+              (summary?.total_approved_p2p_deposits || 0) > 0
                 ? "bg-[#1D8751]"
                 : "bg-[#788099]"
             }`}
             style={{
               width: `${
-                totalFiltered > 0
-                  ? (filteredDeposits / totalFiltered) * 100
-                  : 0
+                ((summary?.total_approved_p2p_deposits || 0) /
+                  ((summary?.total_approved_p2p_deposits || 0) +
+                    (summary?.total_approved_p2p_withdrawals || 0))) *
+                100
               }%`,
             }}
           />
@@ -473,21 +359,28 @@ const Stats = () => {
             </div>
           </div>
           <div className="dark:text-white text-gray-900 font-medium mb-2">
-            {formatNumber(filteredWithdrawals)} USD
+            {formatNumber(
+              getFilteredAmount(
+                summary?.total_approved_p2p_withdrawals || 0,
+                withdrawalsTimeFilter
+              )
+            )}{" "}
+            USD
           </div>
         </div>
         <div className="w-full h-3 dark:bg-[#35353E] bg-gray-300 rounded-full mb-4">
           <div
             className={`h-3 rounded-full ${
-              filteredWithdrawals > 0
+              (summary?.total_approved_p2p_withdrawals || 0) > 0
                 ? "bg-[#E23D3A]"
                 : "bg-[#788099]"
             }`}
             style={{
               width: `${
-                totalFiltered > 0
-                  ? (filteredWithdrawals / totalFiltered) * 100
-                  : 0
+                ((summary?.total_approved_p2p_withdrawals || 0) /
+                  ((summary?.total_approved_p2p_deposits || 0) +
+                    (summary?.total_approved_p2p_withdrawals || 0))) *
+                100
               }%`,
             }}
           />

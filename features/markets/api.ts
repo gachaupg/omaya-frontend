@@ -1,18 +1,37 @@
 /**
  * Markets API - CoinGecko integration for cryptocurrency market data
- * 
- * This API includes fallback mechanisms to handle:
- * - 401 Unauthorized errors (API key issues)
- * - Network connectivity problems
- * - Rate limiting
- * - Invalid data responses
- * 
- * When the primary API fails, the system will automatically use mock data
- * to ensure the application remains functional and provides a good user experience.
  */
 import axios from "axios";
 import { MarketData, MarketDataParams, MarketDataResponse } from "./types";
 import { logger } from "@/lib/utils/logger";
+
+const RATE_LIMIT_DELAY = 10000; 
+const MAX_RETRIES = 2;
+let lastRequestTime = 0;
+let requestCount = 0;
+const REQUEST_WINDOW = 60000; 
+
+// Add this helper function for rate limiting
+const delayIfNeeded = async () => {
+  const now = Date.now();
+  const timeSinceLastRequest = now - lastRequestTime;
+  
+  // If we've made more than 10 requests in the last minute, delay
+  if (requestCount > 10 && timeSinceLastRequest < REQUEST_WINDOW) {
+    const delay = REQUEST_WINDOW - timeSinceLastRequest;
+    console.warn(`Rate limiting: delaying request by ${delay}ms`);
+    await new Promise(resolve => setTimeout(resolve, delay));
+    requestCount = 0;
+  }
+  
+  // Always wait at least 1 second between requests
+  if (timeSinceLastRequest < 1000) {
+    await new Promise(resolve => setTimeout(resolve, 1000 - timeSinceLastRequest));
+  }
+  
+  lastRequestTime = Date.now();
+  requestCount++;
+};
 
 // CoinGecko API configuration
 const COINGECKO_BASE_URL = "https://api.coingecko.com/api/v3";
@@ -292,7 +311,7 @@ export const fetchCoinMarketChart = async (
       response = await axios.get(
         `https://api.coingecko.com/api/v3/coins/${id}/market_chart`,
         {
-          params: { vs_currency, days, interval: "hourly" },
+          params: { vs_currency, days }, // REMOVED interval parameter
           headers: {
             "x-cg-demo-api-key": COINGECKO_API_KEY,
             Accept: "application/json",
@@ -306,7 +325,7 @@ export const fetchCoinMarketChart = async (
       response = await axios.get(
         `https://api.coingecko.com/api/v3/coins/${id}/market_chart`,
         {
-          params: { vs_currency, days, interval: "hourly" },
+          params: { vs_currency, days }, // REMOVED interval parameter
           headers: { Accept: "application/json" },
           timeout: 10000,
         }
@@ -317,7 +336,7 @@ export const fetchCoinMarketChart = async (
       throw new Error("Invalid chart data format received from API");
     }
 
-    return response.data.prices; // [[timestamp, price], ...]
+    return response.data.prices;
   } catch (error) {
     logger.error("Failed to fetch coin market chart", {
       id,
@@ -338,6 +357,41 @@ export const fetchCoinMarketChart = async (
       );
     }
     throw new Error("Failed to fetch chart data: Unknown error");
+  }
+};
+
+// Add this fallback function
+export const fetchCoinMarketChartFallback = async (
+  id: string,
+  days: number = 1,
+  vs_currency: string = "usd"
+) => {
+  try {
+    // Try a different approach - use simple fetch without axios
+    const response = await fetch(
+      `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=${vs_currency}&days=${days}`,
+      {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.prices || !Array.isArray(data.prices)) {
+      throw new Error("Invalid chart data format");
+    }
+
+    return data;
+  } catch (error) {
+    console.error("Fallback API call failed:", error);
+    throw error;
   }
 };
 
@@ -385,70 +439,51 @@ export const fetchCoinMarketChartPublic = async (
   days: number = 1,
   vs_currency: string = "usd"
 ) => {
-  try {
-    // First try with a simple fetch without any headers
-    const response = await fetch(
-      `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=${vs_currency}&days=${days}&interval=hourly`,
-      {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        },
+  let retries = 0;
+  
+  while (retries <= MAX_RETRIES) {
+    try {
+      await delayIfNeeded();
+      
+      // Remove the interval parameter - let CoinGecko auto-determine based on days
+      const response = await axios.get(
+        `https://api.coingecko.com/api/v3/coins/${id}/market_chart`,
+        {
+          params: { 
+            vs_currency, 
+            days
+            // REMOVED: interval: days === 1 ? "hourly" : "daily" 
+          },
+          timeout: 15000,
+        }
+      );
+
+      if (!response.data.prices || !Array.isArray(response.data.prices)) {
+        throw new Error("Invalid chart data format received from API");
       }
-    );
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        // Try alternative endpoint or provide mock data
-        console.warn("API key authentication failed, using fallback data");
-        return generateMockChartData(days);
+      return response.data;
+    } catch (error) {
+      retries++;
+      
+      if (retries > MAX_RETRIES) {
+        if (axios.isAxiosError(error)) {
+          if (error.response?.status === 429) {
+            throw new Error("Rate limit exceeded. Please try again in a few minutes.");
+          }
+          throw new Error(
+            `Failed to fetch chart data: ${
+              error.response?.data?.error || error.message
+            }`
+          );
+        }
+        throw new Error("Failed to fetch chart data: Unknown error");
       }
-      throw new Error(`HTTP error! status: ${response.status}`);
+      
+      // Wait before retrying
+      await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY * retries));
     }
-
-    const data = await response.json();
-
-    if (!data.prices || !Array.isArray(data.prices)) {
-      console.warn("Invalid chart data format, using fallback data");
-      return generateMockChartData(days);
-    }
-
-    return data.prices; // [[timestamp, price], ...]
-  } catch (error) {
-    logger.error("Failed to fetch coin market chart (public)", {
-      id,
-      days,
-      vs_currency,
-      error,
-    });
-    
-    // Return mock data as fallback
-    console.warn("Using fallback chart data due to API error");
-    return generateMockChartData(days);
   }
-};
-
-/**
- * Generate mock chart data for fallback scenarios
- */
-const generateMockChartData = (days: number) => {
-  const now = Date.now();
-  const dataPoints = days === 1 ? 24 : Math.min(days * 24, 168); // Max 7 days of hourly data
-  const prices = [];
-  
-  // More realistic starting prices based on common cryptocurrencies
-  let basePrice = Math.random() * 50000 + 1000; // Random price between $1k-$50k
-  
-  for (let i = 0; i < dataPoints; i++) {
-    const timestamp = now - (dataPoints - i) * (24 * 60 * 60 * 1000 / dataPoints);
-    // Add some random variation to make it look realistic
-    const variation = (Math.random() - 0.5) * 0.05; // ±2.5% variation for more realistic movement
-    const price = basePrice * (1 + variation);
-    basePrice = price; // Use current price as base for next iteration
-    prices.push([timestamp, price]);
-  }
-  
-  return prices;
 };
 
 /**
@@ -456,69 +491,38 @@ const generateMockChartData = (days: number) => {
  * This should work without API key restrictions
  */
 export const fetchCoinDetailsPublic = async (id: string) => {
-  try {
-    // Use fetch instead of axios for better compatibility
-    const response = await fetch(
-      `https://api.coingecko.com/api/v3/coins/${id}`,
-      {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-        },
-      }
-    );
+  let retries = 0;
+  
+  while (retries <= MAX_RETRIES) {
+    try {
+      await delayIfNeeded();
+      
+      const response = await axios.get(
+        `https://api.coingecko.com/api/v3/coins/${id}`,
+        {
+          timeout: 15000,
+        }
+      );
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        // Return mock data for common coins
-        console.warn("API key authentication failed, using fallback data");
-        return generateMockCoinDetails(id);
+      return response.data;
+    } catch (error) {
+      retries++;
+      
+      if (retries > MAX_RETRIES) {
+        if (axios.isAxiosError(error)) {
+          if (error.response?.status === 429) {
+            throw new Error("Rate limit exceeded. Please try again in a few minutes.");
+          }
+          throw new Error(
+            `Failed to fetch coin details: ${
+              error.response?.data?.error || error.message
+            }`
+          );
+        }
+        throw new Error("Failed to fetch coin details: Unknown error");
       }
-      throw new Error(`HTTP error! status: ${response.status}`);
+      
+      await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY * retries));
     }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    logger.error("Failed to fetch coin details (public)", { id, error });
-    
-    // Return mock data as fallback
-    console.warn("Using fallback coin details due to API error");
-    return generateMockCoinDetails(id);
   }
-};
-
-/**
- * Generate mock coin details for fallback scenarios
- */
-const generateMockCoinDetails = (id: string) => {
-  // Generate more realistic mock data based on common crypto patterns
-  const basePrice = Math.random() * 50000 + 1000;
-  const priceChange = (Math.random() - 0.5) * 20; // ±10% change
-  const marketCap = basePrice * (Math.random() * 1000000 + 100000);
-  const volume = marketCap * (Math.random() * 0.1 + 0.01); // 1-11% of market cap
-  
-  const mockData = {
-    id: id,
-    symbol: id.toUpperCase(),
-    name: id.charAt(0).toUpperCase() + id.slice(1),
-    image: {
-      large: `https://assets.coingecko.com/coins/images/1/large/${id}.png`,
-    },
-    market_cap_rank: Math.floor(Math.random() * 100) + 1,
-    market_data: {
-      current_price: {
-        usd: basePrice
-      },
-      price_change_percentage_24h: priceChange,
-      market_cap: {
-        usd: marketCap
-      },
-      total_volume: {
-        usd: volume
-      }
-    }
-  };
-  
-  return mockData;
 };

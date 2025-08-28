@@ -152,8 +152,8 @@ const FavouriteAssets: React.FC = () => {
           <div className="col-span-3 text-center text-white">Loading...</div>
         ) : (
           favoriteAssets?.slice(0, 3).map((asset: FavoriteAsset) => {
-            const dummyData = DUMMY_ASSET_DATA[asset.asset_name] || {
-              symbol: asset.asset_name.split(" ")[0],
+            const dummyData = DUMMY_ASSET_DATA[asset.asset_symbol] || {
+              symbol: asset.asset_symbol.split(" ")[0],
               price: 0,
               change: "+0.00%",
             };
@@ -164,7 +164,7 @@ const FavouriteAssets: React.FC = () => {
               >
                 <button
                   onClick={() => {
-                    const assetId = getAssetIdFromName(asset.asset_name);
+                    const assetId = getAssetIdFromName(asset.asset_symbol);
                     if (assetId) {
                       handleRemoveFromFavorites(assetId);
                     } else {
@@ -194,7 +194,7 @@ const FavouriteAssets: React.FC = () => {
                     {dummyData.symbol}
                   </div>
                   <div className="text-xs text-[#788099] truncate">
-                    {asset.asset_name}
+                    {asset.asset_symbol}
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0">
