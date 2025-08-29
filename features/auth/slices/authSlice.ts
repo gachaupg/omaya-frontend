@@ -27,6 +27,8 @@ import {
 } from "../types";
 import { API_ENDPOINTS } from "../api";
 import { post, get, AxiosError } from "../../../lib/apiClient";
+import { storage } from "../utils/storage";
+import { cookieUtils } from "@/lib/utils/cookieUtils";
 
 const initialState: AuthState = {
   user: null,
@@ -269,22 +271,20 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.profile = null;
       state.kycModalOpen = false;
-      localStorage.removeItem("profile");
+      storage.removeProfile();
       // Clear access token cookie
-      document.cookie =
-        "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict";
+      cookieUtils.removeCookie("access_token");
     },
     clearError(state) {
       state.error = null;
     },
     initializeAuth(state) {
-      const authData = localStorage.getItem("profile");
+      const authData = storage.getProfile();
       if (authData) {
-        const parsedData = JSON.parse(authData);
-        state.user = parsedData.user;
-        state.tokens = parsedData.tokens;
+        state.user = authData.user;
+        state.tokens = authData.tokens;
         state.isAuthenticated = true;
-        state.profile = parsedData.profile || null;
+        state.profile = authData.profile || null;
       }
     },
     openKYCModal(state) {
@@ -347,20 +347,21 @@ const authSlice = createSlice({
         state.profile = action.payload.profile;
 
         // Store in localStorage
-        localStorage.setItem(
-          "profile",
-          JSON.stringify({
-            user: action.payload.user,
-            tokens: {
-              access: action.payload.access,
-              refresh: action.payload.refresh,
-            },
-            profile: action.payload.profile,
-          })
-        );
+        storage.setProfile({
+          user: action.payload.user,
+          tokens: {
+            access: action.payload.access,
+            refresh: action.payload.refresh,
+          },
+          profile: action.payload.profile,
+        });
 
         // Set access token as cookie
-        document.cookie = `access_token=${action.payload.access}; path=/; max-age=86400; secure; samesite=strict`;
+        cookieUtils.setCookie("access_token", action.payload.access, {
+          maxAge: 86400,
+          secure: true,
+          sameSite: 'strict'
+        });
       }
     );
     builder.addCase(loginUser.rejected, (state, action) => {
@@ -517,20 +518,21 @@ const authSlice = createSlice({
         state.twoFAPassword = "";
 
         // Store in localStorage
-        localStorage.setItem(
-          "profile",
-          JSON.stringify({
-            user: action.payload.user,
-            tokens: {
-              access: action.payload.access,
-              refresh: action.payload.refresh,
-            },
-            profile: action.payload.profile,
-          })
-        );
+        storage.setProfile({
+          user: action.payload.user,
+          tokens: {
+            access: action.payload.access,
+            refresh: action.payload.refresh,
+          },
+          profile: action.payload.profile,
+        });
 
         // Set access token as cookie
-        document.cookie = `access_token=${action.payload.access}; path=/; max-age=86400; secure; samesite=strict`;
+        cookieUtils.setCookie("access_token", action.payload.access, {
+          maxAge: 86400,
+          secure: true,
+          sameSite: 'strict'
+        });
       }
     );
     builder.addCase(loginWith2FA.rejected, (state, action) => {

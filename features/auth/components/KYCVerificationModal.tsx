@@ -95,7 +95,7 @@ const KYCVerificationModal: React.FC = () => {
   const handleSumSubMessage = (type: string, payload: any) => {
     console.log("SumSub Message:", type, payload);
 
-    if (payload?.reviewStatus) {
+    if (payload?.reviewStatus && typeof window !== 'undefined') {
       localStorage.setItem("sumsubData", JSON.stringify(payload));
 
       if (payload.reviewStatus === "completed") {

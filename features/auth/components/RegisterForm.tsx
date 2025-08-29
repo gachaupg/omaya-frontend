@@ -10,11 +10,13 @@ import { registerUser, verifyOTP } from "@/features/auth/slices/authSlice";
 import { AppDispatch } from "@/features/auth/store";
 import { useRouter } from "next/navigation";
 import { showToast } from "@/lib/utils/toast";
-import { LoginSocialFacebook } from "reactjs-social-login";
-import { FacebookLoginButton } from "react-social-login-buttons";
+// Dynamic imports for client-side only libraries
+const LoginSocialFacebook = React.lazy(() => import("reactjs-social-login").then(module => ({ default: module.LoginSocialFacebook })));
+const FacebookLoginButton = React.lazy(() => import("react-social-login-buttons").then(module => ({ default: module.FacebookLoginButton })));
 import axios from "axios";
 import { toast } from "react-toastify";
-import GoogleAuthButton from "./GoogleAuthButton";
+// Dynamic import for GoogleAuthButton
+const GoogleAuthButton = React.lazy(() => import("./GoogleAuthButton"));
 
 // Email Verification Modal Component
 interface EmailVerificationModalProps {
@@ -100,12 +102,14 @@ function EmailVerificationModal({
         (digit, idx) => idx >= activeIndex && digit === ""
       );
 
-      if (nextEmptyIndex !== -1 && nextEmptyIndex < 6) {
-        const nextInput = document.getElementById(`code-${nextEmptyIndex}`);
-        nextInput?.focus();
-      } else if (newCode.every((digit) => digit !== "")) {
-        const submitButton = document.getElementById("verify-button");
-        submitButton?.focus();
+      if (typeof document !== 'undefined') {
+        if (nextEmptyIndex !== -1 && nextEmptyIndex < 6) {
+          const nextInput = document.getElementById(`code-${nextEmptyIndex}`);
+          nextInput?.focus();
+        } else if (newCode.every((digit) => digit !== "")) {
+          const submitButton = document.getElementById("verify-button");
+          submitButton?.focus();
+        }
       }
     }
   };
@@ -120,7 +124,7 @@ function EmailVerificationModal({
     setError("");
 
     // Auto-focus next input
-    if (value && index < 5) {
+    if (value && index < 5 && typeof document !== 'undefined') {
       const nextInput = document.getElementById(`code-${index + 1}`);
       nextInput?.focus();
     }
@@ -128,7 +132,7 @@ function EmailVerificationModal({
 
   // Handle backspace
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === "Backspace" && !verificationCode[index] && index > 0) {
+    if (e.key === "Backspace" && !verificationCode[index] && index > 0 && typeof document !== 'undefined') {
       const prevInput = document.getElementById(`code-${index - 1}`);
       prevInput?.focus();
     }
@@ -368,10 +372,12 @@ export default function RegistrationPage() {
     // Terms agreement validation
     if (!agreeToTerms) {
       isValid = false;
-      document.getElementById("terms-container")?.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
+      if (typeof document !== 'undefined') {
+        document.getElementById("terms-container")?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }
     }
 
     setErrors(newErrors);
@@ -1269,29 +1275,37 @@ export default function RegistrationPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 mt-4">
-                <GoogleAuthButton
-                  onSuccess={handleGoogleSuccess}
-                  onError={handleGoogleError}
-                />
+                <React.Suspense fallback={<div className="flex items-center justify-center py-3 px-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-transparent w-full">
+                  <span className="text-gray-700 dark:text-gray-300 font-medium text-sm">Loading Google...</span>
+                </div>}>
+                  <GoogleAuthButton
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                  />
+                </React.Suspense>
                 {!profile ? (
-                  <LoginSocialFacebook
-                    className="flex items-center border border-gray-300 dark:border-gray-600 justify-center  rounded-lg dark:border-gray-600 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-[#2A2A30] transition-colors duration-300 w-full"
-                    appId="9314592348583619"
-                    onResolve={(response: any) => {
-                      setProfile(response.data);
-                      handleFaceBookAuth(response.data.accessToken);
-                    }}
-                    onReject={(error: any) => {
-                      console.error("Facebook login failed:", error);
-                    }}
-                  >
-                    
-                      <div className="flex items-center justify-center">
-                      <span className="text-gray-700  dark:text-gray-300 font-medium text-sm">
-                       <img  className="w-5 h-5 mr-3 bg-white rounded-full" src="https://res.cloudinary.com/pitz/image/upload/v1755777400/channels4_profile_z4k17x-removebg-preview_qf5kzv.png" alt="" />
-                      </span>Facebook
-                      </div>
-                  </LoginSocialFacebook>
+                  <React.Suspense fallback={<div className="flex items-center justify-center py-3 px-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-transparent w-full">
+                    <span className="text-gray-700 dark:text-gray-300 font-medium text-sm">Loading Facebook...</span>
+                  </div>}>
+                    <LoginSocialFacebook
+                      className="flex items-center border border-gray-300 dark:border-gray-600 justify-center  rounded-lg dark:border-gray-600 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-[#2A2A30] transition-colors duration-300 w-full"
+                      appId="9314592348583619"
+                      onResolve={(response: any) => {
+                        setProfile(response.data);
+                        handleFaceBookAuth(response.data.accessToken);
+                      }}
+                      onReject={(error: any) => {
+                        console.error("Facebook login failed:", error);
+                      }}
+                    >
+                      
+                        <div className="flex items-center justify-center">
+                        <span className="text-gray-700  dark:text-gray-300 font-medium text-sm">
+                         <img  className="w-5 h-5 mr-3 bg-white rounded-full" src="https://res.cloudinary.com/pitz/image/upload/v1755777400/channels4_profile_z4k17x-removebg-preview_qf5kzv.png" alt="" />
+                        </span>Facebook
+                        </div>
+                    </LoginSocialFacebook>
+                  </React.Suspense>
                 ) : (
                   <div className="flex items-center justify-center py-3 px-4 rounded-lg border border-green-300 dark:border-green-600 bg-green-50 dark:bg-green-900/20 w-full">
                     <svg className="w-5 h-5 mr-3 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">

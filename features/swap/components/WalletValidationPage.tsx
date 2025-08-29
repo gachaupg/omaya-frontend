@@ -206,7 +206,7 @@ const WalletValidationPage: React.FC<WalletValidationPageProps> = ({
             </div>
             <div className="flex items-center">
               <img
-                src={selectedAsset.image || undefined}
+                src={selectedAsset.asset_image || selectedAsset.image_url || undefined}
                 alt={selectedAsset.name || "Asset"}
                 className="w-8 h-8 mr-3"
               />
