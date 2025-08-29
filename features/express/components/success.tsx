@@ -6,6 +6,36 @@ import CopyButton from "@/components/ui/CopyButton";
 const GREEN = "#309A64";
 
 interface SuccessPageProps {
+  transactionData?: {
+    type: "deposit" | "withdrawal";
+    amount: number;
+    asset: any;
+    paymentDetail?: any;
+    paymentDetails?: any[];
+    walletAddress: string;
+    network: any;
+    transactionId?: string;
+    depositCode?: string;
+    totalAmountDue?: string;
+    commission?: string;
+    networkFee?: string;
+    currency?: string;
+    websocketUrl?: string;
+    websocket_url?: string;
+    status?: string;
+    message?: string;
+    withdrawalAddress?: string;
+    details?: {
+      withdrawal_address?: string;
+      payout_address?: string;
+      from_currency?: string;
+      to_currency?: string;
+      to_network?: string;
+      estimated_amount?: number;
+      changenow_id?: string;
+    };
+  };
+  // Fallback props for backward compatibility
   transactionId?: string;
   date?: string;
   paidAmount?: string | number;
@@ -19,6 +49,7 @@ interface SuccessPageProps {
 }
 
 const SuccessPage: React.FC<SuccessPageProps> = ({
+  transactionData,
   transactionId = "TXNWSU09E2DS",
   date = "6/29/2025, 9:07:43 PM",
   paidAmount = "USD 1",
@@ -31,118 +62,158 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
   netAmount = ".99 USDT",
 }) => {
   const router = useRouter();
+
+  // Extract real data from transactionData if available
+  const getRealData = () => {
+    if (!transactionData) {
+      return {
+        transactionId,
+        date: new Date().toLocaleString(),
+        paidAmount,
+        paidCurrency,
+        receivedAmount,
+        receivedCurrency,
+        payinMethod,
+        payoutMethod,
+        transactionHash,
+        netAmount,
+      };
+    }
+
+    // Extract data based on transaction type
+    const isDeposit = transactionData.type === "deposit";
+    const isWithdrawal = transactionData.type === "withdrawal";
+    
+    // Get currency information with better fallbacks
+    const currency = transactionData.asset?.ticker || 
+                    transactionData.asset?.symbol || 
+                    transactionData.asset?.name ||
+                    transactionData.currency || 
+                    "USDT";
+    
+    const network = transactionData.network?.network_type || 
+                   transactionData.network?.network_id || 
+                   transactionData.network?.name ||
+                   "Unknown";
+    
+    // Get payment method with better fallbacks
+    const paymentMethod = isDeposit 
+      ? (transactionData.paymentDetail?.name || 
+         transactionData.paymentDetails?.[0]?.name || 
+         transactionData.paymentDetail?.bank_name ||
+         "Bank Transfer")
+      : (transactionData.details?.to_network || 
+         transactionData.details?.payout_address?.substring(0, 10) + "..." ||
+         network);
+    
+    // Get amounts with better handling
+    const amount = transactionData.amount || 0;
+    const estimatedAmount = transactionData.details?.estimated_amount || 
+                           transactionData.totalAmountDue || 
+                           amount;
+    
+    // Get transaction hash/ID with better fallbacks
+    const txId = transactionData.transactionId || 
+                transactionData.details?.changenow_id || 
+                transactionData.depositCode ||
+                "N/A";
+    
+    // Format amounts properly
+    const formatAmount = (amt: number | string) => {
+      const num = typeof amt === 'string' ? parseFloat(amt) : amt;
+      return isNaN(num) ? "0" : num.toFixed(8).replace(/\.?0+$/, '');
+    };
+    
+    return {
+      transactionId: txId,
+      date: new Date().toLocaleString(),
+      paidAmount: `${formatAmount(amount)} ${currency}`,
+      paidCurrency: currency,
+      receivedAmount: `${formatAmount(estimatedAmount)} ${currency}`,
+      receivedCurrency: currency,
+      payinMethod: isDeposit ? paymentMethod : `${currency} Wallet`,
+      payoutMethod: isWithdrawal ? paymentMethod : `${currency} Wallet`,
+      transactionHash: txId,
+      netAmount: `${formatAmount(estimatedAmount)} ${currency}`,
+    };
+  };
+
+  const realData = getRealData();
   
   return (
-    <div className="min-h-screen flex flex-col items-center py-12 px-2">
-      {/* Success Icon and Message */}
-      <div className="flex flex-col items-center mb-8">
-        <div className="relative mb-4">
-          <FaCheckCircle style={{ color: GREEN }} size={90} />
-          {/* Decorative dots */}
-          <span className="absolute -top-2 left-1/2 -translate-x-1/2 w-3 h-3 bg-orange-400 rounded-full" />
-          <span
-            className="absolute -bottom-2 left-1/4 w-3 h-3"
-            style={{ background: GREEN, borderRadius: "9999px" }}
-          />
-          <span className="absolute -bottom-2 right-1/4 w-3 h-3 bg-blue-400 rounded-full" />
-        </div>
-        <h1 className="text-3xl font-bold mb-2" style={{ color: GREEN }}>
-          Swap Successful!
-        </h1>
-        <p className="text-lg text-gray-600 dark:text-gray-900 dark:text-white/80">
-          Your Swap has been completed successfully
-        </p>
+    <div className="flex flex-col items-center justify-center w-full">
+      {/* Success Image */}
+      <div className="flex flex-col w-full items-center mb-8">
+        <img className="w-full max-w-md" height={100} src="https://res.cloudinary.com/pitz/image/upload/v1756484286/Screenshot_2025-08-29_191548_two36s.png" alt="Success" />
       </div>
 
-      {/* Transaction Details Card */}
-      <div className="w-full max-w-2xl bg-white dark:bg-[#23232b] rounded-xl shadow-lg p-6 mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-900 dark:text-white mb-4">
-          Transaction Details
-        </h2>
-        <div className="flex flex-col md:flex-row md:justify-between text-gray-600 dark:text-gray-900 dark:text-white/80 text-sm mb-4">
-          <div>
-            <div className="mb-1">Transaction ID</div>
-            <div className="flex items-center gap-2">
-              <div className="font-mono text-gray-900 dark:text-white">{transactionId}</div>
-              <CopyButton
-                value={transactionId}
-                className="text-gray-900 dark:text-gray-500 dark:text-white/60 hover:text-gray-900 dark:text-white transition-colors"
-                showIcon={true}
-              />
+      {/* Main Content Container */}
+      <div className="w-full max-w-md bg-[#1D1D23] rounded-lg shadow-xl">
+        {/* Transaction Details Section */}
+        <div className="p-6 border-b border-gray-700">
+          <h2 className="text-lg font-semibold text-white mb-4">Transaction Details</h2>
+          <div className="flex justify-between text-sm">
+            <div>
+              <div className="text-gray-400 mb-1">Transaction ID</div>
+              <div className="text-white font-mono">{realData.transactionId}</div>
             </div>
-          </div>
-          <div className="md:text-right mt-2 md:mt-0">
-            <div className="mb-1">Date & Time</div>
-            <div className="font-mono text-gray-900 dark:text-white">{date}</div>
-          </div>
-        </div>
-        <hr className="border-gray-200 dark:border-white/10 my-4" />
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Swap Summary</h3>
-        <div className="flex flex-col md:flex-row md:justify-between text-gray-900 dark:text-white/80 text-sm mb-4">
-          <div>
-            <div className="mb-1">You Paid</div>
-            <div className="font-bold text-gray-900 dark:text-white">{paidAmount} {paidCurrency}</div>
-            {payinMethod && <div className="text-xs text-gray-900 dark:text-gray-500 dark:text-white/60">Via {payinMethod}</div>}
-          </div>
-          <div className="md:text-right mt-2 md:mt-0">
-            <div className="mb-1">You Received</div>
-            <div className="font-bold" style={{ color: GREEN }}>
-              {receivedAmount} {receivedCurrency}
-            </div>
-            {payoutMethod && <div className="text-xs text-gray-900 dark:text-gray-500 dark:text-white/60">to {payoutMethod}</div>}
-          </div>
-        </div>
-        <div className="flex flex-col md:flex-row md:justify-between text-gray-900 dark:text-white/80 text-sm mb-4">
-          <div>
-            <div className="mb-1">Transaction Hash</div>
-            <div className="flex items-center gap-2">
-              <div className="font-mono text-gray-900 dark:text-white">{transactionHash}</div>
-              <CopyButton
-                value={transactionHash}
-                className="text-gray-900 dark:text-gray-500 dark:text-white/60 hover:text-gray-900 dark:text-white transition-colors"
-                showIcon={true}
-              />
+            <div className="text-right">
+              <div className="text-gray-400 mb-1">Date & Time</div>
+              <div className="text-white">{realData.date}</div>
             </div>
           </div>
         </div>
-        <div
-          className="flex justify-end font-semibold text-base"
-          style={{ color: GREEN }}
-        >
-          Net Amount Processed &nbsp;{" "}
-          <span className="font-mono">{netAmount}</span>
-        </div>
-      </div>
 
-      {/* Transaction Completed Banner */}
-      <div
-        className="w-full max-w-2xl rounded-b-xl rounded-t-md p-4 flex items-center mb-4"
-        style={{ background: GREEN }}
-      >
-        <FaCheckCircle className="text-gray-900 dark:text-white mr-3" size={24} />
-        <div>
-          <div className="font-bold text-gray-900 dark:text-white">Transaction Completed</div>
-          <div className="text-gray-900 dark:text-gray-700 dark:text-white/90 text-sm">
-            Your {receivedCurrency} has been sent to your wallet. It may take a few minutes to
-            reflect in your balance.
+        {/* Exchange Summary Section */}
+        <div className="p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Exchange Summary</h3>
+          
+          {/* You Paid / You Received */}
+          <div className="flex justify-between mb-4">
+            <div>
+              <div className="text-gray-400 text-sm mb-1">You Paid</div>
+              <div className="text-gray-400 text-xs">Via {realData.payinMethod}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-gray-400 text-sm mb-1">You Received</div>
+              <div className="font-bold" style={{ color: GREEN }}>
+                {realData.receivedAmount} {realData.receivedCurrency}
+              </div>
+              <div className="text-gray-400 text-xs">to {realData.payoutMethod}</div>
+            </div>
+          </div>
+
+          {/* Dashed separator */}
+          <div className="border-t border-dashed border-gray-600 my-4"></div>
+
+          {/* Transaction Hash and Net Amount */}
+          <div className="space-y-3">
+            <div>
+              <div className="text-gray-400 text-sm mb-1">Transaction Hash</div>
+              <div className="text-white font-mono">{realData.transactionHash}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm" style={{ color: GREEN }}>
+                Net Amount Processed
+              </div>
+              <div className="font-mono" style={{ color: GREEN }}>
+                {realData.netAmount}
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Go to Dashboard Button */}
-      <button
-        className="w-full max-w-xs bg-[#1D8751] hover:bg-[#16663d] text-gray-900 dark:text-white font-semibold py-3 rounded-xl text-lg transition mb-4"
-        onClick={() => router.push("/dashboard")}
-      >
-        Go to Dashboard
-      </button>
-
-      {/* Support Footer */}
-      <div className="w-full max-w-2xl text-center text-xs text-gray-900 dark:text-gray-400 dark:text-white/40 mt-2">
-        Need help? Contact our support team at{" "}
-        <a href="mailto:support@omayaexchange.com" className="underline">
-          support@omayaexchange.com
-        </a>
+      {/* Action Buttons */}
+      <div className="w-full max-w-md mt-6 space-y-3">
+       <img src="https://res.cloudinary.com/pitz/image/upload/v1756484240/Frame_34947_qeutak.png" alt="" />
+        
+        <div className="text-center text-xs text-gray-400">
+          Need help? Contact our support team at{" "}
+          <a href="mailto:support@omayaexchange.com" className="underline text-green-400">
+            support@omayaexchange.com
+          </a>
+        </div>
       </div>
     </div>
   );

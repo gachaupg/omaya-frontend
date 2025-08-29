@@ -369,8 +369,13 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           let status: string | undefined;
           let message: string | undefined;
 
-          // Check if it's a ChangeNow WebSocket message (different format)
-          if (data.type === "status_update" && data.data?.status) {
+          // Check if it's a final_status message (transaction completed)
+          if (data.type === "final_status" && data.data?.status) {
+            // Final status format - transaction completed
+            status = data.data.status;
+            message = data.data.message;
+            console.log("Final status received:", status, message);
+          } else if (data.type === "status_update" && data.data?.status) {
             // ChangeNow status update format
             status = data.data.status;
             message = data.data.message;
@@ -450,6 +455,14 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             }
 
             setCurrentStatus(uiStatus);
+
+            // Auto-navigate to success page when transaction is completed
+            if (data.type === "final_status" && status === "completed") {
+              // Give users time to see the completion status before redirecting
+              setTimeout(() => {
+                setShowSuccess(true);
+              }, 2000); // 2 seconds delay to show completion status
+            }
 
             // Auto-navigate to success page when transaction is agent approved
             if (status === "agent_approve") {
@@ -536,9 +549,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     isConnected,
   ]);
 
-  // If showing success page, render it
+  // If showing success page, render it with real transaction data
   if (showSuccess) {
-    return <SuccessPage />;
+    return <SuccessPage transactionData={effectiveTransactionData} />;
   }
 
   // If no transaction data available (not from form submission or localStorage), show loading or redirect
@@ -582,7 +595,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               </span>
               
             </div>
-            {liveAmount !== null &&
+            {/* {liveAmount !== null &&
               liveAmount !== effectiveTransactionData?.amount && (
                 <div className={`${
                   isDark ? 'text-[#7B7B7B]' : 'text-gray-600'
@@ -590,7 +603,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   Initial: {effectiveTransactionData?.amount || 0}{" "}
                   {effectiveTransactionData?.asset?.ticker || "USDT"}
                 </div>
-              )}
+              )} */}
 
             {/* Display previous amount if it changed */}
             {previousAmount !== null &&

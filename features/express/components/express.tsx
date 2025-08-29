@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import ExpressExchangeForm from "./ExpressExchangeForm";
 import Exchanging from "./exchnaging";
+import SuccessPage from "./success";
 
 const Express = () => {
   const [showExchanging, setShowExchanging] = useState(false);
@@ -47,6 +48,7 @@ const Express = () => {
           initialMode={currentMode}
         />
       )}
+   
     </div>
   );
 };
