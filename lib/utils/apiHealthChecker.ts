@@ -24,7 +24,7 @@ export class ApiHealthChecker {
       "/wallet/wallets/",
       "/trading_engine/p2p/orders/",
       "/trading_engine/all-transactions/",
-      "/api/changenow/supported-tokens/",
+      "/administration/admin/changenow-tokens/",
       "/administration/admin/fronted-all-asset-network-range/",
     ];
 

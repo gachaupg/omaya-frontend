@@ -1,11 +1,12 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { FaExchangeAlt, FaExclamationCircle } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../../../store";
 import { fetchAdminPaymentDetails } from "../../../exchange/slices/paymentSlice";
 import { fetchAssets } from "../../../exchange/slices/exchangeSlice";
-import { createDeposit } from "../../../exchange/slices/exchangeSlice";
+import { createDeposit, updateDepositAddress } from "../../../exchange/slices/exchangeSlice";
 import {
   fetchSupportedAssets,
   fetchSwapEstimate,
@@ -15,6 +16,7 @@ import { showToast } from "../../../../lib/utils/toast";
 import { DepositResponse } from "../../../exchange/types";
 import { SupportedAsset } from "../../../swap/types";
 import { FaSearch } from "react-icons/fa";
+import InfoModal from "./info";
 
 interface DepositFormProps {
   onExchange?: (transactionData: {
@@ -35,6 +37,7 @@ export default function DepositForm({
   onModeChange,
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
   const { adminPaymentDetails, loading, error } = useSelector(
     (state: any) => state.payment
   );
@@ -46,9 +49,9 @@ export default function DepositForm({
   const { supportedAssets: swapAssets, loading: swapAssetsLoading } =
     useSelector((state: any) => state.swap);
 
-  const [payAmount, setPayAmount] = useState(0);
+  const [payAmount, setPayAmount] = useState(100); // Set default amount to $100
   const [payBank, setPayBank] = useState("");
-  const [getAmount, setGetAmount] = useState(0);
+  const [getAmount, setGetAmount] = useState(98); // Default amount after 2% commission (100 - 2 = 98)
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const [selectedNetwork, setSelectedNetwork] = useState<any>(null);
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
@@ -80,6 +83,13 @@ export default function DepositForm({
 
   // Add state to store API response
   const [apiResponse, setApiResponse] = useState<any>(null);
+  const [isUserModifiedAmount, setIsUserModifiedAmount] = useState(false);
+  
+  // Add InfoModal state
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+
+  // Add validation state for minimum receive amount
+  const [receiveAmountError, setReceiveAmountError] = useState<string | null>(null);
 
   useEffect(() => {
     dispatch(fetchAdminPaymentDetails())
@@ -105,6 +115,42 @@ export default function DepositForm({
         showToast.error(`Failed to fetch swap assets: ${error}`);
       });
   }, [dispatch]);
+
+  // Auto-select first asset when assets are loaded
+  useEffect(() => {
+    if (swapAssets && swapAssets.length > 0 && !selectedAsset) {
+      // Use the sorted assets to get the first one (USDT on BSC should be first)
+      const sortedAssets = [...swapAssets].sort((a, b) => {
+        const tickerA = (a.ticker || a.symbol || a.name || "").toString().toLowerCase();
+        const tickerB = (b.ticker || b.symbol || b.name || "").toString().toLowerCase();
+        const networkA = (a.network || "").toString().toLowerCase();
+        const networkB = (b.network || "").toString().toLowerCase();
+
+        // Priority 1: USDT on BSC
+        if (tickerA === "usdt" && networkA === "bsc" && !(tickerB === "usdt" && networkB === "bsc")) {
+          return -1;
+        }
+        if (tickerB === "usdt" && networkB === "bsc" && !(tickerA === "usdt" && networkA === "bsc")) {
+          return 1;
+        }
+        // Priority 2: USDC on BSC
+        if (tickerA === "usdc" && networkA === "bsc" && !(tickerB === "usdc" && networkB === "bsc")) {
+          return -1;
+        }
+        if (tickerB === "usdc" && networkB === "bsc" && !(tickerA === "usdc" && networkA === "bsc")) {
+          return 1;
+        }
+        return 0;
+      });
+
+      const firstAsset = sortedAssets[0];
+      setSelectedAsset(firstAsset);
+      setSelectedNetwork({
+        network_id: firstAsset.network,
+        network_type: firstAsset.network,
+      });
+    }
+  }, [swapAssets, selectedAsset]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -144,20 +190,20 @@ export default function DepositForm({
       // Use the actual fetchSwapEstimate API call for deposit
       // Note: fromCurrency is the selected asset, toCurrency is always "USDT" for deposits
       console.log("Fetching estimate for deposit:", {
-        fromCurrency: "USDT",
-        fromNetwork: "BSC",
-        toCurrency: selectedAsset.ticker, // Always USDT for deposits
-        toNetwork: selectedAsset.network, // Always BSC for deposits
+       fromCurrency : "USDT",
+       fromNetwork : "BSC",
+      toCurrency  : selectedAsset.ticker, 
+      toNetwork  : selectedAsset.network, 
         amount: payAmount,
       });
 
       dispatch(
         fetchSwapEstimate({
-          fromCurrency: "USDT",
-          fromNetwork: "BSC",
-          toCurrency: selectedAsset.ticker, // Always USDT for deposits
-          toNetwork: selectedAsset.network, // Always BSC for deposits
-          amount: payAmount,
+          fromCurrency : "USDT",
+          fromNetwork : "BSC",
+         toCurrency  : selectedAsset.ticker, 
+         toNetwork  : selectedAsset.network, 
+           amount: payAmount,
         })
       )
         .then((result) => {
@@ -180,19 +226,13 @@ export default function DepositForm({
     }
   }, [selectedAsset, payAmount]);
 
-  // Filter swap assets based on search term
+  // Filter swap assets based on search term - search by ticker only
   const filteredSwapAssets =
     swapAssets?.filter((asset: SupportedAsset) => {
-      const name = asset.name?.toLowerCase() || "";
-      const symbol = asset.symbol?.toLowerCase() || "";
-      const ticker = asset.ticker?.toLowerCase() || "";
-      const searchTerm = assetSearchTerm.toLowerCase();
+      const ticker = asset.ticker?.toUpperCase() || "";
+      const searchTerm = assetSearchTerm.toUpperCase();
 
-      return (
-        name.includes(searchTerm) ||
-        symbol.includes(searchTerm) ||
-        ticker.includes(searchTerm)
-      );
+      return ticker.includes(searchTerm);
     }) || [];
 
   // Sort assets: USDT on BSC, USDC on BSC, then rest in original order
@@ -339,8 +379,17 @@ export default function DepositForm({
       } else {
         setWalletError(null);
       }
+    } else if (!walletAddress.trim()) {
+      // Clear error when wallet address is empty (optional field)
+      setWalletError(null);
     }
   }, [selectedAsset, walletAddress]);
+
+  // Auto-validate receive amount whenever it changes
+  useEffect(() => {
+    // Remove minimum amount validation - any amount is allowed
+    setReceiveAmountError(null);
+  }, [getAmount]);
 
   // Validate first card data
   const validateFirstCard = () => {
@@ -354,9 +403,7 @@ export default function DepositForm({
       errors.push("Please select an asset");
     }
 
-    if (!selectedPaymentDetail) {
-      errors.push("Please select a payment method");
-    }
+    // Wallet address is optional - no validation needed here
 
     setValidationErrors(errors);
     return errors.length === 0;
@@ -382,27 +429,70 @@ export default function DepositForm({
         }
         depositPayload.append("requested_amount", payAmount.toString());
 
-        if (!selectedPaymentDetail.provider_name) {
-          throw new Error("Payment provider is missing");
-        }
-        depositPayload.append(
-          "payment_provider",
-          selectedPaymentDetail.provider_name
-        );
+        // Handle payment details - make them optional
+        if (selectedPaymentDetail) {
+          if (!selectedPaymentDetail.provider_name) {
+            throw new Error("Payment provider is missing");
+          }
+          depositPayload.append(
+            "payment_provider",
+            selectedPaymentDetail.provider_name
+          );
 
-        if (!selectedPaymentDetail.payment_method_type) {
-          throw new Error("Payment method is missing");
+          if (!selectedPaymentDetail.payment_method_type) {
+            throw new Error("Payment method is missing");
+          }
+          depositPayload.append(
+            "payment_method",
+            selectedPaymentDetail.payment_method_type
+          );
+        } else {
+          // Set default values when no payment method is selected
+          depositPayload.append("payment_provider", "Default");
+          depositPayload.append("payment_method", "Default");
         }
-        depositPayload.append(
-          "payment_method",
-          selectedPaymentDetail.payment_method_type
-        );
-        // Handle currency field
-        const currencyValue =
-          selectedAsset.symbol === "USDT Tether"
-            ? "USDT"
-            : selectedAsset.symbol;
+        // Handle currency field - try multiple properties to get the currency value
+        let currencyValue = "";
+        
+        // Debug: Log the selected asset to see its structure
+        console.log("DEBUG: Selected asset in handleFirstCardSubmit:", selectedAsset);
+        
+        // Ensure selectedAsset exists
+        if (!selectedAsset) {
+          throw new Error("No asset selected");
+        }
+        
+        // Try different properties in order of preference
+        if (selectedAsset.ticker) {
+          currencyValue = selectedAsset.ticker;
+        } else if (selectedAsset.symbol) {
+          // Handle special case for USDT Tether
+          currencyValue = selectedAsset.symbol === "USDT Tether" ? "USDT" : selectedAsset.symbol;
+        } else if (selectedAsset.name) {
+          currencyValue = selectedAsset.name;
+        }
+        
+        // Clean up the currency value (remove any extra spaces, etc.)
+        currencyValue = currencyValue?.trim();
+        
+        console.log("DEBUG: Extracted currency value:", currencyValue);
+        
+        // Fallback: if still no currency value, try to extract from any available property
         if (!currencyValue) {
+          // Try to get any string value from the asset object
+          const assetKeys = Object.keys(selectedAsset);
+          for (const key of assetKeys) {
+            const value = selectedAsset[key];
+            if (typeof value === 'string' && value.trim()) {
+              currencyValue = value.trim();
+              console.log(`DEBUG: Using fallback currency from ${key}:`, currencyValue);
+              break;
+            }
+          }
+        }
+        
+        if (!currencyValue) {
+          console.error("DEBUG: Selected asset for currency extraction:", selectedAsset);
           throw new Error("Currency information is missing");
         }
         depositPayload.append("currency", currencyValue);
@@ -415,15 +505,51 @@ export default function DepositForm({
         }
         depositPayload.append("network", networkValue);
 
-        // Ensure asset_id is present
-        if (!selectedAsset.asset_id) {
-          throw new Error("Asset ID is missing");
+        // Handle asset field - use the asset ticker/symbol/name from the selected asset
+        let assetValue = "";
+        
+        // Try different properties in order of preference
+        if (selectedAsset.ticker) {
+          assetValue = selectedAsset.ticker;
+        } else if (selectedAsset.symbol) {
+          // Handle special case for USDT Tether
+          assetValue = selectedAsset.symbol === "USDT Tether" ? "USDT" : selectedAsset.symbol;
+        } else if (selectedAsset.name) {
+          assetValue = selectedAsset.name;
         }
-        depositPayload.append("asset", selectedAsset.asset_id);
-        depositPayload.append(
-          "additional_info",
-          `Account: ${selectedPaymentDetail.account_name}, Account Number: ${selectedPaymentDetail.account_number}`
-        );
+        
+        // Clean up the asset value (remove any extra spaces, etc.)
+        assetValue = assetValue?.trim();
+        
+        // Fallback: if still no asset value, try to extract from any available property
+        if (!assetValue) {
+          // Try to get any string value from the asset object
+          const assetKeys = Object.keys(selectedAsset);
+          for (const key of assetKeys) {
+            const value = selectedAsset[key];
+            if (typeof value === 'string' && value.trim()) {
+              assetValue = value.trim();
+              break;
+            }
+          }
+        }
+
+        if (!assetValue) {
+          throw new Error("Asset information is missing");
+        }
+        depositPayload.append("asset", assetValue);
+        // Handle additional info based on whether payment detail is selected
+        if (selectedPaymentDetail) {
+          depositPayload.append(
+            "additional_info",
+            `Account: ${selectedPaymentDetail.account_name}, Account Number: ${selectedPaymentDetail.account_number}`
+          );
+        } else {
+          depositPayload.append(
+            "additional_info",
+            "No payment method selected"
+          );
+        }
 
         // Log the complete FormData for debugging
         console.log("DEBUG: Complete FormData entries:");
@@ -474,8 +600,8 @@ export default function DepositForm({
         }, 100);
       } catch (error: any) {
         console.error("DEBUG: Deposit submission error:", error);
-        console.error("DEBUG: Error response:", error.response?.data);
-        console.error("DEBUG: Error status:", error.response?.status);
+        console.error("DEBUG: Error response:", error.response?.data || "No response data");
+        console.error("DEBUG: Error status:", error.response?.status || "No status code");
 
         let errorMessage = "Failed to submit deposit request";
 
@@ -519,11 +645,9 @@ export default function DepositForm({
       errors.push("Please select a payment method");
     }
 
-    if (!walletAddress.trim()) {
-      errors.push("Please enter your wallet address");
-    }
-
-    if (walletError) {
+    // Wallet address is completely optional - no validation required
+    // Only validate if wallet address is provided and has errors
+    if (walletAddress.trim() && walletError) {
       errors.push("Please fix the wallet address errors");
     }
 
@@ -537,6 +661,58 @@ export default function DepositForm({
     }
 
     return errors;
+  };
+
+  // Handle updating deposit address and navigating to status page
+  const handleUpdateAddressAndNavigate = async () => {
+    if (!apiResponse?.transaction_id) {
+      showToast.error("No transaction ID available");
+      return;
+    }
+
+    if (!walletAddress.trim()) {
+      showToast.error("Please enter a wallet address");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Update the deposit address
+      await dispatch(
+        updateDepositAddress({
+          transactionId: apiResponse.transaction_id,
+          depositAddress: walletAddress,
+        })
+      ).unwrap();
+
+      showToast.success("Address updated successfully!");
+
+      // Navigate to the status page (exchanging page)
+      router.push(`/dashboard/express-exchange?transactionId=${apiResponse.transaction_id}`);
+    } catch (error: any) {
+      console.error("Failed to update deposit address:", error);
+      let errorMessage = "Failed to update deposit address";
+      
+      if (error.response?.data) {
+        const responseData = error.response.data;
+        if (responseData.message) {
+          errorMessage = responseData.message;
+        } else if (responseData.error) {
+          errorMessage = responseData.error;
+        } else if (responseData.details) {
+          errorMessage = responseData.details;
+        } else if (typeof responseData === "string") {
+          errorMessage = responseData;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      showToast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Handle form submission
@@ -567,24 +743,19 @@ export default function DepositForm({
       // Create FormData for API submission
       const depositPayload = new FormData();
 
-      // Check if asset is USDT or USDC for different payload structure
-      const isUSDToken =
-        selectedAsset &&
-        (selectedAsset.ticker?.toLowerCase() === "usdt" ||
-          selectedAsset.ticker?.toLowerCase() === "usdc" ||
-          selectedAsset.symbol?.toLowerCase() === "usdt" ||
-          selectedAsset.symbol?.toLowerCase() === "usdc");
-
       // Validate and append required fields
       if (!payAmount || payAmount <= 0) {
         throw new Error("Invalid amount");
       }
       depositPayload.append("requested_amount", payAmount.toString());
 
-      if (!walletAddress.trim()) {
-        throw new Error("Wallet address is required");
+      // Wallet address is completely optional
+      if (walletAddress.trim()) {
+        depositPayload.append("deposit_address", walletAddress);
+      } else {
+        // Set empty value when wallet address is not provided
+        depositPayload.append("deposit_address", "");
       }
-      depositPayload.append("deposit_address", walletAddress);
 
       if (!selectedPaymentDetail.provider_name) {
         throw new Error("Payment provider is missing");
@@ -602,15 +773,33 @@ export default function DepositForm({
         selectedPaymentDetail.payment_method_type
       );
 
-      // Handle currency field based on asset type
-      let currencyValue;
-      if (isUSDToken) {
-        // For USDT/USDC, use the asset ticker/symbol directly
-        currencyValue = selectedAsset.ticker || selectedAsset.symbol || "USDT";
-      } else {
-        // For other assets, use the asset ticker/symbol
-        currencyValue =
-          selectedAsset.ticker || selectedAsset.symbol || selectedAsset.name;
+      // Handle currency field - use the asset ticker/symbol/name from the selected asset
+      let currencyValue = "";
+      
+      // Try different properties in order of preference
+      if (selectedAsset.ticker) {
+        currencyValue = selectedAsset.ticker;
+      } else if (selectedAsset.symbol) {
+        // Handle special case for USDT Tether
+        currencyValue = selectedAsset.symbol === "USDT Tether" ? "USDT" : selectedAsset.symbol;
+      } else if (selectedAsset.name) {
+        currencyValue = selectedAsset.name;
+      }
+      
+      // Clean up the currency value (remove any extra spaces, etc.)
+      currencyValue = currencyValue?.trim();
+      
+      // Fallback: if still no currency value, try to extract from any available property
+      if (!currencyValue) {
+        // Try to get any string value from the asset object
+        const assetKeys = Object.keys(selectedAsset);
+        for (const key of assetKeys) {
+          const value = selectedAsset[key];
+          if (typeof value === 'string' && value.trim()) {
+            currencyValue = value.trim();
+            break;
+          }
+        }
       }
 
       if (!currencyValue) {
@@ -618,18 +807,35 @@ export default function DepositForm({
       }
       depositPayload.append("currency", currencyValue);
 
-      // Handle network field based on asset type
-      let networkValue;
-      if (isUSDToken) {
-        // For USDT/USDC, always use BSC
-        networkValue = "BSC";
-      } else {
-        // For other assets, use the selected network
-        networkValue =
-          selectedNetwork?.network_id ||
-          selectedNetwork?.network_type ||
-          selectedAsset?.network ||
-          "";
+      // Handle network field - use the network from selected asset or network
+      let networkValue = "";
+      
+      // Try to get network from selected network first
+      if (selectedNetwork?.network_id) {
+        networkValue = selectedNetwork.network_id;
+      } else if (selectedNetwork?.network_type) {
+        networkValue = selectedNetwork.network_type;
+      } else if (selectedAsset?.network) {
+        // Fallback to asset network
+        networkValue = selectedAsset.network;
+      }
+      
+      // Clean up the network value
+      networkValue = networkValue?.trim();
+      
+      // Fallback: if still no network value, try to extract from any available property
+      if (!networkValue) {
+        // Try to get any string value from the network object
+        if (selectedNetwork) {
+          const networkKeys = Object.keys(selectedNetwork);
+          for (const key of networkKeys) {
+            const value = selectedNetwork[key];
+            if (typeof value === 'string' && value.trim()) {
+              networkValue = value.trim();
+              break;
+            }
+          }
+        }
       }
 
       if (!networkValue) {
@@ -637,15 +843,33 @@ export default function DepositForm({
       }
       depositPayload.append("network", networkValue);
 
-      // Handle asset field based on asset type
-      let assetValue;
-      if (isUSDToken) {
-        // For USDT/USDC, use the asset ticker/symbol
-        assetValue = selectedAsset.ticker || selectedAsset.symbol || "USDT";
-      } else {
-        // For other assets, use the asset ticker/symbol
-        assetValue =
-          selectedAsset.ticker || selectedAsset.symbol || selectedAsset.name;
+      // Handle asset field - use the asset ticker/symbol/name from the selected asset
+      let assetValue = "";
+      
+      // Try different properties in order of preference
+      if (selectedAsset.ticker) {
+        assetValue = selectedAsset.ticker;
+      } else if (selectedAsset.symbol) {
+        // Handle special case for USDT Tether
+        assetValue = selectedAsset.symbol === "USDT Tether" ? "USDT" : selectedAsset.symbol;
+      } else if (selectedAsset.name) {
+        assetValue = selectedAsset.name;
+      }
+      
+      // Clean up the asset value (remove any extra spaces, etc.)
+      assetValue = assetValue?.trim();
+      
+      // Fallback: if still no asset value, try to extract from any available property
+      if (!assetValue) {
+        // Try to get any string value from the asset object
+        const assetKeys = Object.keys(selectedAsset);
+        for (const key of assetKeys) {
+          const value = selectedAsset[key];
+          if (typeof value === 'string' && value.trim()) {
+            assetValue = value.trim();
+            break;
+          }
+        }
       }
 
       if (!assetValue) {
@@ -759,16 +983,18 @@ export default function DepositForm({
   }, [selectedPaymentDetail]);
 
   return (
-    <div className="w-full min-h-screen flex flex-col justify- bg-[#FFFFFF] dark:bg-[#18181D]"> 
+    <div className="w-full min-h-screen flex flex-col dark:bg-[#18181D]  ">
       <h2 className="text-xl font-bold  mb-2 text-[#788099]">
-        <span className="text-[#7e7e8f]">1-</span> Transaction Info
+        <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Transaction Info
       </h2>
-      <div className="flex items-center justify-center ">
-        <div className="bg-[FFFFFF] dark:bg-[#23232b] border-2 border-[#E8EFF5] dark:border-[#35353E]  rounded-2xl p-3 shadow-lg w-full container mx-auto text-white">
-          {/* First Row - Amount and Bank/Payment Method */}
-          <div className="flex flex-col md:flex-row gap-3 mb-2">
-            <div className="flex-1">
-              <label className="block text-[17px] text-[#051015] dark:text-[#7e7e8f] mb-2 font-medium">
+      <div className="w-full max-w-4xl mx-auto text-white">
+        {/* Top Section - Amount and Bank/Payment Method in one card */}
+        <div className="relative mb-4">
+          {/* Top Card Container */}
+          <div className="flex border border-[#39394a] dark:border-[#35353E]  rounded-2xl p-4">
+            {/* Amount Section */}
+            <div className="flex-1 pr-4">
+              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#788099] mb-2 font-semibold">
                 Amount
               </label>
               <div className="relative">
@@ -776,38 +1002,62 @@ export default function DepositForm({
                   type="number"
                   value={payAmount || ""}
                   onChange={(e) => {
-                    setPayAmount(Number(e.target.value));
+                    const newAmount = Number(e.target.value);
+                    setPayAmount(newAmount);
                     setIsCalculatingFromPay(true);
-                    // Trigger forward calculation
-                    if (selectedAsset && Number(e.target.value) > 0) {
-                      setIsCalculatingReceive(true);
-                      // Add a small delay to make loader visible
-                      setTimeout(() => {
-                        if (isSimpleCalculationAsset(selectedAsset)) {
-                          // Forward calculation for USDT/USDC
-                          const commissionRate = selectedAsset
-                            ?.range_commissions?.[0]?.commission
-                            ? parseFloat(
-                                selectedAsset.range_commissions[0].commission
-                              )
-                            : 2;
-                          const commissionAmount =
-                            (Number(e.target.value) * commissionRate) / 100;
-                          const networkFee = 0;
-                          const totalFees = networkFee + commissionAmount;
-                          const calculatedGetAmount =
-                            Number(e.target.value) - totalFees;
+                    
+                    // Mark that user has manually modified the amount
+                    setIsUserModifiedAmount(true);
+                    
+                    // Show info modal if amount exceeds $5,000
+                    if (newAmount > 15000) {
+                      setIsInfoModalOpen(true);
+                    }
+                    
+                    // Trigger forward calculation with immediate response
+                    if (selectedAsset && newAmount > 0) {
+                      if (isSimpleCalculationAsset(selectedAsset)) {
+                        // Immediate calculation for USDT/USDC
+                        const commissionRate = selectedAsset
+                          ?.range_commissions?.[0]?.commission
+                          ? parseFloat(
+                              selectedAsset.range_commissions[0].commission
+                            )
+                          : 2;
+                        const commissionAmount =
+                          (newAmount * commissionRate) / 100;
+                        const networkFee = 0;
+                        const totalFees = networkFee + commissionAmount;
+                        const calculatedGetAmount = newAmount - totalFees;
+                        
+                        // Only show calculated amount if it's meaningful (> 0.01), otherwise show empty
+                        if (calculatedGetAmount >= 0.01) {
                           setGetAmount(calculatedGetAmount);
+                        } else {
+                          // For very small amounts, keep field empty
+                          setGetAmount(0);
                         }
                         setIsCalculatingReceive(false);
-                      }, 300); // 300ms delay to show loader
+                      } else {
+                        // For estimate-based assets, keep field empty during loading
+                        
+                        // Keep field completely empty during calculation - no intermediate values
+                        setGetAmount(0);
+                        setReceiveAmountError && setReceiveAmountError("Calculating precise rate...");
+                        
+                        // Set loading state for API call (reduced delay)
+                        setIsCalculatingReceive(true);
+                        setTimeout(() => {
+                          setIsCalculatingReceive(false);
+                        }, 100); // Much shorter delay for better UX
+                      }
                     } else {
                       setIsCalculatingReceive(false);
                     }
                   }}
                   onFocus={() => setIsCalculatingFromPay(true)}
                   placeholder="Enter amount"
-                  className="w-full bg-[#EEF1F4] dark:bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg text-[#051015] dark:text-white focus:outline-none border border-[#E8EFF5]  dark:border-[#39394a] appearance-none"
+                  className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#788099] rounded-2xl px-4 py-2 text-lg  focus:outline-none border border-[#39394a] dark:border-[#35353E] appearance-none"
                 />
                 {isCalculatingReceive && isCalculatingFromPay && (
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -816,8 +1066,10 @@ export default function DepositForm({
                 )}
               </div>
             </div>
-            <div className="flex-1">
-              <label className="block text-[17px] text-[#051015] dark:text-[#7e7e8f] mb-2 font-medium">
+
+            {/* Bank/Payment Method Section */}
+            <div className="flex-1 pl-4">
+              <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
                 Bank/Payment Method
               </label>
               <div className="relative">
@@ -836,7 +1088,7 @@ export default function DepositForm({
                     setSelectedPaymentDetail(selectedPayment || null);
                   }}
                   disabled={loading}
-                  className="w-full bg-white dark:bg-[#1D1D23] rounded-2xl px-9 py-2 text-lg text-[#051015] bg:text-white focus:outline-none border border-[#E8EFF5] dark:border-[#39394a] appearance-none disabled:opacity-50"
+                  className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#788099] rounded-2xl px-9 py-2 text-lg  focus:outline-none border border-[#39394a] dark:border-[#35353E] appearance-none disabled:opacity-50"
                 >
                   <option value="">
                     {loading
@@ -853,35 +1105,34 @@ export default function DepositForm({
               {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
             </div>
           </div>
-          {/* Fee & Rate - Dynamic based on selected asset */}
-          <div className="flex items-center rounded-2xl border border-[#E8EFF5] dark:border-[#39394a] bg-white dark:bg-[#23232b] px-2 py-2 mb-3">
-            <div className="flex flex-col gap-2 flex-1">
-              <span className="flex items-center bg-[#F79330] text-white rounded-full px-5 py-1 text-sm font-medium w-fit">
-                <span className="w-2 h-2 bg-white rounded-full mr-2 inline-block"></span>
-                Network fee: $0
-              </span>
 
-              <span className="flex items-center bg-[#1D8751] text-white rounded-full px-5 py-1 text-sm font-medium w-fit">
-                <span className="w-2 h-2 bg-white rounded-full mr-2 inline-block"></span>
-                Commission: {commissionRate}% of ${payAmount} = $
-                {commissionAmount}
-              </span>
-            </div>
-            <img
-              src="https://res.cloudinary.com/pitz/image/upload/v1753424863/Screenshot_2025-07-25_092724_rjinec.png"
-              alt=""
-              style={{ cursor: "pointer" }}
-              onClick={() =>
-                onModeChange &&
-                onModeChange(mode === "deposit" ? "withdrawal" : "deposit")
-              }
-            />
+          {/* Swap Circle - positioned to touch both borders equally */}
+          <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/3 z-10">
+            <button
+              className="w-16 h-16 bg-transparent rounded-full flex items-center justify-center hover:bg-[#23232b]/10 transition-colors shadow-lg"
+              onClick={() => {
+                // Switch between deposit and withdrawal modes
+                if (onModeChange) {
+                  onModeChange(mode === "deposit" ? "withdrawal" : "deposit");
+                }
+              }}
+            >
+              <img
+                src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
+                alt="swap icon"
+                className="w-12 h-12"
+              />
+            </button>
           </div>
-          {/* Second Row - You Get Amount and Asset */}
-          <div className="flex flex-col md:flex-row gap-3 mb-2">
-            <div className="flex-1">
-              <label className="block text-md text-[#051015] dark:text-[#7e7e8f] mb-2 font-medium">
-                You Recieve
+        </div>
+
+        {/* Bottom Section - You Receive and Asset in one card */}
+        <div className="relative mb-3">
+          <div className="flex border border-[#39394a] dark:border-[#35353E] rounded-2xl p-4">
+            {/* You Receive Section */}
+            <div className="flex-1 pr-4">
+              <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+                You Receive
               </label>
               <div className="relative">
                 <input
@@ -914,7 +1165,7 @@ export default function DepositForm({
                   }}
                   onFocus={() => setIsCalculatingFromPay(false)}
                   placeholder="Enter amount"
-                  className="w-full bg-white dark:bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg  text-[#051015] bg:text-white focus:outline-none border border-[#E8EFF5] dark:border-[#39394a] appearance-none"
+                  className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#788099] rounded-2xl px-4 py-2 text-lg  focus:outline-none border border-[#39394a] dark:border-[#35353E] appearance-none"
                 />
                 {isCalculatingReceive && (
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -923,21 +1174,17 @@ export default function DepositForm({
                 )}
               </div>
             </div>
-            <div className="flex-1">
-              <label className="block text-[17px] text-[#051015] dark:text-[#7e7e8f] mb-2 font-medium">
+
+            {/* Asset Section */}
+            <div className="flex-1 pl-4">
+              <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
                 Asset
               </label>
               <div className="relative" ref={assetDropdownRef}>
                 <div
-                  className={`w-full bg-[#E8EFF5] dark:bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg text-[#051015] dark:text-white  focus:outline-none border border-[#E8EFF5] dark:border-[#39394a] flex items-center justify-between ${
-                    !payAmount || payAmount <= 0
-                      ? "opacity-50 cursor-not-allowed"
-                      : "cursor-pointer"
-                  }`}
+                    className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#788099] rounded-2xl px-4 py-2 text-lg  focus:outline-none border border-[#39394a] dark:border-[#35353E] flex items-center justify-between cursor-pointer`}
                   onClick={() => {
-                    if (payAmount && payAmount > 0) {
-                      setIsAssetDropdownOpen(!isAssetDropdownOpen);
-                    }
+                    setIsAssetDropdownOpen(!isAssetDropdownOpen);
                   }}
                 >
                   <div className="flex items-center gap-3">
@@ -956,13 +1203,13 @@ export default function DepositForm({
                               "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                           }}
                         />
-                        <span className="text-white">
-                          {selectedAsset.ticker ||
+                        <span className="text-[#35353e] dark:text-[#788099]">
+                          {(selectedAsset.ticker ||
                             selectedAsset.symbol ||
                             selectedAsset.name ||
-                            "Unknown"}
+                            "Unknown").toUpperCase()}
                         </span>
-                        <span className="ml-2 bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                        <span className="ml-2 bg-[#1D8751] text-[#ffffff] dark:text-[#788099] text-xs font-semibold px-2 py-0.5 rounded-full">
                           {selectedAsset.network || "Unknown"}
                         </span>
                       </>
@@ -973,12 +1220,10 @@ export default function DepositForm({
                           alt="asset icon"
                           className="w-6 h-6"
                         />
-                        <span className="text-[#7e7e8f]">
+                        <span className="text-[#7e7e8f] dark:text-[#788099]">
                           {swapAssetsLoading
                             ? "Loading assets..."
-                            : !payAmount || payAmount <= 0
-                              ? "Enter amount first"
-                              : "Select Asset"}
+                            : "Select Asset"}
                         </span>
                       </>
                     )}
@@ -1022,7 +1267,7 @@ export default function DepositForm({
                       {sortedSwapAssets.length > 0 ? (
                         sortedSwapAssets.map((asset: SupportedAsset, index: number) => (
                           <div
-                            key={`${asset.id || 'asset'}-${asset.symbol || asset.ticker || asset.name}-${asset.network}-${index}`}
+                            key={`${asset.asset_id || 'asset'}-${asset.symbol || asset.ticker || asset.name}-${asset.network}-${index}`}
                             className="flex items-center gap-3 p-3 hover:bg-[#23232b] cursor-pointer border-b border-[#39394a] last:border-b-0"
                             onClick={() => {
                               setSelectedAsset(asset);
@@ -1037,8 +1282,8 @@ export default function DepositForm({
                           >
                             <img
                               src={
-                                asset.icon_url ||
-                                asset.image ||
+                                asset.image_url ||
+                                asset.asset_image ||
                                 "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                               }
                               alt={asset.name}
@@ -1050,22 +1295,22 @@ export default function DepositForm({
                             />
                             <div className="flex-1">
                               <div className="text-white font-medium flex items-center gap-2">
-                                {asset.ticker ||
+                                {(asset.ticker ||
                                   asset.symbol ||
                                   asset.name ||
-                                  "Unknown"}
+                                  "Unknown").toUpperCase()}
                                 <span className="bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
                                   {asset.network || "Unknown"}
                                 </span>
                               </div>
                               <div className="text-[#7e7e8f] text-sm">
                                 {asset.name ||
-                                  asset.ticker ||
-                                  asset.symbol ||
+                                  (asset.ticker || "").toUpperCase() ||
+                                  (asset.symbol || "").toUpperCase() ||
                                   "Unknown Asset"}
                               </div>
                             </div>
-                            {selectedAsset?.id === asset.id && (
+                            {selectedAsset?.asset_id === asset.asset_id && (
                               <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
                             )}
                           </div>
@@ -1083,18 +1328,65 @@ export default function DepositForm({
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Submit Button for First Card */}
+        {/* Fee & Rate - Dynamic based on selected asset */}
+        {/* <div className="flex items-center rounded-2xl border border-[#39394a] bg-[#23232b] px-2 py-2 mb-3">
+          <div className="flex flex-col gap-2 flex-1">
+            <span className="flex items-center bg-[#F79330] text-white rounded-full px-5 py-1 text-sm font-medium w-fit">
+              <span className="w-2 h-2 bg-white rounded-full mr-2 inline-block"></span>
+              Network fee: $0
+            </span>
+
+            <span className="flex items-center bg-[#1D8751] text-white rounded-full px-5 py-1 text-sm font-medium w-fit">
+              <span className="w-2 h-2 bg-white rounded-full mr-2 inline-block"></span>
+              Commission: {commissionRate}% of ${payAmount} = $
+              {commissionAmount}
+            </span>
+          </div>
+          <img
+            src="https://res.cloudinary.com/pitz/image/upload/v1753424863/Screenshot_2025-07-25_092724_rjinec.png"
+            alt=""
+            style={{ cursor: "pointer" }}
+            onClick={() =>
+              onModeChange &&
+              onModeChange(mode === "deposit" ? "withdrawal" : "deposit")
+            }
+          />
+        </div> */}
+
+        {/* Disclaimer Banner */}
+        <div className="flex items-center rounded-2xl px-4 py-3 mb-4 dark:bg-[#1D1D23]">
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                <path d="M12 8v4m0 4h.01" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2"/>
+              </svg>
+            </div>
+            <span className="text-[#35353e] dark:text-[#788099] text-sm font-medium">
+              This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds.
+            </span>
+          </div>
+        </div>
+
+        {/* Submit Button for First Card */}
           {!isFirstCardSubmitted && (
             <div className="mt-4">
               <button
-                className="w-full text-white text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors bg-[#1D8751] hover:bg-[#166b3e] disabled:opacity-50"
+                className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
+                  isSubmitting ||
+                  !selectedAsset ||
+                  (selectedAsset &&
+                    !isSimpleCalculationAsset(selectedAsset) &&
+                    estimateLoading)
+                    ? "bg-gray-500 cursor-not-allowed"
+                    : "bg-[#1D8751] hover:bg-[#166b3e]"
+                }`}
                 onClick={handleFirstCardSubmit}
                 disabled={
                   isSubmitting ||
                   !selectedAsset ||
-                  !payAmount ||
-                  !selectedPaymentDetail ||
                   (selectedAsset &&
                     !isSimpleCalculationAsset(selectedAsset) &&
                     estimateLoading)
@@ -1102,7 +1394,7 @@ export default function DepositForm({
               >
                 {isSubmitting ? (
                   <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#35353e] dark:border-[#788099]"></div>
                     <span>Posting...</span>
                   </div>
                 ) : (
@@ -1122,22 +1414,21 @@ export default function DepositForm({
             </div>
           )}
         </div>
-      </div>
 
       {selectedPaymentDetail && isFirstCardSubmitted && (
         <>
           {/* Payment Details Card */}
           <div
             ref={paymentDetailsRef}
-            className="mt-1 mb-2 flex flex-col gap-3"
+            className="mt-1 mb-2 flex flex-col gap-3 dark:bg-[#1D1D23]"
           >
             <h2 className="text-xl font-bold mb-2 text-[#788099]">
-              <span className="text-[#7e7e8f]">2-</span> Payment Details
+              <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span> Payment Details
             </h2>
-            <div className="flex-1 bg-[#1D1D23] rounded-2xl border border-[#39394a] flex flex-col justify-between p-5 relative min-h-[120px]">
+            <div className="flex-1  dark:bg-[#1D1D23] rounded-2xl border border-[#39394a] dark:border-[#35353E] flex flex-col justify-between p-5 relative min-h-[120px]">
               {/* Bank and logo */}
               <div className="flex items-center justify-between mb-4">
-                <span className="text-[#7e7e8f] text-base font-semibold">
+                <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-semibold">
                   Bank:
                 </span>
                 <div className="flex items-center gap-2">
@@ -1149,7 +1440,7 @@ export default function DepositForm({
                     alt="Bank Logo"
                     className="w-8 h-8 rounded-full object-contain"
                   />
-                  <span className="text-white text-base font-semibold">
+                  <span className="text-[#35353e] dark:text-[#788099] text-base font-semibold">
                     {selectedPaymentDetail.provider_name}
                   </span>
                 </div>
@@ -1157,21 +1448,21 @@ export default function DepositForm({
               <div className="border-t border-dashed border-[#39394a] mb-2"></div>
               {/* Account Name */}
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[#7e7e8f] text-base font-medium">
+                <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-medium">
                   Account Name :
                 </span>
-                <span className="text-white text-base font-medium">
+                <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
                   {selectedPaymentDetail.account_name}
                 </span>
               </div>
               <div className="border-t border-dashed border-[#39394a] mb-2"></div>
               {/* Account Number */}
               <div className="flex items-center justify-between">
-                <span className="text-[#7e7e8f] text-base font-medium">
+                <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-medium">
                   Account Number :
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="text-white text-base font-medium">
+                  <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
                     {selectedPaymentDetail.account_number}
                   </span>
                   <button
@@ -1212,18 +1503,18 @@ export default function DepositForm({
 
           {/* Transaction Code Card - below Payment Details, before Wallet Address */}
           {apiResponse && apiResponse.deposit_code && (
-            <div className="mb-6 flex flex-col gap-3 container mx-auto w-full px-2">
+            <div className="mb-6 flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
               <h2 className="text-xl font-bold mb-2 text-[#788099]">
-                <span className="text-[#7e7e8f]">3-</span> Transaction Code
+                <span className="text-[#7e7e8f] dark:text-[#788099]">3-</span> Transaction Code
               </h2>
-              <div className="bg-[#23232b] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full text-white">
+              <div className=" dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-4 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
                 {/* Transaction Code Row */}
-                <div className="flex items-center justify-center gap-2 mb-4">
+                <div className="flex items-center justify-center gap-1 mb-3">
                   {/* Display deposit code from API response */}
                   {[...apiResponse.deposit_code].map((digit, idx) => (
                     <span
                       key={idx}
-                      className="bg-[#1D1D23] rounded-lg px-4 py-2 text-2xl font-bold border border-[#39394a] tracking-widest"
+                      className="dark:bg-[#1D1D23] rounded-md px-2 py-1 text-lg font-bold border border-[#39394a] dark:border-[#35353E] tracking-wide"
                     >
                       {digit}
                     </span>
@@ -1233,9 +1524,9 @@ export default function DepositForm({
                       navigator.clipboard.writeText(apiResponse.deposit_code);
                       showToast.success("Transaction code copied!");
                     }}
-                    className="flex items-center gap-1 bg-[#23232b] border border-[#1D8751] text-[#1D8751] rounded-full px-4 py-1 ml-2 font-semibold text-base hover:bg-[#1D8751] hover:text-white transition-colors"
+                    className="flex items-center gap-1 bg-[#23232b] dark:bg-[#1D1D23] border border-[#1D8751] text-[#1D8751] rounded-full px-3 py-1 ml-2 font-semibold text-sm hover:bg-[#1D8751] hover:text-white transition-colors"
                   >
-                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
                       <rect
                         x="9"
                         y="9"
@@ -1263,8 +1554,8 @@ export default function DepositForm({
                   <div className="flex items-center mb-2">
                     <span className="mr-2 text-[#1D8751]">
                       <svg
-                        width="20"
-                        height="20"
+                        width="16"
+                        height="16"
                         fill="none"
                         viewBox="0 0 24 24"
                       >
@@ -1287,22 +1578,22 @@ export default function DepositForm({
                         <circle cx="12" cy="16" r="1" fill="#1D8751" />
                       </svg>
                     </span>
-                    <span className="text-base font-semibold text-[#7e7e8f]">
+                    <span className="text-sm font-semibold text-[#7e7e8f] dark:text-[#788099]">
                       Note
                     </span>
                   </div>
-                  <div className="bg-[#23232b] border border-[#1D8751] rounded-xl p-4">
-                    <ul className="list-none space-y-2">
+                  <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-3">
+                    <ul className="list-none space-y-1">
                       <li className="flex items-start">
-                        <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                        <span className="text-white text-sm">
+                        <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-2"></span>
+                          <span className="text-[#35353e] dark:text-[#788099] text-xs">
                           Please write this Transaction Code in the bank message
                           or note section.
                         </span>
                       </li>
                       <li className="flex items-start">
-                        <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                        <span className="text-white text-sm">
+                        <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-2"></span>
+                        <span className="text-[#35353e] dark:text-[#788099] text-xs">
                           This helps us process your payment quickly and
                           accurately.
                         </span>
@@ -1318,13 +1609,13 @@ export default function DepositForm({
           <h2 className="text-xl font-bold  mb-2 text-[#788099]">
             <span className="text-[#7e7e8f]">4-</span> Wallet Address
           </h2>
-          <div className="flex flex-col bg-[#23232b] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full container mx-auto text-white mb-6">
+          <div className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full max-w-4xl mx-auto text-[#35353e] dark:text-[#788099] mb-6">
             {/* Wallet/Account Address Label */}
             <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
-              Wallet/Account Address
+              Wallet/Account Address (Optional)
             </label>
             {/* Input group */}
-            <div className="flex items-center bg-[#23232b] border border-[#39394a] rounded-2xl px-4 py-2 mb-4">
+            <div className="flex items-center dark:bg-[#1D1D23] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-4 py-2 mb-4">
               {/* Left icon */}
               <span className="mr-2 text-[#1D8751]">
                 <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
@@ -1355,7 +1646,7 @@ export default function DepositForm({
                   const value = e.target.value;
                   setWalletAddress(value);
 
-                  // Validate immediately as user types
+                  // Validate immediately as user types (wallet address is optional)
                   if (value.trim() === "") {
                     setWalletError(null);
                   } else if (!selectedAsset) {
@@ -1374,8 +1665,8 @@ export default function DepositForm({
                     }
                   }
                 }}
-                placeholder="Paste here your Crypto address"
-                className={`flex-1 bg-transparent border-none outline-none text-white placeholder-[#788099] text-base ${
+                placeholder="Paste here your Crypto address (optional)"
+                className={`flex-1 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-base ${
                   walletError
                     ? "border-red-500"
                     : walletAddress.trim() && !walletError
@@ -1406,7 +1697,7 @@ export default function DepositForm({
                     showToast.error("Failed to paste from clipboard");
                   }
                 }}
-                className="flex items-center gap-1 bg-[#23232b] border border-[#1D8751] text-[#1D8751] rounded-full px-4 py-1 ml-2 font-semibold text-base hover:bg-[#1D8751] hover:text-white transition-colors"
+                className="flex items-center gap-1 dark:bg-[#1D1D23] border border-[#1D8751] text-[#1D8751] rounded-full px-4 py-1 ml-2 font-semibold text-base hover:bg-[#1D8751] hover:text-white transition-colors"
               >
                 <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
                   <path
@@ -1429,8 +1720,14 @@ export default function DepositForm({
             )}
 
             {walletAddress.trim() && !walletError && selectedAsset && (
-              <p className="text-green-500 text-sm mt-2 font-medium">
+              <p className="text-[#1D8751] text-sm mt-2 font-medium">
                 ✅ Valid BEP20 address
+              </p>
+            )}
+
+            {!walletAddress.trim() && (
+              <p className="text-[#7e7e8f] dark:text-[#788099] text-sm mt-2 font-medium">
+                ℹ️ Wallet address is optional. You can provide it later if needed.
               </p>
             )}
 
@@ -1457,43 +1754,73 @@ export default function DepositForm({
                   <circle cx="12" cy="16" r="1" fill="#1D8751" />
                 </svg>
               </span>
-              <span className="text-base font-semibold text-[#7e7e8f]">
+              <span className="text-base font-semibold text-[#7e7e8f] dark:text-[#788099]">
                 Terms and Conditions Summary
               </span>
             </div>
-            <div className="bg-[#23232b] border border-[#1D8751] rounded-xl p-4">
+            <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-4">
               <ul className="list-none space-y-2">
                 <li className="flex items-start">
                   <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                  <span className="text-white text-sm">
+                  <span className="text-[#35353e] dark:text-[#788099] text-sm">
                     Please send the money from your own account Only
                   </span>
                 </li>
                 <li className="flex items-start">
                   <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                  <span className="text-white text-sm">
+                    <span className="text-[#35353e] dark:text-[#788099] text-sm">
                     Put transaction ID in the description field of the bank
                   </span>
                 </li>
                 <li className="flex items-start">
                   <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                  <span className="text-white text-sm">
+                  <span className="text-[#35353e] dark:text-[#788099] text-sm">
                     Please note, If you do not follow above conditions, we will
                     reject your transaction and send you back your money.
                   </span>
                 </li>
               </ul>
             </div>
+
+            {/* Update Address and Go to Status Button */}
+            {apiResponse && apiResponse.transaction_id && (
+              <div className="mt-4">
+                <button
+                  className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-3 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
+                    isSubmitting || !walletAddress.trim()
+                      ? "bg-gray-500 cursor-not-allowed"
+                      : "bg-[#1D8751] hover:bg-[#166b3e]"
+                  }`}
+                  onClick={handleUpdateAddressAndNavigate}
+                  disabled={isSubmitting || !walletAddress.trim()}
+                >
+                  {isSubmitting ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#35353e] dark:border-[#788099]"></div>
+                      <span>Updating...</span>
+                    </div>
+                  ) : (
+                    <span className="flex items-center justify-center">
+                      <img
+                        src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
+                        alt=""
+                      />
+                      <span className="ml-2">Update Address & Go to Status</span>
+                    </span>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Validation Errors Display */}
           {validationErrors.length > 0 && (
-            <div className="container mx-auto w-full px-2 mb-4">
-              <div className="bg-red-500/10 border border-red-500 rounded-2xl p-4">
-                <h3 className="text-red-500 font-semibold mb-2">
+            <div className="max-w-4xl mx-auto w-full px-2 mb-4">
+                <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-2xl p-4">
+                <h3 className="text-[#1D8751] font-semibold mb-2">
                   Please fix the following errors:
                 </h3>
-                <ul className="list-disc list-inside text-red-400 space-y-1">
+                <ul className="list-disc list-inside text-[#1D8751] space-y-1">
                   {validationErrors.map((error, index) => (
                     <li key={index}>{error}</li>
                   ))}
@@ -1503,22 +1830,26 @@ export default function DepositForm({
           )}
 
           {/* Disclaimer and Button outside the card */}
-          <div className="flex flex-col gap-3 container mx-auto w-full px-2">
-            <div className="flex items-center text-white text-[16px] font-semibold">
-              <FaExclamationCircle className="mr-2 text-red-500" />
+          <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
+            <div className="flex items-center text-[#35353e] dark:text-[#788099] text-[16px] font-semibold">
+              <FaExclamationCircle className="mr-2 text-[#1D8751]" />
               <span>
                 This is only an estimated price based on current market rates.
                 The final price will be confirmed when we receive the funds.
               </span>
             </div>
             <button
-              className="w-full text-white text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors bg-[#1D8751] hover:bg-[#166b3e] disabled:opacity-50"
+              className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
+                isSubmitting
+                  ? "bg-gray-500 cursor-not-allowed"
+                  : "bg-[#1D8751] hover:bg-[#166b3e]"
+              }`}
               onClick={handleSubmit}
               disabled={isSubmitting}
             >
               {isSubmitting ? (
                 <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#35353e] dark:border-[#35353E]"></div>
                   <span>Submitting...</span>
                 </div>
               ) : (
@@ -1538,6 +1869,17 @@ export default function DepositForm({
           </div>
         </>
       )}
+
+      {/* InfoModal */}
+      <InfoModal
+        isOpen={isInfoModalOpen}
+        onClose={() => setIsInfoModalOpen(false)}
+        onContactUs={() => {
+          // Handle contact us action - you can customize this
+          window.open('https://wa.me/your-whatsapp-number', '_blank');
+          setIsInfoModalOpen(false);
+        }}
+      />
     </div>
   );
 }

@@ -1,8 +1,9 @@
-import { User, AuthTokens } from '../types';
+import { User, AuthTokens, UserProfile } from '../types';
 
 interface StoredProfile {
   user: User;
   tokens: AuthTokens;
+  profile?: UserProfile;
 }
 
 const STORAGE_KEYS = {

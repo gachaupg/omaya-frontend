@@ -4,7 +4,7 @@
 import { TransactionSearchParams } from './types';
 
 export const EXCHANGE_ENDPOINTS = {
-    DEPOSITS: '/trading_engine/deposit/',
+    DEPOSITS: '/trading_engine/deposits/',
     WITHDRAWALS: '/trading_engine/withdraw/',
     ASSETS: '/administration/admin/fronted-all-asset-network-range/',
     FAVORITES:'/trading_engine/favorites/',
@@ -22,9 +22,11 @@ export const EXCHANGE_ENDPOINTS = {
         if (params.end_date) queryParams.append('end_date', params.end_date);
         return `/trading_engine/all-transactions/?${queryParams.toString()}`;
     },
+    // Deposit status endpoint
+    DEPOSIT_STATUS: (transactionId: string) => `/deposits/${transactionId}/`,
     // Payment
     PAYMENT_METHODS: '/payments/payment-methods/',
     PAYMENT_PROVIDERS: (methodName: string) => `/payments/payment-providers/${methodName}/`,
     USER_PAYMENT_DETAILS: '/payments/user-payment-details/',
-    ADMIN_PAYMENT_DETAILS: '/payments/admin-payment-details/',
+    ADMIN_PAYMENT_DETAILS: '/payments/admin/payment-details/',
 }

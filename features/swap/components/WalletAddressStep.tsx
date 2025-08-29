@@ -44,25 +44,25 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   };
 
   return (
-    <div className="mb-8">
-      <div className="mb-2 text-base font-semibold dark:text-white text-gray-900">
-        3- Your Wallet Address
+    <div className="w-full flex flex-col">
+      <div className="mb-2 text-xl font-bold text-[#788099]">
+        <span className="text-[#7e7e8f]">2-</span> Your Wallet Address
       </div>
-
-      {/* Combined Wallet Address and Terms Card */}
-      <div className="dark:bg-[#1D1D23] bg-white dark:border-[#35353E] border-gray-200 border-2 rounded-xl p-5">
+      <div className="w-full max-w-4xl mx-auto">
+        {/* Combined Wallet Address and Terms Card */}
+        <div className="bg-white dark:bg-[#23232b] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl p-5 shadow-lg w-full text-gray-900 dark:text-white">
         <div className="flex flex-col gap-6">
           {/* Wallet Address Input Section */}
           <div className="flex flex-col gap-4">
             {/* Wallet/Account Address Label */}
-            <div className="text-sm font-medium dark:text-white text-[#0D0D0D]">
+            <div className="text-sm font-medium text-gray-900 dark:text-white">
               Wallet/Account Address
             </div>
 
             {/* Input Field with Paste Button */}
             <div className="flex items-center gap-3">
               <div className="flex-1 relative">
-                <div className="flex items-center dark:bg-[#181820] bg-white border dark:border-[#35353E] border-gray-300 rounded-lg px-3 py-3">
+                <div className="flex items-center bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#39394a] rounded-2xl px-4 py-3">
                   {/* Wallet Icon */}
                   <svg
                     className="w-5 h-5 text-[#1D8751] mr-3"
@@ -83,14 +83,14 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                     type="text"
                     value={walletAddress}
                     onChange={onWalletAddressChange}
-                    className="flex-1 bg-transparent outline-none dark:text-white text-[#0D0D0D] dark:placeholder-[#8C8CA1] placeholder-gray-500"
+                    className="flex-1 bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#7e7e8f]"
                     placeholder="Paste here your Crypto address"
                     disabled={isLoading}
                   />
 
                   {/* Bookmark Icon */}
                   <svg
-                    className="w-4 h-4 dark:text-[#8C8CA1] text-[#788099] ml-2"
+                    className="w-4 h-4 text-gray-400 dark:text-[#7e7e8f] ml-2"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -109,7 +109,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
               <button
                 onClick={handlePaste}
                 disabled={isLoading}
-                className="dark:bg-[#35353E] bg-gray-300 hover:dark:bg-[#40404A] hover:bg-gray-400 disabled:dark:bg-[#35353E] disabled:bg-gray-300 disabled:cursor-not-allowed dark:text-white text-[#0D0D0D] px-4 py-3 rounded-lg flex items-center gap-2 transition-colors"
+                className="bg-[#1D8751] hover:bg-[#166b3e] disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-4 py-3 rounded-xl flex items-center gap-2 transition-colors"
               >
                 <svg
                   className="w-4 h-4 text-[#1D8751]"
@@ -153,18 +153,18 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                   d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <h3 className="dark:text-white text-[#0D0D0D] font-medium">
+              <h3 className="text-gray-900 dark:text-white font-medium">
                 Terms and Conditions Summary
               </h3>
             </div>
 
             {/* Terms Box */}
-            <div className="dark:bg-[#181820] bg-gray-50 border border-[#1D8751] rounded-lg p-4">
+            <div className="bg-gray-50 dark:bg-[#23232b] border border-[#1D8751] dark:border-[#1D8751] rounded-xl p-4">
               <div className="space-y-3">
                 {/* Term 1 */}
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-[#1D8751] rounded-full mt-2 flex-shrink-0"></div>
-                  <p className="text-sm dark:text-white text-[#0D0D0D]">
+                  <p className="text-sm text-gray-900 dark:text-white">
                     Please send the money from your own account Only
                   </p>
                 </div>
@@ -172,7 +172,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                 {/* Term 2 */}
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-[#1D8751] rounded-full mt-2 flex-shrink-0"></div>
-                  <p className="text-sm dark:text-white text-[#0D0D0D]">
+                  <p className="text-sm text-gray-900 dark:text-white">
                     Put transaction ID in the description field of the bank
                   </p>
                 </div>
@@ -180,7 +180,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                 {/* Term 3 */}
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-[#1D8751] rounded-full mt-2 flex-shrink-0"></div>
-                  <p className="text-sm dark:text-white text-[#0D0D0D]">
+                  <p className="text-sm text-gray-900 dark:text-white">
                     Please note, If you do not follow above conditions, we will
                     reject your transaction and send you back your money.
                   </p>
@@ -196,11 +196,11 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                 checked={hasAcceptedTerms}
                 onChange={(e) => setHasAcceptedTerms(e.target.checked)}
                 disabled={isLoading}
-                className="w-4 h-4 text-[#1D8751] dark:bg-[#181820] bg-white dark:border-[#35353E] border-gray-300 rounded focus:ring-[#1D8751] focus:ring-2 disabled:opacity-50"
+                className="w-4 h-4 text-[#1D8751] bg-white dark:bg-[#1D1D23] border-gray-300 dark:border-[#39394a] rounded focus:ring-[#1D8751] focus:ring-2 disabled:opacity-50"
               />
               <label
                 htmlFor="accept-terms"
-                className="text-sm dark:text-white text-[#0D0D0D]"
+                className="text-sm text-gray-900 dark:text-white"
               >
                 I accept the terms and conditions
               </label>
@@ -214,7 +214,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
         <button
           onClick={handleNext}
           disabled={!hasAcceptedTerms || !walletAddress.trim() || isLoading}
-          className="flex-1 bg-[#1D8751] hover:bg-[#16663d] disabled:dark:bg-[#35353E] disabled:bg-gray-400 disabled:cursor-not-allowed text-white px-6 py-3 rounded-[24px] font-semibold transition-colors flex items-center justify-center gap-2"
+          className="flex-1 bg-[#1D8751] hover:bg-[#166b3e] disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-6 py-3 rounded-2xl font-semibold transition-colors flex items-center justify-center gap-2"
         >
           {isLoading ? (
             <>
@@ -225,6 +225,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
             "Continue"
           )}
         </button>
+      </div>
       </div>
     </div>
   );

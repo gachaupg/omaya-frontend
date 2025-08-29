@@ -133,9 +133,9 @@ const LanguageSelector = () => {
         </svg>
       </div>
       {dropdownOpen && (
-        <div className="absolute right-0 mt-2 w-[300px] bg-white dark:bg-[#18181D] border border-[#FFFFFF] dark:border-[#35353E] rounded-lg shadow-lg z-50">
+        <div className="absolute right-0 mt-2 w-[300px] bg-[#18181D] border border-[#35353E] rounded-lg shadow-lg z-50">
           <button
-            className="block w-full text-left px-4 py-2 text-[#051015] dark:text-white hover:bg-[#E8EFF5] dark:hover:bg-[#35353E]"
+            className="block w-full text-left px-4 py-2 text-white hover:bg-[#35353E]"
             onClick={() => selectLanguage("English")}
           >
             <div className="flex items-center justify-between">
@@ -157,7 +157,7 @@ const LanguageSelector = () => {
             </div>
           </button>
           <button
-            className="block w-full text-left px-4 py-2 text-[#051015] dark:text-white hover:bg-[#E8EFF5] dark:hover:bg-[#35353E]"
+            className="block w-full text-left px-4 py-2 text-white hover:bg-[#35353E]"
             onClick={() => selectLanguage("Somali")}
           >
             <div className="flex items-center justify-between gap-8">
@@ -172,7 +172,7 @@ const LanguageSelector = () => {
                 <span className="text-sm">Somali</span>
               </div>
               {selectedLanguage === "Somali" && (
-                <div className="w-4 h-4 rounded-full flex items-center justify-center bg-[#E8EFF5] dark:bg-[#35353E]">
+                <div className="w-4 h-4 rounded-full flex items-center justify-center">
                   <span className="text-[10px] text-[#1D8751]">✓</span>
                 </div>
               )}
@@ -298,48 +298,98 @@ export default function Navbar() {
 
   // Check if navbar should show white text (transparent on home page)
   const isTransparentNavbar = pathname === "/" && !scrolled;
+  const [theme, setTheme] = useState<{ mode: string } | null>({ mode: "dark" }); // Default to dark theme
 
+  useEffect(() => {
+    const getTheme = () => {
+      try {
+        const themeString = localStorage.getItem("theme");
+        if (!themeString) return null;
+
+        // Try to parse as JSON first (Redux format)
+        try {
+          const parsed = JSON.parse(themeString);
+          if (parsed && typeof parsed === "object" && parsed.mode) {
+            return parsed;
+          }
+        } catch (e) {
+          // If JSON parse fails, treat as simple string (Context format)
+          if (themeString === "light" || themeString === "dark") {
+            return { mode: themeString };
+          }
+        }
+
+        return null;
+      } catch (error) {
+        console.error("Error parsing theme from localStorage:", error);
+        return null;
+      }
+    };
+
+    // Set initial theme
+    setTheme(getTheme());
+
+    // Listen for theme changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "theme") {
+        setTheme(getTheme());
+      }
+    };
+
+    // Listen for custom theme change events
+    const handleThemeChange = () => {
+      setTheme(getTheme());
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("themeChange", handleThemeChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("themeChange", handleThemeChange);
+    };
+  }, []);
+
+  console.log("theme", theme?.mode);
   return (
     <>
       <nav
         className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-4 sm:px-6 md:px-12 2xl:px-20 transition-all duration-300 ${getNavbarBackground()}`}
       >
         <div className="flex items-center">
-            <Link href="/" className="mr-4 md:mr-10">
+          <Link href="/" className="mr-4 md:mr-10">
             {/* Smart logo selection based on page, scroll state, and theme */}
             {pathname === "/" && !scrolled ? (
               // Home page, not scrolled: white logo for transparent background
               <Image
-              src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746538269/Frame_q3pwt7.png"
-              alt="OMAYA Exchange"
-              width={150}
-              height={40}
-              className="h-auto w-32 md:w-40 2xl:w-48 dark:hidden"
-              priority
-              />
-            ) : (
-              <>
-              {/* Light mode logo */}
-              <Image
-                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1755534833/Omaya_Logo_light_mode-removebg-preview_jfawbn.png"
+                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746538269/Frame_q3pwt7.png"
                 alt="OMAYA Exchange"
                 width={150}
                 height={40}
-                className="h-auto w-32 md:w-40 2xl:w-48 dark:hidden"
+                className="h-auto w-32 md:w-40 2xl:w-48"
                 priority
               />
-              {/* Dark mode logo */}
+            ) : // All other cases: green logo
+            theme?.mode === "dark" ? (
               <Image
                 src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747133499/Omaya_green-logo_yva2ah.png"
                 alt="OMAYA Exchange"
                 width={150}
                 height={40}
-                className="h-auto w-32 md:w-40 2xl:w-48 hidden dark:block"
+                className="h-auto w-32 md:w-40 2xl:w-48"
                 priority
               />
-              </>
+            ) : (
+              <Image
+                src="https://res.cloudinary.com/pitz/image/upload/v1750838143/1446599b0a50473eb54aaee7c59988ecc0856b10_mmmmcl.png"
+                alt="OMAYA Exchange"
+                width={150}
+                height={40}
+                className="h-auto w-32 md:w-40 2xl:w-48"
+                priority
+              />
             )}
-            </Link>
+          </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex space-x-6 lg:space-x-8 2xl:space-x-12">
@@ -454,7 +504,7 @@ export default function Navbar() {
                           </div>
                           <div className="flex-1">
                             <h4 className="dark:text-white text-gray-900 font-medium text-base mb-1">
-                              Express Exchange
+                              Exchange
                             </h4>
                             <p className="dark:text-gray-400 text-gray-600 text-sm">
                               Trade cryptocurrencies on the exchange with
@@ -635,6 +685,69 @@ export default function Navbar() {
                           </svg>
                         </div>
                       </Link>
+
+                      {/* Buy Option */}
+                      <Link
+                        href="/dashboard/buy"
+                        className="block"
+                        onClick={() => {
+                          setDepositDropdownOpen(false);
+                        }}
+                      >
+                        <div className="flex items-center transition-colors duration-200 group">
+                          <div className="w-10 h-10 rounded-lg flex items-center justify-center mr-4">
+                            <svg
+                              width="50"
+                              height="50"
+                              viewBox="0 0 50 50"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <rect
+                                x="8"
+                                y="15"
+                                width="34"
+                                height="20"
+                                rx="4"
+                                ry="4"
+                                stroke="#1C8F4D"
+                                strokeWidth="3"
+                                fill="none"
+                              />
+                              <rect
+                                x="16"
+                                y="24"
+                                width="8"
+                                height="4"
+                                fill="#F49A29"
+                                rx="1"
+                                ry="1"
+                              />
+                            </svg>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="dark:text-white text-gray-900 font-medium text-base mb-1">
+                              Buy
+                            </h4>
+                            <p className="dark:text-gray-400 text-gray-600 text-sm">
+                              Buy crypto directly with cash, hassle-free and
+                              suggested for new users
+                            </p>
+                          </div>
+                          <svg
+                            className="w-5 h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                        </div>
+                      </Link>
                     </div>
                   </div>
                 )}
@@ -779,8 +892,8 @@ export default function Navbar() {
             Blog
           </MobileNavLink>
           {/* Show Contact us only on auth pages */}
-          {(pathname?.startsWith("/auth/login") || 
-            pathname?.startsWith("/auth/register") || 
+          {(pathname?.startsWith("/auth/login") ||
+            pathname?.startsWith("/auth/register") ||
             pathname?.startsWith("/auth/forgotPassword") ||
             pathname?.startsWith("/auth/resetPassword")) && (
             <MobileNavLink href="#" onClick={toggleMobileMenu}>

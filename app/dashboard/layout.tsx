@@ -4,7 +4,6 @@ import Sidebar from "@/components/layout/Sidebar";
 import { motion, AnimatePresence } from "framer-motion";
 import KYCVerificationModal from "@/features/auth/components/KYCVerificationModal";
 import { useKYCVerification } from "@/features/auth/hooks/useKYCVerification";
-import { useDeviceSession } from "@/features/settings/hooks/useDeviceSession";
 
 export default function DashboardLayout({
   children,
@@ -13,9 +12,6 @@ export default function DashboardLayout({
 }) {
   // Always call the hook to maintain hook order consistency
   useKYCVerification();
-
-  // Initialize device session tracking
-  useDeviceSession();
 
   return (
     <div className="min-h-screen ml-6 mt-28">

@@ -389,7 +389,11 @@ const ResetPassword = () => {
             </h2>
             <button
               className="w-full bg-[#1D8751] text-white py-2 px-4 rounded-full hover:bg-[#0E5531] transition-colors duration-300 mt-4"
-              onClick={() => (window.location.href = "/auth/login")}
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.location.href = "/auth/login";
+                }
+              }}
             >
               Log In
             </button>

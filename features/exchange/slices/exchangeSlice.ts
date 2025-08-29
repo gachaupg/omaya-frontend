@@ -212,6 +212,27 @@ export const createWithdrawal = createAsyncThunk<
   }
 );
 
+export const updateDepositAddress = createAsyncThunk<
+  Transaction,
+  { transactionId: string; depositAddress: string }
+>(
+  "exchange/updateDepositAddress",
+  async ({ transactionId, depositAddress }, { rejectWithValue }) => {
+    try {
+      const formData = new FormData();
+      formData.append("deposit_address", depositAddress);
+      
+      const response = await post<Transaction>(
+        EXCHANGE_ENDPOINTS.DEPOSIT_STATUS(transactionId),
+        formData
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
 export const getFavoriteAssets = createAsyncThunk<FavoriteAsset[], void>(
   "exchange/getFavoriteAssets",
   async (_, { rejectWithValue }) => {
@@ -451,6 +472,31 @@ const exchangeSlice = createSlice({
       }
     );
     builder.addCase(createWithdrawal.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
+
+    // Update Deposit Address
+    builder.addCase(updateDepositAddress.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(
+      updateDepositAddress.fulfilled,
+      (state, action: PayloadAction<Transaction>) => {
+        state.loading = false;
+        // Update the deposit in the deposits array if it exists
+        if (state.deposits && Array.isArray(state.deposits)) {
+          const index = state.deposits.findIndex(
+            (deposit) => deposit.transaction_id === action.payload.transaction_id
+          );
+          if (index !== -1) {
+            state.deposits[index] = action.payload;
+          }
+        }
+      }
+    );
+    builder.addCase(updateDepositAddress.rejected, (state, action) => {
       state.loading = false;
       state.error = action.payload as string;
     });

@@ -28,7 +28,7 @@ interface TransactionInfoStepProps {
   onSubmit: () => void;
   swapLoading: boolean;
   hideContinueButton?: boolean;
-  onSwapAssets?: () => void; // New prop for handling asset swap
+  onSwapAssets?: () => void;
 }
 
 const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
@@ -59,165 +59,462 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
   onSwapAssets,
 }) => {
   return (
-    <div className="mb-2">
-      <div className="mb-1 text-base dark:text-[#788099] text-gray-600 font-semibold">
-        1-Transaction Info
-      </div>
-      <div className="dark:bg-[#1D1D23] bg-white dark:border-[#35353E] border-gray-200 border-2 rounded-xl p-2 ">
-        <div className="flex flex-col gap-4">
-          {/* You Send */}
-          <div className="flex flex-col md:flex-row md:items-center gap-4">
-            <div className="flex-1">
-              <div className="text-xs mb-1 dark:text-white text-gray-900">
+    <div className="w-full flex flex-col ">
+      <h2 className="text-xl font-bold mb-2 text-[#788099]">
+        <span className="text-[#7e7e8f]">1-</span> Transaction Info
+      </h2>
+      <div className="w-full max-w-4xl mx-auto text-gray-900 dark:text-white">
+        {/* Top Section - You Send and You Get in one card */}
+        <div className="relative mb-4">
+          {/* Top Card Container */}
+          <div className="flex border-2 border-gray-200 dark:border-[#39394a] bg-white dark:bg-transparent rounded-2xl p-4">
+            {/* You Send Section */}
+            <div className="flex-1 pr-4">
+              <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
                 You Send
-              </div>
-              <div className="flex items-center dark:border-[#35353E] border-gray-300 border rounded-[13px] px-2 py-2">
+              </label>
+              <div className="relative">
                 <input
                   type="text"
+                  inputMode="decimal"
                   value={fromAmount}
                   onChange={onFromAmountChange}
-                  className="bg-transparent outline-none w-full dark:text-white text-gray-900"
-                  placeholder="0.00"
+                  placeholder="Enter amount"
+                  className="w-full bg-white dark:bg-[#1D1D23] rounded-2xl px-4 py-2 pr-16 text-lg text-gray-900 dark:text-white focus:outline-none border border-gray-300 dark:border-[#39394a] appearance-none placeholder-gray-400 dark:placeholder-[#7e7e8f]"
                 />
-                <span className="ml-2 text-xs capitalize dark:text-white text-gray-900">
-                  {fromAsset?.ticker}
-                </span>
+                <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                  <span className="text-gray-600 dark:text-white text-sm font-medium">
+                    {fromAsset ? (fromAsset.ticker?.toUpperCase() || fromAsset.symbol?.toUpperCase() || "USDT") : "USDT"}
+                  </span>
+                </div>
               </div>
             </div>
-            <div className="flex-1">
-              <div className="text-xs mb-1 dark:text-white text-gray-900">
+
+            {/* You Get Section */}
+            <div className="flex-1 pl-4">
+              <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
                 Asset
-              </div>
-              <AssetDropdown
-                className="bg-transparent dark:border-[#35353E] border-gray-300 border rounded-[13px] px-2 py-2 dark:text-white text-gray-900"
-                assets={supportedAssets}
-                selectedAsset={fromAsset}
-                onAssetSelect={onFromAssetSelect}
-                isOpen={isFromAssetOpen}
-                onToggle={onFromAssetToggle}
-                searchTerm={searchTerm}
-                onSearchChange={onSearchTermChange}
-                placeholder="Select an asset"
-                label="From Asset"
-              />
-            </div>
-          </div>
+              </label>
+              <div className="relative">
+                <div
+                  className={`w-full bg-white dark:bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg text-gray-900 dark:text-white focus:outline-none border border-gray-300 dark:border-[#39394a] flex items-center justify-between cursor-pointer`}
+                  onClick={onFromAssetToggle}
+                >
+                  <div className="flex items-center gap-3">
+                    {fromAsset ? (
+                      <>
+                        <img
+                          src={
+                            fromAsset.image_url ||
+                            fromAsset.asset_image ||
+                            "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                          }
+                          alt={fromAsset.name}
+                          className="w-6 h-6 rounded-full"
+                          onError={(e) => {
+                            e.currentTarget.src =
+                              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                          }}
+                        />
+                        <span className="text-gray-900 dark:text-white">
+                          {fromAsset.ticker?.toUpperCase() ||
+                            fromAsset.symbol?.toUpperCase() ||
+                            fromAsset.name ||
+                            "Unknown"}
+                        </span>
+                        <span className="ml-2 bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                          {fromAsset.network || "Unknown"}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <img
+                          src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                          alt="asset icon"
+                          className="w-6 h-6"
+                        />
+                        <span className="text-[#7e7e8f]">
+                          Select Asset
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <svg
+                    className={`w-5 h-5 text-[#7e7e8f] transition-transform ${
+                      isFromAssetOpen ? "rotate-180" : ""
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
 
-          {/* Warning */}
-          <div className="flex items-center text-[#FF4D4D] text-xs mt-1">
-            <svg
-              className="w-4 h-4 mr-1"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <span className="text-xs dark:text-[#ffff] text-gray-700">
-              This is only estimated price and its based on current Market
-              Price. We will fix the price when we receive the funds.
-            </span>
-          </div>
+                {/* Asset Dropdown */}
+                {isFromAssetOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1D1D23] border border-gray-200 dark:border-[#39394a] rounded-2xl z-50 max-h-80 overflow-hidden">
+                    {/* Search Input */}
+                    <div className="p-3 border-b border-gray-200 dark:border-[#39394a]">
+                      <div className="relative">
+                        <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input
+                          type="text"
+                          placeholder="Search assets..."
+                          value={searchTerm}
+                          onChange={(e) => onSearchTermChange(e.target.value)}
+                          className="w-full bg-white dark:bg-[#23232b] rounded-xl px-10 py-2 text-gray-900 dark:text-white text-sm focus:outline-none border border-gray-300 dark:border-[#39394a] placeholder-gray-400 dark:placeholder-[#7e7e8f]"
+                        />
+                      </div>
+                    </div>
 
-          {/* Estimated Price Display */}
-          <EstimatedPriceDisplay
-            estimate={estimate}
-            fromAsset={fromAsset}
-            toAsset={toAsset}
-            fromAmount={fromAmount}
-            estimateLoading={estimateLoading}
-            onSwapAssets={onSwapAssets}
-          />
-
-          <div className="text-xs flex items-center gap-2 justify-between">
-            <span className="dark:text-[#ffff] text-gray-900">
-              You will receive
-            </span>
-            <span className="dark:text-[#ffff] text-gray-900">
-              {toAsset && (
-                <img
-                  src={toAsset.image || undefined}
-                  alt={toAsset.ticker || "Asset"}
-                  className="w-6 h-6 mr-2"
-                />
-              )}
-            </span>
-          </div>
-          <div className="flex flex-col md:flex-row md:items-center gap-4">
-            <div className="flex-1">
-              <div className="text-xs dark:text-[#8C8CA1] text-gray-600">
-                I want to Receive
-              </div>
-              <div className="flex items-center dark:border-[#35353E] border-gray-300 border rounded-[18px] px-4 py-3">
-                <input
-                  type="text"
-                  value={toAmount}
-                  onChange={onToAmountChange}
-                  className="bg-transparent outline-none w-full dark:text-white text-gray-900"
-                  placeholder="0.00"
-                  readOnly={estimateLoading}
-                />
-                <span className="ml-2 text-xs dark:text-white text-gray-900">
-                  {toAsset?.ticker}
-                </span>
-                {estimateLoading && (
-                  <div className="ml-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#1D8751]"></div>
+                    {/* Asset List */}
+                    <div className="max-h-60 overflow-y-auto">
+                      {(() => {
+                        const filteredAssets = supportedAssets.filter((asset: SupportedAsset) => {
+                          if (!searchTerm) return true;
+                          
+                          const searchLower = searchTerm.toLowerCase();
+                          const ticker = asset.ticker?.toLowerCase() || '';
+                          
+                          return ticker.includes(searchLower);
+                        });
+                        
+                        return filteredAssets.length > 0 ? (
+                          filteredAssets.map((asset: SupportedAsset) => (
+                            <div
+                              key={asset.asset_id}
+                              className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-[#23232b] cursor-pointer border-b border-gray-200 dark:border-[#39394a] last:border-b-0"
+                              onClick={() => {
+                                onFromAssetSelect(asset);
+                                onFromAssetToggle();
+                              }}
+                            >
+                              <img
+                                src={
+                                  asset.image_url ||
+                                  asset.asset_image ||
+                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                                }
+                                alt={asset.name}
+                                className="w-6 h-6 rounded-full"
+                                onError={(e) => {
+                                  e.currentTarget.src =
+                                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                                }}
+                              />
+                              <div className="flex-1">
+                                <div className="text-gray-900 dark:text-white font-medium flex items-center gap-2">
+                                  {asset.ticker?.toUpperCase() ||
+                                    asset.symbol?.toUpperCase() ||
+                                    asset.name ||
+                                    "Unknown"}
+                                  <span className="bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                                    {asset.network || "Unknown"}
+                                  </span>
+                                </div>
+                                <div className="text-[#7e7e8f] text-sm">
+                                  {asset.name ||
+                                    asset.ticker?.toUpperCase() ||
+                                    asset.symbol?.toUpperCase() ||
+                                    "Unknown Asset"}
+                                </div>
+                              </div>
+                              {fromAsset?.asset_id === asset.asset_id && (
+                                <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                              )}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="p-4 text-center text-[#7e7e8f]">
+                            {searchTerm
+                              ? "No assets found"
+                              : "No assets available"}
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </div>
                 )}
               </div>
             </div>
-            <div className="flex-1">
-              <div className="text-xs dark:text-[#8C8CA1] text-gray-600 mb-1">
-                Asset
-              </div>
-              <AssetDropdown
-                assets={supportedAssets}
-                selectedAsset={toAsset}
-                onAssetSelect={onToAssetSelect}
-                isOpen={isToAssetOpen}
-                onToggle={onToAssetToggle}
-                searchTerm={toSearchTerm}
-                onSearchChange={onToSearchTermChange}
-                placeholder="Select an asset"
-                label="To Asset"
-              />
-            </div>
           </div>
 
-          {/* Error Display */}
-          {estimateError && (
-            <div className="text-red-500 text-xs bg-red-900/20 border border-red-500/30 rounded-lg p-2">
-              {estimateError}
-            </div>
-          )}
-          {localSwapError && (
-            <div className="text-red-500 text-xs bg-red-900/20 border border-red-500/30 rounded-lg p-2">
-              {localSwapError}
-            </div>
-          )}
-        </div>
-        {!hideContinueButton && (
-          <div className="flex w-full mt-2">
+          {/* Swap Circle - positioned to touch both borders equally */}
+          <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/3 z-10">
             <button
-              className="bg-[#1D8751] w-full hover:bg-[#16663d] text-white px-6 py-2 rounded-[24px] font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-16 h-16 bg-transparent rounded-full flex items-center justify-center hover:bg-[#23232b]/10 transition-colors shadow-lg"
+              onClick={onSwapAssets}
+            >
+              <img
+                src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
+                alt="swap icon"
+                className="w-12 h-12"
+              />
+            </button>
+          </div>
+        </div>
+
+        {/* Bottom Section - You Receive and Asset in one card */}
+        <div className="relative mb-3">
+          <div className="flex border-2 border-gray-200 dark:border-[#39394a] bg-white dark:bg-transparent rounded-2xl p-4">
+            {/* You Receive Section */}
+            <div className="flex-1 pr-4">
+              <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+                You Receive
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={toAmount}
+                  onChange={onToAmountChange}
+                  placeholder="Enter amount"
+                  className="w-full bg-white dark:bg-[#1D1D23] rounded-2xl px-4 py-2 pr-16 text-lg text-gray-900 dark:text-white focus:outline-none border border-gray-300 dark:border-[#39394a] appearance-none placeholder-gray-400 dark:placeholder-[#7e7e8f]"
+                  readOnly={estimateLoading}
+                />
+                <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+                  <span className="text-gray-600 dark:text-white text-sm font-medium">
+                    {toAsset ? (toAsset.ticker?.toUpperCase() || toAsset.symbol?.toUpperCase() || "USDT") : "USDT"}
+                  </span>
+                </div>
+                {estimateLoading && (
+                  <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Asset Section */}
+            <div className="flex-1 pl-4">
+              <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+                Asset
+              </label>
+              <div className="relative">
+                <div
+                  className={`w-full bg-white dark:bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg text-gray-900 dark:text-white focus:outline-none border border-gray-300 dark:border-[#39394a] flex items-center justify-between cursor-pointer`}
+                  onClick={onToAssetToggle}
+                >
+                  <div className="flex items-center gap-3">
+                    {toAsset ? (
+                      <>
+                        <img
+                          src={
+                            toAsset.image_url ||
+                            toAsset.asset_image ||
+                            "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                          }
+                          alt={toAsset.name}
+                          className="w-6 h-6 rounded-full"
+                          onError={(e) => {
+                            e.currentTarget.src =
+                              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                          }}
+                        />
+                        <span className="text-gray-900 dark:text-white">
+                          {toAsset.ticker?.toUpperCase() ||
+                            toAsset.symbol?.toUpperCase() ||
+                            toAsset.name ||
+                            "Unknown"}
+                        </span>
+                        <span className="ml-2 bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                          {toAsset.network || "Unknown"}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <img
+                          src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                          alt="asset icon"
+                          className="w-6 h-6"
+                        />
+                        <span className="text-[#7e7e8f]">
+                          Select Asset
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <svg
+                    className={`w-5 h-5 text-[#7e7e8f] transition-transform ${
+                      isToAssetOpen ? "rotate-180" : ""
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+
+                {/* Asset Dropdown */}
+                {isToAssetOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1D1D23] border border-gray-200 dark:border-[#39394a] rounded-2xl z-50 max-h-80 overflow-hidden">
+                    {/* Search Input */}
+                    <div className="p-3 border-b border-gray-200 dark:border-[#39394a]">
+                      <div className="relative">
+                        <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input
+                          type="text"
+                          placeholder="Search assets..."
+                          value={toSearchTerm}
+                          onChange={(e) => onToSearchTermChange(e.target.value)}
+                          className="w-full bg-white dark:bg-[#23232b] rounded-xl px-10 py-2 text-gray-900 dark:text-white text-sm focus:outline-none border border-gray-300 dark:border-[#39394a] placeholder-gray-400 dark:placeholder-[#7e7e8f]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Asset List */}
+                    <div className="max-h-60 overflow-y-auto">
+                      {(() => {
+                        const filteredAssets = supportedAssets.filter((asset: SupportedAsset) => {
+                          if (!toSearchTerm) return true;
+                          
+                          const searchLower = toSearchTerm.toLowerCase();
+                          const ticker = asset.ticker?.toLowerCase() || '';
+                          
+                          return ticker.includes(searchLower);
+                        });
+                        
+                        return filteredAssets.length > 0 ? (
+                          filteredAssets.map((asset: SupportedAsset) => (
+                            <div
+                              key={asset.asset_id}
+                              className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-[#23232b] cursor-pointer border-b border-gray-200 dark:border-[#39394a] last:border-b-0"
+                              onClick={() => {
+                                onToAssetSelect(asset);
+                                onToAssetToggle();
+                              }}
+                            >
+                              <img
+                                src={
+                                  asset.image_url ||
+                                  asset.asset_image ||
+                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                                }
+                                alt={asset.name}
+                                className="w-6 h-6 rounded-full"
+                                onError={(e) => {
+                                  e.currentTarget.src =
+                                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                                }}
+                              />
+                              <div className="flex-1">
+                                <div className="text-gray-900 dark:text-white font-medium flex items-center gap-2">
+                                  {asset.ticker?.toUpperCase() ||
+                                    asset.symbol?.toUpperCase() ||
+                                    asset.name ||
+                                    "Unknown"}
+                                  <span className="bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                                    {asset.network || "Unknown"}
+                                  </span>
+                                </div>
+                                <div className="text-[#7e7e8f] text-sm">
+                                  {asset.name ||
+                                    asset.ticker?.toUpperCase() ||
+                                    asset.symbol?.toUpperCase() ||
+                                    "Unknown Asset"}
+                                </div>
+                              </div>
+                              {toAsset?.asset_id === asset.asset_id && (
+                                <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                              )}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="p-4 text-center text-[#7e7e8f]">
+                            {toSearchTerm
+                              ? "No assets found"
+                              : "No assets available"}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Disclaimer Banner */}
+        <div className="flex items-center rounded-2xl px-4 py-3 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                <path d="M12 8v4m0 4h.01" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2"/>
+              </svg>
+            </div>
+            <span className="text-gray-700 dark:text-white text-sm font-medium">
+              This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds.
+            </span>
+          </div>
+        </div>
+
+        {/* Submit Button */}
+        {!hideContinueButton && (
+          <div className="mt-4">
+            <button
+              className={`w-full text-white dark:text-white text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
+                !fromAsset ||
+                !toAsset ||
+                !fromAmount ||
+                parseFloat(fromAmount) <= 0 ||
+                !estimate ||
+                estimateLoading ||
+                swapLoading
+                  ? "bg-gray-500 cursor-not-allowed"
+                  : "bg-[#1D8751] hover:bg-[#166b3e]"
+              }`}
+              onClick={onSubmit}
               disabled={
                 !fromAsset ||
                 !toAsset ||
                 !fromAmount ||
                 parseFloat(fromAmount) <= 0 ||
                 !estimate ||
-                estimateLoading
+                estimateLoading ||
+                swapLoading
               }
-              onClick={onSubmit}
             >
-              {swapLoading ? "Loading..." : "Submit"}
+              {swapLoading ? (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <span>Loading...</span>
+                </div>
+              ) : (
+                <span>Submit</span>
+              )}
             </button>
+          </div>
+        )}
+
+        {/* Error Display */}
+        {estimateError && (
+          <div className="mt-4 bg-red-500/10 border border-red-500 rounded-2xl p-4">
+            <h3 className="text-red-500 font-semibold mb-2">Estimate Error</h3>
+            <p className="text-red-400 text-sm">{estimateError}</p>
+          </div>
+        )}
+        {localSwapError && (
+          <div className="mt-4 bg-red-500/10 border border-red-500 rounded-2xl p-4">
+            <h3 className="text-red-500 font-semibold mb-2">Error</h3>
+            <p className="text-red-400 text-sm">{localSwapError}</p>
           </div>
         )}
       </div>

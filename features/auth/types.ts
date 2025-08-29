@@ -45,6 +45,13 @@ export interface LoginPayload {
   password: string;
 }
 
+// 2FA Login payload
+export interface Login2FAPayload {
+  email: string;
+  password: string;
+  code: string;
+}
+
 // Forgot password payload
 export interface ForgotPasswordPayload {
   email: string;
@@ -66,6 +73,9 @@ export interface AuthState {
   isAuthenticated: boolean;
   profile: UserProfile | null;
   kycModalOpen: boolean;
+  twoFAModalOpen: boolean;
+  twoFAEmail: string;
+  twoFAPassword: string;
 }
 
 // Successful auth response
@@ -74,6 +84,8 @@ export interface AuthResponse {
   access: string;
   user: User;
   profile: UserProfile;
+  require_2fa?: boolean;
+  message?: string;
 }
 
 export interface ProfileResponse {

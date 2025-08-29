@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { CreateSwapResponse } from "../types";
 import { connectSwapStatusWebSocket } from "./websocket";
 import { API_CONFIG } from "@/lib/appConfig";
-import SwapStatusComponent from "./SwapStatus";
+import SuccessPage from "../../express/components/success";
 import { Copy } from "lucide-react";
 
 interface CopyAddressStepProps {
@@ -175,9 +175,8 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
                 mapBackendStatusToStepperStatus(backendStatus);
               setStatus(stepperStatus);
               setStatusObj(msg.data);
-              if (stepperStatus === "finished") {
-                onNext();
-              }
+              // Status finished - let user decide when to view results
+              // onNext() is removed to prevent auto-navigation
             }
           } catch (e) {
             console.error("Failed to parse WebSocket message", e, event.data);
@@ -209,46 +208,46 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
     currentStepIndex
   );
 
-  // If status is finished, show the SwapStatusComponent with real data
+  // If status is finished, show the SuccessPage with real data
   if (mappedStatus === "finished") {
     return (
-      <SwapStatusComponent
-        transactionId={statusObj?.id || ""}
-        date={statusObj?.updatedAt || statusObj?.createdAt || ""}
-        paidAmount={statusObj?.expectedAmountFrom || ""}
-        paidCurrency={statusObj?.fromCurrency || ""}
-        receivedAmount={statusObj?.expectedAmountTo || ""}
-        receivedCurrency={statusObj?.toCurrency || ""}
-        payinMethod={statusObj?.fromNetwork || ""}
-        payoutMethod={statusObj?.toNetwork || ""}
+      <SuccessPage
+        transactionId={statusObj?.id || swapResponse?.id || ""}
+        date={statusObj?.updatedAt || statusObj?.createdAt || new Date().toLocaleString()}
+        paidAmount={statusObj?.expectedAmountFrom || swapResponse?.fromAmount || ""}
+        paidCurrency={statusObj?.fromCurrency || swapResponse?.fromCurrency || ""}
+        receivedAmount={statusObj?.expectedAmountTo || swapResponse?.toAmount || ""}
+        receivedCurrency={statusObj?.toCurrency || swapResponse?.toCurrency || ""}
+        payinMethod={statusObj?.fromNetwork || swapResponse?.fromNetwork || ""}
+        payoutMethod={statusObj?.toNetwork || swapResponse?.toNetwork || ""}
         transactionHash={statusObj?.payinHash || statusObj?.payoutHash || ""}
-        netAmount={statusObj?.amountTo || statusObj?.expectedAmountTo || ""}
+        netAmount={statusObj?.amountTo || statusObj?.expectedAmountTo || swapResponse?.toAmount || ""}
       />
     );
   }
 
   return (
-    <div className="min-h-screen dark:bg-[#1D1D23] bg-white flex flex-col items-center py-8 w-full">
+    <div className="min-h-screen flex flex-col items-center py-8 w-full">
       {/* Top Card */}
-      <div className="flex flex-col md:flex-row justify-between items-stretch dark:bg-[#1D1D23] bg-white dark:border-[#35353E] border-gray-200 border-2 rounded-2xl p-3 shadow-lg w-full max-w-4xl mb-4 min-h-[180px]">
+      <div className="flex flex-col md:flex-row justify-between items-stretch bg-white dark:bg-[#23232b] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl p-3 shadow-lg w-full max-w-4xl mb-4 min-h-[180px]">
         <div className="flex-1 flex flex-col justify-between py-2 pr-2">
-          <div>
-            <div className="dark:text-[#7B7B7B] text-gray-600 text-xs font-semibold mb-0.5">
-              Amount:
-            </div>
-            <div className="dark:text-white text-gray-900 text-base font-semibold mb-1">
-              {swapResponse.fromAmount} {swapResponse.fromCurrency}
-            </div>
-            <div className="mt-4">
-              <div className="dark:text-[#7B7B7B] text-gray-600 text-xs font-semibold mb-1">
-                To this address:
+                      <div>
+              <div className="text-gray-600 dark:text-[#7e7e8f] text-xs font-semibold mb-0.5">
+                Amount:
               </div>
+              <div className="text-gray-900 dark:text-white text-base font-semibold mb-1">
+                {swapResponse.fromAmount} {swapResponse.fromCurrency}
+              </div>
+              <div className="mt-4">
+                <div className="text-gray-600 dark:text-[#7e7e8f] text-xs font-semibold mb-1">
+                  To this address:
+                </div>
               <div className="flex items-center gap-2">
-                <span className="text-[#1D8751] font-mono text-base truncate">
+                <span className="text-[#1D8751] dark:text-[#1D8751] font-mono text-base truncate">
                   {swapResponse.payinAddress}
                 </span>
                 <button
-                  className="bg-[#1D8751] hover:bg-[#16663d] p-2 rounded-lg text-white transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
+                  className="bg-[#1D8751] hover:bg-[#16663d] dark:bg-[#1D8751] dark:hover:bg-[#16663d] p-2 rounded-lg text-white transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
                   onClick={onCopyAddress}
                   title="Copy Address"
                 >
@@ -267,17 +266,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
                     </svg>
                   )}
                 </button>
-                {/* WebSocket status indicator */}
-                <span className="ml-2 flex items-center gap-1">
-                  <span
-                    className={`w-2 h-2 rounded-full ${
-                      wsConnected ? "bg-green-500" : "bg-red-500"
-                    }`}
-                  ></span>
-                  <span className="text-xs dark:text-[#8C8CA1] text-gray-600">
-                    {wsConnected ? "Connected" : "Disconnected"}
-                  </span>
-                </span>
+
               </div>
             </div>
           </div>
@@ -295,66 +284,101 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
       </div>
 
       {/* Stepper */}
-      <div className="flex items-center justify-between w-full max-w-4xl mb-3">
-        {statusSteps.map((step, idx) => {
-          const isActive = idx === currentStepIndex;
-          const isCompleted = idx < currentStepIndex;
-          
-          return (
-            <div
-              key={step.key}
-              className="flex flex-col items-center flex-1 relative"
-            >
-              <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 b p-1 ${
-                  isActive
-                    ? "bg-[#F79330] dark:bg-[#F79330]"
-                    : isCompleted
-                    ? "bg-[#1D8751] dark:bg-[#1D8751] border-green-200"
-                    : "dark:bg-[#7B7B7B] bg-gray-300  border-gray-400"
-                }`}
-              >
-                {/* Always show the step's icon, colored appropriately */}
-                <span className={isActive ? "text-white" : isCompleted ? "text-white" : "text-white"}>
-                  {StatusIcons[step.key as keyof typeof StatusIcons]}
-                </span>
-              </div>
-              <span
-                className={`font-semibold text-base ${
-                  isActive
-                    ? "text-[#F79330]"
-                    : isCompleted
-                    ? "text-[#1D8751]"
-                    : "dark:text-[#7B7B7B] text-gray-600"
-                }`}
-              >
-                {step.label}
-              </span>
-              {isActive && (
-                <div className="flex gap-1 mt-1">
-                  <span className="w-2 h-2 bg-yellow-400 rounded-full inline-block"></span>
-                  <span className="w-2 h-2 bg-yellow-400 rounded-full inline-block"></span>
-                  <span className="w-2 h-2 bg-yellow-400 rounded-full inline-block"></span>
+      <div className="w-full max-w-4xl mb-3">
+        {/* Circle and connecting line row */}
+        <div className="flex items-center mb-2">
+          {statusSteps.map((step, idx) => {
+            const isActive = idx === currentStepIndex;
+            const isCompleted = idx < currentStepIndex;
+            
+            return (
+              <React.Fragment key={step.key}>
+                <div className="flex items-center">
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center p-1 ${
+                      isActive
+                        ? "bg-[#F79330] dark:bg-[#F79330]"
+                        : isCompleted
+                        ? "bg-[#1D8751] dark:bg-[#1D8751]"
+                        : "bg-gray-300 dark:bg-[#7B7B7B]"
+                    }`}
+                  >
+                    {/* Always show the step's icon, colored appropriately */}
+                    <span className={isActive ? "text-white" : isCompleted ? "text-white" : "text-white"}>
+                      {StatusIcons[step.key as keyof typeof StatusIcons]}
+                    </span>
+                  </div>
                 </div>
-              )}
-            </div>
-          );
-        })}
+                {/* Connecting line at circle center */}
+                {idx < statusSteps.length - 1 && (
+                  <div className="flex-1 h-1 mx-2 rounded-full">
+                    <div
+                      className={`h-full rounded-full transition-all duration-300 ${
+                        idx < currentStepIndex
+                          ? "bg-[#1D8751] dark:bg-[#1D8751]"
+                          : idx === currentStepIndex
+                          ? "bg-gradient-to-r from-[#F79330] to-gray-300 dark:from-[#F79330] dark:to-[#7B7B7B]"
+                          : "bg-gray-300 dark:bg-[#7B7B7B]"
+                      }`}
+                    />
+                  </div>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
+        
+        {/* Text and dots row */}
+        <div className="flex items-center">
+          {statusSteps.map((step, idx) => {
+            const isActive = idx === currentStepIndex;
+            const isCompleted = idx < currentStepIndex;
+            
+            return (
+              <React.Fragment key={`text-${step.key}`}>
+                <div className="flex flex-col items-center w-10">
+                  <span
+                    className={`font-medium text-xs text-center ${
+                      isActive
+                        ? "text-[#F79330] dark:text-[#F79330]"
+                        : isCompleted
+                        ? "text-[#1D8751] dark:text-[#1D8751]"
+                        : "text-gray-600 dark:text-[#7B7B7B]"
+                    }`}
+                  >
+                    {step.label}
+                  </span>
+                  {isActive && (
+                    <div className="flex gap-1 mt-1">
+                      <span className="w-1.5 h-1.5 bg-yellow-400 rounded-full inline-block animate-bounce" style={{animationDelay: '0s'}}></span>
+                      <span className="w-1.5 h-1.5 bg-yellow-400 rounded-full inline-block animate-bounce" style={{animationDelay: '0.2s'}}></span>
+                      <span className="w-1.5 h-1.5 bg-yellow-400 rounded-full inline-block animate-bounce" style={{animationDelay: '0.4s'}}></span>
+                    </div>
+                  )}
+                </div>
+                {/* Spacer for connecting line area */}
+                {idx < statusSteps.length - 1 && (
+                  <div className="flex-1 mx-2"></div>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
       </div>
 
       {/* Transaction Details Card */}
-      <div className="dark:bg-[#23232B] bg-white dark:border-[#35353E] border-gray-200 border-2 rounded-2xl p-6 shadow-lg w-full max-w-4xl mb-3">
+      <div className="bg-white dark:bg-[#23232b] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl p-6 shadow-lg w-full max-w-4xl mb-3">
         {/* Title */}
-        <div className="dark:text-white text-gray-900 text-2xl font-semibold mb-4">
+        <div className="text-gray-900 dark:text-white text-2xl font-semibold mb-4">
           Transaction Details
         </div>
         {/* Transaction ID Row */}
         <div className="flex items-center justify-between mb-1">
-          <div className="dark:text-[#7B7B7B] text-gray-600 text-base font-medium">
+          <div className="text-gray-600 dark:text-[#7e7e8f] text-base font-medium">
             Transaction ID
           </div>
           <div className="flex items-center gap-2">
-            <span className="dark:text-white text-gray-900 text-base font-mono font-semibold">
+            <span className="text-gray-900 dark:text-white text-base font-mono font-semibold">
               {swapResponse.id}
             </span>
             <button
@@ -367,30 +391,45 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
           </div>
         </div>
         {/* Dashed Divider */}
-        <div className="border-t border-dashed dark:border-[#7B7B7B] border-gray-400 mb-4"></div>
+        <div className="border-t border-dashed border-gray-400 dark:border-[#7e7e8f] mb-4"></div>
         {/* You Get and Recipient Wallet */}
         <div className="flex items-center justify-between mb-2">
-          <div className="dark:text-[#7B7B7B] text-gray-600 text-base font-medium">
+          <div className="text-gray-600 dark:text-[#7e7e8f] text-base font-medium">
             You Get
           </div>
-          <div className="dark:text-[#7B7B7B] text-gray-600 text-base font-medium">
+          <div className="text-gray-600 dark:text-[#7e7e8f] text-base font-medium">
             Recipient Wallet
           </div>
         </div>
         <div className="flex items-center justify-between mt-2">
-          <div className="dark:text-white text-gray-900 text-base font-mono font-semibold">
+          <div className="text-gray-900 dark:text-white text-base font-mono font-semibold">
             {swapResponse.toAmount} {swapResponse.toCurrency}
           </div>
           <div className="flex items-center gap-2">
-            <span className="dark:text-[#7B7B7B] text-gray-600 text-sm font-mono">
+            <span className="text-gray-600 dark:text-[#7e7e8f] text-sm font-mono">
               {swapResponse.payoutAddress}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Terms and Conditions Summary - always at the very bottom */}
+      {/* View Results Button - shown when transaction is finished */}
+      {mappedStatus === "finished" && (
+        <div className="w-full max-w-4xl mb-4">
+          <div className="bg-[#1D8751] dark:bg-[#1D8751] border border-[#1D8751] dark:border-[#1D8751] rounded-2xl p-4 shadow-lg text-center">
+            <h3 className="text-white dark:text-white text-lg font-semibold mb-2">🎉 Transaction Completed!</h3>
+            <p className="text-white/90 dark:text-white/90 text-sm mb-4">Your swap has been processed successfully.</p>
+            <button
+              className="bg-white hover:bg-gray-100 dark:bg-white dark:hover:bg-gray-100 text-[#1D8751] dark:text-[#1D8751] font-semibold py-3 px-8 rounded-xl text-lg transition"
+              onClick={onNext}
+            >
+              View Results
+            </button>
+          </div>
+        </div>
+      )}
 
+      {/* Terms and Conditions Summary - always at the very bottom */}
       <div className="flex items-center mb-2 mt-2 max-w-4xl">
         <img
           src="https://res.cloudinary.com/pitz/image/upload/v1752248844/Frame_34947_hxlr7o.png"

@@ -226,7 +226,7 @@ const RatesCalculator = () => {
         formData.append("sent_from", selectedPaymentDetail.account_name);
 
         // Make the API call to trading engine deposit
-        const response = await fetch("/trading_engine/deposit/", {
+        const response = await fetch("/trading_engine/deposits/", {
           method: "POST",
           body: formData,
         });

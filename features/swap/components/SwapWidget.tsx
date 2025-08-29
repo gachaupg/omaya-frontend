@@ -27,6 +27,7 @@ import { SwapStep } from "./types";
 import { SupportedAsset, SwapEstimate } from "../types";
 import { showToast } from "@/lib/utils/toast";
 import { handleApiError } from "@/lib/utils/errorHandler";
+import SuccessPage from "@/features/express/components/success";
 
 const SwapWidget = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -254,10 +255,6 @@ const SwapWidget = () => {
         })
       ).unwrap();
       console.log("Swap created successfully");
-      showToast.success(
-        "Swap created successfully",
-        "Please copy the address and send your funds"
-      );
       setCurrentStep("copy-address");
     } catch (error: any) {
       console.error("Failed to create swap:", error);
@@ -333,15 +330,15 @@ const SwapWidget = () => {
 
   if (error) {
     return (
-      <div className="mx-auto dark:text-white text-[#0D0D0D]">
-        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-          <h3 className="text-red-400 font-semibold mb-2">
+      <div className="mx-auto dark:text-white text-gray-900">
+        <div className="bg-red-500/10 dark:bg-red-500/10 border border-red-500/20 dark:border-red-500/20 rounded-lg p-4">
+          <h3 className="text-red-600 dark:text-red-400 font-semibold mb-2">
             Error Loading Swap
           </h3>
-          <p className="text-red-300 text-sm">{error}</p>
+          <p className="text-red-500 dark:text-red-300 text-sm">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-3 px-4 py-2 bg-red-500 hover:bg-red-600 rounded-md text-white text-sm"
+            className="mt-3 px-4 py-2 bg-red-500 hover:bg-red-600 dark:bg-red-500 dark:hover:bg-red-600 rounded-md text-white text-sm"
           >
             Try Again
           </button>
@@ -351,8 +348,8 @@ const SwapWidget = () => {
   }
   
  return (
-    <div className="mx-auto dark:text-white text-[#0D0D0D]">
-      <h2 className="text-lg font-semibold mb-6">Swap Crypto</h2>
+    <div className="mx-auto dark:text-white text-gray-900 min-h-screen">
+      <h2 className="text-lg font-semibold mb-6 text-gray-900 dark:text-white">Swap Crypto</h2>
 
       {/* Step Indicator */}
       {/* <StepIndicator currentStep={currentStep} /> */}
@@ -412,6 +409,7 @@ const SwapWidget = () => {
       )}
       {/* <SwapStatusComponent transactionId={""} date={""} paidAmount={""} paidCurrency={""} receivedAmount={""} receivedCurrency={""}        */}
       {/* /> */}
+      {/* <SuccessPage /> */}
     </div>
   );
 };

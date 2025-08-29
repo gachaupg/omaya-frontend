@@ -34,7 +34,7 @@ interface SwapState {
 const initialState: SwapState = {
   fromAsset: null,
   toAsset: null,
-  fromAmount: "0",
+  fromAmount: "0.01",
   toAmount: "0",
   supportedAssets: [],
   loading: false,
@@ -124,10 +124,6 @@ export const createSwapTransaction = createAsyncThunk(
   async (swapData: CreateSwapRequest, { rejectWithValue, getState }) => {
     try {
       const response = await createSwap(swapData);
-      showToast.success(
-        "Swap created successfully",
-        "Please copy the address and send your funds"
-      );
       return response;
     } catch (error) {
       console.error("Failed to create swap transaction:", error);
@@ -243,12 +239,22 @@ const swapSlice = createSlice({
       .addCase(fetchSupportedAssets.fulfilled, (state, action) => {
         state.loading = false;
         state.supportedAssets = action.payload;
-        // Set default assets if not set
+        // Set default assets if not set - BTC for fromAsset, ETH for toAsset
         if (!state.fromAsset && action.payload.length > 0) {
-          state.fromAsset = action.payload[0];
+          // Find BTC asset, fallback to first asset if BTC not found
+          const btcAsset = action.payload.find(asset => 
+            asset.ticker.toLowerCase() === 'btc' || 
+            asset.symbol.toLowerCase() === 'btc'
+          );
+          state.fromAsset = btcAsset || action.payload[0];
         }
         if (!state.toAsset && action.payload.length > 1) {
-          state.toAsset = action.payload[1];
+          // Find ETH asset, fallback to second asset if ETH not found
+          const ethAsset = action.payload.find(asset => 
+            asset.ticker.toLowerCase() === 'eth' || 
+            asset.symbol.toLowerCase() === 'eth'
+          );
+          state.toAsset = ethAsset || action.payload[1];
         }
       })
       .addCase(fetchSupportedAssets.rejected, (state, action) => {

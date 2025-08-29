@@ -36,13 +36,13 @@ const SwapStatusComponent: React.FC<SwapStatusProps> = ({
       <div className="flex flex-col items-center mb-8">
         <div className="relative mb-4">
           <FaCheckCircle style={{ color: GREEN }} size={90} />
-          {/* Decorative dots */}
-          <span className="absolute -top-2 left-1/2 -translate-x-1/2 w-3 h-3 bg-orange-400 rounded-full" />
+          {/* Animated loading dots */}
+          <span className="absolute -top-2 left-1/2 -translate-x-1/2 w-3 h-3 bg-orange-400 rounded-full animate-bounce" style={{animationDelay: '0s'}} />
           <span
-            className="absolute -bottom-2 left-1/4 w-3 h-3"
-            style={{ background: GREEN, borderRadius: "9999px" }}
+            className="absolute -bottom-2 left-1/4 w-3 h-3 animate-bounce"
+            style={{ background: GREEN, borderRadius: "9999px", animationDelay: '0.2s' }}
           />
-          <span className="absolute -bottom-2 right-1/4 w-3 h-3 bg-blue-400 rounded-full" />
+          <span className="absolute -bottom-2 right-1/4 w-3 h-3 bg-blue-400 rounded-full animate-bounce" style={{animationDelay: '0.4s'}} />
         </div>
         <h1 className="text-3xl font-bold mb-2" style={{ color: GREEN }}>
           Swap Successful!
@@ -119,13 +119,21 @@ const SwapStatusComponent: React.FC<SwapStatusProps> = ({
         </div>
       </div>
 
-      {/* Go to Dashboard Button */}
-      <button
-        className="w-full max-w-xs bg-[#1D8751] hover:bg-[#16663d] text-white font-semibold py-3 rounded-xl text-lg transition mb-4"
-        onClick={() => router.push("/dashboard")}
-      >
-        Go to Dashboard
-      </button>
+      {/* Action Buttons */}
+      <div className="flex flex-col gap-3 w-full max-w-xs mb-4">
+        <button
+          className="w-full bg-[#1D8751] hover:bg-[#16663d] text-white font-semibold py-3 rounded-xl text-lg transition"
+          onClick={() => router.push("/")}
+        >
+          Go Back Home
+        </button>
+        <button
+          className="w-full bg-[#F79330] hover:bg-[#e67d1a] text-white font-semibold py-3 rounded-xl text-lg transition"
+          onClick={() => router.push("/dashboard")}
+        >
+          Go to Dashboard
+        </button>
+      </div>
 
       {/* Support Footer */}
       <div className="w-full max-w-2xl text-center text-xs text-white/40 mt-2">

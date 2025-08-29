@@ -7,6 +7,7 @@ import {
   AuthTokens,
   RegisterPayload,
   LoginPayload,
+  Login2FAPayload,
   ForgotPasswordPayload,
   ResetPasswordPayload,
   AuthResponse,
@@ -26,6 +27,8 @@ import {
 } from "../types";
 import { API_ENDPOINTS } from "../api";
 import { post, get, AxiosError } from "../../../lib/apiClient";
+import { storage } from "../utils/storage";
+import { cookieUtils } from "@/lib/utils/cookieUtils";
 
 const initialState: AuthState = {
   user: null,
@@ -35,6 +38,9 @@ const initialState: AuthState = {
   isAuthenticated: false,
   profile: null,
   kycModalOpen: false,
+  twoFAModalOpen: false,
+  twoFAEmail: "",
+  twoFAPassword: "",
 };
 
 // Helper to handle API errors
@@ -84,9 +90,30 @@ export const registerUser = createAsyncThunk<RegisterResponse, RegisterPayload>(
 
 export const loginUser = createAsyncThunk<AuthResponse, LoginPayload>(
   "auth/login",
-  async (payload, { rejectWithValue }) => {
+  async (payload, { rejectWithValue, dispatch }) => {
     try {
       const response = await post<AuthResponse>(API_ENDPOINTS.LOGIN, payload);
+      
+      // Check if 2FA is required
+      if (response.data.require_2fa) {
+        // Dispatch action to open 2FA modal with credentials
+        dispatch(open2FAModal({ email: payload.email, password: payload.password }));
+        // Return a special response to indicate 2FA is needed
+        return { ...response.data, require_2fa: true };
+      }
+      
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
+export const loginWith2FA = createAsyncThunk<AuthResponse, Login2FAPayload>(
+  "auth/loginWith2FA",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const response = await post<AuthResponse>(API_ENDPOINTS.LOGIN_2FA, payload);
       return response.data;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
@@ -244,22 +271,20 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.profile = null;
       state.kycModalOpen = false;
-      localStorage.removeItem("profile");
+      storage.removeProfile();
       // Clear access token cookie
-      document.cookie =
-        "access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict";
+      cookieUtils.removeCookie("access_token");
     },
     clearError(state) {
       state.error = null;
     },
     initializeAuth(state) {
-      const authData = localStorage.getItem("profile");
+      const authData = storage.getProfile();
       if (authData) {
-        const parsedData = JSON.parse(authData);
-        state.user = parsedData.user;
-        state.tokens = parsedData.tokens;
+        state.user = authData.user;
+        state.tokens = authData.tokens;
         state.isAuthenticated = true;
-        state.profile = parsedData.profile || null;
+        state.profile = authData.profile || null;
       }
     },
     openKYCModal(state) {
@@ -267,6 +292,16 @@ const authSlice = createSlice({
     },
     closeKYCModal(state) {
       state.kycModalOpen = false;
+    },
+    open2FAModal(state, action: PayloadAction<{ email: string; password: string }>) {
+      state.twoFAModalOpen = true;
+      state.twoFAEmail = action.payload.email;
+      state.twoFAPassword = action.payload.password;
+    },
+    close2FAModal(state) {
+      state.twoFAModalOpen = false;
+      state.twoFAEmail = "";
+      state.twoFAPassword = "";
     },
   },
   extraReducers: (builder) => {
@@ -297,6 +332,12 @@ const authSlice = createSlice({
       loginUser.fulfilled,
       (state, action: PayloadAction<AuthResponse>) => {
         state.loading = false;
+        
+        // If 2FA is required, don't authenticate yet
+        if (action.payload.require_2fa) {
+          return;
+        }
+        
         state.user = action.payload.user;
         state.tokens = {
           access: action.payload.access,
@@ -306,20 +347,21 @@ const authSlice = createSlice({
         state.profile = action.payload.profile;
 
         // Store in localStorage
-        localStorage.setItem(
-          "profile",
-          JSON.stringify({
-            user: action.payload.user,
-            tokens: {
-              access: action.payload.access,
-              refresh: action.payload.refresh,
-            },
-            profile: action.payload.profile,
-          })
-        );
+        storage.setProfile({
+          user: action.payload.user,
+          tokens: {
+            access: action.payload.access,
+            refresh: action.payload.refresh,
+          },
+          profile: action.payload.profile,
+        });
 
         // Set access token as cookie
-        document.cookie = `access_token=${action.payload.access}; path=/; max-age=86400; secure; samesite=strict`;
+        cookieUtils.setCookie("access_token", action.payload.access, {
+          maxAge: 86400,
+          secure: true,
+          sameSite: 'strict'
+        });
       }
     );
     builder.addCase(loginUser.rejected, (state, action) => {
@@ -454,6 +496,49 @@ const authSlice = createSlice({
       state.loading = false;
       state.error = action.payload as string;
     });
+
+    // Login with 2FA
+    builder.addCase(loginWith2FA.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(
+      loginWith2FA.fulfilled,
+      (state, action: PayloadAction<AuthResponse>) => {
+        state.loading = false;
+        state.user = action.payload.user;
+        state.tokens = {
+          access: action.payload.access,
+          refresh: action.payload.refresh,
+        };
+        state.isAuthenticated = true;
+        state.profile = action.payload.profile;
+        state.twoFAModalOpen = false;
+        state.twoFAEmail = "";
+        state.twoFAPassword = "";
+
+        // Store in localStorage
+        storage.setProfile({
+          user: action.payload.user,
+          tokens: {
+            access: action.payload.access,
+            refresh: action.payload.refresh,
+          },
+          profile: action.payload.profile,
+        });
+
+        // Set access token as cookie
+        cookieUtils.setCookie("access_token", action.payload.access, {
+          maxAge: 86400,
+          secure: true,
+          sameSite: 'strict'
+        });
+      }
+    );
+    builder.addCase(loginWith2FA.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
   },
 });
 
@@ -463,5 +548,7 @@ export const {
   initializeAuth,
   openKYCModal,
   closeKYCModal,
+  open2FAModal,
+  close2FAModal,
 } = authSlice.actions;
 export default authSlice.reducer;

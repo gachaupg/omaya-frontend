@@ -153,19 +153,20 @@ const AddPaymentDetailsModal: React.FC<AddPaymentDetailsModalProps> = ({
             </div>
           </div>
 
-          {/* Account Name */}
-          <div>
-            <label className="block text-sm mb-1 text-[#788099]">
-              Account Name
-            </label>
-            <input
-              type="text"
-              value={accountName}
-              onChange={(e) => setAccountName(e.target.value)}
-              className="w-full p-3 rounded-lg text-sm bg-[#18181D] text-white border border-[#35353E] focus:outline-none h-12"
-              placeholder="Sonnie"
-            />
-          </div>
+                     {/* Account Name */}
+           <div>
+             <label className="block text-sm mb-1 text-[#788099]">
+               Account Name
+             </label>
+             <input
+               type="text"
+               value={accountName}
+               className="w-full p-3 rounded-lg text-sm bg-[#2A2A30] text-[#788099] border border-[#35353E] cursor-not-allowed h-12"
+               placeholder="Sonnie"
+               readOnly
+               disabled
+             />
+           </div>
 
           {/* Account Number */}
           <div>

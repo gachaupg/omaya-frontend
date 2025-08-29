@@ -261,7 +261,6 @@ export const createDeviceSession = createAsyncThunk(
   async (payload: CreateDeviceSessionPayload, { rejectWithValue }) => {
     try {
       const response = await settingsApi.createDeviceSession(payload);
-      showToast.success("Device session created successfully");
       return response.data;
     } catch (error: any) {
       showToast.error(error.message || "Failed to create device session");
@@ -523,7 +522,6 @@ const settingsSlice = createSlice({
         } else {
           state.deviceSessions.push(action.payload);
         }
-        state.success = "Device session created successfully";
       })
       .addCase(createDeviceSession.rejected, (state, action) => {
         state.deviceSessionsLoading = false;

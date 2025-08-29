@@ -24,12 +24,12 @@ export const API_CONFIG = {
   },
   P2P: {
     WALLETS: "/wallet/wallets/",
-    DEPOSITS: "/trading_engine/p2p/deposit/",
+    DEPOSITS: "/trading_engine/p2p/deposits/",
     WITHDRAWS: "trading_engine/p2p-withdraw/",
     BUY_ADS: "/ads/buy/",
     SELL_ADS: "/ads/sell/",
     ASSETS: "/administration/admin/fronted-all-asset-network-range/",
-    ADMIN_PAYMENT_DETAILS: "/payments/admin-payment-details/",
+    ADMIN_PAYMENT_DETAILS: "/payments/admin/payment-details/",
     USER_PAYMENT_DETAILS: "/payments/user-payment-details/",
     ORDERS: "/trading_engine/p2p/orders/",
     ALL_ORDERS: "/trading_engine/p2p/all-orders/",
@@ -61,7 +61,7 @@ export const API_CONFIG = {
     MATCHED_TRADE: "/trading_engine/p2p/trades/",
   },
   SWAP: {
-    SUPPORTED_ASSETS: "/api/changenow/supported-tokens/",
+    SUPPORTED_ASSETS: "/administration/admin/changenow-tokens/",
     ESTIMATE_SWAP: "/api/changenow/estimate/",
     CREATE_SWAP: "/api/changenow/create/",
     SWAP_STATUS: "/api/changenow/status/",
@@ -79,7 +79,7 @@ export const API_CONFIG = {
     LOGOUT_ALL_DEVICES: "/api/device-sessions/logout-all/",
   },
   EXCHANGE: {
-    DEPOSIT: "/trading_engine/deposit/",
+    DEPOSIT: "/trading_engine/deposits/",
     WITHDRAW: "/trading_engine/withdraw/",
     SOCKETS: {
       TRANSACTION_STATUS: (txHash: string) =>
@@ -94,5 +94,8 @@ export const API_CONFIG = {
       WITHDRAWAL_STATUS: (transactionId: string) =>
         `${getWebSocketBaseUrl()}/ws/withdrawal-status/${transactionId}/`,
     },
+  },
+  GOOGLE_AUTH: {
+    GOOGLE_AUTH: "/api/auth/google/",
   },
 };
