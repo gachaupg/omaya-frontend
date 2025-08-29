@@ -298,12 +298,32 @@ export default function Navbar() {
 
   // Check if navbar should show white text (transparent on home page)
   const isTransparentNavbar = pathname === "/" && !scrolled;
-  const [theme, setTheme] = useState<{ mode: string } | null>(null);
+  const [theme, setTheme] = useState<{ mode: string } | null>({ mode: "dark" }); // Default to dark theme
 
   useEffect(() => {
     const getTheme = () => {
-      const themeString = localStorage.getItem("theme");
-      return themeString ? JSON.parse(themeString) : null;
+      try {
+        const themeString = localStorage.getItem("theme");
+        if (!themeString) return null;
+
+        // Try to parse as JSON first (Redux format)
+        try {
+          const parsed = JSON.parse(themeString);
+          if (parsed && typeof parsed === "object" && parsed.mode) {
+            return parsed;
+          }
+        } catch (e) {
+          // If JSON parse fails, treat as simple string (Context format)
+          if (themeString === "light" || themeString === "dark") {
+            return { mode: themeString };
+          }
+        }
+
+        return null;
+      } catch (error) {
+        console.error("Error parsing theme from localStorage:", error);
+        return null;
+      }
     };
 
     // Set initial theme
@@ -330,7 +350,7 @@ export default function Navbar() {
     };
   }, []);
 
-  console.log("theme", theme?.mode)
+  console.log("theme", theme?.mode);
   return (
     <>
       <nav
@@ -349,9 +369,9 @@ export default function Navbar() {
                 className="h-auto w-32 md:w-40 2xl:w-48"
                 priority
               />
-            ) : (
-              // All other cases: green logo
-           theme?.mode === "dark" ?   <Image
+            ) : // All other cases: green logo
+            theme?.mode === "dark" ? (
+              <Image
                 src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747133499/Omaya_green-logo_yva2ah.png"
                 alt="OMAYA Exchange"
                 width={150}
@@ -359,7 +379,7 @@ export default function Navbar() {
                 className="h-auto w-32 md:w-40 2xl:w-48"
                 priority
               />
-              :
+            ) : (
               <Image
                 src="https://res.cloudinary.com/pitz/image/upload/v1750838143/1446599b0a50473eb54aaee7c59988ecc0856b10_mmmmcl.png"
                 alt="OMAYA Exchange"
@@ -872,8 +892,8 @@ export default function Navbar() {
             Blog
           </MobileNavLink>
           {/* Show Contact us only on auth pages */}
-          {(pathname?.startsWith("/auth/login") || 
-            pathname?.startsWith("/auth/register") || 
+          {(pathname?.startsWith("/auth/login") ||
+            pathname?.startsWith("/auth/register") ||
             pathname?.startsWith("/auth/forgotPassword") ||
             pathname?.startsWith("/auth/resetPassword")) && (
             <MobileNavLink href="#" onClick={toggleMobileMenu}>
