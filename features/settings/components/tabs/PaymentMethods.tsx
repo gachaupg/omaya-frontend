@@ -44,7 +44,7 @@ const PaymentMethods = () => {
   };
 
   return (
-    <div className="p-3 dark:text-white text-gray-900">
+    <div className="p-3 dark:text-white text-gray-900 w-full">
       {/* Top Header Section */}
       <div className="flex items-center justify-between mb-4">
         <div>

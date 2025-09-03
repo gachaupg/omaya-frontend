@@ -500,7 +500,7 @@ const PrivacySecurity = () => {
     <>
       {show2FAModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="dark:bg-[#23232B] bg-white p-6 rounded-xl w-full max-w-sm">
+          <div className="dark:bg-[#23232B] bg-white p-6 rounded-xl w-full max-w-xl ">
             <h3 className="text-lg font-semibold mb-2 dark:text-white text-gray-900">
               Enable 2FA
             </h3>
@@ -640,7 +640,7 @@ const PrivacySecurity = () => {
         </div>
       )}
 
-      <div className="p-3 dark:text-white text-gray-900 flex flex-col gap-4">
+      <div className="p-3 dark:text-white text-gray-900 flex flex-col gap-4 w-full">
         {/* 2 Factor Authentication */}
         <div className="w-full dark:border-[#35353E] border-gray-300 border-2 rounded-2xl p-4 flex flex-col gap-4 max-w-none mx-auto dark:bg-[#1D1D23] bg-gray-50">
           <div className="text-base font-semibold mb-2 dark:text-white text-gray-900">
@@ -762,7 +762,7 @@ const PrivacySecurity = () => {
             </button> */}
             </div>
           </div>
-                     <div className="dark:text-[#808080] text-gray-600 text-sm mb-3">
+          <div className="dark:text-[#808080] text-gray-600 text-sm mb-3">
              These Devices Are Currently Signed In To Your Account
              <div className="text-[#1D8751] text-xs mt-1">
                💡 Duplicate sessions from the same IP address are automatically prevented

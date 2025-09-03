@@ -60,7 +60,7 @@ const Referral: React.FC = () => {
 
   /* ─────────────────────────────── render ─────────────────────────── */
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-[#18181b] dark:text-white">
+    <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-[#18181b] dark:text-white w-full">
       <ReferralTabs
         tab={activeTab}
         setTab={setActiveTab as (tab: string) => void}
