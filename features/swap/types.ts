@@ -25,15 +25,31 @@ export interface SupportedAsset {
 }
 
 export interface SwapEstimate {
-  network: string;
-  omaya_fee_percentage: number;
-  omaya_fee: number;
-  gas_fee: number;
-  total_fee: number;
-  estimated_amount: number;
-  user_amount: number;
-  min_amount: number;
-  max_amount: number;
+  fromCurrency: string;
+  fromNetwork: string;
+  toCurrency: string;
+  toNetwork: string;
+  flow: string;
+  type: string;
+  rateId: string;
+  validUntil: string;
+  transactionSpeedForecast: any;
+  warningMessage: any;
+  depositFee: number;
+  withdrawalFee: number;
+  userId: any;
+  fromAmount: number;
+  toAmount: number;
+  // Legacy fields for backward compatibility
+  network?: string;
+  omaya_fee_percentage?: number;
+  omaya_fee?: number;
+  gas_fee?: number;
+  total_fee?: number;
+  estimated_amount?: number;
+  user_amount?: number;
+  min_amount?: number;
+  max_amount?: number;
 }
 
 export interface CreateSwapRequest {

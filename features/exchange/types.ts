@@ -98,19 +98,32 @@ export interface DepositWebSocketInfo {
 
 export interface DepositResponse {
   status: string;
+  type: string;
+  asset: string;
+  amount: string;
+  net_amount: string;
+  network: string;
+  deposit_address: string | null;
+  message: string;
+  websocket_url: string;
   transaction_id: string;
   deposit_code: string;
-  requested_amount: string;
-  total_amount_due: string;
-  commission: string;
-  network_fee: string;
-  currency: string;
-  network: string;
-  requires_manual_review: boolean;
-  bank_confirmed: boolean;
-  admin_approved: boolean;
-  websocket: DepositWebSocketInfo;
-  instructions: string;
+  fees: {
+    commission: string;
+    network_fee: string;
+    total_fees: string;
+  };
+  // Legacy fields for backward compatibility
+  requested_amount?: string;
+  total_amount_due?: string;
+  commission?: string;
+  network_fee?: string;
+  currency?: string;
+  requires_manual_review?: boolean;
+  bank_confirmed?: boolean;
+  admin_approved?: boolean;
+  websocket?: DepositWebSocketInfo;
+  instructions?: string;
 }
 
 export type TransactionsResponse = Transaction[];

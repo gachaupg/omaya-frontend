@@ -11,6 +11,60 @@ import {
   AddUserPaymentDetailData,
 } from '../types';
 
+// Cache configuration
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+const CACHE_KEYS = {
+  ADMIN_PAYMENT_DETAILS: 'admin_payment_details_cache',
+  USER_PAYMENT_DETAILS: 'user_payment_details_cache',
+};
+
+// Cache utility functions
+const getCachedData = <T>(key: string): { data: T; timestamp: number; expiresAt: number } | null => {
+  try {
+    const cached = localStorage.getItem(key);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (parsed.expiresAt > Date.now()) {
+        return parsed;
+      } else {
+        // Cache expired, remove it
+        localStorage.removeItem(key);
+      }
+    }
+  } catch (error) {
+    console.warn('Failed to parse cached data:', error);
+    localStorage.removeItem(key);
+  }
+  return null;
+};
+
+const setCachedData = <T>(key: string, data: T): void => {
+  try {
+    const cacheData = {
+      data,
+      timestamp: Date.now(),
+      expiresAt: Date.now() + CACHE_DURATION,
+    };
+    localStorage.setItem(key, JSON.stringify(cacheData));
+  } catch (error) {
+    console.warn('Failed to cache data:', error);
+  }
+};
+
+// Cache invalidation functions
+export const invalidateAdminPaymentDetailsCache = (): void => {
+  localStorage.removeItem(CACHE_KEYS.ADMIN_PAYMENT_DETAILS);
+};
+
+export const invalidateUserPaymentDetailsCache = (): void => {
+  localStorage.removeItem(CACHE_KEYS.USER_PAYMENT_DETAILS);
+};
+
+export const invalidateAllPaymentCaches = (): void => {
+  invalidateAdminPaymentDetailsCache();
+  invalidateUserPaymentDetailsCache();
+};
+
 interface PaymentState {
   paymentMethods: PaymentMethod[];
   paymentProviders: PaymentProvider[];
@@ -18,6 +72,19 @@ interface PaymentState {
   adminPaymentDetails: AdminPaymentDetail[];
   loading: boolean;
   error: string | null;
+  // Cache metadata
+  cache: {
+    adminPaymentDetails: {
+      data: AdminPaymentDetail[];
+      timestamp: number;
+      expiresAt: number;
+    } | null;
+    userPaymentDetails: {
+      data: UserPaymentDetail[];
+      timestamp: number;
+      expiresAt: number;
+    } | null;
+  };
 }
 
 const initialState: PaymentState = {
@@ -27,6 +94,10 @@ const initialState: PaymentState = {
   adminPaymentDetails: [],
   loading: false,
   error: null,
+  cache: {
+    adminPaymentDetails: null,
+    userPaymentDetails: null,
+  },
 };
 
 // Fetch payment methods
@@ -55,12 +126,27 @@ export const fetchPaymentProviders = createAsyncThunk<PaymentProvider[], string>
   }
 );
 
-// Fetch user payment details
-export const fetchUserPaymentDetails = createAsyncThunk<UserPaymentDetail[]>(
+// Fetch user payment details with caching
+export const fetchUserPaymentDetails = createAsyncThunk<UserPaymentDetail[], boolean | undefined>(
   'payment/fetchUserPaymentDetails',
-  async (_, { rejectWithValue }) => {
+  async (forceRefresh = false, { rejectWithValue }) => {
     try {
+      // Check cache first if not forcing refresh
+      if (!forceRefresh) {
+        const cached = getCachedData<UserPaymentDetail[]>(CACHE_KEYS.USER_PAYMENT_DETAILS);
+        if (cached) {
+          console.log('Using cached user payment details');
+          return cached.data;
+        }
+      }
+
+      // Fetch from API
+      console.log('Fetching user payment details from API');
       const response = await get<UserPaymentDetail[]>(EXCHANGE_ENDPOINTS.USER_PAYMENT_DETAILS);
+      
+      // Cache the response
+      setCachedData(CACHE_KEYS.USER_PAYMENT_DETAILS, response.data);
+      
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to fetch user payment details');
@@ -68,12 +154,27 @@ export const fetchUserPaymentDetails = createAsyncThunk<UserPaymentDetail[]>(
   }
 );
 
-// Fetch admin payment details
-export const fetchAdminPaymentDetails = createAsyncThunk<AdminPaymentDetail[]>(
+// Fetch admin payment details with caching
+export const fetchAdminPaymentDetails = createAsyncThunk<AdminPaymentDetail[], boolean | undefined>(
   'payment/fetchAdminPaymentDetails',
-  async (_, { rejectWithValue }) => {
+  async (forceRefresh = false, { rejectWithValue }) => {
     try {
+      // Check cache first if not forcing refresh
+      if (!forceRefresh) {
+        const cached = getCachedData<AdminPaymentDetail[]>(CACHE_KEYS.ADMIN_PAYMENT_DETAILS);
+        if (cached) {
+          console.log('Using cached admin payment details');
+          return cached.data;
+        }
+      }
+
+      // Fetch from API
+      console.log('Fetching admin payment details from API');
       const response = await get<AdminPaymentDetail[]>(EXCHANGE_ENDPOINTS.ADMIN_PAYMENT_DETAILS);
+      
+      // Cache the response
+      setCachedData(CACHE_KEYS.ADMIN_PAYMENT_DETAILS, response.data);
+      
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to fetch admin payment details');
@@ -145,6 +246,12 @@ const paymentSlice = createSlice({
       .addCase(fetchUserPaymentDetails.fulfilled, (state, action: PayloadAction<UserPaymentDetail[]>) => {
         state.loading = false;
         state.userPaymentDetails = action.payload;
+        // Update cache metadata
+        state.cache.userPaymentDetails = {
+          data: action.payload,
+          timestamp: Date.now(),
+          expiresAt: Date.now() + CACHE_DURATION,
+        };
       })
       .addCase(fetchUserPaymentDetails.rejected, (state, action) => {
         state.loading = false;
@@ -158,6 +265,12 @@ const paymentSlice = createSlice({
       .addCase(fetchAdminPaymentDetails.fulfilled, (state, action: PayloadAction<AdminPaymentDetail[]>) => {
         state.loading = false;
         state.adminPaymentDetails = action.payload;
+        // Update cache metadata
+        state.cache.adminPaymentDetails = {
+          data: action.payload,
+          timestamp: Date.now(),
+          expiresAt: Date.now() + CACHE_DURATION,
+        };
       })
       .addCase(fetchAdminPaymentDetails.rejected, (state, action) => {
         state.loading = false;
@@ -171,6 +284,8 @@ const paymentSlice = createSlice({
       .addCase(addUserPaymentDetail.fulfilled, (state, action: PayloadAction<UserPaymentDetail>) => {
         state.loading = false;
         state.userPaymentDetails.push(action.payload);
+        // Invalidate cache since we added new data
+        state.cache.userPaymentDetails = null;
       })
       .addCase(addUserPaymentDetail.rejected, (state, action) => {
         state.loading = false;

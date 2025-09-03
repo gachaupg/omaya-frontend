@@ -5,13 +5,31 @@
  */
 
 import React from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import clsx from "clsx";
 import { navItems } from "@/utils/data";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleNavClick = (item: typeof navItems[0], e: React.MouseEvent) => {
+    // Check if we're currently in this section
+    // For Dashboard, only match exact path since other routes start with /dashboard/
+    // For other routes, match exact path or sub-pages
+    const isInSection = item.href === '/dashboard' 
+      ? pathname === item.href 
+      : pathname === item.href || (pathname && pathname.startsWith(item.href + '/'));
+    
+    if (isInSection) {
+      e.preventDefault();
+      // If already in this section, navigate smoothly to reset the page state
+      router.push(item.href);
+      // Force a refresh of the current route to reset any component state
+      router.refresh();
+    }
+  };
 
   return (
     <>
@@ -25,12 +43,15 @@ export default function Sidebar() {
         <nav>
           <ul className="space-y-1">
             {navItems.map((item) => {
-              const isActive = pathname === item.href;
+              const isActive = item.href === '/dashboard' 
+                ? pathname === item.href 
+                : pathname === item.href || (pathname && pathname.startsWith(item.href + '/'));
               return (
                 <li key={item.label}>
                   <Link
                     prefetch={true}
                     href={item.href}
+                    onClick={(e) => handleNavClick(item, e)}
                     className={clsx(
                       "flex items-center px-6 py-3 rounded-lg text-base font-medium gap-4 transition",
                       "w-full sm:w-auto",
@@ -95,11 +116,14 @@ export default function Sidebar() {
         <nav className="px-6">
           <ul className="flex items-center space-x-4 py-3">
             {navItems.map((item) => {
-              const isActive = pathname === item.href;
+              const isActive = item.href === '/dashboard' 
+                ? pathname === item.href 
+                : pathname === item.href || (pathname && pathname.startsWith(item.href + '/'));
               return (
                 <li key={item.label}>
                   <Link
                     href={item.href}
+                    onClick={(e) => handleNavClick(item, e)}
                     className={clsx(
                       "flex items-center justify-center px-3 py-2 rounded-lg text-sm font-medium gap-2 whitespace-nowrap transition",
                       isActive

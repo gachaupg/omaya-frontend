@@ -24,6 +24,8 @@ export const EXCHANGE_ENDPOINTS = {
     },
     // Deposit status endpoint
     DEPOSIT_STATUS: (transactionId: string) => `/deposits/${transactionId}/`,
+    // Update deposit address endpoint
+    UPDATE_DEPOSIT_ADDRESS: '/trading_engine/deposits/update-address/',
     // Payment
     PAYMENT_METHODS: '/payments/payment-methods/',
     PAYMENT_PROVIDERS: (methodName: string) => `/payments/payment-providers/${methodName}/`,

@@ -37,7 +37,7 @@ export const getSupportedAssets = async (): Promise<SupportedAsset[]> => {
       console.error("Failed to fetch supported assets:", error);
 
       // Handle different error scenarios
-      if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
+      if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND" || error.message?.includes("Network Error")) {
         console.warn("Network connection issue, returning empty assets list");
         return [];
       }
