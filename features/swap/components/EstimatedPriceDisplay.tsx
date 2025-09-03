@@ -21,7 +21,7 @@ const EstimatedPriceDisplay: React.FC<EstimatedPriceDisplayProps> = ({
   // Calculate the rate if estimate is available
   const rate =
     estimate && fromAmount && parseFloat(fromAmount) > 0
-      ? estimate.estimated_amount / parseFloat(fromAmount)
+      ? ((estimate.toAmount || estimate.estimated_amount) || 0) / parseFloat(fromAmount)
       : 0;
 
   // Use gas_fee from estimate for network fee, show "00" if not available
