@@ -28,10 +28,10 @@ const FeeBreakdown: React.FC<FeeBreakdownProps> = ({
             : estimate &&
                 fromAsset &&
                 toAsset &&
-                estimate.estimated_amount &&
+                (estimate.toAmount || estimate.estimated_amount) &&
                 fromAmount
               ? `1 ${fromAsset.ticker} = ${(
-                  estimate.estimated_amount / parseFloat(fromAmount || "1")
+                  ((estimate.toAmount || estimate.estimated_amount) || 0) / parseFloat(fromAmount || "1")
                 ).toFixed(6)} ${toAsset.ticker}`
               : "Select assets and amount to see rate"}
         </span>

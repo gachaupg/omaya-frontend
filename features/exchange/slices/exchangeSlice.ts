@@ -4,6 +4,7 @@
 import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import {
   post,
+  patch,
   get,
   del,
   AxiosError,
@@ -213,18 +214,29 @@ export const createWithdrawal = createAsyncThunk<
 );
 
 export const updateDepositAddress = createAsyncThunk<
-  Transaction,
+  { message: string; exchange_transaction_id: string; status: string },
   { transactionId: string; depositAddress: string }
 >(
   "exchange/updateDepositAddress",
   async ({ transactionId, depositAddress }, { rejectWithValue }) => {
     try {
-      const formData = new FormData();
-      formData.append("deposit_address", depositAddress);
+      // Debug logging
+      const endpoint = EXCHANGE_ENDPOINTS.UPDATE_DEPOSIT_ADDRESS;
+      console.log("DEBUG: Update deposit address endpoint:", endpoint);
+      console.log("DEBUG: Transaction ID:", transactionId);
+      console.log("DEBUG: Deposit address:", depositAddress);
       
-      const response = await post<Transaction>(
-        EXCHANGE_ENDPOINTS.DEPOSIT_STATUS(transactionId),
-        formData
+      // Use the exact payload format you specified
+      const payload = {
+        exchange_transaction_id: transactionId,
+        deposit_address: depositAddress
+      };
+      
+      console.log("DEBUG: Payload being sent:", payload);
+      
+      const response = await post<{ message: string; exchange_transaction_id: string; status: string }>(
+        endpoint,
+        payload
       );
       return response.data;
     } catch (error) {
@@ -483,15 +495,15 @@ const exchangeSlice = createSlice({
     });
     builder.addCase(
       updateDepositAddress.fulfilled,
-      (state, action: PayloadAction<Transaction>) => {
+      (state, action: PayloadAction<{ message: string; exchange_transaction_id: string; status: string }>) => {
         state.loading = false;
         // Update the deposit in the deposits array if it exists
         if (state.deposits && Array.isArray(state.deposits)) {
           const index = state.deposits.findIndex(
-            (deposit) => deposit.transaction_id === action.payload.transaction_id
+            (deposit) => deposit.transaction_id === action.payload.exchange_transaction_id
           );
           if (index !== -1) {
-            state.deposits[index] = action.payload;
+            state.deposits[index] = { ...state.deposits[index], status: action.payload.status };
           }
         }
       }

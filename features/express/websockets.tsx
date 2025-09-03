@@ -10,6 +10,8 @@ export interface TransactionStatusMessage {
       | "failed"
       | "completed"
       | "awaiting_payment"
+      | "awaiting_deposit"
+      | "pending_blockchain"
       | "processing"
       | "exchanging"
       | "sending"
@@ -20,7 +22,8 @@ export interface TransactionStatusMessage {
       | "waiting"
       | "confirming"
       | "admin_approval_required"
-      | "agent_approve";
+      | "agent_approve"
+      | "error";
     message: string;
     timestamp: string;
     transaction_id: string;
@@ -37,6 +40,25 @@ export interface TransactionStatusMessage {
     to_address?: string;
     blockchain_hash?: string;
     event_id?: string;
+    // Deposit-specific fields
+    asset?: string;
+    net_amount?: string;
+    deposit_address?: string;
+    deposit_code?: string;
+    type?: string;
+    network?: string;
+    fees?: {
+      commission?: string;
+      network_fee?: string;
+      total_fees?: string;
+    };
+    // New deposit status update format fields
+    transaction_type?: "deposit" | "withdrawal";
+    tx_hash?: string;
+    created_at?: string;
+    updated_at?: string;
+    // Final status indicator
+    is_final?: boolean;
   };
   // Legacy fields for backward compatibility
   tx_hash?: string;
@@ -45,6 +67,8 @@ export interface TransactionStatusMessage {
   status?: string;
   timestamp?: string;
   error?: string;
+  // Final status indicator
+  is_final?: boolean;
 }
 
 // Base WebSocket class for transaction status
@@ -318,6 +342,7 @@ export class WithdrawalStatusWebSocket extends BaseTransactionStatusWebSocket {
 export class DepositStatusWebSocket extends BaseTransactionStatusWebSocket {
   constructor(
     transactionId: string,
+    wsUrl?: string,
     options: {
       onMessage?: (data: TransactionStatusMessage) => void;
       onError?: (error: Event) => void;
@@ -325,8 +350,17 @@ export class DepositStatusWebSocket extends BaseTransactionStatusWebSocket {
       autoReconnect?: boolean;
     } = {}
   ) {
-    const wsUrl = API_CONFIG.EXCHANGE.SOCKETS.DEPOSIT_STATUS(transactionId);
-    super(transactionId, wsUrl, options);
+    // Use provided WebSocket URL or fall back to default
+    // Only use provided URL if it's not empty or undefined
+    const finalWsUrl = (wsUrl && wsUrl.trim() !== "") 
+      ? wsUrl 
+      : API_CONFIG.EXCHANGE.SOCKETS.DEPOSIT_STATUS(transactionId);
+    
+    console.log("DEBUG: DepositStatusWebSocket constructor - wsUrl:", wsUrl);
+    console.log("DEBUG: DepositStatusWebSocket constructor - finalWsUrl:", finalWsUrl);
+    console.log("DEBUG: Using provided URL:", !!wsUrl);
+    console.log("DEBUG: URL is empty/undefined:", !wsUrl || wsUrl.trim() === "");
+    super(transactionId, finalWsUrl, options);
   }
 }
 

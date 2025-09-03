@@ -114,9 +114,12 @@ const SwapWidget = () => {
     if (
       estimate &&
       !estimateLoading &&
-      estimate.estimated_amount !== undefined
+      (estimate.toAmount !== undefined || estimate.estimated_amount !== undefined)
     ) {
-      dispatch(setToAmount(estimate.estimated_amount.toString()));
+      const amount = estimate.toAmount || estimate.estimated_amount;
+      if (amount !== undefined) {
+        dispatch(setToAmount(amount.toString()));
+      }
     }
   }, [estimate, estimateLoading, dispatch]);
 

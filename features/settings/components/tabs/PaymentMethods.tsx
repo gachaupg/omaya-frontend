@@ -44,9 +44,9 @@ const PaymentMethods = () => {
   };
 
   return (
-    <div className="p-3 dark:text-white text-gray-900">
+    <div className="p-3 dark:text-white w-full text-gray-900 w-full">
       {/* Top Header Section */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center w-full justify-between mb-4">
         <div>
           <div className="text-sm font-semibold dark:text-white text-gray-900 mb-2">
             Wallet Address
@@ -68,7 +68,7 @@ const PaymentMethods = () => {
           <span className="text-lg leading-none">+</span>
         </button>
       </div>
-      <div className="flex flex-col gap-3">
+      <div className="flex w-full flex-col gap-3">
         <p className="text-base font-semibold dark:text-white text-gray-900">
           {" "}
           Payment Methods
