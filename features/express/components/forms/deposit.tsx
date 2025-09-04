@@ -256,13 +256,7 @@ export default function DepositForm({
 
       // Use the actual fetchSwapEstimate API call for deposit
       // For deposits: fromCurrency is USDT, toCurrency is the selected asset
-      console.log("Fetching estimate for deposit:", {
-        fromCurrency: "USDT",
-        fromNetwork: "BSC",
-        toCurrency: selectedAsset.ticker, 
-        toNetwork: selectedAsset.network, 
-        amount: payAmount,
-      });
+      
 
       // Add timeout to prevent hanging API calls
       const timeoutPromise = new Promise((_, reject) => {
@@ -282,7 +276,6 @@ export default function DepositForm({
         timeoutPromise
       ])
         .then((result: any) => {
-          console.log("Estimate result:", result);
           if (result.payload) {
             setEstimate(result.payload);
           }
@@ -309,11 +302,11 @@ export default function DepositForm({
             showToast.warning("Using estimated rate due to server issues");
           } else if (error.message?.includes("Invalid swap parameters")) {
             setEstimateError("Invalid parameters: Using fallback calculation");
-            console.log("Using fallback calculation due to invalid API parameters");
+           
             showToast.warning("Invalid parameters: Using estimated rate");
           } else {
             setEstimateError("API error: Using fallback calculation");
-            console.log("Using fallback calculation due to API error");
+          
             showToast.warning("Using estimated rate due to API unavailability");
           }
           
