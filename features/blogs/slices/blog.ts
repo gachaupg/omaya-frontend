@@ -11,33 +11,87 @@ const initialState: BlogState = {
   news: [],
   loading: false,
   error: null,
+  // Add flags to track if data has been fetched
+  blogsFetched: false,
+  newsFetched: false,
+  // Add flags to prevent multiple simultaneous requests
+  blogsLoading: false,
+  newsLoading: false,
 };
 
 export const fetchBlogs = createAsyncThunk(
   "blog/fetchBlogs",
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, getState }) => {
+    const state = getState() as { blog: BlogState };
+    
+    // Prevent multiple simultaneous requests
+    if (state.blog.blogsLoading || state.blog.blogsFetched) {
+      console.log("Blogs already loading or fetched, skipping");
+      return state.blog.blogs;
+    }
+
     try {
       const blogs = await blogApi.fetchBlogs();
       // Filter for blog category
       return blogs.filter((blog: BlogPost) => blog.category === 'blog');
     } catch (error) {
-      return rejectWithValue(
-        error instanceof Error ? error.message : "Failed to fetch blogs"
-      );
+      console.error("fetchBlogs error:", error);
+      // Return fallback data instead of rejecting
+      return [
+        {
+          _id: "fallback-blog-1",
+          id: 1,
+          title: "Blog Service Temporarily Unavailable",
+          description: "Our blog service is currently experiencing technical difficulties. Please check back later for the latest updates and articles.",
+          content: "Our blog service is currently experiencing technical difficulties. Please check back later for the latest updates and articles.",
+          slug: "service-unavailable",
+          image: "/images/placeholder.jpg",
+          author_name: "System",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          category: "blog",
+          tags: ["system", "notice"],
+        },
+      ];
     }
   }
 );
 
 export const fetchNews = createAsyncThunk(
   "blog/fetchNews",
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, getState }) => {
+    const state = getState() as { blog: BlogState };
+    
+    // Prevent multiple simultaneous requests
+    if (state.blog.newsLoading || state.blog.newsFetched) {
+      console.log("News already loading or fetched, skipping");
+      return state.blog.news;
+    }
+
     try {
       const news = await blogApi.fetchNews();
       return news;
     } catch (error) {
-      return rejectWithValue(
-        error instanceof Error ? error.message : "Failed to fetch news"
-      );
+      console.error("fetchNews error:", error);
+      // Return fallback data instead of rejecting
+      return [
+        {
+          _id: "fallback-news-1",
+          id: 1,
+          title: "News Service Temporarily Unavailable",
+          description: "Our news service is currently experiencing technical difficulties. Please check back later for the latest updates and articles.",
+          content: "Our news service is currently experiencing technical difficulties. Please check back later for the latest updates and articles.",
+          slug: "news-service-unavailable",
+          image: "/images/placeholder.jpg",
+          author_name: "System",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          category: "news",
+          tags: ["system", "notice"],
+        },
+      ];
     }
   }
 );
@@ -55,17 +109,22 @@ const blogSlice = createSlice({
     builder
       .addCase(fetchBlogs.pending, (state) => {
         state.loading = true;
+        state.blogsLoading = true;
         state.error = null;
       })
       .addCase(
         fetchBlogs.fulfilled,
         (state, action: PayloadAction<BlogPost[]>) => {
           state.loading = false;
+          state.blogsLoading = false;
+          state.blogsFetched = true;
           state.blogs = action.payload;
         }
       )
       .addCase(fetchBlogs.rejected, (state, action) => {
         state.loading = false;
+        state.blogsLoading = false;
+        state.blogsFetched = true;
         state.error = action.payload as string;
       });
 
@@ -73,17 +132,22 @@ const blogSlice = createSlice({
     builder
       .addCase(fetchNews.pending, (state) => {
         state.loading = true;
+        state.newsLoading = true;
         state.error = null;
       })
       .addCase(
         fetchNews.fulfilled,
         (state, action: PayloadAction<BlogPost[]>) => {
           state.loading = false;
+          state.newsLoading = false;
+          state.newsFetched = true;
           state.news = action.payload;
         }
       )
       .addCase(fetchNews.rejected, (state, action) => {
         state.loading = false;
+        state.newsLoading = false;
+        state.newsFetched = true;
         state.error = action.payload as string;
       });
   },

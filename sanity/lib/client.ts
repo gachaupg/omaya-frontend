@@ -1,14 +1,20 @@
 // sanity/lib/client.ts
 import { createClient } from '@sanity/client';
+import { getSanityConfig } from '@/lib/sanityConfig';
 
-// Basic client configuration for data fetching only
-export const client = createClient({
-  projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || 'your-project-id',
-  dataset: process.env.NEXT_PUBLIC_SANITY_DATASET || 'production',
-  apiVersion: process.env.NEXT_PUBLIC_SANITY_API_VERSION || '2024-01-01',
-  useCdn: false, // Set to false for real-time data
-  token: process.env.NEXT_PUBLIC_SANITY_READ_TOKEN, // Optional: for private datasets
-});
+const config = getSanityConfig();
+
+// Only create client if Sanity is properly configured
+export const client = config.isConfigured ? createClient({
+  projectId: config.projectId!,
+  dataset: config.dataset,
+  apiVersion: config.apiVersion,
+  useCdn: true, // Use CDN for better performance and reliability
+  token: config.token, // Optional: for private datasets
+  // Add timeout configuration
+  requestTagPrefix: 'omaya-blog',
+  timeout: 10000, // 10 second timeout
+}) : null;
 
 // Simple image URL builder
 export const imageBuilder = (source: any) => {
