@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+    restart: unless-stopped
+    # Uncomment the following lines if you need to connect to external services
+    # networks:
+    #   - app-network
+
+# Uncomment if you need a custom network
+# networks:
+#   app-network:
+#     driver: bridge
