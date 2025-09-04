@@ -168,7 +168,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
         "express_transaction_data",
         JSON.stringify(transactionData)
       );
-      console.log("Stored transaction data in localStorage:", transactionData);
+    
     }
   }, [transactionData]);
 
@@ -176,9 +176,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   useEffect(() => {
     if (showSuccess) {
       localStorage.removeItem("express_transaction_data");
-      console.log(
-        "Cleared transaction data from localStorage - transaction completed"
-      );
+      
     }
   }, [showSuccess]);
 
@@ -696,17 +694,17 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 isDark ? "text-white" : "text-gray-900"
               } text-base font-semibold mb-1 flex items-center gap-2`}
             >
-              <span>
+             <span>
                 {liveAmount !== null
                   ? liveAmount
                   : effectiveTransactionData?.amount || 0}{" "}
-                <span className="uppercase">
-                  {liveCurrency ||
+                { effectiveTransactionData?.type === "deposit" ?'USD': <span className="uppercase">
+                {liveCurrency ||
                     effectiveTransactionData?.asset?.ticker ||
                     effectiveTransactionData?.asset?.symbol ||
                     effectiveTransactionData?.asset?.name ||
                     "USDT"}
-                </span>
+                </span>}
               </span>
             </div>
             {/* {liveAmount !== null &&
@@ -1835,7 +1833,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     } text-base font-normal ml-1 align-middle`}
                   >
                     {effectiveTransactionData?.asset?.description ||
-                      "Tether US"}
+                      ""}
                   </span>
                   <div
                     className={`${
