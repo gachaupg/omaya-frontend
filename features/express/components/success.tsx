@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { FaCheckCircle } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import CopyButton from "@/components/ui/CopyButton";
@@ -87,6 +87,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
 }) => {
   const router = useRouter();
   const { isDark, isLight } = useTheme();
+  const [formattedDate, setFormattedDate] = useState<string>("");
 
   // Extract real data from transactionData and websocketData if available
   const getRealData = () => {
@@ -193,7 +194,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
     
     // Check for tx_hash from new deposit format (highest priority)
     if (websocketData?.data?.tx_hash) {
-      txHash = websocketData.data.tx_hash;
+      txHash = websocketData.data.tx_hash || websocketData.data.transaction_hash;
     } else if (websocketData?.data?.payinHash) {
       txHash = websocketData.data.payinHash;
     } else if (websocketData?.data?.payoutHash) {
@@ -209,29 +210,36 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
     return {
       transactionId: txId,
       date: websocketData?.data?.updated_at ? 
-            new Date(websocketData.data.updated_at).toLocaleString() : 
+            websocketData.data.updated_at : 
             websocketData?.data?.updatedAt ? 
-            new Date(websocketData.data.updatedAt).toLocaleString() : 
-            new Date().toLocaleString(),
+            websocketData.data.updatedAt : 
+            new Date().toISOString(),
       paidAmount: `${formatAmount(amount)} ${currency}`,
       paidCurrency: currency,
-      receivedAmount: `${formatAmount(estimatedAmount)} ${currency}`,
+      receivedAmount: formatAmount(estimatedAmount),
       receivedCurrency: currency,
       payinMethod: isDeposit ? paymentMethod : `${currency} Wallet`,
       payoutMethod: isWithdrawal ? paymentMethod : `${currency} Wallet`,
       transactionHash: txHash,
-      netAmount: `${formatAmount(estimatedAmount)} ${currency}`,
+      netAmount: formatAmount(estimatedAmount),
     };
   };
 
   const realData = getRealData();
+
+  // Format date on client side to avoid hydration mismatch
+  useEffect(() => {
+    if (realData.date) {
+      setFormattedDate(new Date(realData.date).toLocaleString());
+    }
+  }, [realData.date]);
   
   return (
-    <div className="flex flex-col  items-center justify-center w-full">
+    <div className="flex flex-col mt-1 w-full max-w-2xl mx-auto px-4">
       {/* Success Image */}
       <div className="flex flex-col w-full items-center mb-4">
         <img 
-          className="w-80 h-64 object-contain" 
+          className="w-80 h-40 object-contain" 
           src={isDark 
             ? "https://res.cloudinary.com/pitz/image/upload/v1756484286/Screenshot_2025-08-29_191548_two36s.png" 
             : "https://res.cloudinary.com/pitz/image/upload/v1756925670/success_wdhc19.png"
@@ -266,7 +274,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
               }`}>Date & Time</div>
               <div className={`${
                 isDark ? "text-white" : "text-gray-900"
-              }`}>{realData.date}</div>
+              }`}>{formattedDate || realData.date}</div>
             </div>
           </div>
         </div>
@@ -298,17 +306,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
                 isDark ? "text-gray-400" : "text-gray-600"
               }`}>You Received</div>
               <div className="font-bold flex items-center justify-end gap-2" style={{ color: GREEN }}>
-                {transactionData?.asset?.icon && (
-                  <img
-                    src={transactionData.asset.icon}
-                    alt={realData.receivedCurrency}
-                    className="w-5 h-5"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                )}
-                <span>{realData.receivedAmount} {realData.receivedCurrency}</span>
+                <span>{realData.receivedAmount} </span>
               </div>
             </div>
           </div>
@@ -358,7 +356,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
       </div>
 
       {/* Action Buttons */}
-      <div className="w-full  mt-2 space-y-3">
+      <div className="w-full mt-2 space-y-3">
        <img 
          className="w-full" 
          src={isDark 
