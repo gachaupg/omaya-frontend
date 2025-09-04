@@ -18,11 +18,11 @@ export const fetchBlogs = async (): Promise<Blog[]> => {
     try {
       // Check if Sanity is properly configured and client exists
       if (!validateSanityConfig() || !client) {
-        console.warn("Sanity not configured, returning fallback data");
+        console.warn(`[API] Sanity not configured, returning fallback data (container: ${process.env.HOSTNAME || 'unknown'})`);
         return getFallbackBlogs();
       }
 
-      console.log("Fetching blogs from Sanity...");
+      console.log(`[API] Fetching blogs from Sanity... (container: ${process.env.HOSTNAME || 'unknown'})`);
       const data = await client.fetch(
         `*[_type == "blog"] | order(createdAt desc) {
             _id, 
@@ -35,9 +35,10 @@ export const fetchBlogs = async (): Promise<Blog[]> => {
           }`
       );
       
+      console.log(`[API] Successfully fetched ${data?.length || 0} blogs from Sanity`);
       return data || [];
     } catch (err) {
-      console.error("Failed to load blogs from Sanity:", err);
+      console.error(`[API] Failed to load blogs from Sanity:`, err);
       // Return fallback data instead of throwing error
       return getFallbackBlogs();
     }
