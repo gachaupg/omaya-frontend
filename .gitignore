@@ -9,6 +9,8 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+/.env
+/.env.local
 
 # testing
 /coverage
@@ -43,3 +45,14 @@ next-env.d.ts
 
 # build artifacts
 /dist
+
+# Docker
+docker-compose.override.yml
+.dockerignore
+
+# Environment files (keep .env.example in git)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local

@@ -37,4 +37,10 @@ export interface BlogState {
   news: BlogPost[];
   loading: boolean;
   error: string | null;
+  // Add flags to track if data has been fetched
+  blogsFetched: boolean;
+  newsFetched: boolean;
+  // Add flags to prevent multiple simultaneous requests
+  blogsLoading: boolean;
+  newsLoading: boolean;
 }

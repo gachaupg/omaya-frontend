@@ -1,5 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { client, imageBuilder } from "@/sanity/lib/client";
+import { validateSanityConfig } from "@/lib/sanityConfig";
+import { requestManager } from "@/lib/requestManager";
 
 export interface Blog {
   _id: string;
@@ -12,24 +14,48 @@ export interface Blog {
 }
 
 export const fetchBlogs = async (): Promise<Blog[]> => {
-  try {
-    console.log("Fetching blogs from Sanity...");
-    const data = await client.fetch(
-      `*[_type == "blog"] | order(createdAt desc) {
-          _id, 
-          title, 
-          description, 
-          category,
-          author_name, 
-          createdAt,
-          image
-        }`
-    );
-    return data || [];
-  } catch (err) {
-    throw new Error("Failed to load blogs from Sanity");
-  }
+  return requestManager.executeRequest('blogs', async () => {
+    try {
+      // Check if Sanity is properly configured and client exists
+      if (!validateSanityConfig() || !client) {
+        console.warn("Sanity not configured, returning fallback data");
+        return getFallbackBlogs();
+      }
+
+      console.log("Fetching blogs from Sanity...");
+      const data = await client.fetch(
+        `*[_type == "blog"] | order(createdAt desc) {
+            _id, 
+            title, 
+            description, 
+            category,
+            author_name, 
+            createdAt,
+            image
+          }`
+      );
+      
+      return data || [];
+    } catch (err) {
+      console.error("Failed to load blogs from Sanity:", err);
+      // Return fallback data instead of throwing error
+      return getFallbackBlogs();
+    }
+  }, 5 * 60 * 1000); // Cache for 5 minutes
 };
+
+const getFallbackBlogs = (): Blog[] => [
+  {
+    _id: "fallback-blog-1",
+    title: "Blog Service Temporarily Unavailable",
+    description:
+      "Our blog service is currently experiencing technical difficulties. Please check back later for the latest updates and articles.",
+    category: "system",
+    author_name: "System",
+    createdAt: new Date().toISOString(),
+    image: null,
+  },
+];
 
 export default async function handler(
   req: NextApiRequest,
@@ -43,20 +69,9 @@ export default async function handler(
     const blogs = await fetchBlogs();
     res.status(200).json(blogs);
   } catch (error) {
-
+    console.error("API handler error:", error);
     // Return fallback data instead of 500 error
-    const fallbackBlogs = [
-      {
-        _id: "fallback-blog-1",
-        title: "Blog Service Temporarily Unavailable",
-        description:
-          "Our blog service is currently experiencing technical difficulties. Please check back later for the latest updates and articles.",
-        category: "system",
-        author_name: "System",
-        createdAt: new Date().toISOString(),
-        image: null,
-      },
-    ];
+    const fallbackBlogs = getFallbackBlogs();
     res.status(200).json(fallbackBlogs);
   }
 }
