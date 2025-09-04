@@ -1,7 +1,11 @@
 version: '3.8'
 
 services:
+<<<<<<< HEAD
   omaya-frontend:
+=======
+  app:
+>>>>>>> 7fc1c6492bd999b06ce13cc9d2c0860261f324f1
     build:
       context: .
       dockerfile: Dockerfile
@@ -11,6 +15,7 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - HOSTNAME=0.0.0.0
+<<<<<<< HEAD
       # Add your environment variables here
       - NEXT_PUBLIC_SANITY_PROJECT_ID=${NEXT_PUBLIC_SANITY_PROJECT_ID:-}
       - NEXT_PUBLIC_SANITY_DATASET=${NEXT_PUBLIC_SANITY_DATASET:-production}
@@ -29,3 +34,14 @@ services:
 networks:
   omaya-network:
     driver: bridge
+=======
+    restart: unless-stopped
+    # Uncomment the following lines if you need to connect to external services
+    # networks:
+    #   - app-network
+
+# Uncomment if you need a custom network
+# networks:
+#   app-network:
+#     driver: bridge
+>>>>>>> 7fc1c6492bd999b06ce13cc9d2c0860261f324f1
