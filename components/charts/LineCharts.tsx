@@ -572,7 +572,7 @@ const LineCharts = ({
 
   // Process exchange transactions for Exchange Overview
   useEffect(() => {
-    if (exchangeTransactions && userEmail) {
+    if (exchangeTransactions && Array.isArray(exchangeTransactions) && userEmail) {
       const depositData = Array(12).fill(0);
       const withdrawalData = Array(12).fill(0);
       const currentDate = new Date();
