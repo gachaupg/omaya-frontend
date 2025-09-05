@@ -11,6 +11,10 @@ export interface FAQ {
 
 export const fetchFAQs = async (category?: string): Promise<FAQ[]> => {
   try {
+    if (!client) {
+      throw new Error("Sanity client not configured");
+    }
+
     const query = `*[_type == "faq" ${category ? `&& category == "${category}"` : ""}] | order(createdAt desc) {
       _id,
       title,
