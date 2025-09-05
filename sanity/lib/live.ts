@@ -6,6 +6,9 @@ import { client } from "./client";
 
 // Temporarily disable live functionality due to type conflicts
 export const sanityFetch = async (query: string, params?: any) => {
+  if (!client) {
+    throw new Error("Sanity client not configured");
+  }
   return client.fetch(query, params);
 };
 
