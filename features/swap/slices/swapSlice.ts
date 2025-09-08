@@ -12,6 +12,7 @@ import {
 import { getSupportedAssets, getEstimateSwap, createSwap } from "../api";
 import { showToast } from "@/lib/utils/toast";
 import { handleApiError } from "@/lib/utils/errorHandler";
+import { sliceCache } from "../../../lib/utils/sliceCache";
 
 interface SwapState {
   fromAsset: SupportedAsset | null;
@@ -52,8 +53,17 @@ export const fetchSupportedAssets = createAsyncThunk(
   "swap/fetchSupportedAssets",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await getSupportedAssets();
-      return response;
+      const data = await sliceCache.getOrSet(
+        'swap',
+        'fetchSupportedAssets',
+        async () => {
+          const response = await getSupportedAssets();
+          return response;
+        },
+        undefined, // no params
+        60 * 60 * 1000 // 1 hour cache
+      );
+      return data;
     } catch (error) {
       console.error("Failed to fetch supported assets:", error);
       // Only show toast if it's a network error or server error
@@ -93,14 +103,31 @@ export const fetchSwapEstimate = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      const response = await getEstimateSwap(
+      const params = {
         fromCurrency,
         fromNetwork,
         toCurrency,
         toNetwork,
-        amount
+        amount,
+      };
+      
+      const data = await sliceCache.getOrSet(
+        'swap',
+        'fetchSwapEstimate',
+        async () => {
+          const response = await getEstimateSwap(
+            fromCurrency,
+            fromNetwork,
+            toCurrency,
+            toNetwork,
+            amount
+          );
+          return response;
+        },
+        params, // cache based on all parameters
+        5 * 60 * 1000 // 5 minutes cache for estimates (shorter TTL since they're more dynamic)
       );
-      return response;
+      return data;
     } catch (error) {
       console.error("Failed to fetch swap estimate:", error);
       // Only show toast for server errors or network issues

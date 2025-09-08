@@ -9,20 +9,14 @@ import {
 } from "../../../exchange/slices/paymentSlice";
 import { fetchAssets } from "../../../exchange/slices/exchangeSlice";
 import { createDeposit } from "../../../exchange/slices/exchangeSlice";
-import {
-  fetchSupportedAssets,
-  fetchSwapEstimate,
-} from "../../../swap/slices/swapSlice";
+import {fetchSupportedAssets,fetchSwapEstimate,} from "../../../swap/slices/swapSlice";
 import { validateWalletAddress } from "../../../../lib/addressValidaion";
 import { showToast } from "../../../../lib/utils/toast";
 import { DepositResponse } from "../../../exchange/types";
 import { SupportedAsset } from "../../../swap/types";
 import { FaSearch } from "react-icons/fa";
 import { createExpressWithdrawal } from "../../api";
-import {
-  ExpressWithdrawalPayload,
-  ExpressWithdrawalResponse,
-} from "../../types";
+import {ExpressWithdrawalPayload,ExpressWithdrawalResponse,} from "../../types";
 import PaymentMethodsModal from "../../../p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal";
 import InfoModal from "./info";
 
@@ -239,6 +233,9 @@ export default function WithdrawalForm({
   // Add calculation error state for display below "You Send" input
   const [calculationError, setCalculationError] = useState<string | null>(null);
 
+  // Add API validation error state for display below "You will receive" input
+  const [apiValidationError, setApiValidationError] = useState<string | null>(null);
+
 
 
   // Filter user payment details based on selected payment method
@@ -389,21 +386,39 @@ export default function WithdrawalForm({
       // Clear any existing estimate when asset changes
       setEstimate(null);
       setEstimateError(null);
-      // Trigger calculation with new asset
+      setEstimateLoading(false);
+      setCalculationError(null);
+      setReceiveAmountError(null);
+      setApiValidationError(null);
+      
+      // Check asset type first and handle accordingly
+      if (isSimpleCalculationAsset(selectedAsset)) {
+        console.log("Asset changed to simple asset, calculating immediately");
+        // For simple assets, calculate immediately
       calculateAmounts(payAmount, true);
+      } else {
+        console.log("Asset changed to non-simple asset, going to API");
+        // For non-simple assets, the estimate useEffect will handle the API call
+        // Just set loading states for visual feedback
+        setIsCalculating(true);
+        setIsCalculatingReceive(true);
+        setEstimateLoading(true);
+      }
     }
   }, [selectedAsset]);
 
-  // Handle estimate updates and trigger recalculation
+  // Handle estimate updates and trigger recalculation - ONLY for forward calculations
   useEffect(() => {
     console.log("Estimate effect triggered:", { 
       hasEstimate: !!estimate, 
       estimateLoading, 
       isCalculatingFromPay, 
       payAmount,
-      estimateAmount: estimate?.toAmount || estimate?.estimated_amount 
+      estimateAmount: estimate?.toAmount || estimate?.estimated_amount,
+      apiValidationError
     });
     
+    // Only handle forward calculations (when calculating from pay amount)
     if (estimate && !estimateLoading && isCalculatingFromPay && payAmount > 0) {
       const estimateAmount = estimate.toAmount || estimate.estimated_amount;
       console.log("Estimate received, updating receive amount:", estimateAmount);
@@ -430,29 +445,40 @@ export default function WithdrawalForm({
         console.log("DEBUG: Invalid estimate received, keeping loading state");
         setGetAmount(0);
         setGetAmountInput("");
+        if (!apiValidationError) {
+          if (!apiValidationError) {
         setReceiveAmountError("Calculating..."); // Show immediate feedback
+      }
+        }
         // Keep loading states active
       }
-    } else if (estimateLoading && isCalculatingFromPay && payAmount > 0) {
+    } else if (estimateLoading && isCalculatingFromPay && payAmount > 0 && !apiValidationError) {
       // Keep field empty during loading - no intermediate estimates
       if (selectedAsset && !isSimpleCalculationAsset(selectedAsset)) {
         // Keep field completely empty during calculation
         setGetAmount(0);
         setGetAmountInput("");
+        if (!apiValidationError) {
+          if (!apiValidationError) {
         setReceiveAmountError("Calculating..."); // Show immediate feedback
       }
+        }
+      }
       // Set loading states for visual feedback
+      console.log("Setting loading states in estimate useEffect");
       setIsCalculating(true);
       setIsCalculatingReceive(true);
-    } else if (!estimate && !estimateLoading && isCalculatingFromPay && payAmount > 0 && selectedAsset && !isSimpleCalculationAsset(selectedAsset)) {
+    } else if (!estimate && !estimateLoading && isCalculatingFromPay && payAmount > 0 && selectedAsset && !isSimpleCalculationAsset(selectedAsset) && !apiValidationError) {
       // No estimate available but we're calculating from pay - keep loading
       console.log("DEBUG: No estimate available, keeping loading state");
       setGetAmount(0);
       setGetAmountInput("");
-      setReceiveAmountError("Calculating..."); // Show immediate feedback
+      if (!apiValidationError) {
+        setReceiveAmountError("Calculating..."); // Show immediate feedback
+      }
       // Keep loading states active
     }
-  }, [estimate, estimateLoading, isCalculatingFromPay, payAmount, selectedAsset]);
+  }, [estimate, estimateLoading, isCalculatingFromPay, payAmount, selectedAsset, apiValidationError]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -509,6 +535,51 @@ export default function WithdrawalForm({
     return "Failed to calculate estimate";
   };
 
+  // Helper function to handle API validation errors
+  const handleApiValidationError = (error: any): void => {
+    if (error.response?.data?.error) {
+      const errorData = error.response.data.error;
+      
+      // Handle amount validation errors
+      if (errorData.amount && Array.isArray(errorData.amount)) {
+        const amountErrors = errorData.amount;
+        if (amountErrors.some((err: string) => err.includes("decimal places"))) {
+          setApiValidationError("Ensure that there are no more than 8 decimal places.");
+          return;
+        }
+        if (amountErrors.some((err: string) => err.includes("too small"))) {
+          setApiValidationError("Amount is too small. Please increase the amount.");
+          return;
+        }
+        if (amountErrors.some((err: string) => err.includes("too large"))) {
+          setApiValidationError("Amount is too large. Please decrease the amount.");
+          return;
+        }
+        // Generic amount error
+        setApiValidationError(amountErrors[0]);
+        return;
+      }
+      
+      // Handle other validation errors
+      if (typeof errorData === "string") {
+        setApiValidationError(errorData);
+        return;
+      }
+      
+      // Handle nested error objects
+      if (typeof errorData === "object") {
+        const firstError = Object.values(errorData)[0];
+        if (Array.isArray(firstError) && firstError.length > 0) {
+          setApiValidationError(firstError[0]);
+          return;
+        }
+      }
+    }
+    
+    // Fallback to generic error message
+    setApiValidationError("Validation error occurred. Please check your input.");
+  };
+
   // Get default amount based on asset type
   const getDefaultAmount = (asset: any) => {
     if (!asset) return 100;
@@ -551,21 +622,27 @@ export default function WithdrawalForm({
         console.log("Using cached estimate:", cachedEntry.data);
         setEstimate(cachedEntry.data);
         setCalculationError(null); // Clear any previous errors
+        setApiValidationError(null);
         // Don't set any loading states for cached results
         return;
       }
 
-      // Set loading state immediately for visual feedback
-      setEstimateLoading(true);
-      setEstimateError(null);
-      setIsCalculating(true);
-      setIsCalculatingReceive(true);
+      // Set loading state immediately for visual feedback (only if no API validation errors)
+      if (!apiValidationError) {
+        setEstimateLoading(true);
+        setEstimateError(null);
+        setIsCalculating(true);
+        setIsCalculatingReceive(true);
+      }
       
-      // Show immediate fallback calculation for better UX
-      const immediateFallback = payAmount * 0.98; // Quick estimate
-      setGetAmount(immediateFallback);
-      setGetAmountInput(immediateFallback.toString());
-      setReceiveAmountError("Calculating precise rate...");
+      
+      // For non-simple assets, don't show fallback calculation - go directly to API
+      // Keep field empty during calculation - no intermediate values
+      setGetAmount(0);
+      setGetAmountInput("");
+      if (!apiValidationError) {
+        setReceiveAmountError("Calculating..."); // Show immediate feedback
+      }
 
       // Debounce the API call to prevent too many requests (increased to 300ms for better performance)
       const debounceTimeout = setTimeout(() => {
@@ -578,7 +655,11 @@ export default function WithdrawalForm({
           // Keep loading state instead of showing fallback
           setGetAmount(0);
           setGetAmountInput("");
-          setReceiveAmountError("Calculating..."); // Show immediate feedback
+          if (!apiValidationError) {
+          if (!apiValidationError) {
+        setReceiveAmountError("Calculating..."); // Show immediate feedback
+      }
+        }
           // Keep loading states active
         }, 1500); // Ultra-fast 1.5 second timeout for immediate response
 
@@ -608,6 +689,7 @@ export default function WithdrawalForm({
               console.log("Setting new estimate:", result.payload);
               setEstimate(result.payload);
               setCalculationError(null); // Clear any previous errors
+              setApiValidationError(null);
               // Cache the result with timestamp
               setEstimateCache(prev => new Map(prev).set(cacheKey, {
                 data: result.payload,
@@ -618,6 +700,145 @@ export default function WithdrawalForm({
           .catch((error) => {
             clearTimeout(timeoutId); // Clear timeout on error
             console.error("Failed to fetch swap estimate:", error);
+            console.error("Error response data:", error.response?.data);
+            console.error("Error response status:", error.response?.status);
+            
+            // Handle API validation errors for receive amount
+            if (error.response?.data?.error || error.response?.data?.response_data?.error) {
+              const errorData = error.response.data.error || error.response.data.response_data?.error;
+              const responseData = error.response.data.response_data;
+              
+              console.log("API ERROR DETECTED:", { errorData, responseData });
+              
+              // Handle amount validation errors (decimal places, too small, etc.)
+              // Check if errorData is an object with amount property (format 1)
+              if (errorData && typeof errorData === 'object' && errorData.amount && Array.isArray(errorData.amount)) {
+                const amountErrors = errorData.amount;
+                if (amountErrors.some((err: string) => err.includes("decimal places"))) {
+                  console.log("API ERROR: Decimal places validation error detected");
+                  setApiValidationError("Ensure that there are no more than 8 decimal places.");
+                  setReceiveAmountError("Ensure that there are no more than 8 decimal places.");
+                  // Stop loading states and show error
+                  setEstimateLoading(false);
+                  setIsCalculating(false);
+                  setIsCalculatingReceive(false);
+                  console.log("API ERROR: Loading states cleared for decimal places error");
+                  // Don't clear the input - let user see their value and fix it
+                  return;
+                }
+                if (amountErrors.some((err: string) => err.includes("12 digits before the decimal point"))) {
+                  console.log("API ERROR: 12 digits before decimal point validation error detected");
+                  setApiValidationError("Ensure that there are no more than 12 digits before the decimal point.");
+                  setReceiveAmountError("Ensure that there are no more than 12 digits before the decimal point.");
+                  // Stop loading states and show error
+                  setEstimateLoading(false);
+                  setIsCalculating(false);
+                  setIsCalculatingReceive(false);
+                  console.log("API ERROR: Loading states cleared for 12 digits error");
+                  // Don't clear the input - let user see their value and fix it
+                  return;
+                }
+                if (amountErrors.some((err: string) => err.includes("too small"))) {
+                  console.log("API ERROR: Amount too small validation error detected");
+                  setApiValidationError("Amount is too small. Please increase the amount.");
+                  setReceiveAmountError("Amount is too small. Please increase the amount.");
+                  // Stop loading states and show error
+                  setEstimateLoading(false);
+                  setIsCalculating(false);
+                  setIsCalculatingReceive(false);
+                  console.log("API ERROR: Loading states cleared for too small error");
+                  // Don't clear the input - let user see their value and fix it
+                  return;
+                }
+                if (amountErrors.some((err: string) => err.includes("too large"))) {
+                  setApiValidationError("Amount is too large. Please decrease the amount.");
+                  setReceiveAmountError("Amount is too large. Please decrease the amount.");
+                  // Stop loading states and show error
+                  setEstimateLoading(false);
+                  setIsCalculating(false);
+                  setIsCalculatingReceive(false);
+                  // Don't clear the input - let user see their value and fix it
+                  return;
+                }
+                // Generic amount error
+                setApiValidationError(amountErrors[0]);
+                setReceiveAmountError(amountErrors[0]);
+                // Stop loading states and show error
+                setEstimateLoading(false);
+                setIsCalculating(false);
+                setIsCalculatingReceive(false);
+                return;
+              }
+              
+              // Handle deposit_too_small error
+              if (errorData === "deposit_too_small" || 
+                  errorData === "Exchange service error: deposit_too_small" ||
+                  errorData?.error === "deposit_too_small" ||
+                  responseData?.error === "deposit_too_small") {
+                console.log("API ERROR: Deposit too small error detected");
+                const errorMessage = responseData?.message || "Amount is too small. Please increase the amount.";
+                setApiValidationError(errorMessage);
+                setReceiveAmountError(errorMessage);
+                // Stop loading states and show error
+                setEstimateLoading(false);
+                setIsCalculating(false);
+                setIsCalculatingReceive(false);
+                console.log("API ERROR: Loading states cleared for deposit too small error");
+                return;
+              }
+              
+              // Handle other validation errors
+              if (typeof errorData === "string") {
+                // Extract meaningful error message
+                let errorMessage = errorData;
+                if (errorData.includes("Exchange service error:")) {
+                  errorMessage = errorData.replace("Exchange service error: ", "");
+                }
+                if (responseData?.message) {
+                  errorMessage = responseData.message;
+                }
+                
+                setApiValidationError(errorMessage);
+                setReceiveAmountError(errorMessage);
+                // Stop loading states and show error
+                setEstimateLoading(false);
+                setIsCalculating(false);
+                setIsCalculatingReceive(false);
+                console.log("API ERROR: Generic error handled:", errorMessage);
+                return;
+              }
+            }
+            
+            // Fallback: Handle any other error formats that weren't caught above
+            console.log("FALLBACK ERROR HANDLING - No specific error format matched");
+            console.log("Raw error data:", error.response?.data);
+            
+            // Try to extract any meaningful error message
+            let fallbackErrorMessage = "Validation error occurred. Please check your input.";
+            if (error.response?.data?.error) {
+              if (typeof error.response.data.error === 'string') {
+                fallbackErrorMessage = error.response.data.error;
+              } else if (typeof error.response.data.error === 'object') {
+                // Try to extract from nested error object
+                const errorObj = error.response.data.error;
+                if (errorObj.amount && Array.isArray(errorObj.amount)) {
+                  fallbackErrorMessage = errorObj.amount[0];
+                } else if (errorObj.message) {
+                  fallbackErrorMessage = errorObj.message;
+                }
+              }
+            }
+            
+            console.log("FALLBACK: Setting error message:", fallbackErrorMessage);
+            setApiValidationError(fallbackErrorMessage);
+            setReceiveAmountError(fallbackErrorMessage);
+            // Stop loading states and show error
+            setEstimateLoading(false);
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
+            return;
+            
+            // Handle other error types
             const errorMessage = extractErrorMessage(error);
             setEstimateError(errorMessage);
             setCalculationError(errorMessage); // Show error below "You Send" input
@@ -625,7 +846,11 @@ export default function WithdrawalForm({
             // Keep loading state instead of showing fallback
             setGetAmount(0);
             setGetAmountInput("");
-            setReceiveAmountError("Calculating..."); // Show immediate feedback
+            if (!apiValidationError) {
+          if (!apiValidationError) {
+        setReceiveAmountError("Calculating..."); // Show immediate feedback
+      }
+        }
             // Keep loading states active
           })
           .finally(() => {
@@ -635,150 +860,274 @@ export default function WithdrawalForm({
 
       setEstimateTimeout(debounceTimeout);
     } else if (!isCalculatingFromPay && selectedAsset && !isSimpleCalculationAsset(selectedAsset)) {
-      // Clear estimate when calculating from receive amount for non-simple assets
-      setEstimate(null);
-      setEstimateError(null);
+      // For reverse calculations on complex assets, don't set loading states here
+      // The reverse calculation useEffect will handle the loading states and API call
+      // Don't set loading states here to avoid conflicts
     }
   }, [selectedAsset, payAmount, isCalculatingFromPay]);
 
   // Reverse calculation effect for non-simple assets when user types in "You Receive"
   useEffect(() => {
+    console.log("Reverse calculation useEffect triggered:", {
+      selectedAsset: !!selectedAsset,
+      isSimpleAsset: selectedAsset ? isSimpleCalculationAsset(selectedAsset) : false,
+      getAmount,
+      isCalculatingFromPay,
+      isCalculating,
+      isCalculatingReceive,
+      estimateLoading
+    });
+    
     if (
       selectedAsset &&
+      !isSimpleCalculationAsset(selectedAsset) &&
+      getAmount &&
       getAmount > 0 &&
-      !isCalculatingFromPay // Only when calculating from receive amount
+      !isCalculatingFromPay
     ) {
-      if (isSimpleCalculationAsset(selectedAsset)) {
-        // For USDT/USDC, use instant simple reverse calculation
-        let calculatedPayAmount = 0;
-        if (getAmount < 2) {
-          calculatedPayAmount = getAmount;
-        } else {
-          const commissionAmount = 2;
-          const networkFee = 0;
-          const totalFees = networkFee + commissionAmount;
-          calculatedPayAmount = getAmount + totalFees;
+        console.log("Starting reverse calculation - setting loading states");
+        if (!apiValidationError) {
+          setEstimateLoading(true);
+          setEstimateError(null);
         }
-        
-        // Validate the calculated amount
-        if (isNaN(calculatedPayAmount) || calculatedPayAmount <= 0) {
-          setReceiveAmountError("Unable to calculate. Please use 'You Send' field for accurate rates.");
-          setIsCalculating(false);
-          setIsCalculatingReceive(false);
-          return;
-        }
-        
-        // Update the pay amount with the calculated amount instantly
-        setPayAmount(calculatedPayAmount);
-        setPayAmountInput(calculatedPayAmount.toFixed(6));
-        
-        // Show info modal if receive amount exceeds $15,000
-        if (getAmount > 15000) {
-          setIsInfoModalOpen(true);
-        }
-        
-        // Clear any errors and loading states instantly
-        setReceiveAmountError(null);
-        setIsCalculating(false);
-        setIsCalculatingReceive(false);
-      } else {
-        // For other assets, use API to get reverse calculation
-        // We need to find how much of the selected asset we need to send to get the desired USDT amount
-        
-        // Check cache first for reverse calculation - use immediately if found and valid
-        const reverseCacheKey = `REVERSE_${selectedAsset.ticker?.toUpperCase()}_${selectedAsset.network}_${getAmount}`;
-        const cachedReverseEntry = estimateCache.get(reverseCacheKey);
-        
-        if (cachedReverseEntry && isCacheValid(cachedReverseEntry.timestamp)) {
-          console.log("Using cached reverse estimate:", cachedReverseEntry.data);
-          const estimatedAmount = cachedReverseEntry.data?.estimated_amount || cachedReverseEntry.data;
-          if (estimatedAmount !== undefined && !isNaN(estimatedAmount)) {
-            const calculatedPayAmount = estimatedAmount;
-            setPayAmount(calculatedPayAmount);
-            setPayAmountInput(calculatedPayAmount.toFixed(6));
-            setReceiveAmountError(null);
-            setCalculationError(null); // Clear any previous errors
-            // Don't set loading states for cached results
-            return;
-          }
-        }
-        
-        // Set loading state immediately for visual feedback
-        setEstimateLoading(true);
-        setEstimateError(null);
-        setIsCalculating(true);
-        setIsCalculatingReceive(true);
-        
-        // Show immediate fallback calculation for better UX
-        const immediateFallback = getAmount * 1.02; // Quick reverse estimate
-        setPayAmount(immediateFallback);
-        setPayAmountInput(immediateFallback.toString());
-        setReceiveAmountError("Calculating precise rate...");
-        
-        // Debounce reverse calculation to prevent rapid API calls
-        const reverseDebounceTimeout = setTimeout(() => {
-          console.log("DEBUG: Fetching reverse estimate:", {
-            fromCurrency: "USDT",
-            fromNetwork: "BSC",
-            toCurrency: selectedAsset.ticker?.toUpperCase(),
-            toNetwork: selectedAsset.network,
-            amount: getAmount
-          });
 
+      // For reverse calculation, we need to estimate the pay amount from the receive amount
+      // We'll call the API with the correct direction to get the required USDT amount
+        console.log("Starting reverse calculation for amount:", getAmount);
+
+      // Add timeout to prevent hanging API calls
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Request timeout")), 10000); // 10 second timeout
+      });
+
+      Promise.race([
           dispatch(
           fetchSwapEstimate({
-            fromCurrency: "USDT",
-            fromNetwork: "BSC",
-            toCurrency: selectedAsset.ticker?.toUpperCase(),
-            toNetwork: selectedAsset.network,
-            amount: getAmount,
+            fromCurrency: "USDT", // FROM USDT (what we want to receive)
+            fromNetwork: "BSC", 
+            toCurrency: selectedAsset.ticker, // TO selected asset (what we need to send)
+            toNetwork: selectedAsset.network, 
+            amount: getAmount, // Use receive amount directly
           })
-        )
-          .then((result: any) => {
-            console.log("DEBUG: Reverse estimate result:", result);
-            const estimatedAmount = result?.payload?.estimated_amount || result?.estimated_amount;
-            if (estimatedAmount !== undefined && !isNaN(estimatedAmount)) {
-              const calculatedPayAmount = estimatedAmount;
-              setPayAmount(calculatedPayAmount);
-              setPayAmountInput(calculatedPayAmount.toFixed(6));
-              setReceiveAmountError(null);
-              
-              // Cache the reverse calculation result with timestamp
-              setEstimateCache(prev => new Map(prev).set(reverseCacheKey, {
-                data: result.payload || result,
-                timestamp: Date.now()
-              }));
-              
-              // Show info modal if receive amount exceeds $15,000
-              if (getAmount > 15000) {
-                setIsInfoModalOpen(true);
-              }
-            } else {
-              setReceiveAmountError("Unable to get accurate rate. Please use 'You Send' field.");
+        ),
+        timeoutPromise
+      ])
+        .then((result: any) => {
+          console.log("Reverse calculation result:", result);
+          if (result.payload && (result.payload as any)?.estimated_amount) {
+            // The API now returns how much USDT we need to get the desired amount
+            const requiredUsdtAmount = (result.payload as any)?.estimated_amount;
+            
+            if (requiredUsdtAmount && requiredUsdtAmount > 0) {
+              // Set the pay amount to the required USDT amount
+              setPayAmount(requiredUsdtAmount);
+              setPayAmountInput(requiredUsdtAmount.toString());
+              setEstimate(result.payload);
+              setApiValidationError(null);
             }
-          })
+            
+            // Clear loading states after successful calculation
+            console.log("Clearing loading states after successful calculation");
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
+            setEstimateLoading(false);
+            console.log("Reverse calculation completed successfully - loading states cleared");
+          } else {
+            // No valid result, clear loading states
+            console.log("No valid result from reverse calculation");
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
+            setEstimateLoading(false);
+          }
+        })
           .catch((error) => {
             console.error("Failed to fetch reverse estimate:", error);
-            const errorMessage = extractErrorMessage(error);
-            setReceiveAmountError("Unable to get accurate rate. Please use 'You Send' field.");
-            setCalculationError(errorMessage); // Show error below "You Send" input
-          })
-          .finally(() => {
+            console.error("Reverse error response data:", error.response?.data);
+            console.error("Reverse error response status:", error.response?.status);
+          
+          // Handle API validation errors for receive amount first
+          if (error.response?.data?.error || error.response?.data?.response_data?.error) {
+            const errorData = error.response.data.error || error.response.data.response_data?.error;
+            const responseData = error.response.data.response_data;
+            
+            console.log("REVERSE API ERROR DETECTED:", { errorData, responseData });
+            
+            // Handle amount validation errors (decimal places, too small, etc.)
+            // Check if errorData is an object with amount property (format 1)
+            if (errorData && typeof errorData === 'object' && errorData.amount && Array.isArray(errorData.amount)) {
+              const amountErrors = errorData.amount;
+              if (amountErrors.some((err: string) => err.includes("decimal places"))) {
+                setApiValidationError("Ensure that there are no more than 8 decimal places.");
+                setReceiveAmountError("Ensure that there are no more than 8 decimal places.");
+                // Stop loading states and show error
+                setEstimateLoading(false);
+                setIsCalculating(false);
+                setIsCalculatingReceive(false);
+                return;
+              }
+              if (amountErrors.some((err: string) => err.includes("12 digits before the decimal point"))) {
+                console.log("REVERSE API ERROR: 12 digits before decimal point validation error detected");
+                setApiValidationError("Ensure that there are no more than 12 digits before the decimal point.");
+                setReceiveAmountError("Ensure that there are no more than 12 digits before the decimal point.");
+                // Stop loading states and show error
+                setEstimateLoading(false);
+                setIsCalculating(false);
+                setIsCalculatingReceive(false);
+                console.log("REVERSE API ERROR: Loading states cleared for 12 digits error");
+                return;
+              }
+              if (amountErrors.some((err: string) => err.includes("too small"))) {
+                setApiValidationError("Amount is too small. Please increase the amount.");
+                setReceiveAmountError("Amount is too small. Please increase the amount.");
+                // Stop loading states and show error
+                setEstimateLoading(false);
+                setIsCalculating(false);
+                setIsCalculatingReceive(false);
+                return;
+              }
+              if (amountErrors.some((err: string) => err.includes("too large"))) {
+                setApiValidationError("Amount is too large. Please decrease the amount.");
+                setReceiveAmountError("Amount is too large. Please decrease the amount.");
+                // Stop loading states and show error
+                setEstimateLoading(false);
+                setIsCalculating(false);
+                setIsCalculatingReceive(false);
+                return;
+              }
+              // Generic amount error
+              setApiValidationError(amountErrors[0]);
+              setReceiveAmountError(amountErrors[0]);
+              // Stop loading states and show error
+              setEstimateLoading(false);
+              setIsCalculating(false);
+              setIsCalculatingReceive(false);
+              return;
+            }
+            
+            // Handle deposit_too_small error
+            if (errorData === "deposit_too_small" || 
+                errorData === "Exchange service error: deposit_too_small" ||
+                errorData?.error === "deposit_too_small" ||
+                responseData?.error === "deposit_too_small") {
+              console.log("REVERSE API ERROR: Deposit too small error detected");
+              const errorMessage = responseData?.message || "Amount is too small. Please increase the amount.";
+              setApiValidationError(errorMessage);
+              setReceiveAmountError(errorMessage);
+              // Stop loading states and show error
+              setEstimateLoading(false);
+              setIsCalculating(false);
+              setIsCalculatingReceive(false);
+              console.log("REVERSE API ERROR: Loading states cleared for deposit too small error");
+              return;
+            }
+            
+            // Handle other validation errors
+            if (typeof errorData === "string") {
+              // Extract meaningful error message
+              let errorMessage = errorData;
+              if (errorData.includes("Exchange service error:")) {
+                errorMessage = errorData.replace("Exchange service error: ", "");
+              }
+              if (responseData?.message) {
+                errorMessage = responseData.message;
+              }
+              
+              setApiValidationError(errorMessage);
+              setReceiveAmountError(errorMessage);
+              // Stop loading states and show error
+              setEstimateLoading(false);
+              setIsCalculating(false);
+              setIsCalculatingReceive(false);
+              console.log("API ERROR: Generic error handled:", errorMessage);
+              return;
+            }
+            
+            // Fallback: Handle any other error formats that weren't caught above
+            console.log("REVERSE FALLBACK ERROR HANDLING - No specific error format matched");
+            console.log("Reverse raw error data:", error.response?.data);
+            
+            // Try to extract any meaningful error message
+            let fallbackErrorMessage = "Validation error occurred. Please check your input.";
+            if (error.response?.data?.error) {
+              if (typeof error.response.data.error === 'string') {
+                fallbackErrorMessage = error.response.data.error;
+              } else if (typeof error.response.data.error === 'object') {
+                // Try to extract from nested error object
+                const errorObj = error.response.data.error;
+                if (errorObj.amount && Array.isArray(errorObj.amount)) {
+                  fallbackErrorMessage = errorObj.amount[0];
+                } else if (errorObj.message) {
+                  fallbackErrorMessage = errorObj.message;
+                }
+              }
+            }
+            
+            console.log("REVERSE FALLBACK: Setting error message:", fallbackErrorMessage);
+            setApiValidationError(fallbackErrorMessage);
+            setReceiveAmountError(fallbackErrorMessage);
+            // Stop loading states and show error
             setEstimateLoading(false);
             setIsCalculating(false);
             setIsCalculatingReceive(false);
-          });
-        }, 300); // 300ms debounce for reverse calculations
-        
-        // Store the timeout for cleanup
-        setEstimateTimeout(reverseDebounceTimeout);
-      }
-      
-      // Clear the estimate since we're calculating in reverse
-      setEstimate(null);
-      setEstimateError(null);
+            return;
+          }
+          
+          // Handle different types of errors gracefully
+          if (error.message?.includes("Request timeout")) {
+            setEstimateError("Request timeout: Using fallback calculation");
+            showToast.warning("Request timeout: Using estimated rate");
+          } else if (error.message?.includes("Network Error") || error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
+            setEstimateError("Network error: Using fallback calculation");
+            showToast.warning("Using estimated rate due to network issues");
+          } else if (error.message?.includes("Server Error")) {
+            setEstimateError("Server error: Using fallback calculation");
+            showToast.warning("Using estimated rate due to server issues");
+          } else if (error.message?.includes("Invalid swap parameters")) {
+            setEstimateError("Invalid parameters: Using fallback calculation");
+            showToast.warning("Invalid parameters: Using estimated rate");
+          } else {
+            setEstimateError("API error: Using fallback calculation");
+            showToast.warning("Using estimated rate due to API unavailability");
+          }
+          
+          // Common fallback calculation for all error types
+          let commissionRate = 2; // Default fallback
+          if (selectedAsset?.range_commissions && selectedAsset.range_commissions.length > 0) {
+            const firstCommission = selectedAsset.range_commissions[0];
+            if (firstCommission?.commission) {
+              commissionRate = parseFloat(firstCommission.commission);
+            }
+          } else if (selectedAsset?.commission) {
+            commissionRate = parseFloat(selectedAsset.commission);
+          } else if (selectedAsset?.fee_rate) {
+            commissionRate = parseFloat(selectedAsset.fee_rate);
+          }
+          
+          const fallbackPayAmount = getAmount * (1 + commissionRate / 100);
+          setPayAmount(fallbackPayAmount);
+          setPayAmountInput(fallbackPayAmount.toString());
+          
+          // Clear loading states after fallback calculation
+          setIsCalculating(false);
+          setIsCalculatingReceive(false);
+          })
+          .finally(() => {
+            // Always clear estimate loading and calculation states
+            console.log("Finally block - clearing all loading states");
+            setEstimateLoading(false);
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
+            console.log("Reverse calculation finished - loading states cleared");
+        });
+    } else if (!isCalculatingFromPay && getAmount === 0) {
+      // Clear loading states when receive amount is 0
+      setIsCalculating(false);
+      setIsCalculatingReceive(false);
+      setEstimateLoading(false);
     }
-  }, [selectedAsset, getAmount, isCalculatingFromPay, dispatch]);
+  }, [selectedAsset, getAmount, isCalculatingFromPay, apiValidationError]);
+  
+  
 
   // Filter swap assets based on search term - search by ticker and name
   const filteredSwapAssets =
@@ -897,9 +1246,11 @@ export default function WithdrawalForm({
       return;
     }
 
-    // Set calculating state immediately for complex calculations
-    setIsCalculating(true);
-    setIsCalculatingReceive(true);
+    // Set calculating state immediately for complex calculations (only if no API validation errors)
+    if (!apiValidationError) {
+      setIsCalculating(true);
+      setIsCalculatingReceive(true);
+    }
 
     // Debounce calculation to prevent rapid updates
     const timeout = setTimeout(() => {
@@ -907,6 +1258,7 @@ export default function WithdrawalForm({
         setIsCalculating(false);
         setIsCalculatingReceive(false);
         setReceiveAmountError(null);
+        setApiValidationError(null);
         return;
       }
 
@@ -915,6 +1267,7 @@ export default function WithdrawalForm({
         setIsCalculating(false);
         setIsCalculatingReceive(false);
         setReceiveAmountError(null);
+        setApiValidationError(null);
         return;
       }
 
@@ -996,10 +1349,15 @@ export default function WithdrawalForm({
             }
             setPayAmount(newPayAmount);
             setPayAmountInput(newPayAmount.toString());
+            
+            // Clear loading states for simple assets - calculation is instant
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
           } else {
             // For non-USDT/USDC assets, we need to fetch estimate for reverse calculation
             // This is more complex as we need to find the pay amount that gives us the desired receive amount
-            // Show loading state while reverse calculation is happening
+            // The reverse calculation useEffect will handle the API call
+            // Just set loading states here - the useEffect will clear them
             setIsCalculating(true);
             setIsCalculatingReceive(true);
             // Don't update payAmountInput to avoid reloading the input field
@@ -1095,13 +1453,8 @@ export default function WithdrawalForm({
   };
 
   const handleFirstCardSubmit = async () => {
-   
-
     if (validateFirstCard()) {
-     
       setIsSubmitting(true);
-
-      // Reset transaction state at the beginning
       setIsTransactionSubmitted(false);
 
       try {
@@ -1116,221 +1469,84 @@ export default function WithdrawalForm({
           user_payment_detail_id: selectedPaymentDetails[0].id,
         };
 
-       
+        console.log("Submitting withdrawal request:", withdrawalPayload);
 
         // Submit to express withdrawal API
-       
-        const withdrawalResponse = await createExpressWithdrawal(
-          withdrawalPayload
-        );
-
-       
-
-        // Handle different response types based on asset
-        const isSimpleAsset = isSimpleCalculationAsset(selectedAsset);
-       
+        const withdrawalResponse = await createExpressWithdrawal(withdrawalPayload);
+        
+        console.log("Withdrawal response received:", withdrawalResponse);
 
         // Ensure we have a valid response
         if (!withdrawalResponse) {
           throw new Error("No response received from server");
         }
 
+        // Extract response data - handle both direct response and nested data
+        const responseData = (withdrawalResponse as any).data || withdrawalResponse;
+        const isSimpleAsset = isSimpleCalculationAsset(selectedAsset);
+
+        let withdrawalAddress = "";
+        let payoutAddress = "";
+        let websocketUrl = "";
+        let transactionId = "";
+        let message = "";
+
         if (isSimpleAsset) {
           // Direct transfer response for USDT/USDC
-          const directTransferResponse = withdrawalResponse as any;
-          
-
-          if (directTransferResponse.data?.type === "direct_transfer") {
-           
-            // For direct transfer, withdrawal_address is in data object
-            const withdrawalAddress =
-              directTransferResponse.data?.withdrawal_address || "";
-           
-
-            const extractedWebsocketUrl =
-              directTransferResponse.data?.websocket_url || "";
-           
-
-            setWithdrawalAddress(withdrawalAddress);
-            setPayoutAddress(""); // No payout address for direct transfer
-            setWebsocketUrl(extractedWebsocketUrl);
-            setTransactionId(directTransferResponse.data?.transaction_id || "");
-            setQrCodeUrl(
-              withdrawalAddress
-                ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${withdrawalAddress}`
-                : ""
-            );
-            setResponseMessage(
-              directTransferResponse.data?.message ||
-                "Transaction submitted successfully"
-            );
-           
-            setIsTransactionSubmitted(true);
-            setForceUpdate((prev) => prev + 1); // Force re-render
-           
-
-            // Small delay to ensure state updates are processed
-            setTimeout(() => {
-             
-            }, 100);
+          if (responseData.type === "direct_transfer") {
+            withdrawalAddress = responseData.withdrawal_address || "";
+            websocketUrl = responseData.websocket_url || "";
+            transactionId = responseData.transaction_id || "";
+            message = responseData.message || "Transaction submitted successfully";
           } else {
-           
-            // Handle unexpected response type
-            const withdrawalAddress =
-              directTransferResponse.data?.withdrawal_address || "";
-           
-
-            const extractedWebsocketUrl =
-              directTransferResponse.data?.websocket_url || "";
-           
-
-            setWithdrawalAddress(withdrawalAddress);
-            setPayoutAddress("");
-            setWebsocketUrl(extractedWebsocketUrl);
-            setTransactionId(directTransferResponse.data?.transaction_id || "");
-            setQrCodeUrl(
-              withdrawalAddress
-                ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${withdrawalAddress}`
-                : ""
-            );
-            setResponseMessage(
-              directTransferResponse.data?.message ||
-                "Transaction submitted successfully"
-            );
-            setIsTransactionSubmitted(true);
-            setForceUpdate((prev) => prev + 1);
-
-            // Small delay to ensure state updates are processed
-            setTimeout(() => {
-             
-            }, 100);
+            // Fallback for unexpected response structure
+            withdrawalAddress = responseData.withdrawal_address || "";
+            websocketUrl = responseData.websocket_url || "";
+            transactionId = responseData.transaction_id || "";
+            message = responseData.message || "Transaction submitted successfully";
           }
         } else {
           // ChangeNow swap response for other assets
-          const changeNowResponse = withdrawalResponse as any;
-         
-
-          if (changeNowResponse.data?.type === "changenow_swap") {
-           
-            // For ChangeNow, withdrawal_address is in data.details object
-            const withdrawalAddress =
-              changeNowResponse.data?.details?.withdrawal_address || "";
-           
-
-            const extractedWebsocketUrl =
-              changeNowResponse.data?.websocket_url || "";
-
-
-            setWithdrawalAddress(withdrawalAddress);
-            setPayoutAddress(
-              changeNowResponse.data?.details?.payout_address || ""
-            );
-            setWebsocketUrl(extractedWebsocketUrl);
-            setTransactionId(changeNowResponse.data?.transaction_id || "");
-            setQrCodeUrl(
-              withdrawalAddress
-                ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${withdrawalAddress}`
-                : ""
-            );
-            setResponseMessage(
-              changeNowResponse.data?.message ||
-                "Transaction submitted successfully"
-            );
-           
-            setIsTransactionSubmitted(true);
-            setForceUpdate((prev) => prev + 1); // Force re-render
-
-            // Small delay to ensure state updates are processed
-            setTimeout(() => {
-             
-            }, 100);
+          if (responseData.type === "changenow_swap") {
+            withdrawalAddress = responseData.details?.withdrawal_address || "";
+            payoutAddress = responseData.details?.payout_address || "";
+            websocketUrl = responseData.websocket_url || "";
+            transactionId = responseData.transaction_id || "";
+            message = responseData.message || "Transaction submitted successfully";
           } else {
-            // Handle unexpected response type for non-simple assets
-            const withdrawalAddress =
-              changeNowResponse.data?.details?.withdrawal_address || "";
-           
-
-            const extractedWebsocketUrl =
-              changeNowResponse.data?.websocket_url || "";
-           
-
-            setWithdrawalAddress(withdrawalAddress);
-            setPayoutAddress(
-              changeNowResponse.data?.details?.payout_address || ""
-            );
-            setWebsocketUrl(extractedWebsocketUrl);
-            setTransactionId(changeNowResponse.data?.transaction_id || "");
-            setQrCodeUrl(
-              withdrawalAddress
-                ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${withdrawalAddress}`
-                : ""
-            );
-            setResponseMessage(
-              changeNowResponse.data?.message ||
-                "Transaction submitted successfully"
-            );
-            setIsTransactionSubmitted(true);
-            setForceUpdate((prev) => prev + 1);
-
-            // Small delay to ensure state updates are processed
-            setTimeout(() => {
-             
-            }, 100);
+            // Fallback for unexpected response structure
+            withdrawalAddress = responseData.details?.withdrawal_address || responseData.withdrawal_address || "";
+            payoutAddress = responseData.details?.payout_address || "";
+            websocketUrl = responseData.websocket_url || "";
+            transactionId = responseData.transaction_id || "";
+            message = responseData.message || "Transaction submitted successfully";
           }
         }
 
-        // Final fallback: if we reach here, the API call was successful
-        // but we didn't match any expected response type
-        if (!isTransactionSubmitted) {
-         
-
-          // Try to extract data based on response type
-          const response = withdrawalResponse as any;
-          let withdrawalAddress = "";
-          let extractedWebsocketUrl = "";
-
-          if (response.data?.type === "direct_transfer") {
-            // Direct transfer: withdrawal_address in data object
-            withdrawalAddress = response.data?.withdrawal_address || "";
-            extractedWebsocketUrl = response.data?.websocket_url || "";
-           
-          } else if (response.data?.type === "changenow_swap") {
-            // ChangeNow: withdrawal_address in data.details
-            withdrawalAddress =
-              response.data?.details?.withdrawal_address || "";
-            extractedWebsocketUrl = response.data?.websocket_url || "";
-           
-          } else {
-            // Unknown type, try both locations
-            withdrawalAddress =
-              response.data?.withdrawal_address ||
-              response.data?.details?.withdrawal_address ||
-              "";
-            extractedWebsocketUrl = response.data?.websocket_url || "";
-           
-          }
-
-         
-
+        // Update state with extracted data
           setWithdrawalAddress(withdrawalAddress);
-          setPayoutAddress("");
-          setWebsocketUrl(extractedWebsocketUrl);
-          setTransactionId(response.data?.transaction_id || "");
+        setPayoutAddress(payoutAddress);
+        setWebsocketUrl(websocketUrl);
+        setTransactionId(transactionId);
           setQrCodeUrl(
             withdrawalAddress
               ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${withdrawalAddress}`
               : ""
           );
-          setResponseMessage("Transaction submitted successfully");
+        setResponseMessage(message);
+        
+        // Mark transaction as submitted and stop loading
           setIsTransactionSubmitted(true);
           setForceUpdate((prev) => prev + 1);
 
-          // Small delay to ensure state updates are processed
-          setTimeout(() => {
-           
-          }, 100);
-        }
+        console.log("Withdrawal addresses generated successfully:", {
+          withdrawalAddress,
+          payoutAddress,
+          transactionId
+        });
+
       } catch (error: any) {
+        console.error("Error submitting withdrawal request:", error);
        
         let errorMessage = "Failed to submit withdrawal request";
 
@@ -1351,9 +1567,9 @@ export default function WithdrawalForm({
 
         showToast.error(errorMessage);
         setValidationErrors([errorMessage]);
-        // Reset transaction state on error
         setIsTransactionSubmitted(false);
       } finally {
+        // Always stop loading state
         setIsSubmitting(false);
       }
     }
@@ -1694,6 +1910,15 @@ export default function WithdrawalForm({
                     
                     // Allow any numeric input including negative numbers and 0
                     if (inputValue === "" || /^-?\d*\.?\d*$/.test(inputValue)) {
+                      // Check for decimal places validation
+                      if (inputValue.includes('.')) {
+                        const decimalPart = inputValue.split('.')[1];
+                        if (decimalPart && decimalPart.length > 8) {
+                          setCalculationError("Ensure that there are no more than 8 decimal places.");
+                          return;
+                        }
+                      }
+                      
                       setPayAmountInput(inputValue);
                       
                       // Convert to number for calculations
@@ -1708,15 +1933,37 @@ export default function WithdrawalForm({
                       
                       // Clear any previous errors when user starts typing
                       setReceiveAmountError(null);
+        setApiValidationError(null);
                       setCalculationError(null);
+                      setApiValidationError(null);
                       
                       // Only calculate if we have a valid amount and asset
                       if (selectedAsset && newValue >= 0) {
+                        // Check asset type first and handle accordingly
                         if (isSimpleCalculationAsset(selectedAsset)) {
                           // For simple assets (USDT/USDC), calculate immediately
+                          console.log("You Send: Simple asset detected, calculating immediately");
                           calculateAmounts(newValue, true);
                         } else if (newValue > 0) {
-                          // For estimate-based assets, keep field empty during loading
+                          // For non-simple assets, stop normal calculation and go directly to API
+                          console.log("You Send: Non-simple asset detected, going directly to API");
+                          
+                          // Stop any ongoing normal calculations first
+                          if (calculationTimeout) {
+                            clearTimeout(calculationTimeout);
+                          }
+                          if (estimateTimeout) {
+                            clearTimeout(estimateTimeout);
+                          }
+                          
+                          // Clear previous calculation states
+                          setEstimate(null);
+                          setEstimateError(null);
+                          setEstimateLoading(false);
+                          setCalculationError(null);
+                          setReceiveAmountError(null);
+        setApiValidationError(null);
+                          setApiValidationError(null);
                           
                           // Store current value as previous valid amount before showing loading
                           if (getAmountInput && getAmountInput !== "0" && !isCalculating) {
@@ -1726,18 +1973,25 @@ export default function WithdrawalForm({
                           // Keep field empty during calculation - no intermediate values
                           setGetAmount(0);
                           setGetAmountInput("");
-                          setReceiveAmountError("Calculating..."); // Show immediate feedback
+                          if (!apiValidationError) {
+          if (!apiValidationError) {
+        setReceiveAmountError("Calculating..."); // Show immediate feedback
+      }
+        }
                           
                           // Set loading state for visual feedback
                           setIsCalculating(true);
                           setIsCalculatingReceive(true);
+                          setEstimateLoading(true);
                           
-                          // The estimate useEffect will handle the API call with debouncing
+                          // Go directly to API calculation - the estimate useEffect will handle it
+                          console.log("You Send: Going directly to API calculation for amount:", newValue);
                         } else {
                           // For zero/negative values, clear the receive amount but don't show "0"
                           setGetAmount(0);
                           setGetAmountInput("");
                           setReceiveAmountError(null);
+        setApiValidationError(null);
                           setIsCalculating(false);
                           setIsCalculatingReceive(false);
                         }
@@ -1746,6 +2000,7 @@ export default function WithdrawalForm({
                         setGetAmount(0);
                         setGetAmountInput("");
                         setReceiveAmountError(null);
+        setApiValidationError(null);
                         setIsCalculating(false);
                         setIsCalculatingReceive(false);
                       }
@@ -1758,8 +2013,9 @@ export default function WithdrawalForm({
                   onBlur={() => {
                     // Allow any value on blur
                   }}
-                  placeholder={(isCalculating || isCalculatingReceive) ? "Calculating..." : "Enter amount"}
+                  placeholder={(isCalculating || isCalculatingReceive) && !apiValidationError ? "Calculating..." : "Enter amount"}
                   className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg  focus:outline-none border appearance-none ${
+                    apiValidationError ? 'border-red-500' :
                     (isCalculating || isCalculatingReceive) ? 'border-[#1D8751]' : 'border-[#A2A4A9FF] dark:border-[#35353E]'
                   }`}
                 />
@@ -1768,16 +2024,30 @@ export default function WithdrawalForm({
                     {selectedAsset ? ((selectedAsset.ticker || selectedAsset.symbol || "USDT").toUpperCase()) : "USDT"}
                   </span>
                 </div>
-                {(isCalculatingReceive || isCalculating) && (
+                {(isCalculatingReceive || isCalculating) && !apiValidationError && (
                   <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
+                  </div>
+                )}
+                {apiValidationError && (
+                  <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
+                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" className="text-red-500"/>
+                      <line x1="12" y1="8" x2="12" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-red-500"/>
+                      <circle cx="12" cy="16" r="1" fill="currentColor" className="text-red-500"/>
+                    </svg>
                   </div>
                 )}
               </div>
               {/* Display calculation error below You Send input */}
               {calculationError && (
-                <div className="mt-2 text-sm text-red-500 dark:text-red-400">
+                <div className="mt-2 text-sm text-yellow-500 dark:text-yellow-400">
                   {calculationError}
+                </div>
+              )}
+              {apiValidationError && (
+                <div className="mt-2 text-sm text-yellow-500 dark:text-yellow-400">
+                  {apiValidationError}
                 </div>
               )}
             </div>
@@ -1882,37 +2152,62 @@ export default function WithdrawalForm({
                             className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
                             onClick={() => {
                               console.log("Asset selected:", asset);
+                              
+                              // First, stop any ongoing calculations and clear previous states
+                              if (calculationTimeout) {
+                                clearTimeout(calculationTimeout);
+                              }
+                              if (estimateTimeout) {
+                                clearTimeout(estimateTimeout);
+                              }
+                              
+                              // Clear all previous calculation states
+                              setEstimate(null);
+                              setEstimateError(null);
+                              setEstimateLoading(false);
+                              setCalculationError(null);
+                              setReceiveAmountError(null);
+        setApiValidationError(null);
+                              setApiValidationError(null);
+                              
+                              // Set the new asset
                               setSelectedAsset(asset);
                               setIsAssetDropdownOpen(false);
                               setAssetSearchTerm("");
+                              
+                              // Check asset type first and handle accordingly
+                              if (isSimpleCalculationAsset(asset)) {
+                                // For simple assets (USDT/USDC), calculate immediately
+                                console.log("Selected simple asset, calculating immediately");
+                                setIsCalculatingFromPay(true);
                               
                               // Only set default amount if user hasn't manually modified the amount
                               if (!isUserModifiedAmount) {
                                 const defaultAmount = getDefaultAmount(asset);
                                 setPayAmount(defaultAmount);
                                 setPayAmountInput(defaultAmount.toString());
-                                
-                                // Trigger recalculation with new default amount
-                                setIsCalculatingFromPay(true);
-                                if (isSimpleCalculationAsset(asset)) {
                                   calculateAmounts(defaultAmount, true);
-                                } else {
-                                  // For estimate-based assets, the estimate useEffect will handle it
-                                  // Set loading state for visual feedback
-                                  setIsCalculating(true);
-                                  setIsCalculatingReceive(true);
-                                }
                               } else {
                                 // User has custom amount, just recalculate with existing amount
-                                setIsCalculatingFromPay(true);
-                                if (isSimpleCalculationAsset(asset)) {
                                   calculateAmounts(payAmount, true);
+                                }
                                 } else {
-                                  // For estimate-based assets, the estimate useEffect will handle it
-                                  // Set loading state for visual feedback
+                                // For non-simple assets, go directly to API
+                                console.log("Selected non-simple asset, going directly to API");
+                                setIsCalculatingFromPay(true);
+                                
+                                // Set loading states immediately for visual feedback
                                   setIsCalculating(true);
                                   setIsCalculatingReceive(true);
+                                setEstimateLoading(true);
+                                
+                                // Only set default amount if user hasn't manually modified the amount
+                                if (!isUserModifiedAmount) {
+                                  const defaultAmount = getDefaultAmount(asset);
+                                  setPayAmount(defaultAmount);
+                                  setPayAmountInput(defaultAmount.toString());
                                 }
+                                // The estimate useEffect will handle the API call
                               }
                             }}
                           >
@@ -2016,39 +2311,105 @@ export default function WithdrawalForm({
                   inputMode="decimal"
                   value={getAmountInput}
                   onChange={(e) => {
-                    const inputValue = e.target.value;
+                    const value = e.target.value;
                     
-                    // Allow any numeric input including negative numbers and 0
-                    if (inputValue === "" || /^-?\d*\.?\d*$/.test(inputValue)) {
-                      setGetAmountInput(inputValue);
+                    // Only allow numbers and decimals (including 0.006 format)
+                    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                      // Check for decimal places validation
+                      if (value.includes('.')) {
+                        const decimalPart = value.split('.')[1];
+                        if (decimalPart && decimalPart.length > 8) {
+                          setApiValidationError("Ensure that there are no more than 8 decimal places.");
+                          setReceiveAmountError("Ensure that there are no more than 8 decimal places.");
+                          return;
+                        }
+                      }
                       
-                      // Convert to number for calculations
-                      const parsedValue = inputValue === "" ? 0 : parseFloat(inputValue) || 0;
-                      
-                      const newValue = parsedValue;
-                      setGetAmount(newValue);
+                      setGetAmountInput(value); // Store the string value for display
+                      const newAmount = parseFloat(value) || 0;
+                      setGetAmount(newAmount);
                       setIsCalculatingFromPay(false);
                       
                       // Clear any previous errors when user starts typing
                       setReceiveAmountError(null);
+        setApiValidationError(null);
+                      setCalculationError(null);
+                      setApiValidationError(null);
                       
                       // Only calculate if we have a valid amount and asset
-                      if (selectedAsset && newValue >= 0) {
-                        // For simple assets (USDT/USDC), calculate reverse immediately
+                      if (selectedAsset && newAmount >= 0) {
+                        // Check asset type first and handle accordingly
                         if (isSimpleCalculationAsset(selectedAsset)) {
-                          calculateAmounts(newValue, false);
-                        } else {
-                          // For other assets, trigger the reverse calculation effect
-                          // The useEffect will handle the API call
+                          // For simple assets (USDT/USDC), calculate immediately
+                          console.log("You Receive: Simple asset detected, calculating immediately");
+                        const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
+                          ? parseFloat(selectedAsset.range_commissions[0].commission)
+                          : 2;
+                        const commissionAmount = (newAmount * commissionRate) / 100;
+                        const calculatedPayAmount = newAmount + commissionAmount;
+                        setPayAmount(calculatedPayAmount);
+                        setPayAmountInput(calculatedPayAmount.toString());
+                        
+                        // Simple assets don't need loading states - calculation is instant
+                          setIsCalculating(false);
+                          setIsCalculatingReceive(false);
+                        } else if (newAmount > 0) {
+                          // For non-simple assets, stop normal calculation and go directly to API
+                          console.log("You Receive: Non-simple asset detected, going directly to API");
+                          
+                          // Stop any ongoing normal calculations first
+                          if (calculationTimeout) {
+                            clearTimeout(calculationTimeout);
+                          }
+                          if (estimateTimeout) {
+                            clearTimeout(estimateTimeout);
+                          }
+                          
+                          // Clear previous calculation states
+                          setEstimate(null);
+                          setEstimateError(null);
+                          setEstimateLoading(false);
+                          setCalculationError(null);
+                          setReceiveAmountError(null);
+        setApiValidationError(null);
+                          setApiValidationError(null);
+                          
+                          // Store current value as previous valid amount before showing loading
+                          if (payAmountInput && payAmountInput !== "0" && !isCalculating) {
+                            setPreviousValidAmount(payAmountInput);
+                          }
+                          
+                          // Keep field empty during calculation - no intermediate values
+                          setPayAmount(0);
+                          setPayAmountInput("");
+                          if (!apiValidationError) {
+          if (!apiValidationError) {
+        setReceiveAmountError("Calculating..."); // Show immediate feedback
+      }
+        }
+                          
                           // Set loading state for visual feedback
-                          setIsCalculating(true);
-                          setIsCalculatingReceive(true);
+                        setIsCalculating(true);
+                        setIsCalculatingReceive(true);
+                          setEstimateLoading(true);
+                        
+                          // Go directly to API calculation - the reverse calculation useEffect will handle it
+                          console.log("You Receive: Going directly to API calculation for amount:", newAmount);
+                      } else {
+                          // For zero/negative values, clear the pay amount but don't show "0"
+                          setPayAmount(0);
+                          setPayAmountInput("");
+                          setReceiveAmountError(null);
+        setApiValidationError(null);
+                          setIsCalculating(false);
+                        setIsCalculatingReceive(false);
                         }
                       } else {
                         // For invalid input, clear the pay amount but don't show "0"
                         setPayAmount(0);
                         setPayAmountInput("");
                         setReceiveAmountError(null);
+        setApiValidationError(null);
                         setIsCalculating(false);
                         setIsCalculatingReceive(false);
                       }
@@ -2067,13 +2428,15 @@ export default function WithdrawalForm({
                     }
                   }}
                   placeholder={
-                    (isCalculating || isCalculatingReceive) 
+                    (isCalculating || isCalculatingReceive) && !apiValidationError
                       ? "Calculating..." 
                       : "Enter amount"
                   }
                   className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg  focus:outline-none border appearance-none ${
-                    receiveAmountError && (receiveAmountError.includes('Rough estimate') || receiveAmountError.includes('Using estimated rate')) ? 'border-[#F79330]' : 
-                    receiveAmountError && !receiveAmountError.includes('Rough estimate') && !receiveAmountError.includes('Using estimated rate') ? 'border-red-500' :
+                    (receiveAmountError && (receiveAmountError.includes('Rough estimate') || receiveAmountError.includes('Using estimated rate'))) || 
+                    (apiValidationError && (apiValidationError.includes('Rough estimate') || apiValidationError.includes('Using estimated rate'))) ? 'border-[#F79330]' : 
+                    (receiveAmountError && !receiveAmountError.includes('Rough estimate') && !receiveAmountError.includes('Using estimated rate')) || 
+                    (apiValidationError && !apiValidationError.includes('Rough estimate') && !apiValidationError.includes('Using estimated rate')) ? 'border-red-500' :
                     (isCalculating || isCalculatingReceive) ? 'border-[#1D8751]' : 'border-[#A2A4A9FF] dark:border-[#35353E]'
                   }`}
                 />
@@ -2082,12 +2445,12 @@ export default function WithdrawalForm({
                     USD
                   </span>
                 </div>
-                {(isCalculatingReceive || isCalculating) && (
+                {(isCalculatingReceive || isCalculating) && !apiValidationError && (
                   <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
                   </div>
                 )}
-                {receiveAmountError && !receiveAmountError.includes('Rough estimate') && !receiveAmountError.includes('Using estimated rate') && (
+                {((receiveAmountError && !receiveAmountError.includes('Rough estimate') && !receiveAmountError.includes('Using estimated rate')) || apiValidationError) && (
                   <div className="absolute right-16 top-1/2 transform -translate-y-1/2">
                     <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                       <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" className="text-red-500"/>
@@ -2096,7 +2459,7 @@ export default function WithdrawalForm({
                     </svg>
                   </div>
                 )}
-                {receiveAmountError && (receiveAmountError.includes('Rough estimate') || receiveAmountError.includes('Using estimated rate')) && (
+                {((receiveAmountError && (receiveAmountError.includes('Rough estimate') || receiveAmountError.includes('Using estimated rate'))) || (apiValidationError && (apiValidationError.includes('Rough estimate') || apiValidationError.includes('Using estimated rate')))) && (
                   <div className="absolute right-16 top-1/2 transform -translate-y-1/2">
                     <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                       <path d="M12 8v4m0 4h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#F79330]"/>
@@ -2110,6 +2473,11 @@ export default function WithdrawalForm({
                   receiveAmountError.includes('Rough estimate') || receiveAmountError.includes('Using estimated rate') ? 'text-[#F79330]' : 'text-red-500'
                 }`}>
                   {receiveAmountError}
+                </p>
+              )}
+              {apiValidationError && (
+                <p className="text-sm mt-1 text-yellow-500">
+                  {apiValidationError}
                 </p>
               )}
             </div>

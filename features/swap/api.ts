@@ -19,16 +19,19 @@ export const getSupportedAssets = async (): Promise<SupportedAsset[]> => {
         API_CONFIG.SWAP.SUPPORTED_ASSETS
       );
       
+      // Type guard to check if response.data has the expected structure
+      const data = response.data as any;
+      
       // Extract the results array from the ChangeNow response
-      if (response.data && response.data.results) {
-        console.log(`Successfully retrieved ${response.data.total_changenow_tokens} ChangeNow tokens`);
-        return response.data.results;
+      if (data && data.results) {
+        console.log(`Successfully retrieved ${data.total_changenow_tokens} ChangeNow tokens`);
+        return data.results;
       }
       
       // Fallback: if response is directly an array (backward compatibility)
-      if (Array.isArray(response.data)) {
-        console.log(`Retrieved ${response.data.length} supported assets`);
-        return response.data;
+      if (Array.isArray(data)) {
+        console.log(`Retrieved ${data.length} supported assets`);
+        return data;
       }
       
       console.warn("Unexpected response format, returning empty array");

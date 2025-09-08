@@ -84,13 +84,16 @@ export const fetchMarketData = async (
       `/coins/markets?${queryParams.toString()}`
     );
 
+    // Type guard to check if response.data has the expected structure
+    const data = response.data as any;
+    
     logger.info("Market data fetched successfully", {
-      count: response.data.length,
-      firstCoin: response.data[0]?.name,
+      count: data.length,
+      firstCoin: data[0]?.name,
     });
 
     return {
-      data: response.data,
+      data: data,
       success: true,
     };
   } catch (error) {
@@ -332,11 +335,13 @@ export const fetchCoinMarketChart = async (
       );
     }
 
-    if (!response.data.prices || !Array.isArray(response.data.prices)) {
+    // Type guard to check if response.data has the expected structure
+    const data = response.data as any;
+    if (!data || !data.prices || !Array.isArray(data.prices)) {
       throw new Error("Invalid chart data format received from API");
     }
 
-    return response.data.prices;
+    return data.prices;
   } catch (error) {
     logger.error("Failed to fetch coin market chart", {
       id,
@@ -458,11 +463,13 @@ export const fetchCoinMarketChartPublic = async (
         }
       );
 
-      if (!response.data.prices || !Array.isArray(response.data.prices)) {
+      // Type guard to check if response.data has the expected structure
+      const data = response.data as any;
+      if (!data || !data.prices || !Array.isArray(data.prices)) {
         throw new Error("Invalid chart data format received from API");
       }
 
-      return response.data;
+      return data;
     } catch (error) {
       retries++;
       

@@ -9,17 +9,27 @@ import {
   fetchTrendingMarkets,
   searchMarkets,
 } from "../api";
+import { sliceCache } from "../../../lib/utils/sliceCache";
 
 // Async thunks
 export const fetchMarketsAsync = createAsyncThunk(
   "markets/fetchMarkets",
   async (params: MarketDataParams = {}, { rejectWithValue }) => {
     try {
-      const response = await fetchMarketData(params);
-      if (!response.success) {
-        return rejectWithValue(response.error || "Failed to fetch markets");
-      }
-      return response.data;
+      const data = await sliceCache.getOrSet(
+        'markets',
+        'fetchMarkets',
+        async () => {
+          const response = await fetchMarketData(params);
+          if (!response.success) {
+            throw new Error(response.error || "Failed to fetch markets");
+          }
+          return response.data;
+        },
+        params, // cache based on params
+        60 * 60 * 1000 // 1 hour cache
+      );
+      return data;
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : "Unknown error"
@@ -38,11 +48,21 @@ export const fetchTopMarketsAsync = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      const response = await fetchTopMarkets(limit, currency);
-      if (!response.success) {
-        return rejectWithValue(response.error || "Failed to fetch top markets");
-      }
-      return response.data;
+      const params = { limit, currency };
+      const data = await sliceCache.getOrSet(
+        'markets',
+        'fetchTopMarkets',
+        async () => {
+          const response = await fetchTopMarkets(limit, currency);
+          if (!response.success) {
+            throw new Error(response.error || "Failed to fetch top markets");
+          }
+          return response.data;
+        },
+        params, // cache based on params
+        60 * 60 * 1000 // 1 hour cache
+      );
+      return data;
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : "Unknown error"
