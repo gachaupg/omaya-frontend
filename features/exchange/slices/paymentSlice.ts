@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { get, post, del } from '../../../lib/apiClient';
 import { EXCHANGE_ENDPOINTS } from '../api';
+import { sliceCache } from '../../../lib/utils/sliceCache';
 import {
   PaymentMethod,
   PaymentProvider,
@@ -11,58 +12,25 @@ import {
   AddUserPaymentDetailData,
 } from '../types';
 
-// Cache configuration
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
-const CACHE_KEYS = {
-  ADMIN_PAYMENT_DETAILS: 'admin_payment_details_cache',
-  USER_PAYMENT_DETAILS: 'user_payment_details_cache',
+// Cache invalidation functions using the new system
+export const invalidateAdminPaymentDetailsCache = async (): Promise<void> => {
+  await sliceCache.delete('payment', 'fetchAdminPaymentDetails');
 };
 
-// Cache utility functions
-const getCachedData = <T>(key: string): { data: T; timestamp: number; expiresAt: number } | null => {
-  try {
-    const cached = localStorage.getItem(key);
-    if (cached) {
-      const parsed = JSON.parse(cached);
-      if (parsed.expiresAt > Date.now()) {
-        return parsed;
-      } else {
-        // Cache expired, remove it
-        localStorage.removeItem(key);
-      }
-    }
-  } catch (error) {
-    console.warn('Failed to parse cached data:', error);
-    localStorage.removeItem(key);
-  }
-  return null;
+export const invalidateUserPaymentDetailsCache = async (): Promise<void> => {
+  await sliceCache.delete('payment', 'fetchUserPaymentDetails');
 };
 
-const setCachedData = <T>(key: string, data: T): void => {
-  try {
-    const cacheData = {
-      data,
-      timestamp: Date.now(),
-      expiresAt: Date.now() + CACHE_DURATION,
-    };
-    localStorage.setItem(key, JSON.stringify(cacheData));
-  } catch (error) {
-    console.warn('Failed to cache data:', error);
-  }
+export const invalidatePaymentMethodsCache = async (): Promise<void> => {
+  await sliceCache.delete('payment', 'fetchPaymentMethods');
 };
 
-// Cache invalidation functions
-export const invalidateAdminPaymentDetailsCache = (): void => {
-  localStorage.removeItem(CACHE_KEYS.ADMIN_PAYMENT_DETAILS);
+export const invalidatePaymentProvidersCache = async (): Promise<void> => {
+  await sliceCache.delete('payment', 'fetchPaymentProviders');
 };
 
-export const invalidateUserPaymentDetailsCache = (): void => {
-  localStorage.removeItem(CACHE_KEYS.USER_PAYMENT_DETAILS);
-};
-
-export const invalidateAllPaymentCaches = (): void => {
-  invalidateAdminPaymentDetailsCache();
-  invalidateUserPaymentDetailsCache();
+export const invalidateAllPaymentCaches = async (): Promise<void> => {
+  await sliceCache.clearSlice('payment');
 };
 
 interface PaymentState {
@@ -72,19 +40,6 @@ interface PaymentState {
   adminPaymentDetails: AdminPaymentDetail[];
   loading: boolean;
   error: string | null;
-  // Cache metadata
-  cache: {
-    adminPaymentDetails: {
-      data: AdminPaymentDetail[];
-      timestamp: number;
-      expiresAt: number;
-    } | null;
-    userPaymentDetails: {
-      data: UserPaymentDetail[];
-      timestamp: number;
-      expiresAt: number;
-    } | null;
-  };
 }
 
 const initialState: PaymentState = {
@@ -94,10 +49,6 @@ const initialState: PaymentState = {
   adminPaymentDetails: [],
   loading: false,
   error: null,
-  cache: {
-    adminPaymentDetails: null,
-    userPaymentDetails: null,
-  },
 };
 
 // Fetch payment methods
@@ -105,8 +56,17 @@ export const fetchPaymentMethods = createAsyncThunk<PaymentMethod[]>(
   'payment/fetchPaymentMethods',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await get<PaymentMethod[]>(EXCHANGE_ENDPOINTS.PAYMENT_METHODS);
-      return response.data;
+      const data = await sliceCache.getOrSet(
+        'payment',
+        'fetchPaymentMethods',
+        async () => {
+          const response = await get<PaymentMethod[]>(EXCHANGE_ENDPOINTS.PAYMENT_METHODS);
+          return response.data;
+        },
+        undefined, // no params
+        60 * 60 * 1000 // 1 hour cache - payment methods don't change often
+      );
+      return data;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to fetch payment methods');
     }
@@ -118,8 +78,17 @@ export const fetchPaymentProviders = createAsyncThunk<PaymentProvider[], string>
   'payment/fetchPaymentProviders',
   async (methodName, { rejectWithValue }) => {
     try {
-      const response = await get<PaymentProvider[]>(EXCHANGE_ENDPOINTS.PAYMENT_PROVIDERS(methodName));
-      return response.data;
+      const data = await sliceCache.getOrSet(
+        'payment',
+        'fetchPaymentProviders',
+        async () => {
+          const response = await get<PaymentProvider[]>(EXCHANGE_ENDPOINTS.PAYMENT_PROVIDERS(methodName));
+          return response.data;
+        },
+        { methodName }, // cache based on method name
+        60 * 60 * 1000 // 1 hour cache - payment providers don't change often
+      );
+      return data;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to fetch payment providers');
     }
@@ -131,23 +100,24 @@ export const fetchUserPaymentDetails = createAsyncThunk<UserPaymentDetail[], boo
   'payment/fetchUserPaymentDetails',
   async (forceRefresh = false, { rejectWithValue }) => {
     try {
-      // Check cache first if not forcing refresh
-      if (!forceRefresh) {
-        const cached = getCachedData<UserPaymentDetail[]>(CACHE_KEYS.USER_PAYMENT_DETAILS);
-        if (cached) {
-          console.log('Using cached user payment details');
-          return cached.data;
-        }
+      // If forcing refresh, delete cache first
+      if (forceRefresh) {
+        await sliceCache.delete('payment', 'fetchUserPaymentDetails');
       }
 
-      // Fetch from API
-      console.log('Fetching user payment details from API');
-      const response = await get<UserPaymentDetail[]>(EXCHANGE_ENDPOINTS.USER_PAYMENT_DETAILS);
+      const data = await sliceCache.getOrSet(
+        'payment',
+        'fetchUserPaymentDetails',
+        async () => {
+          console.log('Fetching user payment details from API');
+          const response = await get<UserPaymentDetail[]>(EXCHANGE_ENDPOINTS.USER_PAYMENT_DETAILS);
+          return response.data;
+        },
+        undefined, // no params
+        5 * 60 * 1000 // 5 minutes cache - user payment details change more frequently
+      );
       
-      // Cache the response
-      setCachedData(CACHE_KEYS.USER_PAYMENT_DETAILS, response.data);
-      
-      return response.data;
+      return data;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to fetch user payment details');
     }
@@ -159,23 +129,24 @@ export const fetchAdminPaymentDetails = createAsyncThunk<AdminPaymentDetail[], b
   'payment/fetchAdminPaymentDetails',
   async (forceRefresh = false, { rejectWithValue }) => {
     try {
-      // Check cache first if not forcing refresh
-      if (!forceRefresh) {
-        const cached = getCachedData<AdminPaymentDetail[]>(CACHE_KEYS.ADMIN_PAYMENT_DETAILS);
-        if (cached) {
-          console.log('Using cached admin payment details');
-          return cached.data;
-        }
+      // If forcing refresh, delete cache first
+      if (forceRefresh) {
+        await sliceCache.delete('payment', 'fetchAdminPaymentDetails');
       }
 
-      // Fetch from API
-      console.log('Fetching admin payment details from API');
-      const response = await get<AdminPaymentDetail[]>(EXCHANGE_ENDPOINTS.ADMIN_PAYMENT_DETAILS);
+      const data = await sliceCache.getOrSet(
+        'payment',
+        'fetchAdminPaymentDetails',
+        async () => {
+          console.log('Fetching admin payment details from API');
+          const response = await get<AdminPaymentDetail[]>(EXCHANGE_ENDPOINTS.ADMIN_PAYMENT_DETAILS);
+          return response.data;
+        },
+        undefined, // no params
+        5 * 60 * 1000 // 5 minutes cache - admin payment details change more frequently
+      );
       
-      // Cache the response
-      setCachedData(CACHE_KEYS.ADMIN_PAYMENT_DETAILS, response.data);
-      
-      return response.data;
+      return data;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to fetch admin payment details');
     }
@@ -188,6 +159,10 @@ export const addUserPaymentDetail = createAsyncThunk<UserPaymentDetail, AddUserP
   async (payload, { rejectWithValue }) => {
     try {
       const response = await post<UserPaymentDetail>(EXCHANGE_ENDPOINTS.USER_PAYMENT_DETAILS, payload);
+      
+      // Invalidate user payment details cache since we added new data
+      await sliceCache.delete('payment', 'fetchUserPaymentDetails');
+      
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to add user payment detail');
@@ -200,6 +175,9 @@ export const deleteUserPaymentDetail = createAsyncThunk<void, number>(
   async (paymentDetailId, { rejectWithValue }) => {
     try {
       await del(`${EXCHANGE_ENDPOINTS.USER_PAYMENT_DETAILS}${paymentDetailId}/`);
+      
+      // Invalidate user payment details cache since we deleted data
+      await sliceCache.delete('payment', 'fetchUserPaymentDetails');
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to delete payment detail');
     }
@@ -246,12 +224,6 @@ const paymentSlice = createSlice({
       .addCase(fetchUserPaymentDetails.fulfilled, (state, action: PayloadAction<UserPaymentDetail[]>) => {
         state.loading = false;
         state.userPaymentDetails = action.payload;
-        // Update cache metadata
-        state.cache.userPaymentDetails = {
-          data: action.payload,
-          timestamp: Date.now(),
-          expiresAt: Date.now() + CACHE_DURATION,
-        };
       })
       .addCase(fetchUserPaymentDetails.rejected, (state, action) => {
         state.loading = false;
@@ -265,12 +237,6 @@ const paymentSlice = createSlice({
       .addCase(fetchAdminPaymentDetails.fulfilled, (state, action: PayloadAction<AdminPaymentDetail[]>) => {
         state.loading = false;
         state.adminPaymentDetails = action.payload;
-        // Update cache metadata
-        state.cache.adminPaymentDetails = {
-          data: action.payload,
-          timestamp: Date.now(),
-          expiresAt: Date.now() + CACHE_DURATION,
-        };
       })
       .addCase(fetchAdminPaymentDetails.rejected, (state, action) => {
         state.loading = false;
@@ -284,8 +250,6 @@ const paymentSlice = createSlice({
       .addCase(addUserPaymentDetail.fulfilled, (state, action: PayloadAction<UserPaymentDetail>) => {
         state.loading = false;
         state.userPaymentDetails.push(action.payload);
-        // Invalidate cache since we added new data
-        state.cache.userPaymentDetails = null;
       })
       .addCase(addUserPaymentDetail.rejected, (state, action) => {
         state.loading = false;

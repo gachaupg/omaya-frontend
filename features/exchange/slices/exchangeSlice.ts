@@ -13,6 +13,7 @@ import {
 import { EXCHANGE_ENDPOINTS } from "../api";
 import NetworkFallback from "../../../lib/utils/networkFallback";
 import CircuitBreaker from "../../../lib/utils/circuitBreaker";
+import { sliceCache } from "../../../lib/utils/sliceCache";
 import {
   Transaction,
   TransactionsResponse,
@@ -122,13 +123,23 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, void>(
     }
 
     try {
-      const response = await get<AssetsResponse>(endpoint, {
-        timeout: 10000,
-      });
+      // Use cached data if available, otherwise fetch fresh
+      const data = await sliceCache.getOrSet(
+        'exchange',
+        'fetchAssets',
+        async () => {
+          const response = await get<AssetsResponse>(endpoint, {
+            timeout: 10000,
+          });
+          return response.data;
+        },
+        undefined, // no params
+        60 * 60 * 1000 // 1 hour cache
+      );
 
       CircuitBreaker.onSuccess(endpoint);
-      console.log("Fetched Assets:", response.data);
-      return response.data;
+      console.log("Fetched Assets:", data);
+      return data;
     } catch (error: any) {
       CircuitBreaker.onFailure(endpoint, error);
 
