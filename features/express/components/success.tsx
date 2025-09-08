@@ -307,6 +307,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
               }`}>You Received</div>
               <div className="font-bold flex items-center justify-end gap-2" style={{ color: GREEN }}>
                 <span>{realData.receivedAmount} </span>
+                <span>{realData.receivedCurrency}</span>
               </div>
             </div>
           </div>
@@ -349,6 +350,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
                   />
                 )}
                 <span>{realData.netAmount}</span>
+                <span>{realData.receivedCurrency}</span>
               </div>
             </div>
           </div>
