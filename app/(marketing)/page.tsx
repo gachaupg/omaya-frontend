@@ -8,6 +8,7 @@ import ExchangeForm from "@/components/ExchangeForm";
 import { useBlog } from "@/features/blogs/hooks/blog";
 import { BlogPost } from "@/features/blogs/types";
 import { useFAQ } from "@/features/faq/hooks/useFAQ";
+import { ContactForm } from "@/features/contact/components";
 
 const steps = [
   {
@@ -88,6 +89,9 @@ interface Article {
 export default function MarketingPage() {
   const [activeCategory, setActiveCategory] = useState<Category>("News");
   const [openFAQ, setOpenFAQ] = useState<number | null>(4);
+  const [showContactSuccess, setShowContactSuccess] = useState(false);
+  const [showContactError, setShowContactError] = useState(false);
+  const [contactErrorMessage, setContactErrorMessage] = useState('');
   const { blogs, news, loading, error } = useBlog();
   const { faqs: faqItems, loading: faqLoading, error: faqError } = useFAQ();
 
@@ -182,6 +186,27 @@ export default function MarketingPage() {
     setOpenFAQ(openFAQ === id ? null : id);
   };
 
+  const handleContactSuccess = () => {
+    setShowContactSuccess(true);
+    setShowContactError(false);
+    
+    // Hide success message after 3 seconds
+    setTimeout(() => {
+      setShowContactSuccess(false);
+    }, 3000);
+  };
+
+  const handleContactError = (error: string) => {
+    setContactErrorMessage(error);
+    setShowContactError(true);
+    setShowContactSuccess(false);
+    
+    // Hide error message after 5 seconds
+    setTimeout(() => {
+      setShowContactError(false);
+    }, 5000);
+  };
+
   return (
     <div>
       <section
@@ -256,9 +281,12 @@ export default function MarketingPage() {
                 are shaping the future of finance in our region.
               </p>
               <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-                <button className="rounded-md px-6 py-2 text-white bg-[#1D8751] 2xl:text-lg">
+                <a 
+                  href="#contact" 
+                  className="rounded-md px-6 py-2 text-white bg-[#1D8751] 2xl:text-lg hover:bg-[#166b42] transition-colors"
+                >
                   Contact Us
-                </button>
+                </a>
                 <button className="rounded-md text-white hover:bg-white/10 px-6 py-2 flex items-center gap-2 border border-[#1D8751] 2xl:text-lg">
                   Watch Video
                   <Play size={16} className="ml-1 text-[#1D8751]" />
@@ -779,9 +807,12 @@ export default function MarketingPage() {
                 Refer and Invite your friends and earn commission on each
                 transaction they make with us!
               </h2>
-              <button className="bg-white text-[#0A6E3A] px-6 py-2 rounded-full hover:bg-gray-100 transition duration-300">
+              <a 
+                href="#contact" 
+                className="bg-white text-[#0A6E3A] px-6 py-2 rounded-full hover:bg-gray-100 transition duration-300 inline-block"
+              >
                 Contact Us
-              </button>
+              </a>
             </div>
 
             <div className="hidden md:flex w-1/2 justify-end md:mt-8 lg:mt-12 absolute right-0">
@@ -973,7 +1004,7 @@ export default function MarketingPage() {
       </div>
 
       {/* Contact Us Section */}
-      <section className="w-full dark:bg-[#1D1D23] bg-[#F6F6F6] text-white py-16 px-4 md:px-8">
+      <section id="contact" className="w-full dark:bg-[#1D1D23] bg-[#F6F6F6] text-white py-16 px-4 md:px-8">
         <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto">
           <div className="flex flex-col lg:flex-row items-center gap-8">
             {/* Form Section */}
@@ -982,83 +1013,28 @@ export default function MarketingPage() {
                 Need Answers to Your Questions? Contact Us
               </h2>
 
-              <form className="space-y-4">
-                <div>
-                  <label
-                    htmlFor="email"
-                    className="block text-sm  2xl:text-lg mb-2  dark:text-white text-[#0D0D0D]"
-                  >
-                    Email
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                      <svg
-                        width="20"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <rect
-                          x="2"
-                          y="4"
-                          width="20"
-                          height="16"
-                          rx="2"
-                          stroke="#1D8751"
-                          strokeWidth="1.5"
-                        />
-                        <path
-                          d="M22 6L12 13L2 6"
-                          stroke="#1D8751"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </div>
-                    <input
-                      type="email"
-                      id="email"
-                      className="w-full border border-[#35353E] rounded-full py-3 pl-10 pr-3 text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#1D8751]"
-                      placeholder="Your email address"
-                      required
-                    />
-                  </div>
+              {/* Success Message */}
+              {showContactSuccess && (
+                <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl">
+                  <p className="text-green-800 dark:text-green-200 text-sm">
+                    Thank you! Your message has been submitted successfully. We'll get back to you soon.
+                  </p>
                 </div>
+              )}
 
-                <div>
-                  <label
-                    htmlFor="question"
-                    className="block text-sm 2xl:text-lg mb-2 dark:text-white text-[#0D0D0D]"
-                  >
-                    Text
-                  </label>
-                  <textarea
-                    id="question"
-                    className="w-full border border-[#35353E] rounded-3xl py-3 px-4 resize-none text-white  placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#1D8751]"
-                    placeholder="Your question"
-                    rows={5}
-                    required
-                  ></textarea>
+              {/* Error Message */}
+              {showContactError && (
+                <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl">
+                  <p className="text-red-800 dark:text-red-200 text-sm">
+                    {contactErrorMessage}
+                  </p>
                 </div>
+              )}
 
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <button
-                    type="button"
-                    className="w-full sm:w-auto flex-1 bg-[#1D8751] hover:bg-[#1D8751] text-white font-medium py-2 px-6 rounded-full transition-colors focus:outline-none "
-                  >
-                    Connect with Live Chat
-                  </button>
-
-                  <button
-                    type="submit"
-                    className="w-full sm:w-auto flex-1 bg-transparent border-2 border-[#1D8751] text-[#1D8751] font-medium py-2 px-6 rounded-full transition-colors focus:outline-none"
-                  >
-                    Submit Email
-                  </button>
-                </div>
-              </form>
+              <ContactForm 
+                onSuccess={handleContactSuccess}
+                onError={handleContactError}
+              />
             </div>
 
             {/* Image Section */}

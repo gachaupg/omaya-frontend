@@ -9,28 +9,26 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import clsx from "clsx";
 import { navItems } from "@/utils/data";
+import { useTheme } from "@/context/theme";
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
   const handleNavClick = (item: typeof navItems[0], e: React.MouseEvent) => {
-    // Check if we're currently in this section
-    // For Dashboard, only match exact path since other routes start with /dashboard/
-    // For other routes, match exact path or sub-pages
+
     const isInSection = item.href === '/dashboard' 
       ? pathname === item.href 
       : pathname === item.href || (pathname && pathname.startsWith(item.href + '/'));
     
     if (isInSection) {
       e.preventDefault();
-      // If already in this section, navigate smoothly to reset the page state
       router.push(item.href);
-      // Force a refresh of the current route to reset any component state
       router.refresh();
     }
   };
-
+  const { isDark } = useTheme();
+  
   return (
     <>
       {/* Desktop Sidebar */}
@@ -75,7 +73,8 @@ export default function Sidebar() {
                         )}
                       >
                         {isActive ? (
-                          <span className="flex items-center justify-center">
+                          isDark ? (
+                            <span className="flex items-center justify-center">
                             <img
                               src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
                               alt=""
@@ -86,6 +85,19 @@ export default function Sidebar() {
                               alt=""
                             />
                           </span>
+                          ) : (
+                            <span className="flex items-center justify-center">
+                              <img
+                                src="https://res.cloudinary.com/pitz/image/upload/v1752429831/Express_vkggc2.png"
+                                alt=""
+                              />
+                              <img
+                                className="mt-2"
+                                src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
+                                alt=""
+                              />
+                            </span>
+                          )
                         ) : (
                           <span className="flex items-center justify-center">
                             <img

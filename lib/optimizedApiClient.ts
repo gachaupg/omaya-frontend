@@ -20,7 +20,7 @@ const OPTIMIZED_CONFIG: OptimizedApiConfig = {
   retries: 2, // Reduced from 3 to 2
   retryDelay: 500, // Reduced from 1000ms to 500ms
   enableCaching: true,
-  cacheTTL: 5 * 60 * 1000, // 5 minutes
+  cacheTTL: 2 * 60 * 60 * 1000, // 2 hours for better asset caching
   enableRequestDeduplication: true,
 };
 
@@ -254,5 +254,7 @@ export const optimizedGet = optimizedApiClient.get.bind(optimizedApiClient);
 export const optimizedPost = optimizedApiClient.post.bind(optimizedApiClient);
 
 export default optimizedApiClient;
+
+
 
 

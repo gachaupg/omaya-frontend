@@ -6,6 +6,7 @@
 import { get, post, put, patch, del, AxiosRequestConfig } from './apiClient';
 import { AxiosResponse } from 'axios';
 import { browserCache } from './browserCache';
+import { serializeAxiosResponse, deserializeAxiosResponse, isSerializedAxiosResponse } from './utils/axiosSerializer';
 
 interface CachedApiOptions {
   ttl?: number; // Time to live in milliseconds
@@ -59,10 +60,15 @@ class CachedApiClient {
       
       try {
         // Try to get from cache first
-        const cached = await browserCache.get<AxiosResponse<T>>(key);
+        const cached = await browserCache.get<any>(key);
         if (cached) {
           console.log(`[CachedApiClient] Cache hit for GET ${url}`);
-          return cached;
+          // Deserialize if it's a serialized AxiosResponse
+          if (isSerializedAxiosResponse(cached)) {
+            return deserializeAxiosResponse<T>(cached);
+          }
+          // If it's already an AxiosResponse (backward compatibility)
+          return cached as AxiosResponse<T>;
         }
       } catch (error) {
         console.warn(`[CachedApiClient] Cache get failed for ${url}:`, error);
@@ -73,8 +79,9 @@ class CachedApiClient {
         console.log(`[CachedApiClient] Cache miss for GET ${url}, fetching...`);
         const response = await get<T>(url, axiosConfig);
         
-        // Cache the response
-        await browserCache.set(key, response, ttl || this.defaultTTL);
+        // Serialize and cache the response
+        const serializedResponse = serializeAxiosResponse(response);
+        await browserCache.set(key, serializedResponse, ttl || this.defaultTTL);
         
         return response;
       } catch (error) {
@@ -102,10 +109,15 @@ class CachedApiClient {
       
       try {
         // Try to get from cache first
-        const cached = await browserCache.get<AxiosResponse<T>>(key);
+        const cached = await browserCache.get<any>(key);
         if (cached) {
           console.log(`[CachedApiClient] Cache hit for POST ${url}`);
-          return cached;
+          // Deserialize if it's a serialized AxiosResponse
+          if (isSerializedAxiosResponse(cached)) {
+            return deserializeAxiosResponse<T>(cached);
+          }
+          // If it's already an AxiosResponse (backward compatibility)
+          return cached as AxiosResponse<T>;
         }
       } catch (error) {
         console.warn(`[CachedApiClient] Cache get failed for ${url}:`, error);
@@ -115,8 +127,9 @@ class CachedApiClient {
         // Fetch fresh data
         const response = await post<T>(url, data, axiosConfig);
         
-        // Cache the response
-        await browserCache.set(key, response, ttl || this.defaultTTL);
+        // Serialize and cache the response
+        const serializedResponse = serializeAxiosResponse(response);
+        await browserCache.set(key, serializedResponse, ttl || this.defaultTTL);
         
         return response;
       } catch (error) {
@@ -144,10 +157,15 @@ class CachedApiClient {
       
       try {
         // Try to get from cache first
-        const cached = await browserCache.get<AxiosResponse<T>>(key);
+        const cached = await browserCache.get<any>(key);
         if (cached) {
           console.log(`[CachedApiClient] Cache hit for PUT ${url}`);
-          return cached;
+          // Deserialize if it's a serialized AxiosResponse
+          if (isSerializedAxiosResponse(cached)) {
+            return deserializeAxiosResponse<T>(cached);
+          }
+          // If it's already an AxiosResponse (backward compatibility)
+          return cached as AxiosResponse<T>;
         }
       } catch (error) {
         console.warn(`[CachedApiClient] Cache get failed for ${url}:`, error);
@@ -157,8 +175,9 @@ class CachedApiClient {
         // Fetch fresh data
         const response = await put<T>(url, data, axiosConfig);
         
-        // Cache the response
-        await browserCache.set(key, response, ttl || this.defaultTTL);
+        // Serialize and cache the response
+        const serializedResponse = serializeAxiosResponse(response);
+        await browserCache.set(key, serializedResponse, ttl || this.defaultTTL);
         
         return response;
       } catch (error) {
@@ -186,10 +205,15 @@ class CachedApiClient {
       
       try {
         // Try to get from cache first
-        const cached = await browserCache.get<AxiosResponse<T>>(key);
+        const cached = await browserCache.get<any>(key);
         if (cached) {
           console.log(`[CachedApiClient] Cache hit for PATCH ${url}`);
-          return cached;
+          // Deserialize if it's a serialized AxiosResponse
+          if (isSerializedAxiosResponse(cached)) {
+            return deserializeAxiosResponse<T>(cached);
+          }
+          // If it's already an AxiosResponse (backward compatibility)
+          return cached as AxiosResponse<T>;
         }
       } catch (error) {
         console.warn(`[CachedApiClient] Cache get failed for ${url}:`, error);
@@ -199,8 +223,9 @@ class CachedApiClient {
         // Fetch fresh data
         const response = await patch<T>(url, data, axiosConfig);
         
-        // Cache the response
-        await browserCache.set(key, response, ttl || this.defaultTTL);
+        // Serialize and cache the response
+        const serializedResponse = serializeAxiosResponse(response);
+        await browserCache.set(key, serializedResponse, ttl || this.defaultTTL);
         
         return response;
       } catch (error) {
@@ -227,10 +252,15 @@ class CachedApiClient {
       
       try {
         // Try to get from cache first
-        const cached = await browserCache.get<AxiosResponse<T>>(key);
+        const cached = await browserCache.get<any>(key);
         if (cached) {
           console.log(`[CachedApiClient] Cache hit for DELETE ${url}`);
-          return cached;
+          // Deserialize if it's a serialized AxiosResponse
+          if (isSerializedAxiosResponse(cached)) {
+            return deserializeAxiosResponse<T>(cached);
+          }
+          // If it's already an AxiosResponse (backward compatibility)
+          return cached as AxiosResponse<T>;
         }
       } catch (error) {
         console.warn(`[CachedApiClient] Cache get failed for ${url}:`, error);
@@ -240,8 +270,9 @@ class CachedApiClient {
         // Fetch fresh data
         const response = await del<T>(url, axiosConfig);
         
-        // Cache the response
-        await browserCache.set(key, response, ttl || this.defaultTTL);
+        // Serialize and cache the response
+        const serializedResponse = serializeAxiosResponse(response);
+        await browserCache.set(key, serializedResponse, ttl || this.defaultTTL);
         
         return response;
       } catch (error) {

@@ -13,8 +13,19 @@ export const API_CONFIG = {
     "Content-Type": "application/json",
   },
   AUTH: {
-    LOGIN: "/api/login",
-    // ...
+    LOGIN: "/api/login/",
+    LOGIN_2FA: "/api/login-2fa/",
+    REGISTER: "/api/register/",
+    FORGOT_PASSWORD: "/api/forget-password/",
+    RESET_PASSWORD: "/api/reset-password/",
+    VERIFY_OTP: "/api/verify-otp/",
+    LOGOUT: "/api/logout/",
+    REFRESH_TOKEN: "/api/token/refresh/",
+    PROFILE: "/api/profile/",
+    KYC_STATUS: "/api/kyc/status/",
+    KYC_VERIFY: "/api/kyc/verify/",
+    SUMSUB_INITIATE: "/api/sumsub/initiate/",
+    SUMSUB_TOKEN: "/api/sumsub/token/",
     ENABLE_2FA: "/api/2fa/enable/",
     VERIFY_2FA_SETUP: "/api/2fa/verify-setup/",
   },
@@ -97,5 +108,8 @@ export const API_CONFIG = {
   },
   GOOGLE_AUTH: {
     GOOGLE_AUTH: "/api/auth/google/",
+  },
+  CONTACT: {
+    SUBMIT_CONTACT: "/trading_engine/contact/",
   },
 };
