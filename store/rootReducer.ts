@@ -32,6 +32,8 @@ import marketReducer from "@/features/markets/slices/marketSlice";
 import blogReducer from "@/features/blogs/slices/blog";
 import transactionReducer from "@/features/rates/slices/transactionSlice";
 import googleOAuthReducer from "@/features/auth/slices/googleOAuthSlice";
+import contactReducer from "@/features/contact/slices/contactSlice";
+import kycReducer from "@/features/kyc/slices/kycSlice";
 
 const rootReducer = combineReducers({
   deposits: depositReducer,
@@ -60,6 +62,8 @@ const rootReducer = combineReducers({
   blog: blogReducer,
   transaction: transactionReducer,
   googleOAuth: googleOAuthReducer,
+  contact: contactReducer,
+  kyc: kycReducer,
   // Add other reducers here
 });
 

@@ -76,7 +76,7 @@ const SwapWidget = () => {
 
   useEffect(() => {
     dispatch(resetErrorToastFlag());
-    dispatch(fetchSupportedAssets()).catch((error) => {
+    dispatch(fetchSupportedAssets(false)).catch((error) => {
       console.error("Failed to fetch supported assets:", error);
       handleApiError(error);
     });

@@ -2,7 +2,7 @@
 
 import Sidebar from "@/components/layout/Sidebar";
 import { motion, AnimatePresence } from "framer-motion";
-import KYCVerificationModal from "@/features/auth/components/KYCVerificationModal";
+import KYCVerificationModal from "./kyc/kycmodal";
 import { useKYCVerification } from "@/features/auth/hooks/useKYCVerification";
 
 export default function DashboardLayout({

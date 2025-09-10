@@ -2,6 +2,7 @@ import React from "react";
 import AssetDropdown from "./AssetDropdown";
 import EstimatedPriceDisplay from "./EstimatedPriceDisplay";
 import { SupportedAsset, SwapEstimate } from "../types";
+import { useTheme } from "@/context/theme";
 
 interface TransactionInfoStepProps {
   fromAsset: SupportedAsset | null;
@@ -58,6 +59,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
   hideContinueButton,
   onSwapAssets,
 }) => {
+  const { isDark } = useTheme();
+
   return (
     <div className="w-full flex flex-col ">
       <h2 className="text-xl font-bold mb-2 text-[#788099]">
@@ -253,11 +256,15 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
               className="w-16 h-16 bg-transparent rounded-full flex items-center justify-center hover:bg-[#23232b]/10 transition-colors shadow-lg"
               onClick={onSwapAssets}
             >
-              <img
+             {isDark ? <img
                 src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
                 alt="swap icon"
                 className="w-12 h-12"
-              />
+              /> : <img
+                src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
+                alt="swap icon"
+                className="w-12 h-12"
+              />}
             </button>
           </div>
         </div>

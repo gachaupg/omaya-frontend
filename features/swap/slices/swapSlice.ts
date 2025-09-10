@@ -49,23 +49,113 @@ const initialState: SwapState = {
   hasShownErrorToast: false,
 };
 
-export const fetchSupportedAssets = createAsyncThunk(
+export const fetchSupportedAssets = createAsyncThunk<SupportedAsset[], boolean | undefined>(
   "swap/fetchSupportedAssets",
-  async (_, { rejectWithValue }) => {
+  async (forceRefresh: boolean = false, { rejectWithValue }) => {
     try {
-      const data = await sliceCache.getOrSet(
-        'swap',
-        'fetchSupportedAssets',
-        async () => {
-          const response = await getSupportedAssets();
-          return response;
-        },
-        undefined, // no params
-        60 * 60 * 1000 // 1 hour cache
-      );
+      console.log("🔄 Starting fetchSupportedAssets...");
+      
+      let data;
+      
+      if (forceRefresh) {
+        console.log("🔄 Force refresh - bypassing cache...");
+        // Clear cache first
+        await sliceCache.delete('swap', 'fetchSupportedAssets');
+        // Fetch fresh data
+        const response = await getSupportedAssets();
+        console.log("✅ Force refresh API response received:", response?.length || 0, "assets");
+        // Cache the fresh data
+        await sliceCache.set('swap', 'fetchSupportedAssets', response, undefined, 2 * 60 * 60 * 1000);
+        data = response;
+      } else {
+        data = await sliceCache.getOrSet(
+          'swap',
+          'fetchSupportedAssets',
+          async () => {
+            console.log("🔄 Cache miss - fetching from API...");
+            const response = await getSupportedAssets();
+            console.log("✅ API response received:", response?.length || 0, "assets");
+            return response;
+          },
+          undefined, // no params
+          2 * 60 * 60 * 1000 // 2 hours cache
+        );
+      }
+      
+      console.log("✅ fetchSupportedAssets completed:", data?.length || 0, "assets");
       return data;
     } catch (error) {
-      console.error("Failed to fetch supported assets:", error);
+      console.error("❌ Failed to fetch supported assets:", error);
+      
+      // Provide fallback assets if API fails
+      const fallbackAssets: SupportedAsset[] = [
+        {
+          asset_id: "fallback-usdt-bsc",
+          symbol: "USDT",
+          name: "Tether USD",
+          description: "Tether USD on BSC",
+          asset_image: null,
+          image_url: "",
+          ticker: "USDT",
+          has_external_id: false,
+          is_extra_id_supported: false,
+          is_fiat: false,
+          featured: true,
+          is_stable: true,
+          supports_fixed_rate: true,
+          network: "BSC",
+          token_contract: "",
+          can_buy: true,
+          can_sell: true,
+          legacy_ticker: "usdt",
+          is_changenow_asset: false,
+        },
+        {
+          asset_id: "fallback-usdc-bsc",
+          symbol: "USDC",
+          name: "USD Coin",
+          description: "USD Coin on BSC",
+          asset_image: null,
+          image_url: "",
+          ticker: "USDC",
+          has_external_id: false,
+          is_extra_id_supported: false,
+          is_fiat: false,
+          featured: true,
+          is_stable: true,
+          supports_fixed_rate: true,
+          network: "BSC",
+          token_contract: "",
+          can_buy: true,
+          can_sell: true,
+          legacy_ticker: "usdc",
+          is_changenow_asset: false,
+        },
+        {
+          asset_id: "fallback-btc",
+          symbol: "BTC",
+          name: "Bitcoin",
+          description: "Bitcoin",
+          asset_image: null,
+          image_url: "",
+          ticker: "BTC",
+          has_external_id: false,
+          is_extra_id_supported: false,
+          is_fiat: false,
+          featured: true,
+          is_stable: false,
+          supports_fixed_rate: true,
+          network: "BTC",
+          token_contract: "",
+          can_buy: true,
+          can_sell: true,
+          legacy_ticker: "btc",
+          is_changenow_asset: false,
+        }
+      ];
+      
+      console.log("🔄 Using fallback assets:", fallbackAssets.length);
+      
       // Only show toast if it's a network error or server error
       if (error instanceof Error) {
         if (
@@ -75,11 +165,9 @@ export const fetchSupportedAssets = createAsyncThunk(
           handleApiError(error);
         }
       }
-      return rejectWithValue(
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch supported assets"
-      );
+      
+      // Return fallback assets instead of rejecting
+      return fallbackAssets;
     }
   }
 );
@@ -264,8 +352,14 @@ const swapSlice = createSlice({
         state.hasShownErrorToast = false;
       })
       .addCase(fetchSupportedAssets.fulfilled, (state, action) => {
+        console.log("🎯 Redux: fetchSupportedAssets.fulfilled", {
+          payloadLength: action.payload?.length || 0,
+          payload: action.payload
+        });
         state.loading = false;
         state.supportedAssets = action.payload;
+        console.log("🎯 Redux: supportedAssets set to:", state.supportedAssets?.length || 0, "assets");
+        
         // Set default assets if not set - BTC for fromAsset, ETH for toAsset
         if (!state.fromAsset && action.payload.length > 0) {
           // Find BTC asset, fallback to first asset if BTC not found
@@ -274,6 +368,7 @@ const swapSlice = createSlice({
             asset.symbol.toLowerCase() === 'btc'
           );
           state.fromAsset = btcAsset || action.payload[0];
+          console.log("🎯 Redux: fromAsset set to:", state.fromAsset);
         }
         if (!state.toAsset && action.payload.length > 1) {
           // Find ETH asset, fallback to second asset if ETH not found
@@ -282,6 +377,7 @@ const swapSlice = createSlice({
             asset.symbol.toLowerCase() === 'eth'
           );
           state.toAsset = ethAsset || action.payload[1];
+          console.log("🎯 Redux: toAsset set to:", state.toAsset);
         }
       })
       .addCase(fetchSupportedAssets.rejected, (state, action) => {

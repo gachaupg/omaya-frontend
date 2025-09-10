@@ -176,7 +176,9 @@ class BrowserCache {
             return;
           }
 
-          resolve(entry.data);
+          // Deserialize data before returning
+          const deserializedData = this.deserializeData<T>(entry.data);
+          resolve(deserializedData);
         };
 
         request.onerror = () => {
@@ -191,7 +193,7 @@ class BrowserCache {
   }
 
   /**
-   * Set data in cache
+   * Set data in cache with automatic serialization for complex objects
    */
   async set<T>(key: string, data: T, ttl?: number): Promise<void> {
     try {
@@ -199,8 +201,11 @@ class BrowserCache {
       const transaction = db.transaction([this.storeName], 'readwrite');
       const store = transaction.objectStore(this.storeName);
       
-      const entry: CacheEntry<T> = {
-        data,
+      // Serialize data to ensure it can be stored in IndexedDB
+      const serializedData = this.serializeData(data);
+      
+      const entry: CacheEntry<any> = {
+        data: serializedData,
         timestamp: Date.now(),
         ttl: ttl || this.options.ttl,
         key,
@@ -223,6 +228,28 @@ class BrowserCache {
       console.error(`[BrowserCache] Error setting ${key}:`, error);
       throw error;
     }
+  }
+
+  /**
+   * Serialize data to ensure it can be stored in IndexedDB
+   * Handles functions, circular references, and other non-serializable data
+   */
+  private serializeData<T>(data: T): any {
+    try {
+      // Use JSON.parse(JSON.stringify()) to remove functions and circular references
+      return JSON.parse(JSON.stringify(data));
+    } catch (error) {
+      console.warn('[BrowserCache] Failed to serialize data, storing as-is:', error);
+      return data;
+    }
+  }
+
+  /**
+   * Deserialize data when retrieving from cache
+   */
+  private deserializeData<T>(data: any): T {
+    // Data is already deserialized by JSON.parse(JSON.stringify())
+    return data as T;
   }
 
   /**

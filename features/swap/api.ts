@@ -2,6 +2,7 @@
  * api.ts – auto‑generated placeholder
  */
 import { del, get, patch, post, put } from "@/lib/apiClient";
+import { cachedGet } from "@/lib/cachedApiClient";
 import { withRetry } from "@/lib/utils/retry";
 import { API_CONFIG } from "@/lib/appConfig";
 import {
@@ -16,7 +17,10 @@ export const getSupportedAssets = async (): Promise<SupportedAsset[]> => {
   return withRetry(async () => {
     try {
       const response = await get<{ message: string; total_changenow_tokens: number; results: SupportedAsset[] }>(
-        API_CONFIG.SWAP.SUPPORTED_ASSETS
+        API_CONFIG.SWAP.SUPPORTED_ASSETS,
+        {
+          timeout: 10000
+        }
       );
       
       // Type guard to check if response.data has the expected structure

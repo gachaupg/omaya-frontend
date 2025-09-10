@@ -10,6 +10,7 @@ import {
   AxiosError,
   AxiosRequestConfig,
 } from "../../../lib/apiClient";
+import { cachedGet } from "../../../lib/cachedApiClient";
 import { EXCHANGE_ENDPOINTS } from "../api";
 import NetworkFallback from "../../../lib/utils/networkFallback";
 import CircuitBreaker from "../../../lib/utils/circuitBreaker";
@@ -128,13 +129,15 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, void>(
         'exchange',
         'fetchAssets',
         async () => {
-          const response = await get<AssetsResponse>(endpoint, {
+          const response = await cachedGet<AssetsResponse>(endpoint, {
             timeout: 10000,
+            ttl: 2 * 60 * 60 * 1000, // 2 hours cache for assets
+            cache: true
           });
           return response.data;
         },
         undefined, // no params
-        60 * 60 * 1000 // 1 hour cache
+        2 * 60 * 60 * 1000 // 2 hours cache
       );
 
       CircuitBreaker.onSuccess(endpoint);

@@ -46,6 +46,8 @@ const ENDPOINT_SPECIFIC_CONFIG: Record<string, Partial<ApiClientConfig>> = {
   "/trading_engine/p2p/trades/": { timeout: 45000, retries: 1 }, // Critical operations
   "/api/auth/login/": { timeout: 10000, retries: 1 }, // Faster login
   "/api/auth/register/": { timeout: 10000, retries: 1 }, // Faster registration
+  "/api/kyc/status/": { timeout: 15000, retries: 2 }, // KYC status check
+  "/api/kyc/verify/": { timeout: 30000, retries: 1 }, // KYC verification
 };
 
 const generateRequestId = (): string => {

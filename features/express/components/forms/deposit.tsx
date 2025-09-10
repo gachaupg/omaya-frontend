@@ -18,6 +18,7 @@ import { DepositResponse } from "../../../exchange/types";
 import { SupportedAsset } from "../../../swap/types";
 import { FaSearch } from "react-icons/fa";
 import InfoModal from "./info";
+import { useTheme } from "@/context/theme";
 
 interface DepositFormProps {
   onExchange?: (transactionData: {
@@ -57,6 +58,7 @@ export default function DepositForm({
   // Add swap assets state
   const { supportedAssets: swapAssets, loading: swapAssetsLoading } =
     useSelector((state: any) => state.swap);
+    const { isDark } = useTheme();
 
   const [payAmount, setPayAmount] = useState(100); // Set default amount to $100
   const [payAmountInput, setPayAmountInput] = useState("100"); // String value for input display
@@ -127,22 +129,21 @@ export default function DepositForm({
 
   // Fetch swap assets
   useEffect(() => {
-    dispatch(fetchSupportedAssets())
+    dispatch(fetchSupportedAssets(false))
       .unwrap()
       .catch((error: unknown) => {
         console.error("Failed to fetch swap assets:", error);
         
-        // Handle different types of errors with user-friendly messages
+        // Only show error if it's a network issue, not cache issues
         if (error instanceof Error) {
           if (error.message.includes("Network Error") || error.message.includes("Network connection issue")) {
             showToast.warning("Network Issue", "Unable to fetch assets due to network problems. Using fallback data.");
           } else if (error.message.includes("Server Error")) {
             showToast.error("Server Error", "Unable to fetch assets from server. Please try again later.");
-          } else {
+          } else if (!error.message.includes("Cache")) {
+            // Only show error if it's not a cache-related issue
             showToast.error("Asset Loading Error", `Failed to fetch swap assets: ${error.message}`);
           }
-        } else {
-          showToast.error("Asset Loading Error", "Failed to fetch swap assets. Please try again later.");
         }
         
         // Set fallback assets so the form can still work
@@ -764,12 +765,7 @@ export default function DepositForm({
     setCalculationTimeout(timeout);
   };
 
-  // Debug logging
-  console.log("Selected Asset:", selectedAsset);
-  console.log("Commission Rate:", commissionRate);
-  console.log("Commission Amount:", commissionAmount);
-  console.log("Pay Amount:", payAmount);
-  console.log("Estimate:", estimate);
+
 
   // Recalculate when asset changes
   useEffect(() => {
@@ -1029,10 +1025,7 @@ export default function DepositForm({
           }
         }, 100);
       } catch (error: any) {
-        console.error("DEBUG: Deposit submission error:", error);
-        console.error("DEBUG: Error response:", error.response?.data || "No response data");
-        console.error("DEBUG: Error status:", error.response?.status || "No status code");
-
+       
         let errorMessage = "Failed to submit deposit request";
 
         if (error.response?.data) {
@@ -1195,19 +1188,13 @@ export default function DepositForm({
         
         // Step 1: Update deposit address (this triggers the second response)
         if (walletAddress.trim()) {
-          console.log("DEBUG: Updating deposit address for complex asset...");
           updateResponse = await dispatch(
             updateDepositAddress({
               transactionId: apiResponse.transaction_id,
               depositAddress: walletAddress,
             })
           ).unwrap();
-          
-          console.log("DEBUG: Update deposit address response:", updateResponse);
-          
-          // Check if the update response contains the expected fields for complex assets
-          // The updateDepositAddress API might return a limited response, so we check
-          // if it contains the additional fields we need
+
           if (updateResponse && typeof updateResponse === 'object') {
             // Try to extract additional fields if they exist
             const responseData = updateResponse as any;
@@ -1223,17 +1210,13 @@ export default function DepositForm({
                 transaction_id: responseData.transaction_id || apiResponse.transaction_id,
                 deposit_code: responseData.deposit_code || apiResponse.deposit_code,
               };
-              console.log("DEBUG: Received updated response with additional fields for complex asset:", responseData);
-              console.log("DEBUG: Final response now contains:", finalResponse);
+           
               showToast.success("Address updated successfully! Transaction details updated.");
             } else {
-              // Standard update response - use original response but log info
-              console.log("DEBUG: Standard update response received, using original response for complex asset");
-              console.log("DEBUG: Note: Expected additional fields (expected_amount, net_amount, changenow_id) not found in update response");
+          
               showToast.success("Address updated successfully!");
             }
           } else {
-            console.log("DEBUG: Update response doesn't contain expected fields, using original response");
             showToast.success("Address updated successfully!");
           }
                   } else {
@@ -1542,10 +1525,7 @@ export default function DepositForm({
         onExchange(transactionData);
       }
     } catch (error: any) {
-      console.error("DEBUG: Deposit submission error:", error);
-      console.error("DEBUG: Error response:", error.response?.data);
-      console.error("DEBUG: Error status:", error.response?.status);
-
+     
       let errorMessage = "Failed to submit deposit request";
 
       if (error.response?.data) {
@@ -1643,7 +1623,7 @@ export default function DepositForm({
         {/* Top Section - Amount and Bank/Payment Method in one card */}
         <div className="relative mb-4">
           {/* Top Card Container */}
-          <div className="flex border border-[#A2A4A9FF] dark:border-[#35353E]  rounded-2xl p-4">
+          <div className="flex border border-[#D1D2D4FF] dark:border-[#35353E]  rounded-2xl p-4">
             {/* Amount Section */}
             <div className="flex-1 pr-4">
               <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
@@ -1823,7 +1803,7 @@ export default function DepositForm({
           
          
           
-          <div className="flex border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl p-4">
+          <div className="flex border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-4">
             {/* You Receive Section */}
             <div className="flex-1 pr-4">
               <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
