@@ -22,7 +22,7 @@ export const useTransactionValidation = () => {
       transactionType: "deposit" | "withdrawal"
     ) => {
       const userBalance =
-        wallets?.find((w) => w.currency === currency)?.balance || "0";
+        wallets?.wallet?.currency === currency ? wallets.wallet.balance : "0";
 
       // Calculate daily spent from approved transactions
       const pendingWithdrawals = summary?.total_pending_p2p_withdrawals || 0;

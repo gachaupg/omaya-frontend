@@ -34,9 +34,11 @@ export const API_CONFIG = {
     NEWS: "/administration/blogs/news/",
   },
   P2P: {
-    WALLETS: "/wallet/wallets/",
+    WALLETS: "api/wallet/wallets/",
     DEPOSITS: "/trading_engine/p2p/deposits/",
+    DEPOSIT_ADDRESSES: "/trading_engine/p2p/deposit/addresses/",
     WITHDRAWS: "trading_engine/p2p-withdraw/",
+    P2P_WITHDRAW: "/trading_engine/p2p-withdraw/",
     BUY_ADS: "/ads/buy/",
     SELL_ADS: "/ads/sell/",
     ASSETS: "/administration/admin/fronted-all-asset-network-range/",

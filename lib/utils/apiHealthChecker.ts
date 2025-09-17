@@ -21,7 +21,7 @@ export class ApiHealthChecker {
   static init() {
     // Initialize common endpoints
     const commonEndpoints = [
-      "/wallet/wallets/",
+      "api/wallet/wallets/",
       "/trading_engine/p2p/orders/",
       "/trading_engine/all-transactions/",
       "/administration/admin/changenow-tokens/",

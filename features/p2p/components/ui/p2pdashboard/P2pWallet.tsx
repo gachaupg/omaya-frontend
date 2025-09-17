@@ -19,16 +19,16 @@ interface Wallet {
 const formatBalance = (value: number, isUsdt: boolean = false) => {
   if (isUsdt) {
     return new Intl.NumberFormat("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      minimumFractionDigits: 8,
+      maximumFractionDigits: 8,
     }).format(value);
   }
 
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 8,
+    maximumFractionDigits: 8,
   }).format(value);
 };
 
@@ -40,9 +40,10 @@ const P2pWallet = ({
   setIsOpenForm: (isOpenForm: string) => void;
 }) => {
   const dispatch = useDispatch<AppDispatch>();
-  const { data: wallets = [], loading } = useSelector(
+  const { data: wallets, loading } = useSelector(
     (state: RootState) => state.wallets
   );
+  console.log("wallets", wallets);
   const { data: matchedTrades, loading: matchedTradesLoading } = useSelector(
     (state: RootState) => state.matchedTrades
   );
@@ -61,14 +62,10 @@ const P2pWallet = ({
     }
   }, [dispatch, isAuthenticated]);
 
-  // Find USDT wallet with null check
-  const usdtWallet = Array.isArray(wallets)
-    ? wallets.find((wallet: Wallet) => wallet.currency === "USDT")
-    : null;
-  // const balance = usdtWallet ? toNumber(usdtWallet.balance) : 0;
-  const balance = summary && summary.total_approved_p2p_combined
+  // Get balance from wallet response
+  const balance = wallets?.total_balance ? toNumber(wallets.total_balance) : 0;
   const usdValue = balance;
-
+  console.log("usdValue", usdValue);
   return (
     <div>
       <p

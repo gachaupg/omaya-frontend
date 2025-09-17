@@ -4,21 +4,44 @@ import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { FaExchangeAlt, FaExclamationCircle } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch } from "../../../../store";
-import { fetchAdminPaymentDetails } from "../../../exchange/slices/paymentSlice";
-import { fetchAssets } from "../../../exchange/slices/exchangeSlice";
-import { createDeposit, updateDepositAddress } from "../../../exchange/slices/exchangeSlice";
+  import { AppDispatch } from "@/store";
+import { 
+  fetchAdminPaymentDetails,
+  fetchUserPaymentDetails,
+} from "@/features/exchange/slices/paymentSlice";
+import { fetchAssets } from "@/features/exchange/slices/exchangeSlice";
+import { createDeposit, updateDepositAddress } from "@/features/exchange/slices/exchangeSlice";
+import { fetchDepositAddress } from "@/features/p2p/slices/depositSlice";
 import {
   fetchSupportedAssets,
   fetchSwapEstimate,
-} from "../../../swap/slices/swapSlice";
+} from "@/features/swap/slices/swapSlice";
+import { API_CONFIG } from "@/lib/appConfig";
 
-import { showToast } from "../../../../lib/utils/toast";
-import { DepositResponse } from "../../../exchange/types";
-import { SupportedAsset } from "../../../swap/types";
+// import { showToast } from "../../../../lib/utils/toast";
+import { DepositResponse } from "@/features/exchange/types";
+import { SupportedAsset } from "@/features/swap/types";
 import { FaSearch } from "react-icons/fa";
 import InfoModal from "./info";
 import { useTheme } from "@/context/theme";
+import QRCode from "qrcode";
+import { showToast } from "@/lib/utils/toast";
+import { createExpressDeposit } from "../../api";
+import { ExpressDepositResponse } from "../../types";
+
+// Add UserPaymentDetail interface
+interface UserPaymentDetail {
+  id: number;
+  payment_provider_name: string;
+  payment_method_name: string;
+  account_name: string;
+  account_number: string;
+  wallet_address?: string;
+  // Add fallback properties for compatibility
+  provider_name?: string;
+  payment_provider?: string;
+}
+
 
 interface DepositFormProps {
   onExchange?: (transactionData: {
@@ -48,8 +71,11 @@ export default function DepositForm({
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const { adminPaymentDetails, loading, error } = useSelector(
+  const { adminPaymentDetails, userPaymentDetails, loading, error } = useSelector(
     (state: any) => state.payment
+  );
+  const { depositAddress, addressLoading, error: addressError } = useSelector(
+    (state: any) => state.deposits
   );
   const { assets, loading: assetsLoading } = useSelector(
     (state: any) => state.exchange
@@ -65,8 +91,29 @@ export default function DepositForm({
   const [payBank, setPayBank] = useState("");
   const [getAmount, setGetAmount] = useState(98); // Default amount after 2% commission (100 - 2 = 98)
   const [getAmountInput, setGetAmountInput] = useState("98"); // String value for input display
-  const [selectedAsset, setSelectedAsset] = useState<any>(null);
-  const [selectedNetwork, setSelectedNetwork] = useState<any>(null);
+  const [selectedAsset, setSelectedAsset] = useState<any>(() => {
+    // Initialize with USDT immediately
+    return {
+      ticker: "USDT",
+      symbol: "USDT",
+      name: "Tether USD",
+      network: "BSC",
+      range_commissions: [{ commission: "2" }],
+      commission: "2",
+      fee_rate: "2",
+      image_url: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+      asset_id: "usdt-bsc-initial"
+    };
+  });
+  const [selectedNetwork, setSelectedNetwork] = useState<any>(() => {
+    // Initialize with BSC network immediately
+    return {
+      network_id: "BSC",
+      network_type: "BSC",
+      network: "BSC",
+      name: "Binance Smart Chain BEP20"
+    };
+  });
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
   const [walletAddress, setWalletAddress] = useState("");
   const [walletError, setWalletError] = useState<string | null>(null);
@@ -74,11 +121,41 @@ export default function DepositForm({
   const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  
+  
+  // Add deposit response state
+  const [depositResponse, setDepositResponse] = useState<ExpressDepositResponse | null>(null);
+  const [isTransactionSubmitted, setIsTransactionSubmitted] = useState(false);
+  const [websocket, setWebsocket] = useState<WebSocket | null>(null);
+  const [transactionStatus, setTransactionStatus] = useState<string>("pending");
+  const [websocketRetryCount, setWebsocketRetryCount] = useState<number>(0);
+  const [websocketError, setWebsocketError] = useState<string | null>(null);
+  // Add transaction code state
+  const [transactionCode, setTransactionCode] = useState<string>("");
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>("");
+  const paymentDetailsRef = useRef<HTMLDivElement>(null);
+
+  // Generate QR code for deposit address
+  const generateQRCode = async (address: string) => {
+    try {
+      const qrDataUrl = await QRCode.toDataURL(address, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      setQrCodeDataUrl(qrDataUrl);
+    } catch (error) {
+      console.error("Failed to generate QR code:", error);
+    }
+  };
 
   // Debug function to test asset fetching
   const handleDebugAssets = async () => {
     try {
-      console.log("=== Starting debug asset fetch for express deposit ===");
+      console.log("=== Starting debug asset fetch ===");
       console.log("Current exchange assets:", assets);
       console.log("Current swap assets:", swapAssets);
       
@@ -94,9 +171,6 @@ export default function DepositForm({
       console.error("Debug failed:", error);
     }
   };
-  // Add transaction code state
-  const [transactionCode, setTransactionCode] = useState<string>("");
-  const paymentDetailsRef = useRef<HTMLDivElement>(null);
 
   // Asset selection state for search functionality
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
@@ -130,6 +204,389 @@ export default function DepositForm({
   // Add validation state for minimum receive amount
   const [receiveAmountError, setReceiveAmountError] = useState<string | null>(null);
 
+  // Enhanced filtering with fallback options (same as withdrawal form)
+  const enhancedFilteredUserPaymentDetails = payBank
+    ? (userPaymentDetails || []).filter((detail: any) => {
+        // Try multiple possible field names for provider name
+        const providerName =
+          detail.payment_provider_name ||
+          detail.provider_name ||
+          detail.payment_provider;
+
+        return providerName === payBank;
+      })
+    : [];
+
+
+  // WebSocket connection for monitoring deposit status
+  const connectWebSocket = (websocketUrl: string, isRetry: boolean = false) => {
+    try {
+      // Validate WebSocket URL
+      if (!websocketUrl || websocketUrl.trim() === "") {
+        console.error("WebSocket URL is empty or undefined");
+        setWebsocketError("WebSocket URL is empty or undefined");
+        return null;
+      }
+
+      // Clean up malformed URLs (remove //http: or //https: from WebSocket URLs)
+      let cleanedUrl = websocketUrl;
+      if (websocketUrl.includes('//http:') || websocketUrl.includes('//https:')) {
+        cleanedUrl = websocketUrl.replace('//http:', '').replace('//https:', '');
+        console.log("Cleaned malformed WebSocket URL:", {
+          original: websocketUrl,
+          cleaned: cleanedUrl
+        });
+      }
+
+      // Ensure proper WebSocket protocol - always use wss for production/secure contexts
+      let finalUrl = cleanedUrl;
+      
+      console.log("WebSocket URL protocol conversion:", {
+        originalUrl: websocketUrl,
+        currentProtocol: window.location.protocol,
+        isSecure: window.location.protocol === 'https:',
+        isProduction: window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1',
+        isDevBackend: websocketUrl.includes('dev.backend.omaya.io'),
+        needsConversion: websocketUrl.startsWith('ws://') && (window.location.protocol === 'https:' || window.location.hostname !== 'localhost' || websocketUrl.includes('dev.backend.omaya.io'))
+      });
+      
+      // Check if we need to convert ws:// to wss://
+      if (websocketUrl.startsWith('ws://')) {
+        // Convert ws:// to wss:// for secure contexts or production environments
+        const isSecure = window.location.protocol === 'https:';
+        const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        const isDevBackend = websocketUrl.includes('dev.backend.omaya.io');
+        
+        // Always use wss:// for:
+        // 1. HTTPS contexts
+        // 2. Production environments (non-localhost)
+        // 3. Dev backend (dev.backend.omaya.io) - as it likely only supports wss://
+        if (isSecure || isProduction || isDevBackend) {
+          finalUrl = websocketUrl.replace('ws://', 'wss://');
+          console.log("Converted WebSocket URL from ws:// to wss://");
+          console.log("URL conversion:", {
+            before: websocketUrl,
+            after: finalUrl,
+            reason: isSecure ? 'HTTPS context' : isProduction ? 'Production environment' : 'Dev backend requires wss://'
+          });
+        }
+      } else if (!websocketUrl.startsWith('wss://')) {
+        // If URL doesn't have protocol, try to determine from current location
+        const isSecure = window.location.protocol === 'https:';
+        const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        const isDevBackend = websocketUrl.includes('dev.backend.omaya.io');
+        const useWss = isSecure || isProduction || isDevBackend;
+        
+        finalUrl = `${useWss ? 'wss://' : 'ws://'}${websocketUrl}`;
+        console.log("Added WebSocket protocol:", {
+          before: websocketUrl,
+          after: finalUrl,
+          protocol: useWss ? 'wss' : 'ws',
+          reason: isSecure ? 'HTTPS context' : isProduction ? 'Production environment' : isDevBackend ? 'Dev backend requires wss://' : 'HTTP context'
+        });
+      }
+
+      // Validate the constructed URL
+      try {
+        new URL(finalUrl);
+      } catch (urlError) {
+        console.error("Invalid WebSocket URL:", {
+          originalUrl: websocketUrl,
+          constructedUrl: finalUrl,
+          error: urlError
+        });
+        setWebsocketError(`Invalid WebSocket URL: ${finalUrl}`);
+        return null;
+      }
+
+      console.log(`Attempting WebSocket connection to: ${finalUrl}${isRetry ? ' (retry attempt)' : ''}`);
+      
+      // Pre-connection validation and logging
+      console.log("WebSocket connection attempt details:", {
+        originalUrl: websocketUrl,
+        finalUrl: finalUrl,
+        protocolChanged: websocketUrl !== finalUrl,
+        isRetry: isRetry,
+        retryCount: websocketRetryCount,
+        isSecure: window.location.protocol === 'https:',
+        isProduction: window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1',
+        userAgent: navigator.userAgent,
+        online: navigator.onLine,
+        timestamp: new Date().toISOString()
+      });
+      
+      const ws = new WebSocket(finalUrl);
+      
+      // Set up connection timeout
+      const connectionTimeout = setTimeout(() => {
+        if (ws.readyState === WebSocket.CONNECTING) {
+          console.error("WebSocket connection timeout after 10 seconds");
+          ws.close();
+          setWebsocketError("WebSocket connection timeout. Please check your network connection.");
+          setWebsocket(null);
+        }
+      }, 10000); // 10 second timeout
+      
+      ws.onopen = () => {
+        clearTimeout(connectionTimeout);
+        console.log("WebSocket connected for deposit monitoring");
+        setWebsocket(ws);
+        setWebsocketError(null);
+        setWebsocketRetryCount(0);
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log("WebSocket message received:", data);
+          
+          if (data.status) {
+            setTransactionStatus(data.status);
+            
+            if (data.status === "completed") {
+              showToast.success("Deposit completed successfully!");
+              // Reload the page instead of going to success page
+              setTimeout(() => {
+                window.location.reload();
+              }, 2000); // Wait 2 seconds to show success message
+            } else if (data.status === "failed") {
+              showToast.error("Deposit failed. Please contact support.");
+            }
+          }
+        } catch (error) {
+          console.error("Error parsing WebSocket message:", error);
+        }
+      };
+
+      ws.onclose = (event) => {
+        clearTimeout(connectionTimeout);
+        console.log("WebSocket connection closed:", {
+          code: event.code,
+          reason: event.reason,
+          wasClean: event.wasClean,
+          closeCode: event.code,
+          closeReason: event.reason
+        });
+        setWebsocket(null);
+        
+        // Attempt retry if connection was not clean and we haven't exceeded retry limit
+        if (!event.wasClean && websocketRetryCount < 3) {
+          console.log(`Attempting WebSocket retry ${websocketRetryCount + 1}/3`);
+          setWebsocketRetryCount(prev => prev + 1);
+          setTimeout(() => {
+            const retryWs = connectWebSocket(websocketUrl, true);
+            if (!retryWs) {
+              console.error(`WebSocket retry ${websocketRetryCount + 1} failed`);
+              if (websocketRetryCount >= 2) {
+                setWebsocketError("WebSocket connection failed after multiple retry attempts. Please refresh the page to try again.");
+              }
+            }
+          }, 2000 * (websocketRetryCount + 1)); // Exponential backoff
+        } else if (!event.wasClean && websocketRetryCount >= 3) {
+          console.error("WebSocket connection failed after maximum retry attempts");
+          setWebsocketError("WebSocket connection failed after multiple retry attempts. Please refresh the page to try again.");
+        }
+      };
+
+      ws.onerror = (error) => {
+        clearTimeout(connectionTimeout);
+        
+        // Determine the specific error type based on WebSocket readyState
+        let errorType = 'Unknown error';
+        let errorDescription = '';
+        let suggestedAction = '';
+        
+        switch (ws.readyState) {
+          case WebSocket.CONNECTING:
+            errorType = 'Connection failed';
+            errorDescription = 'Failed to establish WebSocket connection';
+            suggestedAction = 'Check if the WebSocket server is running and accessible';
+            break;
+          case WebSocket.OPEN:
+            errorType = 'Communication error';
+            errorDescription = 'Error occurred during WebSocket communication';
+            suggestedAction = 'Check network stability and server response';
+            break;
+          case WebSocket.CLOSING:
+            errorType = 'Connection closing error';
+            errorDescription = 'Error occurred while closing WebSocket connection';
+            suggestedAction = 'This is usually not critical, connection will be retried';
+            break;
+          case WebSocket.CLOSED:
+            errorType = 'Connection closed';
+            errorDescription = 'WebSocket connection was closed unexpectedly';
+            suggestedAction = 'Connection will be retried automatically';
+            break;
+        }
+        
+        const errorMessage = `WebSocket ${errorType}: ${errorDescription}`;
+        
+        // Safely extract error information from Event object
+        const errorInfo = {
+          // Basic error information
+          error: error,
+          eventType: error.type || 'error',
+          target: error.target,
+          url: finalUrl,
+          readyState: ws.readyState,
+          readyStateText: ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'][ws.readyState],
+          timestamp: new Date().toISOString(),
+          errorType: errorType,
+          errorDescription: errorDescription,
+          suggestedAction: suggestedAction,
+          
+          // Event object properties (safely accessed)
+          eventDetails: {
+            isTrusted: error.isTrusted,
+            bubbles: error.bubbles,
+            cancelable: error.cancelable,
+            defaultPrevented: error.defaultPrevented,
+            eventPhase: error.eventPhase,
+            timeStamp: error.timeStamp,
+            currentTarget: error.currentTarget,
+            srcElement: error.srcElement
+          },
+          
+          // Additional debugging information
+          connectionInfo: {
+            protocol: ws.protocol || 'none',
+            extensions: ws.extensions || 'none',
+            binaryType: ws.binaryType || 'blob',
+            bufferedAmount: ws.bufferedAmount || 0
+          },
+          
+          // Network and environment info
+          environment: {
+            userAgent: navigator.userAgent,
+            online: navigator.onLine,
+            protocol: window.location.protocol,
+            host: window.location.host,
+            isSecure: window.location.protocol === 'https:'
+          }
+        };
+        
+        console.error("WebSocket error details:", errorInfo);
+        console.error("WebSocket error summary:", {
+          url: finalUrl,
+          readyState: ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'][ws.readyState],
+          errorType: errorType,
+          suggestedAction: suggestedAction
+        });
+        
+        // Try alternative protocol if this is the first attempt
+        if (websocketRetryCount === 0 && finalUrl.startsWith('ws://')) {
+          console.log("Attempting fallback to wss:// protocol");
+          const fallbackUrl = finalUrl.replace('ws://', 'wss://');
+          setTimeout(() => {
+            connectWebSocket(fallbackUrl, true);
+          }, 1000);
+          return; // Don't set error yet, let the fallback try first
+        }
+        
+        setWebsocketError(errorMessage);
+        setWebsocket(null);
+      };
+
+      return ws;
+    } catch (error) {
+      const errorMessage = `Failed to create WebSocket connection: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      console.error("Failed to create WebSocket connection:", {
+        error: error,
+        url: websocketUrl,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+      setWebsocketError(errorMessage);
+      return null;
+    }
+  };
+
+  // Cleanup WebSocket on component unmount
+  useEffect(() => {
+    return () => {
+      if (websocket) {
+        websocket.close();
+      }
+    };
+  }, [websocket]);
+
+
+  // Handle simple deposit submission
+  const handleSubmit = async () => {
+    // Clear previous errors
+    setValidationErrors([]);
+
+    // Validate form
+    const errors = validateForm();
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      showToast.error("Please fix the following errors: " + errors.join(", "));
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const asset = selectedAsset.ticker || selectedAsset.symbol;
+      const network = selectedNetwork.network || selectedNetwork.name;
+      
+      console.log("Submitting deposit request with:", { asset, network, amount: payAmount });
+
+      // Call the express deposit API
+      const depositResponse = await createExpressDeposit({
+        asset,
+        amount: payAmount.toString(),
+        network,
+        user_payment_detail_id: 1 // Default payment detail ID
+      });
+      
+      console.log("Express deposit response:", depositResponse);
+      
+      // Create transaction data for the exchanging page
+      const transactionData = {
+        type: "deposit" as const,
+        amount: payAmount,
+        asset: {
+          name: selectedAsset.name,
+          ticker: selectedAsset.ticker || selectedAsset.symbol,
+          symbol: selectedAsset.symbol,
+          network: selectedNetwork.network || selectedNetwork.name,
+          image_url: selectedAsset.image_url || selectedAsset.asset_image || selectedAsset.icon_url || selectedAsset.image,
+        },
+        paymentDetail: { provider_name: "direct", payment_method_type: "crypto" },
+        walletAddress: depositResponse.deposit_address,
+        network: selectedNetwork,
+        depositAddress: depositResponse.deposit_address,
+        transactionId: depositResponse.transaction_id,
+        depositCode: depositResponse.details?.changenow_id || depositResponse.transaction_id,
+        websocket_url: depositResponse.websocket_url,
+        expectedAmount: depositResponse.details?.estimated_amount || depositResponse.net_amount,
+        netAmount: depositResponse.net_amount,
+        changenowId: depositResponse.details?.changenow_id || depositResponse.transaction_id,
+        finalDepositAddress: depositResponse.deposit_address,
+        details: depositResponse.details || {},
+      };
+
+      console.log("Transaction data:", transactionData);
+
+      // Store transaction data in localStorage for the exchanging page
+      localStorage.setItem('express_transaction_data', JSON.stringify(transactionData));
+      
+      showToast.success("Deposit request created successfully!");
+
+      // Navigate to exchanging page
+      if (onExchange) {
+        onExchange(transactionData);
+      } else {
+        router.push('/dashboard/express-exchange');
+      }
+    } catch (error: any) {
+      console.error("Deposit submission error:", error);
+      showToast.error(`Failed to create deposit: ${error.message || error}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   useEffect(() => {
     // Try to fetch from cache first, then API if needed
     dispatch(fetchAdminPaymentDetails(false)) // false = don't force refresh
@@ -144,7 +601,7 @@ export default function DepositForm({
     dispatch(fetchAssets(false))
       .unwrap()
       .then((data) => {
-        console.log("DEBUG: Exchange assets loaded in express deposit:", {
+        console.log("DEBUG: Exchange assets loaded:", {
           hasAssets: !!data?.assets,
           assetsLength: data?.assets?.length || 0,
           totalBalance: data?.total_wallet_balance
@@ -152,13 +609,13 @@ export default function DepositForm({
         
         // If no assets in cache, force refresh
         if (!data?.assets || data.assets.length === 0) {
-          console.log("🔄 No exchange assets in cache, forcing refresh...");
+          console.log("🔄 No assets in cache, forcing refresh...");
           return dispatch(fetchAssets(true)).unwrap();
         }
         return data;
       })
       .catch((error: unknown) => {
-        console.error("Failed to fetch exchange assets from cache, trying force refresh:", error);
+        console.error("Failed to fetch assets from cache, trying force refresh:", error);
         // If cache fetch fails, try force refresh
         return dispatch(fetchAssets(true))
           .unwrap()
@@ -169,12 +626,44 @@ export default function DepositForm({
       });
   }, [dispatch]);
 
+  // Fetch user payment details
+  useEffect(() => {
+    dispatch(fetchUserPaymentDetails())
+      .unwrap()
+      .catch((error: unknown) => {
+        showToast.error(`Failed to fetch user payment details: ${error}`);
+      });
+  }, [dispatch]);
+
+  // Fetch deposit address when asset and network are available
+  useEffect(() => {
+    if (selectedAsset && selectedNetwork) {
+      const asset = selectedAsset.ticker || selectedAsset.symbol;
+      const network = selectedNetwork.network || selectedNetwork.name;
+      
+      dispatch(fetchDepositAddress({ asset, network }))
+        .unwrap()
+        .then((addressData) => {
+          // Auto-fill the wallet address input with the deposit address
+          if (addressData && addressData.data && addressData.data.address) {
+            setWalletAddress(addressData.data.address);
+            setWalletError(null); // Clear any existing errors
+            // Generate QR code for the address
+            generateQRCode(addressData.data.address);
+          }
+        })
+        .catch((error: unknown) => {
+          console.error("Failed to fetch deposit address:", error);
+        });
+    }
+  }, [dispatch, selectedAsset, selectedNetwork]);
+
   // Fetch swap assets
   useEffect(() => {
     dispatch(fetchSupportedAssets(false))
       .unwrap()
       .then((data) => {
-        console.log("DEBUG: Swap assets loaded in express deposit:", {
+        console.log("DEBUG: Swap assets loaded:", {
           hasAssets: !!data,
           assetsLength: data?.length || 0
         });
@@ -206,7 +695,7 @@ export default function DepositForm({
               }
             }
             
-            // Set fallback assets so the form can still work
+            // Set fallback assets so the form can still work - only USDT Tether and USDC
             const fallbackAssets = [
               {
                 ticker: "USDT",
@@ -215,7 +704,9 @@ export default function DepositForm({
                 network: "BSC",
                 range_commissions: [{ commission: "2" }],
                 commission: "2",
-                fee_rate: "2"
+                fee_rate: "2",
+                image_url: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+                asset_id: "usdt-tether-bsc"
               },
               {
                 ticker: "USDC",
@@ -224,7 +715,9 @@ export default function DepositForm({
                 network: "BSC",
                 range_commissions: [{ commission: "2" }],
                 commission: "2",
-                fee_rate: "2"
+                fee_rate: "2",
+                image_url: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+                asset_id: "usdc-bsc"
               }
             ];
             
@@ -239,38 +732,52 @@ export default function DepositForm({
       });
   }, [dispatch]);
 
-  // Auto-select first asset when assets are loaded
+  // Auto-select USDT Tether asset - always ensure USDT is available and selected
   useEffect(() => {
-    if (swapAssets && swapAssets.length > 0 && !selectedAsset) {
-      // Use the sorted assets to get the first one (USDT on BSC should be first)
-      const sortedAssets = [...swapAssets].sort((a, b) => {
-        const tickerA = (a.ticker || a.symbol || a.name || "").toString().toLowerCase();
-        const tickerB = (b.ticker || b.symbol || b.name || "").toString().toLowerCase();
-        const networkA = (a.network || "").toString().toLowerCase();
-        const networkB = (b.network || "").toString().toLowerCase();
+    console.log("DEBUG: Asset selection effect triggered:", { 
+      hasSwapAssets: !!swapAssets, 
+      swapAssetsLength: swapAssets?.length || 0, 
+      hasSelectedAsset: !!selectedAsset,
+      swapAssets: swapAssets
+    });
 
-        // Priority 1: USDT on BSC
-        if (tickerA === "usdt" && networkA === "bsc" && !(tickerB === "usdt" && networkB === "bsc")) {
-          return -1;
-        }
-        if (tickerB === "usdt" && networkB === "bsc" && !(tickerA === "usdt" && networkA === "bsc")) {
-          return 1;
-        }
-        // Priority 2: USDC on BSC
-        if (tickerA === "usdc" && networkA === "bsc" && !(tickerB === "usdc" && networkB === "bsc")) {
-          return -1;
-        }
-        if (tickerB === "usdc" && networkB === "bsc" && !(tickerA === "usdc" && networkA === "bsc")) {
-          return 1;
-        }
-        return 0;
-      });
+    // Always ensure USDT is selected, regardless of API assets
+    if (!selectedAsset) {
+      // Try to find USDT Tether from the API assets first (we'll force BSC network)
+      let usdtAsset = null;
+      if (swapAssets && swapAssets.length > 0) {
+        usdtAsset = swapAssets.find((asset: any) => {
+          const ticker = (asset.ticker || asset.symbol || "").toString().toLowerCase();
+          const name = (asset.name || "").toString().toLowerCase();
+          return ticker === "usdt" && (name.includes("tether") || name.includes("usdt"));
+        });
+        console.log("DEBUG: Found USDT Tether from API:", usdtAsset);
+      }
 
-      const firstAsset = sortedAssets[0];
-      setSelectedAsset(firstAsset);
+      // Always create/use a USDT Tether asset - fallback if not found in API
+      const selectedUsdtAsset = usdtAsset ? {
+        ...usdtAsset,
+        network: "BSC", // Force BSC network for USDT Tether
+        name: "Tether USD"
+      } : {
+        ticker: "USDT",
+        symbol: "USDT",
+        name: "Tether USD",
+        network: "BSC",
+        range_commissions: [{ commission: "2" }],
+        commission: "2",
+        fee_rate: "2",
+        image_url: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+        asset_id: "usdt-tether-bsc"
+      };
+
+      console.log("DEBUG: Setting selected asset:", selectedUsdtAsset);
+      setSelectedAsset(selectedUsdtAsset);
       setSelectedNetwork({
-        network_id: firstAsset.network,
-        network_type: firstAsset.network,
+        network_id: "BSC",
+        network_type: "BSC",
+        network: "BSC",
+        name: "Binance Smart Chain BEP20"
       });
     }
   }, [swapAssets, selectedAsset]);
@@ -545,51 +1052,49 @@ export default function DepositForm({
              symbol.includes(searchTerm);
     }) || [];
 
-  // Sort assets: USDT on BSC, USDC on BSC, then rest in original order
-  const sortedSwapAssets = [...filteredSwapAssets].sort((a, b) => {
-    // Ensure tickers exist and are strings (using ticker as primary, fallback to symbol/name)
-    const tickerA = (a.ticker || a.symbol || a.name || "")
-      .toString()
-      .toLowerCase();
-    const tickerB = (b.ticker || b.symbol || b.name || "")
-      .toString()
-      .toLowerCase();
-    const networkA = (a.network || "").toString().toLowerCase();
-    const networkB = (b.network || "").toString().toLowerCase();
+  // Filter to show ONLY USDT Tether and USDC - exactly these two assets
+  const sortedSwapAssets = (() => {
+    // Always return exactly these two assets - no API filtering needed
+    const exactAssets = [
+      {
+        ticker: "USDT",
+        symbol: "USDT",
+        name: "Tether USD",
+        network: "BSC",
+        range_commissions: [{ commission: "2" }],
+        commission: "2",
+        fee_rate: "2",
+        image_url: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+        asset_id: "usdt-tether-bsc"
+      },
+      {
+        ticker: "USDC",
+        symbol: "USDC",
+        name: "USD Coin",
+        network: "BSC",
+        range_commissions: [{ commission: "2" }],
+        commission: "2",
+        fee_rate: "2",
+        image_url: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+        asset_id: "usdc-bsc"
+      }
+    ];
 
-    // Priority 1: USDT on BSC
-    if (
-      tickerA === "usdt" &&
-      networkA === "bsc" &&
-      !(tickerB === "usdt" && networkB === "bsc")
-    ) {
-      return -1;
+    // Filter based on search term if provided
+    if (assetSearchTerm.trim()) {
+      const searchTerm = assetSearchTerm.toUpperCase();
+      return exactAssets.filter(asset => 
+        asset.ticker.includes(searchTerm) ||
+        asset.name.toUpperCase().includes(searchTerm) ||
+        "TETHER".includes(searchTerm) ||
+        "USD COIN".includes(searchTerm) ||
+        "BSC".includes(searchTerm) ||
+        "BEP20".includes(searchTerm)
+      );
     }
-    if (
-      tickerB === "usdt" &&
-      networkB === "bsc" &&
-      !(tickerA === "usdt" && networkA === "bsc")
-    ) {
-      return 1;
-    }
-    // Priority 2: USDC on BSC
-    if (
-      tickerA === "usdc" &&
-      networkA === "bsc" &&
-      !(tickerB === "usdc" && networkB === "bsc")
-    ) {
-      return -1;
-    }
-    if (
-      tickerB === "usdc" &&
-      networkB === "bsc" &&
-      !(tickerA === "usdc" && networkA === "bsc")
-    ) {
-      return 1;
-    }
-    // Default: preserve original order (no change)
-    return 0;
-  });
+
+    return exactAssets;
+  })();
 
   // Calculate fees and amounts - Network fee is always 0
   const networkFee = 0;
@@ -932,213 +1437,6 @@ export default function DepositForm({
     return errors.length === 0;
   };
 
-  const handleFirstCardSubmit = async () => {
-    if (validateFirstCard()) {
-      setIsSubmitting(true);
-
-      try {
-        // Debug logging
-        console.log("DEBUG: Form data being submitted:", {
-          payAmount,
-          selectedPaymentDetail,
-          selectedAsset,
-        });
-
-        // Create FormData for API submission
-        const depositPayload = new FormData();
-        // Validate and append required fields
-        if (!payAmount || payAmount <= 0) {
-          throw new Error("Invalid amount");
-        }
-        depositPayload.append("requested_amount", payAmount.toString());
-
-        // For direct crypto deposits, use the specific values you provided
-        depositPayload.append("payment_provider", "direct");
-        depositPayload.append("payment_method", "crypto");
-        // Handle currency field - try multiple properties to get the currency value
-        let currencyValue = "";
-        
-        // Debug: Log the selected asset to see its structure
-        console.log("DEBUG: Selected asset in handleFirstCardSubmit:", selectedAsset);
-        
-        // Ensure selectedAsset exists
-        if (!selectedAsset) {
-          throw new Error("No asset selected");
-        }
-        
-        // Try different properties in order of preference
-        if (selectedAsset.ticker) {
-          currencyValue = selectedAsset.ticker;
-        } else if (selectedAsset.symbol) {
-          // Handle special case for USDT Tether
-          currencyValue = selectedAsset.symbol === "USDT Tether" ? "USDT" : selectedAsset.symbol;
-        } else if (selectedAsset.name) {
-          currencyValue = selectedAsset.name;
-        }
-        
-        // Clean up the currency value (remove any extra spaces, etc.)
-        currencyValue = currencyValue?.trim();
-        
-        console.log("DEBUG: Extracted currency value:", currencyValue);
-        
-        // Fallback: if still no currency value, try to extract from any available property
-        if (!currencyValue) {
-          // Try to get any string value from the asset object
-          const assetKeys = Object.keys(selectedAsset);
-          for (const key of assetKeys) {
-            const value = selectedAsset[key];
-            if (typeof value === 'string' && value.trim()) {
-              currencyValue = value.trim();
-              console.log(`DEBUG: Using fallback currency from ${key}:`, currencyValue);
-              break;
-            }
-          }
-        }
-        
-        if (!currencyValue) {
-          console.error("DEBUG: Selected asset for currency extraction:", selectedAsset);
-          throw new Error("Currency information is missing");
-        }
-        depositPayload.append("currency", currencyValue);
-
-        // Handle network field more carefully
-        const networkValue =
-          selectedNetwork?.network_id || selectedNetwork?.network_type || "";
-        if (!networkValue) {
-          throw new Error("Network information is missing");
-        }
-        depositPayload.append("network", networkValue);
-
-        // Handle asset field - use the asset ticker/symbol/name from the selected asset
-        let assetValue = "";
-        
-        // Try different properties in order of preference
-        if (selectedAsset.ticker) {
-          assetValue = selectedAsset.ticker;
-        } else if (selectedAsset.symbol) {
-          // Handle special case for USDT Tether
-          assetValue = selectedAsset.symbol === "USDT Tether" ? "USDT" : selectedAsset.symbol;
-        } else if (selectedAsset.name) {
-          assetValue = selectedAsset.name;
-        }
-        
-        // Clean up the asset value (remove any extra spaces, etc.)
-        assetValue = assetValue?.trim();
-        
-        // Fallback: if still no asset value, try to extract from any available property
-        if (!assetValue) {
-          // Try to get any string value from the asset object
-          const assetKeys = Object.keys(selectedAsset);
-          for (const key of assetKeys) {
-            const value = selectedAsset[key];
-            if (typeof value === 'string' && value.trim()) {
-              assetValue = value.trim();
-              break;
-            }
-          }
-        }
-
-        if (!assetValue) {
-          throw new Error("Asset information is missing");
-        }
-        depositPayload.append("asset", assetValue);
-        // For direct crypto deposits, set minimal additional info
-        depositPayload.append("additional_info", "Direct crypto deposit");
-
-        // Log the complete FormData for debugging
-        console.log("DEBUG: Complete FormData entries:");
-        for (let [key, value] of depositPayload.entries()) {
-          console.log(`${key}:`, value);
-        }
-
-        // Submit to API - let axios set the correct Content-Type for FormData
-        const depositResponse = (await dispatch(
-          createDeposit({
-            payload: depositPayload,
-            config: {
-              // Don't set Content-Type manually for FormData - let axios handle it
-            },
-          })
-        ).unwrap()) as unknown as DepositResponse;
-
-        console.log("DEBUG: Deposit response:", depositResponse);
-       
-     
-        // Store the API response and update transaction code
-        setApiResponse(depositResponse);
-        setTransactionCode(depositResponse.deposit_code || "");
-        
-        // Debug log the stored websocket_url and deposit_code
-        console.log("DEBUG: Storing API response with websocket_url:", depositResponse.websocket_url);
-        console.log("DEBUG: API response type check - websocket_url exists:", 'websocket_url' in depositResponse);
-        console.log("DEBUG: Deposit code received:", depositResponse.deposit_code);
-        console.log("DEBUG: Full API response:", depositResponse);
-
-        // Show success message
-        showToast.success("Deposit request submitted successfully!");
-
-        setIsFirstCardSubmitted(true);
-        // Scroll to the next section
-        setTimeout(() => {
-          if (paymentDetailsRef.current) {
-            paymentDetailsRef.current.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-            });
-          }
-        }, 100);
-      } catch (error: any) {
-       
-        let errorMessage = "Failed to submit deposit request";
-
-        if (error.response?.data) {
-          // Try to extract specific error message from response
-          const responseData = error.response.data;
-          if (responseData.message) {
-            // Check for specific error message and show user-friendly message
-            if (responseData.message.includes("Transaction not found or not eligible for address update")) {
-              errorMessage = "Your address doesn't match the requested asset";
-            } else {
-              errorMessage = responseData.message;
-            }
-          } else if (responseData.error) {
-            // Check for specific error in error field
-            if (responseData.error.includes("Transaction not found or not eligible for address update")) {
-              errorMessage = "Your address doesn't match the requested asset";
-            } else {
-              errorMessage = responseData.error;
-            }
-          } else if (responseData.details) {
-            errorMessage = responseData.details;
-          } else if (typeof responseData === "string") {
-            // Check for specific error in string response
-            if (responseData.includes("Transaction not found or not eligible for address update")) {
-              errorMessage = "Your address doesn't match the requested asset";
-            } else {
-              errorMessage = responseData;
-            }
-          }
-        } else if (error.message) {
-          // Check for specific error in error.message
-          if (error.message.includes("Transaction not found or not eligible for address update")) {
-            errorMessage = "Your address doesn't match the requested asset";
-          } else {
-            errorMessage = error.message;
-          }
-        }
-
-        // For address update failures, show more specific message
-        if (errorMessage === "Failed to process request" || errorMessage === "Failed to submit deposit request") {
-          errorMessage = "Your wallet address doesn't match the asset requested";
-        }
-
-        showToast.error(errorMessage);
-        setValidationErrors([errorMessage]);
-      } finally {
-        setIsSubmitting(false);
-      }
-    }
-  };
 
   // Validate form data
   const validateForm = () => {
@@ -1152,9 +1450,6 @@ export default function DepositForm({
       errors.push("Please select an asset");
     }
 
-    if (!selectedPaymentDetail) {
-      errors.push("Please select a payment method");
-    }
 
     // Wallet address is optional for initial submission - only required for address update step
     if (walletAddress.trim() && walletError) {
@@ -1370,11 +1665,8 @@ export default function DepositForm({
     }
   };
 
-  // Handle form submission
-  const handleSubmit = async () => {
-    // Clear previous errors
-    setValidationErrors([]);
-
+  // Handle form submission - REMOVED (duplicate function)
+  /*
     // Validate form
     const errors = validateForm();
     if (errors.length > 0) {
@@ -1638,6 +1930,7 @@ export default function DepositForm({
       setIsSubmitting(false);
     }
   };
+  */
 
   useEffect(() => {
     if (selectedPaymentDetail && paymentDetailsRef.current) {
@@ -1682,673 +1975,154 @@ export default function DepositForm({
           </p>
         </div>
       )}
-      <div className="w-full max-w-4xl mx-auto text-white">
-        {/* Top Section - Amount and Bank/Payment Method in one card */}
+      <div className="w-full mx-auto text-white">
+          {/* Transaction Info Card with Asset and Network selects only */}
         <div className="relative mb-4">
-          {/* Top Card Container */}
-          <div className="flex border border-[#D1D2D4FF] dark:border-[#35353E]  rounded-2xl p-4">
-            {/* Amount Section */}
-            <div className="flex-1 pr-4">
-              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                You Send
-                <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
-                {/* {isCalculatingFromPay && (
-                  <span className="text-xs text-[#1D8751] font-medium">(Active)</span>
-                )} */}
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={payAmountInput}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    console.log("You Send input changed:", { value, selectedAsset: selectedAsset?.ticker });
-                    
-                    // Only allow numbers and decimals (including 0.006 format)
-                    if (value === "" || /^\d*\.?\d*$/.test(value)) {
-                      setPayAmountInput(value); // Store the string value for display
-                      const newAmount = parseFloat(value) || 0;
-                      setPayAmount(newAmount);
-                      setIsCalculatingFromPay(true);
-                      
-                      // Mark that user has manually modified the amount
-                      setIsUserModifiedAmount(true);
-                      
-                      // Show info modal if amount exceeds $15,000
-                      if (newAmount > 15000) {
-                        setIsInfoModalOpen(true);
-                      }
-                      
-                      // For simple assets, calculate immediately
-                      if (selectedAsset && newAmount > 0 && isSimpleCalculationAsset(selectedAsset)) {
-                        console.log("Triggering immediate forward calculation for simple asset:", newAmount);
-                        const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
-                          ? parseFloat(selectedAsset.range_commissions[0].commission)
-                          : 2;
-                        const commissionAmount = (newAmount * commissionRate) / 100;
-                        const calculatedGetAmount = newAmount - commissionAmount;
-                        setGetAmount(calculatedGetAmount);
-                        setGetAmountInput(calculatedGetAmount.toString());
-                        
-                        // Simple assets don't need loading states - calculation is instant
-                      } else if (selectedAsset && newAmount > 0) {
-                        // For complex assets, trigger API calculation
-                        console.log("Triggering API forward calculation for complex asset:", newAmount);
-                        
-                        // Set loading states to show spinner in "You Receive" field
-                        setIsCalculating(true);
-                        setIsCalculatingReceive(true);
-                        
-                        // Trigger the calculation
-                        calculateAmounts(newAmount, true);
-                      } else {
-                        // No calculation needed, ensure loading states are off
-                        setIsCalculatingReceive(false);
-                        setIsCalculating(false);
-                      }
-                    }
-                  }}
-                  onFocus={() => setIsCalculatingFromPay(true)}
-                  placeholder="Enter amount"
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg  focus:outline-none border appearance-none ${
-                    (isCalculating || isCalculatingReceive) && isCalculatingFromPay ? 'border-[#1D8751]' : 'border-[#A2A4A9FF] dark:border-[#35353E]'
-                  }`}
-                />
-
+            {/* Transaction Info Card Container */}
+            <div className="border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-6">
+              
+              {/* Two Select Fields Row - Asset and Network only */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 
-                {/* Show loading spinner when calculating "You Receive" from "You Send" */}
-                {(isCalculating || isCalculatingReceive) && isCalculatingFromPay && (
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
-                  </div>
-                )}
-
-                {/* Show info for non-simple assets when typing in You Send */}
-                {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && isCalculatingFromPay && payAmount > 0 && (
-                  <div className="mt-2 text-xs text-[#788099]">
-                    {estimateLoading ? "⏳ Fetching live rate..." : estimate ? "✅ Using live rate" : "⏳ Calculating..."}
-                  </div>
-                )}
-                {estimateError && !estimateLoading && isCalculatingFromPay && (
-                  <div className="flex items-center justify-between gap-2 text-[#F79330] text-sm mt-2">
-                    <div className="flex items-center gap-2">
-                      <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                        <path d="M12 8v4m0 4h.01" stroke="#F79330" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <circle cx="12" cy="12" r="10" stroke="#F79330" strokeWidth="2"/>
-                      </svg>
-                      <span>{estimateError}</span>
-                    </div>
-                    <button
-                      onClick={() => {
-                        // Retry API call
-                        if (payAmount > 0) {
-                          calculateAmounts(payAmount, true);
-                        }
-                      }}
-                      className="text-[#1D8751] hover:text-[#166b3e] text-xs underline"
+                {/* Asset Select */}
+                <div>
+                  <label className="block text-[20px] text-[#7e7e8f] dark:text-[#ffffff] mb-3 font-semibold">
+                    Asset
+                  </label>
+                  <div className="relative" ref={assetDropdownRef}>
+                    <div
+                      className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-6 py-3 text-base focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer"
+                      onClick={() => setIsAssetDropdownOpen(!isAssetDropdownOpen)}
                     >
-                      Retry
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Bank/Payment Method Section */}
-            <div className="flex-1 pl-4">
-              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
-                Bank/Payment Method
-              </label>
-              <div className="relative">
-                <img
-                  src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
-                  alt="bank icon"
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 pointer-events-none"
-                />
-                <select
-                  value={payBank}
-                  onChange={(e) => {
-                    const selectedPayment = adminPaymentDetails?.find(
-                      (payment: any) => payment.provider_name === e.target.value
-                    );
-                    setPayBank(e.target.value);
-                    setSelectedPaymentDetail(selectedPayment || null);
-                  }}
-                  disabled={loading}
-                  className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-9 py-2 text-lg  focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] appearance-none disabled:opacity-50"
-                >
-                  <option value="">
-                    {loading
-                      ? "Loading payment methods..."
-                      : "Select Payment Method"}
-                  </option>
-                  {adminPaymentDetails?.map((payment: any, index: number) => (
-                    <option key={index} value={payment.provider_name}>
-                      {payment.provider_name} - {payment.payment_method_type}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
-            </div>
-          </div>
-
-          {/* Swap Circle - positioned to touch both borders equally */}
-          <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/3 z-10">
-            <button
-              className="w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105"
-              onClick={() => {
-                // Switch between deposit and withdrawal modes
-                if (onModeChange) {
-                  onModeChange(mode === "deposit" ? "withdrawal" : "deposit");
-                }
-              }}
-            >
-              {/* Light mode image */}
-              <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
-                alt="swap icon"
-                className="w-16 h-16 dark:hidden"
-              />
-              {/* Dark mode image */}
-              <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
-                alt="swap icon"
-                className="w-16 h-16 hidden dark:block"
-              />
-            </button>
-          </div>
-        </div>
-
-                {/* Bottom Section - You Receive and Asset in one card */}
-        <div className="relative mb-3">
-          
-         
-          
-          <div className="flex border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-4">
-            {/* You Receive Section */}
-            <div className="flex-1 pr-4">
-              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                You Receive
-                <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
-                {!isCalculatingFromPay && (
-                  <span className="text-xs text-[#1D8751] font-medium">(Active)</span>
-                )}
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={getAmountInput}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    console.log("You Receive input changed:", { value, selectedAsset: selectedAsset?.ticker });
-                    
-                    // Only allow numbers and decimals (including 0.006 format)
-                    if (value === "" || /^\d*\.?\d*$/.test(value)) {
-                      setGetAmountInput(value); // Store the string value for display
-                      const newAmount = parseFloat(value) || 0;
-                      setGetAmount(newAmount);
-                      setIsCalculatingFromPay(false);
-                      
-                      // For simple assets, calculate immediately
-                      if (selectedAsset && newAmount > 0 && isSimpleCalculationAsset(selectedAsset)) {
-                        console.log("Triggering immediate reverse calculation for simple asset:", newAmount);
-                        const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
-                          ? parseFloat(selectedAsset.range_commissions[0].commission)
-                          : 2;
-                        const commissionAmount = (newAmount * commissionRate) / 100;
-                        const calculatedPayAmount = newAmount + commissionAmount;
-                        setPayAmount(calculatedPayAmount);
-                        setPayAmountInput(calculatedPayAmount.toString());
-                        
-                        // Simple assets don't need loading states - calculation is instant
-                      } else if (selectedAsset && newAmount > 0) {
-                        // For complex assets, trigger API calculation
-                        console.log("Triggering API reverse calculation for complex asset:", newAmount);
-                        
-                        // Set loading states to show spinner in "You Send" field
-                        setIsCalculating(true);
-                        setIsCalculatingReceive(true);
-                        
-                        // Trigger the calculation
-                        calculateAmounts(newAmount, false);
-                      } else {
-                        // No calculation needed, ensure loading states are off
-                        setIsCalculatingReceive(false);
-                        setIsCalculating(false);
-                      }
-                    }
-                  }}
-                  onFocus={() => setIsCalculatingFromPay(false)}
-                  placeholder="Enter amount"
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg  focus:outline-none border appearance-none ${
-                    receiveAmountError && (receiveAmountError.includes('Rough estimate') || receiveAmountError.includes('Using estimated rate')) ? 'border-[#F79330]' : 
-                    receiveAmountError ? 'border-red-500' :
-                    (isCalculating || isCalculatingReceive) ? 'border-[#1D8751]' : 'border-[#A2A4A9FF] dark:border-[#35353E]'
-                  }`}
-                />
-                {/* Show loading spinner when calculating "You Send" from "You Receive" */}
-                {(isCalculating || isCalculatingReceive) && !isCalculatingFromPay && (
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
-                  </div>
-                )}
-                {receiveAmountError && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                      <path d="M12 8v4m0 4h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#F79330]"/>
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" className="text-[#F79330]"/>
-                    </svg>
-                    <span className={`text-sm font-medium ${
-                      receiveAmountError.includes('Rough estimate') || receiveAmountError.includes('Using estimated rate') ? 'text-[#F79330]' : 'text-red-500'
-                    }`}>
-                      {receiveAmountError}
-                    </span>
-                  </div>
-                )}
-
-                {/* Show API estimate status for non-simple assets */}
-                {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && (
-                  <div className="mt-2">
-                    {/* {estimateLoading && isCalculatingFromPay && (
-                      <div className="flex items-center gap-2 text-[#1D8751] text-sm">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#1D8751]"></div>
-                        <span>Fetching live rate from API...</span>
-                      </div>
-                    )} */}
-                    {estimate && !estimateLoading && isCalculatingFromPay && (
-                      <div className="flex items-center gap-2 text-[#1D8751] text-sm">
-                        <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                          <path d="M12 8v4m0 4h.01" stroke="#1D8751" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          <circle cx="12" cy="12" r="10" stroke="#1D8751" strokeWidth="2"/>
-                        </svg>
-                        <span>Using live rate</span>
-                      </div>
-                    )}
-                    {estimateLoading && !isCalculatingFromPay && (
-                      <div className="flex items-center gap-2 text-[#1D8751] text-sm">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#1D8751]"></div>
-                        <span>Calculating ...</span>
-                  </div>
-                )}
-                    {estimate && !estimateLoading && !isCalculatingFromPay && (
-                      <div className="flex items-center gap-2 text-[#1D8751] text-sm">
-                        <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                          <path d="M12 8v4m0 4h.01" stroke="#1D8751" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          <circle cx="12" cy="12" r="10" stroke="#1D8751" strokeWidth="2"/>
-                        </svg>
-                        <span>Using live rate for reverse calculation</span>
-                      </div>
-                    )}
-                    {estimateError && !estimateLoading && (
-                      <div className="flex items-center justify-between gap-2 text-[#F79330] text-sm">
-                        <div className="flex items-center gap-2">
-                          <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                            <path d="M12 8v4m0 4h.01" stroke="#F79330" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            <circle cx="12" cy="12" r="10" stroke="#F79330" strokeWidth="2"/>
-                          </svg>
-                          <span>{estimateError}</span>
-                        </div>
-                        <button
-                          onClick={() => {
-                            // Retry API call
-                            if (isCalculatingFromPay && payAmount > 0) {
-                              calculateAmounts(payAmount, true);
-                            } else if (!isCalculatingFromPay && getAmount > 0) {
-                              calculateAmounts(getAmount, false);
-                            }
-                          }}
-                          className="text-[#1D8751] hover:text-[#166b3e] text-xs underline"
-                        >
-                          Retry
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Asset Section */}
-            <div className="flex-1 pl-4">
-              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
-                Asset
-              </label>
-              <div className="relative" ref={assetDropdownRef}>
-                <div
-                    className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 text-lg  focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer`}
-                  onClick={() => {
-                    setIsAssetDropdownOpen(!isAssetDropdownOpen);
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    {selectedAsset ? (
-                      <>
-                        <img
-                          src={
-                            selectedAsset.image_url ||
-                            selectedAsset.asset_image ||
-                            "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                          }
-                          alt={selectedAsset.name || selectedAsset.ticker || "Asset"}
-                          className="w-6 h-6 rounded-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.src =
-                              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
-                          }}
-                        />
-                        <span className="text-[#35353e] dark:text-[#788099]">
-                          {(selectedAsset.ticker ||
-                            selectedAsset.symbol ||
-                            selectedAsset.name ||
-                            "Unknown").toUpperCase()}
-                        </span>
-                        <span className="ml-2 bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                          {selectedAsset.network || "Unknown"}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <img
-                          src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                          alt="asset icon"
-                          className="w-6 h-6"
-                        />
-                        <span className="text-[#7e7e8f] dark:text-[#788099]">
-                          {swapAssetsLoading
-                            ? "Loading assets..."
-                            : "Select Asset"}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                  <svg
-                    className={`w-5 h-5 text-[#7e7e8f] transition-transform ${
-                      isAssetDropdownOpen ? "rotate-180" : ""
-                    }`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
-
-                {/* Asset Dropdown */}
-                {isAssetDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl z-50 max-h-80 overflow-hidden">
-                    {/* Search Input */}
-                    <div className="p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
-                      <div className="relative">
-                        <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
-                        <input
-                          type="text"
-                          placeholder="Search assets..."
-                          value={assetSearchTerm}
-                          onChange={(e) => setAssetSearchTerm(e.target.value)}
-                          className="w-full text-gray-900 dark:text-white dark:bg-[#1D1D23] bg-white rounded-xl px-10 py-2 text-sm focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Asset List */}
-                    <div className="max-h-60 overflow-y-auto">
-                      {sortedSwapAssets.length > 0 ? (
-                        sortedSwapAssets.map((asset: SupportedAsset, index: number) => (
-                          <div
-                            key={`${asset.asset_id || 'asset'}-${asset.symbol || asset.ticker || asset.name}-${asset.network}-${index}`}
-                            className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
-                            onClick={() => {
-                              console.log("Asset selected:", {
-                                ticker: asset.ticker,
-                                network: asset.network,
-                                isSimple: isSimpleCalculationAsset(asset),
-                                image: asset.image_url || asset.asset_image
-                              });
-                              setSelectedAsset(asset);
-                              // Set the network from the selected asset
-                              setSelectedNetwork({
-                                network_id: asset.network,
-                                network_type: asset.network,
-                              });
-                              setIsAssetDropdownOpen(false);
-                              setAssetSearchTerm("");
-                            }}
-                          >
+                      <div className="flex items-center gap-3">
+                        {selectedAsset ? (
+                          <>
                             <img
-                              src={
-                                asset.image_url ||
-                                asset.asset_image ||
-                                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                              }
-                              alt={asset.name || asset.ticker || "Asset"}
+                              src={selectedAsset.image_url || selectedAsset.asset_image || "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"}
+                              alt={selectedAsset.name || selectedAsset.ticker || "Asset"}
                               className="w-6 h-6 rounded-full object-cover"
                               onError={(e) => {
-                                e.currentTarget.src =
-                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                                e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                               }}
                             />
-                            <div className="flex-1">
-                              <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
-                                {(asset.ticker ||
-                                  asset.symbol ||
-                                  asset.name ||
-                                  "Unknown").toUpperCase()}
-                                <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                                  {asset.network || "Unknown"}
-                                </span>
-                              </div>
-                              <div className="text-[#35353e] dark:text-[#788099] text-sm">
-                                {asset.name ||
-                                  (asset.ticker || "").toUpperCase() ||
-                                  (asset.symbol || "").toUpperCase() ||
-                                  "Unknown Asset"}
-                              </div>
-                            </div>
-                            {selectedAsset?.asset_id === asset.asset_id && (
-                              <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                            )}
+                            <span className="text-[#35353e] dark:text-[#788099]">
+                              {(selectedAsset.ticker || selectedAsset.symbol || selectedAsset.name || "USDT").toUpperCase()}
+                            </span>
+                            <span className="ml-2 bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                              {selectedAsset.network === "BSC" ? "Binance Smart Chain BEP20" : (selectedAsset.network || "Unknown")}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-[#7e7e8f] dark:text-[#788099]">Select Asset</span>
+                        )}
+                      </div>
+                      <svg className={`w-5 h-5 text-[#7e7e8f] transition-transform ${isAssetDropdownOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                    
+                    {/* Asset Dropdown */}
+                    {isAssetDropdownOpen && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl z-50 max-h-80 overflow-hidden">
+                        {/* Search Input */}
+                        <div className="p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+                          <div className="relative">
+                            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
+                            <input
+                              type="text"
+                              placeholder="Search assets..."
+                              value={assetSearchTerm}
+                              onChange={(e) => setAssetSearchTerm(e.target.value)}
+                              className="w-full pl-10 pr-4 py-2 text-[#35353e] dark:bg-[#35353E] dark:text-[#ffffff] rounded-lg border border-[#A2A4A9FF] dark:border-[#35353E] focus:outline-none focus:border-[#1D8751]"
+                            />
                           </div>
-                        ))
-                      ) : (
-                        <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
-                          {assetSearchTerm
-                            ? "No assets found"
-                            : "No assets available"}
                         </div>
-                      )}
+
+                        {/* Asset List */}
+                        <div className="max-h-60 overflow-y-auto">
+                          {sortedSwapAssets.length > 0 ? (
+                            sortedSwapAssets.map((asset: any, index: number) => (
+                              <div
+                                key={`${asset.asset_id || 'asset'}-${asset.symbol || asset.ticker || asset.name}-${asset.network}-${index}`}
+                                className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
+                                onClick={() => {
+                                  setSelectedAsset(asset);
+                                  
+                                  // Force BSC network for USDT and USDC assets
+                                  const ticker = (asset.ticker || asset.symbol || "").toLowerCase();
+                                  const isUsdtOrUsdc = ticker === "usdt" || ticker === "usdc";
+                                  
+                                  setSelectedNetwork({
+                                    network_id: isUsdtOrUsdc ? "BSC" : asset.network,
+                                    network_type: isUsdtOrUsdc ? "BSC" : asset.network,
+                                    network: isUsdtOrUsdc ? "BSC" : asset.network,
+                                    name: isUsdtOrUsdc ? "Binance Smart Chain BEP20" : (asset.network === "BSC" ? "Binance Smart Chain BEP20" : asset.network)
+                                  });
+                                  setIsAssetDropdownOpen(false);
+                                  setAssetSearchTerm("");
+                                }}
+                              >
+                                <img
+                                  src={asset.image_url || asset.asset_image || "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"}
+                                  alt={asset.name || asset.ticker || "Asset"}
+                                  className="w-6 h-6 rounded-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                                  }}
+                                />
+                                <div className="flex-1">
+                                  <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
+                                    {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
+                                    <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                                      {asset.network === "BSC" ? "Binance Smart Chain BEP20" : (asset.network || "Unknown")}
+                                    </span>
+                                  </div>
+                                  <div className="text-[#35353e] dark:text-[#788099] text-sm">
+                                    {asset.name || (asset.ticker || "").toUpperCase() || (asset.symbol || "").toUpperCase() || "Unknown Asset"}
+                                  </div>
+                                </div>
+                                {selectedAsset?.asset_id === asset.asset_id && (
+                                  <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                                )}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
+                              {assetSearchTerm ? "No assets found" : "No assets available"}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Network Select */}
+                <div>
+                  <label className="block text-[20px] text-[#7e7e8f] dark:text-[#ffffff] mb-3 font-semibold">
+                    Network
+                  </label>
+                  <div className="relative">
+                    <div className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-6 py-3 text-base focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer">
+                      <div className="flex items-center gap-3">
+                        <span className="text-[#35353e] dark:text-[#788099] font-medium">
+                          {selectedNetwork?.name || "Binance Smart Chain BEP20"}
+                        </span>
+                      </div>
+                      <svg className="w-5 h-5 text-[#7e7e8f]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Fee & Rate - Dynamic based on selected asset */}
-        {/* <div className="flex items-center rounded-2xl border border-[#39394a] bg-[#23232b] px-2 py-2 mb-3">
-          <div className="flex flex-col gap-2 flex-1">
-            <span className="flex items-center bg-[#F79330] text-white rounded-full px-5 py-1 text-sm font-medium w-fit">
-              <span className="w-2 h-2 bg-white rounded-full mr-2 inline-block"></span>
-              Network fee: $0
-            </span>
-
-            <span className="flex items-center bg-[#1D8751] text-white rounded-full px-5 py-1 text-sm font-medium w-fit">
-              <span className="w-2 h-2 bg-white rounded-full mr-2 inline-block"></span>
-              Commission: {commissionRate}% of ${payAmount} = $
-              {commissionAmount}
-            </span>
-          </div>
-          <img
-            src="https://res.cloudinary.com/pitz/image/upload/v1753424863/Screenshot_2025-07-25_092724_rjinec.png"
-            alt=""
-            style={{ cursor: "pointer" }}
-            onClick={() =>
-              onModeChange &&
-              onModeChange(mode === "deposit" ? "withdrawal" : "deposit")
-            }
-          />
-        </div> */}
-
-        {/* Disclaimer Banner */}
-        <div className="flex items-center rounded-2xl px-4 py-3 mb-4 dark:bg-[#1D1D23]">
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
-              <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                <path d="M12 8v4m0 4h.01" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2"/>
-              </svg>
-            </div>
-            <span className="text-[#35353e] dark:text-[#788099] text-sm font-medium">
-              This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds.
-            </span>
-          </div>
-        </div>
-
-        {/* Submit Button for First Card */}
-          {!isFirstCardSubmitted && (
-            <div className="mt-4">
-              <button
-                className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
-                  isSubmitting ||
-                  !selectedAsset ||
-                  (selectedAsset &&
-                    !isSimpleCalculationAsset(selectedAsset) &&
-                    estimateLoading)
-                    ? "bg-gray-500 cursor-not-allowed"
-                    : "bg-[#1D8751] hover:bg-[#166b3e]"
-                }`}
-                onClick={handleFirstCardSubmit}
-                disabled={
-                  isSubmitting ||
-                  !selectedAsset ||
-                  (walletAddress.trim() && !!walletError) ||
-                  (selectedAsset &&
-                    !isSimpleCalculationAsset(selectedAsset) &&
-                    estimateLoading)
-                }
-              >
-                {isSubmitting ? (
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#35353e] dark:border-[#788099]"></div>
-                    <span>Posting...</span>
-                  </div>
-                ) : (
-                  <span className="flex items-center justify-center">
-                    <img
-                      src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
-                      alt=""
-                    />
-                    <img
-                      className="mt-2"
-                      src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                      alt=""
-                    />
-                  </span>
-                )}
-              </button>
-            </div>
-          )}
-        </div>
-
-      {selectedPaymentDetail && isFirstCardSubmitted && (
         <>
-          {/* Payment Details Card */}
-          <div
-            ref={paymentDetailsRef}
-            className="mt-1 mb-2 flex flex-col gap-3 dark:bg-[#1D1D23]"
-          >
-            <h2 className="text-xl font-bold mb-2 text-[#788099]">
-              <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span> Payment Details
-            </h2>
-            <div className="flex-1  dark:bg-[#1D1D23] rounded-2xl border border-[#39394a] dark:border-[#35353E] flex flex-col justify-between p-5 relative min-h-[120px]">
-              {/* Bank and logo */}
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-semibold">
-                  Bank:
-                </span>
-                <div className="flex items-center gap-2">
-                  <img
-                    src={
-                      selectedPaymentDetail.logo ||
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
-                    }
-                    alt="Bank Logo"
-                    className="w-8 h-8 rounded-full object-contain"
-                  />
-                  <span className="text-[#35353e] dark:text-[#788099] text-base font-semibold">
-                    {selectedPaymentDetail.provider_name}
-                  </span>
-                </div>
-              </div>
-              <div className="border-t border-dashed border-[#39394a] mb-2"></div>
-              {/* Account Name */}
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-medium">
-                  Account Name :
-                </span>
-                <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
-                  {selectedPaymentDetail.account_name}
-                </span>
-              </div>
-              <div className="border-t border-dashed border-[#39394a] mb-2"></div>
-              {/* Account Number */}
-              <div className="flex items-center justify-between">
-                <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-medium">
-                  Account Number :
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
-                    {selectedPaymentDetail.account_number}
-                  </span>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(
-                        selectedPaymentDetail.account_number
-                      );
-                      showToast.success("copied!");
-                    }}
-                    className="text-[#F79330] hover:text-white transition-colors p-1 rounded"
-                    title="Copy Account Number"
-                  >
-                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
-                      <rect
-                        x="9"
-                        y="9"
-                        width="13"
-                        height="13"
-                        rx="2"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      />
-                      <rect
-                        x="3"
-                        y="3"
-                        width="13"
-                        height="13"
-                        rx="2"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* Transaction Code Card - below Payment Details, before Wallet Address */}
           {apiResponse && apiResponse.deposit_code && (
             <div className="mb-6 flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
               <h2 className="text-xl font-bold mb-2 text-[#788099]">
-                <span className="text-[#7e7e8f] dark:text-[#788099]">3-</span> Transaction Code
+                <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span> Transaction Code
               </h2>
               <div className=" dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-4 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
                 {/* Transaction Code Row */}
@@ -2454,13 +2228,26 @@ export default function DepositForm({
 
           {/* Wallet Address Section */}
           <h2 className="text-xl font-bold  mb-2 text-[#788099]">
-            <span className="text-[#7e7e8f]">4-</span> Wallet Address
+            <span className="text-[#7e7e8f]">3-</span> Wallet Address
           </h2>
-          <div className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full max-w-4xl mx-auto text-[#35353e] dark:text-[#788099] mb-6">
+          <div className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full  mx-auto text-[#35353e] dark:text-[#788099] mb-6">
             {/* Wallet/Account Address Label */}
             <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
               Wallet/Account Address
             </label>
+            
+            {/* Loading indicator */}
+            {addressLoading && (
+              <div className="mb-4 p-3 bg-[#f8f9fa] dark:bg-[#2a2a2a] border border-[#e9ecef] dark:border-[#404040] rounded-xl">
+                <div className="flex items-center gap-3">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#1D8751]"></div>
+                  <p className="text-sm text-[#495057] dark:text-[#adb5bd]">
+                    Generating deposit address...
+                  </p>
+                </div>
+              </div>
+            )}
+            
             {/* Input group */}
             <div className="flex items-center dark:bg-[#1D1D23] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-4 py-2 mb-4">
               {/* Left icon */}
@@ -2489,18 +2276,21 @@ export default function DepositForm({
               <input
                 type="text"
                 value={walletAddress}
+                readOnly={isFirstCardSubmitted}
                 onChange={(e) => {
-                  const value = e.target.value;
-                  setWalletAddress(value);
+                  if (!isFirstCardSubmitted) {
+                    const value = e.target.value;
+                    setWalletAddress(value);
+                  }
 
                   // Validate immediately as user types (wallet address is optional for initial submission)
-                  if (value.trim() === "") {
+                  if (e.target.value.trim() === "") {
                     setWalletError(null); // No error when empty - address is optional
                   } else if (!selectedAsset) {
                     setWalletError("Please select an asset first");
                   } else {
                     // Allow all address types - no specific network validation
-                    if (value.trim().length < 10) {
+                    if (e.target.value.trim().length < 10) {
                       setWalletError("Address seems too short");
                       setForceUpdate((prev) => prev + 1);
                     } else {
@@ -2510,7 +2300,7 @@ export default function DepositForm({
                   }
                 }}
                 placeholder="Paste here your Crypto address"
-                className={`flex-1 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-base ${
+                className={`flex-1 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-sm ${
                   walletError
                     ? "border-red-500"
                     : walletAddress.trim() && !walletError
@@ -2530,29 +2320,35 @@ export default function DepositForm({
                   />
                 </svg>
               </span>
-              {/* Paste button */}
+              {/* Copy button */}
               <button
-                onClick={async () => {
-                  try {
-                    const text = await navigator.clipboard.readText();
-                    setWalletAddress(text);
-                  } catch (err) {
-                    console.error("Failed to read clipboard:", err);
-                    showToast.error("Failed to paste from clipboard");
-                  }
+                onClick={() => {
+                  navigator.clipboard.writeText(walletAddress);
+                  showToast.success("Address copied to clipboard!");
                 }}
                 className="flex items-center gap-1 dark:bg-[#1D1D23] border border-[#1D8751] text-[#1D8751] rounded-full px-4 py-1 ml-2 font-semibold text-base hover:bg-[#1D8751] hover:text-white transition-colors"
               >
                 <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M19 21H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4l2-2h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z"
+                  <rect
+                    x="9"
+                    y="9"
+                    width="13"
+                    height="13"
+                    rx="2"
                     stroke="currentColor"
                     strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                  />
+                  <rect
+                    x="3"
+                    y="3"
+                    width="13"
+                    height="13"
+                    rx="2"
+                    stroke="currentColor"
+                    strokeWidth="2"
                   />
                 </svg>
-                Paste
+                Copy
               </button>
             </div>
 
@@ -2563,10 +2359,37 @@ export default function DepositForm({
               </p>
             )}
 
-            {walletAddress.trim() && !walletError && selectedAsset && (
+            {isFirstCardSubmitted && depositResponse && (
+              <p className="text-[#1D8751] text-sm mt-2 font-medium">
+                ✅ Deposit address generated - Send {depositResponse.amount} {depositResponse.asset} to this address
+              </p>
+            )}
+            {walletAddress.trim() && !walletError && selectedAsset && !isFirstCardSubmitted && (
               <p className="text-[#1D8751] text-sm mt-2 font-medium">
                 ✅ Valid address
               </p>
+            )}
+
+
+            {/* QR Code Display */}
+            {qrCodeDataUrl && walletAddress && (
+              <div className="mt-4 p-4  rounded-xl">
+                <div className="flex flex-col items-center">
+                  <h3 className="text-sm font-semibold text-[#495057] dark:text-[#adb5bd] mb-3">
+                    Scan QR Code to Send
+                  </h3>
+                  <div className="bg-white dark:bg-[#1a1a1a] p-3 rounded-lg border border-[#dee2e6] dark:border-[#404040]">
+                    <img 
+                      src={qrCodeDataUrl} 
+                      alt="Deposit Address QR Code" 
+                      className="w-48 h-48"
+                    />
+                  </div>
+                  <p className="text-xs text-[#6c757d] dark:text-[#6c757d] mt-2 text-center max-w-xs">
+                    Scan this QR code with your wallet to send {selectedAsset?.ticker || 'crypto'} to the deposit address
+                  </p>
+                </div>
+              </div>
             )}
 
           
@@ -2649,46 +2472,178 @@ export default function DepositForm({
             </div>
           )}
 
-          {/* Disclaimer and Button outside the card */}
-          <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
-            <div className="flex items-center text-[#35353e] dark:text-[#788099] text-[16px] font-semibold">
-              <FaExclamationCircle className="mr-2 text-[#1D8751]" />
-              <span>
-                This is only an estimated price based on current market rates.
-                The final price will be confirmed when we receive the funds.
-              </span>
+        </>
+      
+
+      {/* Deposit Address Display Section */}
+      {isTransactionSubmitted && depositResponse && (
+        <div className="max-w-4xl mx-auto w-full px-2 mt-6">
+          <div className="bg-[#1D1D23] rounded-2xl border border-[#39394a] p-6">
+            <h3 className="text-white font-semibold mb-4 text-lg">Deposit Instructions</h3>
+            <div className="space-y-4">
+              <div className="bg-[#2A2A2A] rounded-xl p-4">
+                <p className="text-[#788099] text-sm mb-2">Send this amount:</p>
+                <p className="text-white font-bold text-xl">
+                  {depositResponse.amount} {depositResponse.asset}
+                </p>
+              </div>
+              
+              <div className="bg-[#2A2A2A] rounded-xl p-4">
+                <p className="text-[#788099] text-sm mb-2">To this address:</p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={depositResponse.deposit_address}
+                    readOnly
+                    className="flex-1 bg-transparent text-white font-mono text-sm p-2 border border-[#39394a] rounded-lg"
+                  />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(depositResponse.deposit_address);
+                      showToast.success("Address copied to clipboard!");
+                    }}
+                    className="px-3 py-2 bg-[#1D8751] text-white rounded-lg hover:bg-[#166b3e] transition-colors"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-[#2A2A2A] rounded-xl p-4">
+                <p className="text-[#788099] text-sm mb-2">Network:</p>
+                <p className="text-white font-medium">{depositResponse.network}</p>
+              </div>
+
+              <div className="bg-[#2A2A2A] rounded-xl p-4">
+                <p className="text-[#788099] text-sm mb-2">You will receive:</p>
+                <p className="text-white font-bold text-lg">
+                  {depositResponse.net_amount} {depositResponse.details.to_currency}
+                </p>
+                <p className="text-[#1D8751] text-sm mt-1">
+                  (Estimated: {depositResponse.details.estimated_amount} {depositResponse.details.to_currency})
+                </p>
+              </div>
+
+              <div className="bg-[#1D8751]/10 border border-[#1D8751] rounded-xl p-4">
+                <p className="text-[#1D8751] font-medium mb-2">Important:</p>
+                <p className="text-[#788099] text-sm">
+                  {depositResponse.message}
+                </p>
+              </div>
+
+              <div className="bg-[#2A2A2A] rounded-xl p-4">
+                <p className="text-[#788099] text-sm mb-2">Transaction ID:</p>
+                <p className="text-white font-mono text-sm">{depositResponse.transaction_id}</p>
+              </div>
+
+              <div className="bg-[#2A2A2A] rounded-xl p-4">
+                <p className="text-[#788099] text-sm mb-2">Status:</p>
+                <div className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded-full ${
+                    transactionStatus === "completed" ? "bg-green-500" :
+                    transactionStatus === "failed" ? "bg-red-500" :
+                    transactionStatus === "pending" ? "bg-yellow-500" :
+                    "bg-gray-500"
+                  }`}></div>
+                  <p className="text-white font-medium capitalize">{transactionStatus}</p>
+                  {websocket && (
+                    <div className="flex items-center gap-1 text-green-500 text-xs">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span>Live</span>
+                    </div>
+                  )}
+                  {websocketError && (
+                    <div className="flex items-center gap-1 text-red-500 text-xs">
+                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                      <span>Connection Error</span>
+                    </div>
+                  )}
+                  {websocketRetryCount > 0 && websocketRetryCount < 3 && (
+                    <div className="flex items-center gap-1 text-yellow-500 text-xs">
+                      <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                      <span>Retrying... ({websocketRetryCount}/3)</span>
+                    </div>
+                  )}
+                  {websocketError && websocketRetryCount >= 3 && (
+                    <div className="flex flex-col gap-2">
+                      <div className="text-xs text-red-400">
+                        {websocketError}
+                      </div>
+                    <button
+                      onClick={() => {
+                          console.log("Manual WebSocket retry initiated");
+                        setWebsocketError(null);
+                        setWebsocketRetryCount(0);
+                        if (depositResponse?.websocket_url) {
+                            console.log("Retrying with provided WebSocket URL:", depositResponse.websocket_url);
+                            const ws = connectWebSocket(depositResponse.websocket_url);
+                            if (!ws) {
+                              console.log("Primary retry failed, trying fallback");
+                              const fallbackUrl = API_CONFIG.EXCHANGE.SOCKETS.DEPOSIT_STATUS(depositResponse.transaction_id);
+                              connectWebSocket(fallbackUrl);
+                            }
+                        } else if (depositResponse?.transaction_id) {
+                            console.log("Retrying with fallback WebSocket URL");
+                          const fallbackUrl = API_CONFIG.EXCHANGE.SOCKETS.DEPOSIT_STATUS(depositResponse.transaction_id);
+                          connectWebSocket(fallbackUrl);
+                        }
+                      }}
+                        className="text-xs text-blue-400 hover:text-blue-300 underline bg-blue-900/20 px-2 py-1 rounded"
+                    >
+                        Retry Connection
+                    </button>
+                    </div>
+                  )}
+                  {/* Debug button for asset fetching */}
+                  {(swapAssets?.length === 0 || assets?.length === 0) && (
+                    <button
+                      onClick={handleDebugAssets}
+                      className="text-xs text-yellow-400 hover:text-yellow-300 underline ml-2"
+                    >
+                      Debug Assets
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
+          </div>
+        </div>
+      )}
+            </div>
+          </div>
+
+        
+
+
+
+        {/* Submit Button for First Card */}
+        {!isFirstCardSubmitted && (
+          <div className=" mx-auto w-full px-2 mt-6">
             <button
-              className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
+              className={`w-full text-white text-base font-medium py-3 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
                 isSubmitting
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
               }`}
-              onClick={handleProceedToNext}
-              disabled={isSubmitting || !walletAddress.trim() || !!walletError}
+              onClick={handleSubmit}
+              disabled={isSubmitting || !selectedAsset || !selectedNetwork}
             >
               {isSubmitting ? (
                 <div className="flex items-center gap-2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#35353e] dark:border-[#35353E]"></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                   <span>Processing...</span>
                 </div>
               ) : (
-                <span className="flex items-center justify-center">
-                  <img
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
-                    alt=""
-                  />
-                  <img
-                    className="mt-2"
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                    alt=""
-                  />
-                </span>
+                <span>Deposit</span>
               )}
             </button>
           </div>
-        </>
-      )}
+        )}
+        
+        </div>
+
+     
+
 
       {/* InfoModal */}
       <InfoModal

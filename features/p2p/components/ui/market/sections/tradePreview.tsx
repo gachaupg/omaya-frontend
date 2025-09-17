@@ -31,8 +31,8 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-  const { data: wallets = [], loading: walletLoading } = useSelector(
-    (state: RootState) => state.wallets || { data: [], loading: false }
+  const { data: wallets, loading: walletLoading } = useSelector(
+    (state: RootState) => state.wallets || { data: null, loading: false }
   );
   const [transactionSummary, setTransactionSummary] =
     useState<TransactionSummary | null>(null);
@@ -68,11 +68,10 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     }
   }, [dispatch, isAuthenticated]);
 
-  // Get USDT wallet balance
-  const usdtWallet = wallets?.find(
-    (w: { currency: string }) => w.currency === "USDT"
-  );
-  const walletBalance = usdtWallet ? parseFloat(usdtWallet.balance) : 0;
+  // Get USDT wallet balance from the new wallet response structure
+  const walletBalance = wallets?.wallet?.currency === "USDT" 
+    ? parseFloat(wallets.wallet.balance) 
+    : 0;
 
   const handleSendAmountChange = (value: string) => {
     setSendAmount(value);

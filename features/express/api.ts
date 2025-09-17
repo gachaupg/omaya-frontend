@@ -1,5 +1,5 @@
-import { post, get } from "../../lib/apiClient";
-import { API_CONFIG } from "../../lib/appConfig";
+import { post, get } from "@/lib/apiClient";
+import { API_CONFIG } from "@/lib/appConfig";
 
 // Express withdrawal API
 export const createExpressWithdrawal = async (data: {

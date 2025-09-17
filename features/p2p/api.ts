@@ -13,6 +13,7 @@ import {
   CreateP2PAdRequest,
   AssetsResponse,
   Wallet,
+  WalletResponse,
   P2PBuySellResponse,
   TransactionSummary,
   OrderMatchRequest,
@@ -24,6 +25,7 @@ import {
   ReferredUser,
   ReferralWallet,
   WithdrawalAddressesResponse,
+  DepositAddressResponse,
 } from "./types";
 import { API_CONFIG } from "@/lib/appConfig";
 
@@ -68,6 +70,16 @@ export const updateDeposit = async (
       `${API_CONFIG.P2P.DEPOSITS}${id}/`,
       data
     );
+    return response.data;
+  });
+};
+
+export const getDepositAddress = async (asset: string, network: string): Promise<DepositAddressResponse> => {
+  return withRetry(async () => {
+    const response = await post<DepositAddressResponse>(API_CONFIG.P2P.DEPOSIT_ADDRESSES, {
+      asset,
+      network
+    });
     return response.data;
   });
 };
@@ -155,9 +167,9 @@ export const getAssets = async (): Promise<AssetsResponse> => {
 };
 
 // Wallet API calls
-export const getWallets = async (): Promise<Wallet[]> => {
+export const getWallets = async (): Promise<WalletResponse> => {
   return withRetry(async () => {
-    const response = await get<Wallet[]>(API_CONFIG.P2P.WALLETS);
+    const response = await get<WalletResponse>(API_CONFIG.P2P.WALLETS);
     return response.data;
   });
 };
