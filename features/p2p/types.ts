@@ -248,6 +248,21 @@ export interface Wallet {
   created_on: string;
 }
 
+export interface WalletResponse {
+  wallet: Wallet;
+  deposit_addresses: {
+    tron: {
+      address: string | null;
+      status: string;
+    };
+    bsc: {
+      address: string;
+      status: string;
+    };
+  };
+  total_balance: string;
+}
+
 export interface PaymentDetail {
   id: number;
   provider: string;
@@ -572,5 +587,29 @@ export interface WithdrawalAddressesResponse {
     user_id: number;
     address_count: number;
     addresses: WithdrawalAddressDebug[];
+  };
+}
+
+export interface DepositAddress {
+  id: number;
+  address: string;
+  chain: string;
+  network_name: string;
+  is_default: boolean;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface DepositAddressResponse {
+  status: string;
+  message: string;
+  data: {
+    id: number;
+    address: string;
+    chain: string;
+    network_name: string;
+    is_default: boolean;
+    is_active: boolean;
+    created_at: string;
   };
 }

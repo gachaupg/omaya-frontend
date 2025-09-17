@@ -110,9 +110,9 @@ const handleApiError = (error: unknown): string => {
 };
 
 // Async thunks
-export const fetchAssets = createAsyncThunk<AssetsResponse, void>(
+export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>(
   "exchange/fetchAssets",
-  async (_, { rejectWithValue }) => {
+  async (forceRefresh: boolean = false, { rejectWithValue }) => {
     const endpoint = EXCHANGE_ENDPOINTS.ASSETS;
 
     // Check circuit breaker before making the call
@@ -124,24 +124,44 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, void>(
     }
 
     try {
-      // Use cached data if available, otherwise fetch fresh
-      const data = await sliceCache.getOrSet(
-        'exchange',
-        'fetchAssets',
-        async () => {
-          const response = await cachedGet<AssetsResponse>(endpoint, {
-            timeout: 10000,
-            ttl: 2 * 60 * 60 * 1000, // 2 hours cache for assets
-            cache: true
-          });
-          return response.data;
-        },
-        undefined, // no params
-        2 * 60 * 60 * 1000 // 2 hours cache
-      );
+      let data;
+      
+      if (forceRefresh) {
+        console.log("🔄 Force refresh - bypassing cache for exchange assets...");
+        // Clear cache first
+        await sliceCache.delete('exchange', 'fetchAssets');
+        // Fetch fresh data
+        const response = await cachedGet<AssetsResponse>(endpoint, {
+          timeout: 10000,
+          ttl: 2 * 60 * 60 * 1000, // 2 hours cache for assets
+          cache: true
+        });
+        console.log("✅ Force refresh API response received:", response?.data?.assets?.length || 0, "assets");
+        // Cache the fresh data
+        await sliceCache.set('exchange', 'fetchAssets', response.data, undefined, 2 * 60 * 60 * 1000);
+        data = response.data;
+      } else {
+        // Use cached data if available, otherwise fetch fresh
+        data = await sliceCache.getOrSet(
+          'exchange',
+          'fetchAssets',
+          async () => {
+            console.log("🔄 Cache miss - fetching exchange assets from API...");
+            const response = await cachedGet<AssetsResponse>(endpoint, {
+              timeout: 10000,
+              ttl: 2 * 60 * 60 * 1000, // 2 hours cache for assets
+              cache: true
+            });
+            console.log("✅ API response received:", response?.data?.assets?.length || 0, "assets");
+            return response.data;
+          },
+          undefined, // no params
+          2 * 60 * 60 * 1000 // 2 hours cache
+        );
+      }
 
       CircuitBreaker.onSuccess(endpoint);
-      console.log("Fetched Assets:", data);
+      console.log("✅ Fetched Assets:", data?.assets?.length || 0, "assets");
       return data;
     } catch (error: any) {
       CircuitBreaker.onFailure(endpoint, error);

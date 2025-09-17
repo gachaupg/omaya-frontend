@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import SuccessPage from "./success";
 import {
   useTransactionStatusWebSocket,
   TransactionStatusMessage,
@@ -52,7 +51,6 @@ interface ExchangingProps {
 export default function Exchanging({ transactionData }: ExchangingProps) {
   const searchParams = useSearchParams();
   const { isDark } = useTheme();
-  const [showSuccess, setShowSuccess] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<string>("pending");
   const [persistedTransactionData, setPersistedTransactionData] =
     useState<any>(null);
@@ -71,6 +69,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(
     null
   );
+
 
   // Fallback polling function
   const startFallbackPolling = () => {
@@ -118,6 +117,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   useEffect(() => {
     const transactionIdFromUrl = searchParams?.get("transactionId");
 
+
     if (transactionIdFromUrl) {
       // Check if we have persisted data for this transaction
       const stored = localStorage.getItem("express_transaction_data");
@@ -126,10 +126,11 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           const parsed = JSON.parse(stored);
           if (parsed.transactionId === transactionIdFromUrl) {
             setPersistedTransactionData(parsed);
-
             return;
           }
-        } catch (error) {}
+        } catch (error) {
+          // Silent error handling
+        }
       }
 
       // If no persisted data found, create a basic transaction data object
@@ -161,6 +162,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   // Use persisted data if no transactionData is provided (page reload scenario)
   const effectiveTransactionData = transactionData || persistedTransactionData;
 
+
   // Store transaction data in localStorage when it's provided
   useEffect(() => {
     if (transactionData && transactionData.transactionId) {
@@ -172,13 +174,6 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     }
   }, [transactionData]);
 
-  // Clear localStorage when transaction is completed
-  useEffect(() => {
-    if (showSuccess) {
-      localStorage.removeItem("express_transaction_data");
-      
-    }
-  }, [showSuccess]);
 
   // Use WebSocket for both deposit and withdrawal transactions
   const shouldUseWebSocket =
@@ -186,21 +181,6 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     (effectiveTransactionData?.type === "withdrawal" ||
       effectiveTransactionData?.type === "deposit");
 
-  // WebSocket hook for both deposit and withdrawal transactions
-  console.log("DEBUG: transactionData received:", effectiveTransactionData);
-  console.log(
-    "DEBUG: transactionId being passed to WebSocket:",
-    effectiveTransactionData?.transactionId
-  );
-  console.log("DEBUG: transaction type:", effectiveTransactionData?.type);
-  console.log(
-    "DEBUG: WebSocket URL (camelCase):",
-    effectiveTransactionData?.websocketUrl
-  );
-  console.log(
-    "DEBUG: WebSocket URL (snake_case):",
-    effectiveTransactionData?.websocket_url
-  );
 
   // Extract WebSocket URL from transaction data (handle both camelCase and snake_case)
   let websocketUrl =
@@ -208,59 +188,26 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     effectiveTransactionData?.websocket_url ||
     undefined;
 
+  // Clean up malformed URLs (remove //http: or //https: from WebSocket URLs)
+  if (websocketUrl && (websocketUrl.includes('//http:') || websocketUrl.includes('//https:'))) {
+    websocketUrl = websocketUrl.replace('//http:', '').replace('//https:', '');
+  }
+
   // Fix protocol mismatch: ensure WebSocket URL matches the API base URL protocol
   if (websocketUrl) {
     const apiBaseUrl = API_CONFIG.BASE_URL;
     const apiIsSecure = apiBaseUrl.startsWith("https://");
     const wsIsSecure = websocketUrl.startsWith("wss://");
 
-    console.log("DEBUG: API base URL:", apiBaseUrl);
-    console.log("DEBUG: API is secure:", apiIsSecure);
-    console.log("DEBUG: WebSocket is secure:", wsIsSecure);
-
     if (apiIsSecure && !wsIsSecure) {
       // API is HTTPS but WebSocket is WS - convert to WSS
       websocketUrl = websocketUrl.replace("ws://", "wss://");
-      console.log(
-        "DEBUG: Converted WebSocket URL from ws:// to wss://:",
-        websocketUrl
-      );
     } else if (!apiIsSecure && wsIsSecure) {
       // API is HTTP but WebSocket is WSS - convert to WS (for local development)
       websocketUrl = websocketUrl.replace("wss://", "ws://");
-      console.log(
-        "DEBUG: Converted WebSocket URL from wss:// to ws://:",
-        websocketUrl
-      );
     }
   }
 
-  console.log("DEBUG: Extracted websocketUrl:", websocketUrl);
-  console.log(
-    "DEBUG: effectiveTransactionData?.websocketUrl:",
-    effectiveTransactionData?.websocketUrl
-  );
-  console.log(
-    "DEBUG: effectiveTransactionData type:",
-    typeof effectiveTransactionData?.websocketUrl
-  );
-  console.log("DEBUG: websocketUrl type:", typeof websocketUrl);
-  console.log(
-    "DEBUG: Full effectiveTransactionData:",
-    effectiveTransactionData
-  );
-
-  // Check if websocketUrl is valid
-  if (websocketUrl) {
-    console.log("DEBUG: websocketUrl is valid:", websocketUrl);
-    console.log("DEBUG: websocketUrl length:", websocketUrl.length);
-    console.log(
-      "DEBUG: websocketUrl starts with ws:// or wss://:",
-      websocketUrl.startsWith("ws://") || websocketUrl.startsWith("wss://")
-    );
-  } else {
-    console.log("DEBUG: websocketUrl is invalid or undefined");
-  }
 
   // Check if this is a USDT/USDC transaction (should use backend WebSocket)
   const isUSDTCurrency =
@@ -271,6 +218,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     effectiveTransactionData?.asset?.name?.toLowerCase().includes("usdt") ||
     effectiveTransactionData?.asset?.name?.toLowerCase().includes("usdc");
   const finalWebsocketUrl = websocketUrl;
+
   const { isConnected, lastMessage, disconnect, sendMessage } =
     useTransactionStatusWebSocket(
       effectiveTransactionData?.transactionId || "",
@@ -278,17 +226,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       finalWebsocketUrl,
       {
         onMessage: (data: TransactionStatusMessage) => {
-          console.log("Transaction status update:", data);
-          console.log(
-            "Raw WebSocket message received:",
-            JSON.stringify(data, null, 2)
-          );
 
-          // Log ChangeNow specific data if present
-          if (data.type === "status_update") {
-            console.log("ChangeNow status update detected");
-            console.log("ChangeNow data:", JSON.stringify(data.data, null, 2));
-          }
 
           // Clear any WebSocket errors when we receive a message
           setWsError(null);
@@ -401,14 +339,6 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             message = (data as any).message;
           }
 
-          console.log("Extracted status:", status, "message:", message);
-          console.log("DEBUG: is_final check:", {
-            "data.is_final": data.is_final,
-            "(data as any).is_final": (data as any).is_final,
-            "data.data?.is_final": data.data?.is_final,
-            "data.type": data.type,
-            "Raw data": data
-          });
 
           // Process statuses for both deposit and withdrawal
           const validStatuses = [
@@ -439,15 +369,6 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               effectiveTransactionData?.details?.changenow_id ||
               effectiveTransactionData?.fromCurrency ||
               effectiveTransactionData?.toCurrency;
-            
-            console.log("DEBUG: Flow detection:", {
-              isChangeNowFlow,
-              "changenow_id": effectiveTransactionData?.details?.changenow_id,
-              "fromCurrency": effectiveTransactionData?.fromCurrency,
-              "toCurrency": effectiveTransactionData?.toCurrency,
-              "asset": effectiveTransactionData?.asset,
-              status
-            });
 
             if (isChangeNowFlow) {
               // ChangeNow flow - combine some statuses for better UX
@@ -457,35 +378,34 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 uiStatus = "confirming"; // pending_blockchain -> confirming (next step after pending)
               } else if (status === "confirming") {
                 uiStatus = "confirming"; // confirming stays the same
+              } else if (status === "processing") {
+                uiStatus = "confirming"; // processing -> confirming (transaction is being processed)
               } else if (status === "exchanging") {
-                uiStatus = "exchanging"; // exchanging stays the same
+                uiStatus = "sending"; // exchanging -> sending (skip exchanging step)
               } else if (status === "sending") {
                 uiStatus = "sending"; // sending stays the same
               } else if (status === "finished") {
                 uiStatus = "sending"; // finished -> sending (waiting for completed status)
               } else if (status === "completed") {
-                console.log("🔥 COMPLETED STATUS IN CHANGENOW FLOW DETECTED!");
-                uiStatus = "completed"; // completed -> should trigger success page
+                uiStatus = "completed"; // completed -> show all steps as completed
               }
             } else {
-              // Regular flow (first two assets)
+              // Regular flow (first two assets) - skip exchanging step
               if (status === "pending_blockchain") {
                 uiStatus = "confirming"; // pending_blockchain -> confirming (next step after pending)
               } else if (status === "transaction_created") {
                 uiStatus = "confirming";
+              } else if (status === "processing") {
+                uiStatus = "confirming"; // processing -> confirming (transaction is being processed)
               } else if (status === "processing_transfer") {
-                uiStatus = "exchanging";
+                uiStatus = "sending"; // processing_transfer -> sending (skip exchanging)
               } else if (status === "approval_required") {
-                uiStatus = "exchanging"; // Show as exchanging while waiting for approval
+                uiStatus = "sending"; // approval_required -> sending (skip exchanging)
               } else if (status === "admin_approval_required") {
                 uiStatus = "sending"; // Admin approval means exchanging is complete, move to sending
               } else if (status === "completed" || status === "finished") {
-                // Check if this is a final completed status
-                if (data.is_final === true || data.type === "final_status" || (data as any).is_final === true || data.data?.is_final === true) {
-                  uiStatus = "completed"; // Show as completed when final
-                } else {
-                  uiStatus = "sending"; // Show as "sending to you" when completed but not final
-                }
+                // Always show as completed when status is completed
+                uiStatus = "completed"; // Show as completed
               } else if (status === "agent_approve") {
                 uiStatus = "sending"; // Show as "sending to you" when agent approved
               }
@@ -502,45 +422,27 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               // For direct exchanges, completed status should always trigger navigation
               (data.type === "status_update" && status === "completed")
             );
-            console.log("DEBUG: Auto-navigation check:", {
-              status,
-              "status === completed": status === "completed",
-              "data.type": data.type,
-              "data.type === final_status": data.type === "final_status",
-              "data.is_final": data.is_final,
-              "(data as any).is_final": (data as any).is_final,
-              "data.data?.is_final": data.data?.is_final,
-              "data.type === status_update && status === completed": data.type === "status_update" && status === "completed",
-              "shouldAutoNavigate": shouldAutoNavigate
-            });
             
             if (shouldAutoNavigate) {
-              console.log("🚀 AUTO-NAVIGATION TRIGGERED! Redirecting to success page in 2 seconds...");
-              // Store final websocket data for success page
+              // Store final websocket data
               setFinalWebsocketData(data);
-              // Give users time to see the completion status before redirecting
+              // Give users time to see the completion status before reloading
               setTimeout(() => {
-                console.log("🎉 NAVIGATING TO SUCCESS PAGE NOW!");
-                setShowSuccess(true);
-              }, 2000); // 2 seconds delay to show completion status
+                window.location.reload();
+              }, 3000); // 3 seconds delay to show completion status
             }
 
-            // Auto-navigate to success page when transaction is agent approved
+            // Auto-reload when transaction is agent approved
             if (status === "agent_approve") {
-              // Store final websocket data for success page
+              // Store final websocket data
               setFinalWebsocketData(data);
-              // Give users time to see the completion status before redirecting
+              // Give users time to see the completion status before reloading
               setTimeout(() => {
-                setShowSuccess(true);
-                // Remove auto-redirect - let users click the button manually
-              }, 1000);
+                window.location.reload();
+              }, 3000);
             }
           } else {
-            console.log(
-              "Bypassing status:",
-              status,
-              "- not in valid statuses list"
-            );
+            // Status not in valid list - ignore
           }
 
           // Special handling for P2P deposit status updates
@@ -572,13 +474,10 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               
               // Check if P2P deposit is completed
               if (depositData.status === "completed") {
-                console.log("🎉 P2P DEPOSIT COMPLETED! Redirecting to success page in 2 seconds...");
-                
-                // Give users time to see the completion status before redirecting
+                // Give users time to see the completion status before reloading
                 setTimeout(() => {
-                  console.log("🚀 NAVIGATING TO SUCCESS PAGE FOR COMPLETED P2P DEPOSIT!");
-                  setShowSuccess(true);
-                }, 2000); // 2 seconds delay
+                  window.location.reload();
+                }, 3000); // 3 seconds delay
               }
             }
           }
@@ -656,17 +555,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     isConnected,
   ]);
 
-  // If showing success page, render it with real transaction data and websocket data
-  if (showSuccess) {
-    return (
-    <div className="w-full min-h-screen flex flex-col items-center justify-center pt-2">
-        <SuccessPage
-        transactionData={effectiveTransactionData}
-        websocketData={finalWebsocketData}
-      />
-    </div>
-    );
-  }
+  // Success page disabled - always reload instead
 
   // If no transaction data available (not from form submission or localStorage), show loading or redirect
   if (!effectiveTransactionData) {
@@ -940,21 +829,19 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       
       <div className="flex items-center justify-between w-full max-w-4xl mb-4 relative">
         {/* Connecting Lines */}
-        <div className="absolute top-5 left-[12.5%] right-[12.5%] h-0.5 z-0">
+        <div className="absolute top-5 left-[16.66%] right-[16.66%] h-0.5 z-0">
           <div
             className={`h-0.5 transition-all duration-500 ${
               currentStatus === "completed" || currentStatus === "finished"
                 ? "bg-[#1D8751] w-full"
                 : currentStatus === "sending"
                   ? "bg-[#1D8751] w-full"
-                  : currentStatus === "exchanging"
-                    ? "bg-[#FF9500] w-3/4"
-                    : currentStatus === "confirming"
-                      ? "bg-[#FF9500] w-1/2"
-                      : currentStatus === "pending" ||
-                          currentStatus === "waiting"
-                        ? "bg-[#FF9500] w-1/4"
-                        : "bg-[#7B7B7B] w-0"
+                  : currentStatus === "confirming"
+                    ? "bg-[#FF9500] w-1/2"
+                    : currentStatus === "pending" ||
+                        currentStatus === "waiting"
+                      ? "bg-[#FF9500] w-1/3"
+                      : "bg-[#7B7B7B] w-0"
             }`}
           ></div>
         </div>
@@ -964,11 +851,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           <div
             className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${
               currentStatus === "pending" ||
-              currentStatus === "waiting" ||
-              !shouldUseWebSocket
+              currentStatus === "waiting"
                 ? "bg-[#FF9500] border-[#FF95001A]"
                 : currentStatus === "confirming" ||
-                    currentStatus === "exchanging" ||
                     currentStatus === "sending" ||
                     currentStatus === "completed" ||
                     currentStatus === "finished"
@@ -983,11 +868,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 r="10"
                 stroke={
                   currentStatus === "pending" ||
-                  currentStatus === "waiting" ||
-                  !shouldUseWebSocket
+                  currentStatus === "waiting"
                     ? "#fff"
                     : currentStatus === "confirming" ||
-                        currentStatus === "exchanging" ||
                         currentStatus === "sending" ||
                         currentStatus === "completed" ||
                         currentStatus === "finished"
@@ -1000,10 +883,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 d="M12 8v4l2 2"
                 stroke={
                   currentStatus === "pending" ||
-                  currentStatus === "waiting" ||
-                  !shouldUseWebSocket
+                  currentStatus === "waiting"
                     ? "#fff"
-                    : currentStatus === "exchanging" ||
+                    : currentStatus === "confirming" ||
                         currentStatus === "sending" ||
                         currentStatus === "completed" ||
                         currentStatus === "finished"
@@ -1020,11 +902,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             <span
               className={`font-semibold text-base ${
                 currentStatus === "pending" ||
-                currentStatus === "waiting" ||
-                !shouldUseWebSocket
+                currentStatus === "waiting"
                   ? "text-[#FF9500]"
                   : currentStatus === "confirming" ||
-                      currentStatus === "exchanging" ||
                       currentStatus === "sending" ||
                       currentStatus === "completed" ||
                       currentStatus === "finished"
@@ -1035,8 +915,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               Awaiting Deposit
             </span>
             {(currentStatus === "pending" ||
-              currentStatus === "waiting" ||
-              !shouldUseWebSocket) && (
+              currentStatus === "waiting") && (
               <div className="flex gap-1">
                 <span
                   className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
@@ -1053,7 +932,6 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               </div>
             )}
             {(currentStatus === "confirming" ||
-              currentStatus === "exchanging" ||
               currentStatus === "sending" ||
               currentStatus === "completed" ||
               currentStatus === "finished") && (
@@ -1077,8 +955,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${
               currentStatus === "confirming"
                 ? "bg-[#FF9500] border-[#FF95001A]"
-                : currentStatus === "exchanging" ||
-                    currentStatus === "sending" ||
+                : currentStatus === "sending" ||
                     currentStatus === "completed" ||
                     currentStatus === "finished"
                   ? "bg-[#1D8751] border-[#1D87511A]"
@@ -1092,7 +969,6 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 r="10"
                 stroke={
                   currentStatus === "confirming" ||
-                  currentStatus === "exchanging" ||
                   currentStatus === "sending" ||
                   currentStatus === "completed" ||
                   currentStatus === "finished"
@@ -1105,7 +981,6 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 d="M9 12l2 2 4-4"
                 stroke={
                   currentStatus === "confirming" ||
-                  currentStatus === "exchanging" ||
                   currentStatus === "sending" ||
                   currentStatus === "completed" ||
                   currentStatus === "finished"
@@ -1123,8 +998,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               className={`font-semibold text-base ${
                 currentStatus === "confirming"
                   ? "text-[#FF9500]"
-                  : currentStatus === "exchanging" ||
-                      currentStatus === "sending" ||
+                  : currentStatus === "sending" ||
                       currentStatus === "completed" ||
                       currentStatus === "finished"
                     ? "text-[#1D8751]"
@@ -1134,97 +1008,6 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               Confirming
             </span>
             {currentStatus === "confirming" && (
-              <div className="flex gap-1">
-                <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
-                  style={{ animationDelay: "0ms" }}
-                ></span>
-                <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
-                  style={{ animationDelay: "150ms" }}
-                ></span>
-                <span
-                  className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
-                  style={{ animationDelay: "300ms" }}
-                ></span>
-              </div>
-            )}
-            {(currentStatus === "exchanging" ||
-              currentStatus === "sending" ||
-              currentStatus === "completed" ||
-              currentStatus === "finished") && (
-              <div className="flex items-center gap-1">
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M9 12l2 2 4-4"
-                    stroke="#1D8751"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-            )}
-          </div>
-        </div>
-        {/* Step 3: Exchanging */}
-        <div className="flex flex-col items-center flex-1 relative z-10">
-          <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${
-              currentStatus === "exchanging"
-                ? "bg-[#FF9500] border-[#FF95001A]"
-                : currentStatus === "sending" ||
-                    currentStatus === "completed" ||
-                    currentStatus === "finished"
-                  ? "bg-[#1D8751] border-[#1D87511A]"
-                  : "bg-[#23232B] border-[#35353E]"
-            }`}
-          >
-            <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
-              <circle
-                cx="12"
-                cy="12"
-                r="10"
-                stroke={
-                  currentStatus === "exchanging" ||
-                  currentStatus === "sending" ||
-                  currentStatus === "completed" ||
-                  currentStatus === "finished"
-                    ? "#fff"
-                    : "#7B7B7B"
-                }
-                strokeWidth="2"
-              />
-              <path
-                d="M8 12h8M12 8v8"
-                stroke={
-                  currentStatus === "exchanging" ||
-                  currentStatus === "sending" ||
-                  currentStatus === "completed" ||
-                  currentStatus === "finished"
-                    ? "#fff"
-                    : "#7B7B7B"
-                }
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            </svg>
-          </div>
-          <div className="flex items-center gap-1">
-            <span
-              className={`font-semibold text-base ${
-                currentStatus === "exchanging"
-                  ? "text-[#FF9500]"
-                  : currentStatus === "sending" ||
-                      currentStatus === "completed" ||
-                      currentStatus === "finished"
-                    ? "text-[#1D8751]"
-                    : "text-[#7B7B7B]"
-              }`}
-            >
-              Exchanging
-            </span>
-            {currentStatus === "exchanging" && (
               <div className="flex gap-1">
                 <span
                   className="w-2 h-2 bg-[#FF9500] rounded-full inline-block animate-bounce"
@@ -1257,7 +1040,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             )}
           </div>
         </div>
-        {/* Step 4: Sending to you */}
+        {/* Step 3: Sending to you */}
         <div className="flex flex-col items-center flex-1 relative z-10">
           <div
             className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${
@@ -1566,6 +1349,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           </div>
         </div>
       </div>
+
      
       <div className="w-full max-w-4xl rounded-2xl flex ">
        

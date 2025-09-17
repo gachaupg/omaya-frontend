@@ -23,7 +23,7 @@ const Available = () => {
   const dispatch = useDispatch<AppDispatch>();
   const summary = useSelector(selectTransactionSummary);
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-  const { data: wallets = [], loading: walletLoading } = useSelector(
+  const { data: wallets, loading: walletLoading } = useSelector(
     (state: RootState) => state.wallets
   );
 
@@ -34,11 +34,10 @@ const Available = () => {
     }
   }, [dispatch, isAuthenticated]);
 
-  // Find USDT wallet with null check and ensure wallets is an array
-  const usdtWallet = Array.isArray(wallets)
-    ? wallets.find((wallet: Wallet) => wallet.currency === "USDT")
-    : undefined;
-  const walletBalance = usdtWallet ? parseFloat(usdtWallet.balance) : 0;
+  // Get USDT wallet balance from the new wallet response structure
+  const walletBalance = wallets?.wallet?.currency === "USDT" 
+    ? parseFloat(wallets.wallet.balance) 
+    : 0;
 
   // Calculate available balance (total approved - pending withdrawals)
   const availableBalance = summary

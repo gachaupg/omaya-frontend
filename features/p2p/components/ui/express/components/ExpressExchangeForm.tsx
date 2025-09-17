@@ -52,7 +52,7 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
   }, [initialMode]);
 
   return (
-    <div className="w-full mx-auto p-0">
+    <div className=" w-full mx-auto p-0">
       {/* Mode Selection */}
       
 

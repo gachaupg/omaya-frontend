@@ -5,7 +5,8 @@ import { AppDispatch } from "@/store";
 import { RootState } from "@/store/rootReducer";
 import { 
   closeKYCModal, 
-  verifyKYCStatus 
+  verifyKYCStatus,
+  logout 
 } from "@/features/auth/slices/authSlice";
 import { checkKYCStatus } from "@/features/kyc/slices/kycSlice";
 import { showToast } from "@/lib/utils/toast";
@@ -738,6 +739,18 @@ const KYCVerificationModal: React.FC = () => {
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <button
+              onClick={() => {
+                dispatch(logout());
+                handleClose();
+              }}
+              className="text-red-400 hover:text-red-300 transition-colors p-1"
+              title="Logout"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
             </button>
           </div>

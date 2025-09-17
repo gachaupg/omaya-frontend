@@ -1,31 +1,93 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
-import { FaExchangeAlt, FaExclamationCircle } from "react-icons/fa";
+import { FaExchangeAlt, FaExclamationCircle, FaWallet } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch } from "../../../../store";
+import { useRouter } from "next/navigation";
+import { AppDispatch } from "@/store";
 import {
   fetchAdminPaymentDetails,
   fetchUserPaymentDetails,
-} from "../../../exchange/slices/paymentSlice";
-import { fetchAssets } from "../../../exchange/slices/exchangeSlice";
-import { createDeposit } from "../../../exchange/slices/exchangeSlice";
+} from "@/features/exchange/slices/paymentSlice";
+import { fetchAssets } from "@/features/exchange/slices/exchangeSlice";
+import { createDeposit } from "@/features/exchange/slices/exchangeSlice";
 import {
   fetchSupportedAssets,
   fetchSwapEstimate,
-} from "../../../swap/slices/swapSlice";
-import { validateWalletAddress } from "../../../../lib/addressValidaion";
-import { showToast } from "../../../../lib/utils/toast";
-import { DepositResponse } from "../../../exchange/types";
-import { SupportedAsset } from "../../../swap/types";
+} from "@/features/swap/slices/swapSlice";
+import { validateWalletAddress } from "@/lib/addressValidaion";
+import { showToast } from "@/lib/utils/toast";
+import { DepositResponse } from "@/features/exchange/types";
+import { SupportedAsset } from "@/features/swap/types";
 import { FaSearch } from "react-icons/fa";
-import { createExpressWithdrawal } from "../../api";
+import { createP2PWithdrawal } from "../../api";
 import {
-  ExpressWithdrawalPayload,
-  ExpressWithdrawalResponse,
+  P2PWithdrawalRequest,
+  P2PWithdrawalResponse,
 } from "../../types";
-import PaymentMethodsModal from "../../../p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal";
 import InfoModal from "./info";
-import { debugAssetFetching } from "../../../../lib/utils/debugAssets";
+import { debugAssetFetching } from "@/lib/utils/debugAssets";
+
+// Success Modal Component
+const SuccessModal = ({
+  isOpen,
+  onClose,
+  amount,
+  asset,
+  onNavigateToP2P,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  amount: number;
+  asset: any;
+  onNavigateToP2P: () => void;
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+      <div className="bg-[#2A2A2A] rounded-3xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl">
+        {/* Success Icon */}
+        <div className="flex justify-center mb-6">
+          <div className="w-16 h-16 bg-[#4CAF50] rounded-full flex items-center justify-center">
+            <svg width="32" height="32" fill="none" viewBox="0 0 24 24">
+              <path
+                d="M9 12l2 2 4-4"
+                stroke="white"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+        </div>
+
+        {/* Success Title */}
+        <h2 className="text-white text-xl font-semibold mb-4">
+          Successfully Submitted
+        </h2>
+
+        {/* Amount Info */}
+        <div className="mb-6">
+          <p className="text-gray-400 text-sm mb-2">You Will Receive</p>
+          <p className="text-white text-2xl font-bold">
+            {amount} {asset?.ticker?.toUpperCase() || asset?.symbol?.toUpperCase() || "USDT"}
+          </p>
+        </div>
+
+        {/* OK Button */}
+        <button
+          onClick={() => {
+            onClose();
+            onNavigateToP2P();
+          }}
+          className="w-full bg-[#4CAF50] text-white py-3 rounded-2xl text-lg font-medium hover:bg-[#45a049] transition-colors"
+        >
+          OK
+        </button>
+      </div>
+    </div>
+  );
+};
 
 // Add UserPaymentDetail interface
 interface UserPaymentDetail {
@@ -114,7 +176,6 @@ interface DepositFormProps {
     type: "deposit" | "withdrawal";
     amount: number;
     asset: any;
-    paymentDetail: any;
     walletAddress: string;
     network: any;
     transactionId?: string;
@@ -133,7 +194,7 @@ interface DepositFormProps {
     toNetwork?: string;
     estimatedAmount?: number;
     changeNowId?: string;
-    paymentDetails?: UserPaymentDetail[];
+    status?: string;
   }) => void;
   mode: "deposit" | "withdrawal";
   onModeChange?: (mode: "deposit" | "withdrawal") => void;
@@ -145,6 +206,7 @@ export default function WithdrawalForm({
   onModeChange,
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
   const { adminPaymentDetails, loading, error } = useSelector(
     (state: any) => state.payment
   );
@@ -171,18 +233,8 @@ export default function WithdrawalForm({
   // Debug function to test asset fetching
   const handleDebugAssets = async () => {
     try {
-      console.log("=== Starting debug asset fetch for express withdrawal ===");
-      console.log("Current exchange assets:", assets);
-      console.log("Current swap assets:", swapAssets);
-      
-      // Force refresh both asset types
-      console.log("🔄 Force refreshing exchange assets...");
-      await dispatch(fetchAssets(true)).unwrap();
-      
-      console.log("🔄 Force refreshing swap assets...");
-      await dispatch(fetchSupportedAssets(true)).unwrap();
-      
-      console.log("✅ Assets force refreshed");
+      console.log("=== Starting debug asset fetch ===");
+      await debugAssetFetching();
     } catch (error) {
       console.error("Debug failed:", error);
     }
@@ -205,7 +257,6 @@ export default function WithdrawalForm({
   );
 
   const [payAmount, setPayAmount] = useState(100);
-  const [payBank, setPayBank] = useState("");
   const [getAmount, setGetAmount] = useState(0);
   const [payAmountInput, setPayAmountInput] = useState("100");
   const [getAmountInput, setGetAmountInput] = useState("0");
@@ -215,7 +266,6 @@ export default function WithdrawalForm({
   const [walletAddress, setWalletAddress] = useState("");
   const [walletError, setWalletError] = useState<string | null>(null);
   const [forceUpdate, setForceUpdate] = useState(0);
-  const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   // Add state for API response data
@@ -226,7 +276,6 @@ export default function WithdrawalForm({
   const [responseMessage, setResponseMessage] = useState<string>("");
   const [websocketUrl, setWebsocketUrl] = useState<string>("");
   const [transactionId, setTransactionId] = useState<string>("");
-  const paymentDetailsRef = useRef<HTMLDivElement>(null);
   // Asset selection state for search functionality
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
   const [assetSearchTerm, setAssetSearchTerm] = useState("");
@@ -243,10 +292,6 @@ export default function WithdrawalForm({
   // Add loading state for "You Receive" calculation
   const [isCalculatingReceive, setIsCalculatingReceive] = useState(false);
 
-  // Add payment selection state
-  const [selectedPaymentDetails, setSelectedPaymentDetails] = useState<
-    UserPaymentDetail[]
-  >([]);
 
   // Add calculation stability state
   const [isCalculating, setIsCalculating] = useState(false);
@@ -267,11 +312,13 @@ export default function WithdrawalForm({
   // Cache duration in milliseconds (5 minutes)
   const CACHE_DURATION = 5 * 60 * 1000;
 
-  // Add PaymentMethodsModal state
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   // Add InfoModal state
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+
+  // Add Success Modal state
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [successAmount, setSuccessAmount] = useState(0);
 
   // Add validation state for minimum receive amount
   const [receiveAmountError, setReceiveAmountError] = useState<string | null>(
@@ -286,38 +333,6 @@ export default function WithdrawalForm({
     null
   );
 
-  // Filter user payment details based on selected payment method
-  const filteredUserPaymentDetails = payBank
-    ? (userPaymentDetails || []).filter(
-        (detail: any) => detail.payment_provider_name === payBank
-      )
-    : [];
-
-  // Enhanced filtering with fallback options
-  const enhancedFilteredUserPaymentDetails = payBank
-    ? (userPaymentDetails || []).filter((detail: any) => {
-        // Try multiple possible field names for provider name
-        const providerName =
-          detail.payment_provider_name ||
-          detail.provider_name ||
-          detail.payment_provider;
-
-        return providerName === payBank;
-      })
-    : [];
-
-  // Auto-select first account when accounts are available for selected bank
-  useEffect(() => {
-    if (
-      payBank &&
-      enhancedFilteredUserPaymentDetails.length > 0 &&
-      selectedPaymentDetails.length === 0
-    ) {
-      console.log("DEBUG: Auto-selecting first account for bank:", payBank);
-      const firstAccount = enhancedFilteredUserPaymentDetails[0];
-      setSelectedPaymentDetails([firstAccount]);
-    }
-  }, [payBank, enhancedFilteredUserPaymentDetails, selectedPaymentDetails]);
 
   // Track isTransactionSubmitted changes
   useEffect(() => {
@@ -335,16 +350,6 @@ export default function WithdrawalForm({
     websocketUrl,
   ]);
 
-  // Payment selection handlers
-  const handleSelectPaymentDetail = (detail: UserPaymentDetail) => {
-    setSelectedPaymentDetails((prev) =>
-      prev.some((d) => d.id === detail.id) ? prev : [...prev, detail]
-    );
-  };
-
-  const handleRemovePaymentDetail = (detail: UserPaymentDetail) => {
-    setSelectedPaymentDetails((prev) => prev.filter((d) => d.id !== detail.id));
-  };
 
   useEffect(() => {
     // Try to fetch from cache first, then API if needed
@@ -359,32 +364,10 @@ export default function WithdrawalForm({
   }, [dispatch]);
 
   useEffect(() => {
-    // First try to get from cache, then force refresh if no data
-    dispatch(fetchAssets(false))
+    dispatch(fetchAssets())
       .unwrap()
-      .then((data) => {
-        console.log("DEBUG: Exchange assets loaded in express withdrawal:", {
-          hasAssets: !!data?.assets,
-          assetsLength: data?.assets?.length || 0,
-          totalBalance: data?.total_wallet_balance
-        });
-        
-        // If no assets in cache, force refresh
-        if (!data?.assets || data.assets.length === 0) {
-          console.log("🔄 No exchange assets in cache, forcing refresh...");
-          return dispatch(fetchAssets(true)).unwrap();
-        }
-        return data;
-      })
       .catch((error: unknown) => {
-        console.error("Failed to fetch exchange assets from cache, trying force refresh:", error);
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchAssets(true))
-          .unwrap()
-          .catch((refreshError: unknown) => {
-            showToast.error(`Failed to fetch assets: ${refreshError}`);
-            throw refreshError;
-          });
+        showToast.error(`Failed to fetch assets: ${error}`);
       });
   }, [dispatch]);
 
@@ -404,127 +387,54 @@ export default function WithdrawalForm({
     dispatch(fetchSupportedAssets(false))
       .unwrap()
       .then((data) => {
-        console.log("DEBUG: Swap assets loaded in express withdrawal:", {
-          hasAssets: !!data,
-          assetsLength: data?.length || 0
-        });
-        
-        // If no assets in cache, force refresh
-        if (!data || data.length === 0) {
-          console.log("🔄 No swap assets in cache, forcing refresh...");
-          return dispatch(fetchSupportedAssets(true)).unwrap();
-        }
-        return data;
+        console.log("DEBUG: Swap assets fetched successfully:", data);
+        console.log("DEBUG: Number of assets:", data?.length || 0);
       })
       .catch((error: unknown) => {
-        console.error("Failed to fetch swap assets from cache, trying force refresh:", error);
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchSupportedAssets(true))
-          .unwrap()
-          .catch((refreshError: unknown) => {
-            console.error("Failed to fetch swap assets even with force refresh:", refreshError);
-            
-            // Only show error if it's a network issue, not cache issues
-            if (refreshError instanceof Error) {
-              if (refreshError.message.includes("Network Error") || refreshError.message.includes("Network connection issue")) {
-                showToast.warning("Network Issue", "Unable to fetch assets due to network problems. Using fallback data.");
-              } else if (refreshError.message.includes("Server Error")) {
-                showToast.error("Server Error", "Unable to fetch assets from server. Please try again later.");
-              } else if (!refreshError.message.includes("Cache")) {
-                // Only show error if it's not a cache-related issue
-                showToast.error("Asset Loading Error", `Failed to fetch swap assets: ${refreshError.message}`);
-              }
-            }
-            
-            // Set fallback assets so the form can still work
-            const fallbackAssets = [
-              {
-                ticker: "USDT",
-                symbol: "USDT",
-                name: "Tether USD",
-                network: "BSC",
-                range_commissions: [{ commission: "2" }],
-                commission: "2",
-                fee_rate: "2"
-              },
-              {
-                ticker: "USDC",
-                symbol: "USDC", 
-                name: "USD Coin",
-                network: "BSC",
-                range_commissions: [{ commission: "2" }],
-                commission: "2",
-                fee_rate: "2"
-              }
-            ];
-            
-            // Update the Redux store with fallback assets
-            dispatch({
-              type: "swap/fetchSupportedAssets/fulfilled",
-              payload: fallbackAssets
-            });
-            
-            throw refreshError;
-          });
+        console.error("DEBUG: Failed to fetch swap assets:", error);
+        // Only show error if it's a network issue, not cache issues
+        if (
+          error instanceof Error &&
+          (error.message.includes("Network") ||
+            error.message.includes("Server"))
+        ) {
+          showToast.error(`Failed to fetch swap assets: ${error.message}`);
+        }
       });
   }, [dispatch]);
 
-  // Auto-select first asset and calculate received amount when assets are loaded
+  // Auto-select USDT Tether on BSC when assets are loaded
   useEffect(() => {
     if (swapAssets && swapAssets.length > 0 && !selectedAsset) {
-      // Sort assets to get USDT on BSC first, then USDC on BSC, then others
-      const sortedAssets = [...swapAssets].sort((a, b) => {
-        const tickerA = (a.ticker || a.symbol || a.name || "")
-          .toString()
-          .toUpperCase();
-        const tickerB = (b.ticker || b.symbol || b.name || "")
-          .toString()
-          .toUpperCase();
-        const networkA = (a.network || "").toString().toLowerCase();
-        const networkB = (b.network || "").toString().toLowerCase();
-
-        // Priority 1: USDT on BSC
-        if (
-          tickerA === "USDT" &&
-          networkA === "bsc" &&
-          !(tickerB === "USDT" && networkB === "bsc")
-        ) {
-          return -1;
-        }
-        if (
-          tickerB === "USDT" &&
-          networkB === "bsc" &&
-          !(tickerA === "USDT" && networkA === "bsc")
-        ) {
-          return 1;
-        }
-        // Priority 2: USDC on BSC
-        if (
-          tickerA === "USDC" &&
-          networkA === "bsc" &&
-          !(tickerB === "USDC" && networkB === "bsc")
-        ) {
-          return -1;
-        }
-        if (
-          tickerB === "USDC" &&
-          networkB === "bsc" &&
-          !(tickerA === "USDC" && networkA === "bsc")
-        ) {
-          return 1;
-        }
-        return 0;
+      // Find USDT Tether (we'll force BSC network regardless of original network)
+      const usdtTetherAsset = swapAssets.find((asset: SupportedAsset) => {
+        const ticker = (asset.ticker || asset.symbol || "").toString().toUpperCase();
+        const name = (asset.name || "").toString().toUpperCase();
+        
+        // Only look for USDT Tether specifically
+        return ticker === "USDT" && (name.includes("TETHER") || name.includes("USDT"));
       });
 
-      const firstAsset = sortedAssets[0];
-      console.log("Auto-selecting first asset:", firstAsset);
-      setSelectedAsset(firstAsset);
+      if (usdtTetherAsset) {
+        console.log("Auto-selecting USDT Tether on BSC:", usdtTetherAsset);
+        setSelectedAsset({
+          ...usdtTetherAsset,
+          network: "BSC", // Force BSC network for USDT Tether
+          name: "Tether USD"
+        });
+        
+        // Set the network to BSC for USDT
+        setSelectedNetwork({
+          network_id: "BSC",
+          network_type: "BSC",
+        });
 
       // Only set default amount if user hasn't manually modified the amount
       if (!isUserModifiedAmount) {
-        const defaultAmount = getDefaultAmount(firstAsset);
+          const defaultAmount = getDefaultAmount(usdtTetherAsset);
         setPayAmount(defaultAmount);
         setPayAmountInput(defaultAmount.toString());
+        }
       }
     }
   }, [swapAssets, selectedAsset, isUserModifiedAmount]);
@@ -1466,64 +1376,54 @@ export default function WithdrawalForm({
     }
   }, [selectedAsset, getAmount, isCalculatingFromPay, apiValidationError]);
 
-  // Filter swap assets based on search term - search by ticker and name
-  const filteredSwapAssets =
-    swapAssets?.filter((asset: SupportedAsset) => {
-      const ticker = asset.ticker?.toUpperCase() || "";
-      const name = asset.name?.toUpperCase() || "";
-      const symbol = asset.symbol?.toUpperCase() || "";
+  // Always show exactly these two assets - no API filtering needed
+  const exactAssets = [
+    {
+      ticker: "USDT",
+      symbol: "USDT",
+      name: "Tether USD",
+      network: "BSC",
+      range_commissions: [{ commission: "2" }],
+      commission: "2",
+      fee_rate: "2",
+      image_url: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+      asset_id: "usdt-tether-bsc"
+    },
+    {
+      ticker: "USDC",
+      symbol: "USDC",
+      name: "USD Coin",
+      network: "BSC",
+      range_commissions: [{ commission: "2" }],
+      commission: "2",
+      fee_rate: "2",
+      image_url: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+      asset_id: "usdc-bsc"
+    }
+  ];
+
+  // Filter based on search term if provided
+  const filteredSwapAssets = assetSearchTerm.trim() ? 
+    exactAssets.filter(asset => {
       const searchTerm = assetSearchTerm.toUpperCase();
+      return asset.ticker.includes(searchTerm) ||
+             asset.name.toUpperCase().includes(searchTerm) ||
+             "TETHER".includes(searchTerm) ||
+             "USD COIN".includes(searchTerm) ||
+             "BSC".includes(searchTerm) ||
+             "BEP20".includes(searchTerm) ||
+             "BINANCE SMART CHAIN".includes(searchTerm);
+    }) : exactAssets;
 
-      return (
-        ticker.includes(searchTerm) ||
-        name.includes(searchTerm) ||
-        symbol.includes(searchTerm)
-      );
-    }) || [];
-
-  // Sort assets: USDT on BSC, USDC on BSC, then rest in original order
+  // Sort assets: USDT Tether first, then USDC
   const sortedSwapAssets = [...filteredSwapAssets].sort((a, b) => {
-    // Ensure tickers exist and are strings (using ticker as primary, fallback to symbol/name)
-    const tickerA = (a.ticker || a.symbol || a.name || "")
-      .toString()
-      .toUpperCase();
-    const tickerB = (b.ticker || b.symbol || b.name || "")
-      .toString()
-      .toUpperCase();
-    const networkA = (a.network || "").toString().toLowerCase();
-    const networkB = (b.network || "").toString().toLowerCase();
-
-    // Priority 1: USDT on BSC
-    if (
-      tickerA === "USDT" &&
-      networkA === "bsc" &&
-      !(tickerB === "USDT" && networkB === "bsc")
-    ) {
+    // USDT always comes first
+    if (a.ticker === "USDT" && b.ticker !== "USDT") {
       return -1;
     }
-    if (
-      tickerB === "USDT" &&
-      networkB === "bsc" &&
-      !(tickerA === "USDT" && networkA === "bsc")
-    ) {
+    if (b.ticker === "USDT" && a.ticker !== "USDT") {
       return 1;
     }
-    // Priority 2: USDC on BSC
-    if (
-      tickerA === "USDC" &&
-      networkA === "bsc" &&
-      !(tickerB === "USDC" && networkB === "bsc")
-    ) {
-      return -1;
-    }
-    if (
-      tickerB === "USDC" &&
-      networkB === "bsc" &&
-      !(tickerA === "USDC" && networkA === "bsc")
-    ) {
-      return 1;
-    }
-    // Default: preserve original order (no change)
     return 0;
   });
 
@@ -1759,17 +1659,61 @@ export default function WithdrawalForm({
     };
   }, [calculationTimeout, estimateTimeout]);
 
-  // Re-validate wallet address when asset changes (always BEP20)
+  // Validate BEP20 wallet address
+  const validateBEP20Address = (address: string) => {
+    if (!address || address.trim() === "") {
+      return { isValid: false, message: "Wallet address is required" };
+    }
+
+    // Remove whitespace
+    const cleanAddress = address.trim();
+
+    // BEP20 addresses are Ethereum-compatible (0x prefix, 42 characters total, hexadecimal)
+    const bep20Regex = /^0x[a-fA-F0-9]{40}$/;
+    
+    if (!bep20Regex.test(cleanAddress)) {
+      return { 
+        isValid: false, 
+        message: "Invalid BEP20 address format. Must start with '0x' followed by 40 hexadecimal characters" 
+      };
+    }
+
+    // Additional validation: check if it's not a zero address
+    if (cleanAddress.toLowerCase() === "0x0000000000000000000000000000000000000000") {
+      return { 
+        isValid: false, 
+        message: "Cannot use zero address (0x0000...)" 
+      };
+    }
+
+    return { isValid: true, message: null };
+  };
+
+  // Re-validate wallet address when it changes (always BEP20 for USDT Tether)
   useEffect(() => {
-    if (walletAddress.trim() && selectedAsset) {
-      const validation = validateWalletAddress(walletAddress, "BEP20");
+    if (walletAddress.trim()) {
+      const validation = validateBEP20Address(walletAddress);
       if (!validation.isValid) {
-        setWalletError(validation.message || "Invalid wallet address format");
+        setWalletError(validation.message || "Invalid BEP20 wallet address format");
       } else {
         setWalletError(null);
+        // Clear any validation errors related to wallet address when it becomes valid
+        setValidationErrors(prev => prev.filter(error => 
+          !error.includes("wallet") && 
+          !error.includes("address") && 
+          !error.includes("BEP20")
+        ));
       }
+    } else {
+      setWalletError(null); // Clear error when field is empty
+      // Clear validation errors when field is empty
+      setValidationErrors(prev => prev.filter(error => 
+        !error.includes("wallet") && 
+        !error.includes("address") && 
+        !error.includes("BEP20")
+      ));
     }
-  }, [selectedAsset, walletAddress]);
+  }, [walletAddress]);
 
   // Validate first card data
   const validateFirstCard = () => {
@@ -1782,7 +1726,13 @@ export default function WithdrawalForm({
 
     // Allow any amount including negative values
     // No validation for negative amounts
-    if (selectedPaymentDetails.length === 0) {
+    if (!walletAddress.trim()) {
+      return false;
+    }
+
+    // Validate BEP20 wallet address format
+    const validation = validateBEP20Address(walletAddress);
+    if (!validation.isValid) {
       return false;
     }
 
@@ -1803,24 +1753,19 @@ export default function WithdrawalForm({
       setIsTransactionSubmitted(false);
 
       try {
-        // Create withdrawal payload for express API
-        const withdrawalPayload: ExpressWithdrawalPayload = {
-          asset:
-            selectedAsset.ticker?.toUpperCase() ||
-            selectedAsset.symbol?.toUpperCase(),
+        // Create withdrawal payload for P2P API
+        const withdrawalPayload: P2PWithdrawalRequest = {
           amount: payAmount.toString(),
-          network:
-            selectedNetwork?.network_id ||
-            selectedNetwork?.network_type ||
-            selectedAsset.network,
-          user_payment_detail_id: selectedPaymentDetails[0].id,
+          currency: selectedAsset.ticker?.toUpperCase() || selectedAsset.symbol?.toUpperCase(),
+          network: selectedNetwork?.network_id || selectedNetwork?.network_type || selectedAsset.network,
+          wallet_type: "crypto",
+          receiver_wallet: walletAddress
         };
 
-        console.log("Submitting withdrawal request:", withdrawalPayload);
+        console.log("Submitting P2P withdrawal request:", withdrawalPayload);
 
-        // Submit to express withdrawal API
-        const withdrawalResponse =
-          await createExpressWithdrawal(withdrawalPayload);
+        // Submit to P2P withdrawal API
+        const withdrawalResponse = await createP2PWithdrawal(withdrawalPayload);
 
         console.log("Withdrawal response received:", withdrawalResponse);
 
@@ -1891,9 +1836,9 @@ export default function WithdrawalForm({
         );
         setResponseMessage(message);
 
-        // Mark transaction as submitted and stop loading
-        setIsTransactionSubmitted(true);
-        setForceUpdate((prev) => prev + 1);
+        // Show success modal instead of going to exchanging page
+        setSuccessAmount(payAmount);
+        setIsSuccessModalOpen(true);
 
         console.log("Withdrawal addresses generated successfully:", {
           withdrawalAddress,
@@ -1942,12 +1887,14 @@ export default function WithdrawalForm({
       errors.push("Please select an asset");
     }
 
-    if (selectedPaymentDetails.length === 0) {
-      errors.push("Please select at least one payment method");
-    }
-
     if (!walletAddress.trim()) {
-      errors.push("Please enter your wallet address");
+      errors.push("Please enter a BEP20 wallet address");
+    } else {
+      // Validate the wallet address format
+      const validation = validateBEP20Address(walletAddress);
+      if (!validation.isValid) {
+        errors.push(validation.message || "Invalid BEP20 wallet address");
+      }
     }
 
     if (walletError) {
@@ -1985,101 +1932,26 @@ export default function WithdrawalForm({
       // Debug logging
 
       if (mode === "withdrawal") {
-        // Handle withdrawal submission
-        const withdrawalPayload: ExpressWithdrawalPayload = {
-          asset:
-            selectedAsset.ticker?.toUpperCase() ||
-            selectedAsset.symbol?.toUpperCase(),
+        // Handle withdrawal submission using P2P API
+        const p2pWithdrawalPayload: P2PWithdrawalRequest = {
           amount: payAmount.toString(),
-          network:
-            selectedNetwork?.network_id ||
-            selectedNetwork?.network_type ||
-            selectedAsset.network,
-          user_payment_detail_id: selectedPaymentDetails[0].id, // Use first selected payment detail
+          currency: selectedAsset.ticker?.toUpperCase() || selectedAsset.symbol?.toUpperCase(),
+          network: selectedNetwork?.network_id || selectedNetwork?.network_type || selectedAsset.network,
+          wallet_type: "crypto",
+          receiver_wallet: walletAddress
         };
 
-        // Submit to express withdrawal API
-        const withdrawalResponse =
-          await createExpressWithdrawal(withdrawalPayload);
+        console.log("Submitting P2P withdrawal request:", p2pWithdrawalPayload);
+        const withdrawalResponse = await createP2PWithdrawal(p2pWithdrawalPayload);
+        console.log("P2P withdrawal response received:", withdrawalResponse);
 
-        // Handle different response types based on asset
-        const isSimpleAsset = isSimpleCalculationAsset(selectedAsset);
+        // Handle P2P withdrawal response
+        const p2pResponse = withdrawalResponse as any;
+        const responseData = p2pResponse.data || p2pResponse;
 
-        if (isSimpleAsset) {
-          // Direct transfer response for USDT/USDC
-          const directTransferResponse = withdrawalResponse as any;
-
-          if (directTransferResponse.type === "direct_transfer") {
-            if (onExchange) {
-              const transactionData = {
-                type: "withdrawal" as const,
-                amount: payAmount,
-                asset: {
-                  ...selectedAsset,
-                  icon:
-                    selectedAsset.image_url ||
-                    selectedAsset.asset_image ||
-                    selectedAsset.icon_url ||
-                    selectedAsset.image,
-                },
-                paymentDetail: selectedPaymentDetail,
-                walletAddress: walletAddress,
-                network: selectedNetwork,
-                transactionId: directTransferResponse.transaction_id,
-                withdrawalAddress: directTransferResponse.withdrawal_address,
-                message: directTransferResponse.message,
-                websocketUrl: directTransferResponse.websocket_url,
-                responseType: "direct_transfer",
-                paymentDetails: selectedPaymentDetails,
-              };
-
-              onExchange(transactionData);
-              setIsTransactionSubmitted(true);
-              setForceUpdate((prev) => prev + 1); // Force re-render
-            }
-          }
-        } else {
-          // ChangeNow swap response for other assets
-          const changeNowResponse = withdrawalResponse as any;
-
-          if (changeNowResponse.data?.type === "changenow_swap") {
-            if (onExchange) {
-              const transactionData = {
-                type: "withdrawal" as const,
-                amount: payAmount,
-                asset: {
-                  ...selectedAsset,
-                  icon:
-                    selectedAsset.image_url ||
-                    selectedAsset.asset_image ||
-                    selectedAsset.icon_url ||
-                    selectedAsset.image,
-                },
-                paymentDetail: selectedPaymentDetail,
-                walletAddress: walletAddress,
-                network: selectedNetwork,
-                transactionId: changeNowResponse.data?.transaction_id,
-                withdrawalAddress:
-                  changeNowResponse.data?.details?.withdrawal_address,
-                payoutAddress: changeNowResponse.data?.details?.payout_address,
-                fromCurrency: changeNowResponse.data?.details?.from_currency,
-                toCurrency: changeNowResponse.data?.details?.to_currency,
-                toNetwork: changeNowResponse.data?.details?.to_network,
-                estimatedAmount:
-                  changeNowResponse.data?.details?.estimated_amount,
-                changeNowId: changeNowResponse.data?.details?.changenow_id,
-                message: changeNowResponse.data?.message,
-                websocketUrl: changeNowResponse.data?.websocket_url,
-                responseType: "changenow_swap",
-                paymentDetails: selectedPaymentDetails,
-              };
-
-              onExchange(transactionData);
-              setIsTransactionSubmitted(true);
-              setForceUpdate((prev) => prev + 1); // Force re-render
-            }
-          }
-        }
+        // Show success modal instead of calling onExchange
+        setSuccessAmount(payAmount);
+        setIsSuccessModalOpen(true);
       } else {
         // Handle deposit submission
         const depositPayload = new FormData();
@@ -2094,21 +1966,6 @@ export default function WithdrawalForm({
         }
         depositPayload.append("deposit_address", walletAddress);
 
-        if (!selectedPaymentDetail.provider_name) {
-          throw new Error("Payment provider is missing");
-        }
-        depositPayload.append(
-          "payment_provider",
-          selectedPaymentDetail.provider_name
-        );
-
-        if (!selectedPaymentDetail.payment_method_type) {
-          throw new Error("Payment method is missing");
-        }
-        depositPayload.append(
-          "payment_method",
-          selectedPaymentDetail.payment_method_type
-        );
         // Handle currency field
         const currencyValue =
           selectedAsset.symbol === "USDT Tether"
@@ -2132,10 +1989,6 @@ export default function WithdrawalForm({
           throw new Error("Asset ID is missing");
         }
         depositPayload.append("asset", selectedAsset.asset_id);
-        depositPayload.append(
-          "additional_info",
-          `Account: ${selectedPaymentDetail.account_name}, Account Number: ${selectedPaymentDetail.account_number}`
-        );
 
         // Log the complete FormData for debugging
 
@@ -2173,7 +2026,6 @@ export default function WithdrawalForm({
                 selectedAsset.icon_url ||
                 selectedAsset.image,
             },
-            paymentDetail: selectedPaymentDetail,
             walletAddress: walletAddress,
             network: selectedNetwork,
             transactionId: depositResponse.transaction_id,
@@ -2183,7 +2035,6 @@ export default function WithdrawalForm({
             networkFee: depositResponse.network_fee as string,
             currency: depositResponse.currency,
             websocketUrl: depositResponse.websocket?.url,
-            paymentDetails: selectedPaymentDetails,
           };
 
           onExchange(transactionData);
@@ -2223,17 +2074,6 @@ export default function WithdrawalForm({
     }
   };
 
-  useEffect(() => {
-    if (selectedPaymentDetail && paymentDetailsRef.current) {
-      paymentDetailsRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-      setTimeout(() => {
-        window.scrollBy({ top: -80, left: 0, behavior: "smooth" });
-      }, 400);
-    }
-  }, [selectedPaymentDetail]);
 
   return (
     <div className="w-full min-h-screen flex flex-col dark:bg-[#18181D]  ">
@@ -2241,225 +2081,13 @@ export default function WithdrawalForm({
         <span className="text-[#7e7e8f]">1-</span> Transaction Info
       </h2>
 
-      <div className="w-full max-w-4xl mx-auto text-white">
-        {/* Top Section - You Send and You Get in one card */}
-        <div className="relative mb-4">
-          {/* Top Card Container */}
-          <div className="flex border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-4">
-            {/* You Send Section */}
+      <div className="w-full mx-auto text-white">
+        {/* Single Outer Card Container */}
+        <div className="border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-6 mb-4">
+          {/* Asset and Network Row */}
+          <div className="flex gap-6 mb-6">
+            {/* Asset Section */}
             <div className="flex-1 pr-4">
-              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                You Send
-                {isCalculatingFromPay &&
-                  (isCalculating || isCalculatingReceive) && (
-                    <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
-                  )}
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={payAmountInput}
-                  onChange={(e) => {
-                    const inputValue = e.target.value;
-
-                    // Allow any numeric input including negative numbers and 0
-                    if (inputValue === "" || /^-?\d*\.?\d*$/.test(inputValue)) {
-                      // Check for decimal places validation
-                      if (inputValue.includes(".")) {
-                        const decimalPart = inputValue.split(".")[1];
-                        if (decimalPart && decimalPart.length > 8) {
-                          setCalculationError(
-                            "Ensure that there are no more than 8 decimal places."
-                          );
-                          return;
-                        }
-                      }
-
-                      setPayAmountInput(inputValue);
-
-                      // Convert to number for calculations
-                      const parsedValue =
-                        inputValue === "" ? 0 : parseFloat(inputValue) || 0;
-
-                      const newValue = parsedValue;
-                      setPayAmount(newValue);
-                      setIsCalculatingFromPay(true);
-
-                      // Mark that user has manually modified the amount
-                      setIsUserModifiedAmount(true);
-
-                      // Clear any previous errors when user starts typing
-                      setReceiveAmountError(null);
-                      setApiValidationError(null);
-                      setCalculationError(null);
-                      setApiValidationError(null);
-
-                      // Only calculate if we have a valid amount and asset
-                      if (selectedAsset && newValue >= 0) {
-                        // Check asset type first and handle accordingly
-                        if (isSimpleCalculationAsset(selectedAsset)) {
-                          // For simple assets (USDT/USDC), calculate immediately
-                          console.log(
-                            "You Send: Simple asset detected, calculating immediately"
-                          );
-                          calculateAmounts(newValue, true);
-                        } else if (newValue > 0) {
-                          // For non-simple assets, stop normal calculation and go directly to API
-                          console.log(
-                            "You Send: Non-simple asset detected, going directly to API"
-                          );
-
-                          // Stop any ongoing normal calculations first
-                          if (calculationTimeout) {
-                            clearTimeout(calculationTimeout);
-                          }
-                          if (estimateTimeout) {
-                            clearTimeout(estimateTimeout);
-                          }
-
-                          // Clear previous calculation states
-                          setEstimate(null);
-                          setEstimateError(null);
-                          setEstimateLoading(false);
-                          setCalculationError(null);
-                          setReceiveAmountError(null);
-                          setApiValidationError(null);
-                          setApiValidationError(null);
-
-                          // Store current value as previous valid amount before showing loading
-                          if (
-                            getAmountInput &&
-                            getAmountInput !== "0" &&
-                            !isCalculating
-                          ) {
-                            setPreviousValidAmount(getAmountInput);
-                          }
-
-                          // Keep field empty during calculation - no intermediate values
-                          setGetAmount(0);
-                          setGetAmountInput("");
-                          if (!apiValidationError) {
-                            if (!apiValidationError) {
-                              setReceiveAmountError("Calculating..."); // Show immediate feedback
-                            }
-                          }
-
-                          // Set loading state for visual feedback
-                          setIsCalculating(true);
-                          setIsCalculatingReceive(true);
-                          setEstimateLoading(true);
-
-                          // Go directly to API calculation - the estimate useEffect will handle it
-                          console.log(
-                            "You Send: Going directly to API calculation for amount:",
-                            newValue
-                          );
-                        } else {
-                          // For zero/negative values, clear the receive amount but don't show "0"
-                          setGetAmount(0);
-                          setGetAmountInput("");
-                          setReceiveAmountError(null);
-                          setApiValidationError(null);
-                          setIsCalculating(false);
-                          setIsCalculatingReceive(false);
-                        }
-                      } else {
-                        // For invalid input, clear the receive amount but don't show "0"
-                        setGetAmount(0);
-                        setGetAmountInput("");
-                        setReceiveAmountError(null);
-                        setApiValidationError(null);
-                        setIsCalculating(false);
-                        setIsCalculatingReceive(false);
-                      }
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    // Allow all numeric input including negative signs
-                  }}
-                  onFocus={() => setIsCalculatingFromPay(true)}
-                  onBlur={() => {
-                    // Allow any value on blur
-                  }}
-                  placeholder={
-                    (isCalculating || isCalculatingReceive) &&
-                    !apiValidationError
-                      ? "Calculating..."
-                      : "Enter amount"
-                  }
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg  focus:outline-none border appearance-none ${
-                    apiValidationError
-                      ? "border-red-500"
-                      : isCalculating || isCalculatingReceive
-                        ? "border-[#1D8751]"
-                        : "border-[#A2A4A9FF] dark:border-[#35353E]"
-                  }`}
-                />
-                <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                  <span className="text-[#35353e] dark:text-[#ffffff] text-sm font-medium">
-                    {selectedAsset
-                      ? (
-                          selectedAsset.ticker ||
-                          selectedAsset.symbol ||
-                          "USDT"
-                        ).toUpperCase()
-                      : "USDT"}
-                  </span>
-                </div>
-                {(isCalculatingReceive || isCalculating) &&
-                  !apiValidationError && (
-                    <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
-                    </div>
-                  )}
-                {apiValidationError && (
-                  <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
-                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        className="text-red-500"
-                      />
-                      <line
-                        x1="12"
-                        y1="8"
-                        x2="12"
-                        y2="12"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        className="text-red-500"
-                      />
-                      <circle
-                        cx="12"
-                        cy="16"
-                        r="1"
-                        fill="currentColor"
-                        className="text-red-500"
-                      />
-                    </svg>
-                  </div>
-                )}
-              </div>
-              {/* Display calculation error below You Send input */}
-              {calculationError && (
-                <div className="mt-2 text-sm text-yellow-500 dark:text-yellow-400">
-                  {calculationError}
-                </div>
-              )}
-              {apiValidationError && (
-                <div className="mt-2 text-sm text-yellow-500 dark:text-yellow-400">
-                  {apiValidationError}
-                </div>
-              )}
-            </div>
-
-            {/* You Get Section */}
-            <div className="flex-1 pl-4">
               <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                 Asset
               </label>
@@ -2518,7 +2146,7 @@ export default function WithdrawalForm({
                         <span className="text-[#7e7e8f] dark:text-[#788099]">
                           {swapAssetsLoading
                             ? "Loading assets..."
-                            : "Select Asset"}
+                            : "USDT Tether"}
                         </span>
                       </>
                     )}
@@ -2561,75 +2189,36 @@ export default function WithdrawalForm({
                     <div className="max-h-60 overflow-y-auto">
                       {sortedSwapAssets.length > 0 ? (
                         sortedSwapAssets.map(
-                          (asset: SupportedAsset, index: number) => (
+                          (asset: any, index: number) => (
                             <div
                               key={`${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
                               className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
                               onClick={() => {
                                 console.log("Asset selected:", asset);
-
-                                // First, stop any ongoing calculations and clear previous states
-                                if (calculationTimeout) {
-                                  clearTimeout(calculationTimeout);
-                                }
-                                if (estimateTimeout) {
-                                  clearTimeout(estimateTimeout);
-                                }
-
-                                // Clear all previous calculation states
-                                setEstimate(null);
-                                setEstimateError(null);
-                                setEstimateLoading(false);
-                                setCalculationError(null);
-                                setReceiveAmountError(null);
-                                setApiValidationError(null);
-                                setApiValidationError(null);
-
-                                // Set the new asset
-                                setSelectedAsset(asset);
+                                
+                                // Force BSC network and proper names for USDT Tether and USDC
+                                const ticker = (asset.ticker || asset.symbol || "").toLowerCase();
+                                const isUsdtTether = ticker === "usdt";
+                                const isUsdc = ticker === "usdc";
+                                
+                                const updatedAsset = {
+                                  ...asset,
+                                  network: "BSC", // Force BSC network for both
+                                  name: isUsdtTether ? "Tether USD" : isUsdc ? "USD Coin" : asset.name
+                                };
+                                
+                                setSelectedAsset(updatedAsset);
+                                setSelectedNetwork({
+                                  network_id: "BSC",
+                                  network_type: "BSC",
+                                });
                                 setIsAssetDropdownOpen(false);
                                 setAssetSearchTerm("");
-
-                                // Check asset type first and handle accordingly
-                                if (isSimpleCalculationAsset(asset)) {
-                                  // For simple assets (USDT/USDC), calculate immediately
-                                  console.log(
-                                    "Selected simple asset, calculating immediately"
-                                  );
-                                  setIsCalculatingFromPay(true);
-
-                                  // Only set default amount if user hasn't manually modified the amount
-                                  if (!isUserModifiedAmount) {
-                                    const defaultAmount =
-                                      getDefaultAmount(asset);
-                                    setPayAmount(defaultAmount);
-                                    setPayAmountInput(defaultAmount.toString());
-                                    calculateAmounts(defaultAmount, true);
-                                  } else {
-                                    // User has custom amount, just recalculate with existing amount
-                                    calculateAmounts(payAmount, true);
-                                  }
-                                } else {
-                                  // For non-simple assets, go directly to API
-                                  console.log(
-                                    "Selected non-simple asset, going directly to API"
-                                  );
-                                  setIsCalculatingFromPay(true);
-
-                                  // Set loading states immediately for visual feedback
-                                  setIsCalculating(true);
-                                  setIsCalculatingReceive(true);
-                                  setEstimateLoading(true);
-
-                                  // Only set default amount if user hasn't manually modified the amount
-                                  if (!isUserModifiedAmount) {
-                                    const defaultAmount =
-                                      getDefaultAmount(asset);
-                                    setPayAmount(defaultAmount);
-                                    setPayAmountInput(defaultAmount.toString());
-                                  }
-                                  // The estimate useEffect will handle the API call
-                                }
+                                // Clear validation errors related to asset selection
+                                setValidationErrors(prev => prev.filter(error => 
+                                  !error.includes("asset") && 
+                                  !error.includes("Asset")
+                                ));
                               }}
                             >
                               <img
@@ -2678,8 +2267,8 @@ export default function WithdrawalForm({
                       ) : (
                         <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
                           {assetSearchTerm
-                            ? "No assets found"
-                            : "No assets available"}
+                            ? "No USDT Tether assets found matching your search"
+                            : "Only USDT Tether on BSC is available for withdrawal"}
                         </div>
                       )}
                     </div>
@@ -2687,43 +2276,38 @@ export default function WithdrawalForm({
                 )}
               </div>
             </div>
+
+            {/* Network Section */}
+            <div className="flex-1 pl-4">
+              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+                Network
+              </label>
+              <div className="relative">
+                <div className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                      alt="network icon"
+                      className="w-6 h-6"
+                    />
+                    <span className="text-[#35353e] dark:text-[#788099]">
+                      {selectedNetwork?.network_id || selectedNetwork?.network_type || selectedAsset?.network 
+                        ? "Binance Smart Chain BEP20" 
+                        : "Binance Smart Chain BEP20"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Swap Circle - positioned to touch both borders equally */}
-          <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/3 z-10">
-            <button
-              className="w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105"
-              onClick={() => {
-                // Switch between deposit and withdrawal modes
-                if (onModeChange) {
-                  onModeChange(mode === "deposit" ? "withdrawal" : "deposit");
-                }
-              }}
-            >
-              {/* Light mode image */}
-              <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
-                alt="swap icon"
-                className="w-16 h-16 dark:hidden"
-              />
-              {/* Dark mode image */}
-              <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
-                alt="swap icon"
-                className="w-16 h-16 hidden dark:block"
-              />
-            </button>
-          </div>
-        </div>
-
-        {/* Bottom Section - You Receive and Bank/Payment Method in one card */}
-        <div className="relative mb-3">
-          <div className="flex border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-4">
-            {/* You Receive Section */}
+          {/* Amount and Wallet Address Row */}
+          <div className="flex gap-6">
+            {/* Amount Section */}
             <div className="flex-1 pr-4">
               <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                You Receive
-                {!isCalculatingFromPay &&
+                Amount
+                {isCalculatingFromPay &&
                   (isCalculating || isCalculatingReceive) && (
                     <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                   )}
@@ -2732,171 +2316,51 @@ export default function WithdrawalForm({
                 <input
                   type="text"
                   inputMode="decimal"
-                  value={getAmountInput}
+                  value={payAmountInput}
                   onChange={(e) => {
-                    const value = e.target.value;
+                    const inputValue = e.target.value;
 
-                    // Only allow numbers and decimals (including 0.006 format)
-                    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                    // Allow any numeric input including negative numbers and 0
+                    if (inputValue === "" || /^-?\d*\.?\d*$/.test(inputValue)) {
                       // Check for decimal places validation
-                      if (value.includes(".")) {
-                        const decimalPart = value.split(".")[1];
+                      if (inputValue.includes(".")) {
+                        const decimalPart = inputValue.split(".")[1];
                         if (decimalPart && decimalPart.length > 8) {
-                          setApiValidationError(
-                            "Ensure that there are no more than 8 decimal places."
-                          );
-                          setReceiveAmountError(
+                          setCalculationError(
                             "Ensure that there are no more than 8 decimal places."
                           );
                           return;
                         }
                       }
 
-                      setGetAmountInput(value); // Store the string value for display
-                      const newAmount = parseFloat(value) || 0;
-                      setGetAmount(newAmount);
-                      setIsCalculatingFromPay(false);
+                      setPayAmountInput(inputValue);
+
+                      // Convert to number for calculations
+                      const parsedValue =
+                        inputValue === "" ? 0 : parseFloat(inputValue) || 0;
+
+                      const newValue = parsedValue;
+                      setPayAmount(newValue);
+                      setIsCalculatingFromPay(true);
+
+                      // Mark that user has manually modified the amount
+                      setIsUserModifiedAmount(true);
 
                       // Clear any previous errors when user starts typing
-                      setReceiveAmountError(null);
-                      setApiValidationError(null);
+                          setReceiveAmountError(null);
+                          setApiValidationError(null);
                       setCalculationError(null);
-                      setApiValidationError(null);
-
-                      // Only calculate if we have a valid amount and asset
-                      if (selectedAsset && newAmount >= 0) {
-                        // Check asset type first and handle accordingly
-                        if (isSimpleCalculationAsset(selectedAsset)) {
-                          // For simple assets (USDT/USDC), calculate immediately
-                          console.log(
-                            "You Receive: Simple asset detected, calculating immediately"
-                          );
-                          const commissionRate = selectedAsset
-                            ?.range_commissions?.[0]?.commission
-                            ? parseFloat(
-                                selectedAsset.range_commissions[0].commission
-                              )
-                            : 2;
-                          const commissionAmount =
-                            (newAmount * commissionRate) / 100;
-                          const calculatedPayAmount =
-                            newAmount + commissionAmount;
-                          setPayAmount(calculatedPayAmount);
-                          setPayAmountInput(calculatedPayAmount.toString());
-
-                          // Simple assets don't need loading states - calculation is instant
-                          setIsCalculating(false);
-                          setIsCalculatingReceive(false);
-                        } else if (newAmount > 0) {
-                          // For non-simple assets, stop normal calculation and go directly to API
-                          console.log(
-                            "You Receive: Non-simple asset detected, going directly to API"
-                          );
-
-                          // Stop any ongoing normal calculations first
-                          if (calculationTimeout) {
-                            clearTimeout(calculationTimeout);
-                          }
-                          if (estimateTimeout) {
-                            clearTimeout(estimateTimeout);
-                          }
-
-                          // Clear previous calculation states
-                          setEstimate(null);
-                          setEstimateError(null);
-                          setEstimateLoading(false);
-                          setCalculationError(null);
-                          setReceiveAmountError(null);
-                          setApiValidationError(null);
-                          setApiValidationError(null);
-
-                          // Store current value as previous valid amount before showing loading
-                          if (
-                            payAmountInput &&
-                            payAmountInput !== "0" &&
-                            !isCalculating
-                          ) {
-                            setPreviousValidAmount(payAmountInput);
-                          }
-
-                          // Keep field empty during calculation - no intermediate values
-                          setPayAmount(0);
-                          setPayAmountInput("");
-                          if (!apiValidationError) {
-                            if (!apiValidationError) {
-                              setReceiveAmountError("Calculating..."); // Show immediate feedback
-                            }
-                          }
-
-                          // Set loading state for visual feedback
-                          setIsCalculating(true);
-                          setIsCalculatingReceive(true);
-                          setEstimateLoading(true);
-
-                          // Go directly to API calculation - the reverse calculation useEffect will handle it
-                          console.log(
-                            "You Receive: Going directly to API calculation for amount:",
-                            newAmount
-                          );
-                        } else {
-                          // For zero/negative values, clear the pay amount but don't show "0"
-                          setPayAmount(0);
-                          setPayAmountInput("");
-                          setReceiveAmountError(null);
-                          setApiValidationError(null);
-                          setIsCalculating(false);
-                          setIsCalculatingReceive(false);
-                        }
-                      } else {
-                        // For invalid input, clear the pay amount but don't show "0"
-                        setPayAmount(0);
-                        setPayAmountInput("");
-                        setReceiveAmountError(null);
-                        setApiValidationError(null);
-                        setIsCalculating(false);
-                        setIsCalculatingReceive(false);
-                      }
+                      // Clear validation errors related to amount
+                      setValidationErrors(prev => prev.filter(error => 
+                        !error.includes("amount") && 
+                        !error.includes("Amount")
+                      ));
                     }
                   }}
-                  onKeyDown={(e) => {
-                    // Allow all numeric input including negative signs
-                  }}
-                  onFocus={() => setIsCalculatingFromPay(false)}
-                  onBlur={() => {
-                    // Allow any value on blur, but still validate if positive
-                    const currentValue = parseFloat(getAmountInput) || 0;
-                    if (currentValue > 0) {
-                      const validationError = validateReceiveAmount(
-                        currentValue,
-                        selectedAsset
-                      );
-                      setReceiveAmountError(validationError);
-                    }
-                  }}
-                  placeholder={
-                    (isCalculating || isCalculatingReceive) &&
-                    !apiValidationError
-                      ? "Calculating..."
-                      : "Enter amount"
-                  }
+                  onFocus={() => setIsCalculatingFromPay(true)}
+                  placeholder="Enter amount"
                   className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg  focus:outline-none border appearance-none ${
-                    (receiveAmountError &&
-                      (receiveAmountError.includes("Rough estimate") ||
-                        receiveAmountError.includes("Using estimated rate"))) ||
-                    (apiValidationError &&
-                      (apiValidationError.includes("Rough estimate") ||
-                        apiValidationError.includes("Using estimated rate")))
-                      ? "border-[#F79330]"
-                      : (receiveAmountError &&
-                            !receiveAmountError.includes("Rough estimate") &&
-                            !receiveAmountError.includes(
-                              "Using estimated rate"
-                            )) ||
-                          (apiValidationError &&
-                            !apiValidationError.includes("Rough estimate") &&
-                            !apiValidationError.includes(
-                              "Using estimated rate"
-                            ))
+                    apiValidationError
                         ? "border-red-500"
                         : isCalculating || isCalculatingReceive
                           ? "border-[#1D8751]"
@@ -2905,269 +2369,82 @@ export default function WithdrawalForm({
                 />
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
                   <span className="text-[#35353e] dark:text-[#ffffff] text-sm font-medium">
-                    USD
+                    {selectedAsset
+                      ? (
+                          selectedAsset.ticker ||
+                          selectedAsset.symbol ||
+                          "USDT"
+                        ).toUpperCase()
+                      : "USDT"}
                   </span>
                 </div>
-                {(isCalculatingReceive || isCalculating) &&
-                  !apiValidationError && (
-                    <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
                     </div>
-                  )}
-                {((receiveAmountError &&
-                  !receiveAmountError.includes("Rough estimate") &&
-                  !receiveAmountError.includes("Using estimated rate")) ||
-                  apiValidationError) && (
-                  <div className="absolute right-16 top-1/2 transform -translate-y-1/2">
-                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        className="text-red-500"
-                      />
-                      <line
-                        x1="12"
-                        y1="8"
-                        x2="12"
-                        y2="12"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        className="text-red-500"
-                      />
-                      <circle
-                        cx="12"
-                        cy="16"
-                        r="1"
-                        fill="currentColor"
-                        className="text-red-500"
-                      />
-                    </svg>
+              {/* Display calculation error below Amount input */}
+              {calculationError && (
+                <div className="mt-2 text-sm text-yellow-500 dark:text-yellow-400">
+                  {calculationError}
                   </div>
-                )}
-                {((receiveAmountError &&
-                  (receiveAmountError.includes("Rough estimate") ||
-                    receiveAmountError.includes("Using estimated rate"))) ||
-                  (apiValidationError &&
-                    (apiValidationError.includes("Rough estimate") ||
-                      apiValidationError.includes(
-                        "Using estimated rate"
-                      )))) && (
-                  <div className="absolute right-16 top-1/2 transform -translate-y-1/2">
-                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                      <path
-                        d="M12 8v4m0 4h.01"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="text-[#F79330]"
-                      />
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        className="text-[#F79330]"
-                      />
-                    </svg>
-                  </div>
-                )}
-              </div>
-              {receiveAmountError && (
-                <p
-                  className={`text-sm mt-1 ${
-                    receiveAmountError.includes("Rough estimate") ||
-                    receiveAmountError.includes("Using estimated rate")
-                      ? "text-[#F79330]"
-                      : "text-red-500"
-                  }`}
-                >
-                  {receiveAmountError}
-                </p>
               )}
               {apiValidationError && (
-                <p className="text-sm mt-1 text-yellow-500">
+                <div className="mt-2 text-sm text-yellow-500 dark:text-yellow-400">
                   {apiValidationError}
-                </p>
+                </div>
               )}
             </div>
 
-            {/* Bank/Payment Method Section */}
+            {/* Wallet Address Section */}
             <div className="flex-1 pl-4">
               <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
-                Bank/Payment Method
+                Wallet Address
               </label>
               <div className="relative">
-                <img
-                  src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
-                  alt="bank icon"
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 pointer-events-none z-10"
+                <FaWallet className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#7e7e8f] dark:text-[#788099] pointer-events-none z-10" />
+                <input
+                  type="text"
+                  value={walletAddress}
+                  onChange={(e) => setWalletAddress(e.target.value)}
+                  onPaste={(e) => {
+                    e.preventDefault(); // Prevent default paste behavior
+                    const pastedText = e.clipboardData.getData('text');
+                    setWalletAddress(pastedText); // Set the pasted text directly
+                  }}
+                  placeholder="Enter BEP20 wallet address (0x...)"
+                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-9 py-2 text-lg focus:outline-none border ${
+                    walletError 
+                      ? "border-red-500" 
+                      : walletAddress.trim() && !walletError 
+                        ? "border-green-500" 
+                        : "border-[#A2A4A9FF] dark:border-[#35353E]"
+                  }`}
                 />
-                <select
-                  value={payBank}
-                  onChange={(e) => {
-                    console.log("DEBUG: Selected bank:", e.target.value);
-                    console.log(
-                      "DEBUG: Available adminPaymentDetails:",
-                      adminPaymentDetails
-                    );
-                    const selectedPayment = adminPaymentDetails?.find(
-                      (payment: any) => payment.provider_name === e.target.value
-                    );
-                    console.log("DEBUG: Selected payment:", selectedPayment);
-                    setPayBank(e.target.value);
-                    setSelectedPaymentDetail(selectedPayment || null);
-                    // Clear selected payment details when changing bank
-                    setSelectedPaymentDetails([]);
-                  }}
-                  className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-9 py-2 text-lg  focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] appearance-none cursor-pointer relative"
-                  style={{
-                    backgroundImage:
-                      'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22/%3E%3C/svg%3E")',
-                    backgroundRepeat: "no-repeat",
-                    backgroundPosition: "right 8px center",
-                    backgroundSize: "12px auto",
-                    paddingRight: "40px",
-                  }}
-                >
-                  <option value="">
-                    {loading
-                      ? "Loading payment methods..."
-                      : adminPaymentDetails?.length === 0
-                        ? "No payment methods available"
-                        : "Select Payment Method"}
-                  </option>
-                  <option value="test">Test Payment Method</option>
-                  {adminPaymentDetails?.map((payment: any, index: number) => (
-                    <option key={index} value={payment.provider_name}>
-                      {payment.provider_name} - {payment.payment_method}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
-
-              {/* Registered Account Section */}
-              {payBank && (
-                <div className="mt-3">
-                  <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
-                    Registered Account
-                  </label>
-                  {enhancedFilteredUserPaymentDetails.length > 0 ? (
-                    <div className="relative">
-                      <img
-                        src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
-                        alt="account icon"
-                        className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 pointer-events-none z-10"
-                      />
-                      <select
-                        value={
-                          selectedPaymentDetails.length > 0
-                            ? selectedPaymentDetails[0].id
-                            : ""
-                        }
-                        onChange={(e) => {
-                          const selectedId = Number(e.target.value);
-                          const selectedDetail =
-                            enhancedFilteredUserPaymentDetails.find(
-                              (detail: UserPaymentDetail) =>
-                                detail.id === selectedId
-                            );
-                          if (selectedDetail) {
-                            setSelectedPaymentDetails([selectedDetail]);
-                          }
-                        }}
-                        className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#788099] rounded-2xl px-9 py-2 text-lg  focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] appearance-none cursor-pointer relative"
-                        style={{
-                          backgroundImage:
-                            'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22/%3E%3C/svg%3E")',
-                          backgroundRepeat: "no-repeat",
-                          backgroundPosition: "right 8px center",
-                          backgroundSize: "12px auto",
-                          paddingRight: "40px",
-                        }}
-                      >
-                        <option value="">
-                          {userPaymentLoading
-                            ? "Loading accounts..."
-                            : "Select Registered Account"}
-                        </option>
-                        {enhancedFilteredUserPaymentDetails.map(
-                          (detail: UserPaymentDetail) => (
-                            <option key={detail.id} value={detail.id}>
-                              {detail.payment_provider_name}{" "}
-                              {detail.account_number}
-                            </option>
-                          )
-                        )}
-                      </select>
                     </div>
-                  ) : (
-                    <p className="text-[#F79330] text-sm">
-                      <button
-                        type="button"
-                        onClick={() => setIsPaymentModalOpen(true)}
-                        className="hover:underline cursor-pointer"
-                      >
-                        Don't have an account? Register Now
-                      </button>
-                    </p>
-                  )}
-                </div>
+              {walletError && <p className="text-red-500 text-sm mt-1">{walletError}</p>}
+              {walletAddress.trim() && !walletError && (
+                <p className="text-green-500 text-sm mt-1">✅ Valid BEP20 address</p>
               )}
             </div>
           </div>
-        </div>
 
-        {/* Fee & Rate - Dynamic based on selected asset */}
-        {/* <div className="flex items-center rounded-2xl border border-[#39394a] bg-[#23232b] px-2 py-2 mb-3">
-            <div className="flex flex-col gap-2 flex-1">
-              <span className="flex items-center bg-[#F79330] text-white rounded-full px-5 py-1 text-sm font-medium w-fit">
-                <span className="w-2 h-2 bg-white rounded-full mr-2 inline-block"></span>
-                Network fee: $0
-              </span>
-
-              <span className="flex items-center bg-[#1D8751] text-white rounded-full px-5 py-1 text-sm font-medium w-fit">
-                <span className="w-2 h-2 bg-white rounded-full mr-2 inline-block"></span>
-                Commission: {selectedAsset && isSimpleCalculationAsset(selectedAsset) ? `$2 flat fee` : `${selectedAsset?.range_commissions?.[0]?.commission || 2}% of $${payAmount}`} = $
-                {commissionAmount}
+          {/* Disclaimer Banner */}
+          <div className="flex items-center rounded-2xl px-4 py-3 mt-6 bg-[#f8f9fa] dark:bg-[#1D1D23]">
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 bg-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                  <path
+                    d="M12 8v4m0 4h.01"
+                    stroke="white"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" />
+                </svg>
+              </div>
+              <span className="text-[#35353e] dark:text-[#788099] text-sm font-medium">
+                This is only an estimated price based on current market rates. The
+                final price will be confirmed when we receive the funds.
               </span>
             </div>
-            <img
-              src="https://res.cloudinary.com/pitz/image/upload/v1753424863/Screenshot_2025-07-25_092724_rjinec.png"
-              alt=""
-              style={{ cursor: "pointer" }}
-              onClick={() =>
-                onModeChange &&
-                onModeChange(mode === "deposit" ? "withdrawal" : "deposit")
-              }
-            />
-          </div>  */}
-
-        {/* Disclaimer Banner */}
-        <div className="flex items-center rounded-2xl px-4 py-3 mb-4 dark:bg-[#1D1D23]">
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 bg-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0">
-              <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                <path
-                  d="M12 8v4m0 4h.01"
-                  stroke="white"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" />
-              </svg>
-            </div>
-            <span className="text-[#35353e] dark:text-[#788099] text-sm font-medium">
-              This is only an estimated price based on current market rates. The
-              final price will be confirmed when we receive the funds.
-            </span>
           </div>
         </div>
 
@@ -3195,8 +2472,8 @@ export default function WithdrawalForm({
             >
               {isSubmitting ? (
                 <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#A2A4A9FF] dark:border-[#35353E]"></div>
-                  <span>Getting Withdrawal Addresses...</span>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <span className="text-white">Getting Withdrawal Addresses...</span>
                 </div>
               ) : isTransactionSubmitted ? (
                 <div className="flex items-center gap-2">
@@ -3207,22 +2484,13 @@ export default function WithdrawalForm({
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
+                      className="text-white"
                     />
                   </svg>
-                  <span>Withdrawal Addresses Generated</span>
+                  <span className="text-white">Withdrawal Addresses Generated</span>
                 </div>
               ) : (
-                <span className="flex items-center justify-center">
-                  <img
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
-                    alt=""
-                  />
-                  <img
-                    className="mt-2"
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                    alt=""
-                  />
-                </span>
+                <span className="text-white">Withdrawal</span>
               )}
             </button>
           )}
@@ -3230,7 +2498,7 @@ export default function WithdrawalForm({
       </div>
 
       {/* Wallet Address Section - shown after transaction submission */}
-      {isTransactionSubmitted && (
+      {false && isTransactionSubmitted && (
         <div
           key={`wallet-section-${forceUpdate}`}
           className="mb-6 flex flex-col gap-3 max-w-4xl mx-auto w-full px-2"
@@ -3458,50 +2726,19 @@ export default function WithdrawalForm({
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
               }`}
               onClick={() => {
-                // Navigate to exchanging page with websocket URL
-                if (onExchange) {
-                  const transactionData = {
-                    type: "withdrawal" as const,
-                    amount: payAmount,
-                    asset: {
-                      ...selectedAsset,
-                      icon:
-                        selectedAsset.image_url ||
-                        selectedAsset.asset_image ||
-                        selectedAsset.icon_url ||
-                        selectedAsset.image,
-                    },
-                    paymentDetail: selectedPaymentDetail,
-                    walletAddress: withdrawalAddress,
-                    network: selectedNetwork,
-                    transactionId: transactionId,
-                    withdrawalAddress: withdrawalAddress,
-                    message: responseMessage,
-                    websocketUrl: websocketUrl,
-                    paymentDetails: selectedPaymentDetails,
-                  };
-                  onExchange(transactionData);
-                }
+                // Show success modal instead of navigating to exchanging page
+                setSuccessAmount(payAmount);
+                setIsSuccessModalOpen(true);
               }}
               disabled={isSubmitting || isInfoModalOpen || getAmount > 15000}
             >
               {isSubmitting ? (
                 <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#A2A4A9FF] dark:border-[#35353E]"></div>
-                  <span>Submitting...</span>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <span className="text-white">Submitting...</span>
                 </div>
               ) : (
-                <span className="flex items-center justify-center">
-                  <img
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
-                    alt=""
-                  />
-                  <img
-                    className="mt-2"
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                    alt=""
-                  />
-                </span>
+                <span className="text-white">Complete Withdrawal</span>
               )}
             </button>
           </div>
@@ -3524,16 +2761,6 @@ export default function WithdrawalForm({
         </div>
       )}
 
-      {/* PaymentMethodsModal */}
-      <PaymentMethodsModal
-        open={isPaymentModalOpen}
-        onClose={() => setIsPaymentModalOpen(false)}
-        onAdd={() => {
-          // Refresh user payment details after adding (force refresh)
-          dispatch(fetchUserPaymentDetails(true));
-          showToast.success("Payment method added successfully!");
-        }}
-      />
 
       {/* InfoModal */}
       <InfoModal
@@ -3546,6 +2773,27 @@ export default function WithdrawalForm({
           // Handle contact us action - you can customize this
           window.open("https://wa.me/your-whatsapp-number", "_blank");
           setIsInfoModalOpen(false);
+        }}
+      />
+
+      {/* Success Modal */}
+      <SuccessModal
+        isOpen={isSuccessModalOpen}
+        onClose={() => {
+          setIsSuccessModalOpen(false);
+          // Reset form after success
+          setPayAmount(100);
+          setPayAmountInput("100");
+          setWalletAddress("");
+          setIsTransactionSubmitted(false);
+          // Reload the page after closing the success modal
+          window.location.reload();
+        }}
+        amount={successAmount}
+        asset={selectedAsset}
+        onNavigateToP2P={() => {
+          // Navigate to P2P page
+          router.push('/dashboard/p2p');
         }}
       />
     </div>

@@ -1,17 +1,21 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { P2PDeposit, CreateP2PDepositRequest } from "../types";
+import { P2PDeposit, CreateP2PDepositRequest, DepositAddress } from "../types";
 import * as api from "../api";
 
 interface DepositState {
   deposits: P2PDeposit[];
+  depositAddress: DepositAddress | null;
   loading: boolean;
+  addressLoading: boolean;
   error: string | null;
   totalCount: number;
 }
 
 const initialState: DepositState = {
   deposits: [],
+  depositAddress: null,
   loading: false,
+  addressLoading: false,
   error: null,
   totalCount: 0,
 };
@@ -44,6 +48,14 @@ export const updateDeposit = createAsyncThunk(
   "deposits/updateDeposit",
   async ({ id, data }: { id: string; data: Partial<P2PDeposit> }) => {
     const response = await api.updateDeposit(id, data);
+    return response;
+  }
+);
+
+export const fetchDepositAddress = createAsyncThunk(
+  "deposits/fetchDepositAddress",
+  async ({ asset, network }: { asset: string; network: string }) => {
+    const response = await api.getDepositAddress(asset, network);
     return response;
   }
 );
@@ -96,6 +108,19 @@ const depositSlice = createSlice({
       .addCase(updateDeposit.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || "Failed to update deposit";
+      })
+      // Fetch Deposit Address
+      .addCase(fetchDepositAddress.pending, (state) => {
+        state.addressLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchDepositAddress.fulfilled, (state, action) => {
+        state.addressLoading = false;
+        state.depositAddress = action.payload.data;
+      })
+      .addCase(fetchDepositAddress.rejected, (state, action) => {
+        state.addressLoading = false;
+        state.error = action.error.message || "Failed to fetch deposit address";
       });
   },
 });
