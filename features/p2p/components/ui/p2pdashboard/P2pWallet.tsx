@@ -19,16 +19,16 @@ interface Wallet {
 const formatBalance = (value: number, isUsdt: boolean = false) => {
   if (isUsdt) {
     return new Intl.NumberFormat("en-US", {
-      minimumFractionDigits: 8,
-      maximumFractionDigits: 8,
+      minimumFractionDigits: 12,
+      maximumFractionDigits: 12,
     }).format(value);
   }
 
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    minimumFractionDigits: 8,
-    maximumFractionDigits: 8,
+    minimumFractionDigits: 12,
+    maximumFractionDigits: 12,
   }).format(value);
 };
 
@@ -98,7 +98,7 @@ const P2pWallet = ({
                   className={`text-base font-semibold dark:text-[${tokens.colors.dark.textBody}] text-gray-600 opacity-80 flex items-center`}
                 >
                   <span className="mx-1 opacity-50 text-lg">≈</span>
-                  {loading ? "..." : formatBalance(usdValue ?? 0)}
+                  {`${formatBalance(balance ?? 0, true)} USDT`}
                 </span>
               </div>
             </div>

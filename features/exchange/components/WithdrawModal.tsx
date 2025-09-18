@@ -20,7 +20,7 @@ interface WithdrawalModalProps {
   onClose: () => void;
 }
 
-const CRYPTO_ASSETS = ['USDT Tether', 'USDC', 'BTC', 'ETH', 'BNB', 'DOGE', 'ADA', 'SOL', 'XRP', 'USD'];
+const CRYPTO_ASSETS = ['USDT Tether', 'BTC', 'ETH', 'BNB', 'DOGE', 'ADA', 'SOL', 'XRP', 'USD'];
 
 const WithdrawalModal: React.FC<WithdrawalModalProps> = ({ asset, assetType, onClose }) => {
   const dispatch = useDispatch<AppDispatch>()

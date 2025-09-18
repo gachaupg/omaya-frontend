@@ -111,12 +111,28 @@ export default function DepositForm({
       network_id: "BSC",
       network_type: "BSC",
       network: "BSC",
-      name: "Binance Smart Chain BEP20"
+      name: "Binance Smart Chain BEP20",
+      icon: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+      isDefault: true
     };
   });
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
   const [walletAddress, setWalletAddress] = useState("");
   const [walletError, setWalletError] = useState<string | null>(null);
+  const [isNetworkDropdownOpen, setIsNetworkDropdownOpen] = useState(false);
+  
+  // Network options - only Binance Smart Chain BEP20
+  const availableNetworks = [
+    {
+      network_id: "BSC",
+      network_type: "BSC", 
+      network: "BSC",
+      name: "Binance Smart Chain BEP20",
+      icon: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+      isDefault: true
+    }
+  ];
+  
   const [forceUpdate, setForceUpdate] = useState(0);
   const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -176,6 +192,7 @@ export default function DepositForm({
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
   const [assetSearchTerm, setAssetSearchTerm] = useState("");
   const assetDropdownRef = useRef<HTMLDivElement>(null);
+  const networkDropdownRef = useRef<HTMLDivElement>(null);
 
   // Estimate calculation state
   const [estimate, setEstimate] = useState<any>(null);
@@ -695,7 +712,7 @@ export default function DepositForm({
               }
             }
             
-            // Set fallback assets so the form can still work - only USDT Tether and USDC
+            // Set fallback assets so the form can still work - only USDT Tether
             const fallbackAssets = [
               {
                 ticker: "USDT",
@@ -707,17 +724,6 @@ export default function DepositForm({
                 fee_rate: "2",
                 image_url: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
                 asset_id: "usdt-tether-bsc"
-              },
-              {
-                ticker: "USDC",
-                symbol: "USDC", 
-                name: "USD Coin",
-                network: "BSC",
-                range_commissions: [{ commission: "2" }],
-                commission: "2",
-                fee_rate: "2",
-                image_url: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
-                asset_id: "usdc-bsc"
               }
             ];
             
@@ -777,7 +783,9 @@ export default function DepositForm({
         network_id: "BSC",
         network_type: "BSC",
         network: "BSC",
-        name: "Binance Smart Chain BEP20"
+        name: "Binance Smart Chain BEP20",
+        icon: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+        isDefault: true
       });
     }
   }, [swapAssets, selectedAsset]);
@@ -791,6 +799,12 @@ export default function DepositForm({
       ) {
         setIsAssetDropdownOpen(false);
       }
+      if (
+        networkDropdownRef.current &&
+        !networkDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsNetworkDropdownOpen(false);
+      }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -799,14 +813,14 @@ export default function DepositForm({
     };
   }, []);
 
-  // Check if asset is USDT or USDC (should use simple calculation)
+  // Check if asset is USDT (should use simple calculation)
   const isSimpleCalculationAsset = (asset: any) => {
     if (!asset) return false;
     const ticker = (asset.ticker || asset.symbol || "").toLowerCase();
-    return ticker === "usdt" || ticker === "usdc";
+    return ticker === "usdt";
   };
 
-  // Fetch estimate for non-USDT/USDC assets - triggers immediately on asset or amount change
+  // Fetch estimate for non-USDT assets - triggers immediately on asset or amount change
   useEffect(() => {
     console.log("Estimate useEffect triggered:", {
       selectedAsset: selectedAsset?.ticker,
@@ -898,13 +912,13 @@ export default function DepositForm({
           setEstimateLoading(false);
         });
     } else {
-      // Clear estimate for USDT/USDC or when conditions not met
+      // Clear estimate for USDT or when conditions not met
       setEstimate(null);
       setEstimateError(null);
     }
   }, [selectedAsset, payAmount, isCalculatingFromPay]);
 
-  // Fetch reverse estimate for non-USDT/USDC assets when calculating from receive amount
+  // Fetch reverse estimate for non-USDT assets when calculating from receive amount
   useEffect(() => {
     console.log("Reverse estimate useEffect triggered:", {
       selectedAsset: selectedAsset?.ticker,
@@ -1052,9 +1066,9 @@ export default function DepositForm({
              symbol.includes(searchTerm);
     }) || [];
 
-  // Filter to show ONLY USDT Tether and USDC - exactly these two assets
+  // Filter to show ONLY USDT Tether - exactly this asset
   const sortedSwapAssets = (() => {
-    // Always return exactly these two assets - no API filtering needed
+    // Always return exactly this asset - no API filtering needed
     const exactAssets = [
       {
         ticker: "USDT",
@@ -1066,17 +1080,6 @@ export default function DepositForm({
         fee_rate: "2",
         image_url: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
         asset_id: "usdt-tether-bsc"
-      },
-      {
-        ticker: "USDC",
-        symbol: "USDC",
-        name: "USD Coin",
-        network: "BSC",
-        range_commissions: [{ commission: "2" }],
-        commission: "2",
-        fee_rate: "2",
-        image_url: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
-        asset_id: "usdc-bsc"
       }
     ];
 
@@ -1141,7 +1144,7 @@ export default function DepositForm({
       return;
     }
 
-    // For simple calculation assets (USDT/USDC), calculate immediately
+    // For simple calculation assets (USDT), calculate immediately
       if (isSimpleCalculationAsset(selectedAsset)) {
         let commissionRate = 2; // Default fallback
         
@@ -1215,7 +1218,7 @@ export default function DepositForm({
         if (fromPay) {
           // Forward calculation: from pay amount to receive amount
           if (isSimpleCalculationAsset(selectedAsset)) {
-            // Simple calculation for USDT/USDC
+            // Simple calculation for USDT
             let commissionRate = 2; // Default fallback
             
             // Safely access commission rate with multiple fallback options
@@ -1246,7 +1249,7 @@ export default function DepositForm({
             setGetAmountInput(calculatedGetAmount.toString());
             setReceiveAmountError(null);
           } else {
-            // For non-USDT/USDC assets, we need to fetch estimate
+            // For non-USDT assets, we need to fetch estimate
             // The estimate fetching is handled in the useEffect above
             if (estimate && estimate.estimated_amount) {
               setGetAmount(estimate.estimated_amount);
@@ -1258,7 +1261,7 @@ export default function DepositForm({
               setIsCalculatingReceive(true);
               // Don't update amounts yet, wait for estimate
             } else {
-              // For non-USDT/USDC assets, only show loading until API estimate is available
+              // For non-USDT assets, only show loading until API estimate is available
               // Don't do manual calculations - wait for API
               setIsCalculating(true);
               setIsCalculatingReceive(true);
@@ -1267,7 +1270,7 @@ export default function DepositForm({
         } else {
           // Reverse calculation: from receive amount to pay amount
           if (isSimpleCalculationAsset(selectedAsset)) {
-            // Simple reverse calculation for USDT/USDC
+            // Simple reverse calculation for USDT
             let commissionRate = 2; // Default fallback
             
             // Safely access commission rate with multiple fallback options
@@ -1298,7 +1301,7 @@ export default function DepositForm({
             setPayAmountInput(calculatedPayAmount.toString());
             setReceiveAmountError(null);
           } else {
-            // For non-USDT/USDC assets, we need to fetch estimate for reverse calculation
+            // For non-USDT assets, we need to fetch estimate for reverse calculation
             // Use the API to find the pay amount that gives us the desired receive amount
             setEstimateLoading(true);
             setEstimateError(null);
@@ -1472,7 +1475,7 @@ export default function DepositForm({
   /**
    * Handles the two-step deposit process:
    * 
-   * For Simple Assets (USDT/USDC):
+   * For Simple Assets (USDT):
    * - Single API call flow
    * - Uses original response data
    * 
@@ -1504,7 +1507,7 @@ export default function DepositForm({
       return;
     }
 
-    // Check if this is a simple calculation asset (USDT or USDC)
+    // Check if this is a simple calculation asset (USDT)
     const isSimpleAsset = selectedAsset && isSimpleCalculationAsset(selectedAsset);
 
     setIsSubmitting(true);
@@ -1513,7 +1516,7 @@ export default function DepositForm({
       let finalResponse = apiResponse;
       let updateResponse;
       
-      // For simple assets (USDT/USDC), proceed as before
+      // For simple assets (USDT), proceed as before
       if (isSimpleAsset) {
         // Only update deposit address if one is provided
         if (walletAddress.trim()) {
@@ -2009,7 +2012,7 @@ export default function DepositForm({
                               {(selectedAsset.ticker || selectedAsset.symbol || selectedAsset.name || "USDT").toUpperCase()}
                             </span>
                             <span className="ml-2 bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                              {selectedAsset.network === "BSC" ? "Binance Smart Chain BEP20" : (selectedAsset.network || "Unknown")}
+                              BSC
                             </span>
                           </>
                         ) : (
@@ -2048,15 +2051,17 @@ export default function DepositForm({
                                 onClick={() => {
                                   setSelectedAsset(asset);
                                   
-                                  // Force BSC network for USDT and USDC assets
+                                  // Force BSC network for USDT assets
                                   const ticker = (asset.ticker || asset.symbol || "").toLowerCase();
-                                  const isUsdtOrUsdc = ticker === "usdt" || ticker === "usdc";
+                                  const isUsdt = ticker === "usdt";
                                   
                                   setSelectedNetwork({
-                                    network_id: isUsdtOrUsdc ? "BSC" : asset.network,
-                                    network_type: isUsdtOrUsdc ? "BSC" : asset.network,
-                                    network: isUsdtOrUsdc ? "BSC" : asset.network,
-                                    name: isUsdtOrUsdc ? "Binance Smart Chain BEP20" : (asset.network === "BSC" ? "Binance Smart Chain BEP20" : asset.network)
+                                    network_id: isUsdt ? "BSC" : asset.network,
+                                    network_type: isUsdt ? "BSC" : asset.network,
+                                    network: isUsdt ? "BSC" : asset.network,
+                                    name: isUsdt ? "Binance Smart Chain BEP20" : asset.network,
+                                    icon: isUsdt ? "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png" : "https://cryptologos.cc/logos/ethereum-eth-logo.png",
+                                    isDefault: isUsdt
                                   });
                                   setIsAssetDropdownOpen(false);
                                   setAssetSearchTerm("");
@@ -2074,7 +2079,7 @@ export default function DepositForm({
                                   <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
                                     {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
                                     <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                                      {asset.network === "BSC" ? "Binance Smart Chain BEP20" : (asset.network || "Unknown")}
+                                      BSC
                                     </span>
                                   </div>
                                   <div className="text-[#35353e] dark:text-[#788099] text-sm">
@@ -2102,17 +2107,76 @@ export default function DepositForm({
                   <label className="block text-[20px] text-[#7e7e8f] dark:text-[#ffffff] mb-3 font-semibold">
                     Network
                   </label>
-                  <div className="relative">
-                    <div className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-6 py-3 text-base focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer">
+                  <div className="relative" ref={networkDropdownRef}>
+                    <div 
+                      className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-6 py-3 text-base focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer hover:border-[#1D8751] dark:hover:border-[#1D8751] transition-colors"
+                      onClick={() => setIsNetworkDropdownOpen(!isNetworkDropdownOpen)}
+                    >
                       <div className="flex items-center gap-3">
+                        <img
+                          src={selectedNetwork?.icon || availableNetworks[0].icon}
+                          alt="network icon"
+                          className="w-6 h-6"
+                        />
                         <span className="text-[#35353e] dark:text-[#788099] font-medium">
                           {selectedNetwork?.name || "Binance Smart Chain BEP20"}
                         </span>
                       </div>
-                      <svg className="w-5 h-5 text-[#7e7e8f]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg 
+                        className={`w-5 h-5 text-[#7e7e8f] transition-transform ${isNetworkDropdownOpen ? 'rotate-180' : ''}`} 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </div>
+
+                    {/* Network Dropdown */}
+                    {isNetworkDropdownOpen && (
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg z-50 max-h-60 overflow-y-auto">
+                        <div className="p-2">
+                          {availableNetworks.map((network, index) => (
+                            <div
+                              key={`${network.network_id}-${index}`}
+                              className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer rounded-xl transition-colors ${
+                                selectedNetwork?.network_id === network.network_id 
+                                  ? 'bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751]/30' 
+                                  : ''
+                              }`}
+                              onClick={() => {
+                                setSelectedNetwork(network);
+                                setIsNetworkDropdownOpen(false);
+                              }}
+                            >
+                              <img
+                                src={network.icon}
+                                alt={`${network.name} icon`}
+                                className="w-6 h-6"
+                              />
+                              <div className="flex-1">
+                                <div className="font-medium text-[#35353e] dark:text-[#ffffff]">
+                                  {network.name}
+                                </div>
+                                <div className="text-sm text-[#7e7e8f] dark:text-[#788099]">
+                                  {network.network_id}
+                                </div>
+                              </div>
+                              {network.isDefault && (
+                                <span className="text-xs bg-[#1D8751] text-white px-2 py-1 rounded-full">
+                                  Default
+                                </span>
+                              )}
+                              {selectedNetwork?.network_id === network.network_id && (
+                                <svg className="w-5 h-5 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

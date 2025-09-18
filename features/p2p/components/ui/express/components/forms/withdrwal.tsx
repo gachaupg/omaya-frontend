@@ -24,8 +24,10 @@ import {
   P2PWithdrawalRequest,
   P2PWithdrawalResponse,
 } from "../../types";
+import { verifyWithdrawal, resendWithdrawalOTP } from "../../../../../slices/withdrawSlice";
 import InfoModal from "./info";
 import { debugAssetFetching } from "@/lib/utils/debugAssets";
+import OTPModal from "./OTPModal";
 
 // Success Modal Component
 const SuccessModal = ({
@@ -44,7 +46,7 @@ const SuccessModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-[#2A2A2A] rounded-3xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl">
         {/* Success Icon */}
         <div className="flex justify-center mb-6">
@@ -261,10 +263,35 @@ export default function WithdrawalForm({
   const [payAmountInput, setPayAmountInput] = useState("100");
   const [getAmountInput, setGetAmountInput] = useState("0");
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
-  const [selectedNetwork, setSelectedNetwork] = useState<any>(null);
+  const [selectedNetwork, setSelectedNetwork] = useState<any>(() => {
+    // Initialize with BSC network immediately
+    return {
+      network_id: "BSC",
+      network_type: "BSC",
+      network: "BSC",
+      name: "Binance Smart Chain BEP20",
+      icon: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+      isDefault: true
+    };
+  });
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
   const [walletAddress, setWalletAddress] = useState("");
   const [walletError, setWalletError] = useState<string | null>(null);
+  const [isNetworkDropdownOpen, setIsNetworkDropdownOpen] = useState(false);
+  
+  // Network options - only Binance Smart Chain BEP20
+  const availableNetworks = [
+    {
+      network_id: "BSC",
+      network_type: "BSC", 
+      network: "BSC",
+      name: "Binance Smart Chain BEP20",
+      icon: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+      isDefault: true
+    }
+  ];
+  
+  const networkDropdownRef = useRef<HTMLDivElement>(null);
   const [forceUpdate, setForceUpdate] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -320,6 +347,12 @@ export default function WithdrawalForm({
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [successAmount, setSuccessAmount] = useState(0);
 
+  // Add OTP Modal state
+  const [isOTPModalOpen, setIsOTPModalOpen] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState('');
+  const [pendingWithdrawalData, setPendingWithdrawalData] = useState<any>(null);
+
   // Add validation state for minimum receive amount
   const [receiveAmountError, setReceiveAmountError] = useState<string | null>(
     null
@@ -327,6 +360,61 @@ export default function WithdrawalForm({
 
   // Add calculation error state for display below "You Send" input
   const [calculationError, setCalculationError] = useState<string | null>(null);
+
+  // OTP Modal Functions
+  const handleOTPVerify = async (otp: string) => {
+    setOtpLoading(true);
+    setOtpError('');
+    
+    try {
+      if (!pendingWithdrawalData?.withdrawal_id) {
+        throw new Error('Withdrawal ID not found');
+      }
+
+      // Use the real API to verify OTP
+      const result = await dispatch(verifyWithdrawal({
+        withdrawal_id: pendingWithdrawalData.withdrawal_id,
+        otp: otp
+      })).unwrap();
+
+      // OTP verified successfully, show success modal
+      setIsOTPModalOpen(false);
+      setIsSuccessModalOpen(true);
+      setOtpLoading(false);
+      showToast.success('Withdrawal verified successfully!');
+      
+    } catch (error: any) {
+      setOtpError(error.message || 'Failed to verify OTP. Please try again.');
+      setOtpLoading(false);
+      showToast.error('OTP verification failed');
+    }
+  };
+
+  const handleOTPResend = async () => {
+    setOtpError('');
+    
+    try {
+      if (!pendingWithdrawalData?.withdrawal_id) {
+        throw new Error('Withdrawal ID not found');
+      }
+
+      // Use the real API to resend OTP
+      await dispatch(resendWithdrawalOTP({
+        withdrawal_id: pendingWithdrawalData.withdrawal_id
+      })).unwrap();
+
+      showToast.success('New OTP sent successfully');
+    } catch (error: any) {
+      setOtpError('Failed to resend OTP. Please try again.');
+      showToast.error('Failed to resend OTP');
+    }
+  };
+
+  const handleOTPClose = () => {
+    setIsOTPModalOpen(false);
+    setOtpError('');
+    setPendingWithdrawalData(null);
+  };
 
   // Add API validation error state for display below "You will receive" input
   const [apiValidationError, setApiValidationError] = useState<string | null>(
@@ -349,6 +437,23 @@ export default function WithdrawalForm({
     qrCodeUrl,
     websocketUrl,
   ]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        networkDropdownRef.current &&
+        !networkDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsNetworkDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
 
   useEffect(() => {
@@ -587,11 +692,11 @@ export default function WithdrawalForm({
     };
   }, []);
 
-  // Check if asset is USDT or USDC (should use simple calculation)
+  // Check if asset is USDT (should use simple calculation)
   const isSimpleCalculationAsset = (asset: any) => {
     if (!asset) return false;
     const ticker = (asset.ticker || asset.symbol || "").toLowerCase();
-    return ticker === "usdt" || ticker === "usdc";
+    return ticker === "usdt";
   };
 
   // Helper function to check if cache entry is still valid
@@ -684,14 +789,14 @@ export default function WithdrawalForm({
   const getDefaultAmount = (asset: any) => {
     if (!asset) return 100;
     const ticker = (asset.ticker || asset.symbol || "").toLowerCase();
-    return ticker === "usdt" || ticker === "usdc" ? 100 : 0.001;
+    return ticker === "usdt" ? 100 : 0.001;
   };
 
   // Get minimum amount based on asset type
   const getMinimumAmount = (asset: any) => {
     if (!asset) return 10; // Default minimum
     const ticker = (asset.ticker || asset.symbol || "").toLowerCase();
-    return ticker === "usdt" || ticker === "usdc" ? 2 : 10; // 2 for USDT/USDC, 10 for others
+    return ticker === "usdt" ? 2 : 10; // 2 for USDT, 10 for others
   };
 
   // Validate receive amount - allow any amount for now
@@ -700,7 +805,7 @@ export default function WithdrawalForm({
     return null; // No error
   };
 
-  // Fetch estimate for non-USDT/USDC assets with debouncing for better performance
+  // Fetch estimate for non-USDT assets with debouncing for better performance
   useEffect(() => {
     // Clear any existing estimate timeout
     if (estimateTimeout) {
@@ -1388,17 +1493,6 @@ export default function WithdrawalForm({
       fee_rate: "2",
       image_url: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
       asset_id: "usdt-tether-bsc"
-    },
-    {
-      ticker: "USDC",
-      symbol: "USDC",
-      name: "USD Coin",
-      network: "BSC",
-      range_commissions: [{ commission: "2" }],
-      commission: "2",
-      fee_rate: "2",
-      image_url: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
-      asset_id: "usdc-bsc"
     }
   ];
 
@@ -1415,7 +1509,7 @@ export default function WithdrawalForm({
              "BINANCE SMART CHAIN".includes(searchTerm);
     }) : exactAssets;
 
-  // Sort assets: USDT Tether first, then USDC
+  // Sort assets: USDT Tether first
   const sortedSwapAssets = [...filteredSwapAssets].sort((a, b) => {
     // USDT always comes first
     if (a.ticker === "USDT" && b.ticker !== "USDT") {
@@ -1430,11 +1524,11 @@ export default function WithdrawalForm({
   // Calculate fees and amounts - Network fee is always 0 for BEP20
   const networkFee = 0;
 
-  // Use flat $2 fee for USDT/USDC, percentage for other assets
+  // Use flat $2 fee for USDT, percentage for other assets
   let commissionAmount = 0;
   if (selectedAsset && isSimpleCalculationAsset(selectedAsset)) {
-    // For USDT/USDC, only apply $2 fee if amount is $2 or more
-    commissionAmount = payAmount >= 2 ? 2 : 0; // Flat $2 fee for USDT/USDC (only if amount >= $2)
+    // For USDT, only apply $2 fee if amount is $2 or more
+    commissionAmount = payAmount >= 2 ? 2 : 0; // Flat $2 fee for USDT (only if amount >= $2)
   } else {
     // Use default commission rate for other assets
     const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
@@ -1454,7 +1548,7 @@ export default function WithdrawalForm({
 
     // For simple calculations, do them immediately without any delays
     if (fromPay && selectedAsset && isSimpleCalculationAsset(selectedAsset)) {
-      // Immediate calculation for USDT/USDC - no debouncing at all
+      // Immediate calculation for USDT - no debouncing at all
       let calculatedGetAmount;
       if (fromAmount < 2) {
         calculatedGetAmount = fromAmount;
@@ -1585,7 +1679,7 @@ export default function WithdrawalForm({
               setIsCalculatingReceive(true);
               // Don't update amounts yet, wait for estimate
             } else {
-              // For non-USDT/USDC assets, only show loading until API estimate is available
+              // For non-USDT assets, only show loading until API estimate is available
               // Don't do manual calculations - wait for API
               setIsCalculating(true);
               setIsCalculatingReceive(true);
@@ -1610,7 +1704,7 @@ export default function WithdrawalForm({
             setIsCalculating(false);
             setIsCalculatingReceive(false);
           } else {
-            // For non-USDT/USDC assets, we need to fetch estimate for reverse calculation
+            // For non-USDT assets, we need to fetch estimate for reverse calculation
             // This is more complex as we need to find the pay amount that gives us the desired receive amount
             // The reverse calculation useEffect will handle the API call
             // Just set loading states here - the useEffect will clear them
@@ -1786,7 +1880,7 @@ export default function WithdrawalForm({
         let message = "";
 
         if (isSimpleAsset) {
-          // Direct transfer response for USDT/USDC
+          // Direct transfer response for USDT
           if (responseData.type === "direct_transfer") {
             withdrawalAddress = responseData.withdrawal_address || "";
             websocketUrl = responseData.websocket_url || "";
@@ -1836,9 +1930,17 @@ export default function WithdrawalForm({
         );
         setResponseMessage(message);
 
-        // Show success modal instead of going to exchanging page
+        // Show OTP modal first, then success modal after verification
         setSuccessAmount(payAmount);
-        setIsSuccessModalOpen(true);
+        setPendingWithdrawalData({
+          amount: payAmount,
+          asset: selectedAsset,
+          withdrawalAddress,
+          payoutAddress,
+          transactionId,
+          withdrawal_id: responseData.withdrawal_id || responseData.id
+        });
+        setIsOTPModalOpen(true);
 
         console.log("Withdrawal addresses generated successfully:", {
           withdrawalAddress,
@@ -1949,9 +2051,15 @@ export default function WithdrawalForm({
         const p2pResponse = withdrawalResponse as any;
         const responseData = p2pResponse.data || p2pResponse;
 
-        // Show success modal instead of calling onExchange
+        // Show OTP modal first, then success modal after verification
         setSuccessAmount(payAmount);
-        setIsSuccessModalOpen(true);
+        setPendingWithdrawalData({
+          amount: payAmount,
+          asset: selectedAsset,
+          response: responseData,
+          withdrawal_id: responseData.withdrawal_id || responseData.id
+        });
+        setIsOTPModalOpen(true);
       } else {
         // Handle deposit submission
         const depositPayload = new FormData();
@@ -2196,15 +2304,14 @@ export default function WithdrawalForm({
                               onClick={() => {
                                 console.log("Asset selected:", asset);
                                 
-                                // Force BSC network and proper names for USDT Tether and USDC
+                                // Force BSC network and proper names for USDT Tether
                                 const ticker = (asset.ticker || asset.symbol || "").toLowerCase();
                                 const isUsdtTether = ticker === "usdt";
-                                const isUsdc = ticker === "usdc";
                                 
                                 const updatedAsset = {
                                   ...asset,
                                   network: "BSC", // Force BSC network for both
-                                  name: isUsdtTether ? "Tether USD" : isUsdc ? "USD Coin" : asset.name
+                                  name: isUsdtTether ? "Tether USD" : asset.name
                                 };
                                 
                                 setSelectedAsset(updatedAsset);
@@ -2282,21 +2389,76 @@ export default function WithdrawalForm({
               <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                 Network
               </label>
-              <div className="relative">
-                <div className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between">
+              <div className="relative" ref={networkDropdownRef}>
+                <div 
+                  className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer hover:border-[#1D8751] dark:hover:border-[#1D8751] transition-colors"
+                  onClick={() => setIsNetworkDropdownOpen(!isNetworkDropdownOpen)}
+                >
                   <div className="flex items-center gap-3">
                     <img
-                      src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                      src={selectedNetwork?.icon || availableNetworks[0].icon}
                       alt="network icon"
                       className="w-6 h-6"
                     />
                     <span className="text-[#35353e] dark:text-[#788099]">
-                      {selectedNetwork?.network_id || selectedNetwork?.network_type || selectedAsset?.network 
-                        ? "Binance Smart Chain BEP20" 
-                        : "Binance Smart Chain BEP20"}
+                      {selectedNetwork?.name || "Binance Smart Chain BEP20"}
                     </span>
                   </div>
+                  <svg 
+                    className={`w-5 h-5 text-[#7e7e8f] transition-transform ${isNetworkDropdownOpen ? 'rotate-180' : ''}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
                 </div>
+
+                {/* Network Dropdown */}
+                {isNetworkDropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg z-50 max-h-60 overflow-y-auto">
+                    <div className="p-2">
+                      {availableNetworks.map((network, index) => (
+                        <div
+                          key={`${network.network_id}-${index}`}
+                          className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer rounded-xl transition-colors ${
+                            selectedNetwork?.network_id === network.network_id 
+                              ? 'bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751]/30' 
+                              : ''
+                          }`}
+                          onClick={() => {
+                            setSelectedNetwork(network);
+                            setIsNetworkDropdownOpen(false);
+                          }}
+                        >
+                          <img
+                            src={network.icon}
+                            alt={`${network.name} icon`}
+                            className="w-6 h-6"
+                          />
+                          <div className="flex-1">
+                            <div className="font-medium text-[#35353e] dark:text-[#ffffff]">
+                              {network.name}
+                            </div>
+                            <div className="text-sm text-[#7e7e8f] dark:text-[#788099]">
+                              {network.network_id}
+                            </div>
+                          </div>
+                          {network.isDefault && (
+                            <span className="text-xs bg-[#1D8751] text-white px-2 py-1 rounded-full">
+                              Default
+                            </span>
+                          )}
+                          {selectedNetwork?.network_id === network.network_id && (
+                            <svg className="w-5 h-5 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -2726,9 +2888,14 @@ export default function WithdrawalForm({
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
               }`}
               onClick={() => {
-                // Show success modal instead of navigating to exchanging page
+                // Show OTP modal first, then success modal after verification
                 setSuccessAmount(payAmount);
-                setIsSuccessModalOpen(true);
+                setPendingWithdrawalData({
+                  amount: payAmount,
+                  asset: selectedAsset,
+                  withdrawal_id: `demo-${Date.now()}` // Demo ID for testing UI flow
+                });
+                setIsOTPModalOpen(true);
               }}
               disabled={isSubmitting || isInfoModalOpen || getAmount > 15000}
             >
@@ -2795,6 +2962,16 @@ export default function WithdrawalForm({
           // Navigate to P2P page
           router.push('/dashboard/p2p');
         }}
+      />
+
+      {/* OTP Modal */}
+      <OTPModal
+        isOpen={isOTPModalOpen}
+        onClose={handleOTPClose}
+        onVerify={handleOTPVerify}
+        onResend={handleOTPResend}
+        isLoading={otpLoading}
+        error={otpError}
       />
     </div>
   );

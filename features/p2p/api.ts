@@ -117,6 +117,18 @@ export const verifyWithdrawal = async (data: {
   });
 };
 
+export const resendWithdrawalOTP = async (data: {
+  withdrawal_id: string;
+}): Promise<P2PResponse> => {
+  return withRetry(async () => {
+    const response = await post<P2PResponse>(API_CONFIG.P2P.WITHDRAWAL_OTP, {
+      withdrawal_id: data.withdrawal_id,
+      action: "resend"
+    });
+    return response.data;
+  });
+};
+
 // P2P Ads API calls
 export const getBuyAds = async (): Promise<{
   results: P2PAd[];

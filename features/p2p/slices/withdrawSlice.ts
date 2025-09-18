@@ -41,6 +41,14 @@ export const verifyWithdrawal = createAsyncThunk(
   }
 );
 
+export const resendWithdrawalOTP = createAsyncThunk(
+  "withdrawals/resendWithdrawalOTP",
+  async (data: { withdrawal_id: string }) => {
+    const response = await api.resendWithdrawalOTP(data);
+    return response;
+  }
+);
+
 const withdrawSlice = createSlice({
   name: "withdrawals",
   initialState,
@@ -93,6 +101,19 @@ const withdrawSlice = createSlice({
       .addCase(verifyWithdrawal.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || "Failed to verify withdrawal";
+      })
+      // Resend Withdrawal OTP
+      .addCase(resendWithdrawalOTP.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(resendWithdrawalOTP.fulfilled, (state, action) => {
+        state.loading = false;
+        // Handle successful OTP resend
+      })
+      .addCase(resendWithdrawalOTP.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Failed to resend OTP";
       });
   },
 });

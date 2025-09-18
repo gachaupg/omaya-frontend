@@ -15,7 +15,7 @@ import { calculateCommission } from './utils/calculations/commissionCalculator';
 import { calculateNetworkFee, calculateTotalFees } from './utils/calculations/feeCalculator';
 
 // Define asset types based on the choices, matching TransactionTypePanel
-const CRYPTO_ASSETS = ['USDT Tether', 'USDC', 'BTC', 'ETH', 'BNB', 'DOGE', 'ADA', 'SOL', 'XRP', 'USD'];
+const CRYPTO_ASSETS = ['USDT Tether', 'BTC', 'ETH', 'BNB', 'DOGE', 'ADA', 'SOL', 'XRP', 'USD'];
 
 interface DepositModalProps {
   asset: Asset;

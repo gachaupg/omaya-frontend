@@ -20,7 +20,7 @@ interface AssetSelectorProps {
   totalFees: number;
 }
 
-const CRYPTO_ASSETS = ['USDT Tether', 'USDC', 'BTC', 'ETH', 'BNB', 'DOGE', 'ADA', 'SOL', 'XRP', 'USD'];
+const CRYPTO_ASSETS = ['USDT Tether', 'BTC', 'ETH', 'BNB', 'DOGE', 'ADA', 'SOL', 'XRP', 'USD'];
 
 const AssetSelector: React.FC<AssetSelectorProps> = ({
   currentAsset,
