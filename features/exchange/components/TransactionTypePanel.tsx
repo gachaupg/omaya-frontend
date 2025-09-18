@@ -11,7 +11,7 @@ import toast, { Toaster } from 'react-hot-toast';
 
 
 // Define asset types based on the choices
-const CRYPTO_ASSETS = ['USDT Tether', 'USDC', 'BTC', 'ETH', 'BNB', 'DOGE', 'ADA', 'SOL', 'XRP', 'USD'];
+const CRYPTO_ASSETS = ['USDT Tether', 'BTC', 'ETH', 'BNB', 'DOGE', 'ADA', 'SOL', 'XRP', 'USD'];
 
 const FOREX_BROKER_INFO: Record<string, { country: string; logo: string }> = {
   FXP: { country: 'Cyprus', logo: 'https://upload.wikimedia.org/wikipedia/commons/7/7e/FXPRIMUS_logo.png' },

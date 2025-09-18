@@ -18,7 +18,6 @@ const DUMMY_ASSET_DATA: Record<
   { symbol: string; price: number; change: string }
 > = {
   "USDT Tether": { symbol: "USDT", price: 0.99, change: "+0.01%" },
-  "USD Coin": { symbol: "USDC", price: 1.0, change: "+0.02%" },
   FXPRIMUS: { symbol: "FXP", price: 1.0, change: "+0.00%" },
 };
 

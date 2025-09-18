@@ -105,7 +105,6 @@ export function useDepositLogic(
     if (assets?.assets && assets.assets.length > 0) {
       const CRYPTO_ASSETS = [
         "USDT Tether",
-        "USDC",
         "BTC",
         "ETH",
         "BNB",

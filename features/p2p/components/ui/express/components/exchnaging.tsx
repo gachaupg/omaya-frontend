@@ -209,14 +209,11 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   }
 
 
-  // Check if this is a USDT/USDC transaction (should use backend WebSocket)
+  // Check if this is a USDT transaction (should use backend WebSocket)
   const isUSDTCurrency =
     effectiveTransactionData?.asset?.ticker?.toLowerCase() === "usdt" ||
-    effectiveTransactionData?.asset?.ticker?.toLowerCase() === "usdc" ||
     effectiveTransactionData?.asset?.symbol?.toLowerCase().includes("usdt") ||
-    effectiveTransactionData?.asset?.symbol?.toLowerCase().includes("usdc") ||
-    effectiveTransactionData?.asset?.name?.toLowerCase().includes("usdt") ||
-    effectiveTransactionData?.asset?.name?.toLowerCase().includes("usdc");
+    effectiveTransactionData?.asset?.name?.toLowerCase().includes("usdt");
   const finalWebsocketUrl = websocketUrl;
 
   const { isConnected, lastMessage, disconnect, sendMessage } =
@@ -599,7 +596,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
              <span>
                 {liveAmount !== null
                   ? liveAmount
-                  : effectiveTransactionData?.amount || 0}{" "}
+                  :  0}{" "}
                 <span className="uppercase">
                 {liveCurrency ||
                     effectiveTransactionData?.asset?.ticker ||

@@ -46,7 +46,6 @@ export const getCurrencyIcon = (currency: string): string => {
     BTC: "₿",
     ETH: "Ξ",
     USDT: "₮",
-    USDC: "₮",
     BNB: "BNB",
     ADA: "₳",
     DOT: "●",

@@ -19,6 +19,7 @@ import { SupportedAsset } from "../../../swap/types";
 import { FaSearch } from "react-icons/fa";
 import InfoModal from "./info";
 import { useTheme } from "@/context/theme";
+import { useAssetsDisplay, usePaymentMethodsDisplay } from "../../hooks/useDataDisplay";
 
 interface DepositFormProps {
   onExchange?: (transactionData: {
@@ -59,6 +60,22 @@ export default function DepositForm({
   const { supportedAssets: swapAssets, loading: swapAssetsLoading } =
     useSelector((state: any) => state.swap);
     const { isDark } = useTheme();
+
+  // Use the data display hooks for consistent data handling
+  const assetsDisplay = useAssetsDisplay(
+    assets?.assets,
+    swapAssets,
+    assetsLoading,
+    swapAssetsLoading,
+    null, // exchange error
+    null  // swap error
+  );
+
+  const paymentMethodsDisplay = usePaymentMethodsDisplay(
+    adminPaymentDetails,
+    loading,
+    error
+  );
 
   const [payAmount, setPayAmount] = useState(100); // Set default amount to $100
   const [payAmountInput, setPayAmountInput] = useState("100"); // String value for input display
@@ -216,15 +233,6 @@ export default function DepositForm({
                 range_commissions: [{ commission: "2" }],
                 commission: "2",
                 fee_rate: "2"
-              },
-              {
-                ticker: "USDC",
-                symbol: "USDC", 
-                name: "USD Coin",
-                network: "BSC",
-                range_commissions: [{ commission: "2" }],
-                commission: "2",
-                fee_rate: "2"
               }
             ];
             
@@ -241,9 +249,9 @@ export default function DepositForm({
 
   // Auto-select first asset when assets are loaded
   useEffect(() => {
-    if (swapAssets && swapAssets.length > 0 && !selectedAsset) {
+    if (assetsDisplay.shouldShowData && assetsDisplay.displayData.length > 0 && !selectedAsset) {
       // Use the sorted assets to get the first one (USDT on BSC should be first)
-      const sortedAssets = [...swapAssets].sort((a, b) => {
+      const sortedAssets = [...assetsDisplay.displayData].sort((a, b) => {
         const tickerA = (a.ticker || a.symbol || a.name || "").toString().toLowerCase();
         const tickerB = (b.ticker || b.symbol || b.name || "").toString().toLowerCase();
         const networkA = (a.network || "").toString().toLowerCase();
@@ -256,13 +264,6 @@ export default function DepositForm({
         if (tickerB === "usdt" && networkB === "bsc" && !(tickerA === "usdt" && networkA === "bsc")) {
           return 1;
         }
-        // Priority 2: USDC on BSC
-        if (tickerA === "usdc" && networkA === "bsc" && !(tickerB === "usdc" && networkB === "bsc")) {
-          return -1;
-        }
-        if (tickerB === "usdc" && networkB === "bsc" && !(tickerA === "usdc" && networkA === "bsc")) {
-          return 1;
-        }
         return 0;
       });
 
@@ -273,7 +274,7 @@ export default function DepositForm({
         network_type: firstAsset.network,
       });
     }
-  }, [swapAssets, selectedAsset]);
+  }, [assetsDisplay.displayData, selectedAsset]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -292,14 +293,14 @@ export default function DepositForm({
     };
   }, []);
 
-  // Check if asset is USDT or USDC (should use simple calculation)
+  // Check if asset is USDT (should use simple calculation)
   const isSimpleCalculationAsset = (asset: any) => {
     if (!asset) return false;
     const ticker = (asset.ticker || asset.symbol || "").toLowerCase();
-    return ticker === "usdt" || ticker === "usdc";
+    return ticker === "usdt";
   };
 
-  // Fetch estimate for non-USDT/USDC assets - triggers immediately on asset or amount change
+  // Fetch estimate for non-USDT assets - triggers immediately on asset or amount change
   useEffect(() => {
     console.log("Estimate useEffect triggered:", {
       selectedAsset: selectedAsset?.ticker,
@@ -391,13 +392,13 @@ export default function DepositForm({
           setEstimateLoading(false);
         });
     } else {
-      // Clear estimate for USDT/USDC or when conditions not met
+      // Clear estimate for USDT or when conditions not met
       setEstimate(null);
       setEstimateError(null);
     }
   }, [selectedAsset, payAmount, isCalculatingFromPay]);
 
-  // Fetch reverse estimate for non-USDT/USDC assets when calculating from receive amount
+  // Fetch reverse estimate for non-USDT assets when calculating from receive amount
   useEffect(() => {
     console.log("Reverse estimate useEffect triggered:", {
       selectedAsset: selectedAsset?.ticker,
@@ -532,9 +533,9 @@ export default function DepositForm({
     return () => clearTimeout(safetyTimeout);
   }, [isCalculating, isCalculatingReceive]);
 
-  // Filter swap assets based on search term - search by ticker and name
+  // Filter assets based on search term - search by ticker and name
   const filteredSwapAssets =
-    swapAssets?.filter((asset: SupportedAsset) => {
+    assetsDisplay.displayData?.filter((asset: SupportedAsset) => {
       const ticker = asset.ticker?.toUpperCase() || "";
       const name = asset.name?.toUpperCase() || "";
       const symbol = asset.symbol?.toUpperCase() || "";
@@ -545,7 +546,7 @@ export default function DepositForm({
              symbol.includes(searchTerm);
     }) || [];
 
-  // Sort assets: USDT on BSC, USDC on BSC, then rest in original order
+  // Sort assets: USDT on BSC, then rest in original order
   const sortedSwapAssets = [...filteredSwapAssets].sort((a, b) => {
     // Ensure tickers exist and are strings (using ticker as primary, fallback to symbol/name)
     const tickerA = (a.ticker || a.symbol || a.name || "")
@@ -569,21 +570,6 @@ export default function DepositForm({
       tickerB === "usdt" &&
       networkB === "bsc" &&
       !(tickerA === "usdt" && networkA === "bsc")
-    ) {
-      return 1;
-    }
-    // Priority 2: USDC on BSC
-    if (
-      tickerA === "usdc" &&
-      networkA === "bsc" &&
-      !(tickerB === "usdc" && networkB === "bsc")
-    ) {
-      return -1;
-    }
-    if (
-      tickerB === "usdc" &&
-      networkB === "bsc" &&
-      !(tickerA === "usdc" && networkA === "bsc")
     ) {
       return 1;
     }
@@ -636,7 +622,7 @@ export default function DepositForm({
       return;
     }
 
-    // For simple calculation assets (USDT/USDC), calculate immediately
+    // For simple calculation assets (USDT), calculate immediately
       if (isSimpleCalculationAsset(selectedAsset)) {
         let commissionRate = 2; // Default fallback
         
@@ -710,7 +696,7 @@ export default function DepositForm({
         if (fromPay) {
           // Forward calculation: from pay amount to receive amount
           if (isSimpleCalculationAsset(selectedAsset)) {
-            // Simple calculation for USDT/USDC
+            // Simple calculation for USDT
             let commissionRate = 2; // Default fallback
             
             // Safely access commission rate with multiple fallback options
@@ -741,7 +727,7 @@ export default function DepositForm({
             setGetAmountInput(calculatedGetAmount.toString());
             setReceiveAmountError(null);
           } else {
-            // For non-USDT/USDC assets, we need to fetch estimate
+            // For non-USDT assets, we need to fetch estimate
             // The estimate fetching is handled in the useEffect above
             if (estimate && estimate.estimated_amount) {
               setGetAmount(estimate.estimated_amount);
@@ -753,7 +739,7 @@ export default function DepositForm({
               setIsCalculatingReceive(true);
               // Don't update amounts yet, wait for estimate
             } else {
-              // For non-USDT/USDC assets, only show loading until API estimate is available
+              // For non-USDT assets, only show loading until API estimate is available
               // Don't do manual calculations - wait for API
               setIsCalculating(true);
               setIsCalculatingReceive(true);
@@ -762,7 +748,7 @@ export default function DepositForm({
         } else {
           // Reverse calculation: from receive amount to pay amount
           if (isSimpleCalculationAsset(selectedAsset)) {
-            // Simple reverse calculation for USDT/USDC
+            // Simple reverse calculation for USDT
             let commissionRate = 2; // Default fallback
             
             // Safely access commission rate with multiple fallback options
@@ -793,7 +779,7 @@ export default function DepositForm({
             setPayAmountInput(calculatedPayAmount.toString());
             setReceiveAmountError(null);
           } else {
-            // For non-USDT/USDC assets, we need to fetch estimate for reverse calculation
+            // For non-USDT assets, we need to fetch estimate for reverse calculation
             // Use the API to find the pay amount that gives us the desired receive amount
             setEstimateLoading(true);
             setEstimateError(null);
@@ -1177,7 +1163,7 @@ export default function DepositForm({
   /**
    * Handles the two-step deposit process:
    * 
-   * For Simple Assets (USDT/USDC):
+   * For Simple Assets (USDT):
    * - Single API call flow
    * - Uses original response data
    * 
@@ -1209,7 +1195,7 @@ export default function DepositForm({
       return;
     }
 
-    // Check if this is a simple calculation asset (USDT or USDC)
+    // Check if this is a simple calculation asset (USDT)
     const isSimpleAsset = selectedAsset && isSimpleCalculationAsset(selectedAsset);
 
     setIsSubmitting(true);
@@ -1218,7 +1204,7 @@ export default function DepositForm({
       let finalResponse = apiResponse;
       let updateResponse;
       
-      // For simple assets (USDT/USDC), proceed as before
+      // For simple assets (USDT), proceed as before
       if (isSimpleAsset) {
         // Only update deposit address if one is provided
         if (walletAddress.trim()) {
@@ -1819,11 +1805,11 @@ export default function DepositForm({
                   className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-9 py-2 text-lg  focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] appearance-none disabled:opacity-50"
                 >
                   <option value="">
-                    {loading
+                    {paymentMethodsDisplay.isLoading
                       ? "Loading payment methods..."
                       : "Select Payment Method"}
                   </option>
-                  {adminPaymentDetails?.map((payment: any, index: number) => (
+                  {paymentMethodsDisplay.displayData?.map((payment: any, index: number) => (
                     <option key={index} value={payment.provider_name}>
                       {payment.provider_name} - {payment.payment_method_type}
                     </option>
@@ -2057,7 +2043,7 @@ export default function DepositForm({
                           className="w-6 h-6"
                         />
                         <span className="text-[#7e7e8f] dark:text-[#788099]">
-                          {swapAssetsLoading
+                          {assetsDisplay.isLoading
                             ? "Loading assets..."
                             : "Select Asset"}
                         </span>
