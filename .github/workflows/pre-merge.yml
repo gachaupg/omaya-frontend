@@ -1,0 +1,407 @@
+name: Omaya-Backend Pre-Merge Security Scans
+
+on:
+  push:
+    branches-ignore: [dev, testing, staging, prod]
+  pull_request:
+    branches-ignore: [dev, testing, staging, prod]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  actions: read
+  security-events: write
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  FAIL_ON_DEPS_VULN:  'false'
+  FAIL_ON_IMAGE_VULN: 'false'
+  UPLOAD_SARIF:       'false'     # keep false until Code Scanning is enabled
+  ENABLE_CODEQL:      'true'     # flip to 'true' to enable Step 4
+  IMAGE_NAME: 'omaya-frontend'
+  IMAGE_TAG:  '${{ github.sha }}'
+  DOCKERFILE: './Dockerfile'
+  BUILD_CONTEXT: '.'
+
+# -------------------------------------------------
+# STEP 1) Build Docker image once and share via artifact
+# -------------------------------------------------
+jobs:
+  build-image:
+    name: Build image
+    runs-on: ubuntu-latest
+    outputs:
+      image-tar: image.tar
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Docker build
+        env:
+          DOCKER_CONTEXT: default
+        run: |
+          docker build -t "$IMAGE_NAME:$IMAGE_TAG" -f "$DOCKERFILE" "$BUILD_CONTEXT"
+          docker save "$IMAGE_NAME:$IMAGE_TAG" -o image.tar
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: built-image
+          path: image.tar
+          if-no-files-found: error
+          retention-days: 3
+
+  # -------------------------------------------------
+  # STEP 2) Grype: (a) repo deps via Syft SBOM -> Grype, (b) image scan
+  # -------------------------------------------------
+  grype-scan:
+    name: Grype scans (deps + image)
+    runs-on: ubuntu-latest
+    needs: [build-image]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: built-image
+          path: .
+
+      - name: Load image
+        run: docker load -i image.tar
+
+      # ---- Deps (directory) SBOM -> Grype ----
+      - name: Create SBOM (dir) with Syft
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: spdx-json
+          output-file: sbom-deps.spdx.json
+          upload-artifact: false
+
+      - name: Grype scan (SBOM)
+        env:
+          DOCKER_CONTEXT: default
+        run: |
+          set -e
+          if [ ! -s sbom-deps.spdx.json ]; then
+            echo '{"runs":[{"results":[]}]}'>grype-deps.sarif
+          else
+            docker run --rm -v "$PWD:/work" anchore/grype:latest \
+              "sbom:/work/sbom-deps.spdx.json" -o sarif -q > grype-deps.sarif || true
+            [ -s grype-deps.sarif ] || echo '{"runs":[{"results":[]}]}'>grype-deps.sarif
+          fi
+
+      - name: Summary (deps)
+        if: always()
+        run: |
+          python - << 'PY'
+          import json, os, textwrap
+          def load_results(p):
+              if not (os.path.exists(p) and os.path.getsize(p)>0): return [], {}
+              d=json.load(open(p,encoding="utf-8"))
+              runs=d.get("runs",[]); res=(runs[0].get("results",[]) if runs else [])
+              rules=((runs[0].get("tool",{}).get("driver",{}).get("rules",[])) if runs else [])
+              rmap={r.get("id"): (r.get("properties") or {}).get("severity") for r in rules}
+              return res, rmap
+          def sev_of(r, rid, rmap):
+              props=r.get("properties") or {}
+              s=props.get("severity") or rmap.get(rid) or r.get("level") or "UNKNOWN"
+              if isinstance(s,(int,float)) or (isinstance(s,str) and s.replace('.','',1).isdigit()):
+                  try:
+                      sc=float(s); 
+                      return "CRITICAL" if sc>=9 else "HIGH" if sc>=7 else "MEDIUM" if sc>=4 else "LOW" if sc>0 else "UNKNOWN"
+                  except: pass
+              s=str(s).upper()
+              return {"ERROR":"HIGH","WARNING":"MEDIUM","NOTE":"LOW","INFO":"LOW"}.get(s, s if s in {"CRITICAL","HIGH","MEDIUM","LOW"} else "UNKNOWN")
+          def loc(r):
+              try:
+                  loc=(r.get("locations") or [{}])[0]
+                  phys=loc.get("physicalLocation",{})
+                  uri=(phys.get("artifactLocation") or {}).get("uri","")
+                  line=(phys.get("region") or {}).get("startLine")
+                  return f"{uri}:{line or 0}" if uri else "-"
+              except: return "-"
+          res, rmap = load_results("grype-deps.sarif")
+          counts={"CRITICAL":0,"HIGH":0,"MEDIUM":0,"LOW":0,"UNKNOWN":0}
+          rows=[]
+          for r in res:
+              rid=r.get("ruleId","-"); sev=sev_of(r,rid,rmap); counts[sev]=counts.get(sev,0)+1
+              msg=(r.get("message") or {}).get("text","").strip()
+              if len(msg)>140: msg=textwrap.shorten(msg, width=140, placeholder="…")
+              rows.append((sev,rid,loc(r),msg))
+          order={"CRITICAL":0,"HIGH":1,"MEDIUM":2,"LOW":3,"UNKNOWN":4}
+          rows.sort(key=lambda x:(order.get(x[0],9), x[1]))
+          total=sum(counts.values())
+          lines=["## Grype Dependency Scan", f"- Findings (all severities): **{total}**"]
+          if total:
+              lines+=["", "**By severity**: " + ", ".join([f"{k}: **{v}**" for k,v in counts.items() if v>0]), "",
+                      "### Top 15 findings", "| Severity | ID | Location | Message |",
+                      "|----------|----|----------|---------|"]
+              for sev,rid,lc,msg in rows[:15]:
+                  lines.append(f"| {sev} | {rid} | {lc} | {msg or '-'} |")
+          s=os.environ.get("GITHUB_STEP_SUMMARY"); out="\n".join(lines)+"\n"
+          open(s,"a",encoding="utf-8").write(out) if s else print(out)
+          PY
+
+      - name: Upload SARIF (deps)
+        if: ${{ env.UPLOAD_SARIF == 'true' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false)) }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: grype-deps.sarif
+          category: grype-dependencies
+        continue-on-error: true
+
+      - name: Gate on findings (deps)
+        if: always()
+        run: |
+          COUNT=$(python - << 'PY'
+          import json, os
+          p="grype-deps.sarif"
+          if os.path.exists(p) and os.path.getsize(p)>0:
+            try: print(len(json.load(open(p,encoding="utf-8")).get("runs",[{}])[0].get("results",[])))
+            except Exception: print(0)
+          else: print(0)
+          PY
+          )
+          echo "Dependency findings: $COUNT"
+          if [ "${FAIL_ON_DEPS_VULN:-false}" = "true" ] && [ "$COUNT" -gt 0 ]; then
+            exit 1
+          fi
+
+      # ---- Image scan with Grype ----
+      - name: Grype scan (image)
+        env:
+          DOCKER_CONTEXT: default
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            anchore/grype:latest "$IMAGE_NAME:$IMAGE_TAG" -o sarif -q \
+            > grype-image.sarif || true
+          [ -s grype-image.sarif ] || echo '{"runs":[{"results":[]}]}'>grype-image.sarif
+
+      - name: Summary (image)
+        if: always()
+        run: |
+          python - << 'PY'
+          import json, os, textwrap
+          def load_results(p):
+              if not (os.path.exists(p) and os.path.getsize(p)>0): return [], {}
+              d=json.load(open(p,encoding="utf-8"))
+              runs=d.get("runs",[]); res=(runs[0].get("results",[]) if runs else [])
+              rules=((runs[0].get("tool",{}).get("driver",{}).get("rules",[])) if runs else [])
+              rmap={r.get("id"): (r.get("properties") or {}).get("severity") for r in rules}
+              return res, rmap
+          def sev_of(r, rid, rmap):
+              props=r.get("properties") or {}
+              s=props.get("severity") or rmap.get(rid) or r.get("level") or "UNKNOWN"
+              if isinstance(s,(int,float)) or (isinstance(s,str) and s.replace('.','',1).isdigit()):
+                  try:
+                      sc=float(s); 
+                      return "CRITICAL" if sc>=9 else "HIGH" if sc>=7 else "MEDIUM" if sc>=4 else "LOW" if sc>0 else "UNKNOWN"
+                  except: pass
+              s=str(s).upper()
+              return {"ERROR":"HIGH","WARNING":"MEDIUM","NOTE":"LOW","INFO":"LOW"}.get(s, s if s in {"CRITICAL","HIGH","MEDIUM","LOW"} else "UNKNOWN")
+          def loc(r):
+              try:
+                  loc=(r.get("locations") or [{}])[0]
+                  phys=loc.get("physicalLocation",{})
+                  uri=(phys.get("artifactLocation") or {}).get("uri","")
+                  line=(phys.get("region") or {}).get("startLine")
+                  return f"{uri}:{line or 0}" if uri else "-"
+              except: return "-"
+          res, rmap = load_results("grype-image.sarif")
+          counts={"CRITICAL":0,"HIGH":0,"MEDIUM":0,"LOW":0,"UNKNOWN":0}
+          rows=[]
+          for r in res:
+              rid=r.get("ruleId","-"); sev=sev_of(r,rid,rmap); counts[sev]=counts.get(sev,0)+1
+              msg=(r.get("message") or {}).get("text","").strip()
+              if len(msg)>140: msg=textwrap.shorten(msg, width=140, placeholder="…")
+              rows.append((sev,rid,loc(r),msg))
+          order={"CRITICAL":0,"HIGH":1,"MEDIUM":2,"LOW":3,"UNKNOWN":4}
+          rows.sort(key=lambda x:(order.get(x[0],9), x[1]))
+          total=sum(counts.values())
+          lines=["## Grype Image Scan", f"- Findings (all severities): **{total}**"]
+          if total:
+              lines+=["", "**By severity**: " + ", ".join([f"{k}: **{v}**" for k,v in counts.items() if v>0]), "",
+                      "### Top 15 findings", "| Severity | ID | Location | Message |",
+                      "|----------|----|----------|---------|"]
+              for sev,rid,lc,msg in rows[:15]:
+                  lines.append(f"| {sev} | {rid} | {lc} | {msg or '-'} |")
+          s=os.environ.get("GITHUB_STEP_SUMMARY"); out="\n".join(lines)+"\n"
+          open(s,"a",encoding="utf-8").write(out) if s else print(out)
+          PY
+
+      - name: Upload SARIF (image)
+        if: ${{ env.UPLOAD_SARIF == 'true' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false)) }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: grype-image.sarif
+          category: grype-image
+        continue-on-error: true
+
+      - name: Gate on findings (image)
+        if: always()
+        run: |
+          COUNT=$(python - << 'PY'
+          import json, os
+          p="grype-image.sarif"
+          if os.path.exists(p) and os.path.getsize(p)>0:
+            try:
+              print(len(json.load(open(p,encoding="utf-8")).get("runs",[{}])[0].get("results",[])))
+            except Exception:
+              print(0)
+          else:
+            print(0)
+          PY
+          )
+          echo "Image findings: $COUNT"
+          if [ "${FAIL_ON_IMAGE_VULN:-false}" = "true" ] && [ "$COUNT" -gt 0 ]; then
+            exit 1
+          fi
+
+      - name: Upload SARIF artifacts (all grype)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: grype-sarif
+          path: |
+            grype-deps.sarif
+            grype-image.sarif
+          if-no-files-found: warn
+
+  # -------------------------------------------------
+  # STEP 3) Trivy: FS + Image (using the built image)
+  # -------------------------------------------------
+  trivy-scan:
+    name: Trivy scans (fs + image)
+    runs-on: ubuntu-latest
+    needs: [build-image, grype-scan]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: built-image
+          path: .
+
+      - name: Load image
+        run: docker load -i image.tar
+
+      - name: Run Trivy FS Scan
+        run: |
+          docker run --rm -v "$PWD:/workspace" ghcr.io/aquasecurity/trivy:latest fs /workspace --format json -o trivy-fs.json || true
+
+      - name: Run Trivy Image Scan
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/aquasecurity/trivy:latest image "$IMAGE_NAME:$IMAGE_TAG" --format json -o trivy-image.json || true
+
+      - name: Trivy Scan Summary
+        if: always()
+        run: |
+          python - << 'PY'
+          import json, os
+          def count_findings(file):
+              try:
+                  if os.path.exists(file) and os.path.getsize(file)>0:
+                      data = json.load(open(file,encoding='utf-8'))
+                      # Trivy JSON may be a dict with "Results", not a flat list
+                      if isinstance(data, dict) and "Results" in data:
+                          return sum(len(r.get("Vulnerabilities") or []) for r in data.get("Results") or [])
+                      return len(data) if isinstance(data, list) else 0
+              except Exception:
+                  return 0
+              return 0
+          fs_findings = count_findings('trivy-fs.json')
+          image_findings = count_findings('trivy-image.json')
+          total_findings = fs_findings + image_findings
+          s = os.environ.get("GITHUB_STEP_SUMMARY")
+          out = f"## Trivy Scan Summary\n- FS Findings: **{fs_findings}**\n- Image Findings: **{image_findings}**\n- Total Findings: **{total_findings}**\n"
+          open(s,'a',encoding='utf-8').write(out) if s else print(out)
+          PY
+
+      - name: Upload Trivy artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-json
+          path: |
+            trivy-fs.json
+            trivy-image.json
+          if-no-files-found: warn
+
+  # -------------------------------------------------
+  # STEP 4) CodeQL Deep Semantic Analysis (optional)
+  # Flip ENABLE_CODEQL='true' and enable Code Scanning in repo settings
+  # -------------------------------------------------
+  # codeql:
+  #   name: CodeQL
+  #   runs-on: ubuntu-latest
+  
+  #   # For PRs from forks, GitHub blocks security-events: write.
+  #   # We still run analysis, but skip uploading (handled in steps below).
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  
+  #     # Detect common languages present in the repo and build a comma-separated list.
+  #     # If none are found, default to 'javascript' so CodeQL doesn't error.
+  #     - name: Detect languages
+  #       id: detect
+  #       shell: bash
+  #       run: |
+  #         set -euo pipefail
+  #         langs=()
+  
+  #         has_any() { git ls-files -z "$@" 2>/dev/null | grep -q . || return 1; }
+  
+  #         # Python
+  #         if has_any '*.py' 'requirements.txt' 'pyproject.toml' 'Pipfile'; then langs+=("python"); fi
+  #         # JavaScript/TypeScript
+  #         if has_any 'package.json' '*.js' '*.jsx' '*.ts' '*.tsx'; then langs+=("javascript"); fi
+  #         # Go
+  #         if has_any 'go.mod' '*.go'; then langs+=("go"); fi
+  #         # Java/Kotlin
+  #         if has_any 'pom.xml' 'build.gradle' 'build.gradle.kts' '*.java' '*.kt'; then langs+=("java"); fi
+  #         # C# (.NET)
+  #         if has_any '*.csproj' '*.sln' '*.cs'; then langs+=("csharp"); fi
+  #         # C/C++
+  #         if has_any '*.c' '*.cpp' '*.cc' '*.cxx' '*.h' '*.hpp'; then langs+=("cpp"); fi
+  #         # Ruby
+  #         if has_any 'Gemfile' '*.rb'; then langs+=("ruby"); fi
+  #         # Swift
+  #         if has_any 'Package.swift' '*.swift'; then langs+=("swift"); fi
+  
+  #         if [ ${#langs[@]} -eq 0 ]; then
+  #           langs=("javascript")
+  #         fi
+  
+  #         langs_csv="$(IFS=,; echo "${langs[*]}")"
+  #         echo "Detected CodeQL languages: $langs_csv"
+  #         echo "langs=$langs_csv" >> "$GITHUB_OUTPUT"
+  
+  #     - name: Initialize CodeQL
+  #       uses: github/codeql-action/init@v3
+  #       with:
+  #         languages: ${{ steps.detect.outputs.langs }}
+  #         # queries: security-and-quality  # uncomment if you want the extended pack
+  
+  #     # For compiled languages, 'autobuild' attempts a sensible default build.
+  #     # If your build is custom, replace this step with explicit build commands.
+  #     - name: Autobuild
+  #       uses: github/codeql-action/autobuild@v3
+  
+  #     # If this is a PR from a fork, uploading SARIF will be blocked by GitHub.
+  #     # We still run analyze; on forks it will skip upload internally without failing the job.
+  #     - name: Analyze
+  #       uses: github/codeql-action/analyze@v3
+  #       with:
+  #         category: '/language:${{ steps.detect.outputs.langs }}'
