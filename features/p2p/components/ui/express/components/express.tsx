@@ -7,9 +7,10 @@ import { useTheme } from "@/context/theme";
 
 interface ExpressProps {
   mode?: "deposit" | "withdrawal";
+  balance?: number;
 }
 
-const Express = ({ mode = "deposit" }: ExpressProps) => {
+const Express = ({ mode = "deposit",balance }: ExpressProps) => {
   const [showExchanging, setShowExchanging] = useState(false);
   const [transactionData, setTransactionData] = useState<any>(null);
   const { isDark } = useTheme();
@@ -26,6 +27,7 @@ const Express = ({ mode = "deposit" }: ExpressProps) => {
             setShowExchanging(true);
           }}
           initialMode={mode}
+          balance={balance}
         />
       )}
        {/* <SuccessPage transactionData={transactionData} /> */}

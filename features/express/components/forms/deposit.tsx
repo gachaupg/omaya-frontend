@@ -1639,7 +1639,7 @@ export default function DepositForm({
 
   return (
     <div className="w-full min-h-screen flex flex-col dark:bg-[#18181D]  ">
-      <h2 className="text-xl font-bold  mb-2 text-[#788099]">
+      <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
         <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Transaction Info
       </h2>
       
@@ -2247,13 +2247,13 @@ export default function DepositForm({
       {selectedPaymentDetail && isFirstCardSubmitted && (
         <>
           {/* Payment Details Card */}
+          <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
+            <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span> Payment Details
+          </h2>
           <div
             ref={paymentDetailsRef}
-            className="mt-1 mb-2 flex flex-col gap-3 dark:bg-[#1D1D23]"
+            className="mt-1 mb-2 w-full flex flex-col gap-3 max-w-4xl mx-auto px-2 "
           >
-            <h2 className="text-xl font-bold mb-2 text-[#788099]">
-              <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span> Payment Details
-            </h2>
             <div className="flex-1  dark:bg-[#1D1D23] rounded-2xl border border-[#39394a] dark:border-[#35353E] flex flex-col justify-between p-5 relative min-h-[120px]">
               {/* Bank and logo */}
               <div className="flex items-center justify-between mb-4">
@@ -2332,10 +2332,11 @@ export default function DepositForm({
 
           {/* Transaction Code Card - below Payment Details, before Wallet Address */}
           {apiResponse && apiResponse.deposit_code && (
-            <div className="mb-6 flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
-              <h2 className="text-xl font-bold mb-2 text-[#788099]">
+            <>
+              <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
                 <span className="text-[#7e7e8f] dark:text-[#788099]">3-</span> Transaction Code
               </h2>
+              <div className="mb-6 flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
               <div className=" dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-4 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
                 {/* Transaction Code Row */}
                 <div className="flex items-center justify-center gap-3 mb-3">
@@ -2435,12 +2436,13 @@ export default function DepositForm({
                   </div>
                 </div>
               </div>
-            </div>
+              </div>
+            </>
           )}
 
           {/* Wallet Address Section */}
-          <h2 className="text-xl font-bold  mb-2 text-[#788099]">
-            <span className="text-[#7e7e8f]">4-</span> Wallet Address
+          <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
+            <span className="text-[#7e7e8f] dark:text-[#788099]">4-</span> Wallet Address
           </h2>
           <div className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full max-w-4xl mx-auto text-[#35353e] dark:text-[#788099] mb-6">
             {/* Wallet/Account Address Label */}

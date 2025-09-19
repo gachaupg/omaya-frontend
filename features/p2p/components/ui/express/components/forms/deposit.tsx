@@ -62,12 +62,14 @@ interface DepositFormProps {
   }) => void;
   mode: "deposit" | "withdrawal";
   onModeChange?: (mode: "deposit" | "withdrawal") => void;
+  balance?: number;
 }
 
 export default function DepositForm({
   onExchange,
   mode,
   onModeChange,
+  balance,
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -86,11 +88,11 @@ export default function DepositForm({
     useSelector((state: any) => state.swap);
     const { isDark } = useTheme();
 
-  const [payAmount, setPayAmount] = useState(100); // Set default amount to $100
-  const [payAmountInput, setPayAmountInput] = useState("100"); // String value for input display
+  const [payAmount, setPayAmount] = useState(0); // Set default amount to $0
+  const [payAmountInput, setPayAmountInput] = useState("0"); // String value for input display
   const [payBank, setPayBank] = useState("");
-  const [getAmount, setGetAmount] = useState(98); // Default amount after 2% commission (100 - 2 = 98)
-  const [getAmountInput, setGetAmountInput] = useState("98"); // String value for input display
+  const [getAmount, setGetAmount] = useState(0); // Default amount after 2% commission (0 - 0 = 0)
+  const [getAmountInput, setGetAmountInput] = useState("0"); // String value for input display
   const [selectedAsset, setSelectedAsset] = useState<any>(() => {
     // Initialize with USDT immediately
     return {
