@@ -2260,8 +2260,8 @@ export default function WithdrawalForm({
 
   return (
     <div className="w-full min-h-screen flex flex-col dark:bg-[#18181D]  ">
-      <h2 className="text-xl font-bold mb-2 text-[#788099]">
-        <span className="text-[#7e7e8f]">1-</span> Transaction Info
+      <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
+        <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Transaction Info
       </h2>
 
       <div className="w-full max-w-4xl mx-auto text-white">
@@ -3258,8 +3258,8 @@ export default function WithdrawalForm({
           key={`wallet-section-${forceUpdate}`}
           className="mb-6 flex flex-col gap-3 max-w-4xl mx-auto w-full px-2"
         >
-          <h2 className="text-xl font-bold mb-2  text-[#7e7e8f] dark:text-[#788099]">
-            <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>{" "}
+          <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
+            <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>
             Wallet Address
           </h2>
           <div className="dark:bg-[#1D1D23] border-2 border-[#35353e] rounded-2xl p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
@@ -3533,11 +3533,9 @@ export default function WithdrawalForm({
 
       {/* Validation Errors Display */}
       {validationErrors.length > 0 && (
-        <div className="max-w-4xl mx-auto w-full px-2 mb-4">
+        <div className="max-w-4xl mt-4 mx-auto w-full px-2 mb-4">
           <div className="bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] rounded-2xl p-4">
-            <h3 className="text-[#1D8751] font-semibold mb-2">
-              Please fix the following errors:
-            </h3>
+            
             <ul className="list-disc list-inside text-[#1D8751] space-y-1">
               {validationErrors.map((error, index) => (
                 <li key={index}>{error}</li>

@@ -34,12 +34,17 @@ interface ExpressExchangeFormProps {
     };
   }) => void;
   initialMode?: "deposit" | "withdrawal";
+  balance?: number;
 }
 
 const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
   onExchange,
   initialMode = "deposit",
+  balance,
 }) => {
+  // Debug logging for balance
+  console.log("ExpressExchangeForm - Received balance:", balance);
+  
   const [mode, setMode] = useState<"deposit" | "withdrawal">(initialMode);
 
   const handleModeChange = (newMode: "deposit" | "withdrawal") => {
@@ -62,12 +67,14 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
           onExchange={onExchange}
           mode={mode}
           onModeChange={handleModeChange}
+          balance={balance}
         />
       ) : (
         <WithdrawalForm
           onExchange={onExchange}
           mode={mode}
           onModeChange={handleModeChange}
+          balance={balance}
         />
       )}
     </div>

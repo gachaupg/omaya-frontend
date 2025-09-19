@@ -32,6 +32,26 @@ export const formatNumber = (value: number): string => {
 };
 
 /**
+ * Formats a balance with appropriate decimal places for small values
+ * @param value - The balance to format
+ * @returns Formatted balance string
+ */
+export const formatBalance = (value: number): string => {
+  if (value === 0) return "0.00";
+  
+  // For very small values, show more decimal places
+  if (value < 0.01) {
+    return new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 8,
+      maximumFractionDigits: 8,
+    }).format(value);
+  }
+  
+  // For normal values, use standard 2 decimal places
+  return formatNumber(value);
+};
+
+/**
  * Formats large numbers to be user-friendly
  * Converts numbers with more than 7 digits to use K, M, B suffixes
  */

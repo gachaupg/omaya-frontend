@@ -16,15 +16,16 @@ import {
 } from "@/features/swap/slices/swapSlice";
 import { validateWalletAddress } from "@/lib/addressValidaion";
 import { showToast } from "@/lib/utils/toast";
+import { formatNumber, formatBalance } from "@/utils/formatters";
 import { DepositResponse } from "@/features/exchange/types";
 import { SupportedAsset } from "@/features/swap/types";
 import { FaSearch } from "react-icons/fa";
 import { createP2PWithdrawal } from "../../api";
+import { P2PWithdrawalRequest, P2PWithdrawalResponse } from "../../types";
 import {
-  P2PWithdrawalRequest,
-  P2PWithdrawalResponse,
-} from "../../types";
-import { verifyWithdrawal, resendWithdrawalOTP } from "../../../../../slices/withdrawSlice";
+  verifyWithdrawal,
+  resendWithdrawalOTP,
+} from "../../../../../slices/withdrawSlice";
 import InfoModal from "./info";
 import { debugAssetFetching } from "@/lib/utils/debugAssets";
 import OTPModal from "./OTPModal";
@@ -72,7 +73,10 @@ const SuccessModal = ({
         <div className="mb-6">
           <p className="text-gray-400 text-sm mb-2">You Will Receive</p>
           <p className="text-white text-2xl font-bold">
-            {amount} {asset?.ticker?.toUpperCase() || asset?.symbol?.toUpperCase() || "USDT"}
+            {amount}{" "}
+            {asset?.ticker?.toUpperCase() ||
+              asset?.symbol?.toUpperCase() ||
+              "USDT"}
           </p>
         </div>
 
@@ -200,13 +204,18 @@ interface DepositFormProps {
   }) => void;
   mode: "deposit" | "withdrawal";
   onModeChange?: (mode: "deposit" | "withdrawal") => void;
+  balance?: number;
 }
 
 export default function WithdrawalForm({
   onExchange,
   mode,
   onModeChange,
+  balance,
 }: DepositFormProps) {
+  // Debug logging for balance
+  console.log("WithdrawalForm - Received balance:", balance);
+  
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const { adminPaymentDetails, loading, error } = useSelector(
@@ -258,9 +267,9 @@ export default function WithdrawalForm({
     (state: any) => state.payment
   );
 
-  const [payAmount, setPayAmount] = useState(100);
+  const [payAmount, setPayAmount] = useState(0);
   const [getAmount, setGetAmount] = useState(0);
-  const [payAmountInput, setPayAmountInput] = useState("100");
+  const [payAmountInput, setPayAmountInput] = useState("0");
   const [getAmountInput, setGetAmountInput] = useState("0");
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const [selectedNetwork, setSelectedNetwork] = useState<any>(() => {
@@ -271,26 +280,26 @@ export default function WithdrawalForm({
       network: "BSC",
       name: "Binance Smart Chain BEP20",
       icon: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
-      isDefault: true
+      isDefault: true,
     };
   });
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
   const [walletAddress, setWalletAddress] = useState("");
   const [walletError, setWalletError] = useState<string | null>(null);
   const [isNetworkDropdownOpen, setIsNetworkDropdownOpen] = useState(false);
-  
+
   // Network options - only Binance Smart Chain BEP20
   const availableNetworks = [
     {
       network_id: "BSC",
-      network_type: "BSC", 
+      network_type: "BSC",
       network: "BSC",
       name: "Binance Smart Chain BEP20",
       icon: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
-      isDefault: true
-    }
+      isDefault: true,
+    },
   ];
-  
+
   const networkDropdownRef = useRef<HTMLDivElement>(null);
   const [forceUpdate, setForceUpdate] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -319,7 +328,6 @@ export default function WithdrawalForm({
   // Add loading state for "You Receive" calculation
   const [isCalculatingReceive, setIsCalculatingReceive] = useState(false);
 
-
   // Add calculation stability state
   const [isCalculating, setIsCalculating] = useState(false);
   const [calculationTimeout, setCalculationTimeout] =
@@ -339,7 +347,6 @@ export default function WithdrawalForm({
   // Cache duration in milliseconds (5 minutes)
   const CACHE_DURATION = 5 * 60 * 1000;
 
-
   // Add InfoModal state
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
@@ -350,7 +357,7 @@ export default function WithdrawalForm({
   // Add OTP Modal state
   const [isOTPModalOpen, setIsOTPModalOpen] = useState(false);
   const [otpLoading, setOtpLoading] = useState(false);
-  const [otpError, setOtpError] = useState('');
+  const [otpError, setOtpError] = useState("");
   const [pendingWithdrawalData, setPendingWithdrawalData] = useState<any>(null);
 
   // Add validation state for minimum receive amount
@@ -358,61 +365,67 @@ export default function WithdrawalForm({
     null
   );
 
+  // Add balance validation state
+  const [balanceError, setBalanceError] = useState<string | null>(null);
+
   // Add calculation error state for display below "You Send" input
   const [calculationError, setCalculationError] = useState<string | null>(null);
 
   // OTP Modal Functions
   const handleOTPVerify = async (otp: string) => {
     setOtpLoading(true);
-    setOtpError('');
-    
+    setOtpError("");
+
     try {
       if (!pendingWithdrawalData?.withdrawal_id) {
-        throw new Error('Withdrawal ID not found');
+        throw new Error("Withdrawal ID not found");
       }
 
       // Use the real API to verify OTP
-      const result = await dispatch(verifyWithdrawal({
-        withdrawal_id: pendingWithdrawalData.withdrawal_id,
-        otp: otp
-      })).unwrap();
+      const result = await dispatch(
+        verifyWithdrawal({
+          withdrawal_id: pendingWithdrawalData.withdrawal_id,
+          otp: otp,
+        })
+      ).unwrap();
 
       // OTP verified successfully, show success modal
       setIsOTPModalOpen(false);
       setIsSuccessModalOpen(true);
       setOtpLoading(false);
-      showToast.success('Withdrawal verified successfully!');
-      
+      showToast.success("Withdrawal verified successfully!");
     } catch (error: any) {
-      setOtpError(error.message || 'Failed to verify OTP. Please try again.');
+      setOtpError(error.message || "Failed to verify OTP. Please try again.");
       setOtpLoading(false);
-      showToast.error('OTP verification failed');
+      showToast.error("OTP verification failed");
     }
   };
 
   const handleOTPResend = async () => {
-    setOtpError('');
-    
+    setOtpError("");
+
     try {
       if (!pendingWithdrawalData?.withdrawal_id) {
-        throw new Error('Withdrawal ID not found');
+        throw new Error("Withdrawal ID not found");
       }
 
       // Use the real API to resend OTP
-      await dispatch(resendWithdrawalOTP({
-        withdrawal_id: pendingWithdrawalData.withdrawal_id
-      })).unwrap();
+      await dispatch(
+        resendWithdrawalOTP({
+          withdrawal_id: pendingWithdrawalData.withdrawal_id,
+        })
+      ).unwrap();
 
-      showToast.success('New OTP sent successfully');
+      showToast.success("New OTP sent successfully");
     } catch (error: any) {
-      setOtpError('Failed to resend OTP. Please try again.');
-      showToast.error('Failed to resend OTP');
+      setOtpError("Failed to resend OTP. Please try again.");
+      showToast.error("Failed to resend OTP");
     }
   };
 
   const handleOTPClose = () => {
     setIsOTPModalOpen(false);
-    setOtpError('');
+    setOtpError("");
     setPendingWithdrawalData(null);
   };
 
@@ -420,7 +433,6 @@ export default function WithdrawalForm({
   const [apiValidationError, setApiValidationError] = useState<string | null>(
     null
   );
-
 
   // Track isTransactionSubmitted changes
   useEffect(() => {
@@ -454,7 +466,6 @@ export default function WithdrawalForm({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-
 
   useEffect(() => {
     // Try to fetch from cache first, then API if needed
@@ -513,11 +524,16 @@ export default function WithdrawalForm({
     if (swapAssets && swapAssets.length > 0 && !selectedAsset) {
       // Find USDT Tether (we'll force BSC network regardless of original network)
       const usdtTetherAsset = swapAssets.find((asset: SupportedAsset) => {
-        const ticker = (asset.ticker || asset.symbol || "").toString().toUpperCase();
+        const ticker = (asset.ticker || asset.symbol || "")
+          .toString()
+          .toUpperCase();
         const name = (asset.name || "").toString().toUpperCase();
-        
+
         // Only look for USDT Tether specifically
-        return ticker === "USDT" && (name.includes("TETHER") || name.includes("USDT"));
+        return (
+          ticker === "USDT" &&
+          (name.includes("TETHER") || name.includes("USDT"))
+        );
       });
 
       if (usdtTetherAsset) {
@@ -525,20 +541,20 @@ export default function WithdrawalForm({
         setSelectedAsset({
           ...usdtTetherAsset,
           network: "BSC", // Force BSC network for USDT Tether
-          name: "Tether USD"
+          name: "Tether USD",
         });
-        
+
         // Set the network to BSC for USDT
         setSelectedNetwork({
           network_id: "BSC",
           network_type: "BSC",
         });
 
-      // Only set default amount if user hasn't manually modified the amount
-      if (!isUserModifiedAmount) {
+        // Only set default amount if user hasn't manually modified the amount
+        if (!isUserModifiedAmount) {
           const defaultAmount = getDefaultAmount(usdtTetherAsset);
-        setPayAmount(defaultAmount);
-        setPayAmountInput(defaultAmount.toString());
+          setPayAmount(defaultAmount);
+          setPayAmountInput(defaultAmount.toString());
         }
       }
     }
@@ -787,9 +803,9 @@ export default function WithdrawalForm({
 
   // Get default amount based on asset type
   const getDefaultAmount = (asset: any) => {
-    if (!asset) return 100;
+    if (!asset) return 0;
     const ticker = (asset.ticker || asset.symbol || "").toLowerCase();
-    return ticker === "usdt" ? 100 : 0.001;
+    return ticker === "usdt" ? 0 : 0.001;
   };
 
   // Get minimum amount based on asset type
@@ -802,6 +818,14 @@ export default function WithdrawalForm({
   // Validate receive amount - allow any amount for now
   const validateReceiveAmount = (amount: number, asset: any) => {
     // Allow any amount - no validation for now
+    return null; // No error
+  };
+
+  // Validate balance - check if amount exceeds available balance
+  const validateBalance = (amount: number) => {
+    if (balance !== undefined && amount > balance) {
+      return `Insufficient balance. Available: ${formatBalance(balance)}`;
+    }
     return null; // No error
   };
 
@@ -1491,23 +1515,27 @@ export default function WithdrawalForm({
       range_commissions: [{ commission: "2" }],
       commission: "2",
       fee_rate: "2",
-      image_url: "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
-      asset_id: "usdt-tether-bsc"
-    }
+      image_url:
+        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png",
+      asset_id: "usdt-tether-bsc",
+    },
   ];
 
   // Filter based on search term if provided
-  const filteredSwapAssets = assetSearchTerm.trim() ? 
-    exactAssets.filter(asset => {
-      const searchTerm = assetSearchTerm.toUpperCase();
-      return asset.ticker.includes(searchTerm) ||
-             asset.name.toUpperCase().includes(searchTerm) ||
-             "TETHER".includes(searchTerm) ||
-             "USD COIN".includes(searchTerm) ||
-             "BSC".includes(searchTerm) ||
-             "BEP20".includes(searchTerm) ||
-             "BINANCE SMART CHAIN".includes(searchTerm);
-    }) : exactAssets;
+  const filteredSwapAssets = assetSearchTerm.trim()
+    ? exactAssets.filter((asset) => {
+        const searchTerm = assetSearchTerm.toUpperCase();
+        return (
+          asset.ticker.includes(searchTerm) ||
+          asset.name.toUpperCase().includes(searchTerm) ||
+          "TETHER".includes(searchTerm) ||
+          "USD COIN".includes(searchTerm) ||
+          "BSC".includes(searchTerm) ||
+          "BEP20".includes(searchTerm) ||
+          "BINANCE SMART CHAIN".includes(searchTerm)
+        );
+      })
+    : exactAssets;
 
   // Sort assets: USDT Tether first
   const sortedSwapAssets = [...filteredSwapAssets].sort((a, b) => {
@@ -1764,19 +1792,23 @@ export default function WithdrawalForm({
 
     // BEP20 addresses are Ethereum-compatible (0x prefix, 42 characters total, hexadecimal)
     const bep20Regex = /^0x[a-fA-F0-9]{40}$/;
-    
+
     if (!bep20Regex.test(cleanAddress)) {
-      return { 
-        isValid: false, 
-        message: "Invalid BEP20 address format. Must start with '0x' followed by 40 hexadecimal characters" 
+      return {
+        isValid: false,
+        message:
+          "Invalid BEP20 address format. Must start with '0x' followed by 40 hexadecimal characters",
       };
     }
 
     // Additional validation: check if it's not a zero address
-    if (cleanAddress.toLowerCase() === "0x0000000000000000000000000000000000000000") {
-      return { 
-        isValid: false, 
-        message: "Cannot use zero address (0x0000...)" 
+    if (
+      cleanAddress.toLowerCase() ===
+      "0x0000000000000000000000000000000000000000"
+    ) {
+      return {
+        isValid: false,
+        message: "Cannot use zero address (0x0000...)",
       };
     }
 
@@ -1788,24 +1820,32 @@ export default function WithdrawalForm({
     if (walletAddress.trim()) {
       const validation = validateBEP20Address(walletAddress);
       if (!validation.isValid) {
-        setWalletError(validation.message || "Invalid BEP20 wallet address format");
+        setWalletError(
+          validation.message || "Invalid BEP20 wallet address format"
+        );
       } else {
         setWalletError(null);
         // Clear any validation errors related to wallet address when it becomes valid
-        setValidationErrors(prev => prev.filter(error => 
-          !error.includes("wallet") && 
-          !error.includes("address") && 
-          !error.includes("BEP20")
-        ));
+        setValidationErrors((prev) =>
+          prev.filter(
+            (error) =>
+              !error.includes("wallet") &&
+              !error.includes("address") &&
+              !error.includes("BEP20")
+          )
+        );
       }
     } else {
       setWalletError(null); // Clear error when field is empty
       // Clear validation errors when field is empty
-      setValidationErrors(prev => prev.filter(error => 
-        !error.includes("wallet") && 
-        !error.includes("address") && 
-        !error.includes("BEP20")
-      ));
+      setValidationErrors((prev) =>
+        prev.filter(
+          (error) =>
+            !error.includes("wallet") &&
+            !error.includes("address") &&
+            !error.includes("BEP20")
+        )
+      );
     }
   }, [walletAddress]);
 
@@ -1815,6 +1855,11 @@ export default function WithdrawalForm({
       return false;
     }
     if (!payAmount) {
+      return false;
+    }
+
+    // Check if amount exceeds available balance
+    if (balance !== undefined && payAmount > balance) {
       return false;
     }
 
@@ -1850,10 +1895,15 @@ export default function WithdrawalForm({
         // Create withdrawal payload for P2P API
         const withdrawalPayload: P2PWithdrawalRequest = {
           amount: payAmount.toString(),
-          currency: selectedAsset.ticker?.toUpperCase() || selectedAsset.symbol?.toUpperCase(),
-          network: selectedNetwork?.network_id || selectedNetwork?.network_type || selectedAsset.network,
+          currency:
+            selectedAsset.ticker?.toUpperCase() ||
+            selectedAsset.symbol?.toUpperCase(),
+          network:
+            selectedNetwork?.network_id ||
+            selectedNetwork?.network_type ||
+            selectedAsset.network,
           wallet_type: "crypto",
-          receiver_wallet: walletAddress
+          receiver_wallet: walletAddress,
         };
 
         console.log("Submitting P2P withdrawal request:", withdrawalPayload);
@@ -1938,7 +1988,7 @@ export default function WithdrawalForm({
           withdrawalAddress,
           payoutAddress,
           transactionId,
-          withdrawal_id: responseData.withdrawal_id || responseData.id
+          withdrawal_id: responseData.withdrawal_id || responseData.id,
         });
         setIsOTPModalOpen(true);
 
@@ -2037,14 +2087,20 @@ export default function WithdrawalForm({
         // Handle withdrawal submission using P2P API
         const p2pWithdrawalPayload: P2PWithdrawalRequest = {
           amount: payAmount.toString(),
-          currency: selectedAsset.ticker?.toUpperCase() || selectedAsset.symbol?.toUpperCase(),
-          network: selectedNetwork?.network_id || selectedNetwork?.network_type || selectedAsset.network,
+          currency:
+            selectedAsset.ticker?.toUpperCase() ||
+            selectedAsset.symbol?.toUpperCase(),
+          network:
+            selectedNetwork?.network_id ||
+            selectedNetwork?.network_type ||
+            selectedAsset.network,
           wallet_type: "crypto",
-          receiver_wallet: walletAddress
+          receiver_wallet: walletAddress,
         };
 
         console.log("Submitting P2P withdrawal request:", p2pWithdrawalPayload);
-        const withdrawalResponse = await createP2PWithdrawal(p2pWithdrawalPayload);
+        const withdrawalResponse =
+          await createP2PWithdrawal(p2pWithdrawalPayload);
         console.log("P2P withdrawal response received:", withdrawalResponse);
 
         // Handle P2P withdrawal response
@@ -2057,7 +2113,7 @@ export default function WithdrawalForm({
           amount: payAmount,
           asset: selectedAsset,
           response: responseData,
-          withdrawal_id: responseData.withdrawal_id || responseData.id
+          withdrawal_id: responseData.withdrawal_id || responseData.id,
         });
         setIsOTPModalOpen(true);
       } else {
@@ -2182,11 +2238,11 @@ export default function WithdrawalForm({
     }
   };
 
-
   return (
     <div className="w-full min-h-screen flex flex-col dark:bg-[#18181D]  ">
       <h2 className="text-xl font-bold mb-2 text-[#788099]">
         <span className="text-[#7e7e8f]">1-</span> Transaction Info
+     
       </h2>
 
       <div className="w-full mx-auto text-white">
@@ -2296,81 +2352,86 @@ export default function WithdrawalForm({
                     {/* Asset List */}
                     <div className="max-h-60 overflow-y-auto">
                       {sortedSwapAssets.length > 0 ? (
-                        sortedSwapAssets.map(
-                          (asset: any, index: number) => (
-                            <div
-                              key={`${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
-                              className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
-                              onClick={() => {
-                                console.log("Asset selected:", asset);
-                                
-                                // Force BSC network and proper names for USDT Tether
-                                const ticker = (asset.ticker || asset.symbol || "").toLowerCase();
-                                const isUsdtTether = ticker === "usdt";
-                                
-                                const updatedAsset = {
-                                  ...asset,
-                                  network: "BSC", // Force BSC network for both
-                                  name: isUsdtTether ? "Tether USD" : asset.name
-                                };
-                                
-                                setSelectedAsset(updatedAsset);
-                                setSelectedNetwork({
-                                  network_id: "BSC",
-                                  network_type: "BSC",
-                                });
-                                setIsAssetDropdownOpen(false);
-                                setAssetSearchTerm("");
-                                // Clear validation errors related to asset selection
-                                setValidationErrors(prev => prev.filter(error => 
-                                  !error.includes("asset") && 
-                                  !error.includes("Asset")
-                                ));
+                        sortedSwapAssets.map((asset: any, index: number) => (
+                          <div
+                            key={`${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
+                            className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
+                            onClick={() => {
+                              console.log("Asset selected:", asset);
+
+                              // Force BSC network and proper names for USDT Tether
+                              const ticker = (
+                                asset.ticker ||
+                                asset.symbol ||
+                                ""
+                              ).toLowerCase();
+                              const isUsdtTether = ticker === "usdt";
+
+                              const updatedAsset = {
+                                ...asset,
+                                network: "BSC", // Force BSC network for both
+                                name: isUsdtTether ? "Tether USD" : asset.name,
+                              };
+
+                              setSelectedAsset(updatedAsset);
+                              setSelectedNetwork({
+                                network_id: "BSC",
+                                network_type: "BSC",
+                              });
+                              setIsAssetDropdownOpen(false);
+                              setAssetSearchTerm("");
+                              // Clear validation errors related to asset selection
+                              setValidationErrors((prev) =>
+                                prev.filter(
+                                  (error) =>
+                                    !error.includes("asset") &&
+                                    !error.includes("Asset")
+                                )
+                              );
+                            }}
+                          >
+                            <img
+                              src={
+                                asset.image_url ||
+                                asset.asset_image ||
+                                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                              }
+                              alt={asset.name}
+                              className="w-6 h-6 rounded-full"
+                              onError={(e) => {
+                                e.currentTarget.src =
+                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                               }}
-                            >
-                              <img
-                                src={
-                                  asset.image_url ||
-                                  asset.asset_image ||
-                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                                }
-                                alt={asset.name}
-                                className="w-6 h-6 rounded-full"
-                                onError={(e) => {
-                                  e.currentTarget.src =
-                                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
-                                }}
-                              />
-                              <div className="flex-1">
-                                <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
-                                  {(
-                                    asset.ticker ||
-                                    asset.symbol ||
-                                    asset.name ||
-                                    "Unknown"
-                                  ).toUpperCase()}
-                                  <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                                    {asset.network || "Unknown"}
-                                  </span>
-                                </div>
-                                <div className="text-[#35353e] dark:text-[#788099] text-sm">
-                                  {asset.name ||
-                                    (asset.ticker || "").toUpperCase() ||
-                                    (asset.symbol || "").toUpperCase() ||
-                                    "Unknown Asset"}
-                                  {asset.legacy_ticker && (
-                                    <span className="text-xs text-[#f7c624] dark:text-[#f7c624] bg-[#f7c6241a] px-1 py-0.5 rounded-full">
-                                      {asset.legacy_ticker}
-                                    </span>
-                                  )}
-                                </div>
+                            />
+                            <div className="flex-1">
+                              <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
+                                {(
+                                  asset.ticker ||
+                                  asset.symbol ||
+                                  asset.name ||
+                                  "Unknown"
+                                ).toUpperCase()}
+                                <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                                  {asset.network || "Unknown"}
+                                </span>
                               </div>
-                              {selectedAsset?.asset_id === asset.asset_id && (
-                                <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                              )}
+                              <div className="text-[#35353e] dark:text-[#788099] text-sm">
+                                {asset.name ||
+                                  (asset.ticker || "").toUpperCase() ||
+                                  (asset.symbol || "").toUpperCase() ||
+                                  "Unknown Asset"}
+                                {asset.legacy_ticker && (
+                                  <span className="text-xs text-[#f7c624] dark:text-[#f7c624] bg-[#f7c6241a] px-1 py-0.5 rounded-full">
+                                    {asset.legacy_ticker}
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                          )
-                        )
+                            {selectedAsset?.asset_id === asset.asset_id && (
+                              <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                            )}
+                          </div>
+                        ))
                       ) : (
                         <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
                           {assetSearchTerm
@@ -2390,9 +2451,11 @@ export default function WithdrawalForm({
                 Network
               </label>
               <div className="relative" ref={networkDropdownRef}>
-                <div 
+                <div
                   className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer hover:border-[#1D8751] dark:hover:border-[#1D8751] transition-colors"
-                  onClick={() => setIsNetworkDropdownOpen(!isNetworkDropdownOpen)}
+                  onClick={() =>
+                    setIsNetworkDropdownOpen(!isNetworkDropdownOpen)
+                  }
                 >
                   <div className="flex items-center gap-3">
                     <img
@@ -2404,13 +2467,18 @@ export default function WithdrawalForm({
                       {selectedNetwork?.name || "Binance Smart Chain BEP20"}
                     </span>
                   </div>
-                  <svg 
-                    className={`w-5 h-5 text-[#7e7e8f] transition-transform ${isNetworkDropdownOpen ? 'rotate-180' : ''}`} 
-                    fill="none" 
-                    stroke="currentColor" 
+                  <svg
+                    className={`w-5 h-5 text-[#7e7e8f] transition-transform ${isNetworkDropdownOpen ? "rotate-180" : ""}`}
+                    fill="none"
+                    stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
                   </svg>
                 </div>
 
@@ -2422,9 +2490,9 @@ export default function WithdrawalForm({
                         <div
                           key={`${network.network_id}-${index}`}
                           className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer rounded-xl transition-colors ${
-                            selectedNetwork?.network_id === network.network_id 
-                              ? 'bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751]/30' 
-                              : ''
+                            selectedNetwork?.network_id === network.network_id
+                              ? "bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751]/30"
+                              : ""
                           }`}
                           onClick={() => {
                             setSelectedNetwork(network);
@@ -2449,9 +2517,20 @@ export default function WithdrawalForm({
                               Default
                             </span>
                           )}
-                          {selectedNetwork?.network_id === network.network_id && (
-                            <svg className="w-5 h-5 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          {selectedNetwork?.network_id ===
+                            network.network_id && (
+                            <svg
+                              className="w-5 h-5 text-[#1D8751]"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 13l4 4L19 7"
+                              />
                             </svg>
                           )}
                         </div>
@@ -2508,25 +2587,33 @@ export default function WithdrawalForm({
                       // Mark that user has manually modified the amount
                       setIsUserModifiedAmount(true);
 
+                      // Validate balance in real-time
+                      const balanceValidationError = validateBalance(newValue);
+                      setBalanceError(balanceValidationError);
+
                       // Clear any previous errors when user starts typing
-                          setReceiveAmountError(null);
-                          setApiValidationError(null);
+                      setReceiveAmountError(null);
+                      setApiValidationError(null);
                       setCalculationError(null);
+                      // Don't clear balanceError here - let it show if amount exceeds balance
                       // Clear validation errors related to amount
-                      setValidationErrors(prev => prev.filter(error => 
-                        !error.includes("amount") && 
-                        !error.includes("Amount")
-                      ));
+                      setValidationErrors((prev) =>
+                        prev.filter(
+                          (error) =>
+                            !error.includes("amount") &&
+                            !error.includes("Amount")
+                        )
+                      );
                     }
                   }}
                   onFocus={() => setIsCalculatingFromPay(true)}
                   placeholder="Enter amount"
                   className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg  focus:outline-none border appearance-none ${
                     apiValidationError
-                        ? "border-red-500"
-                        : isCalculating || isCalculatingReceive
-                          ? "border-[#1D8751]"
-                          : "border-[#A2A4A9FF] dark:border-[#35353E]"
+                      ? "border-red-500"
+                      : isCalculating || isCalculatingReceive
+                        ? "border-[#1D8751]"
+                        : "border-[#A2A4A9FF] dark:border-[#35353E]"
                   }`}
                 />
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
@@ -2540,12 +2627,17 @@ export default function WithdrawalForm({
                       : "USDT"}
                   </span>
                 </div>
-                    </div>
+              </div>
               {/* Display calculation error below Amount input */}
               {calculationError && (
                 <div className="mt-2 text-sm text-yellow-500 dark:text-yellow-400">
                   {calculationError}
-                  </div>
+                </div>
+              )}
+              {balanceError && (
+                <div className="mt-2 text-sm text-red-500 dark:text-red-400">
+                  {balanceError}
+                </div>
               )}
               {apiValidationError && (
                 <div className="mt-2 text-sm text-yellow-500 dark:text-yellow-400">
@@ -2567,22 +2659,26 @@ export default function WithdrawalForm({
                   onChange={(e) => setWalletAddress(e.target.value)}
                   onPaste={(e) => {
                     e.preventDefault(); // Prevent default paste behavior
-                    const pastedText = e.clipboardData.getData('text');
+                    const pastedText = e.clipboardData.getData("text");
                     setWalletAddress(pastedText); // Set the pasted text directly
                   }}
                   placeholder="Enter BEP20 wallet address (0x...)"
                   className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-9 py-2 text-lg focus:outline-none border ${
-                    walletError 
-                      ? "border-red-500" 
-                      : walletAddress.trim() && !walletError 
-                        ? "border-green-500" 
+                    walletError
+                      ? "border-red-500"
+                      : walletAddress.trim() && !walletError
+                        ? "border-green-500"
                         : "border-[#A2A4A9FF] dark:border-[#35353E]"
                   }`}
                 />
-                    </div>
-              {walletError && <p className="text-red-500 text-sm mt-1">{walletError}</p>}
+              </div>
+              {walletError && (
+                <p className="text-red-500 text-sm mt-1">{walletError}</p>
+              )}
               {walletAddress.trim() && !walletError && (
-                <p className="text-green-500 text-sm mt-1">✅ Valid BEP20 address</p>
+                <p className="text-green-500 text-sm mt-1">
+                  ✅ Valid BEP20 address
+                </p>
               )}
             </div>
           </div>
@@ -2599,12 +2695,18 @@ export default function WithdrawalForm({
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
-                  <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" />
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="white"
+                    strokeWidth="2"
+                  />
                 </svg>
               </div>
               <span className="text-[#35353e] dark:text-[#788099] text-sm font-medium">
-                This is only an estimated price based on current market rates. The
-                final price will be confirmed when we receive the funds.
+                This is only an estimated price based on current market rates.
+                The final price will be confirmed when we receive the funds.
               </span>
             </div>
           </div>
@@ -2620,7 +2722,8 @@ export default function WithdrawalForm({
                 isSubmitting ||
                 isTransactionSubmitted ||
                 isInfoModalOpen ||
-                getAmount > 15000
+                getAmount > 15000 ||
+                !!balanceError
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
               }`}
@@ -2629,13 +2732,16 @@ export default function WithdrawalForm({
                 isSubmitting ||
                 isTransactionSubmitted ||
                 isInfoModalOpen ||
-                getAmount > 15000
+                getAmount > 15000 ||
+                !!balanceError
               }
             >
               {isSubmitting ? (
                 <div className="flex items-center gap-2">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  <span className="text-white">Getting Withdrawal Addresses...</span>
+                  <span className="text-white">
+                    Getting Withdrawal Addresses...
+                  </span>
                 </div>
               ) : isTransactionSubmitted ? (
                 <div className="flex items-center gap-2">
@@ -2649,7 +2755,9 @@ export default function WithdrawalForm({
                       className="text-white"
                     />
                   </svg>
-                  <span className="text-white">Withdrawal Addresses Generated</span>
+                  <span className="text-white">
+                    Withdrawal Addresses Generated
+                  </span>
                 </div>
               ) : (
                 <span className="text-white">Withdrawal</span>
@@ -2893,7 +3001,7 @@ export default function WithdrawalForm({
                 setPendingWithdrawalData({
                   amount: payAmount,
                   asset: selectedAsset,
-                  withdrawal_id: `demo-${Date.now()}` // Demo ID for testing UI flow
+                  withdrawal_id: `demo-${Date.now()}`, // Demo ID for testing UI flow
                 });
                 setIsOTPModalOpen(true);
               }}
@@ -2928,7 +3036,6 @@ export default function WithdrawalForm({
         </div>
       )}
 
-
       {/* InfoModal */}
       <InfoModal
         isOpen={isInfoModalOpen}
@@ -2949,8 +3056,8 @@ export default function WithdrawalForm({
         onClose={() => {
           setIsSuccessModalOpen(false);
           // Reset form after success
-          setPayAmount(100);
-          setPayAmountInput("100");
+          setPayAmount(0);
+          setPayAmountInput("0");
           setWalletAddress("");
           setIsTransactionSubmitted(false);
           // Reload the page after closing the success modal
@@ -2960,7 +3067,7 @@ export default function WithdrawalForm({
         asset={selectedAsset}
         onNavigateToP2P={() => {
           // Navigate to P2P page
-          router.push('/dashboard/p2p');
+          router.push("/dashboard/p2p");
         }}
       />
 
