@@ -61,4 +61,13 @@
   "marketing.contact.questionPlaceholder": "Fadlan ku sharrax su'aashaada ama arrintaada...",
   "marketing.contact.submit": "Gudbi Foomka Xiriirka",
   "marketing.contact.submitting": "Waa la gudbinayaa..."
+  ,
+  "marketing.steps.create.title": "Samee Akoon",
+  "marketing.steps.create.desc": "Si dhakhso leh oo ammaan ah u samee akoon si aad u bilowdo safarkaaga ganacsiga dhijitaalka ah.",
+  "marketing.steps.verify.title": "Xaqiiji Aqoonsiga",
+  "marketing.steps.verify.desc": "Xaqiiji aqoonsigaaga si loo hubiyo waayo-aragnimo ammaan ah oo waafaqsan.",
+  "marketing.steps.transfer.title": "Dir Lacag",
+  "marketing.steps.transfer.desc": "Si fudud u wareeji lacagta oo hel adduun hanti dhijitaal ah.",
+  "marketing.steps.start.title": "Ka Bilaaw Isweydaarsiga",
+  "marketing.steps.start.desc": "Isla markiiba u billaaw isweydaarsiga oo sahami fursado aan dhammaad lahayn"
 }

@@ -14,26 +14,23 @@ import { ContactForm } from "@/features/contact/components";
 const steps = [
   {
     icon: "https://res.cloudinary.com/dam1sxczj/image/upload/v1746707947/create_account_gzbijn.png",
-    title: "Create Account",
-    description:
-      "Create an account quickly and securely to start your digital trading journey.",
+    title: "marketing.steps.create.title",
+    description: "marketing.steps.create.desc",
   },
   {
     icon: "https://res.cloudinary.com/dam1sxczj/image/upload/v1746707947/verify_i9k3dd.png",
-    title: "Verify Identity",
-    description:
-      "Verify your identity to ensure a secure and compliant trading experience.",
+    title: "marketing.steps.verify.title",
+    description: "marketing.steps.verify.desc",
   },
   {
     icon: "https://res.cloudinary.com/dam1sxczj/image/upload/v1746707947/Transfermoney_hnssjb.png",
-    title: "Transfer Money",
-    description:
-      "Transfer funds effortlessly and access a world of digital assets.",
+    title: "marketing.steps.transfer.title",
+    description: "marketing.steps.transfer.desc",
   },
   {
     icon: "https://res.cloudinary.com/dam1sxczj/image/upload/v1746707947/exchange_gmhyus.png",
-    title: "Start Exchanging",
-    description: "Start exchanging instantly and explore endless opportunities",
+    title: "marketing.steps.start.title",
+    description: "marketing.steps.start.desc",
   },
 ];
 
@@ -358,7 +355,10 @@ export default function MarketingPage() {
 
                   <div className="darK:text-white space-y-6 text-left 2xl:text-lg">
                     <p>
-                      {t("marketing.about.body", "Established in 2019, OMAYA Express Exchange is Somalia's leading cryptocurrency exchange, licensed by the Central Bank of Somalia. With a team spread across the country and abroad, we've facilitated over 50,000 transactions, surpassing $60 million in volume. In addition to cryptocurrency services, we act as a local agent for premier Forex brokers, offering comprehensive financial solutions. We are fully compliant with government regulations, ensuring a secure and trustworthy platform for all our users. Our commitment to innovation and customer satisfaction drives everything we do at OMAYA Exchange. We focus on providing a seamless, user-friendly experience for both novice and experienced traders. By combining advanced technology with a deep understanding of the local market, we empower our users to confidently participate in the global digital economy. As we continue to grow, we remain dedicated to maintaining the highest standards of transparency, security, and regulatory compliance, ensuring that OMAYA Exchange remains the trusted gateway to financial freedom in East Africa.")}
+                      {t(
+                        "marketing.about.body",
+                        "Established in 2019, OMAYA Express Exchange is Somalia's leading cryptocurrency exchange, licensed by the Central Bank of Somalia. With a team spread across the country and abroad, we've facilitated over 50,000 transactions, surpassing $60 million in volume. In addition to cryptocurrency services, we act as a local agent for premier Forex brokers, offering comprehensive financial solutions. We are fully compliant with government regulations, ensuring a secure and trustworthy platform for all our users. Our commitment to innovation and customer satisfaction drives everything we do at OMAYA Exchange. We focus on providing a seamless, user-friendly experience for both novice and experienced traders. By combining advanced technology with a deep understanding of the local market, we empower our users to confidently participate in the global digital economy. As we continue to grow, we remain dedicated to maintaining the highest standards of transparency, security, and regulatory compliance, ensuring that OMAYA Exchange remains the trusted gateway to financial freedom in East Africa."
+                      )}
                     </p>
                   </div>
                 </div>
@@ -408,10 +408,10 @@ export default function MarketingPage() {
                     ></img>
                   </div>
                   <h3 className="darK:text-white font-medium text-lg 2xl:text-xl mb-2 text-center">
-                    {step.title}
+                    {t(String(step.title), String(step.title))}
                   </h3>
                   <p className="darK:text-[#788099] text-center text-sm 2xl:text-lg">
-                    {step.description}
+                    {t(String(step.description), String(step.description))}
                   </p>
                 </div>
 
@@ -607,7 +607,10 @@ export default function MarketingPage() {
                   {t("marketing.benefits.safety.title", "Absolute Safety")}
                 </h3>
                 <p className="text-gray-200 text-sm 2xl:text-lg">
-                  {t("marketing.benefits.safety.desc", "Exchange confidently with OMAYA, where safety is our top priority.")}
+                  {t(
+                    "marketing.benefits.safety.desc",
+                    "Exchange confidently with OMAYA, where safety is our top priority."
+                  )}
                 </p>
               </div>
             </div>
@@ -630,10 +633,16 @@ export default function MarketingPage() {
               </div>
               <div>
                 <h3 className="text-white font-medium text-lg 2xl:text-xl mb-2">
-                  {t("marketing.benefits.fast.title", "Fast Deposits & Withdrawals")}
+                  {t(
+                    "marketing.benefits.fast.title",
+                    "Fast Deposits & Withdrawals"
+                  )}
                 </h3>
                 <p className="text-gray-200 text-sm 2xl:text-lg">
-                  {t("marketing.benefits.fast.desc", "Enjoy swift and seamless deposits and withdrawals.")}
+                  {t(
+                    "marketing.benefits.fast.desc",
+                    "Enjoy swift and seamless deposits and withdrawals."
+                  )}
                 </p>
               </div>
             </div>
@@ -656,10 +665,16 @@ export default function MarketingPage() {
               </div>
               <div>
                 <h3 className="text-white font-medium text-lg 2xl:text-xl mb-2">
-                  {t("marketing.benefits.invite.title", "Invite your friend and earn")}
+                  {t(
+                    "marketing.benefits.invite.title",
+                    "Invite your friend and earn"
+                  )}
                 </h3>
                 <p className="text-gray-200 text-sm 2xl:text-lg">
-                  {t("marketing.benefits.invite.desc", "Refer and invite your friends and earn commission on each transaction they make with us!")}
+                  {t(
+                    "marketing.benefits.invite.desc",
+                    "Refer and invite your friends and earn commission on each transaction they make with us!"
+                  )}
                 </p>
               </div>
             </div>

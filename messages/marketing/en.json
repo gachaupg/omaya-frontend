@@ -60,5 +60,13 @@
   "marketing.contact.questionLabel": "Your Question *",
   "marketing.contact.questionPlaceholder": "Please describe your question or issue...",
   "marketing.contact.submit": "Submit Contact Form",
-  "marketing.contact.submitting": "Submitting..."
+  "marketing.contact.submitting": "Submitting...",
+  "marketing.steps.create.title": "Create Account",
+  "marketing.steps.create.desc": "Create an account quickly and securely to start your digital trading journey.",
+  "marketing.steps.verify.title": "Verify Identity",
+  "marketing.steps.verify.desc": "Verify your identity to ensure a secure and compliant trading experience.",
+  "marketing.steps.transfer.title": "Transfer Money",
+  "marketing.steps.transfer.desc": "Transfer funds effortlessly and access a world of digital assets.",
+  "marketing.steps.start.title": "Start Exchanging",
+  "marketing.steps.start.desc": "Start exchanging instantly and explore endless opportunities"
 }
