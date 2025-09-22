@@ -127,6 +127,11 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
       currency = websocketData.data.currency.toUpperCase();
     }
     
+    // Check for withdrawal completion currency
+    if (websocketData?.data?.status === "completed" && websocketData?.data?.currency) {
+      currency = websocketData.data.currency.toUpperCase();
+    }
+    
     const network = transactionData.network?.network_type || 
                    transactionData.network?.network_id || 
                    transactionData.network?.name ||
@@ -171,6 +176,12 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
           amount = parseFloat(wsData.amount);
           estimatedAmount = parseFloat(wsData.amount);
         }
+        
+        // Check for withdrawal amount from completion status
+        if (wsData.amount && wsData.status === "completed") {
+          amount = parseFloat(wsData.amount);
+          estimatedAmount = parseFloat(wsData.amount);
+        }
       }
     
     // Get transaction hash/ID with websocket data priority
@@ -192,9 +203,11 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
     // Get transaction hash from websocket data
     let txHash = txId;
     
-    // Check for tx_hash from new deposit format (highest priority)
-    if (websocketData?.data?.tx_hash) {
-      txHash = websocketData.data.tx_hash || websocketData.data.transaction_hash;
+    // Check for transaction_hash from withdrawal completion (highest priority)
+    if (websocketData?.data?.transaction_hash) {
+      txHash = websocketData.data.transaction_hash;
+    } else if (websocketData?.data?.tx_hash) {
+      txHash = websocketData.data.tx_hash;
     } else if (websocketData?.data?.payinHash) {
       txHash = websocketData.data.payinHash;
     } else if (websocketData?.data?.payoutHash) {
