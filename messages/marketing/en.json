@@ -27,8 +27,7 @@
   "marketing.referral.subtitle": "Invite your friend, and earn commission",
   "marketing.referral.title": "Refer and Invite your friends and earn commission on each transaction they make with us!",
   "marketing.blogs.title": "Enjoy Our Blog & News On the Latest Updates",
-  "marketing.blogs.read": "Read Article"
-  ,
+  "marketing.blogs.read": "Read Article",
   "marketing.contact.title": "Need Answers to Your Questions? Contact Us",
   "marketing.contact.success": "Thank you! Your message has been submitted successfully. We'll get back to you soon.",
   "marketing.contact.tryAgain": "Try Again",
@@ -44,4 +43,16 @@
   "marketing.app.appStore": "App Store",
   "marketing.app.googlePlay": "Google Play",
   "marketing.buttons.goToCategory": "Go To {category}"
+  ,
+  "marketing.exchange.tabs.swap": "Swap Crypto",
+  "marketing.exchange.pay": "You pay",
+  "marketing.exchange.get": "You get",
+  "marketing.exchange.amount": "Amount",
+  "marketing.exchange.note": "This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds.",
+  "marketing.contact.emailLabel": "Email Address *",
+  "marketing.contact.emailPlaceholder": "your.email@example.com",
+  "marketing.contact.questionLabel": "Your Question *",
+  "marketing.contact.questionPlaceholder": "Please describe your question or issue...",
+  "marketing.contact.submit": "Submit Contact Form",
+  "marketing.contact.submitting": "Submitting..."
 }

@@ -27,8 +27,7 @@
   "marketing.referral.subtitle": "Casuun saaxiibkaa, oo hel gunno",
   "marketing.referral.title": "Ku martiqaad saaxiibadaa oo hel gunno macaamil kasta oo ay nala sameeyaan!",
   "marketing.blogs.title": "Ku Raaxayso Blog-gayaga & Wararka Cusub",
-  "marketing.blogs.read": "Akhri Qoraalka"
-  ,
+  "marketing.blogs.read": "Akhri Qoraalka",
   "marketing.contact.title": "Ma u baahan tahay jawaabo? Nala soo xiriir",
   "marketing.contact.success": "Mahadsanid! Farriintaada waa la gudbiyay si guul leh. Waxaan kaa soo jawaabi doonaa goor dhow.",
   "marketing.contact.tryAgain": "Mar Kale Isku Day",
@@ -44,4 +43,16 @@
   "marketing.app.appStore": "App Store",
   "marketing.app.googlePlay": "Google Play",
   "marketing.buttons.goToCategory": "Tag {category}"
+  ,
+  "marketing.exchange.tabs.swap": "Isweydaarsi Crypto",
+  "marketing.exchange.pay": "Waxaad bixinaysaa",
+  "marketing.exchange.get": "Waxaad helaysaa",
+  "marketing.exchange.amount": "Qaddar",
+  "marketing.exchange.note": "Tani waa qiime qiyaas ah oo ku saleysan heerarka suuqa ee hadda. Qiimaha kama dambaysta ah waxaa la xaqiijin doonaa marka aan helno lacagta.",
+  "marketing.contact.emailLabel": "Cinwaanka Emailka *",
+  "marketing.contact.emailPlaceholder": "emailkaaga@tusaale.com",
+  "marketing.contact.questionLabel": "Su'aashaada *",
+  "marketing.contact.questionPlaceholder": "Fadlan ku sharrax su'aashaada ama arrintaada...",
+  "marketing.contact.submit": "Gudbi Foomka Xiriirka",
+  "marketing.contact.submitting": "Waa la gudbinayaa..."
 }
