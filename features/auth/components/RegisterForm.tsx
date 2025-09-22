@@ -17,6 +17,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 // Dynamic import for GoogleAuthButton
 const GoogleAuthButton = React.lazy(() => import("./GoogleAuthButton"));
+import { useI18n } from "@/lib/useI18n";
 
 // Email Verification Modal Component
 interface EmailVerificationModalProps {
@@ -280,6 +281,7 @@ function EmailVerificationModal({
 }
 
 export default function RegistrationPage() {
+  const { t } = useI18n("auth");
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
 
@@ -577,10 +579,10 @@ export default function RegistrationPage() {
           <div className="max-w-md mx-auto 2xl:max-w-3/4">
             <div className="mb-6">
               <h1 className="dark:text-white text-gray-900 text-2xl font-semibold">
-                Registration
+                {t("auth.register.title", "Registration")}
               </h1>
               <p className="dark:text-[#788099] text-gray-600">
-                Please Register with correct Information
+                {t("auth.register.subtitle", "Please Register with correct Information")}
               </p>
             </div>
 
@@ -591,7 +593,7 @@ export default function RegistrationPage() {
                     htmlFor="first-name"
                     className="block dark:text-white text-gray-900 text-sm mb-2"
                   >
-                    First Name*
+                    {t("auth.register.firstName", "First Name*")}
                   </label>
                   <div className="relative">
                     <input
@@ -604,7 +606,7 @@ export default function RegistrationPage() {
                           ? "border-[#FDA29B]"
                           : "border-gray-700"
                       } dark:text-[#788099] text-gray-900 focus:outline-none focus:border-[#13B562]`}
-                      placeholder="Full Name"
+                      placeholder={t("auth.register.firstName", "Full Name")}
                     />
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <svg
@@ -643,7 +645,7 @@ export default function RegistrationPage() {
                     htmlFor="establishment-date"
                     className="block dark:text-white text-gray-900 text-sm mb-2"
                   >
-                    Last Name*
+                    {t("auth.register.lastName", "Last Name*")}
                   </label>
                   <div className="relative">
                     <input
@@ -654,7 +656,7 @@ export default function RegistrationPage() {
                       className={`w-full py-2 px-4 pl-9 rounded-full dark:bg-[#1D1D23] bg-white border ${
                         errors.lastName ? "border-[#FDA29B]" : "border-gray-700"
                       } dark:text-[#788099] text-gray-900 focus:outline-none focus:border-[#13B562]`}
-                      placeholder="Last Name"
+                      placeholder={t("auth.register.lastName", "Last Name")}
                     />
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <svg
@@ -695,7 +697,7 @@ export default function RegistrationPage() {
                     htmlFor="email"
                     className="block dark:text-white text-gray-900 text-sm mb-2"
                   >
-                    Email*
+                    {t("auth.register.email", "Email*")}
                   </label>
                   <div className="relative">
                     <input
@@ -706,7 +708,7 @@ export default function RegistrationPage() {
                       className={`w-full py-2 px-4 pl-9 rounded-full dark:bg-[#1D1D23] bg-white border ${
                         errors.email ? "border-[#FDA29B]" : "border-gray-700"
                       } dark:text-[#788099] text-gray-900 focus:outline-none focus:border-[#13B562]`}
-                      placeholder="Email Address"
+                      placeholder={t("auth.login.email.placeholder", "Email Address")}
                     />
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <svg
@@ -810,7 +812,7 @@ export default function RegistrationPage() {
                     htmlFor="phone"
                     className="block dark:text-white text-gray-900 text-sm mb-2"
                   >
-                    Phone*
+                    {t("auth.register.phone", "Phone*")}
                   </label>
                   <div className="relative">
                     <input
@@ -821,7 +823,7 @@ export default function RegistrationPage() {
                       className={`w-full py-2 px-4 pl-9 rounded-full dark:bg-[#1D1D23] bg-white border ${
                         errors.phone ? "border-[#FDA29B]" : "border-gray-700"
                       } dark:text-[#788099] text-gray-900 focus:outline-none focus:border-[#13B562]`}
-                      placeholder="+12345678"
+                      placeholder={"+12345678"}
                     />
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <svg
@@ -855,7 +857,7 @@ export default function RegistrationPage() {
                     htmlFor="password"
                     className="block dark:text-white text-gray-900 text-sm mb-2"
                   >
-                    Password*
+                    {t("auth.register.password", "Password*")}
                   </label>
                   <div className="relative">
                     <input
@@ -866,7 +868,7 @@ export default function RegistrationPage() {
                       className={`w-full py-2 px-4 pl-9 rounded-full dark:bg-[#1D1D23] bg-white border ${
                         errors.password ? "border-[#FDA29B]" : "border-gray-700"
                       } dark:text-[#788099] text-gray-900 focus:outline-none focus:border-[#13B562]`}
-                      placeholder="Enter password"
+                      placeholder={t("auth.register.password.placeholder", "Enter password")}
                     />
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <svg
@@ -988,7 +990,7 @@ export default function RegistrationPage() {
                     htmlFor="confirm-password"
                     className="block dark:text-white text-gray-900 text-sm mb-2"
                   >
-                    Confirm password*
+                    {t("auth.register.confirm", "Confirm password*")}
                   </label>
                   <div className="relative">
                     <input
@@ -1001,7 +1003,7 @@ export default function RegistrationPage() {
                           ? "border-[#FDA29B]"
                           : "border-gray-700"
                       } dark:text-[#788099] text-gray-900 focus:outline-none focus:border-[#13B562]`}
-                      placeholder="Confirm password"
+                      placeholder={t("auth.register.confirm.placeholder", "Confirm password")}
                     />
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <svg
@@ -1127,7 +1129,7 @@ export default function RegistrationPage() {
                     className={`h-2 w-2 rounded-full ${hasMinChars ? "bg-[#1D8751]" : "bg-[#1D8751]"}`}
                   ></div>
                   <span className="text-sm dark:text-white text-gray-900">
-                    At least 8 characters
+                    {t("auth.register.requirements.8chars", "At least 8 characters")}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -1135,7 +1137,7 @@ export default function RegistrationPage() {
                     className={`h-2 w-2 rounded-full ${hasNumber || hasSymbol ? "bg-[#1D8751]" : "bg-[#1D8751]"}`}
                   ></div>
                   <span className="text-sm dark:text-white text-gray-900">
-                    At least one number or symbol
+                    {t("auth.register.requirements.numberSymbol", "At least one number or symbol")}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -1143,7 +1145,7 @@ export default function RegistrationPage() {
                     className={`h-2 w-2 rounded-full ${hasMixedCase ? "bg-[#1D8751]" : "bg-[#1D8751]"}`}
                   ></div>
                   <span className="text-sm dark:text-white text-gray-900">
-                    Both uppercase and lowercase letters
+                    {t("auth.register.requirements.mixedCase", "Both uppercase and lowercase letters")}
                   </span>
                 </div>
               </div>
@@ -1154,7 +1156,7 @@ export default function RegistrationPage() {
                   htmlFor="referral-code"
                   className="block dark:text-white text-gray-900 text-sm mb-2"
                 >
-                  Referral Code
+                  {t("auth.register.referral", "Referral Code")}
                 </label>
                 <div className="relative">
                   <input
@@ -1163,7 +1165,7 @@ export default function RegistrationPage() {
                     value={referralCode}
                     onChange={(e) => setReferralCode(e.target.value)}
                     className="w-full py-2 px-4 pl-9 rounded-full dark:bg-[#1D1D23] bg-white border dark:border-gray-700 border-gray-300 dark:text-[#788099] text-gray-900 focus:outline-none focus:border-[#13B562]"
-                    placeholder="Paste here your referral code"
+                    placeholder={t("auth.register.referral.placeholder", "Paste here your referral code")}
                   />
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <img
@@ -1231,15 +1233,13 @@ export default function RegistrationPage() {
                       htmlFor="terms"
                       className="text-sm dark:text-white text-gray-900 cursor-pointer"
                     >
-                      By clicking Register, you agree to our Terms of Services
-                      and that you have read our Data Use Policy, including our
-                      Cookie Use
+                      {t("auth.register.terms", "By clicking Register, you agree to our Terms of Services and that you have read our Data Use Policy, including our Cookie Use")}
                     </label>
                   </div>
                 </div>
                 {!agreeToTerms && errors.firstName && (
                   <p className="mt-1 text-xs text-[#F04438]">
-                    You must agree to the terms and conditions
+                    {t("auth.register.mustAgree", "You must agree to the terms and conditions")}
                   </p>
                 )}
               </div>
@@ -1249,18 +1249,18 @@ export default function RegistrationPage() {
                 type="submit"
                 className="w-full bg-[#1D8751] text-white py-3 px-4 rounded-full hover:bg-[#0E5531] transition-colors duration-300 mt-4"
               >
-                Register
+                {t("auth.register.submit", "Register")}
               </button>
 
               {/* Login Link */}
               <div className="text-center mt-2">
                 <p className="text-gray-400">
-                  Already have an account?{" "}
+                  {t("auth.register.haveAccount", "Already have an account?")}{" "}
                   <Link
                     href="/auth/login"
                     className="text-[#1D8751] hover:text-[#0E5531] cursor-pointer"
                   >
-                    Log In
+                    {t("auth.register.login", "Log In")}
                   </Link>
                 </p>
                 <div className="border-t dark:border-gray-700 border-gray-300 flex-grow mt-2"></div>
@@ -1270,7 +1270,7 @@ export default function RegistrationPage() {
               <div className="mt-4">
                 <div className="relative flex items-center justify-center">
                   <span className="mx-4 text-gray-400 text-sm">
-                    Or Sign Up with
+                  {t("auth.register.or", "Or Sign Up with")}
                   </span>
                 </div>
 

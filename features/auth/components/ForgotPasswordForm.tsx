@@ -14,8 +14,10 @@ import {
 import { AppDispatch } from "@/features/auth/store";
 import { storage } from "../utils/storage";
 import { showToast } from "@/lib/utils/toast";
+import { useI18n } from "@/lib/useI18n";
 
 const ForgetPassword = () => {
+  const { t } = useI18n("auth");
   const dispatch = useDispatch<AppDispatch>();
   const [email, setEmail] = useState(() => storage.getUserEmail());
   const [emailError, setEmailError] = useState("");
@@ -109,11 +111,10 @@ const ForgetPassword = () => {
       <div className="w-1/2 p-8 flex flex-col justify-center">
         <div className="max-w-md mx-auto w-full 2xl:max-w-3/4">
           <h1 className="text-2xl font-semibold dark:text-white text-gray-900 mb-2">
-            Forgot Password
+            {t("auth.forgot.title", "Forgot Password")}
           </h1>
           <p className="dark:text-[#788099] text-gray-600 mb-1">
-            Enter your email to receive the instruction <br />
-            to reset your password
+            {t("auth.forgot.subtitle", "Enter your email to receive the instruction to reset your password")}
           </p>
           <form className="space-y-4" onSubmit={handleEmailSubmit}>
             <div className="grid grid-cols-1 gap-4">
@@ -122,7 +123,7 @@ const ForgetPassword = () => {
                   htmlFor="email"
                   className="block dark:text-white text-gray-900 text-sm mb-2"
                 >
-                  Email*
+                  {t("auth.forgot.email", "Email*")}
                 </label>
                 <div className="relative">
                   <input
@@ -130,7 +131,7 @@ const ForgetPassword = () => {
                     id="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Email Address"
+                    placeholder={t("auth.forgot.email.placeholder", "Email Address")}
                     className="w-full py-2 px-4 pl-9 dark:bg-[#1D1D23] bg-white border dark:border-[#35353E] border-gray-300 rounded-full dark:text-[#788099] text-gray-900 dark:placeholder-[#788099] placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent"
                   />
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -170,7 +171,7 @@ const ForgetPassword = () => {
               className="w-full bg-[#1D8751] text-white py-2 px-4 rounded-full hover:bg-[#0E5531] transition-colors duration-300 mt-4"
               disabled={isLoading}
             >
-              {isLoading ? "Sending..." : "Confirm"}
+              {isLoading ? t("auth.forgot.submitting", "Sending...") : t("auth.forgot.submit", "Confirm")}
             </button>
           </form>
         </div>
