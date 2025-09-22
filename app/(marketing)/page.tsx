@@ -358,26 +358,7 @@ export default function MarketingPage() {
 
                   <div className="darK:text-white space-y-6 text-left 2xl:text-lg">
                     <p>
-                      Established in 2019, OMAYA Express Exchange is Somalia's
-                      leading cryptocurrency exchange, licensed by the Central
-                      Bank of Somalia. With a team spread across the country and
-                      abroad, we've facilitated over 50,000 transactions,
-                      surpassing $60 million in volume. In addition to
-                      cryptocurrency services, we act as a local agent for
-                      premier Forex brokers, offering comprehensive financial
-                      solutions. We are fully compliant with government
-                      regulations, ensuring a secure and trustworthy platform
-                      for all our users. Our commitment to innovation and
-                      customer satisfaction drives everything we do at OMAYA
-                      Exchange. We focus on providing a seamless, user-friendly
-                      experience for both novice and experienced traders. By
-                      combining advanced technology with a deep understanding of
-                      the local market, we empower our users to confidently
-                      participate in the global digital economy. As we continue
-                      to grow, we remain dedicated to maintaining the highest
-                      standards of transparency, security, and regulatory
-                      compliance, ensuring that OMAYA Exchange remains the
-                      trusted gateway to financial freedom in East Africa.
+                      {t("marketing.about.body", "Established in 2019, OMAYA Express Exchange is Somalia's leading cryptocurrency exchange, licensed by the Central Bank of Somalia. With a team spread across the country and abroad, we've facilitated over 50,000 transactions, surpassing $60 million in volume. In addition to cryptocurrency services, we act as a local agent for premier Forex brokers, offering comprehensive financial solutions. We are fully compliant with government regulations, ensuring a secure and trustworthy platform for all our users. Our commitment to innovation and customer satisfaction drives everything we do at OMAYA Exchange. We focus on providing a seamless, user-friendly experience for both novice and experienced traders. By combining advanced technology with a deep understanding of the local market, we empower our users to confidently participate in the global digital economy. As we continue to grow, we remain dedicated to maintaining the highest standards of transparency, security, and regulatory compliance, ensuring that OMAYA Exchange remains the trusted gateway to financial freedom in East Africa.")}
                     </p>
                   </div>
                 </div>
@@ -623,11 +604,10 @@ export default function MarketingPage() {
               </div>
               <div>
                 <h3 className="text-white font-medium text-lg mb-2 2xl:text-xl">
-                  Absolute Safety
+                  {t("marketing.benefits.safety.title", "Absolute Safety")}
                 </h3>
                 <p className="text-gray-200 text-sm 2xl:text-lg">
-                  Exchange confidently with OMAYA, where safety is our top
-                  priority.
+                  {t("marketing.benefits.safety.desc", "Exchange confidently with OMAYA, where safety is our top priority.")}
                 </p>
               </div>
             </div>
@@ -650,10 +630,10 @@ export default function MarketingPage() {
               </div>
               <div>
                 <h3 className="text-white font-medium text-lg 2xl:text-xl mb-2">
-                  Fast Deposits & Withdrawals
+                  {t("marketing.benefits.fast.title", "Fast Deposits & Withdrawals")}
                 </h3>
                 <p className="text-gray-200 text-sm 2xl:text-lg">
-                  Enjoy swift and seamless deposits and withdrawals.
+                  {t("marketing.benefits.fast.desc", "Enjoy swift and seamless deposits and withdrawals.")}
                 </p>
               </div>
             </div>
@@ -676,11 +656,10 @@ export default function MarketingPage() {
               </div>
               <div>
                 <h3 className="text-white font-medium text-lg 2xl:text-xl mb-2">
-                  Invite your friend and earn
+                  {t("marketing.benefits.invite.title", "Invite your friend and earn")}
                 </h3>
                 <p className="text-gray-200 text-sm 2xl:text-lg">
-                  Refer and invite your friends and earn commission on each
-                  transaction they make with us!
+                  {t("marketing.benefits.invite.desc", "Refer and invite your friends and earn commission on each transaction they make with us!")}
                 </p>
               </div>
             </div>
@@ -1029,14 +1008,20 @@ export default function MarketingPage() {
             {/* Form Section */}
             <div className="w-full lg:w-1/2 space-y-6">
               <h2 className="text-3xl 2xl:text-4xl font-bold mb-6 w-3/4 text-[#0D0D0D]  dark:text-white">
-                {t("marketing.contact.title", "Need Answers to Your Questions? Contact Us")}
+                {t(
+                  "marketing.contact.title",
+                  "Need Answers to Your Questions? Contact Us"
+                )}
               </h2>
 
               {/* Success Message */}
               {showContactSuccess && (
                 <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl">
                   <p className="text-green-800 dark:text-green-200 text-sm">
-                    {t("marketing.contact.success", "Thank you! Your message has been submitted successfully. We'll get back to you soon.")}
+                    {t(
+                      "marketing.contact.success",
+                      "Thank you! Your message has been submitted successfully. We'll get back to you soon."
+                    )}
                   </p>
                 </div>
               )}
@@ -1130,9 +1115,14 @@ export default function MarketingPage() {
                 ) : faqItems.length === 0 ? (
                   // Empty state
                   <div className="text-center py-8">
-                    <p className="text-gray-400 text-lg">{t("marketing.faq.empty", "No FAQs available.")}</p>
+                    <p className="text-gray-400 text-lg">
+                      {t("marketing.faq.empty", "No FAQs available.")}
+                    </p>
                     <p className="text-gray-500 text-sm mt-2">
-                      {t("marketing.faq.addHint", "Please add some FAQ items to your Sanity CMS.")}
+                      {t(
+                        "marketing.faq.addHint",
+                        "Please add some FAQ items to your Sanity CMS."
+                      )}
                     </p>
                   </div>
                 ) : (
