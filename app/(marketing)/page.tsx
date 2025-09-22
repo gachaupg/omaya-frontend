@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { useMarketingI18n } from "@/lib/useMarketingI18n";
 import Image from "next/image";
 import Link from "next/link";
 import { tokens } from "@/styles/tokens";
@@ -87,11 +88,12 @@ interface Article {
 }
 
 export default function MarketingPage() {
+  const { t } = useMarketingI18n();
   const [activeCategory, setActiveCategory] = useState<Category>("News");
   const [openFAQ, setOpenFAQ] = useState<number | null>(4);
   const [showContactSuccess, setShowContactSuccess] = useState(false);
   const [showContactError, setShowContactError] = useState(false);
-  const [contactErrorMessage, setContactErrorMessage] = useState('');
+  const [contactErrorMessage, setContactErrorMessage] = useState("");
   const { blogs, news, loading, error } = useBlog();
   const { faqs: faqItems, loading: faqLoading, error: faqError } = useFAQ();
 
@@ -189,7 +191,7 @@ export default function MarketingPage() {
   const handleContactSuccess = () => {
     setShowContactSuccess(true);
     setShowContactError(false);
-    
+
     // Hide success message after 3 seconds
     setTimeout(() => {
       setShowContactSuccess(false);
@@ -200,7 +202,7 @@ export default function MarketingPage() {
     setContactErrorMessage(error);
     setShowContactError(true);
     setShowContactSuccess(false);
-    
+
     // Hide error message after 5 seconds
     setTimeout(() => {
       setShowContactError(false);
@@ -264,31 +266,27 @@ export default function MarketingPage() {
             <div className="space-y-6 pl-6 md:pl-12 md:text-left text-center 2xl:col-span-2">
               <h1 className="text-4xl md:text-5xl font-bold text-white tracking-wide ">
                 <span className="inline-block w-full 2xl:text-7xl">
-                  Welcome&nbsp;to
+                  {t("marketing.hero.heading1", "Welcome to")}
                 </span>
                 <span className="inline-block w-full 2xl:text-7xl">
-                  OMAYA&nbsp;Exchange
+                  {t("marketing.hero.heading2", "OMAYA Exchange")}
                 </span>
               </h1>
               <p className="text-white/80  max-w-xl 2xl:max-w-3xl mx-auto md:mx-0 2xl:text-lg">
-                We are OMAYA EXCHANGE, Somalia's leading platform for exchanging
-                cryptocurrencies and Forex. Founded by experts with over 15
-                years of IT experience, we bridge traditional finance with the
-                digital economy in East Africa. Our secure and user-friendly
-                platform is designed to meet the unique needs of our market,
-                empowering users with seamless access to the world of digital
-                assets. Committed to transparency, innovation, and education, we
-                are shaping the future of finance in our region.
+                {t(
+                  "marketing.hero.subtitle",
+                  "We are OMAYA EXCHANGE, Somalia's leading platform for exchanging cryptocurrencies and Forex."
+                )}
               </p>
               <div className="flex flex-wrap gap-4 justify-center md:justify-start">
-                <a 
-                  href="#contact" 
+                <a
+                  href="#contact"
                   className="rounded-md px-6 py-2 text-white bg-[#1D8751] 2xl:text-lg hover:bg-[#166b42] transition-colors"
                 >
-                  Contact Us
+                  {t("marketing.hero.cta.primary", "Contact Us")}
                 </a>
                 <button className="rounded-md text-white hover:bg-white/10 px-6 py-2 flex items-center gap-2 border border-[#1D8751] 2xl:text-lg">
-                  Watch Video
+                  {t("marketing.hero.cta.secondary", "Watch Video")}
                   <Play size={16} className="ml-1 text-[#1D8751]" />
                 </button>
               </div>
@@ -313,10 +311,10 @@ export default function MarketingPage() {
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
           {/* Section Title */}
           <h2 className="text-center text-2xl md:text-3xl 2xl:text-4xl font-medium darK:text-white mb-12">
-            Celebrating Success:{" "}
-            <span className="text-[#1D8751]">
-              Key Achievements at OMAYA EXCHANGE
-            </span>
+            {t(
+              "marketing.achievements.title",
+              "Celebrating Success: Key Achievements at OMAYA EXCHANGE"
+            )}
           </h2>
           {/* Achievement Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -329,7 +327,7 @@ export default function MarketingPage() {
                   {achievement.value}
                 </div>
                 <div className="darK:text-white text-xm text-center 2xl:text-sm">
-                  {achievement.label}
+                  {t(achievement.label, achievement.label)}
                 </div>
               </div>
             ))}
@@ -346,14 +344,14 @@ export default function MarketingPage() {
                 <div>
                   <div className="flex items-center mb-2 gap-4 justify-center md:justify-start">
                     <div className="text-sm 2xl:text-lg darK:text-white font-medium p-1 tracking-widest rotate-180 border-l-2 border-[#1D8751] [writing-mode:vertical-rl]">
-                      ABOUT US
+                      {t("marketing.about.label", "ABOUT US")}
                     </div>
                     <div>
                       <h3 className="text-[#1D8751] text-xl 2xl:text-2xl font-medium mb-1">
-                        ABOUT
+                        {t("marketing.about.title1", "ABOUT")}
                       </h3>
                       <h4 className="text-[#1D8751] text-xl 2xl:text-2xl font-medium mb-4">
-                        OMAYA EXCHANGE .
+                        {t("marketing.about.title2", "OMAYA EXCHANGE .")}
                       </h4>
                     </div>
                   </div>
@@ -403,8 +401,12 @@ export default function MarketingPage() {
         {/* Main heading */}
         <div className="text-center mb-12">
           <h2 className="text-2xl md:text-3xl 2xl:text-4xl font-medium">
-            <span className="darK:text-white">Get Set Up And </span>
-            <span className="text-[#1D8751]">Start Exchanging</span>
+            <span className="darK:text-white">
+              {t("marketing.getSetup.titlePrefix", "Get Set Up And")}{" "}
+            </span>
+            <span className="text-[#1D8751]">
+              {t("marketing.getSetup.titleHighlight", "Start Exchanging")}
+            </span>
           </h2>
         </div>
 
@@ -511,7 +513,9 @@ export default function MarketingPage() {
         {/* Features section */}
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl mt-24">
           <h2 className="text-center text-2xl md:text-3xl 2xl:text-4xl font-medium text-white mb-16">
-            <span className="text-[#1D8751]">Why Choose Us</span>
+            <span className="text-[#1D8751]">
+              {t("marketing.features.title", "Why Choose Us")}
+            </span>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-24">
             <div className="relative flex justify-center">
@@ -546,7 +550,12 @@ export default function MarketingPage() {
                 {features.map((feature, index) => (
                   <li key={index} className="flex items-center 2xl:text-lg">
                     <div className="w-3 h-3 rounded-full bg-[#1D8751] flex items-center justify-center mr-3"></div>
-                    <span className="text-[#788099]">{feature}</span>
+                    <span className="text-[#788099]">
+                      {t(
+                        `marketing.features.items.${feature === "Low Transaction Fee" ? "lowFee" : feature === "Secure Payment Service" ? "secure" : feature === "Fast Transactions" ? "fast" : "support"}`,
+                        feature
+                      )}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -683,7 +692,7 @@ export default function MarketingPage() {
       <div className="w-full dark:bg-[#18181D] bg-[#EEF1F4]  py-16">
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
           <h2 className="text-center text-2xl md:text-3xl 2xl:text-4xl font-medium darK:text-white mb-12">
-            Supported Assets
+            {t("marketing.assets.title", "Supported Assets")}
           </h2>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
@@ -801,14 +810,19 @@ export default function MarketingPage() {
             {/* Text content */}
             <div className="w-full md:w-1/2 mb-8 md:mb-0">
               <p className="text-white text-lg 2xl:text-xl mb-2">
-                Invite your friend, and earn commission
+                {t(
+                  "marketing.referral.subtitle",
+                  "Invite your friend, and earn commission"
+                )}
               </p>
               <h2 className="text-white text-2xl md:text-2xl 2xl:text-3xl font-medium mb-6">
-                Refer and Invite your friends and earn commission on each
-                transaction they make with us!
+                {t(
+                  "marketing.referral.title",
+                  "Refer and Invite your friends and earn commission on each transaction they make with us!"
+                )}
               </h2>
-              <a 
-                href="#contact" 
+              <a
+                href="#contact"
                 className="bg-white text-[#0A6E3A] px-6 py-2 rounded-full hover:bg-gray-100 transition duration-300 inline-block"
               >
                 Contact Us
@@ -847,8 +861,10 @@ export default function MarketingPage() {
           {/* Header section */}
           <div className="mb-10">
             <h2 className="text-center text-2xl 2xl:text-3xl font-semibold dark:text-white text-[#0D0D0D]">
-              Enjoy Our <span className="text-[#1D8751] mr-2">Blog</span> & News
-              On the <span className="text-[#1D8751]">Latest Updates</span>
+              {t(
+                "marketing.blogs.title",
+                "Enjoy Our Blog & News On the Latest Updates"
+              )}
             </h2>
 
             {/* Category toggle buttons */}
@@ -929,7 +945,7 @@ export default function MarketingPage() {
                   onClick={() => window.location.reload()}
                   className="bg-[#1D8751] text-white px-4 py-2 rounded-lg hover:bg-[#167a47] transition-colors"
                 >
-                  Try Again
+                  {t("marketing.contact.tryAgain", "Try Again")}
                 </button>
               </div>
             ) : filteredArticles.length === 0 ? (
@@ -983,7 +999,7 @@ export default function MarketingPage() {
                       href={`/blog/${article.id}`}
                       className="inline-block text-[#1D8751] border border-[#1D8751] rounded-full px-4 py-1 text-sm 2xl:text-lg transition-colors hover:bg-[#1D8751] hover:text-white"
                     >
-                      Read Article
+                      {t("marketing.blogs.read", "Read Article")}
                     </Link>
                   </div>
                 </div>
@@ -997,27 +1013,30 @@ export default function MarketingPage() {
               href={`/${activeCategory.toLowerCase()}`}
               className="inline-block bg-[#1D8751] text-white rounded-full px-6 py-3 font-medium text-sm transition-colors hover:bg-[#1D8751]"
             >
-              Go To {activeCategory}
+              {t("marketing.buttons.goToCategory", `Go To ${activeCategory}`)}
             </Link>
           </div>
         </div>
       </div>
 
       {/* Contact Us Section */}
-      <section id="contact" className="w-full dark:bg-[#1D1D23] bg-[#F6F6F6] text-white py-16 px-4 md:px-8">
+      <section
+        id="contact"
+        className="w-full dark:bg-[#1D1D23] bg-[#F6F6F6] text-white py-16 px-4 md:px-8"
+      >
         <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto">
           <div className="flex flex-col lg:flex-row items-center gap-8">
             {/* Form Section */}
             <div className="w-full lg:w-1/2 space-y-6">
               <h2 className="text-3xl 2xl:text-4xl font-bold mb-6 w-3/4 text-[#0D0D0D]  dark:text-white">
-                Need Answers to Your Questions? Contact Us
+                {t("marketing.contact.title", "Need Answers to Your Questions? Contact Us")}
               </h2>
 
               {/* Success Message */}
               {showContactSuccess && (
                 <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl">
                   <p className="text-green-800 dark:text-green-200 text-sm">
-                    Thank you! Your message has been submitted successfully. We'll get back to you soon.
+                    {t("marketing.contact.success", "Thank you! Your message has been submitted successfully. We'll get back to you soon.")}
                   </p>
                 </div>
               )}
@@ -1031,7 +1050,7 @@ export default function MarketingPage() {
                 </div>
               )}
 
-              <ContactForm 
+              <ContactForm
                 onSuccess={handleContactSuccess}
                 onError={handleContactError}
               />
@@ -1105,15 +1124,15 @@ export default function MarketingPage() {
                       onClick={() => window.location.reload()}
                       className="bg-[#1D8751] text-white px-4 py-2 rounded-lg hover:bg-[#167a47] transition-colors"
                     >
-                      Try Again
+                      {t("marketing.contact.tryAgain", "Try Again")}
                     </button>
                   </div>
                 ) : faqItems.length === 0 ? (
                   // Empty state
                   <div className="text-center py-8">
-                    <p className="text-gray-400 text-lg">No FAQs available.</p>
+                    <p className="text-gray-400 text-lg">{t("marketing.faq.empty", "No FAQs available.")}</p>
                     <p className="text-gray-500 text-sm mt-2">
-                      Please add some FAQ items to your Sanity CMS.
+                      {t("marketing.faq.addHint", "Please add some FAQ items to your Sanity CMS.")}
                     </p>
                   </div>
                 ) : (

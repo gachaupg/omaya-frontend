@@ -13,6 +13,7 @@ import {
   logout,
 } from "@/features/auth/slices/authSlice";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { useLanguageOptional } from "@/context/language";
 
 const DefaultProfileIcon = () => (
   <div
@@ -94,7 +95,10 @@ const AuthButton = ({
 
 const LanguageSelector = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState("English");
+  const ctx = useLanguageOptional();
+  const [selectedLanguage, setSelectedLanguage] = useState(
+    ctx?.locale === "so" ? "Somali" : "English"
+  );
 
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
@@ -103,6 +107,14 @@ const LanguageSelector = () => {
   const selectLanguage = (language: string) => {
     setSelectedLanguage(language);
     setDropdownOpen(false);
+    try {
+      const locale = language === "Somali" ? "so" : "en";
+      if (ctx) {
+        ctx.setLocale(locale as any);
+      } else {
+        document.cookie = `NEXT_LOCALE=${locale}; path=/; max-age=${60 * 60 * 24 * 365}`;
+      }
+    } catch {}
   };
 
   return (
