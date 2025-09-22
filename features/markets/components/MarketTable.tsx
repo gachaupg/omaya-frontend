@@ -29,7 +29,10 @@ import { Asset, FavoriteAsset } from "../../exchange/types";
 
 
 // Utility functions for formatting
-const formatPrice = (price: number): string => {
+const formatPrice = (price: number | null | undefined): string => {
+  if (price === null || price === undefined || isNaN(price)) {
+    return "$0.00";
+  }
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
@@ -38,7 +41,10 @@ const formatPrice = (price: number): string => {
   }).format(price);
 };
 
-const formatVolume = (volume: number): string => {
+const formatVolume = (volume: number | null | undefined): string => {
+  if (volume === null || volume === undefined || isNaN(volume)) {
+    return "$0.00";
+  }
   if (volume >= 1e12) {
     return `$${(volume / 1e12).toFixed(2)}T`;
   } else if (volume >= 1e9) {
@@ -51,7 +57,10 @@ const formatVolume = (volume: number): string => {
   return `$${volume.toFixed(2)}`;
 };
 
-const formatMarketCap = (marketCap: number): string => {
+const formatMarketCap = (marketCap: number | null | undefined): string => {
+  if (marketCap === null || marketCap === undefined || isNaN(marketCap)) {
+    return "$0.00";
+  }
   if (marketCap >= 1e12) {
     return `$${(marketCap / 1e12).toFixed(2)}T`;
   } else if (marketCap >= 1e9) {
@@ -62,7 +71,10 @@ const formatMarketCap = (marketCap: number): string => {
   return `$${marketCap.toFixed(2)}`;
 };
 
-const formatPercentage = (percentage: number): string => {
+const formatPercentage = (percentage: number | null | undefined): string => {
+  if (percentage === null || percentage === undefined || isNaN(percentage)) {
+    return "0.00%";
+  }
   const sign = percentage >= 0 ? "+" : "";
   return `${sign}${percentage.toFixed(2)}%`;
 };
@@ -223,17 +235,21 @@ const MarketTable = () => {
     switch (activeFilter) {
       case "Gainers":
         return markets.filter(
-          (market) => market.price_change_percentage_24h > 0
+          (market) => market.price_change_percentage_24h !== null && market.price_change_percentage_24h > 0
         );
       case "Losers":
         return markets.filter(
-          (market) => market.price_change_percentage_24h < 0
+          (market) => market.price_change_percentage_24h !== null && market.price_change_percentage_24h < 0
         );
       case "New":
         // Filter for coins with recent activity (you can customize this logic)
         return markets.slice(0, 10);
       case "Market Cap":
-        return [...markets].sort((a, b) => b.market_cap - a.market_cap);
+        return [...markets].sort((a, b) => {
+          const aCap = a.market_cap || 0;
+          const bCap = b.market_cap || 0;
+          return bCap - aCap;
+        });
       default:
         return markets;
     }
@@ -641,7 +657,7 @@ const MarketTable = () => {
                       </td>
                       <td
                         className={`font-medium px-2 py-3 ${
-                          market.price_change_percentage_24h >= 0
+                          market.price_change_percentage_24h !== null && market.price_change_percentage_24h >= 0
                             ? "text-[#13B562]"
                             : "text-[#FF6B6B]"
                         }`}

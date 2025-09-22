@@ -63,6 +63,7 @@ interface DepositFormProps {
   mode: "deposit" | "withdrawal";
   onModeChange?: (mode: "deposit" | "withdrawal") => void;
   balance?: number;
+  skipAmountValidation?: boolean; // New prop to skip amount validation when posting ads
 }
 
 export default function DepositForm({
@@ -70,6 +71,7 @@ export default function DepositForm({
   mode,
   onModeChange,
   balance,
+  skipAmountValidation = false,
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -548,22 +550,33 @@ export default function DepositForm({
       const asset = selectedAsset.ticker || selectedAsset.symbol;
       const network = selectedNetwork.network || selectedNetwork.name;
       
-      console.log("Submitting deposit request with:", { asset, network, amount: payAmount });
+      console.log("Submitting deposit request with:", { 
+        asset, 
+        network, 
+        amount: skipAmountValidation ? "NOT INCLUDED" : payAmount, 
+        skipAmountValidation 
+      });
 
       // Call the express deposit API
-      const depositResponse = await createExpressDeposit({
+      const depositPayload: any = {
         asset,
-        amount: payAmount.toString(),
         network,
         user_payment_detail_id: 1 // Default payment detail ID
-      });
+      };
+
+      // Only include amount if skipAmountValidation is false
+      if (!skipAmountValidation && payAmount > 0) {
+        depositPayload.amount = payAmount.toString();
+      }
+
+      const depositResponse = await createExpressDeposit(depositPayload);
       
       console.log("Express deposit response:", depositResponse);
       
       // Create transaction data for the exchanging page
       const transactionData = {
         type: "deposit" as const,
-        amount: payAmount,
+        amount: skipAmountValidation ? 0 : payAmount,
         asset: {
           name: selectedAsset.name,
           ticker: selectedAsset.ticker || selectedAsset.symbol,
@@ -1428,8 +1441,11 @@ export default function DepositForm({
   const validateFirstCard = () => {
     const errors: string[] = [];
 
-    if (!payAmount || payAmount <= 0) {
-      errors.push("Please enter a valid amount");
+    // Skip amount validation when skipAmountValidation is true (for posting ads)
+    if (!skipAmountValidation) {
+      if (!payAmount || payAmount <= 0) {
+        errors.push("Please enter a valid amount");
+      }
     }
 
     if (!selectedAsset) {
@@ -1447,8 +1463,11 @@ export default function DepositForm({
   const validateForm = () => {
     const errors: string[] = [];
 
-    if (!payAmount || payAmount <= 0) {
-      errors.push("Please enter a valid amount");
+    // Skip amount validation when skipAmountValidation is true (for posting ads)
+    if (!skipAmountValidation) {
+      if (!payAmount || payAmount <= 0) {
+        errors.push("Please enter a valid amount");
+      }
     }
 
     if (!selectedAsset) {
@@ -1592,7 +1611,7 @@ export default function DepositForm({
       // Prepare transaction data for the status page
       const transactionData = {
         type: "deposit" as const,
-        amount: payAmount,
+        amount: skipAmountValidation ? 0 : payAmount,
         asset: {
           ...selectedAsset,
           icon: selectedAsset.image_url || selectedAsset.asset_image || selectedAsset.icon_url || selectedAsset.image
@@ -1865,7 +1884,7 @@ export default function DepositForm({
       if (onExchange) {
         const transactionData = {
           type: "deposit" as const,
-          amount: payAmount,
+          amount: skipAmountValidation ? 0 : payAmount,
           asset: {
             ...selectedAsset,
             icon: selectedAsset.image_url || selectedAsset.asset_image || selectedAsset.icon_url || selectedAsset.image
