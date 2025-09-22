@@ -6,7 +6,10 @@ import { getNamespaceMessages, type Messages } from "./getMessages";
 
 type Translator = (key: string, fallback?: string) => string;
 
-export function useI18n(namespace: string): { t: Translator; messages: Messages | null } {
+export function useI18n(namespace: string): {
+  t: Translator;
+  messages: Messages | null;
+} {
   const ctx = useLanguageOptional();
   const locale = ctx?.locale ?? "en";
   const [messages, setMessages] = useState<Messages | null>(null);
@@ -30,5 +33,3 @@ export function useI18n(namespace: string): { t: Translator; messages: Messages 
 
   return { t, messages };
 }
-
-

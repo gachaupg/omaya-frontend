@@ -103,7 +103,7 @@ export default function LoginPage() {
           setIsSubmitting(false);
           return;
         }
-        
+
         // Immediately navigate to dashboard without waiting for additional API calls
         router.push("/dashboard");
         // Force a hard navigation to ensure the redirect happens immediately
@@ -210,7 +210,9 @@ export default function LoginPage() {
             <h1 className="dark:text-white text-gray-900 text-2xl font-semibold">
               {t("auth.login.title", "Welcome")}
             </h1>
-            <p className="dark:text-[#788099] text-gray-600">{t("auth.login.subtitle", "Please Login")}</p>
+            <p className="dark:text-[#788099] text-gray-600">
+              {t("auth.login.subtitle", "Please Login")}
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -233,7 +235,10 @@ export default function LoginPage() {
                       ? "border-[#FDA29B]"
                       : "dark:border-gray-700 border-gray-300"
                   } dark:text-white text-gray-900 focus:outline-none focus:border-[#13B562]`}
-                  placeholder={t("auth.login.email.placeholder", "Email Address")}
+                  placeholder={t(
+                    "auth.login.email.placeholder",
+                    "Email Address"
+                  )}
                 />
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg
@@ -302,7 +307,10 @@ export default function LoginPage() {
                       ? "border-[#FDA29B]"
                       : "dark:border-gray-700 border-gray-300"
                   } dark:text-white text-gray-900 focus:outline-none focus:border-[#13B562]`}
-                  placeholder={t("auth.login.password.placeholder", "****************")}
+                  placeholder={t(
+                    "auth.login.password.placeholder",
+                    "****************"
+                  )}
                 />
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg
@@ -545,7 +553,7 @@ export default function LoginPage() {
                   {t("auth.login.submitting", "Logging in...")}
                 </div>
               ) : (
-                {t("auth.login.submit", "Log In")}
+                t("auth.login.submit", "Log In")
               )}
             </button>
 

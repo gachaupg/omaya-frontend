@@ -114,7 +114,10 @@ const ForgetPassword = () => {
             {t("auth.forgot.title", "Forgot Password")}
           </h1>
           <p className="dark:text-[#788099] text-gray-600 mb-1">
-            {t("auth.forgot.subtitle", "Enter your email to receive the instruction to reset your password")}
+            {t(
+              "auth.forgot.subtitle",
+              "Enter your email to receive the instruction to reset your password"
+            )}
           </p>
           <form className="space-y-4" onSubmit={handleEmailSubmit}>
             <div className="grid grid-cols-1 gap-4">
@@ -131,7 +134,10 @@ const ForgetPassword = () => {
                     id="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder={t("auth.forgot.email.placeholder", "Email Address")}
+                    placeholder={t(
+                      "auth.forgot.email.placeholder",
+                      "Email Address"
+                    )}
                     className="w-full py-2 px-4 pl-9 dark:bg-[#1D1D23] bg-white border dark:border-[#35353E] border-gray-300 rounded-full dark:text-[#788099] text-gray-900 dark:placeholder-[#788099] placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent"
                   />
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -171,7 +177,9 @@ const ForgetPassword = () => {
               className="w-full bg-[#1D8751] text-white py-2 px-4 rounded-full hover:bg-[#0E5531] transition-colors duration-300 mt-4"
               disabled={isLoading}
             >
-              {isLoading ? t("auth.forgot.submitting", "Sending...") : t("auth.forgot.submit", "Confirm")}
+              {isLoading
+                ? t("auth.forgot.submitting", "Sending...")
+                : t("auth.forgot.submit", "Confirm")}
             </button>
           </form>
         </div>

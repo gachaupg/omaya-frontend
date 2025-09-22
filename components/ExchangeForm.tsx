@@ -124,7 +124,9 @@ export default function ExchangeForm() {
 
       {/* Pay card */}
       <div className="flex flex-col p-5 border border-gray-300 dark:border-white/20 rounded-xl -mb-5 mt-10">
-        <h2 className="text-gray-900 dark:text-white text-sm mb-3">{t("marketing.exchange.pay", "You pay")}</h2>
+        <h2 className="text-gray-900 dark:text-white text-sm mb-3">
+          {t("marketing.exchange.pay", "You pay")}
+        </h2>
         <div className="flex justify-between">
           <div className="flex items-center gap-2">
             <Image
@@ -160,7 +162,9 @@ export default function ExchangeForm() {
 
       {/* Get card */}
       <div className="flex flex-col p-5 border border-gray-300 dark:border-white/20 -mt-5 rounded-xl">
-        <h2 className="text-gray-900 dark:text-white text-sm mb-3">{t("marketing.exchange.get", "You get")}</h2>
+        <h2 className="text-gray-900 dark:text-white text-sm mb-3">
+          {t("marketing.exchange.get", "You get")}
+        </h2>
         <div className="flex justify-between">
           <div className="flex items-center gap-2">
             <Image

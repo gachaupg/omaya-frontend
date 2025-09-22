@@ -1,6 +1,12 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
 import { defaultLocale, type Locale } from "../i18n.config";
 
 type LanguageContextValue = {
@@ -8,14 +14,19 @@ type LanguageContextValue = {
   setLocale: (next: Locale) => void;
 };
 
-const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);
+export const LanguageContext = createContext<LanguageContextValue | undefined>(
+  undefined
+);
 
 type LanguageProviderProps = {
   initialLocale?: Locale;
   children: React.ReactNode;
 };
 
-export function LanguageProvider({ initialLocale = defaultLocale, children }: LanguageProviderProps) {
+export function LanguageProvider({
+  initialLocale = defaultLocale,
+  children,
+}: LanguageProviderProps) {
   const [locale, setLocaleState] = useState<Locale>(initialLocale);
 
   const setLocale = useCallback((next: Locale) => {
@@ -25,9 +36,16 @@ export function LanguageProvider({ initialLocale = defaultLocale, children }: La
     } catch {}
   }, []);
 
-  const value = useMemo<LanguageContextValue>(() => ({ locale, setLocale }), [locale, setLocale]);
+  const value = useMemo<LanguageContextValue>(
+    () => ({ locale, setLocale }),
+    [locale, setLocale]
+  );
 
-  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
+  return (
+    <LanguageContext.Provider value={value}>
+      {children}
+    </LanguageContext.Provider>
+  );
 }
 
 export function useLanguage() {
@@ -38,4 +56,6 @@ export function useLanguage() {
   return ctx;
 }
 
-
+export function useLanguageOptional() {
+  return useContext(LanguageContext);
+}
