@@ -577,7 +577,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           isDark
             ? "bg-[#23232B]  border:[#E8EFF5] dark:border-[#35353E]"
             : "bg-white border-gray-200"
-        } border-2 rounded-2xl p-4 shadow-lg w-full max-w-4xl mb-4 min-h-[180px]`}
+        } border-2 rounded-2xl p-4 shadow-lg w-full  mb-4 min-h-[180px]`}
       >
         <div className="flex-1 flex flex-col justify-between py-2 pr-2">
           <div>
@@ -813,7 +813,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             <img
               src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${
                 effectiveTransactionData?.type === "deposit" &&
-                effectiveTransactionData?.paymentDetail
+                effectiveTransactionData?.paymentDetail &&
+                effectiveTransactionData.paymentDetail.provider_name !== "direct"
                   ? effectiveTransactionData.paymentDetail.account_number
                   : effectiveTransactionData?.walletAddress || ""
               }`}
@@ -824,7 +825,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
         </div>
       </div>
       
-      <div className="flex items-center justify-between w-full max-w-4xl mb-4 relative">
+      <div className="flex items-center justify-between w-full  mb-4 relative">
         {/* Connecting Lines */}
         <div className="absolute top-5 left-[16.66%] right-[16.66%] h-0.5 z-0">
           <div
@@ -1089,7 +1090,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     : "text-[#7B7B7B]"
               }`}
             >
-              {currentStatus === "completed" ? "Transaction Completed" : "Sending to you"}
+              {currentStatus === "completed" ? "Transaction Completed" : "Completed"}
             </span>
             {currentStatus === "sending" && (
               <div className="flex gap-1">
@@ -1144,7 +1145,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       <div
         className={`${
           isDark ? "bg-[#23232B] border-[#35353E]" : "bg-white border-gray-200"
-        } border-2 rounded-2xl p-6 shadow-lg w-full max-w-4xl mb-4`}
+        } border-2 rounded-2xl p-6 shadow-lg w-full  mb-4`}
       >
         {/* Title */}
         <div
@@ -1348,7 +1349,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       </div>
 
      
-      <div className="w-full max-w-4xl rounded-2xl flex ">
+      <div className="w-full  rounded-2xl flex ">
        
         <div className="w-full bg-[#FF9500]/50 border-2 border-solid border-[#FF9500]/50 rounded-[18px] flex flex-col gap-2 p-3">
           <h2 className="text-white text-base font-semibold">

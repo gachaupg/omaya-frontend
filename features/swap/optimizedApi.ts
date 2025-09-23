@@ -141,7 +141,7 @@ export const createSwapOptimized = async (
       swapData,
       {
         apiName: 'changenow',
-        timeout: 10000, // 10 second timeout for swap creation
+        timeout: 30000, // 30 second timeout for swap creation
       }
     );
     

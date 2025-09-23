@@ -343,8 +343,8 @@ const swapSlice = createSlice({
         if (!state.fromAsset && action.payload.length > 0) {
           // Find BTC asset, fallback to first asset if BTC not found
           const btcAsset = action.payload.find(asset => 
-            asset.ticker.toLowerCase() === 'btc' || 
-            asset.symbol.toLowerCase() === 'btc'
+            asset?.ticker?.toLowerCase() === 'btc' || 
+            asset?.symbol?.toLowerCase() === 'btc'
           );
           state.fromAsset = btcAsset || action.payload[0];
           console.log("🎯 Redux: fromAsset set to:", state.fromAsset);
@@ -352,8 +352,8 @@ const swapSlice = createSlice({
         if (!state.toAsset && action.payload.length > 1) {
           // Find ETH asset, fallback to second asset if ETH not found
           const ethAsset = action.payload.find(asset => 
-            asset.ticker.toLowerCase() === 'eth' || 
-            asset.symbol.toLowerCase() === 'eth'
+            asset?.ticker?.toLowerCase() === 'eth' || 
+            asset?.symbol?.toLowerCase() === 'eth'
           );
           state.toAsset = ethAsset || action.payload[1];
           console.log("🎯 Redux: toAsset set to:", state.toAsset);

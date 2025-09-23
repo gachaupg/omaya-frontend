@@ -265,8 +265,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   // Check if this is a USDT transaction (should use backend WebSocket)
   const isUSDTCurrency =
     effectiveTransactionData?.asset?.ticker?.toLowerCase() === "usdt" ||
-    effectiveTransactionData?.asset?.symbol?.toLowerCase().includes("usdt") ||
-    effectiveTransactionData?.asset?.name?.toLowerCase().includes("usdt");
+    effectiveTransactionData?.asset?.symbol?.toLowerCase()?.includes("usdt") ||
+    effectiveTransactionData?.asset?.name?.toLowerCase()?.includes("usdt");
   const finalWebsocketUrl = websocketUrl;
   const { isConnected, lastMessage, disconnect, sendMessage } =
     useTransactionStatusWebSocket(

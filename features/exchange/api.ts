@@ -6,7 +6,7 @@ import { TransactionSearchParams } from './types';
 export const EXCHANGE_ENDPOINTS = {
     DEPOSITS: '/trading_engine/deposits/',
     WITHDRAWALS: '/trading_engine/withdraw/',
-    ASSETS: '/administration/admin/fronted-all-asset-network-range/',
+    ASSETS: '/api/changenow/supported-tokens/',
     FAVORITES:'/trading_engine/favorites/',
     ADDFAVORITE: '/trading_engine/favorites/',
     REMOVEFAVORITE: '/trading_engine/favorites/',

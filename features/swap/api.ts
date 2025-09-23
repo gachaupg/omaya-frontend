@@ -19,7 +19,7 @@ export const getSupportedAssets = async (): Promise<SupportedAsset[]> => {
       const response = await get<{ message: string; total_changenow_tokens: number; results: SupportedAsset[] }>(
         API_CONFIG.SWAP.SUPPORTED_ASSETS,
         {
-          timeout: 10000
+          timeout: 30000
         }
       );
       

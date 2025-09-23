@@ -161,7 +161,9 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
                   </td>
                   {/* Date */}
                   <td className="px-4 py-2 dark:text-white text-gray-900">
-                    {new Date(item.date).toLocaleString()}
+                    {new Date(item.date).toLocaleString("en-US", {
+                      timeZone: "UTC"
+                    })}
                   </td>
                   {/* Rating */}
                   <td className="px-4 py-2">
