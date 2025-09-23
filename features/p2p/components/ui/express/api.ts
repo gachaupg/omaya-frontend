@@ -24,6 +24,6 @@ export const createP2PWithdrawal = async (data: P2PWithdrawalRequest) => {
 
 // Express deposit API
 export const createExpressDeposit = async (data: ExpressDepositPayload): Promise<ExpressDepositResponse> => {
-  const response = await post("/trading_engine/p2p/deposit/create/", data);
+  const response = await post(API_CONFIG.P2P.P2P_DEPOSIT_CREATE, data);
   return response.data as ExpressDepositResponse;
 };

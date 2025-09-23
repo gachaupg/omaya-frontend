@@ -131,6 +131,8 @@ export const useThemeToggle = () => {
   };
 
   const getCurrentTheme = () => {
+    if (!mounted) return "dark"; // Default during SSR
+    
     if (theme.mode === "system") {
       return window.matchMedia("(prefers-color-scheme: dark)").matches
         ? "dark"

@@ -140,6 +140,27 @@ interface DepositFormProps {
   onModeChange?: (mode: "deposit" | "withdrawal") => void;
 }
 
+// Network mapping function
+const getNetworkDisplayName = (network: string) => {
+  const networkMap: { [key: string]: string } = {
+    'bsc': 'BSC',
+    'matic': 'Polygon',
+    'avaxc': 'Avalanche',
+    'eth': 'Ethereum',
+    'osmo': 'Osmosis',
+    'band': 'Band Protocol',
+    'sol': 'Solana',
+    'nano': 'Nano',
+    'sxp': 'Solar',
+    'luna': 'Terra',
+    'base': 'Base',
+    'trc20': 'TRON',
+    'trx': 'TRON'
+  };
+  
+  return networkMap[network?.toLowerCase()] || network || 'Unknown';
+};
+
 export default function WithdrawalForm({
   onExchange,
   mode,
@@ -495,47 +516,49 @@ export default function WithdrawalForm({
   // Auto-select first asset and calculate received amount when assets are loaded
   useEffect(() => {
     if (assetsDisplay.shouldShowData && assetsDisplay.displayData.length > 0 && !selectedAsset) {
-      // Sort assets to get USDT on BSC first, then USDT on BSC, then others
+      // Sort assets to get USDT on BSC first, then USDC on BSC, then others
       const sortedAssets = [...assetsDisplay.displayData].sort((a, b) => {
-        const tickerA = (a.ticker || a.symbol || a.name || "")
+        const tickerA = (a?.ticker || a?.symbol || a?.name || "")
           .toString()
-          .toUpperCase();
-        const tickerB = (b.ticker || b.symbol || b.name || "")
+          .toLowerCase();
+        const tickerB = (b?.ticker || b?.symbol || b?.name || "")
           .toString()
-          .toUpperCase();
-        const networkA = (a.network || "").toString().toLowerCase();
-        const networkB = (b.network || "").toString().toLowerCase();
+          .toLowerCase();
+        const networkA = (a?.network || "").toString().toLowerCase();
+        const networkB = (b?.network || "").toString().toLowerCase();
 
         // Priority 1: USDT on BSC
         if (
-          tickerA === "USDT" &&
+          tickerA === "usdt" &&
           networkA === "bsc" &&
-          !(tickerB === "USDT" && networkB === "bsc")
+          !(tickerB === "usdt" && networkB === "bsc")
         ) {
           return -1;
         }
         if (
-          tickerB === "USDT" &&
+          tickerB === "usdt" &&
           networkB === "bsc" &&
-          !(tickerA === "USDT" && networkA === "bsc")
+          !(tickerA === "usdt" && networkA === "bsc")
         ) {
           return 1;
         }
-        // Priority 2: USDT on BSC
+        
+        // Priority 2: USDC on BSC
         if (
-          tickerA === "USDT" &&
+          tickerA === "usdc" &&
           networkA === "bsc" &&
-          !(tickerB === "USDT" && networkB === "bsc")
+          !(tickerB === "usdc" && networkB === "bsc")
         ) {
           return -1;
         }
         if (
-          tickerB === "USDT" &&
+          tickerB === "usdc" &&
           networkB === "bsc" &&
-          !(tickerA === "USDT" && networkA === "bsc")
+          !(tickerA === "usdc" && networkA === "bsc")
         ) {
           return 1;
         }
+        
         return 0;
       });
 
@@ -703,7 +726,7 @@ export default function WithdrawalForm({
   // Check if asset is USDT or USDT (should use simple calculation)
   const isSimpleCalculationAsset = (asset: any) => {
     if (!asset) return false;
-    const ticker = (asset.ticker || asset.symbol || "").toLowerCase();
+    const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
     return ticker === "usdt";
   };
 
@@ -796,14 +819,14 @@ export default function WithdrawalForm({
   // Get default amount based on asset type
   const getDefaultAmount = (asset: any) => {
     if (!asset) return 100;
-    const ticker = (asset.ticker || asset.symbol || "").toLowerCase();
+    const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
     return ticker === "usdt" || ticker === "usdc" ? 100 : 0.001;
   };
 
   // Get minimum amount based on asset type
   const getMinimumAmount = (asset: any) => {
     if (!asset) return 10; // Default minimum
-    const ticker = (asset.ticker || asset.symbol || "").toLowerCase();
+    const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
     return ticker === "usdt" || ticker === "usdc" ? 2 : 10; // 2 for USDT/USDT, 10 for others
   };
 
@@ -1184,7 +1207,7 @@ export default function WithdrawalForm({
 
       // Add timeout to prevent hanging API calls
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Request timeout")), 10000); // 10 second timeout
+        setTimeout(() => reject(new Error("Request timeout")), 30000); // 30 second timeout
       });
 
       Promise.race([
@@ -1492,9 +1515,9 @@ export default function WithdrawalForm({
   // Filter swap assets based on search term - search by ticker and name
   const filteredSwapAssets =
     assetsDisplay.displayData?.filter((asset: SupportedAsset) => {
-      const ticker = asset.ticker?.toUpperCase() || "";
-      const name = asset.name?.toUpperCase() || "";
-      const symbol = asset.symbol?.toUpperCase() || "";
+      const ticker = asset?.ticker?.toUpperCase() || "";
+      const name = asset?.name?.toUpperCase() || "";
+      const symbol = asset?.symbol?.toUpperCase() || "";
       const searchTerm = assetSearchTerm.toUpperCase();
 
       return (
@@ -1504,48 +1527,50 @@ export default function WithdrawalForm({
       );
     }) || [];
 
-  // Sort assets: USDT on BSC, USDT on BSC, then rest in original order
+  // Sort assets: USDT on BSC first, USDC on BSC second, then rest in original order
   const sortedSwapAssets = [...filteredSwapAssets].sort((a, b) => {
     // Ensure tickers exist and are strings (using ticker as primary, fallback to symbol/name)
-    const tickerA = (a.ticker || a.symbol || a.name || "")
+    const tickerA = (a?.ticker || a?.symbol || a?.name || "")
       .toString()
-      .toUpperCase();
-    const tickerB = (b.ticker || b.symbol || b.name || "")
+      .toLowerCase();
+    const tickerB = (b?.ticker || b?.symbol || b?.name || "")
       .toString()
-      .toUpperCase();
-    const networkA = (a.network || "").toString().toLowerCase();
-    const networkB = (b.network || "").toString().toLowerCase();
+      .toLowerCase();
+    const networkA = (a?.network || "").toString().toLowerCase();
+    const networkB = (b?.network || "").toString().toLowerCase();
 
     // Priority 1: USDT on BSC
     if (
-      tickerA === "USDT" &&
+      tickerA === "usdt" &&
       networkA === "bsc" &&
-      !(tickerB === "USDT" && networkB === "bsc")
+      !(tickerB === "usdt" && networkB === "bsc")
     ) {
       return -1;
     }
     if (
-      tickerB === "USDT" &&
+      tickerB === "usdt" &&
       networkB === "bsc" &&
-      !(tickerA === "USDT" && networkA === "bsc")
+      !(tickerA === "usdt" && networkA === "bsc")
     ) {
       return 1;
     }
-    // Priority 2: USDT on BSC
+    
+    // Priority 2: USDC on BSC
     if (
-      tickerA === "USDT" &&
+      tickerA === "usdc" &&
       networkA === "bsc" &&
-      !(tickerB === "USDT" && networkB === "bsc")
+      !(tickerB === "usdc" && networkB === "bsc")
     ) {
       return -1;
     }
     if (
-      tickerB === "USDT" &&
+      tickerB === "usdc" &&
       networkB === "bsc" &&
-      !(tickerA === "USDT" && networkA === "bsc")
+      !(tickerA === "usdc" && networkA === "bsc")
     ) {
       return 1;
     }
+    
     // Default: preserve original order (no change)
     return 0;
   });
@@ -2498,18 +2523,18 @@ export default function WithdrawalForm({
                       <>
                         <img
                           src={
-                            selectedAsset.image_url ||
-                            selectedAsset.asset_image ||
-                            selectedAsset.icon_url ||
-                            selectedAsset.image ||
+                            selectedAsset?.image_url ||
+                            selectedAsset?.asset_image ||
+                            (selectedAsset as any)?.image ||
                             "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                           }
                           alt={
-                            selectedAsset.name ||
-                            selectedAsset.ticker ||
+                            selectedAsset?.name ||
+                            selectedAsset?.ticker ||
+                            selectedAsset?.symbol ||
                             "Asset"
                           }
-                          className="w-6 h-6 rounded-full"
+                          className="w-6 h-6 rounded-full object-cover"
                           onError={(e) => {
                             console.log(
                               "Image failed to load for asset:",
@@ -2528,7 +2553,7 @@ export default function WithdrawalForm({
                           ).toUpperCase()}
                         </span>
                         <span className="ml-2 bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                          {selectedAsset.network || "Unknown"}
+                          {getNetworkDisplayName(selectedAsset.network)}
                         </span>
                       </>
                     ) : (
@@ -2657,13 +2682,15 @@ export default function WithdrawalForm({
                             >
                               <img
                                 src={
-                                  asset.image_url ||
-                                  asset.asset_image ||
+                                  asset?.image_url ||
+                                  asset?.asset_image ||
+                                  (asset as any)?.image ||
                                   "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                                 }
-                                alt={asset.name}
-                                className="w-6 h-6 rounded-full"
+                                alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
+                                className="w-6 h-6 rounded-full object-cover"
                                 onError={(e) => {
+                                  console.log("Image failed to load for asset:", asset);
                                   e.currentTarget.src =
                                     "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                                 }}
@@ -2677,7 +2704,7 @@ export default function WithdrawalForm({
                                     "Unknown"
                                   ).toUpperCase()}
                                   <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                                    {asset.network || "Unknown"}
+                                    {getNetworkDisplayName(asset.network)}
                                   </span>
                                 </div>
                                 <div className="text-[#35353e] dark:text-[#788099] text-sm">

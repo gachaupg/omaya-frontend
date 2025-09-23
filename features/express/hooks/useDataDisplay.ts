@@ -88,9 +88,9 @@ export function useAssetsDisplay(
     
     // Add swap assets if available (avoid duplicates)
     if (swapAssets && swapAssets.length > 0) {
-      const existingSymbols = new Set(assets.map(asset => asset.ticker || asset.symbol));
+      const existingSymbols = new Set(assets.map(asset => asset?.ticker || asset?.symbol));
       const uniqueSwapAssets = swapAssets.filter(asset => 
-        !existingSymbols.has(asset.ticker || asset.symbol)
+        !existingSymbols.has(asset?.ticker || asset?.symbol)
       );
       assets.push(...uniqueSwapAssets);
     }

@@ -264,7 +264,7 @@ export const fetchCoinDetails = async (id: string) => {
             "x-cg-demo-api-key": COINGECKO_API_KEY,
             Accept: "application/json",
           },
-          timeout: 10000,
+          timeout: 30000,
         }
       );
     } catch (apiKeyError) {
@@ -274,7 +274,7 @@ export const fetchCoinDetails = async (id: string) => {
         `https://api.coingecko.com/api/v3/coins/${id}`,
         {
           headers: { Accept: "application/json" },
-          timeout: 10000,
+          timeout: 30000,
         }
       );
     }
@@ -319,7 +319,7 @@ export const fetchCoinMarketChart = async (
             "x-cg-demo-api-key": COINGECKO_API_KEY,
             Accept: "application/json",
           },
-          timeout: 10000,
+          timeout: 30000,
         }
       );
     } catch (apiKeyError) {
@@ -330,7 +330,7 @@ export const fetchCoinMarketChart = async (
         {
           params: { vs_currency, days }, // REMOVED interval parameter
           headers: { Accept: "application/json" },
-          timeout: 10000,
+          timeout: 30000,
         }
       );
     }

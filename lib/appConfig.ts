@@ -39,6 +39,7 @@ export const API_CONFIG = {
     DEPOSIT_ADDRESSES: "/trading_engine/p2p/deposit/addresses/",
     WITHDRAWS: "trading_engine/p2p-withdraw/",
     P2P_WITHDRAW: "/trading_engine/p2p-withdraw/",
+    P2P_DEPOSIT_CREATE: "/trading_engine/p2p/deposit/create/",
     BUY_ADS: "/ads/buy/",
     SELL_ADS: "/ads/sell/",
     ASSETS: "/administration/admin/fronted-all-asset-network-range/",
@@ -74,7 +75,7 @@ export const API_CONFIG = {
     MATCHED_TRADE: "/trading_engine/p2p/trades/",
   },
   SWAP: {
-    SUPPORTED_ASSETS: "/administration/admin/changenow-tokens/",
+    SUPPORTED_ASSETS: "api/changenow/supported-tokens/",
     ESTIMATE_SWAP: "/api/changenow/estimate/",
     CREATE_SWAP: "/api/changenow/create/",
     SWAP_STATUS: "/api/changenow/status/",

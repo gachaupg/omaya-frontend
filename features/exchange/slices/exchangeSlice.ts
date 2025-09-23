@@ -132,7 +132,7 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>
         await sliceCache.delete('exchange', 'fetchAssets');
         // Fetch fresh data
         const response = await cachedGet<AssetsResponse>(endpoint, {
-          timeout: 10000,
+          timeout: 30000,
           ttl: 2 * 60 * 60 * 1000, // 2 hours cache for assets
           cache: true
         });
@@ -148,7 +148,7 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>
           async () => {
             console.log("🔄 Cache miss - fetching exchange assets from API...");
             const response = await cachedGet<AssetsResponse>(endpoint, {
-              timeout: 10000,
+              timeout: 30000,
               ttl: 2 * 60 * 60 * 1000, // 2 hours cache for assets
               cache: true
             });

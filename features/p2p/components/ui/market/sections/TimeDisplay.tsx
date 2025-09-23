@@ -28,7 +28,9 @@ export const TimeDisplay = ({ seconds }: TimeDisplayProps) => {
       // fallback: show current time
       const updateTime = () => {
         const now = new Date();
-        setTime(now.toLocaleTimeString());
+        setTime(now.toLocaleTimeString("en-US", {
+          timeZone: "UTC"
+        }));
       };
       updateTime();
       const interval = setInterval(updateTime, 1000);
@@ -42,5 +44,5 @@ export const TimeDisplay = ({ seconds }: TimeDisplayProps) => {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   }
 
-  return <span className="font-bold">{time}</span>;
+  return <span className="font-bold" suppressHydrationWarning>{time}</span>;
 };

@@ -1200,7 +1200,7 @@ export default function WithdrawalForm({
 
       // Add timeout to prevent hanging API calls
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Request timeout")), 10000); // 10 second timeout
+        setTimeout(() => reject(new Error("Request timeout")), 30000); // 30 second timeout
       });
 
       Promise.race([

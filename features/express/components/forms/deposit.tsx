@@ -42,6 +42,42 @@ interface DepositFormProps {
   onModeChange?: (mode: "deposit" | "withdrawal") => void;
 }
 
+// Network mapping function
+const getNetworkDisplayName = (network: string) => {
+  const networkMap: { [key: string]: string } = {
+    'bsc': 'BSC',
+    'matic': 'Polygon',
+    'avaxc': 'Avalanche',
+    'eth': 'Ethereum',
+    'osmo': 'Osmosis',
+    'band': 'Band Protocol',
+    'sol': 'Solana',
+    'nano': 'Nano',
+    'sxp': 'Solar',
+    'luna': 'Terra',
+    'base': 'Base',
+    'trc20': 'TRON',
+    'trx': 'TRON'
+  };
+  
+  return networkMap[network?.toLowerCase()] || network || 'Unknown';
+};
+
+// Helper function to get network value from asset (handles both Asset and SupportedAsset types)
+const getAssetNetwork = (asset: any): string => {
+  // For SupportedAsset (swap assets) - has network property
+  if (asset.network) {
+    return asset.network;
+  }
+  
+  // For Asset (exchange assets) - has networks array
+  if (asset.networks && asset.networks.length > 0) {
+    return asset.networks[0].network_type || asset.networks[0].network_id || '';
+  }
+  
+  return '';
+};
+
 export default function DepositForm({
   onExchange,
   mode,
@@ -250,12 +286,12 @@ export default function DepositForm({
   // Auto-select first asset when assets are loaded
   useEffect(() => {
     if (assetsDisplay.shouldShowData && assetsDisplay.displayData.length > 0 && !selectedAsset) {
-      // Use the sorted assets to get the first one (USDT on BSC should be first)
+      // Use the sorted assets to get the first one (USDT on BSC first, USDC on BSC second)
       const sortedAssets = [...assetsDisplay.displayData].sort((a, b) => {
-        const tickerA = (a.ticker || a.symbol || a.name || "").toString().toLowerCase();
-        const tickerB = (b.ticker || b.symbol || b.name || "").toString().toLowerCase();
-        const networkA = (a.network || "").toString().toLowerCase();
-        const networkB = (b.network || "").toString().toLowerCase();
+        const tickerA = (a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase();
+        const tickerB = (b?.ticker || b?.symbol || b?.name || "").toString().toLowerCase();
+        const networkA = (a?.network || "").toString().toLowerCase();
+        const networkB = (b?.network || "").toString().toLowerCase();
 
         // Priority 1: USDT on BSC
         if (tickerA === "usdt" && networkA === "bsc" && !(tickerB === "usdt" && networkB === "bsc")) {
@@ -264,14 +300,24 @@ export default function DepositForm({
         if (tickerB === "usdt" && networkB === "bsc" && !(tickerA === "usdt" && networkA === "bsc")) {
           return 1;
         }
+        
+        // Priority 2: USDC on BSC
+        if (tickerA === "usdc" && networkA === "bsc" && !(tickerB === "usdc" && networkB === "bsc")) {
+          return -1;
+        }
+        if (tickerB === "usdc" && networkB === "bsc" && !(tickerA === "usdc" && networkA === "bsc")) {
+          return 1;
+        }
+        
         return 0;
       });
 
       const firstAsset = sortedAssets[0];
       setSelectedAsset(firstAsset);
+      const networkValue = getAssetNetwork(firstAsset);
       setSelectedNetwork({
-        network_id: firstAsset.network,
-        network_type: firstAsset.network,
+        network_id: networkValue,
+        network_type: networkValue,
       });
     }
   }, [assetsDisplay.displayData, selectedAsset]);
@@ -296,7 +342,7 @@ export default function DepositForm({
   // Check if asset is USDT (should use simple calculation)
   const isSimpleCalculationAsset = (asset: any) => {
     if (!asset) return false;
-    const ticker = (asset.ticker || asset.symbol || "").toLowerCase();
+    const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
     return ticker === "usdt";
   };
 
@@ -325,7 +371,7 @@ export default function DepositForm({
 
       // Add timeout to prevent hanging API calls
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Request timeout")), 10000); // 10 second timeout
+        setTimeout(() => reject(new Error("Request timeout")), 30000); // 30 second timeout
       });
 
       Promise.race([
@@ -334,7 +380,7 @@ export default function DepositForm({
           fromCurrency: "USDT",
           fromNetwork: "BSC",
           toCurrency: selectedAsset.ticker, 
-          toNetwork: selectedAsset.network, 
+          toNetwork: getAssetNetwork(selectedAsset), 
           amount: payAmount,
         })
         ),
@@ -422,7 +468,7 @@ export default function DepositForm({
       
       console.log("Fetching reverse estimate for deposit:", {
         fromCurrency: selectedAsset.ticker, // We're converting FROM the selected asset
-        fromNetwork: selectedAsset.network, 
+        fromNetwork: getAssetNetwork(selectedAsset), 
         toCurrency: "USDT", // TO USDT (since we want to know how much USDT we need)
         toNetwork: "BSC", 
         amount: getAmount, // Use the receive amount directly
@@ -430,14 +476,14 @@ export default function DepositForm({
 
       // Add timeout to prevent hanging API calls
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Request timeout")), 10000); // 10 second timeout
+        setTimeout(() => reject(new Error("Request timeout")), 30000); // 30 second timeout
       });
 
       Promise.race([
         dispatch(
           fetchSwapEstimate({
             fromCurrency: selectedAsset.ticker, // FROM selected asset
-            fromNetwork: selectedAsset.network, 
+            fromNetwork: getAssetNetwork(selectedAsset), 
             toCurrency: "USDT", // TO USDT
             toNetwork: "BSC", 
             amount: getAmount, // Use receive amount directly
@@ -536,9 +582,9 @@ export default function DepositForm({
   // Filter assets based on search term - search by ticker and name
   const filteredSwapAssets =
     assetsDisplay.displayData?.filter((asset: SupportedAsset) => {
-      const ticker = asset.ticker?.toUpperCase() || "";
-      const name = asset.name?.toUpperCase() || "";
-      const symbol = asset.symbol?.toUpperCase() || "";
+      const ticker = asset?.ticker?.toUpperCase() || "";
+      const name = asset?.name?.toUpperCase() || "";
+      const symbol = asset?.symbol?.toUpperCase() || "";
       const searchTerm = assetSearchTerm.toUpperCase();
 
       return ticker.includes(searchTerm) || 
@@ -549,14 +595,14 @@ export default function DepositForm({
   // Sort assets: USDT on BSC, then rest in original order
   const sortedSwapAssets = [...filteredSwapAssets].sort((a, b) => {
     // Ensure tickers exist and are strings (using ticker as primary, fallback to symbol/name)
-    const tickerA = (a.ticker || a.symbol || a.name || "")
+    const tickerA = (a?.ticker || a?.symbol || a?.name || "")
       .toString()
       .toLowerCase();
-    const tickerB = (b.ticker || b.symbol || b.name || "")
+    const tickerB = (b?.ticker || b?.symbol || b?.name || "")
       .toString()
       .toLowerCase();
-    const networkA = (a.network || "").toString().toLowerCase();
-    const networkB = (b.network || "").toString().toLowerCase();
+    const networkA = (a?.network || "").toString().toLowerCase();
+    const networkB = (b?.network || "").toString().toLowerCase();
 
     // Priority 1: USDT on BSC
     if (
@@ -573,6 +619,23 @@ export default function DepositForm({
     ) {
       return 1;
     }
+    
+    // Priority 2: USDC on BSC
+    if (
+      tickerA === "usdc" &&
+      networkA === "bsc" &&
+      !(tickerB === "usdc" && networkB === "bsc")
+    ) {
+      return -1;
+    }
+    if (
+      tickerB === "usdc" &&
+      networkB === "bsc" &&
+      !(tickerA === "usdc" && networkA === "bsc")
+    ) {
+      return 1;
+    }
+    
     // Default: preserve original order (no change)
     return 0;
   });
@@ -938,9 +1001,20 @@ export default function DepositForm({
         }
         depositPayload.append("requested_amount", payAmount.toString());
 
-        // For direct crypto deposits, use the specific values you provided
-        depositPayload.append("payment_provider", "direct");
-        depositPayload.append("payment_method", "crypto");
+        // Use the selected payment method details
+        if (!selectedPaymentDetail) {
+          throw new Error("Please select a payment method");
+        }
+        
+        if (!selectedPaymentDetail.provider_name) {
+          throw new Error("Payment provider is missing");
+        }
+        depositPayload.append("payment_provider", selectedPaymentDetail.provider_name);
+        
+        if (!selectedPaymentDetail.payment_method_type) {
+          throw new Error("Payment method is missing");
+        }
+        depositPayload.append("payment_method", selectedPaymentDetail.payment_method_type);
         // Handle currency field - try multiple properties to get the currency value
         let currencyValue = "";
         
@@ -1283,7 +1357,7 @@ export default function DepositForm({
           ...selectedAsset,
           icon: selectedAsset.image_url || selectedAsset.asset_image || selectedAsset.icon_url || selectedAsset.image
         },
-        paymentDetail: { provider_name: "direct", payment_method_type: "crypto" },
+        paymentDetail: selectedPaymentDetail || { provider_name: "direct", payment_method_type: "crypto" },
         walletAddress: walletAddress.trim() || "Not provided",
         network: selectedNetwork,
         transactionId: finalResponse.transaction_id,
@@ -1456,9 +1530,9 @@ export default function DepositForm({
         networkValue = selectedNetwork.network_id;
       } else if (selectedNetwork?.network_type) {
         networkValue = selectedNetwork.network_type;
-      } else if (selectedAsset?.network) {
+      } else if (selectedAsset) {
         // Fallback to asset network
-        networkValue = selectedAsset.network;
+        networkValue = getAssetNetwork(selectedAsset);
       }
       
       // Clean up the network value
@@ -2014,13 +2088,15 @@ export default function DepositForm({
                       <>
                         <img
                           src={
-                            selectedAsset.image_url ||
-                            selectedAsset.asset_image ||
+                            selectedAsset?.image_url ||
+                            selectedAsset?.asset_image ||
+                            (selectedAsset as any)?.image ||
                             "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                           }
-                          alt={selectedAsset.name || selectedAsset.ticker || "Asset"}
+                          alt={selectedAsset?.name || selectedAsset?.ticker || selectedAsset?.symbol || "Asset"}
                           className="w-6 h-6 rounded-full object-cover"
                           onError={(e) => {
+                            console.log("Image failed to load for selected asset:", selectedAsset);
                             e.currentTarget.src =
                               "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                           }}
@@ -2032,7 +2108,7 @@ export default function DepositForm({
                             "Unknown").toUpperCase()}
                         </span>
                         <span className="ml-2 bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                          {selectedAsset.network || "Unknown"}
+                          {getNetworkDisplayName(getAssetNetwork(selectedAsset))}
                         </span>
                       </>
                     ) : (
@@ -2089,20 +2165,21 @@ export default function DepositForm({
                       {sortedSwapAssets.length > 0 ? (
                         sortedSwapAssets.map((asset: SupportedAsset, index: number) => (
                           <div
-                            key={`${asset.asset_id || 'asset'}-${asset.symbol || asset.ticker || asset.name}-${asset.network}-${index}`}
+                            key={`${asset.asset_id || 'asset'}-${asset.symbol || asset.ticker || asset.name}-${asset.network || 'unknown'}-${index}`}
                             className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
                             onClick={() => {
                               console.log("Asset selected:", {
                                 ticker: asset.ticker,
-                                network: asset.network,
+                                network: asset.network || 'unknown',
                                 isSimple: isSimpleCalculationAsset(asset),
                                 image: asset.image_url || asset.asset_image
                               });
                               setSelectedAsset(asset);
                               // Set the network from the selected asset
+                              const networkValue = getAssetNetwork(asset);
                               setSelectedNetwork({
-                                network_id: asset.network,
-                                network_type: asset.network,
+                                network_id: networkValue,
+                                network_type: networkValue,
                               });
                               setIsAssetDropdownOpen(false);
                               setAssetSearchTerm("");
@@ -2110,13 +2187,15 @@ export default function DepositForm({
                           >
                             <img
                               src={
-                                asset.image_url ||
-                                asset.asset_image ||
+                                asset?.image_url ||
+                                asset?.asset_image ||
+                                (asset as any)?.image ||
                                 "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                               }
-                              alt={asset.name || asset.ticker || "Asset"}
+                              alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
                               className="w-6 h-6 rounded-full object-cover"
                               onError={(e) => {
+                                console.log("Image failed to load for asset:", asset);
                                 e.currentTarget.src =
                                   "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                               }}
@@ -2128,7 +2207,7 @@ export default function DepositForm({
                                   asset.name ||
                                   "Unknown").toUpperCase()}
                                 <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                                  {asset.network || "Unknown"}
+                                  {getNetworkDisplayName(getAssetNetwork(asset))}
                                 </span>
                               </div>
                               <div className="text-[#35353e] dark:text-[#788099] text-sm">
@@ -2339,15 +2418,15 @@ export default function DepositForm({
               <div className="mb-6 flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
               <div className=" dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-4 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
                 {/* Transaction Code Row */}
-                <div className="flex items-center justify-center gap-3 mb-3">
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-3">
                   {/* Display deposit code from API response - each character in its own box */}
-                  <div className="flex gap-2">
+                  <div className="flex gap-1 sm:gap-2 flex-wrap justify-center">
                     {apiResponse.deposit_code.split('').map((char: string, index: number) => (
                       <div
                         key={index}
-                        className="w-10 h-12 bg-[#35353E] border border-[#4A4A4A] rounded-lg flex items-center justify-center"
+                        className="w-8 h-10 sm:w-10 sm:h-12 bg-[#35353E] border border-[#4A4A4A] rounded-lg flex items-center justify-center"
                       >
-                        <span className="text-xl font-bold text-white font-mono">
+                        <span className="text-lg sm:text-xl font-bold text-white font-mono">
                           {char}
                         </span>
                       </div>
@@ -2358,7 +2437,7 @@ export default function DepositForm({
                       navigator.clipboard.writeText(apiResponse.deposit_code);
                       showToast.success("Transaction code copied!");
                     }}
-                    className="flex items-center gap-2 bg-[#35353E] border border-[#1D8751] text-white rounded-full px-4 py-2 font-semibold text-sm hover:bg-[#1D8751] hover:text-white transition-colors"
+                    className="flex items-center gap-2 bg-[#35353E] border border-[#1D8751] text-white rounded-full px-3 py-2 sm:px-4 font-semibold text-xs sm:text-sm hover:bg-[#1D8751] hover:text-white transition-colors"
                   >
                     <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
                       <rect

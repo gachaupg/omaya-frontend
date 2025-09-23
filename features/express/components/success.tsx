@@ -243,7 +243,9 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
   // Format date on client side to avoid hydration mismatch
   useEffect(() => {
     if (realData.date) {
-      setFormattedDate(new Date(realData.date).toLocaleString());
+      setFormattedDate(new Date(realData.date).toLocaleString("en-US", {
+        timeZone: "UTC"
+      }));
     }
   }, [realData.date]);
   
