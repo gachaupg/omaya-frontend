@@ -723,11 +723,15 @@ export default function WithdrawalForm({
     };
   }, []);
 
-  // Check if asset is USDT or USDT (should use simple calculation)
+  // Check if asset is one of the first two direct assets (USDT on BSC or USDC on BSC)
   const isSimpleCalculationAsset = (asset: any) => {
     if (!asset) return false;
     const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
-    return ticker === "usdt";
+    const network = (asset?.network || "").toLowerCase();
+    
+    // First two assets: USDT on BSC and USDC on BSC
+    return (ticker === "usdt" && network === "bsc") || 
+           (ticker === "usdc" && network === "bsc");
   };
 
   // Helper function to check if cache entry is still valid
@@ -740,7 +744,7 @@ export default function WithdrawalForm({
     if (error.response?.data) {
       const responseData = error.response.data;
       if (responseData.error === "deposit_too_small") {
-        return "Amount is too small. Please increase the amount.";
+        return "Amount is too small. Please enter a larger amount to proceed.";
       }
       if (responseData.message) {
         return responseData.message;
@@ -779,7 +783,7 @@ export default function WithdrawalForm({
         }
         if (amountErrors.some((err: string) => err.includes("too small"))) {
           setApiValidationError(
-            "Amount is too small. Please increase the amount."
+            "Amount is too small. Please enter a larger amount to proceed."
           );
           return;
         }
@@ -827,7 +831,7 @@ export default function WithdrawalForm({
   const getMinimumAmount = (asset: any) => {
     if (!asset) return 10; // Default minimum
     const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
-    return ticker === "usdt" || ticker === "usdc" ? 2 : 10; // 2 for USDT/USDT, 10 for others
+    return ticker === "usdt" || ticker === "usdc" ? 2 : 10; // 2 for direct assets, 10 for others
   };
 
   // Validate receive amount - allow any amount for now
@@ -836,7 +840,7 @@ export default function WithdrawalForm({
     return null; // No error
   };
 
-  // Fetch estimate for non-USDT/USDT assets with debouncing for better performance
+  // Fetch estimate for non-direct assets with debouncing for better performance
   useEffect(() => {
     // Clear any existing estimate timeout
     if (estimateTimeout) {
@@ -1018,10 +1022,10 @@ export default function WithdrawalForm({
                     "API ERROR: Amount too small validation error detected"
                   );
                   setApiValidationError(
-                    "Amount is too small. Please increase the amount."
+                    "Amount is too small. Please enter a larger amount to proceed."
                   );
                   setReceiveAmountError(
-                    "Amount is too small. Please increase the amount."
+                    "Amount is too small. Please enter a larger amount to proceed."
                   );
                   // Stop loading states and show error
                   setEstimateLoading(false);
@@ -1069,9 +1073,10 @@ export default function WithdrawalForm({
                 console.log("API ERROR: Deposit too small error detected");
                 const errorMessage =
                   responseData?.message ||
-                  "Amount is too small. Please increase the amount.";
+                  "Amount is too small. Please enter a larger amount to proceed.";
                 setApiValidationError(errorMessage);
                 setReceiveAmountError(errorMessage);
+                setCalculationError(errorMessage); // Show error below "You Send" input
                 // Stop loading states and show error
                 setEstimateLoading(false);
                 setIsCalculating(false);
@@ -1329,10 +1334,10 @@ export default function WithdrawalForm({
                 amountErrors.some((err: string) => err.includes("too small"))
               ) {
                 setApiValidationError(
-                  "Amount is too small. Please increase the amount."
+                  "Amount is too small. Please enter a larger amount to proceed."
                 );
                 setReceiveAmountError(
-                  "Amount is too small. Please increase the amount."
+                  "Amount is too small. Please enter a larger amount to proceed."
                 );
                 // Stop loading states and show error
                 setEstimateLoading(false);
@@ -1377,9 +1382,10 @@ export default function WithdrawalForm({
               );
               const errorMessage =
                 responseData?.message ||
-                "Amount is too small. Please increase the amount.";
+                "Amount is too small. Please enter a larger amount to proceed.";
               setApiValidationError(errorMessage);
               setReceiveAmountError(errorMessage);
+              setCalculationError(errorMessage); // Show error below "You Send" input
               // Stop loading states and show error
               setEstimateLoading(false);
               setIsCalculating(false);
@@ -1578,11 +1584,11 @@ export default function WithdrawalForm({
   // Calculate fees and amounts - Network fee is always 0 for BEP20
   const networkFee = 0;
 
-  // Use flat $2 fee for USDT/USDT, percentage for other assets
+  // Use flat $2 fee for direct assets (USDT on BSC, USDC on BSC), percentage for other assets
   let commissionAmount = 0;
   if (selectedAsset && isSimpleCalculationAsset(selectedAsset)) {
-    // For USDT/USDT, only apply $2 fee if amount is $2 or more
-    commissionAmount = payAmount >= 2 ? 2 : 0; // Flat $2 fee for USDT/USDT (only if amount >= $2)
+    // For direct assets, only apply $2 fee if amount is $2 or more
+    commissionAmount = payAmount >= 2 ? 2 : 0; // Flat $2 fee for direct assets (only if amount >= $2)
   } else {
     // Use default commission rate for other assets
     const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
@@ -1602,15 +1608,12 @@ export default function WithdrawalForm({
 
     // For simple calculations, do them immediately without any delays
     if (fromPay && selectedAsset && isSimpleCalculationAsset(selectedAsset)) {
-      // Immediate calculation for USDT/USDT - no debouncing at all
+      // Immediate calculation for direct assets (USDT on BSC, USDC on BSC) - simply subtract 2
       let calculatedGetAmount;
       if (fromAmount < 2) {
         calculatedGetAmount = fromAmount;
       } else {
-        const commissionAmount = 2;
-        const networkFee = 0;
-        const totalFees = networkFee + commissionAmount;
-        calculatedGetAmount = Math.max(0, fromAmount - totalFees);
+        calculatedGetAmount = Math.max(0, fromAmount - 2); // Simply subtract 2 for direct assets
       }
 
       // Show result immediately
@@ -1670,10 +1673,7 @@ export default function WithdrawalForm({
             if (fromAmount < 2) {
               calculatedGetAmount = fromAmount;
             } else {
-              const commissionAmount = 2;
-              const networkFee = 0;
-              const totalFees = networkFee + commissionAmount;
-              calculatedGetAmount = Math.max(0, fromAmount - totalFees);
+              calculatedGetAmount = Math.max(0, fromAmount - 2); // Simply subtract 2 for direct assets
             }
 
             // Only show calculated amount if it's meaningful (> 0.01), otherwise show empty
@@ -1733,7 +1733,7 @@ export default function WithdrawalForm({
               setIsCalculatingReceive(true);
               // Don't update amounts yet, wait for estimate
             } else {
-              // For non-USDT/USDT assets, only show loading until API estimate is available
+              // For non-direct assets, only show loading until API estimate is available
               // Don't do manual calculations - wait for API
               setIsCalculating(true);
               setIsCalculatingReceive(true);
@@ -1746,10 +1746,7 @@ export default function WithdrawalForm({
             if (fromAmount < 2) {
               newPayAmount = fromAmount;
             } else {
-              const commissionAmount = 2;
-              const networkFee = 0;
-              const totalFees = networkFee + commissionAmount;
-              newPayAmount = Math.max(0, fromAmount + totalFees);
+              newPayAmount = fromAmount + 2; // Simply add 2 for direct assets
             }
             setPayAmount(newPayAmount);
             setPayAmountInput(newPayAmount.toString());
@@ -1758,7 +1755,7 @@ export default function WithdrawalForm({
             setIsCalculating(false);
             setIsCalculatingReceive(false);
           } else {
-            // For non-USDT/USDT assets, we need to fetch estimate for reverse calculation
+            // For non-direct assets, we need to fetch estimate for reverse calculation
             // This is more complex as we need to find the pay amount that gives us the desired receive amount
             // The reverse calculation useEffect will handle the API call
             // Just set loading states here - the useEffect will clear them
@@ -1889,7 +1886,7 @@ export default function WithdrawalForm({
         let message = "";
 
         if (isSimpleAsset) {
-          // Direct transfer response for USDT/USDT
+          // Direct transfer response for direct assets
           if (responseData.type === "direct_transfer") {
             withdrawalAddress = responseData.withdrawal_address || "";
             websocketUrl = responseData.websocket_url || "";
@@ -2054,7 +2051,7 @@ export default function WithdrawalForm({
         const isSimpleAsset = isSimpleCalculationAsset(selectedAsset);
 
         if (isSimpleAsset) {
-          // Direct transfer response for USDT/USDT
+          // Direct transfer response for direct assets
           const directTransferResponse = withdrawalResponse as any;
 
           if (directTransferResponse.type === "direct_transfer") {
@@ -2347,9 +2344,9 @@ export default function WithdrawalForm({
                       if (selectedAsset && newValue >= 0) {
                         // Check asset type first and handle accordingly
                         if (isSimpleCalculationAsset(selectedAsset)) {
-                          // For simple assets (USDT/USDT), calculate immediately
+                          // For direct assets (USDT on BSC, USDC on BSC), calculate immediately
                           console.log(
-                            "You Send: Simple asset detected, calculating immediately"
+                            "You Send: Direct asset detected, calculating immediately"
                           );
                           calculateAmounts(newValue, true);
                         } else if (newValue > 0) {
@@ -2640,9 +2637,9 @@ export default function WithdrawalForm({
 
                                 // Check asset type first and handle accordingly
                                 if (isSimpleCalculationAsset(asset)) {
-                                  // For simple assets (USDT/USDT), calculate immediately
+                                  // For direct assets (USDT on BSC, USDC on BSC), calculate immediately
                                   console.log(
-                                    "Selected simple asset, calculating immediately"
+                                    "Selected direct asset, calculating immediately"
                                   );
                                   setIsCalculatingFromPay(true);
 
@@ -2817,9 +2814,9 @@ export default function WithdrawalForm({
                       if (selectedAsset && newAmount >= 0) {
                         // Check asset type first and handle accordingly
                         if (isSimpleCalculationAsset(selectedAsset)) {
-                          // For simple assets (USDT/USDT), calculate immediately
+                          // For direct assets (USDT on BSC, USDC on BSC), calculate immediately
                           console.log(
-                            "You Receive: Simple asset detected, calculating immediately"
+                            "You Receive: Direct asset detected, calculating immediately"
                           );
                           const commissionRate = selectedAsset
                             ?.range_commissions?.[0]?.commission
@@ -3184,7 +3181,7 @@ export default function WithdrawalForm({
 
               <span className="flex items-center bg-[#1D8751] text-white rounded-full px-5 py-1 text-sm font-medium w-fit">
                 <span className="w-2 h-2 bg-white rounded-full mr-2 inline-block"></span>
-                Commission: {selectedAsset && isSimpleCalculationAsset(selectedAsset) ? `$2 flat fee` : `${selectedAsset?.range_commissions?.[0]?.commission || 2}% of $${payAmount}`} = $
+                Commission: {selectedAsset && isSimpleCalculationAsset(selectedAsset) ? `$2 flat fee (direct assets)` : `${selectedAsset?.range_commissions?.[0]?.commission || 2}% of $${payAmount}`} = $
                 {commissionAmount}
               </span>
             </div>

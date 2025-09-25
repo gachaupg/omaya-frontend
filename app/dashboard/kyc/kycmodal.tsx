@@ -5,10 +5,9 @@ import { AppDispatch } from "@/store";
 import { RootState } from "@/store/rootReducer";
 import { 
   closeKYCModal, 
-  verifyKYCStatus,
   logout 
 } from "@/features/auth/slices/authSlice";
-import { checkKYCStatus } from "@/features/kyc/slices/kycSlice";
+import { checkKYCStatus, verifyKYCStatus } from "@/features/kyc/slices/kycSlice";
 import { showToast } from "@/lib/utils/toast";
 
 const KYCVerificationModal: React.FC = () => {
@@ -23,7 +22,6 @@ const KYCVerificationModal: React.FC = () => {
     country: 'Somalia',
     documentType: '',
     documentNumber: '',
-    location: '',
     email: user?.email || '',
   });
   const [currentStep, setCurrentStep] = useState(1);
@@ -66,18 +64,12 @@ const KYCVerificationModal: React.FC = () => {
         }
         return true;
       case 2:
-        if (!verificationData.location) {
-          setError("Please provide your current location");
-          return false;
-        }
-        return true;
-      case 3:
         if (!documentImage) {
           setError("Please upload a clear image of your document");
           return false;
         }
         return true;
-      case 4:
+      case 3:
         if (!faceImage) {
           setError("Please capture your face for verification");
           return false;
@@ -218,7 +210,7 @@ const KYCVerificationModal: React.FC = () => {
   };
 
   const handleManualVerificationSubmit = async () => {
-    if (!validateStep(4)) return;
+    if (!validateStep(3)) return;
 
     setIsSubmitting(true);
     setError(null);
@@ -230,56 +222,27 @@ const KYCVerificationModal: React.FC = () => {
         return;
       }
 
-      // Prepare verification data for API submission
-      const verificationPayload = {
-        user_id: user.user_id,
-        status: true,
-        verification_data: {
-          country: verificationData.country,
-          document_type: verificationData.documentType,
-          document_number: verificationData.documentNumber,
-          location: verificationData.location,
-          email: verificationData.email,
-          document_image: documentImage,
-          face_image: faceImage
-        }
-      };
-
-      console.log("Submitting to /api/kyc/verify/:", verificationPayload);
+      console.log("Submitting KYC verification for user:", user.user_id);
       
-      // Call the KYC verification API
-      const API_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://dev.backend.omaya.io";
-      const response = await fetch(`${API_BASE_URL}/api/kyc/verify/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${tokens?.access || ''}`
-        },
-        body: JSON.stringify({
+      // Call the KYC verification API using the thunk
+      const result = await dispatch(verifyKYCStatus({
         user_id: user.user_id,
-          status: true
-        })
-      });
+        status: true
+      })).unwrap();
 
-      if (response.ok) {
-        const result = await response.json();
-        console.log("KYC Verification Response:", result);
-        
-        // Refetch KYC status after successful verification
-        dispatch(checkKYCStatus());
-        
-        showToast.success("Verification Submitted", "Your verification details have been submitted for review");
-        setShowManualVerification(false);
-        setShowSuccessModal(true);
-      } else {
-        const errorData = await response.json();
-        setError(errorData.message || "Verification submission failed");
-        showToast.error("Verification Error", errorData.message || "Verification submission failed");
-      }
+      console.log("KYC Verification Response:", result);
+      
+      // Refetch KYC status after successful verification
+      dispatch(checkKYCStatus());
+      
+      showToast.success("Verification Submitted", "Your verification details have been submitted for review");
+      setShowManualVerification(false);
+      setShowSuccessModal(true);
     } catch (error) {
       console.error("KYC Verification Error:", error);
-      setError("An error occurred during verification submission");
-      showToast.error("Verification Error", "An error occurred during verification submission");
+      const errorMessage = typeof error === 'string' ? error : "An error occurred during verification submission";
+      setError(errorMessage);
+      showToast.error("Verification Error", errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -317,7 +280,6 @@ const KYCVerificationModal: React.FC = () => {
       country: 'Somalia',
       documentType: '',
       documentNumber: '',
-      location: '',
       email: user?.email || '',
     });
   };
@@ -372,7 +334,7 @@ const KYCVerificationModal: React.FC = () => {
       {showManualVerification && !showSuccessModal && (
         <div className="bg-[#1A1A1A] rounded-lg p-6 max-w-2xl w-full mx-4 border border-[#35353E] max-h-[90vh] overflow-y-auto">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-white">Identity Verification - Step {currentStep} of 4</h2>
+            <h2 className="text-xl font-semibold text-white">Identity Verification - Step {currentStep} of 3</h2>
             <button
               onClick={handleClose}
               className="text-gray-400 hover:text-white transition-colors"
@@ -387,7 +349,7 @@ const KYCVerificationModal: React.FC = () => {
           <div className="w-full bg-gray-700 rounded-full h-2 mb-6">
             <div 
               className="bg-[#1D8751] h-2 rounded-full transition-all duration-300" 
-              style={{ width: `${(currentStep / 4) * 100}%` }}
+              style={{ width: `${(currentStep / 3) * 100}%` }}
             ></div>
           </div>
           
@@ -459,35 +421,8 @@ const KYCVerificationModal: React.FC = () => {
             </div>
           )}
 
-          {/* Step 2: Location */}
+          {/* Step 2: Document Upload */}
           {currentStep === 2 && (
-            <div className="space-y-4">
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-[#1D8751]/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-2">Current Location</h3>
-                <p className="text-gray-400 text-sm">Please provide your current location</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Location *</label>
-                <input
-                  type="text"
-                  value={verificationData.location}
-                  onChange={(e) => handleInputChange('location', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#2A2A2A] border border-[#35353E] rounded-lg text-white focus:outline-none focus:border-[#1D8751]"
-                  placeholder="Enter your current city and country"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Document Upload */}
-          {currentStep === 3 && (
             <div className="space-y-4">
               <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-[#1D8751]/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -546,8 +481,8 @@ const KYCVerificationModal: React.FC = () => {
             </div>
           )}
 
-           {/* Step 4: Face Verification with Rotation */}
-           {currentStep === 4 && (
+           {/* Step 3: Face Verification with Rotation */}
+           {currentStep === 3 && (
              <div className="space-y-4">
                <div className="text-center mb-6">
                  <div className="w-16 h-16 bg-[#1D8751]/20 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -708,7 +643,7 @@ const KYCVerificationModal: React.FC = () => {
               </button>
             )}
             
-            {currentStep < 4 ? (
+            {currentStep < 3 ? (
               <button
                 onClick={nextStep}
                 className="flex-1 bg-[#1D8751] hover:bg-[#167a47] text-white h-10 rounded-lg transition-colors duration-200"

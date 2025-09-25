@@ -3,20 +3,20 @@ import React, { useState } from "react";
 interface WalletAddressStepProps {
   walletAddress: string;
   onWalletAddressChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  walletValidationError: string;
   onBack: () => void;
   onNext: () => void;
   fromAsset: any;
+  toAsset: any;
   isLoading?: boolean;
 }
 
 const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   walletAddress,
   onWalletAddressChange,
-  walletValidationError,
   onBack,
   onNext,
   fromAsset,
+  toAsset,
   isLoading = false,
 }) => {
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
@@ -84,7 +84,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                     value={walletAddress}
                     onChange={onWalletAddressChange}
                     className="flex-1 bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#7e7e8f]"
-                    placeholder="Paste here your Crypto address"
+                    placeholder={`Paste your ${toAsset?.name || toAsset?.symbol || 'crypto'} address here`}
                     disabled={isLoading}
                   />
 
@@ -128,12 +128,6 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
               </button>
             </div>
 
-            {/* Validation Error */}
-            {walletValidationError && (
-              <div className="text-red-500 text-xs mt-1">
-                {walletValidationError}
-              </div>
-            )}
           </div>
 
           {/* Terms and Conditions Section */}
