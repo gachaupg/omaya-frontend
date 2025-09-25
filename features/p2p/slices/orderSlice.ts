@@ -4,6 +4,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import {
   getAllP2POrders,
+  getAllP2PBuyandSell,
   matchP2POrder,
   getConfirmOrder,
   SingleOrder,
@@ -86,6 +87,18 @@ export const fetchAllP2POrders = createAsyncThunk(
     } catch (err: any) {
       handleP2PError(err);
       return rejectWithValue(err.message || "Failed to fetch all orders");
+    }
+  }
+);
+
+export const fetchAllP2PBuyandSell = createAsyncThunk(
+  "p2pMarket/fetchAllP2PBuyandSell",
+  async (page: number = 1, { rejectWithValue }) => {
+    try {
+      return await getAllP2PBuyandSell(page);
+    } catch (err: any) {
+      handleP2PError(err);
+      return rejectWithValue(err.message || "Failed to fetch buy and sell orders");
     }
   }
 );
@@ -424,6 +437,49 @@ const p2pMarketSlice = createSlice({
         state.p2pSellOrders = sell_orders;
       })
       .addCase(fetchAllP2POrders.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      .addCase(fetchAllP2PBuyandSell.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAllP2PBuyandSell.fulfilled, (state, action) => {
+        state.loading = false;
+        const response = action.payload as any;
+        console.log("Redux: API response received:", response);
+        
+        // The API returns all orders in results.results array
+        // We need to separate them by order_type
+        const allOrders = response.results?.results || [];
+        console.log("Redux: All orders count:", allOrders.length);
+        
+        const buyOrders = allOrders.filter((order: any) => order.order_type === 'buy');
+        const sellOrders = allOrders.filter((order: any) => order.order_type === 'sell');
+        
+        console.log("Redux: Buy orders count:", buyOrders.length);
+        console.log("Redux: Sell orders count:", sellOrders.length);
+        
+        // Update buy orders
+        state.p2pBuyOrders = {
+          next: response.next,
+          previous: response.previous,
+          total_orders_count: buyOrders.length,
+          results: buyOrders
+        };
+        
+        // Update sell orders
+        state.p2pSellOrders = {
+          next: response.next,
+          previous: response.previous,
+          total_orders_count: sellOrders.length,
+          results: sellOrders
+        };
+        
+        console.log("Redux: Updated state - buy orders:", state.p2pBuyOrders);
+        console.log("Redux: Updated state - sell orders:", state.p2pSellOrders);
+      })
+      .addCase(fetchAllP2PBuyandSell.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })

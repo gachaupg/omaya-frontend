@@ -56,6 +56,8 @@ const SwapWidget = () => {
   const [walletValidationError, setWalletValidationError] = React.useState("");
   const [copyMessage, setCopyMessage] = React.useState("");
   const [localSwapError, setLocalSwapError] = React.useState("");
+  const [activeInputField, setActiveInputField] = React.useState<'from' | 'to'>('from');
+  const [lastSuccessfulEstimate, setLastSuccessfulEstimate] = React.useState<SwapEstimate | null>(null);
 
   // New state for the flow
   const [currentStep, setCurrentStep] =
@@ -65,6 +67,8 @@ const SwapWidget = () => {
   // Simple debounce implementation
   const [debouncedFromAmount, setDebouncedFromAmount] =
     React.useState(fromAmount);
+  const [debouncedToAmount, setDebouncedToAmount] =
+    React.useState(toAmount);
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -73,6 +77,14 @@ const SwapWidget = () => {
 
     return () => clearTimeout(timer);
   }, [fromAmount]);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedToAmount(toAmount);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [toAmount]);
 
   useEffect(() => {
     dispatch(resetErrorToastFlag());
@@ -87,49 +99,116 @@ const SwapWidget = () => {
     if (
       fromAsset &&
       toAsset &&
-      debouncedFromAmount &&
-      parseFloat(debouncedFromAmount) > 0
+      ((activeInputField === 'from' && debouncedFromAmount && parseFloat(debouncedFromAmount) > 0) ||
+       (activeInputField === 'to' && debouncedToAmount && parseFloat(debouncedToAmount) > 0))
     ) {
       dispatch(resetErrorToastFlag());
+      const amount = activeInputField === 'from' 
+        ? parseFloat(debouncedFromAmount)
+        : parseFloat(debouncedToAmount);
+      
+      // For reverse calculation (when user types in "to" field), swap the currencies
+      const estimateParams = activeInputField === 'to' 
+        ? {
+            fromCurrency: toAsset.ticker,
+            fromNetwork: toAsset.network,
+            toCurrency: fromAsset.ticker,
+            toNetwork: fromAsset.network,
+            amount: amount,
+          }
+        : {
+            fromCurrency: fromAsset.ticker,
+            fromNetwork: fromAsset.network,
+            toCurrency: toAsset.ticker,
+            toNetwork: toAsset.network,
+            amount: amount,
+          };
+        
       dispatch(
-        fetchSwapEstimate({
-          fromCurrency: fromAsset.ticker,
-          fromNetwork: fromAsset.network,
-          toCurrency: toAsset.ticker,
-          toNetwork: toAsset.network,
-          amount: parseFloat(debouncedFromAmount),
-        })
+        fetchSwapEstimate(estimateParams)
       ).catch((error) => {
         console.error("Failed to fetch swap estimate:", error);
-        handleApiError(error);
+        console.log("Estimate params:", estimateParams);
+        console.log("Active input field:", activeInputField);
+        // Don't show error toast for reverse calculation failures
+        // as they might be expected (unsupported pairs, etc.)
+        if (activeInputField === 'from') {
+          handleApiError(error);
+        } else {
+          console.warn("Reverse calculation failed, this might be expected:", error);
+        }
       });
     } else {
       // Clear estimate if conditions are not met
       dispatch(clearEstimate());
     }
-  }, [dispatch, fromAsset, toAsset, debouncedFromAmount]);
+  }, [dispatch, fromAsset, toAsset, debouncedFromAmount, debouncedToAmount, activeInputField]);
 
-  // Update toAmount when estimate is received
+  // Update amounts when estimate is received
   useEffect(() => {
     if (
       estimate &&
       !estimateLoading &&
-      (estimate.toAmount !== undefined || estimate.estimated_amount !== undefined)
+      (estimate.toAmount !== undefined || estimate.estimated_amount !== undefined) &&
+      (estimate.fromAmount !== undefined || estimate.user_amount !== undefined)
     ) {
-      const amount = estimate.toAmount || estimate.estimated_amount;
-      if (amount !== undefined) {
-        dispatch(setToAmount(amount.toString()));
+      // Store successful estimate for potential fallback calculations
+      setLastSuccessfulEstimate(estimate);
+      
+      if (activeInputField === 'from') {
+        // User typed in "from" field, update "to" amount (normal flow)
+        // Use toAmount from raw_response if available, otherwise fall back to estimated_amount
+        const toAmount = estimate.raw_response?.toAmount || estimate.toAmount || estimate.estimated_amount;
+        if (toAmount !== undefined) {
+          dispatch(setToAmount(toAmount.toString()));
+        }
+      } else if (activeInputField === 'to') {
+        // User typed in "to" field, update "from" amount (reverse flow)
+        // Since we swapped the currencies in the API call, the estimate.toAmount 
+        // now represents what the user should send (because we swapped from/to in the API call)
+        const fromAmount = estimate.raw_response?.toAmount || estimate.toAmount || estimate.estimated_amount;
+        if (fromAmount !== undefined) {
+          dispatch(setFromAmount(fromAmount.toString()));
+        }
       }
     }
-  }, [estimate, estimateLoading, dispatch]);
+  }, [estimate, estimateLoading, dispatch, activeInputField]);
 
   // Handle estimate errors
   useEffect(() => {
     if (estimateError) {
       console.error("Swap estimate error:", estimateError);
-      showToast.error("Estimate Error", estimateError);
+      console.log("Active input field during error:", activeInputField);
+      
+      // Only show error toast for forward calculation errors
+      // Reverse calculation errors might be expected (unsupported pairs)
+      if (activeInputField === 'from') {
+        showToast.error("Estimate Error", estimateError);
+      } else {
+        console.warn("Reverse calculation error (might be expected):", estimateError);
+        
+        // Try fallback calculation using last successful estimate
+        if (lastSuccessfulEstimate && debouncedToAmount) {
+          try {
+            const toAmount = lastSuccessfulEstimate.raw_response?.toAmount || lastSuccessfulEstimate.toAmount || lastSuccessfulEstimate.estimated_amount;
+            const fromAmount = lastSuccessfulEstimate.raw_response?.fromAmount || lastSuccessfulEstimate.fromAmount || lastSuccessfulEstimate.user_amount;
+            
+            // Check if both amounts are valid numbers before calculating rate
+            if (toAmount !== undefined && fromAmount !== undefined && toAmount > 0 && fromAmount > 0) {
+              const rate = toAmount / fromAmount;
+              const calculatedFromAmount = parseFloat(debouncedToAmount) / rate;
+              dispatch(setFromAmount(calculatedFromAmount.toString()));
+              console.log("Fallback calculation successful:", { rate, calculatedFromAmount, toAmount, fromAmount });
+            } else {
+              console.warn("Fallback calculation skipped: invalid amounts", { toAmount, fromAmount });
+            }
+          } catch (fallbackError) {
+            console.error("Fallback calculation failed:", fallbackError);
+          }
+        }
+      }
     }
-  }, [estimateError]);
+  }, [estimateError, activeInputField, lastSuccessfulEstimate, debouncedToAmount, dispatch]);
 
   // Handle swap errors
   useEffect(() => {
@@ -163,39 +242,21 @@ const SwapWidget = () => {
   };
 
   const handleWalletAddressNext = () => {
-    // Validate wallet address
+    // Skip wallet address validation - proceed directly to swap creation
     if (!walletAddress.trim()) {
       setWalletValidationError("Wallet address is required");
       showToast.error(
         "Wallet Address Required",
-        "Please enter a valid wallet address"
+        "Please enter a wallet address"
       );
       return;
     }
 
-    // Import and use the validation function
-    import("@/lib/addressValidaion").then(({ validateWalletAddress }) => {
-      const normalizedNetwork = fromAsset?.network?.toUpperCase() || "ETH";
-      const validationResult = validateWalletAddress(
-        walletAddress,
-        normalizedNetwork
-      );
+    // Clear any previous validation errors
+    setWalletValidationError("");
 
-      if (!validationResult.isValid) {
-        const errorMessage =
-          validationResult.message ||
-          `Invalid ${fromAsset?.network || "wallet"} address`;
-        setWalletValidationError(errorMessage);
-        showToast.error("Invalid Wallet Address", errorMessage);
-        return;
-      }
-
-      // Clear any previous validation errors
-      setWalletValidationError("");
-
-      // All validation passed, create the swap
-      handleSubmit();
-    });
+    // Create the swap without validation
+    handleSubmit();
   };
 
   // Handle back step
@@ -213,6 +274,7 @@ const SwapWidget = () => {
     const value = e.target.value;
     // Only allow numbers and decimals
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      setActiveInputField('from');
       dispatch(setFromAmount(value));
     }
   };
@@ -221,6 +283,7 @@ const SwapWidget = () => {
     const value = e.target.value;
     // Only allow numbers and decimals
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      setActiveInputField('to');
       dispatch(setToAmount(value));
     }
   };
@@ -395,15 +458,16 @@ const SwapWidget = () => {
             swapLoading={swapLoading}
             hideContinueButton={showWalletAddress}
             onSwapAssets={handleSwapAssets}
+            activeInputField={activeInputField}
           />
           {showWalletAddress && (
             <WalletAddressStep
               walletAddress={walletAddress}
               onWalletAddressChange={handleWalletAddressChange}
-              walletValidationError={walletValidationError}
               onBack={() => {}}
               onNext={handleWalletAddressNext}
               fromAsset={fromAsset}
+              toAsset={toAsset}
               // Pass loading state to disable button
               isLoading={swapLoading}
             />

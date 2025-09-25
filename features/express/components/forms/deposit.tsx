@@ -339,14 +339,18 @@ export default function DepositForm({
     };
   }, []);
 
-  // Check if asset is USDT (should use simple calculation)
+  // Check if asset is one of the first two direct assets (USDT on BSC or USDC on BSC)
   const isSimpleCalculationAsset = (asset: any) => {
     if (!asset) return false;
     const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
-    return ticker === "usdt";
+    const network = (asset?.network || "").toLowerCase();
+    
+    // First two assets: USDT on BSC and USDC on BSC
+    return (ticker === "usdt" && network === "bsc") || 
+           (ticker === "usdc" && network === "bsc");
   };
 
-  // Fetch estimate for non-USDT assets - triggers immediately on asset or amount change
+  // Fetch estimate for non-direct assets - triggers immediately on asset or amount change
   useEffect(() => {
     console.log("Estimate useEffect triggered:", {
       selectedAsset: selectedAsset?.ticker,
@@ -444,7 +448,7 @@ export default function DepositForm({
     }
   }, [selectedAsset, payAmount, isCalculatingFromPay]);
 
-  // Fetch reverse estimate for non-USDT assets when calculating from receive amount
+  // Fetch reverse estimate for non-direct assets when calculating from receive amount
   useEffect(() => {
     console.log("Reverse estimate useEffect triggered:", {
       selectedAsset: selectedAsset?.ticker,
@@ -685,7 +689,7 @@ export default function DepositForm({
       return;
     }
 
-    // For simple calculation assets (USDT), calculate immediately
+    // For direct assets (USDT on BSC, USDC on BSC), calculate immediately
       if (isSimpleCalculationAsset(selectedAsset)) {
         let commissionRate = 2; // Default fallback
         
@@ -730,7 +734,7 @@ export default function DepositForm({
         
         setReceiveAmountError(null);
         
-        // For simple assets, no loading states needed - calculation is instant
+        // For direct assets, no loading states needed - calculation is instant
         return;
       }
 
@@ -759,33 +763,14 @@ export default function DepositForm({
         if (fromPay) {
           // Forward calculation: from pay amount to receive amount
           if (isSimpleCalculationAsset(selectedAsset)) {
-            // Simple calculation for USDT
-            let commissionRate = 2; // Default fallback
-            
-            // Safely access commission rate with multiple fallback options
-            if (selectedAsset?.range_commissions && selectedAsset.range_commissions.length > 0) {
-              const firstCommission = selectedAsset.range_commissions[0];
-              if (firstCommission?.commission) {
-                commissionRate = parseFloat(firstCommission.commission);
-              }
-            } else if (selectedAsset?.commission) {
-              // Try alternative commission property
-              commissionRate = parseFloat(selectedAsset.commission);
-            } else if (selectedAsset?.fee_rate) {
-              // Try fee_rate property
-              commissionRate = parseFloat(selectedAsset.fee_rate);
+            // Simple calculation for direct assets (USDT on BSC, USDC on BSC) - simply subtract 2
+            let calculatedGetAmount;
+            if (fromAmount < 2) {
+              calculatedGetAmount = fromAmount;
+            } else {
+              calculatedGetAmount = Math.max(0, fromAmount - 2); // Simply subtract 2 for direct assets
             }
-            
-            // Ensure commission rate is a valid number
-            if (isNaN(commissionRate) || commissionRate <= 0) {
-              commissionRate = 2; // Default to 2% if invalid
-            }
-            
-            const commissionAmount = (fromAmount * commissionRate) / 100;
-            const networkFee = 0;
-            const totalFees = networkFee + commissionAmount;
-            const calculatedGetAmount = fromAmount - totalFees;
-            console.log("Complex forward calculation result:", { fromAmount, calculatedGetAmount, totalFees, commissionRate });
+            console.log("Direct asset forward calculation result:", { fromAmount, calculatedGetAmount });
             setGetAmount(calculatedGetAmount);
             setGetAmountInput(calculatedGetAmount.toString());
             setReceiveAmountError(null);
@@ -811,33 +796,14 @@ export default function DepositForm({
         } else {
           // Reverse calculation: from receive amount to pay amount
           if (isSimpleCalculationAsset(selectedAsset)) {
-            // Simple reverse calculation for USDT
-            let commissionRate = 2; // Default fallback
-            
-            // Safely access commission rate with multiple fallback options
-            if (selectedAsset?.range_commissions && selectedAsset.range_commissions.length > 0) {
-              const firstCommission = selectedAsset.range_commissions[0];
-              if (firstCommission?.commission) {
-                commissionRate = parseFloat(firstCommission.commission);
-              }
-            } else if (selectedAsset?.commission) {
-              // Try alternative commission property
-              commissionRate = parseFloat(selectedAsset.commission);
-            } else if (selectedAsset?.fee_rate) {
-              // Try fee_rate property
-              commissionRate = parseFloat(selectedAsset.fee_rate);
+            // Simple reverse calculation for direct assets (USDT on BSC, USDC on BSC) - simply add 2
+            let calculatedPayAmount;
+            if (fromAmount < 2) {
+              calculatedPayAmount = fromAmount;
+            } else {
+              calculatedPayAmount = fromAmount + 2; // Simply add 2 for direct assets
             }
-            
-            // Ensure commission rate is a valid number
-            if (isNaN(commissionRate) || commissionRate <= 0) {
-              commissionRate = 2; // Default to 2% if invalid
-            }
-            
-            const commissionAmount = (fromAmount * commissionRate) / 100;
-            const networkFee = 0;
-            const totalFees = networkFee + commissionAmount;
-            const calculatedPayAmount = fromAmount + totalFees;
-            console.log("Complex reverse calculation result:", { fromAmount, calculatedPayAmount, totalFees, commissionRate });
+            console.log("Direct asset reverse calculation result:", { fromAmount, calculatedPayAmount });
             setPayAmount(calculatedPayAmount);
             setPayAmountInput(calculatedPayAmount.toString());
             setReceiveAmountError(null);
@@ -894,7 +860,7 @@ export default function DepositForm({
   // Forward calculations are now handled directly in the input handlers
   // This useEffect was causing duplicate calculations and loading state conflicts
 
-  // Update amounts when estimate is received or for simple calculation assets
+  // Update amounts when estimate is received or for direct assets
   useEffect(() => {
     console.log("Estimate effect triggered:", { 
       hasEstimate: !!estimate, 
@@ -1269,7 +1235,7 @@ export default function DepositForm({
       return;
     }
 
-    // Check if this is a simple calculation asset (USDT)
+    // Check if this is a direct asset (USDT on BSC, USDC on BSC)
     const isSimpleAsset = selectedAsset && isSimpleCalculationAsset(selectedAsset);
 
     setIsSubmitting(true);
@@ -1278,7 +1244,7 @@ export default function DepositForm({
       let finalResponse = apiResponse;
       let updateResponse;
       
-      // For simple assets (USDT), proceed as before
+      // For direct assets (USDT on BSC, USDC on BSC), proceed as before
       if (isSimpleAsset) {
         // Only update deposit address if one is provided
         if (walletAddress.trim()) {
@@ -1780,14 +1746,10 @@ export default function DepositForm({
                         setIsInfoModalOpen(true);
                       }
                       
-                      // For simple assets, calculate immediately
+                      // For direct assets, calculate immediately
                       if (selectedAsset && newAmount > 0 && isSimpleCalculationAsset(selectedAsset)) {
-                        console.log("Triggering immediate forward calculation for simple asset:", newAmount);
-                        const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
-                          ? parseFloat(selectedAsset.range_commissions[0].commission)
-                          : 2;
-                        const commissionAmount = (newAmount * commissionRate) / 100;
-                        const calculatedGetAmount = newAmount - commissionAmount;
+                        console.log("Triggering immediate forward calculation for direct asset:", newAmount);
+                        const calculatedGetAmount = newAmount < 2 ? newAmount : Math.max(0, newAmount - 2);
                         setGetAmount(calculatedGetAmount);
                         setGetAmountInput(calculatedGetAmount.toString());
                         
@@ -1824,7 +1786,7 @@ export default function DepositForm({
                   </div>
                 )}
 
-                {/* Show info for non-simple assets when typing in You Send */}
+                {/* Show info for non-direct assets when typing in You Send */}
                 {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && isCalculatingFromPay && payAmount > 0 && (
                   <div className="mt-2 text-xs text-[#788099]">
                     {estimateLoading ? "⏳ Fetching live rate..." : estimate ? "✅ Using live rate" : "⏳ Calculating..."}
@@ -1952,14 +1914,10 @@ export default function DepositForm({
                       setGetAmount(newAmount);
                       setIsCalculatingFromPay(false);
                       
-                      // For simple assets, calculate immediately
+                      // For direct assets, calculate immediately
                       if (selectedAsset && newAmount > 0 && isSimpleCalculationAsset(selectedAsset)) {
-                        console.log("Triggering immediate reverse calculation for simple asset:", newAmount);
-                        const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
-                          ? parseFloat(selectedAsset.range_commissions[0].commission)
-                          : 2;
-                        const commissionAmount = (newAmount * commissionRate) / 100;
-                        const calculatedPayAmount = newAmount + commissionAmount;
+                        console.log("Triggering immediate reverse calculation for direct asset:", newAmount);
+                        const calculatedPayAmount = newAmount < 2 ? newAmount : newAmount + 2;
                         setPayAmount(calculatedPayAmount);
                         setPayAmountInput(calculatedPayAmount.toString());
                         
@@ -2009,7 +1967,7 @@ export default function DepositForm({
                   </div>
                 )}
 
-                {/* Show API estimate status for non-simple assets */}
+                {/* Show API estimate status for non-direct assets */}
                 {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && (
                   <div className="mt-2">
                     {/* {estimateLoading && isCalculatingFromPay && (

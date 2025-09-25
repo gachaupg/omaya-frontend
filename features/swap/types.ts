@@ -3,25 +3,26 @@
  */
 
 export interface SupportedAsset {
-  asset_id: string;
-  symbol: string;
+  asset_id?: string;
+  symbol?: string;
   name: string;
-  description: string | null;
-  asset_image: string | null;
-  image_url: string;
+  description?: string | null;
+  asset_image?: string | null;
+  image_url?: string;
+  image?: string;
   ticker: string;
-  has_external_id: boolean;
-  is_extra_id_supported: boolean;
-  is_fiat: boolean;
-  featured: boolean;
-  is_stable: boolean;
-  supports_fixed_rate: boolean;
+  has_external_id?: boolean;
+  is_extra_id_supported?: boolean;
+  is_fiat?: boolean;
+  featured?: boolean;
+  is_stable?: boolean;
+  supports_fixed_rate?: boolean;
   network: string;
-  token_contract: string;
-  can_buy: boolean;
-  can_sell: boolean;
-  legacy_ticker: string;
-  is_changenow_asset: boolean;
+  token_contract?: string;
+  can_buy?: boolean;
+  can_sell?: boolean;
+  legacy_ticker?: string;
+  is_changenow_asset?: boolean;
 }
 
 export interface SwapEstimate {
@@ -50,6 +51,23 @@ export interface SwapEstimate {
   user_amount?: number;
   min_amount?: number;
   max_amount?: number;
+  raw_response?: {
+    fromCurrency: string;
+    fromNetwork: string;
+    toCurrency: string;
+    toNetwork: string;
+    flow: string;
+    type: string;
+    rateId: string | null;
+    validUntil: string | null;
+    transactionSpeedForecast: string;
+    warningMessage: any;
+    depositFee: number;
+    withdrawalFee: number;
+    userId: any;
+    fromAmount: number;
+    toAmount: number;
+  };
 }
 
 export interface CreateSwapRequest {

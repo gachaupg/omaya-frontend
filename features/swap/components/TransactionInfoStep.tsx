@@ -30,6 +30,7 @@ interface TransactionInfoStepProps {
   swapLoading: boolean;
   hideContinueButton?: boolean;
   onSwapAssets?: () => void;
+  activeInputField?: 'from' | 'to';
 }
 
 const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
@@ -58,6 +59,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
   swapLoading,
   hideContinueButton,
   onSwapAssets,
+  activeInputField,
 }) => {
   const { isDark } = useTheme();
 
@@ -83,7 +85,11 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   value={fromAmount}
                   onChange={onFromAmountChange}
                   placeholder="Enter amount"
-                  className="w-full bg-white dark:bg-[#1D1D23] rounded-2xl px-4 py-2 pr-16 text-lg text-gray-900 dark:text-white focus:outline-none border border-gray-300 dark:border-[#39394a] appearance-none placeholder-gray-400 dark:placeholder-[#7e7e8f]"
+                  className={`w-full bg-white dark:bg-[#1D1D23] rounded-2xl px-4 py-2 pr-16 text-lg text-gray-900 dark:text-white focus:outline-none border appearance-none placeholder-gray-400 dark:placeholder-[#7e7e8f] ${
+                    activeInputField === 'from' 
+                      ? 'border-[#1D8751] ring-2 ring-[#1D8751]/20' 
+                      : 'border-gray-300 dark:border-[#39394a]'
+                  }`}
                 />
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
                   <span className="text-gray-600 dark:text-white text-sm font-medium">
@@ -108,6 +114,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                       <>
                         <img
                           src={
+                            fromAsset.image ||
                             fromAsset.image_url ||
                             fromAsset.asset_image ||
                             "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
@@ -186,14 +193,18 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                           
                           const searchLower = searchTerm.toLowerCase();
                           const ticker = asset.ticker?.toLowerCase() || '';
+                          const name = asset.name?.toLowerCase() || '';
+                          const network = asset.network?.toLowerCase() || '';
                           
-                          return ticker.includes(searchLower);
+                          return ticker.includes(searchLower) || 
+                                 name.includes(searchLower) || 
+                                 network.includes(searchLower);
                         });
                         
                         return filteredAssets.length > 0 ? (
-                          filteredAssets.map((asset: SupportedAsset) => (
+                          filteredAssets.map((asset: SupportedAsset, index) => (
                             <div
-                              key={asset.asset_id}
+                              key={`${asset.ticker}-${asset.network}-${index}`}
                               className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-[#23232b] cursor-pointer border-b border-gray-200 dark:border-[#39394a] last:border-b-0"
                               onClick={() => {
                                 onFromAssetSelect(asset);
@@ -202,6 +213,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                             >
                               <img
                                 src={
+                                  asset.image ||
                                   asset.image_url ||
                                   asset.asset_image ||
                                   "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
@@ -230,7 +242,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                                     "Unknown Asset"}
                                 </div>
                               </div>
-                              {fromAsset?.asset_id === asset.asset_id && (
+                              {fromAsset?.ticker === asset.ticker && fromAsset?.network === asset.network && (
                                 <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
                               )}
                             </div>
@@ -284,15 +296,18 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   value={toAmount}
                   onChange={onToAmountChange}
                   placeholder="Enter amount"
-                  className="w-full bg-white dark:bg-[#1D1D23] rounded-2xl px-4 py-2 pr-16 text-lg text-gray-900 dark:text-white focus:outline-none border border-gray-300 dark:border-[#39394a] appearance-none placeholder-gray-400 dark:placeholder-[#7e7e8f]"
-                  readOnly={estimateLoading}
+                  className={`w-full bg-white dark:bg-[#1D1D23] rounded-2xl px-4 py-2 pr-16 text-lg text-gray-900 dark:text-white focus:outline-none border appearance-none placeholder-gray-400 dark:placeholder-[#7e7e8f] ${
+                    activeInputField === 'to' 
+                      ? 'border-[#1D8751] ring-2 ring-[#1D8751]/20' 
+                      : 'border-gray-300 dark:border-[#39394a]'
+                  }`}
                 />
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
                   <span className="text-gray-600 dark:text-white text-sm font-medium">
                     {toAsset ? (toAsset.ticker?.toUpperCase() || toAsset.symbol?.toUpperCase() || "USDT") : "USDT"}
                   </span>
                 </div>
-                {estimateLoading && (
+                {estimateLoading && activeInputField === 'to' && (
                   <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
                   </div>
@@ -315,6 +330,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                       <>
                         <img
                           src={
+                            toAsset.image ||
                             toAsset.image_url ||
                             toAsset.asset_image ||
                             "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
@@ -393,14 +409,18 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                           
                           const searchLower = toSearchTerm.toLowerCase();
                           const ticker = asset.ticker?.toLowerCase() || '';
+                          const name = asset.name?.toLowerCase() || '';
+                          const network = asset.network?.toLowerCase() || '';
                           
-                          return ticker.includes(searchLower);
+                          return ticker.includes(searchLower) || 
+                                 name.includes(searchLower) || 
+                                 network.includes(searchLower);
                         });
                         
                         return filteredAssets.length > 0 ? (
-                          filteredAssets.map((asset: SupportedAsset) => (
+                          filteredAssets.map((asset: SupportedAsset, index) => (
                             <div
-                              key={asset.asset_id}
+                              key={`${asset.ticker}-${asset.network}-${index}`}
                               className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-[#23232b] cursor-pointer border-b border-gray-200 dark:border-[#39394a] last:border-b-0"
                               onClick={() => {
                                 onToAssetSelect(asset);
@@ -409,6 +429,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                             >
                               <img
                                 src={
+                                  asset.image ||
                                   asset.image_url ||
                                   asset.asset_image ||
                                   "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
@@ -437,7 +458,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                                     "Unknown Asset"}
                                 </div>
                               </div>
-                              {toAsset?.asset_id === asset.asset_id && (
+                              {toAsset?.ticker === asset.ticker && toAsset?.network === asset.network && (
                                 <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
                               )}
                             </div>
