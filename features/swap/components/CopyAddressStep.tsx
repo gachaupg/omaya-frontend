@@ -111,6 +111,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
     if (s === "exchanging") return "exchanging";
     if (s === "sending") return "sending";
     if (s === "finished") return "finished";
+    if (s === "completed") return "completed"; // Keep completed as completed
     return s;
   }
 
@@ -175,8 +176,14 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
                 mapBackendStatusToStepperStatus(backendStatus);
               setStatus(stepperStatus);
               setStatusObj(msg.data);
-              // Status finished - let user decide when to view results
-              // onNext() is removed to prevent auto-navigation
+              
+              // Auto-navigate to success page when status is completed
+              if (backendStatus === "completed") {
+                console.log("✅ Swap completed, automatically showing success page");
+                console.log("Status changed to completed, triggering success page");
+                // Keep the status as "completed" to trigger success page
+                setStatus("completed");
+              }
             }
           } catch (e) {
             console.error("Failed to parse WebSocket message", e, event.data);
@@ -208,8 +215,9 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
     currentStepIndex
   );
 
-  // If status is finished, show the SuccessPage with real data
-  if (mappedStatus === "finished") {
+  // If status is completed, show the SuccessPage with real data
+  if (mappedStatus === "completed" || mappedStatus === "finished") {
+    console.log("🎉 Rendering success page for status:", mappedStatus);
     return (
       <SuccessPage
         transactionId={statusObj?.id || swapResponse?.id || ""}
