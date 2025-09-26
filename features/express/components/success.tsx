@@ -212,6 +212,8 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
       txHash = websocketData.data.payinHash;
     } else if (websocketData?.data?.payoutHash) {
       txHash = websocketData.data.payoutHash;
+    } else if (websocketData?.data?.payout_hash) {
+      txHash = websocketData.data.payout_hash;
     }
     
     // Format amounts properly
