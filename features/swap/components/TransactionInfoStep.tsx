@@ -85,10 +85,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   value={fromAmount}
                   onChange={onFromAmountChange}
                   placeholder="Enter amount"
-                  className={`w-full bg-white dark:bg-[#1D1D23] rounded-2xl px-4 py-2 pr-16 text-lg text-gray-900 dark:text-white focus:outline-none border appearance-none placeholder-gray-400 dark:placeholder-[#7e7e8f] ${
-                    activeInputField === 'from' 
-                      ? 'border-[#1D8751] ring-2 ring-[#1D8751]/20' 
-                      : 'border-gray-300 dark:border-[#39394a]'
+                  className={`w-full bg-white dark:bg-[#1D1D23] rounded-2xl px-4 py-2 pr-16 text-lg text-gray-900 dark:text-white focus:outline-none border appearance-none placeholder-gray-400 dark:placeholder-[#7e7e8f]  border-[#35353E] dark:border-[#39394a]'
                   }`}
                 />
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
