@@ -479,6 +479,7 @@ const TransactionHistoryTable: React.FC<TransactionHistoryTableProps> = () => {
                             year: "numeric",
                             month: "numeric",
                             day: "numeric",
+                            timeZone: "UTC"
                           })}
                         </span>
                       </div>

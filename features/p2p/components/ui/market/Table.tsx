@@ -38,7 +38,8 @@ const MarketTable: React.FC<MarketTableProps> = ({
   } | null>(null);
 
   const handleTradeClick = (i: number) => setSelectedRowIndex(i);
-
+  console.log("data in table", data);
+  console.log("currentPage", currentPage);
   const handleSort = (key: string) => {
     setSortConfig((prev) => ({
       key,

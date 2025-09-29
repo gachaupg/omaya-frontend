@@ -8,7 +8,7 @@ import Image from "next/image";
 import { tokens } from "@/styles/tokens";
 import MarketTable from "./Table";
 import {
-  fetchAllP2POrders,
+  fetchAllP2PBuyandSell,
   setCurrentPage,
 } from "@/features/p2p/slices/orderSlice";
 import { RootState } from "@/store/rootReducer";
@@ -117,6 +117,12 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
   const { p2pBuyOrders, p2pSellOrders, loading, error, currentPage } =
     useSelector((state: RootState) => state.p2pMarket || {});
   const orders = { buy_orders: p2pBuyOrders, sell_orders: p2pSellOrders };
+  console.log("orders object:", { 
+    buyOrdersCount: p2pBuyOrders?.results?.length || 0, 
+    sellOrdersCount: p2pSellOrders?.results?.length || 0,
+    buyOrders: p2pBuyOrders,
+    sellOrders: p2pSellOrders
+  });
   const [mounted, setMounted] = useState(false);
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("USDT");
@@ -132,7 +138,7 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
   useEffect(() => {
     if (mounted && isAuthenticated) {
       const fetchOrders = async () => {
-        dispatch(fetchAllP2POrders(currentPage) as any);
+        dispatch(fetchAllP2PBuyandSell(currentPage) as any);
       };
       fetchOrders();
     }
@@ -149,8 +155,12 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
     if (!orders) {
       return [];
     }
-    const orderType = activeTab === "buy" ? "sell_orders" : "buy_orders";
-    return orders[orderType]?.results || [];
+    // For now, since API only returns buy orders, show buy orders for both tabs
+    // TODO: Fix API to return proper sell orders when needed
+    const orderType = "buy_orders"; // activeTab === "buy" ? "sell_orders" : "buy_orders";
+    const activeOrders = orders[orderType]?.results || [];
+    console.log("getActiveOrders:", { activeTab, orderType, activeOrders: activeOrders.length });
+    return activeOrders;
   }, [orders, activeTab]);
 
   const transformedData: MarketRow[] = useMemo(() => {
@@ -245,7 +255,7 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
   };
 
   const handleRefresh = () => {
-    dispatch(fetchAllP2POrders(currentPage) as any);
+    dispatch(fetchAllP2PBuyandSell(currentPage) as any);
   };
 
   const totalPages = Math.ceil(

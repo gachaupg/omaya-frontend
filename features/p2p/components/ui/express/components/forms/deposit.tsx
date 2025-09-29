@@ -63,6 +63,7 @@ interface DepositFormProps {
   mode: "deposit" | "withdrawal";
   onModeChange?: (mode: "deposit" | "withdrawal") => void;
   balance?: number;
+  skipAmountValidation?: boolean; // New prop to skip amount validation when posting ads
 }
 
 export default function DepositForm({
@@ -70,6 +71,7 @@ export default function DepositForm({
   mode,
   onModeChange,
   balance,
+  skipAmountValidation = false,
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -548,22 +550,33 @@ export default function DepositForm({
       const asset = selectedAsset.ticker || selectedAsset.symbol;
       const network = selectedNetwork.network || selectedNetwork.name;
       
-      console.log("Submitting deposit request with:", { asset, network, amount: payAmount });
+      console.log("Submitting deposit request with:", { 
+        asset, 
+        network, 
+        amount: skipAmountValidation ? "NOT INCLUDED" : payAmount, 
+        skipAmountValidation 
+      });
 
       // Call the express deposit API
-      const depositResponse = await createExpressDeposit({
+      const depositPayload: any = {
         asset,
-        amount: payAmount.toString(),
         network,
         user_payment_detail_id: 1 // Default payment detail ID
-      });
+      };
+
+      // Only include amount if skipAmountValidation is false
+      if (!skipAmountValidation && payAmount > 0) {
+        depositPayload.amount = payAmount.toString();
+      }
+
+      const depositResponse = await createExpressDeposit(depositPayload);
       
       console.log("Express deposit response:", depositResponse);
       
       // Create transaction data for the exchanging page
       const transactionData = {
         type: "deposit" as const,
-        amount: payAmount,
+        amount: skipAmountValidation ? 0 : payAmount,
         asset: {
           name: selectedAsset.name,
           ticker: selectedAsset.ticker || selectedAsset.symbol,
@@ -571,7 +584,7 @@ export default function DepositForm({
           network: selectedNetwork.network || selectedNetwork.name,
           image_url: selectedAsset.image_url || selectedAsset.asset_image || selectedAsset.icon_url || selectedAsset.image,
         },
-        paymentDetail: { provider_name: "direct", payment_method_type: "crypto" },
+        paymentDetail: selectedPaymentDetail || { provider_name: "direct", payment_method_type: "crypto" },
         walletAddress: depositResponse.deposit_address,
         network: selectedNetwork,
         depositAddress: depositResponse.deposit_address,
@@ -847,7 +860,7 @@ export default function DepositForm({
 
       // Add timeout to prevent hanging API calls
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Request timeout")), 10000); // 10 second timeout
+        setTimeout(() => reject(new Error("Request timeout")), 30000); // 30 second timeout
       });
 
       Promise.race([
@@ -952,7 +965,7 @@ export default function DepositForm({
 
       // Add timeout to prevent hanging API calls
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Request timeout")), 10000); // 10 second timeout
+        setTimeout(() => reject(new Error("Request timeout")), 30000); // 30 second timeout
       });
 
       Promise.race([
@@ -1428,8 +1441,11 @@ export default function DepositForm({
   const validateFirstCard = () => {
     const errors: string[] = [];
 
-    if (!payAmount || payAmount <= 0) {
-      errors.push("Please enter a valid amount");
+    // Skip amount validation when skipAmountValidation is true (for posting ads)
+    if (!skipAmountValidation) {
+      if (!payAmount || payAmount <= 0) {
+        errors.push("Please enter a valid amount");
+      }
     }
 
     if (!selectedAsset) {
@@ -1447,8 +1463,11 @@ export default function DepositForm({
   const validateForm = () => {
     const errors: string[] = [];
 
-    if (!payAmount || payAmount <= 0) {
-      errors.push("Please enter a valid amount");
+    // Skip amount validation when skipAmountValidation is true (for posting ads)
+    if (!skipAmountValidation) {
+      if (!payAmount || payAmount <= 0) {
+        errors.push("Please enter a valid amount");
+      }
     }
 
     if (!selectedAsset) {
@@ -1592,12 +1611,12 @@ export default function DepositForm({
       // Prepare transaction data for the status page
       const transactionData = {
         type: "deposit" as const,
-        amount: payAmount,
+        amount: skipAmountValidation ? 0 : payAmount,
         asset: {
           ...selectedAsset,
           icon: selectedAsset.image_url || selectedAsset.asset_image || selectedAsset.icon_url || selectedAsset.image
         },
-        paymentDetail: { provider_name: "direct", payment_method_type: "crypto" },
+        paymentDetail: selectedPaymentDetail || { provider_name: "direct", payment_method_type: "crypto" },
         walletAddress: walletAddress.trim() || "Not provided",
         network: selectedNetwork,
         transactionId: finalResponse.transaction_id,
@@ -1865,7 +1884,7 @@ export default function DepositForm({
       if (onExchange) {
         const transactionData = {
           type: "deposit" as const,
-          amount: payAmount,
+          amount: skipAmountValidation ? 0 : payAmount,
           asset: {
             ...selectedAsset,
             icon: selectedAsset.image_url || selectedAsset.asset_image || selectedAsset.icon_url || selectedAsset.image
@@ -2192,15 +2211,15 @@ export default function DepositForm({
               </h2>
               <div className=" dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-4 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
                 {/* Transaction Code Row */}
-                <div className="flex items-center justify-center gap-3 mb-3">
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-3">
                   {/* Display deposit code from API response - each character in its own box */}
-                  <div className="flex gap-2">
+                  <div className="flex gap-1 sm:gap-2 flex-wrap justify-center">
                     {apiResponse.deposit_code.split('').map((char: string, index: number) => (
                       <div
                         key={index}
-                        className="w-10 h-12 bg-[#35353E] border border-[#4A4A4A] rounded-lg flex items-center justify-center"
+                        className="w-8 h-10 sm:w-10 sm:h-12 bg-[#35353E] border border-[#4A4A4A] rounded-lg flex items-center justify-center"
                       >
-                        <span className="text-xl font-bold text-white font-mono">
+                        <span className="text-lg sm:text-xl font-bold text-white font-mono">
                           {char}
                         </span>
                       </div>
@@ -2211,7 +2230,7 @@ export default function DepositForm({
                       navigator.clipboard.writeText(apiResponse.deposit_code);
                       showToast.success("Transaction code copied!");
                     }}
-                    className="flex items-center gap-2 bg-[#35353E] border border-[#1D8751] text-white rounded-full px-4 py-2 font-semibold text-sm hover:bg-[#1D8751] hover:text-white transition-colors"
+                    className="flex items-center gap-2 bg-[#35353E] border border-[#1D8751] text-white rounded-full px-3 py-2 sm:px-4 font-semibold text-xs sm:text-sm hover:bg-[#1D8751] hover:text-white transition-colors"
                   >
                     <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
                       <rect

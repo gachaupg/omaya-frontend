@@ -82,7 +82,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
   receivedCurrency = "USDT",
   payinMethod = "Salam Bank",
   payoutMethod = "usdt-erc20",
-  transactionHash = "TXNWSU09E2DS",
+  transactionHash = "0x96ba940eec77c56e7a2806c5c269410303dce20cc2226ca1439659037940ce5b",
   netAmount = ".99 USDT",
 }) => {
   const router = useRouter();
@@ -124,6 +124,11 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
     
     // Check for deposit-specific currency from websocket data
     if (websocketData?.data?.currency) {
+      currency = websocketData.data.currency.toUpperCase();
+    }
+    
+    // Check for withdrawal completion currency
+    if (websocketData?.data?.status === "completed" && websocketData?.data?.currency) {
       currency = websocketData.data.currency.toUpperCase();
     }
     
@@ -171,6 +176,12 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
           amount = parseFloat(wsData.amount);
           estimatedAmount = parseFloat(wsData.amount);
         }
+        
+        // Check for withdrawal amount from completion status
+        if (wsData.amount && wsData.status === "completed") {
+          amount = parseFloat(wsData.amount);
+          estimatedAmount = parseFloat(wsData.amount);
+        }
       }
     
     // Get transaction hash/ID with websocket data priority
@@ -192,13 +203,17 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
     // Get transaction hash from websocket data
     let txHash = txId;
     
-    // Check for tx_hash from new deposit format (highest priority)
-    if (websocketData?.data?.tx_hash) {
-      txHash = websocketData.data.tx_hash || websocketData.data.transaction_hash;
+    // Check for transaction_hash from withdrawal completion (highest priority)
+    if (websocketData?.data?.transaction_hash) {
+      txHash = websocketData.data.transaction_hash;
+    } else if (websocketData?.data?.tx_hash) {
+      txHash = websocketData.data.tx_hash;
     } else if (websocketData?.data?.payinHash) {
       txHash = websocketData.data.payinHash;
     } else if (websocketData?.data?.payoutHash) {
       txHash = websocketData.data.payoutHash;
+    } else if (websocketData?.data?.payout_hash) {
+      txHash = websocketData.data.payout_hash;
     }
     
     // Format amounts properly
@@ -230,7 +245,9 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
   // Format date on client side to avoid hydration mismatch
   useEffect(() => {
     if (realData.date) {
-      setFormattedDate(new Date(realData.date).toLocaleString());
+      setFormattedDate(new Date(realData.date).toLocaleString("en-US", {
+        timeZone: "UTC"
+      }));
     }
   }, [realData.date]);
   
@@ -323,9 +340,9 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
               <div className={`text-sm mb-1 ${
                 isDark ? "text-gray-400" : "text-gray-600"
               }`}>Transaction Hash</div>
-              <div className={`font-mono ${
+              <div className={` text-[12px] font-mono ${
                 isDark ? "text-white" : "text-gray-900"
-              }`}>{realData.transactionHash}</div>
+              }`}>{realData.transactionHash} </div>
             </div>
             <div className={`my-4 rounded-[18px] shadow-xl border-1 ${
               isDark 

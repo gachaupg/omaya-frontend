@@ -26,11 +26,7 @@ import {
 import PaymentMethodsModal from "../../../p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal";
 import InfoModal from "./info";
 import { debugAssetFetching } from "../../../../lib/utils/debugAssets";
-import {
-  useAssetsDisplay,
-  usePaymentMethodsDisplay,
-} from "../../hooks/useDataDisplay";
-import { useExpressI18n } from "@/lib/useExpressI18n";
+import { useAssetsDisplay, usePaymentMethodsDisplay } from "../../hooks/useDataDisplay";
 
 // Add UserPaymentDetail interface
 interface UserPaymentDetail {
@@ -57,12 +53,9 @@ const UserPaymentSelector = ({
   onRemove: (detail: UserPaymentDetail) => void;
   selectedDetails: UserPaymentDetail[];
 }) => {
-  const { t } = useExpressI18n();
   return (
     <div className="bg-[#1D1D23] rounded-2xl border border-[#39394a] p-4">
-      <h3 className="text-white font-semibold mb-3">
-        {t("express.selectPaymentMethods", "Select Payment Methods")}
-      </h3>
+      <h3 className="text-white font-semibold mb-3">Select Payment Methods</h3>
       <div className="space-y-2">
         {userPaymentDetails && userPaymentDetails.length > 0 ? (
           userPaymentDetails.map((detail) => {
@@ -81,10 +74,8 @@ const UserPaymentSelector = ({
                   <div className="text-white font-medium">
                     {detail.payment_provider_name ||
                       detail.provider_name ||
-                      t("express.unknownProvider", "Unknown Provider")}{" "}
-                    -{" "}
-                    {detail.payment_method_name ||
-                      t("express.unknownMethod", "Unknown Method")}
+                      "Unknown Provider"}{" "}
+                    - {detail.payment_method_name || "Unknown Method"}
                   </div>
                   <div className="text-[#788099] text-sm">
                     {detail.account_name} ({detail.account_number})
@@ -104,16 +95,14 @@ const UserPaymentSelector = ({
                       : "bg-[#1D8751] text-white hover:bg-[#166b3e]"
                   }`}
                 >
-                  {isSelected
-                    ? t("express.remove", "Remove")
-                    : t("express.select", "Select")}
+                  {isSelected ? "Remove" : "Select"}
                 </button>
               </div>
             );
           })
         ) : (
           <div className="text-center text-[#788099] py-4">
-            {t("express.noPaymentDetails", "No payment details available")}
+            No payment details available
           </div>
         )}
       </div>
@@ -151,13 +140,33 @@ interface DepositFormProps {
   onModeChange?: (mode: "deposit" | "withdrawal") => void;
 }
 
+// Network mapping function
+const getNetworkDisplayName = (network: string) => {
+  const networkMap: { [key: string]: string } = {
+    'bsc': 'BSC',
+    'matic': 'Polygon',
+    'avaxc': 'Avalanche',
+    'eth': 'Ethereum',
+    'osmo': 'Osmosis',
+    'band': 'Band Protocol',
+    'sol': 'Solana',
+    'nano': 'Nano',
+    'sxp': 'Solar',
+    'luna': 'Terra',
+    'base': 'Base',
+    'trc20': 'TRON',
+    'trx': 'TRON'
+  };
+  
+  return networkMap[network?.toLowerCase()] || network || 'Unknown';
+};
+
 export default function WithdrawalForm({
   onExchange,
   mode,
   onModeChange,
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const { t } = useExpressI18n();
   const { adminPaymentDetails, loading, error } = useSelector(
     (state: any) => state.payment
   );
@@ -214,14 +223,14 @@ export default function WithdrawalForm({
       console.log("=== Starting debug asset fetch for express withdrawal ===");
       console.log("Current exchange assets:", assets);
       console.log("Current swap assets:", swapAssets);
-
+      
       // Force refresh both asset types
       console.log("🔄 Force refreshing exchange assets...");
       await dispatch(fetchAssets(true)).unwrap();
-
+      
       console.log("🔄 Force refreshing swap assets...");
       await dispatch(fetchSupportedAssets(true)).unwrap();
-
+      
       console.log("✅ Assets force refreshed");
     } catch (error) {
       console.error("Debug failed:", error);
@@ -401,9 +410,9 @@ export default function WithdrawalForm({
         console.log("DEBUG: Exchange assets loaded in express withdrawal:", {
           hasAssets: !!data?.assets,
           assetsLength: data?.assets?.length || 0,
-          totalBalance: data?.total_wallet_balance,
+          totalBalance: data?.total_wallet_balance
         });
-
+        
         // If no assets in cache, force refresh
         if (!data?.assets || data.assets.length === 0) {
           console.log("🔄 No exchange assets in cache, forcing refresh...");
@@ -412,10 +421,7 @@ export default function WithdrawalForm({
         return data;
       })
       .catch((error: unknown) => {
-        console.error(
-          "Failed to fetch exchange assets from cache, trying force refresh:",
-          error
-        );
+        console.error("Failed to fetch exchange assets from cache, trying force refresh:", error);
         // If cache fetch fails, try force refresh
         return dispatch(fetchAssets(true))
           .unwrap()
@@ -444,9 +450,9 @@ export default function WithdrawalForm({
       .then((data) => {
         console.log("DEBUG: Swap assets loaded in express withdrawal:", {
           hasAssets: !!data,
-          assetsLength: data?.length || 0,
+          assetsLength: data?.length || 0
         });
-
+        
         // If no assets in cache, force refresh
         if (!data || data.length === 0) {
           console.log("🔄 No swap assets in cache, forcing refresh...");
@@ -455,43 +461,25 @@ export default function WithdrawalForm({
         return data;
       })
       .catch((error: unknown) => {
-        console.error(
-          "Failed to fetch swap assets from cache, trying force refresh:",
-          error
-        );
+        console.error("Failed to fetch swap assets from cache, trying force refresh:", error);
         // If cache fetch fails, try force refresh
         return dispatch(fetchSupportedAssets(true))
           .unwrap()
           .catch((refreshError: unknown) => {
-            console.error(
-              "Failed to fetch swap assets even with force refresh:",
-              refreshError
-            );
-
+            console.error("Failed to fetch swap assets even with force refresh:", refreshError);
+            
             // Only show error if it's a network issue, not cache issues
             if (refreshError instanceof Error) {
-              if (
-                refreshError.message.includes("Network Error") ||
-                refreshError.message.includes("Network connection issue")
-              ) {
-                showToast.warning(
-                  "Network Issue",
-                  "Unable to fetch assets due to network problems. Using fallback data."
-                );
+              if (refreshError.message.includes("Network Error") || refreshError.message.includes("Network connection issue")) {
+                showToast.warning("Network Issue", "Unable to fetch assets due to network problems. Using fallback data.");
               } else if (refreshError.message.includes("Server Error")) {
-                showToast.error(
-                  "Server Error",
-                  "Unable to fetch assets from server. Please try again later."
-                );
+                showToast.error("Server Error", "Unable to fetch assets from server. Please try again later.");
               } else if (!refreshError.message.includes("Cache")) {
                 // Only show error if it's not a cache-related issue
-                showToast.error(
-                  "Asset Loading Error",
-                  `Failed to fetch swap assets: ${refreshError.message}`
-                );
+                showToast.error("Asset Loading Error", `Failed to fetch swap assets: ${refreshError.message}`);
               }
             }
-
+            
             // Set fallback assets so the form can still work
             const fallbackAssets = [
               {
@@ -501,25 +489,25 @@ export default function WithdrawalForm({
                 network: "BSC",
                 range_commissions: [{ commission: "2" }],
                 commission: "2",
-                fee_rate: "2",
+                fee_rate: "2"
               },
               {
                 ticker: "USDT",
-                symbol: "USDT",
+                symbol: "USDT", 
                 name: "USD Coin",
                 network: "BSC",
                 range_commissions: [{ commission: "2" }],
                 commission: "2",
-                fee_rate: "2",
-              },
+                fee_rate: "2"
+              }
             ];
-
+            
             // Update the Redux store with fallback assets
             dispatch({
               type: "swap/fetchSupportedAssets/fulfilled",
-              payload: fallbackAssets,
+              payload: fallbackAssets
             });
-
+            
             throw refreshError;
           });
       });
@@ -527,52 +515,50 @@ export default function WithdrawalForm({
 
   // Auto-select first asset and calculate received amount when assets are loaded
   useEffect(() => {
-    if (
-      assetsDisplay.shouldShowData &&
-      assetsDisplay.displayData.length > 0 &&
-      !selectedAsset
-    ) {
-      // Sort assets to get USDT on BSC first, then USDT on BSC, then others
+    if (assetsDisplay.shouldShowData && assetsDisplay.displayData.length > 0 && !selectedAsset) {
+      // Sort assets to get USDT on BSC first, then USDC on BSC, then others
       const sortedAssets = [...assetsDisplay.displayData].sort((a, b) => {
-        const tickerA = (a.ticker || a.symbol || a.name || "")
+        const tickerA = (a?.ticker || a?.symbol || a?.name || "")
           .toString()
-          .toUpperCase();
-        const tickerB = (b.ticker || b.symbol || b.name || "")
+          .toLowerCase();
+        const tickerB = (b?.ticker || b?.symbol || b?.name || "")
           .toString()
-          .toUpperCase();
-        const networkA = (a.network || "").toString().toLowerCase();
-        const networkB = (b.network || "").toString().toLowerCase();
+          .toLowerCase();
+        const networkA = (a?.network || "").toString().toLowerCase();
+        const networkB = (b?.network || "").toString().toLowerCase();
 
         // Priority 1: USDT on BSC
         if (
-          tickerA === "USDT" &&
+          tickerA === "usdt" &&
           networkA === "bsc" &&
-          !(tickerB === "USDT" && networkB === "bsc")
+          !(tickerB === "usdt" && networkB === "bsc")
         ) {
           return -1;
         }
         if (
-          tickerB === "USDT" &&
+          tickerB === "usdt" &&
           networkB === "bsc" &&
-          !(tickerA === "USDT" && networkA === "bsc")
+          !(tickerA === "usdt" && networkA === "bsc")
         ) {
           return 1;
         }
-        // Priority 2: USDT on BSC
+        
+        // Priority 2: USDC on BSC
         if (
-          tickerA === "USDT" &&
+          tickerA === "usdc" &&
           networkA === "bsc" &&
-          !(tickerB === "USDT" && networkB === "bsc")
+          !(tickerB === "usdc" && networkB === "bsc")
         ) {
           return -1;
         }
         if (
-          tickerB === "USDT" &&
+          tickerB === "usdc" &&
           networkB === "bsc" &&
-          !(tickerA === "USDT" && networkA === "bsc")
+          !(tickerA === "usdc" && networkA === "bsc")
         ) {
           return 1;
         }
+        
         return 0;
       });
 
@@ -737,11 +723,15 @@ export default function WithdrawalForm({
     };
   }, []);
 
-  // Check if asset is USDT or USDT (should use simple calculation)
+  // Check if asset is one of the first two direct assets (USDT on BSC or USDC on BSC)
   const isSimpleCalculationAsset = (asset: any) => {
     if (!asset) return false;
-    const ticker = (asset.ticker || asset.symbol || "").toLowerCase();
-    return ticker === "usdt";
+    const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
+    const network = (asset?.network || "").toLowerCase();
+    
+    // First two assets: USDT on BSC and USDC on BSC
+    return (ticker === "usdt" && network === "bsc") || 
+           (ticker === "usdc" && network === "bsc");
   };
 
   // Helper function to check if cache entry is still valid
@@ -754,7 +744,7 @@ export default function WithdrawalForm({
     if (error.response?.data) {
       const responseData = error.response.data;
       if (responseData.error === "deposit_too_small") {
-        return "Amount is too small. Please increase the amount.";
+        return "Amount is too small. Please enter a larger amount to proceed.";
       }
       if (responseData.message) {
         return responseData.message;
@@ -793,7 +783,7 @@ export default function WithdrawalForm({
         }
         if (amountErrors.some((err: string) => err.includes("too small"))) {
           setApiValidationError(
-            "Amount is too small. Please increase the amount."
+            "Amount is too small. Please enter a larger amount to proceed."
           );
           return;
         }
@@ -833,15 +823,15 @@ export default function WithdrawalForm({
   // Get default amount based on asset type
   const getDefaultAmount = (asset: any) => {
     if (!asset) return 100;
-    const ticker = (asset.ticker || asset.symbol || "").toLowerCase();
+    const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
     return ticker === "usdt" || ticker === "usdc" ? 100 : 0.001;
   };
 
   // Get minimum amount based on asset type
   const getMinimumAmount = (asset: any) => {
     if (!asset) return 10; // Default minimum
-    const ticker = (asset.ticker || asset.symbol || "").toLowerCase();
-    return ticker === "usdt" || ticker === "usdc" ? 2 : 10; // 2 for USDT/USDT, 10 for others
+    const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
+    return ticker === "usdt" || ticker === "usdc" ? 2 : 10; // 2 for direct assets, 10 for others
   };
 
   // Validate receive amount - allow any amount for now
@@ -850,7 +840,7 @@ export default function WithdrawalForm({
     return null; // No error
   };
 
-  // Fetch estimate for non-USDT/USDT assets with debouncing for better performance
+  // Fetch estimate for non-direct assets with debouncing for better performance
   useEffect(() => {
     // Clear any existing estimate timeout
     if (estimateTimeout) {
@@ -1032,10 +1022,10 @@ export default function WithdrawalForm({
                     "API ERROR: Amount too small validation error detected"
                   );
                   setApiValidationError(
-                    "Amount is too small. Please increase the amount."
+                    "Amount is too small. Please enter a larger amount to proceed."
                   );
                   setReceiveAmountError(
-                    "Amount is too small. Please increase the amount."
+                    "Amount is too small. Please enter a larger amount to proceed."
                   );
                   // Stop loading states and show error
                   setEstimateLoading(false);
@@ -1083,9 +1073,10 @@ export default function WithdrawalForm({
                 console.log("API ERROR: Deposit too small error detected");
                 const errorMessage =
                   responseData?.message ||
-                  "Amount is too small. Please increase the amount.";
+                  "Amount is too small. Please enter a larger amount to proceed.";
                 setApiValidationError(errorMessage);
                 setReceiveAmountError(errorMessage);
+                setCalculationError(errorMessage); // Show error below "You Send" input
                 // Stop loading states and show error
                 setEstimateLoading(false);
                 setIsCalculating(false);
@@ -1221,7 +1212,7 @@ export default function WithdrawalForm({
 
       // Add timeout to prevent hanging API calls
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Request timeout")), 10000); // 10 second timeout
+        setTimeout(() => reject(new Error("Request timeout")), 30000); // 30 second timeout
       });
 
       Promise.race([
@@ -1343,10 +1334,10 @@ export default function WithdrawalForm({
                 amountErrors.some((err: string) => err.includes("too small"))
               ) {
                 setApiValidationError(
-                  "Amount is too small. Please increase the amount."
+                  "Amount is too small. Please enter a larger amount to proceed."
                 );
                 setReceiveAmountError(
-                  "Amount is too small. Please increase the amount."
+                  "Amount is too small. Please enter a larger amount to proceed."
                 );
                 // Stop loading states and show error
                 setEstimateLoading(false);
@@ -1391,9 +1382,10 @@ export default function WithdrawalForm({
               );
               const errorMessage =
                 responseData?.message ||
-                "Amount is too small. Please increase the amount.";
+                "Amount is too small. Please enter a larger amount to proceed.";
               setApiValidationError(errorMessage);
               setReceiveAmountError(errorMessage);
+              setCalculationError(errorMessage); // Show error below "You Send" input
               // Stop loading states and show error
               setEstimateLoading(false);
               setIsCalculating(false);
@@ -1529,9 +1521,9 @@ export default function WithdrawalForm({
   // Filter swap assets based on search term - search by ticker and name
   const filteredSwapAssets =
     assetsDisplay.displayData?.filter((asset: SupportedAsset) => {
-      const ticker = asset.ticker?.toUpperCase() || "";
-      const name = asset.name?.toUpperCase() || "";
-      const symbol = asset.symbol?.toUpperCase() || "";
+      const ticker = asset?.ticker?.toUpperCase() || "";
+      const name = asset?.name?.toUpperCase() || "";
+      const symbol = asset?.symbol?.toUpperCase() || "";
       const searchTerm = assetSearchTerm.toUpperCase();
 
       return (
@@ -1541,48 +1533,50 @@ export default function WithdrawalForm({
       );
     }) || [];
 
-  // Sort assets: USDT on BSC, USDT on BSC, then rest in original order
+  // Sort assets: USDT on BSC first, USDC on BSC second, then rest in original order
   const sortedSwapAssets = [...filteredSwapAssets].sort((a, b) => {
     // Ensure tickers exist and are strings (using ticker as primary, fallback to symbol/name)
-    const tickerA = (a.ticker || a.symbol || a.name || "")
+    const tickerA = (a?.ticker || a?.symbol || a?.name || "")
       .toString()
-      .toUpperCase();
-    const tickerB = (b.ticker || b.symbol || b.name || "")
+      .toLowerCase();
+    const tickerB = (b?.ticker || b?.symbol || b?.name || "")
       .toString()
-      .toUpperCase();
-    const networkA = (a.network || "").toString().toLowerCase();
-    const networkB = (b.network || "").toString().toLowerCase();
+      .toLowerCase();
+    const networkA = (a?.network || "").toString().toLowerCase();
+    const networkB = (b?.network || "").toString().toLowerCase();
 
     // Priority 1: USDT on BSC
     if (
-      tickerA === "USDT" &&
+      tickerA === "usdt" &&
       networkA === "bsc" &&
-      !(tickerB === "USDT" && networkB === "bsc")
+      !(tickerB === "usdt" && networkB === "bsc")
     ) {
       return -1;
     }
     if (
-      tickerB === "USDT" &&
+      tickerB === "usdt" &&
       networkB === "bsc" &&
-      !(tickerA === "USDT" && networkA === "bsc")
+      !(tickerA === "usdt" && networkA === "bsc")
     ) {
       return 1;
     }
-    // Priority 2: USDT on BSC
+    
+    // Priority 2: USDC on BSC
     if (
-      tickerA === "USDT" &&
+      tickerA === "usdc" &&
       networkA === "bsc" &&
-      !(tickerB === "USDT" && networkB === "bsc")
+      !(tickerB === "usdc" && networkB === "bsc")
     ) {
       return -1;
     }
     if (
-      tickerB === "USDT" &&
+      tickerB === "usdc" &&
       networkB === "bsc" &&
-      !(tickerA === "USDT" && networkA === "bsc")
+      !(tickerA === "usdc" && networkA === "bsc")
     ) {
       return 1;
     }
+    
     // Default: preserve original order (no change)
     return 0;
   });
@@ -1590,11 +1584,11 @@ export default function WithdrawalForm({
   // Calculate fees and amounts - Network fee is always 0 for BEP20
   const networkFee = 0;
 
-  // Use flat $2 fee for USDT/USDT, percentage for other assets
+  // Use flat $2 fee for direct assets (USDT on BSC, USDC on BSC), percentage for other assets
   let commissionAmount = 0;
   if (selectedAsset && isSimpleCalculationAsset(selectedAsset)) {
-    // For USDT/USDT, only apply $2 fee if amount is $2 or more
-    commissionAmount = payAmount >= 2 ? 2 : 0; // Flat $2 fee for USDT/USDT (only if amount >= $2)
+    // For direct assets, only apply $2 fee if amount is $2 or more
+    commissionAmount = payAmount >= 2 ? 2 : 0; // Flat $2 fee for direct assets (only if amount >= $2)
   } else {
     // Use default commission rate for other assets
     const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
@@ -1614,15 +1608,12 @@ export default function WithdrawalForm({
 
     // For simple calculations, do them immediately without any delays
     if (fromPay && selectedAsset && isSimpleCalculationAsset(selectedAsset)) {
-      // Immediate calculation for USDT/USDT - no debouncing at all
+      // Immediate calculation for direct assets (USDT on BSC, USDC on BSC) - simply subtract 2
       let calculatedGetAmount;
       if (fromAmount < 2) {
         calculatedGetAmount = fromAmount;
       } else {
-        const commissionAmount = 2;
-        const networkFee = 0;
-        const totalFees = networkFee + commissionAmount;
-        calculatedGetAmount = Math.max(0, fromAmount - totalFees);
+        calculatedGetAmount = Math.max(0, fromAmount - 2); // Simply subtract 2 for direct assets
       }
 
       // Show result immediately
@@ -1682,10 +1673,7 @@ export default function WithdrawalForm({
             if (fromAmount < 2) {
               calculatedGetAmount = fromAmount;
             } else {
-              const commissionAmount = 2;
-              const networkFee = 0;
-              const totalFees = networkFee + commissionAmount;
-              calculatedGetAmount = Math.max(0, fromAmount - totalFees);
+              calculatedGetAmount = Math.max(0, fromAmount - 2); // Simply subtract 2 for direct assets
             }
 
             // Only show calculated amount if it's meaningful (> 0.01), otherwise show empty
@@ -1745,7 +1733,7 @@ export default function WithdrawalForm({
               setIsCalculatingReceive(true);
               // Don't update amounts yet, wait for estimate
             } else {
-              // For non-USDT/USDT assets, only show loading until API estimate is available
+              // For non-direct assets, only show loading until API estimate is available
               // Don't do manual calculations - wait for API
               setIsCalculating(true);
               setIsCalculatingReceive(true);
@@ -1758,10 +1746,7 @@ export default function WithdrawalForm({
             if (fromAmount < 2) {
               newPayAmount = fromAmount;
             } else {
-              const commissionAmount = 2;
-              const networkFee = 0;
-              const totalFees = networkFee + commissionAmount;
-              newPayAmount = Math.max(0, fromAmount + totalFees);
+              newPayAmount = fromAmount + 2; // Simply add 2 for direct assets
             }
             setPayAmount(newPayAmount);
             setPayAmountInput(newPayAmount.toString());
@@ -1770,7 +1755,7 @@ export default function WithdrawalForm({
             setIsCalculating(false);
             setIsCalculatingReceive(false);
           } else {
-            // For non-USDT/USDT assets, we need to fetch estimate for reverse calculation
+            // For non-direct assets, we need to fetch estimate for reverse calculation
             // This is more complex as we need to find the pay amount that gives us the desired receive amount
             // The reverse calculation useEffect will handle the API call
             // Just set loading states here - the useEffect will clear them
@@ -1901,7 +1886,7 @@ export default function WithdrawalForm({
         let message = "";
 
         if (isSimpleAsset) {
-          // Direct transfer response for USDT/USDT
+          // Direct transfer response for direct assets
           if (responseData.type === "direct_transfer") {
             withdrawalAddress = responseData.withdrawal_address || "";
             websocketUrl = responseData.websocket_url || "";
@@ -2066,7 +2051,7 @@ export default function WithdrawalForm({
         const isSimpleAsset = isSimpleCalculationAsset(selectedAsset);
 
         if (isSimpleAsset) {
-          // Direct transfer response for USDT/USDT
+          // Direct transfer response for direct assets
           const directTransferResponse = withdrawalResponse as any;
 
           if (directTransferResponse.type === "direct_transfer") {
@@ -2298,8 +2283,7 @@ export default function WithdrawalForm({
   return (
     <div className="w-full min-h-screen flex flex-col dark:bg-[#18181D]  ">
       <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
-        <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span>{" "}
-        Transaction Info
+        <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Transaction Info
       </h2>
 
       <div className="w-full max-w-4xl mx-auto text-white">
@@ -2360,9 +2344,9 @@ export default function WithdrawalForm({
                       if (selectedAsset && newValue >= 0) {
                         // Check asset type first and handle accordingly
                         if (isSimpleCalculationAsset(selectedAsset)) {
-                          // For simple assets (USDT/USDT), calculate immediately
+                          // For direct assets (USDT on BSC, USDC on BSC), calculate immediately
                           console.log(
-                            "You Send: Simple asset detected, calculating immediately"
+                            "You Send: Direct asset detected, calculating immediately"
                           );
                           calculateAmounts(newValue, true);
                         } else if (newValue > 0) {
@@ -2536,18 +2520,18 @@ export default function WithdrawalForm({
                       <>
                         <img
                           src={
-                            selectedAsset.image_url ||
-                            selectedAsset.asset_image ||
-                            selectedAsset.icon_url ||
-                            selectedAsset.image ||
+                            selectedAsset?.image_url ||
+                            selectedAsset?.asset_image ||
+                            (selectedAsset as any)?.image ||
                             "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                           }
                           alt={
-                            selectedAsset.name ||
-                            selectedAsset.ticker ||
+                            selectedAsset?.name ||
+                            selectedAsset?.ticker ||
+                            selectedAsset?.symbol ||
                             "Asset"
                           }
-                          className="w-6 h-6 rounded-full"
+                          className="w-6 h-6 rounded-full object-cover"
                           onError={(e) => {
                             console.log(
                               "Image failed to load for asset:",
@@ -2566,7 +2550,7 @@ export default function WithdrawalForm({
                           ).toUpperCase()}
                         </span>
                         <span className="ml-2 bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                          {selectedAsset.network || "Unknown"}
+                          {getNetworkDisplayName(selectedAsset.network)}
                         </span>
                       </>
                     ) : (
@@ -2653,9 +2637,9 @@ export default function WithdrawalForm({
 
                                 // Check asset type first and handle accordingly
                                 if (isSimpleCalculationAsset(asset)) {
-                                  // For simple assets (USDT/USDT), calculate immediately
+                                  // For direct assets (USDT on BSC, USDC on BSC), calculate immediately
                                   console.log(
-                                    "Selected simple asset, calculating immediately"
+                                    "Selected direct asset, calculating immediately"
                                   );
                                   setIsCalculatingFromPay(true);
 
@@ -2695,13 +2679,15 @@ export default function WithdrawalForm({
                             >
                               <img
                                 src={
-                                  asset.image_url ||
-                                  asset.asset_image ||
+                                  asset?.image_url ||
+                                  asset?.asset_image ||
+                                  (asset as any)?.image ||
                                   "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                                 }
-                                alt={asset.name}
-                                className="w-6 h-6 rounded-full"
+                                alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
+                                className="w-6 h-6 rounded-full object-cover"
                                 onError={(e) => {
+                                  console.log("Image failed to load for asset:", asset);
                                   e.currentTarget.src =
                                     "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                                 }}
@@ -2715,7 +2701,7 @@ export default function WithdrawalForm({
                                     "Unknown"
                                   ).toUpperCase()}
                                   <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                                    {asset.network || "Unknown"}
+                                    {getNetworkDisplayName(asset.network)}
                                   </span>
                                 </div>
                                 <div className="text-[#35353e] dark:text-[#788099] text-sm">
@@ -2828,9 +2814,9 @@ export default function WithdrawalForm({
                       if (selectedAsset && newAmount >= 0) {
                         // Check asset type first and handle accordingly
                         if (isSimpleCalculationAsset(selectedAsset)) {
-                          // For simple assets (USDT/USDT), calculate immediately
+                          // For direct assets (USDT on BSC, USDC on BSC), calculate immediately
                           console.log(
-                            "You Receive: Simple asset detected, calculating immediately"
+                            "You Receive: Direct asset detected, calculating immediately"
                           );
                           const commissionRate = selectedAsset
                             ?.range_commissions?.[0]?.commission
@@ -3104,13 +3090,11 @@ export default function WithdrawalForm({
                         : "Select Payment Method"}
                   </option>
                   <option value="test">Test Payment Method</option>
-                  {paymentMethodsDisplay.displayData?.map(
-                    (payment: any, index: number) => (
-                      <option key={index} value={payment.provider_name}>
-                        {payment.provider_name} - {payment.payment_method}
-                      </option>
-                    )
-                  )}
+                  {paymentMethodsDisplay.displayData?.map((payment: any, index: number) => (
+                    <option key={index} value={payment.provider_name}>
+                      {payment.provider_name} - {payment.payment_method}
+                    </option>
+                  ))}
                 </select>
               </div>
               {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
@@ -3197,7 +3181,7 @@ export default function WithdrawalForm({
 
               <span className="flex items-center bg-[#1D8751] text-white rounded-full px-5 py-1 text-sm font-medium w-fit">
                 <span className="w-2 h-2 bg-white rounded-full mr-2 inline-block"></span>
-                Commission: {selectedAsset && isSimpleCalculationAsset(selectedAsset) ? `$2 flat fee` : `${selectedAsset?.range_commissions?.[0]?.commission || 2}% of $${payAmount}`} = $
+                Commission: {selectedAsset && isSimpleCalculationAsset(selectedAsset) ? `$2 flat fee (direct assets)` : `${selectedAsset?.range_commissions?.[0]?.commission || 2}% of $${payAmount}`} = $
                 {commissionAmount}
               </span>
             </div>
@@ -3228,10 +3212,8 @@ export default function WithdrawalForm({
               </svg>
             </div>
             <span className="text-[#35353e] dark:text-[#788099] text-sm font-medium">
-              {t(
-                "express.estimate.notice",
-                "This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds."
-              )}
+              This is only an estimated price based on current market rates. The
+              final price will be confirmed when we receive the funds.
             </span>
           </div>
         </div>
@@ -3501,14 +3483,8 @@ export default function WithdrawalForm({
             <div className="flex items-center text-[#35353e] dark:text-[#788099] text-[16px] font-semibold">
               <FaExclamationCircle className="mr-2 text-[#1D8751]" />
               <span>
-                {t(
-                  "express.estimate.line1",
-                  "This is only an estimated price based on current market rates."
-                )}{" "}
-                {t(
-                  "express.estimate.line2",
-                  "The final price will be confirmed when we receive the funds."
-                )}
+                This is only an estimated price based on current market rates.
+                The final price will be confirmed when we receive the funds.
               </span>
             </div>
 
@@ -3583,6 +3559,7 @@ export default function WithdrawalForm({
       {validationErrors.length > 0 && (
         <div className="max-w-4xl mt-4 mx-auto w-full px-2 mb-4">
           <div className="bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] rounded-2xl p-4">
+            
             <ul className="list-disc list-inside text-[#1D8751] space-y-1">
               {validationErrors.map((error, index) => (
                 <li key={index}>{error}</li>

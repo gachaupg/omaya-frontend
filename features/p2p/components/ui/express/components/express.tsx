@@ -8,9 +8,10 @@ import { useTheme } from "@/context/theme";
 interface ExpressProps {
   mode?: "deposit" | "withdrawal";
   balance?: number;
+  skipAmountValidation?: boolean; // New prop to skip amount validation when posting ads
 }
 
-const Express = ({ mode = "deposit",balance }: ExpressProps) => {
+const Express = ({ mode = "deposit", balance, skipAmountValidation = false }: ExpressProps) => {
   const [showExchanging, setShowExchanging] = useState(false);
   const [transactionData, setTransactionData] = useState<any>(null);
   const { isDark } = useTheme();
@@ -28,6 +29,7 @@ const Express = ({ mode = "deposit",balance }: ExpressProps) => {
           }}
           initialMode={mode}
           balance={balance}
+          skipAmountValidation={skipAmountValidation}
         />
       )}
        {/* <SuccessPage transactionData={transactionData} /> */}

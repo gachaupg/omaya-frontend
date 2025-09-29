@@ -7,10 +7,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../../../store";
 import { fetchAdminPaymentDetails } from "../../../exchange/slices/paymentSlice";
 import { fetchAssets } from "../../../exchange/slices/exchangeSlice";
-import {
-  createDeposit,
-  updateDepositAddress,
-} from "../../../exchange/slices/exchangeSlice";
+import { createDeposit, updateDepositAddress } from "../../../exchange/slices/exchangeSlice";
 import {
   fetchSupportedAssets,
   fetchSwapEstimate,
@@ -22,11 +19,7 @@ import { SupportedAsset } from "../../../swap/types";
 import { FaSearch } from "react-icons/fa";
 import InfoModal from "./info";
 import { useTheme } from "@/context/theme";
-import { useExpressI18n } from "@/lib/useExpressI18n";
-import {
-  useAssetsDisplay,
-  usePaymentMethodsDisplay,
-} from "../../hooks/useDataDisplay";
+import { useAssetsDisplay, usePaymentMethodsDisplay } from "../../hooks/useDataDisplay";
 
 interface DepositFormProps {
   onExchange?: (transactionData: {
@@ -49,6 +42,42 @@ interface DepositFormProps {
   onModeChange?: (mode: "deposit" | "withdrawal") => void;
 }
 
+// Network mapping function
+const getNetworkDisplayName = (network: string) => {
+  const networkMap: { [key: string]: string } = {
+    'bsc': 'BSC',
+    'matic': 'Polygon',
+    'avaxc': 'Avalanche',
+    'eth': 'Ethereum',
+    'osmo': 'Osmosis',
+    'band': 'Band Protocol',
+    'sol': 'Solana',
+    'nano': 'Nano',
+    'sxp': 'Solar',
+    'luna': 'Terra',
+    'base': 'Base',
+    'trc20': 'TRON',
+    'trx': 'TRON'
+  };
+  
+  return networkMap[network?.toLowerCase()] || network || 'Unknown';
+};
+
+// Helper function to get network value from asset (handles both Asset and SupportedAsset types)
+const getAssetNetwork = (asset: any): string => {
+  // For SupportedAsset (swap assets) - has network property
+  if (asset.network) {
+    return asset.network;
+  }
+  
+  // For Asset (exchange assets) - has networks array
+  if (asset.networks && asset.networks.length > 0) {
+    return asset.networks[0].network_type || asset.networks[0].network_id || '';
+  }
+  
+  return '';
+};
+
 export default function DepositForm({
   onExchange,
   mode,
@@ -66,8 +95,7 @@ export default function DepositForm({
   // Add swap assets state
   const { supportedAssets: swapAssets, loading: swapAssetsLoading } =
     useSelector((state: any) => state.swap);
-  const { isDark } = useTheme();
-  const { t } = useExpressI18n();
+    const { isDark } = useTheme();
 
   // Use the data display hooks for consistent data handling
   const assetsDisplay = useAssetsDisplay(
@@ -76,7 +104,7 @@ export default function DepositForm({
     assetsLoading,
     swapAssetsLoading,
     null, // exchange error
-    null // swap error
+    null  // swap error
   );
 
   const paymentMethodsDisplay = usePaymentMethodsDisplay(
@@ -106,14 +134,14 @@ export default function DepositForm({
       console.log("=== Starting debug asset fetch for express deposit ===");
       console.log("Current exchange assets:", assets);
       console.log("Current swap assets:", swapAssets);
-
+      
       // Force refresh both asset types
       console.log("🔄 Force refreshing exchange assets...");
       await dispatch(fetchAssets(true)).unwrap();
-
+      
       console.log("🔄 Force refreshing swap assets...");
       await dispatch(fetchSupportedAssets(true)).unwrap();
-
+      
       console.log("✅ Assets force refreshed");
     } catch (error) {
       console.error("Debug failed:", error);
@@ -141,24 +169,19 @@ export default function DepositForm({
 
   // Add calculation stability state
   const [isCalculating, setIsCalculating] = useState(false);
-  const [calculationTimeout, setCalculationTimeout] =
-    useState<NodeJS.Timeout | null>(null);
+  const [calculationTimeout, setCalculationTimeout] = useState<NodeJS.Timeout | null>(null);
   const [calculationComplete, setCalculationComplete] = useState(false);
-  const [estimateTimeout, setEstimateTimeout] = useState<NodeJS.Timeout | null>(
-    null
-  );
+  const [estimateTimeout, setEstimateTimeout] = useState<NodeJS.Timeout | null>(null);
 
   // Add state to store API response
   const [apiResponse, setApiResponse] = useState<any>(null);
   const [isUserModifiedAmount, setIsUserModifiedAmount] = useState(false);
-
+  
   // Add InfoModal state
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
   // Add validation state for minimum receive amount
-  const [receiveAmountError, setReceiveAmountError] = useState<string | null>(
-    null
-  );
+  const [receiveAmountError, setReceiveAmountError] = useState<string | null>(null);
 
   useEffect(() => {
     // Try to fetch from cache first, then API if needed
@@ -177,9 +200,9 @@ export default function DepositForm({
         console.log("DEBUG: Exchange assets loaded in express deposit:", {
           hasAssets: !!data?.assets,
           assetsLength: data?.assets?.length || 0,
-          totalBalance: data?.total_wallet_balance,
+          totalBalance: data?.total_wallet_balance
         });
-
+        
         // If no assets in cache, force refresh
         if (!data?.assets || data.assets.length === 0) {
           console.log("🔄 No exchange assets in cache, forcing refresh...");
@@ -188,10 +211,7 @@ export default function DepositForm({
         return data;
       })
       .catch((error: unknown) => {
-        console.error(
-          "Failed to fetch exchange assets from cache, trying force refresh:",
-          error
-        );
+        console.error("Failed to fetch exchange assets from cache, trying force refresh:", error);
         // If cache fetch fails, try force refresh
         return dispatch(fetchAssets(true))
           .unwrap()
@@ -209,9 +229,9 @@ export default function DepositForm({
       .then((data) => {
         console.log("DEBUG: Swap assets loaded in express deposit:", {
           hasAssets: !!data,
-          assetsLength: data?.length || 0,
+          assetsLength: data?.length || 0
         });
-
+        
         // If no assets in cache, force refresh
         if (!data || data.length === 0) {
           console.log("🔄 No swap assets in cache, forcing refresh...");
@@ -220,43 +240,25 @@ export default function DepositForm({
         return data;
       })
       .catch((error: unknown) => {
-        console.error(
-          "Failed to fetch swap assets from cache, trying force refresh:",
-          error
-        );
+        console.error("Failed to fetch swap assets from cache, trying force refresh:", error);
         // If cache fetch fails, try force refresh
         return dispatch(fetchSupportedAssets(true))
           .unwrap()
           .catch((refreshError: unknown) => {
-            console.error(
-              "Failed to fetch swap assets even with force refresh:",
-              refreshError
-            );
-
+            console.error("Failed to fetch swap assets even with force refresh:", refreshError);
+            
             // Only show error if it's a network issue, not cache issues
             if (refreshError instanceof Error) {
-              if (
-                refreshError.message.includes("Network Error") ||
-                refreshError.message.includes("Network connection issue")
-              ) {
-                showToast.warning(
-                  "Network Issue",
-                  "Unable to fetch assets due to network problems. Using fallback data."
-                );
+              if (refreshError.message.includes("Network Error") || refreshError.message.includes("Network connection issue")) {
+                showToast.warning("Network Issue", "Unable to fetch assets due to network problems. Using fallback data.");
               } else if (refreshError.message.includes("Server Error")) {
-                showToast.error(
-                  "Server Error",
-                  "Unable to fetch assets from server. Please try again later."
-                );
+                showToast.error("Server Error", "Unable to fetch assets from server. Please try again later.");
               } else if (!refreshError.message.includes("Cache")) {
                 // Only show error if it's not a cache-related issue
-                showToast.error(
-                  "Asset Loading Error",
-                  `Failed to fetch swap assets: ${refreshError.message}`
-                );
+                showToast.error("Asset Loading Error", `Failed to fetch swap assets: ${refreshError.message}`);
               }
             }
-
+            
             // Set fallback assets so the form can still work
             const fallbackAssets = [
               {
@@ -266,16 +268,16 @@ export default function DepositForm({
                 network: "BSC",
                 range_commissions: [{ commission: "2" }],
                 commission: "2",
-                fee_rate: "2",
-              },
+                fee_rate: "2"
+              }
             ];
-
+            
             // Update the Redux store with fallback assets
             dispatch({
               type: "swap/fetchSupportedAssets/fulfilled",
-              payload: fallbackAssets,
+              payload: fallbackAssets
             });
-
+            
             throw refreshError;
           });
       });
@@ -283,45 +285,39 @@ export default function DepositForm({
 
   // Auto-select first asset when assets are loaded
   useEffect(() => {
-    if (
-      assetsDisplay.shouldShowData &&
-      assetsDisplay.displayData.length > 0 &&
-      !selectedAsset
-    ) {
-      // Use the sorted assets to get the first one (USDT on BSC should be first)
+    if (assetsDisplay.shouldShowData && assetsDisplay.displayData.length > 0 && !selectedAsset) {
+      // Use the sorted assets to get the first one (USDT on BSC first, USDC on BSC second)
       const sortedAssets = [...assetsDisplay.displayData].sort((a, b) => {
-        const tickerA = (a.ticker || a.symbol || a.name || "")
-          .toString()
-          .toLowerCase();
-        const tickerB = (b.ticker || b.symbol || b.name || "")
-          .toString()
-          .toLowerCase();
-        const networkA = (a.network || "").toString().toLowerCase();
-        const networkB = (b.network || "").toString().toLowerCase();
+        const tickerA = (a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase();
+        const tickerB = (b?.ticker || b?.symbol || b?.name || "").toString().toLowerCase();
+        const networkA = (a?.network || "").toString().toLowerCase();
+        const networkB = (b?.network || "").toString().toLowerCase();
 
         // Priority 1: USDT on BSC
-        if (
-          tickerA === "usdt" &&
-          networkA === "bsc" &&
-          !(tickerB === "usdt" && networkB === "bsc")
-        ) {
+        if (tickerA === "usdt" && networkA === "bsc" && !(tickerB === "usdt" && networkB === "bsc")) {
           return -1;
         }
-        if (
-          tickerB === "usdt" &&
-          networkB === "bsc" &&
-          !(tickerA === "usdt" && networkA === "bsc")
-        ) {
+        if (tickerB === "usdt" && networkB === "bsc" && !(tickerA === "usdt" && networkA === "bsc")) {
           return 1;
         }
+        
+        // Priority 2: USDC on BSC
+        if (tickerA === "usdc" && networkA === "bsc" && !(tickerB === "usdc" && networkB === "bsc")) {
+          return -1;
+        }
+        if (tickerB === "usdc" && networkB === "bsc" && !(tickerA === "usdc" && networkA === "bsc")) {
+          return 1;
+        }
+        
         return 0;
       });
 
       const firstAsset = sortedAssets[0];
       setSelectedAsset(firstAsset);
+      const networkValue = getAssetNetwork(firstAsset);
       setSelectedNetwork({
-        network_id: firstAsset.network,
-        network_type: firstAsset.network,
+        network_id: networkValue,
+        network_type: networkValue,
       });
     }
   }, [assetsDisplay.displayData, selectedAsset]);
@@ -343,26 +339,26 @@ export default function DepositForm({
     };
   }, []);
 
-  // Check if asset is USDT (should use simple calculation)
+  // Check if asset is one of the first two direct assets (USDT on BSC or USDC on BSC)
   const isSimpleCalculationAsset = (asset: any) => {
     if (!asset) return false;
-    const ticker = (asset.ticker || asset.symbol || "").toLowerCase();
-    return ticker === "usdt";
+    const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
+    const network = (asset?.network || "").toLowerCase();
+    
+    // First two assets: USDT on BSC and USDC on BSC
+    return (ticker === "usdt" && network === "bsc") || 
+           (ticker === "usdc" && network === "bsc");
   };
 
-  // Fetch estimate for non-USDT assets - triggers immediately on asset or amount change
+  // Fetch estimate for non-direct assets - triggers immediately on asset or amount change
   useEffect(() => {
     console.log("Estimate useEffect triggered:", {
       selectedAsset: selectedAsset?.ticker,
       isSimple: selectedAsset ? isSimpleCalculationAsset(selectedAsset) : null,
       payAmount,
-      shouldFetch:
-        selectedAsset &&
-        !isSimpleCalculationAsset(selectedAsset) &&
-        payAmount &&
-        payAmount > 0,
+      shouldFetch: selectedAsset && !isSimpleCalculationAsset(selectedAsset) && payAmount && payAmount > 0
     });
-
+    
     if (
       selectedAsset &&
       !isSimpleCalculationAsset(selectedAsset) &&
@@ -375,46 +371,43 @@ export default function DepositForm({
 
       // Use the actual fetchSwapEstimate API call for deposit
       // For deposits: fromCurrency is USDT, toCurrency is the selected asset
+      
 
       // Add timeout to prevent hanging API calls
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Request timeout")), 10000); // 10 second timeout
+        setTimeout(() => reject(new Error("Request timeout")), 30000); // 30 second timeout
       });
 
       Promise.race([
-        dispatch(
-          fetchSwapEstimate({
-            fromCurrency: "USDT",
-            fromNetwork: "BSC",
-            toCurrency: selectedAsset.ticker,
-            toNetwork: selectedAsset.network,
-            amount: payAmount,
-          })
+      dispatch(
+        fetchSwapEstimate({
+          fromCurrency: "USDT",
+          fromNetwork: "BSC",
+          toCurrency: selectedAsset.ticker, 
+          toNetwork: getAssetNetwork(selectedAsset), 
+          amount: payAmount,
+        })
         ),
-        timeoutPromise,
+        timeoutPromise
       ])
         .then((result: any) => {
           if (result.payload) {
             setEstimate(result.payload);
           }
-
+          
           // Clear loading states after successful calculation
           setIsCalculating(false);
           setIsCalculatingReceive(false);
         })
         .catch((error) => {
           console.error("Failed to fetch swap estimate:", error);
-
+          
           // Handle different types of errors gracefully
           if (error.message?.includes("Request timeout")) {
             setEstimateError("Request timeout: Using fallback calculation");
             console.log("Using fallback calculation due to request timeout");
             showToast.warning("Request timeout: Using estimated rate");
-          } else if (
-            error.message?.includes("Network Error") ||
-            error.code === "ECONNREFUSED" ||
-            error.code === "ENOTFOUND"
-          ) {
+          } else if (error.message?.includes("Network Error") || error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
             setEstimateError("Network error: Using fallback calculation");
             console.log("Using fallback calculation due to network error");
             showToast.warning("Using estimated rate due to network issues");
@@ -424,24 +417,23 @@ export default function DepositForm({
             showToast.warning("Using estimated rate due to server issues");
           } else if (error.message?.includes("Invalid swap parameters")) {
             setEstimateError("Invalid parameters: Using fallback calculation");
-
+           
             showToast.warning("Invalid parameters: Using estimated rate");
           } else {
             setEstimateError("API error: Using fallback calculation");
-
+          
             showToast.warning("Using estimated rate due to API unavailability");
           }
-
+          
           // Common fallback calculation for all error types
-          const commissionRate = selectedAsset?.range_commissions?.[0]
-            ?.commission
+          const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
             ? parseFloat(selectedAsset.range_commissions[0].commission)
             : 2;
           const commissionAmount = (payAmount * commissionRate) / 100;
           const calculatedGetAmount = payAmount - commissionAmount;
           setGetAmount(calculatedGetAmount);
           setGetAmountInput(calculatedGetAmount.toString());
-
+          
           // Clear loading states after fallback calculation
           setIsCalculating(false);
           setIsCalculatingReceive(false);
@@ -456,20 +448,15 @@ export default function DepositForm({
     }
   }, [selectedAsset, payAmount, isCalculatingFromPay]);
 
-  // Fetch reverse estimate for non-USDT assets when calculating from receive amount
+  // Fetch reverse estimate for non-direct assets when calculating from receive amount
   useEffect(() => {
     console.log("Reverse estimate useEffect triggered:", {
       selectedAsset: selectedAsset?.ticker,
       isSimple: selectedAsset ? isSimpleCalculationAsset(selectedAsset) : null,
       getAmount,
-      shouldFetch:
-        selectedAsset &&
-        !isSimpleCalculationAsset(selectedAsset) &&
-        getAmount &&
-        getAmount > 0 &&
-        !isCalculatingFromPay,
+      shouldFetch: selectedAsset && !isSimpleCalculationAsset(selectedAsset) && getAmount && getAmount > 0 && !isCalculatingFromPay
     });
-
+    
     if (
       selectedAsset &&
       !isSimpleCalculationAsset(selectedAsset) &&
@@ -482,50 +469,49 @@ export default function DepositForm({
 
       // For reverse calculation, we need to estimate the pay amount from the receive amount
       // We'll call the API with the correct direction to get the required USDT amount
-
+      
       console.log("Fetching reverse estimate for deposit:", {
         fromCurrency: selectedAsset.ticker, // We're converting FROM the selected asset
-        fromNetwork: selectedAsset.network,
+        fromNetwork: getAssetNetwork(selectedAsset), 
         toCurrency: "USDT", // TO USDT (since we want to know how much USDT we need)
-        toNetwork: "BSC",
+        toNetwork: "BSC", 
         amount: getAmount, // Use the receive amount directly
       });
 
       // Add timeout to prevent hanging API calls
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Request timeout")), 10000); // 10 second timeout
+        setTimeout(() => reject(new Error("Request timeout")), 30000); // 30 second timeout
       });
 
       Promise.race([
         dispatch(
           fetchSwapEstimate({
             fromCurrency: selectedAsset.ticker, // FROM selected asset
-            fromNetwork: selectedAsset.network,
+            fromNetwork: getAssetNetwork(selectedAsset), 
             toCurrency: "USDT", // TO USDT
-            toNetwork: "BSC",
+            toNetwork: "BSC", 
             amount: getAmount, // Use receive amount directly
           })
         ),
-        timeoutPromise,
+        timeoutPromise
       ])
         .then((result: any) => {
           console.log("Reverse estimate result:", result);
           if (result.payload && (result.payload as any)?.estimated_amount) {
             // The API now returns how much USDT we need to get the desired amount
-            const requiredUsdtAmount = (result.payload as any)
-              ?.estimated_amount;
-
+            const requiredUsdtAmount = (result.payload as any)?.estimated_amount;
+            
             if (requiredUsdtAmount && requiredUsdtAmount > 0) {
               // Set the pay amount to the required USDT amount
               setPayAmount(requiredUsdtAmount);
               setPayAmountInput(requiredUsdtAmount.toString());
               setEstimate(result.payload);
-              console.log("Reverse calculation successful:", {
-                desiredReceive: getAmount,
-                requiredPay: requiredUsdtAmount,
+              console.log("Reverse calculation successful:", { 
+                desiredReceive: getAmount, 
+                requiredPay: requiredUsdtAmount 
               });
             }
-
+            
             // Clear loading states after successful calculation
             setIsCalculating(false);
             setIsCalculatingReceive(false);
@@ -533,17 +519,13 @@ export default function DepositForm({
         })
         .catch((error) => {
           console.error("Failed to fetch reverse estimate:", error);
-
+          
           // Handle different types of errors gracefully
           if (error.message?.includes("Request timeout")) {
             setEstimateError("Request timeout: Using fallback calculation");
             console.log("Using fallback calculation due to request timeout");
             showToast.warning("Request timeout: Using estimated rate");
-          } else if (
-            error.message?.includes("Network Error") ||
-            error.code === "ECONNREFUSED" ||
-            error.code === "ENOTFOUND"
-          ) {
+          } else if (error.message?.includes("Network Error") || error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
             setEstimateError("Network error: Using fallback calculation");
             console.log("Using fallback calculation due to network error");
             showToast.warning("Using estimated rate due to network issues");
@@ -553,22 +535,17 @@ export default function DepositForm({
             showToast.warning("Using estimated rate due to server issues");
           } else if (error.message?.includes("Invalid swap parameters")) {
             setEstimateError("Invalid parameters: Using fallback calculation");
-            console.log(
-              "Using fallback calculation due to invalid API parameters"
-            );
+            console.log("Using fallback calculation due to invalid API parameters");
             showToast.warning("Invalid parameters: Using estimated rate");
           } else {
             setEstimateError("API error: Using fallback calculation");
             console.log("Using fallback calculation due to API error");
             showToast.warning("Using estimated rate due to API unavailability");
           }
-
+          
           // Common fallback calculation for all error types
           let commissionRate = 2; // Default fallback
-          if (
-            selectedAsset?.range_commissions &&
-            selectedAsset.range_commissions.length > 0
-          ) {
+          if (selectedAsset?.range_commissions && selectedAsset.range_commissions.length > 0) {
             const firstCommission = selectedAsset.range_commissions[0];
             if (firstCommission?.commission) {
               commissionRate = parseFloat(firstCommission.commission);
@@ -578,11 +555,11 @@ export default function DepositForm({
           } else if (selectedAsset?.fee_rate) {
             commissionRate = parseFloat(selectedAsset.fee_rate);
           }
-
+          
           const fallbackPayAmount = getAmount * (1 + commissionRate / 100);
           setPayAmount(fallbackPayAmount);
           setPayAmountInput(fallbackPayAmount.toString());
-
+          
           // Clear loading states after fallback calculation
           setIsCalculating(false);
           setIsCalculatingReceive(false);
@@ -602,36 +579,34 @@ export default function DepositForm({
         setIsCalculatingReceive(false);
       }
     }, 15000); // 15 second safety timeout
-
+    
     return () => clearTimeout(safetyTimeout);
   }, [isCalculating, isCalculatingReceive]);
 
   // Filter assets based on search term - search by ticker and name
   const filteredSwapAssets =
     assetsDisplay.displayData?.filter((asset: SupportedAsset) => {
-      const ticker = asset.ticker?.toUpperCase() || "";
-      const name = asset.name?.toUpperCase() || "";
-      const symbol = asset.symbol?.toUpperCase() || "";
+      const ticker = asset?.ticker?.toUpperCase() || "";
+      const name = asset?.name?.toUpperCase() || "";
+      const symbol = asset?.symbol?.toUpperCase() || "";
       const searchTerm = assetSearchTerm.toUpperCase();
 
-      return (
-        ticker.includes(searchTerm) ||
-        name.includes(searchTerm) ||
-        symbol.includes(searchTerm)
-      );
+      return ticker.includes(searchTerm) || 
+             name.includes(searchTerm) || 
+             symbol.includes(searchTerm);
     }) || [];
 
   // Sort assets: USDT on BSC, then rest in original order
   const sortedSwapAssets = [...filteredSwapAssets].sort((a, b) => {
     // Ensure tickers exist and are strings (using ticker as primary, fallback to symbol/name)
-    const tickerA = (a.ticker || a.symbol || a.name || "")
+    const tickerA = (a?.ticker || a?.symbol || a?.name || "")
       .toString()
       .toLowerCase();
-    const tickerB = (b.ticker || b.symbol || b.name || "")
+    const tickerB = (b?.ticker || b?.symbol || b?.name || "")
       .toString()
       .toLowerCase();
-    const networkA = (a.network || "").toString().toLowerCase();
-    const networkB = (b.network || "").toString().toLowerCase();
+    const networkA = (a?.network || "").toString().toLowerCase();
+    const networkB = (b?.network || "").toString().toLowerCase();
 
     // Priority 1: USDT on BSC
     if (
@@ -648,6 +623,23 @@ export default function DepositForm({
     ) {
       return 1;
     }
+    
+    // Priority 2: USDC on BSC
+    if (
+      tickerA === "usdc" &&
+      networkA === "bsc" &&
+      !(tickerB === "usdc" && networkB === "bsc")
+    ) {
+      return -1;
+    }
+    if (
+      tickerB === "usdc" &&
+      networkB === "bsc" &&
+      !(tickerA === "usdc" && networkA === "bsc")
+    ) {
+      return 1;
+    }
+    
     // Default: preserve original order (no change)
     return 0;
   });
@@ -663,15 +655,15 @@ export default function DepositForm({
 
   // Stable calculation function with debouncing
   const calculateAmounts = (fromAmount: number, fromPay: boolean = true) => {
-    console.log("calculateAmounts called:", {
-      fromAmount,
-      fromPay,
+    console.log("calculateAmounts called:", { 
+      fromAmount, 
+      fromPay, 
       selectedAsset: selectedAsset?.ticker,
       isCalculating,
       isCalculatingReceive,
-      isCalculatingFromPay,
+      isCalculatingFromPay
     });
-
+    
     // Clear any existing timeout
     if (calculationTimeout) {
       clearTimeout(calculationTimeout);
@@ -697,76 +689,64 @@ export default function DepositForm({
       return;
     }
 
-    // For simple calculation assets (USDT), calculate immediately
-    if (isSimpleCalculationAsset(selectedAsset)) {
-      let commissionRate = 2; // Default fallback
-
-      // Safely access commission rate with multiple fallback options
-      if (
-        selectedAsset?.range_commissions &&
-        selectedAsset.range_commissions.length > 0
-      ) {
-        const firstCommission = selectedAsset.range_commissions[0];
-        if (firstCommission?.commission) {
-          commissionRate = parseFloat(firstCommission.commission);
+    // For direct assets (USDT on BSC, USDC on BSC), calculate immediately
+      if (isSimpleCalculationAsset(selectedAsset)) {
+        let commissionRate = 2; // Default fallback
+        
+        // Safely access commission rate with multiple fallback options
+        if (selectedAsset?.range_commissions && selectedAsset.range_commissions.length > 0) {
+          const firstCommission = selectedAsset.range_commissions[0];
+          if (firstCommission?.commission) {
+            commissionRate = parseFloat(firstCommission.commission);
+          }
+        } else if (selectedAsset?.commission) {
+          // Try alternative commission property
+          commissionRate = parseFloat(selectedAsset.commission);
+        } else if (selectedAsset?.fee_rate) {
+          // Try fee_rate property
+          commissionRate = parseFloat(selectedAsset.fee_rate);
         }
-      } else if (selectedAsset?.commission) {
-        // Try alternative commission property
-        commissionRate = parseFloat(selectedAsset.commission);
-      } else if (selectedAsset?.fee_rate) {
-        // Try fee_rate property
-        commissionRate = parseFloat(selectedAsset.fee_rate);
-      }
-
-      // Ensure commission rate is a valid number
-      if (isNaN(commissionRate) || commissionRate <= 0) {
-        commissionRate = 2; // Default to 2% if invalid
-      }
-
-      if (fromPay) {
-        // Forward calculation: from pay amount to receive amount
+        
+        // Ensure commission rate is a valid number
+        if (isNaN(commissionRate) || commissionRate <= 0) {
+          commissionRate = 2; // Default to 2% if invalid
+        }
+        
+        if (fromPay) {
+          // Forward calculation: from pay amount to receive amount
         const commissionAmount = (fromAmount * commissionRate) / 100;
         const networkFee = 0;
         const totalFees = networkFee + commissionAmount;
         const calculatedGetAmount = fromAmount - totalFees;
-        console.log("Forward calculation result:", {
-          fromAmount,
-          calculatedGetAmount,
-          totalFees,
-        });
-        setGetAmount(calculatedGetAmount);
-        setGetAmountInput(calculatedGetAmount.toString());
-      } else {
-        // Reverse calculation: from receive amount to pay amount
-        const commissionAmount = (fromAmount * commissionRate) / 100;
-        const networkFee = 0;
-        const totalFees = networkFee + commissionAmount;
-        const calculatedPayAmount = fromAmount + totalFees;
-        console.log("Reverse calculation result:", {
-          fromAmount,
-          calculatedPayAmount,
-          totalFees,
-          commissionRate,
-        });
-        setPayAmount(calculatedPayAmount);
-        setPayAmountInput(calculatedPayAmount.toString());
+            console.log("Forward calculation result:", { fromAmount, calculatedGetAmount, totalFees });
+            setGetAmount(calculatedGetAmount);
+            setGetAmountInput(calculatedGetAmount.toString());
+        } else {
+          // Reverse calculation: from receive amount to pay amount
+          const commissionAmount = (fromAmount * commissionRate) / 100;
+          const networkFee = 0;
+          const totalFees = networkFee + commissionAmount;
+          const calculatedPayAmount = fromAmount + totalFees;
+          console.log("Reverse calculation result:", { fromAmount, calculatedPayAmount, totalFees, commissionRate });
+          setPayAmount(calculatedPayAmount);
+          setPayAmountInput(calculatedPayAmount.toString());
+          }
+        
+        setReceiveAmountError(null);
+        
+        // For direct assets, no loading states needed - calculation is instant
+        return;
       }
-
-      setReceiveAmountError(null);
-
-      // For simple assets, no loading states needed - calculation is instant
-      return;
-    }
 
     // Set calculating state immediately for complex calculations
     setIsCalculating(true);
-    setIsCalculatingReceive(true);
+          setIsCalculatingReceive(true);
 
     // Debounce calculation to prevent rapid updates
     const timeout = setTimeout(() => {
       if (!selectedAsset) {
         setIsCalculating(false);
-        setIsCalculatingReceive(false);
+          setIsCalculatingReceive(false);
         setReceiveAmountError(null);
         return;
       }
@@ -783,41 +763,14 @@ export default function DepositForm({
         if (fromPay) {
           // Forward calculation: from pay amount to receive amount
           if (isSimpleCalculationAsset(selectedAsset)) {
-            // Simple calculation for USDT
-            let commissionRate = 2; // Default fallback
-
-            // Safely access commission rate with multiple fallback options
-            if (
-              selectedAsset?.range_commissions &&
-              selectedAsset.range_commissions.length > 0
-            ) {
-              const firstCommission = selectedAsset.range_commissions[0];
-              if (firstCommission?.commission) {
-                commissionRate = parseFloat(firstCommission.commission);
-              }
-            } else if (selectedAsset?.commission) {
-              // Try alternative commission property
-              commissionRate = parseFloat(selectedAsset.commission);
-            } else if (selectedAsset?.fee_rate) {
-              // Try fee_rate property
-              commissionRate = parseFloat(selectedAsset.fee_rate);
+            // Simple calculation for direct assets (USDT on BSC, USDC on BSC) - simply subtract 2
+            let calculatedGetAmount;
+            if (fromAmount < 2) {
+              calculatedGetAmount = fromAmount;
+            } else {
+              calculatedGetAmount = Math.max(0, fromAmount - 2); // Simply subtract 2 for direct assets
             }
-
-            // Ensure commission rate is a valid number
-            if (isNaN(commissionRate) || commissionRate <= 0) {
-              commissionRate = 2; // Default to 2% if invalid
-            }
-
-            const commissionAmount = (fromAmount * commissionRate) / 100;
-            const networkFee = 0;
-            const totalFees = networkFee + commissionAmount;
-            const calculatedGetAmount = fromAmount - totalFees;
-            console.log("Complex forward calculation result:", {
-              fromAmount,
-              calculatedGetAmount,
-              totalFees,
-              commissionRate,
-            });
+            console.log("Direct asset forward calculation result:", { fromAmount, calculatedGetAmount });
             setGetAmount(calculatedGetAmount);
             setGetAmountInput(calculatedGetAmount.toString());
             setReceiveAmountError(null);
@@ -843,41 +796,14 @@ export default function DepositForm({
         } else {
           // Reverse calculation: from receive amount to pay amount
           if (isSimpleCalculationAsset(selectedAsset)) {
-            // Simple reverse calculation for USDT
-            let commissionRate = 2; // Default fallback
-
-            // Safely access commission rate with multiple fallback options
-            if (
-              selectedAsset?.range_commissions &&
-              selectedAsset.range_commissions.length > 0
-            ) {
-              const firstCommission = selectedAsset.range_commissions[0];
-              if (firstCommission?.commission) {
-                commissionRate = parseFloat(firstCommission.commission);
-              }
-            } else if (selectedAsset?.commission) {
-              // Try alternative commission property
-              commissionRate = parseFloat(selectedAsset.commission);
-            } else if (selectedAsset?.fee_rate) {
-              // Try fee_rate property
-              commissionRate = parseFloat(selectedAsset.fee_rate);
+            // Simple reverse calculation for direct assets (USDT on BSC, USDC on BSC) - simply add 2
+            let calculatedPayAmount;
+            if (fromAmount < 2) {
+              calculatedPayAmount = fromAmount;
+            } else {
+              calculatedPayAmount = fromAmount + 2; // Simply add 2 for direct assets
             }
-
-            // Ensure commission rate is a valid number
-            if (isNaN(commissionRate) || commissionRate <= 0) {
-              commissionRate = 2; // Default to 2% if invalid
-            }
-
-            const commissionAmount = (fromAmount * commissionRate) / 100;
-            const networkFee = 0;
-            const totalFees = networkFee + commissionAmount;
-            const calculatedPayAmount = fromAmount + totalFees;
-            console.log("Complex reverse calculation result:", {
-              fromAmount,
-              calculatedPayAmount,
-              totalFees,
-              commissionRate,
-            });
+            console.log("Direct asset reverse calculation result:", { fromAmount, calculatedPayAmount });
             setPayAmount(calculatedPayAmount);
             setPayAmountInput(calculatedPayAmount.toString());
             setReceiveAmountError(null);
@@ -886,14 +812,14 @@ export default function DepositForm({
             // Use the API to find the pay amount that gives us the desired receive amount
             setEstimateLoading(true);
             setEstimateError(null);
-
+            
             // For reverse calculation, we need to estimate from the receive amount
             // We'll use a trial-and-error approach or call the API with different amounts
             // For now, show loading state and calculate a rough estimate
             const roughEstimate = fromAmount * 1.02; // Rough estimate with 2% commission
             setPayAmount(roughEstimate);
             setPayAmountInput(roughEstimate.toString());
-
+            
             // Set loading states
             setIsCalculating(true);
             setIsCalculatingReceive(true);
@@ -906,7 +832,7 @@ export default function DepositForm({
         setIsCalculating(false);
         setIsCalculatingReceive(false);
         setCalculationComplete(true);
-
+        
         // Reset completion status after a short delay
         setTimeout(() => {
           setCalculationComplete(false);
@@ -916,6 +842,8 @@ export default function DepositForm({
 
     setCalculationTimeout(timeout);
   };
+
+
 
   // Recalculate when asset changes
   useEffect(() => {
@@ -932,40 +860,32 @@ export default function DepositForm({
   // Forward calculations are now handled directly in the input handlers
   // This useEffect was causing duplicate calculations and loading state conflicts
 
-  // Update amounts when estimate is received or for simple calculation assets
+  // Update amounts when estimate is received or for direct assets
   useEffect(() => {
-    console.log("Estimate effect triggered:", {
-      hasEstimate: !!estimate,
-      estimateLoading,
-      isCalculatingFromPay,
+    console.log("Estimate effect triggered:", { 
+      hasEstimate: !!estimate, 
+    estimateLoading,
+    isCalculatingFromPay,
       payAmount,
       getAmount,
-      estimateAmount: (estimate as any)?.estimated_amount,
+      estimateAmount: (estimate as any)?.estimated_amount 
     });
-
+    
     if (estimate && !estimateLoading) {
       if (isCalculatingFromPay && payAmount > 0) {
         // Forward calculation: update receive amount
-        console.log(
-          "Estimate received, updating receive amount:",
-          (estimate as any)?.estimated_amount
-        );
-
-        if (
-          (estimate as any)?.estimated_amount &&
-          (estimate as any)?.estimated_amount > 0
-        ) {
+        console.log("Estimate received, updating receive amount:", (estimate as any)?.estimated_amount);
+        
+        if ((estimate as any)?.estimated_amount && (estimate as any)?.estimated_amount > 0) {
           setGetAmount((estimate as any).estimated_amount);
           setGetAmountInput((estimate as any).estimated_amount.toString());
           setReceiveAmountError(null);
-          setIsCalculating(false);
-          setIsCalculatingReceive(false);
-        } else {
-          console.log(
-            "DEBUG: Invalid estimate received, clearing loading state"
-          );
-          setGetAmount(0);
-          setGetAmountInput("");
+        setIsCalculating(false);
+        setIsCalculatingReceive(false);
+      } else {
+          console.log("DEBUG: Invalid estimate received, clearing loading state");
+        setGetAmount(0);
+        setGetAmountInput("");
           setReceiveAmountError("Invalid estimate received");
           setIsCalculating(false);
           setIsCalculatingReceive(false);
@@ -974,8 +894,8 @@ export default function DepositForm({
         // Reverse calculation: estimate already handled in reverse useEffect
         setIsCalculating(false);
         setIsCalculatingReceive(false);
-        setReceiveAmountError(null);
-      }
+              setReceiveAmountError(null);
+            }
     } else if (estimateLoading) {
       // Loading states are managed by the input handlers and calculateAmounts function
       // Don't interfere with them here
@@ -983,14 +903,7 @@ export default function DepositForm({
       // No estimate available - loading states are managed elsewhere
       // Don't interfere with them here
     }
-  }, [
-    estimate,
-    estimateLoading,
-    isCalculatingFromPay,
-    payAmount,
-    getAmount,
-    selectedAsset,
-  ]);
+  }, [estimate, estimateLoading, isCalculatingFromPay, payAmount, getAmount, selectedAsset]);
 
   // Reverse calculations are now handled directly in the input handlers
   // This useEffect was causing duplicate calculations and loading state conflicts
@@ -1004,10 +917,10 @@ export default function DepositForm({
       } else {
         setWalletError(null);
       }
-    } else if (!walletAddress.trim()) {
-      // Clear error when wallet address is empty (optional field for initial submission)
-      setWalletError(null);
-    }
+          } else if (!walletAddress.trim()) {
+        // Clear error when wallet address is empty (optional field for initial submission)
+        setWalletError(null);
+      }
   }, [selectedAsset, walletAddress]);
 
   // Auto-validate receive amount whenever it changes
@@ -1054,63 +967,62 @@ export default function DepositForm({
         }
         depositPayload.append("requested_amount", payAmount.toString());
 
-        // For direct crypto deposits, use the specific values you provided
-        depositPayload.append("payment_provider", "direct");
-        depositPayload.append("payment_method", "crypto");
+        // Use the selected payment method details
+        if (!selectedPaymentDetail) {
+          throw new Error("Please select a payment method");
+        }
+        
+        if (!selectedPaymentDetail.provider_name) {
+          throw new Error("Payment provider is missing");
+        }
+        depositPayload.append("payment_provider", selectedPaymentDetail.provider_name);
+        
+        if (!selectedPaymentDetail.payment_method_type) {
+          throw new Error("Payment method is missing");
+        }
+        depositPayload.append("payment_method", selectedPaymentDetail.payment_method_type);
         // Handle currency field - try multiple properties to get the currency value
         let currencyValue = "";
-
+        
         // Debug: Log the selected asset to see its structure
-        console.log(
-          "DEBUG: Selected asset in handleFirstCardSubmit:",
-          selectedAsset
-        );
-
+        console.log("DEBUG: Selected asset in handleFirstCardSubmit:", selectedAsset);
+        
         // Ensure selectedAsset exists
         if (!selectedAsset) {
           throw new Error("No asset selected");
         }
-
+        
         // Try different properties in order of preference
         if (selectedAsset.ticker) {
           currencyValue = selectedAsset.ticker;
         } else if (selectedAsset.symbol) {
           // Handle special case for USDT Tether
-          currencyValue =
-            selectedAsset.symbol === "USDT Tether"
-              ? "USDT"
-              : selectedAsset.symbol;
+          currencyValue = selectedAsset.symbol === "USDT Tether" ? "USDT" : selectedAsset.symbol;
         } else if (selectedAsset.name) {
           currencyValue = selectedAsset.name;
         }
-
+        
         // Clean up the currency value (remove any extra spaces, etc.)
         currencyValue = currencyValue?.trim();
-
+        
         console.log("DEBUG: Extracted currency value:", currencyValue);
-
+        
         // Fallback: if still no currency value, try to extract from any available property
         if (!currencyValue) {
           // Try to get any string value from the asset object
           const assetKeys = Object.keys(selectedAsset);
           for (const key of assetKeys) {
             const value = selectedAsset[key];
-            if (typeof value === "string" && value.trim()) {
+            if (typeof value === 'string' && value.trim()) {
               currencyValue = value.trim();
-              console.log(
-                `DEBUG: Using fallback currency from ${key}:`,
-                currencyValue
-              );
+              console.log(`DEBUG: Using fallback currency from ${key}:`, currencyValue);
               break;
             }
           }
         }
-
+        
         if (!currencyValue) {
-          console.error(
-            "DEBUG: Selected asset for currency extraction:",
-            selectedAsset
-          );
+          console.error("DEBUG: Selected asset for currency extraction:", selectedAsset);
           throw new Error("Currency information is missing");
         }
         depositPayload.append("currency", currencyValue);
@@ -1125,30 +1037,27 @@ export default function DepositForm({
 
         // Handle asset field - use the asset ticker/symbol/name from the selected asset
         let assetValue = "";
-
+        
         // Try different properties in order of preference
         if (selectedAsset.ticker) {
           assetValue = selectedAsset.ticker;
         } else if (selectedAsset.symbol) {
           // Handle special case for USDT Tether
-          assetValue =
-            selectedAsset.symbol === "USDT Tether"
-              ? "USDT"
-              : selectedAsset.symbol;
+          assetValue = selectedAsset.symbol === "USDT Tether" ? "USDT" : selectedAsset.symbol;
         } else if (selectedAsset.name) {
           assetValue = selectedAsset.name;
         }
-
+        
         // Clean up the asset value (remove any extra spaces, etc.)
         assetValue = assetValue?.trim();
-
+        
         // Fallback: if still no asset value, try to extract from any available property
         if (!assetValue) {
           // Try to get any string value from the asset object
           const assetKeys = Object.keys(selectedAsset);
           for (const key of assetKeys) {
             const value = selectedAsset[key];
-            if (typeof value === "string" && value.trim()) {
+            if (typeof value === 'string' && value.trim()) {
               assetValue = value.trim();
               break;
             }
@@ -1179,24 +1088,16 @@ export default function DepositForm({
         ).unwrap()) as unknown as DepositResponse;
 
         console.log("DEBUG: Deposit response:", depositResponse);
-
+       
+     
         // Store the API response and update transaction code
         setApiResponse(depositResponse);
         setTransactionCode(depositResponse.deposit_code || "");
-
+        
         // Debug log the stored websocket_url and deposit_code
-        console.log(
-          "DEBUG: Storing API response with websocket_url:",
-          depositResponse.websocket_url
-        );
-        console.log(
-          "DEBUG: API response type check - websocket_url exists:",
-          "websocket_url" in depositResponse
-        );
-        console.log(
-          "DEBUG: Deposit code received:",
-          depositResponse.deposit_code
-        );
+        console.log("DEBUG: Storing API response with websocket_url:", depositResponse.websocket_url);
+        console.log("DEBUG: API response type check - websocket_url exists:", 'websocket_url' in depositResponse);
+        console.log("DEBUG: Deposit code received:", depositResponse.deposit_code);
         console.log("DEBUG: Full API response:", depositResponse);
 
         // Show success message
@@ -1213,6 +1114,7 @@ export default function DepositForm({
           }
         }, 100);
       } catch (error: any) {
+       
         let errorMessage = "Failed to submit deposit request";
 
         if (error.response?.data) {
@@ -1220,22 +1122,14 @@ export default function DepositForm({
           const responseData = error.response.data;
           if (responseData.message) {
             // Check for specific error message and show user-friendly message
-            if (
-              responseData.message.includes(
-                "Transaction not found or not eligible for address update"
-              )
-            ) {
+            if (responseData.message.includes("Transaction not found or not eligible for address update")) {
               errorMessage = "Your address doesn't match the requested asset";
             } else {
               errorMessage = responseData.message;
             }
           } else if (responseData.error) {
             // Check for specific error in error field
-            if (
-              responseData.error.includes(
-                "Transaction not found or not eligible for address update"
-              )
-            ) {
+            if (responseData.error.includes("Transaction not found or not eligible for address update")) {
               errorMessage = "Your address doesn't match the requested asset";
             } else {
               errorMessage = responseData.error;
@@ -1244,11 +1138,7 @@ export default function DepositForm({
             errorMessage = responseData.details;
           } else if (typeof responseData === "string") {
             // Check for specific error in string response
-            if (
-              responseData.includes(
-                "Transaction not found or not eligible for address update"
-              )
-            ) {
+            if (responseData.includes("Transaction not found or not eligible for address update")) {
               errorMessage = "Your address doesn't match the requested asset";
             } else {
               errorMessage = responseData;
@@ -1256,11 +1146,7 @@ export default function DepositForm({
           }
         } else if (error.message) {
           // Check for specific error in error.message
-          if (
-            error.message.includes(
-              "Transaction not found or not eligible for address update"
-            )
-          ) {
+          if (error.message.includes("Transaction not found or not eligible for address update")) {
             errorMessage = "Your address doesn't match the requested asset";
           } else {
             errorMessage = error.message;
@@ -1268,12 +1154,8 @@ export default function DepositForm({
         }
 
         // For address update failures, show more specific message
-        if (
-          errorMessage === "Failed to process request" ||
-          errorMessage === "Failed to submit deposit request"
-        ) {
-          errorMessage =
-            "Your wallet address doesn't match the asset requested";
+        if (errorMessage === "Failed to process request" || errorMessage === "Failed to submit deposit request") {
+          errorMessage = "Your wallet address doesn't match the asset requested";
         }
 
         showToast.error(errorMessage);
@@ -1320,11 +1202,11 @@ export default function DepositForm({
   // Handle proceeding to next step (with or without wallet address)
   /**
    * Handles the two-step deposit process:
-   *
+   * 
    * For Simple Assets (USDT):
    * - Single API call flow
    * - Uses original response data
-   *
+   * 
    * For Complex Assets (all others):
    * - Step 1: First API call returns basic info with status "pending_address"
    * - Step 2: After updating address, second response contains:
@@ -1333,7 +1215,7 @@ export default function DepositForm({
    *   * changenow_id
    *   * deposit_address
    *   * status: "pending"
-   *
+   * 
    * The second response should be used for the final transaction data.
    */
   const handleProceedToNext = async () => {
@@ -1353,17 +1235,16 @@ export default function DepositForm({
       return;
     }
 
-    // Check if this is a simple calculation asset (USDT)
-    const isSimpleAsset =
-      selectedAsset && isSimpleCalculationAsset(selectedAsset);
+    // Check if this is a direct asset (USDT on BSC, USDC on BSC)
+    const isSimpleAsset = selectedAsset && isSimpleCalculationAsset(selectedAsset);
 
     setIsSubmitting(true);
 
     try {
       let finalResponse = apiResponse;
       let updateResponse;
-
-      // For simple assets (USDT), proceed as before
+      
+      // For direct assets (USDT on BSC, USDC on BSC), proceed as before
       if (isSimpleAsset) {
         // Only update deposit address if one is provided
         if (walletAddress.trim()) {
@@ -1374,31 +1255,26 @@ export default function DepositForm({
             })
           ).unwrap();
           showToast.success("Address updated successfully!");
-        } else {
-          // No wallet address provided - use a placeholder or skip update
-          updateResponse = { status: "pending" };
-          showToast.success("Proceeding without wallet address!");
-        }
+                  } else {
+            // No wallet address provided - use a placeholder or skip update
+            updateResponse = { status: "pending" };
+            showToast.success("Proceeding without wallet address!");
+          }
       } else {
         // For other assets, implement two-step process
-        console.log(
-          "DEBUG: Implementing two-step process for complex asset:",
-          selectedAsset?.ticker
-        );
-        console.log(
-          "DEBUG: Expected flow: First response -> update address -> Second response with additional details"
-        );
-
+        console.log("DEBUG: Implementing two-step process for complex asset:", selectedAsset?.ticker);
+        console.log("DEBUG: Expected flow: First response -> update address -> Second response with additional details");
+        
         // According to user description, the expected flow for complex assets is:
         // 1. First API response: { transaction_id, deposit_code, status: "pending_address", requires_deposit_address: true, websocket_url }
         // 2. After updating address, second response: { transaction_id, deposit_address, websocket_url (different), changenow_id, expected_amount, net_amount, status: "pending" }
-        //
+        // 
         // The second response should be used for the final transaction data, including:
         // - New websocket_url (different from first response)
         // - expected_amount and net_amount for accurate calculations
         // - changenow_id for tracking
         // - deposit_address for final confirmation
-
+        
         // Step 1: Update deposit address (this triggers the second response)
         if (walletAddress.trim()) {
           updateResponse = await dispatch(
@@ -1408,45 +1284,35 @@ export default function DepositForm({
             })
           ).unwrap();
 
-          if (updateResponse && typeof updateResponse === "object") {
+          if (updateResponse && typeof updateResponse === 'object') {
             // Try to extract additional fields if they exist
             const responseData = updateResponse as any;
-
+            
             // According to user description, the second response should contain:
             // websocket_url, changenow_id, expected_amount, net_amount, deposit_address, status: "pending"
-            if (
-              responseData.websocket_url ||
-              responseData.expected_amount ||
-              responseData.net_amount ||
-              responseData.changenow_id
-            ) {
+            if (responseData.websocket_url || responseData.expected_amount || responseData.net_amount || responseData.changenow_id) {
               // This response contains the additional fields we need
               finalResponse = {
                 ...apiResponse,
                 ...responseData,
                 // Ensure we have the transaction_id and deposit_code
-                transaction_id:
-                  responseData.transaction_id || apiResponse.transaction_id,
-                deposit_code:
-                  responseData.deposit_code || apiResponse.deposit_code,
+                transaction_id: responseData.transaction_id || apiResponse.transaction_id,
+                deposit_code: responseData.deposit_code || apiResponse.deposit_code,
               };
-
-              showToast.success(
-                "Address updated successfully! Transaction details updated."
-              );
+           
+              showToast.success("Address updated successfully! Transaction details updated.");
             } else {
+          
               showToast.success("Address updated successfully!");
             }
           } else {
             showToast.success("Address updated successfully!");
           }
-        } else {
-          // No wallet address provided - this might not work for complex assets
-          updateResponse = { status: "pending" };
-          showToast.warning(
-            "Warning: Complex assets typically require a deposit address"
-          );
-        }
+                  } else {
+            // No wallet address provided - this might not work for complex assets
+            updateResponse = { status: "pending" };
+            showToast.warning("Warning: Complex assets typically require a deposit address");
+          }
       }
 
       // Prepare transaction data for the status page
@@ -1455,16 +1321,9 @@ export default function DepositForm({
         amount: payAmount,
         asset: {
           ...selectedAsset,
-          icon:
-            selectedAsset.image_url ||
-            selectedAsset.asset_image ||
-            selectedAsset.icon_url ||
-            selectedAsset.image,
+          icon: selectedAsset.image_url || selectedAsset.asset_image || selectedAsset.icon_url || selectedAsset.image
         },
-        paymentDetail: {
-          provider_name: "direct",
-          payment_method_type: "crypto",
-        },
+        paymentDetail: selectedPaymentDetail || { provider_name: "direct", payment_method_type: "crypto" },
         walletAddress: walletAddress.trim() || "Not provided",
         network: selectedNetwork,
         transactionId: finalResponse.transaction_id,
@@ -1472,18 +1331,10 @@ export default function DepositForm({
         status: updateResponse.status,
         websocket_url: finalResponse.websocket_url, // Use the appropriate websocket URL
         // Add additional fields from the final response for complex assets
-        ...(finalResponse.expected_amount && {
-          expectedAmount: finalResponse.expected_amount,
-        }),
-        ...(finalResponse.net_amount && {
-          netAmount: finalResponse.net_amount,
-        }),
-        ...(finalResponse.changenow_id && {
-          changenowId: finalResponse.changenow_id,
-        }),
-        ...(finalResponse.deposit_address && {
-          finalDepositAddress: finalResponse.deposit_address,
-        }),
+        ...(finalResponse.expected_amount && { expectedAmount: finalResponse.expected_amount }),
+        ...(finalResponse.net_amount && { netAmount: finalResponse.net_amount }),
+        ...(finalResponse.changenow_id && { changenowId: finalResponse.changenow_id }),
+        ...(finalResponse.deposit_address && { finalDepositAddress: finalResponse.deposit_address }),
       };
 
       console.log("DEBUG: Final transaction data:", transactionData);
@@ -1493,34 +1344,24 @@ export default function DepositForm({
         onExchange(transactionData);
       } else {
         // Fallback navigation if onExchange is not provided
-        router.push(
-          `/dashboard/express-exchange?transactionId=${finalResponse.transaction_id}`
-        );
+        router.push(`/dashboard/express-exchange?transactionId=${finalResponse.transaction_id}`);
       }
     } catch (error: any) {
       console.error("Failed to update deposit address:", error);
       let errorMessage = "Failed to process request";
-
+      
       if (error.response?.data) {
         const responseData = error.response.data;
         if (responseData.message) {
           // Check for specific error message and show user-friendly message
-          if (
-            responseData.message.includes(
-              "Transaction not found or not eligible for address update"
-            )
-          ) {
+          if (responseData.message.includes("Transaction not found or not eligible for address update")) {
             errorMessage = "Your address doesn't match the requested asset";
           } else {
             errorMessage = responseData.message;
           }
         } else if (responseData.error) {
           // Check for specific error in error field
-          if (
-            responseData.error.includes(
-              "Transaction not found or not eligible for address update"
-            )
-          ) {
+          if (responseData.error.includes("Transaction not found or not eligible for address update")) {
             errorMessage = "Your address doesn't match the requested asset";
           } else {
             errorMessage = responseData.error;
@@ -1529,11 +1370,7 @@ export default function DepositForm({
           errorMessage = responseData.details;
         } else if (typeof responseData === "string") {
           // Check for specific error in string response
-          if (
-            responseData.includes(
-              "Transaction not found or not eligible for address update"
-            )
-          ) {
+          if (responseData.includes("Transaction not found or not eligible for address update")) {
             errorMessage = "Your address doesn't match the requested asset";
           } else {
             errorMessage = responseData;
@@ -1541,11 +1378,7 @@ export default function DepositForm({
         }
       } else if (error.message) {
         // Check for specific error in error.message
-        if (
-          error.message.includes(
-            "Transaction not found or not eligible for address update"
-          )
-        ) {
+        if (error.message.includes("Transaction not found or not eligible for address update")) {
           errorMessage = "Your address doesn't match the requested asset";
         } else {
           errorMessage = error.message;
@@ -1553,10 +1386,7 @@ export default function DepositForm({
       }
 
       // For address update failures, show more specific message
-      if (
-        errorMessage === "Failed to process request" ||
-        errorMessage === "Failed to update deposit address"
-      ) {
+      if (errorMessage === "Failed to process request" || errorMessage === "Failed to update deposit address") {
         errorMessage = "Your wallet address doesn't match the asset requested";
       }
 
@@ -1600,13 +1430,13 @@ export default function DepositForm({
       }
       depositPayload.append("requested_amount", payAmount.toString());
 
-      // Wallet address is optional for initial submission
-      if (walletAddress.trim()) {
-        depositPayload.append("deposit_address", walletAddress);
-      } else {
-        // Set empty value when wallet address is not provided
-        depositPayload.append("deposit_address", "");
-      }
+              // Wallet address is optional for initial submission
+        if (walletAddress.trim()) {
+          depositPayload.append("deposit_address", walletAddress);
+        } else {
+          // Set empty value when wallet address is not provided
+          depositPayload.append("deposit_address", "");
+        }
 
       if (!selectedPaymentDetail.provider_name) {
         throw new Error("Payment provider is missing");
@@ -1626,30 +1456,27 @@ export default function DepositForm({
 
       // Handle currency field - use the asset ticker/symbol/name from the selected asset
       let currencyValue = "";
-
+      
       // Try different properties in order of preference
       if (selectedAsset.ticker) {
         currencyValue = selectedAsset.ticker;
       } else if (selectedAsset.symbol) {
         // Handle special case for USDT Tether
-        currencyValue =
-          selectedAsset.symbol === "USDT Tether"
-            ? "USDT"
-            : selectedAsset.symbol;
+        currencyValue = selectedAsset.symbol === "USDT Tether" ? "USDT" : selectedAsset.symbol;
       } else if (selectedAsset.name) {
         currencyValue = selectedAsset.name;
       }
-
+      
       // Clean up the currency value (remove any extra spaces, etc.)
       currencyValue = currencyValue?.trim();
-
+      
       // Fallback: if still no currency value, try to extract from any available property
       if (!currencyValue) {
         // Try to get any string value from the asset object
         const assetKeys = Object.keys(selectedAsset);
         for (const key of assetKeys) {
           const value = selectedAsset[key];
-          if (typeof value === "string" && value.trim()) {
+          if (typeof value === 'string' && value.trim()) {
             currencyValue = value.trim();
             break;
           }
@@ -1663,20 +1490,20 @@ export default function DepositForm({
 
       // Handle network field - use the network from selected asset or network
       let networkValue = "";
-
+      
       // Try to get network from selected network first
       if (selectedNetwork?.network_id) {
         networkValue = selectedNetwork.network_id;
       } else if (selectedNetwork?.network_type) {
         networkValue = selectedNetwork.network_type;
-      } else if (selectedAsset?.network) {
+      } else if (selectedAsset) {
         // Fallback to asset network
-        networkValue = selectedAsset.network;
+        networkValue = getAssetNetwork(selectedAsset);
       }
-
+      
       // Clean up the network value
       networkValue = networkValue?.trim();
-
+      
       // Fallback: if still no network value, try to extract from any available property
       if (!networkValue) {
         // Try to get any string value from the network object
@@ -1684,7 +1511,7 @@ export default function DepositForm({
           const networkKeys = Object.keys(selectedNetwork);
           for (const key of networkKeys) {
             const value = selectedNetwork[key];
-            if (typeof value === "string" && value.trim()) {
+            if (typeof value === 'string' && value.trim()) {
               networkValue = value.trim();
               break;
             }
@@ -1699,30 +1526,27 @@ export default function DepositForm({
 
       // Handle asset field - use the asset ticker/symbol/name from the selected asset
       let assetValue = "";
-
+      
       // Try different properties in order of preference
       if (selectedAsset.ticker) {
         assetValue = selectedAsset.ticker;
       } else if (selectedAsset.symbol) {
         // Handle special case for USDT Tether
-        assetValue =
-          selectedAsset.symbol === "USDT Tether"
-            ? "USDT"
-            : selectedAsset.symbol;
+        assetValue = selectedAsset.symbol === "USDT Tether" ? "USDT" : selectedAsset.symbol;
       } else if (selectedAsset.name) {
         assetValue = selectedAsset.name;
       }
-
+      
       // Clean up the asset value (remove any extra spaces, etc.)
       assetValue = assetValue?.trim();
-
+      
       // Fallback: if still no asset value, try to extract from any available property
       if (!assetValue) {
         // Try to get any string value from the asset object
         const assetKeys = Object.keys(selectedAsset);
         for (const key of assetKeys) {
           const value = selectedAsset[key];
-          if (typeof value === "string" && value.trim()) {
+          if (typeof value === 'string' && value.trim()) {
             assetValue = value.trim();
             break;
           }
@@ -1757,6 +1581,7 @@ export default function DepositForm({
       ).unwrap()) as unknown as DepositResponse;
 
       console.log("DEBUG: Deposit response:", depositResponse);
+    
 
       // Store the API response and update transaction code
       setApiResponse(depositResponse);
@@ -1772,11 +1597,7 @@ export default function DepositForm({
           amount: payAmount,
           asset: {
             ...selectedAsset,
-            icon:
-              selectedAsset.image_url ||
-              selectedAsset.asset_image ||
-              selectedAsset.icon_url ||
-              selectedAsset.image,
+            icon: selectedAsset.image_url || selectedAsset.asset_image || selectedAsset.icon_url || selectedAsset.image
           },
           paymentDetail: selectedPaymentDetail,
           walletAddress: walletAddress,
@@ -1793,6 +1614,7 @@ export default function DepositForm({
         onExchange(transactionData);
       }
     } catch (error: any) {
+     
       let errorMessage = "Failed to submit deposit request";
 
       if (error.response?.data) {
@@ -1800,22 +1622,14 @@ export default function DepositForm({
         const responseData = error.response.data;
         if (responseData.message) {
           // Check for specific error message and show user-friendly message
-          if (
-            responseData.message.includes(
-              "Transaction not found or not eligible for address update"
-            )
-          ) {
+          if (responseData.message.includes("Transaction not found or not eligible for address update")) {
             errorMessage = "Your address doesn't match the requested asset";
           } else {
             errorMessage = responseData.message;
           }
         } else if (responseData.error) {
           // Check for specific error in error field
-          if (
-            responseData.error.includes(
-              "Transaction not found or not eligible for address update"
-            )
-          ) {
+          if (responseData.error.includes("Transaction not found or not eligible for address update")) {
             errorMessage = "Your address doesn't match the requested asset";
           } else {
             errorMessage = responseData.error;
@@ -1824,11 +1638,7 @@ export default function DepositForm({
           errorMessage = responseData.details;
         } else if (typeof responseData === "string") {
           // Check for specific error in string response
-          if (
-            responseData.includes(
-              "Transaction not found or not eligible for address update"
-            )
-          ) {
+          if (responseData.includes("Transaction not found or not eligible for address update")) {
             errorMessage = "Your address doesn't match the requested asset";
           } else {
             errorMessage = responseData;
@@ -1836,11 +1646,7 @@ export default function DepositForm({
         }
       } else if (error.message) {
         // Check for specific error in error.message
-        if (
-          error.message.includes(
-            "Transaction not found or not eligible for address update"
-          )
-        ) {
+        if (error.message.includes("Transaction not found or not eligible for address update")) {
           errorMessage = "Your address doesn't match the requested asset";
         } else {
           errorMessage = error.message;
@@ -1848,10 +1654,7 @@ export default function DepositForm({
       }
 
       // For address update failures, show more specific message
-      if (
-        errorMessage === "Failed to process request" ||
-        errorMessage === "Failed to submit deposit request"
-      ) {
+      if (errorMessage === "Failed to process request" || errorMessage === "Failed to submit deposit request") {
         errorMessage = "Your wallet address doesn't match the asset requested";
       }
 
@@ -1877,39 +1680,23 @@ export default function DepositForm({
   return (
     <div className="w-full min-h-screen flex flex-col dark:bg-[#18181D]  ">
       <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
-        <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span>{" "}
-        Transaction Info
+        <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Transaction Info
       </h2>
-
+      
       {/* Network Status Indicator */}
       {estimateError && !estimateLoading && (
         <div className="mb-4 p-3 bg-[#F79330] bg-opacity-10 border border-[#F79330] rounded-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-[#F79330]">
               <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                <path
-                  d="M12 8v4m0 4h.01"
-                  stroke="#F79330"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <circle
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="#F79330"
-                  strokeWidth="2"
-                />
+                <path d="M12 8v4m0 4h.01" stroke="#F79330" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="12" cy="12" r="10" stroke="#F79330" strokeWidth="2"/>
               </svg>
               <span className="text-sm font-medium">
-                {estimateError.includes("Network error")
-                  ? "Network Issues Detected"
-                  : estimateError.includes("Server error")
-                    ? "Server Issues Detected"
-                    : estimateError.includes("Request timeout")
-                      ? "Request Timeout"
-                      : "API Issues Detected"}
+                {estimateError.includes("Network error") ? "Network Issues Detected" :
+                 estimateError.includes("Server error") ? "Server Issues Detected" :
+                 estimateError.includes("Request timeout") ? "Request Timeout" :
+                 "API Issues Detected"}
               </span>
             </div>
             <span className="text-xs text-[#F79330] opacity-75">
@@ -1917,8 +1704,7 @@ export default function DepositForm({
             </span>
           </div>
           <p className="text-xs text-[#F79330] mt-1 opacity-75">
-            Live rates are temporarily unavailable. Calculations are based on
-            estimated rates.
+            Live rates are temporarily unavailable. Calculations are based on estimated rates.
           </p>
         </div>
       )}
@@ -1943,61 +1729,39 @@ export default function DepositForm({
                   value={payAmountInput}
                   onChange={(e) => {
                     const value = e.target.value;
-                    console.log("You Send input changed:", {
-                      value,
-                      selectedAsset: selectedAsset?.ticker,
-                    });
-
+                    console.log("You Send input changed:", { value, selectedAsset: selectedAsset?.ticker });
+                    
                     // Only allow numbers and decimals (including 0.006 format)
                     if (value === "" || /^\d*\.?\d*$/.test(value)) {
                       setPayAmountInput(value); // Store the string value for display
                       const newAmount = parseFloat(value) || 0;
                       setPayAmount(newAmount);
                       setIsCalculatingFromPay(true);
-
+                      
                       // Mark that user has manually modified the amount
                       setIsUserModifiedAmount(true);
-
+                      
                       // Show info modal if amount exceeds $15,000
                       if (newAmount > 15000) {
                         setIsInfoModalOpen(true);
                       }
-
-                      // For simple assets, calculate immediately
-                      if (
-                        selectedAsset &&
-                        newAmount > 0 &&
-                        isSimpleCalculationAsset(selectedAsset)
-                      ) {
-                        console.log(
-                          "Triggering immediate forward calculation for simple asset:",
-                          newAmount
-                        );
-                        const commissionRate = selectedAsset
-                          ?.range_commissions?.[0]?.commission
-                          ? parseFloat(
-                              selectedAsset.range_commissions[0].commission
-                            )
-                          : 2;
-                        const commissionAmount =
-                          (newAmount * commissionRate) / 100;
-                        const calculatedGetAmount =
-                          newAmount - commissionAmount;
+                      
+                      // For direct assets, calculate immediately
+                      if (selectedAsset && newAmount > 0 && isSimpleCalculationAsset(selectedAsset)) {
+                        console.log("Triggering immediate forward calculation for direct asset:", newAmount);
+                        const calculatedGetAmount = newAmount < 2 ? newAmount : Math.max(0, newAmount - 2);
                         setGetAmount(calculatedGetAmount);
                         setGetAmountInput(calculatedGetAmount.toString());
-
+                        
                         // Simple assets don't need loading states - calculation is instant
                       } else if (selectedAsset && newAmount > 0) {
                         // For complex assets, trigger API calculation
-                        console.log(
-                          "Triggering API forward calculation for complex asset:",
-                          newAmount
-                        );
-
+                        console.log("Triggering API forward calculation for complex asset:", newAmount);
+                        
                         // Set loading states to show spinner in "You Receive" field
                         setIsCalculating(true);
                         setIsCalculatingReceive(true);
-
+                        
                         // Trigger the calculation
                         calculateAmounts(newAmount, true);
                       } else {
@@ -2010,57 +1774,30 @@ export default function DepositForm({
                   onFocus={() => setIsCalculatingFromPay(true)}
                   placeholder="Enter amount"
                   className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg  focus:outline-none border appearance-none ${
-                    (isCalculating || isCalculatingReceive) &&
-                    isCalculatingFromPay
-                      ? "border-[#1D8751]"
-                      : "border-[#A2A4A9FF] dark:border-[#35353E]"
+                    (isCalculating || isCalculatingReceive) && isCalculatingFromPay ? 'border-[#1D8751]' : 'border-[#A2A4A9FF] dark:border-[#35353E]'
                   }`}
                 />
 
+                
                 {/* Show loading spinner when calculating "You Receive" from "You Send" */}
-                {(isCalculating || isCalculatingReceive) &&
-                  isCalculatingFromPay && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
-                    </div>
-                  )}
+                {(isCalculating || isCalculatingReceive) && isCalculatingFromPay && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
+                  </div>
+                )}
 
-                {/* Show info for non-simple assets when typing in You Send */}
-                {selectedAsset &&
-                  !isSimpleCalculationAsset(selectedAsset) &&
-                  isCalculatingFromPay &&
-                  payAmount > 0 && (
-                    <div className="mt-2 text-xs text-[#788099]">
-                      {estimateLoading
-                        ? "⏳ Fetching live rate..."
-                        : estimate
-                          ? "✅ Using live rate"
-                          : "⏳ Calculating..."}
-                    </div>
-                  )}
+                {/* Show info for non-direct assets when typing in You Send */}
+                {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && isCalculatingFromPay && payAmount > 0 && (
+                  <div className="mt-2 text-xs text-[#788099]">
+                    {estimateLoading ? "⏳ Fetching live rate..." : estimate ? "✅ Using live rate" : "⏳ Calculating..."}
+                  </div>
+                )}
                 {estimateError && !estimateLoading && isCalculatingFromPay && (
                   <div className="flex items-center justify-between gap-2 text-[#F79330] text-sm mt-2">
                     <div className="flex items-center gap-2">
-                      <svg
-                        width="16"
-                        height="16"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          d="M12 8v4m0 4h.01"
-                          stroke="#F79330"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <circle
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="#F79330"
-                          strokeWidth="2"
-                        />
+                      <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                        <path d="M12 8v4m0 4h.01" stroke="#F79330" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <circle cx="12" cy="12" r="10" stroke="#F79330" strokeWidth="2"/>
                       </svg>
                       <span>{estimateError}</span>
                     </div>
@@ -2108,13 +1845,11 @@ export default function DepositForm({
                       ? "Loading payment methods..."
                       : "Select Payment Method"}
                   </option>
-                  {paymentMethodsDisplay.displayData?.map(
-                    (payment: any, index: number) => (
-                      <option key={index} value={payment.provider_name}>
-                        {payment.provider_name} - {payment.payment_method_type}
-                      </option>
-                    )
-                  )}
+                  {paymentMethodsDisplay.displayData?.map((payment: any, index: number) => (
+                    <option key={index} value={payment.provider_name}>
+                      {payment.provider_name} - {payment.payment_method_type}
+                    </option>
+                  ))}
                 </select>
               </div>
               {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
@@ -2148,8 +1883,11 @@ export default function DepositForm({
           </div>
         </div>
 
-        {/* Bottom Section - You Receive and Asset in one card */}
+                {/* Bottom Section - You Receive and Asset in one card */}
         <div className="relative mb-3">
+          
+         
+          
           <div className="flex border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-4">
             {/* You Receive Section */}
             <div className="flex-1 pr-4">
@@ -2157,9 +1895,7 @@ export default function DepositForm({
                 You Receive
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                 {!isCalculatingFromPay && (
-                  <span className="text-xs text-[#1D8751] font-medium">
-                    (Active)
-                  </span>
+                  <span className="text-xs text-[#1D8751] font-medium">(Active)</span>
                 )}
               </label>
               <div className="relative">
@@ -2169,53 +1905,31 @@ export default function DepositForm({
                   value={getAmountInput}
                   onChange={(e) => {
                     const value = e.target.value;
-                    console.log("You Receive input changed:", {
-                      value,
-                      selectedAsset: selectedAsset?.ticker,
-                    });
-
+                    console.log("You Receive input changed:", { value, selectedAsset: selectedAsset?.ticker });
+                    
                     // Only allow numbers and decimals (including 0.006 format)
                     if (value === "" || /^\d*\.?\d*$/.test(value)) {
                       setGetAmountInput(value); // Store the string value for display
                       const newAmount = parseFloat(value) || 0;
                       setGetAmount(newAmount);
                       setIsCalculatingFromPay(false);
-
-                      // For simple assets, calculate immediately
-                      if (
-                        selectedAsset &&
-                        newAmount > 0 &&
-                        isSimpleCalculationAsset(selectedAsset)
-                      ) {
-                        console.log(
-                          "Triggering immediate reverse calculation for simple asset:",
-                          newAmount
-                        );
-                        const commissionRate = selectedAsset
-                          ?.range_commissions?.[0]?.commission
-                          ? parseFloat(
-                              selectedAsset.range_commissions[0].commission
-                            )
-                          : 2;
-                        const commissionAmount =
-                          (newAmount * commissionRate) / 100;
-                        const calculatedPayAmount =
-                          newAmount + commissionAmount;
+                      
+                      // For direct assets, calculate immediately
+                      if (selectedAsset && newAmount > 0 && isSimpleCalculationAsset(selectedAsset)) {
+                        console.log("Triggering immediate reverse calculation for direct asset:", newAmount);
+                        const calculatedPayAmount = newAmount < 2 ? newAmount : newAmount + 2;
                         setPayAmount(calculatedPayAmount);
                         setPayAmountInput(calculatedPayAmount.toString());
-
+                        
                         // Simple assets don't need loading states - calculation is instant
                       } else if (selectedAsset && newAmount > 0) {
                         // For complex assets, trigger API calculation
-                        console.log(
-                          "Triggering API reverse calculation for complex asset:",
-                          newAmount
-                        );
-
+                        console.log("Triggering API reverse calculation for complex asset:", newAmount);
+                        
                         // Set loading states to show spinner in "You Send" field
                         setIsCalculating(true);
                         setIsCalculatingReceive(true);
-
+                        
                         // Trigger the calculation
                         calculateAmounts(newAmount, false);
                       } else {
@@ -2228,58 +1942,32 @@ export default function DepositForm({
                   onFocus={() => setIsCalculatingFromPay(false)}
                   placeholder="Enter amount"
                   className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg  focus:outline-none border appearance-none ${
-                    receiveAmountError &&
-                    (receiveAmountError.includes("Rough estimate") ||
-                      receiveAmountError.includes("Using estimated rate"))
-                      ? "border-[#F79330]"
-                      : receiveAmountError
-                        ? "border-red-500"
-                        : isCalculating || isCalculatingReceive
-                          ? "border-[#1D8751]"
-                          : "border-[#A2A4A9FF] dark:border-[#35353E]"
+                    receiveAmountError && (receiveAmountError.includes('Rough estimate') || receiveAmountError.includes('Using estimated rate')) ? 'border-[#F79330]' : 
+                    receiveAmountError ? 'border-red-500' :
+                    (isCalculating || isCalculatingReceive) ? 'border-[#1D8751]' : 'border-[#A2A4A9FF] dark:border-[#35353E]'
                   }`}
                 />
                 {/* Show loading spinner when calculating "You Send" from "You Receive" */}
-                {(isCalculating || isCalculatingReceive) &&
-                  !isCalculatingFromPay && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
-                    </div>
-                  )}
+                {(isCalculating || isCalculatingReceive) && !isCalculatingFromPay && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
+                  </div>
+                )}
                 {receiveAmountError && (
                   <div className="flex items-center gap-2 mt-2">
                     <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                      <path
-                        d="M12 8v4m0 4h.01"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="text-[#F79330]"
-                      />
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        className="text-[#F79330]"
-                      />
+                      <path d="M12 8v4m0 4h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#F79330]"/>
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" className="text-[#F79330]"/>
                     </svg>
-                    <span
-                      className={`text-sm font-medium ${
-                        receiveAmountError.includes("Rough estimate") ||
-                        receiveAmountError.includes("Using estimated rate")
-                          ? "text-[#F79330]"
-                          : "text-red-500"
-                      }`}
-                    >
+                    <span className={`text-sm font-medium ${
+                      receiveAmountError.includes('Rough estimate') || receiveAmountError.includes('Using estimated rate') ? 'text-[#F79330]' : 'text-red-500'
+                    }`}>
                       {receiveAmountError}
                     </span>
                   </div>
                 )}
 
-                {/* Show API estimate status for non-simple assets */}
+                {/* Show API estimate status for non-direct assets */}
                 {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && (
                   <div className="mt-2">
                     {/* {estimateLoading && isCalculatingFromPay && (
@@ -2290,26 +1978,9 @@ export default function DepositForm({
                     )} */}
                     {estimate && !estimateLoading && isCalculatingFromPay && (
                       <div className="flex items-center gap-2 text-[#1D8751] text-sm">
-                        <svg
-                          width="16"
-                          height="16"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            d="M12 8v4m0 4h.01"
-                            stroke="#1D8751"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          <circle
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="#1D8751"
-                            strokeWidth="2"
-                          />
+                        <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                          <path d="M12 8v4m0 4h.01" stroke="#1D8751" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <circle cx="12" cy="12" r="10" stroke="#1D8751" strokeWidth="2"/>
                         </svg>
                         <span>Using live rate</span>
                       </div>
@@ -2318,30 +1989,13 @@ export default function DepositForm({
                       <div className="flex items-center gap-2 text-[#1D8751] text-sm">
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#1D8751]"></div>
                         <span>Calculating ...</span>
-                      </div>
-                    )}
+                  </div>
+                )}
                     {estimate && !estimateLoading && !isCalculatingFromPay && (
                       <div className="flex items-center gap-2 text-[#1D8751] text-sm">
-                        <svg
-                          width="16"
-                          height="16"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            d="M12 8v4m0 4h.01"
-                            stroke="#1D8751"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          <circle
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="#1D8751"
-                            strokeWidth="2"
-                          />
+                        <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                          <path d="M12 8v4m0 4h.01" stroke="#1D8751" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <circle cx="12" cy="12" r="10" stroke="#1D8751" strokeWidth="2"/>
                         </svg>
                         <span>Using live rate for reverse calculation</span>
                       </div>
@@ -2349,26 +2003,9 @@ export default function DepositForm({
                     {estimateError && !estimateLoading && (
                       <div className="flex items-center justify-between gap-2 text-[#F79330] text-sm">
                         <div className="flex items-center gap-2">
-                          <svg
-                            width="16"
-                            height="16"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              d="M12 8v4m0 4h.01"
-                              stroke="#F79330"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                            <circle
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="#F79330"
-                              strokeWidth="2"
-                            />
+                          <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                            <path d="M12 8v4m0 4h.01" stroke="#F79330" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <circle cx="12" cy="12" r="10" stroke="#F79330" strokeWidth="2"/>
                           </svg>
                           <span>{estimateError}</span>
                         </div>
@@ -2399,7 +2036,7 @@ export default function DepositForm({
               </label>
               <div className="relative" ref={assetDropdownRef}>
                 <div
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 text-lg  focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer`}
+                    className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 text-lg  focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer`}
                   onClick={() => {
                     setIsAssetDropdownOpen(!isAssetDropdownOpen);
                   }}
@@ -2409,31 +2046,27 @@ export default function DepositForm({
                       <>
                         <img
                           src={
-                            selectedAsset.image_url ||
-                            selectedAsset.asset_image ||
+                            selectedAsset?.image_url ||
+                            selectedAsset?.asset_image ||
+                            (selectedAsset as any)?.image ||
                             "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                           }
-                          alt={
-                            selectedAsset.name ||
-                            selectedAsset.ticker ||
-                            "Asset"
-                          }
+                          alt={selectedAsset?.name || selectedAsset?.ticker || selectedAsset?.symbol || "Asset"}
                           className="w-6 h-6 rounded-full object-cover"
                           onError={(e) => {
+                            console.log("Image failed to load for selected asset:", selectedAsset);
                             e.currentTarget.src =
                               "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                           }}
                         />
                         <span className="text-[#35353e] dark:text-[#788099]">
-                          {(
-                            selectedAsset.ticker ||
+                          {(selectedAsset.ticker ||
                             selectedAsset.symbol ||
                             selectedAsset.name ||
-                            "Unknown"
-                          ).toUpperCase()}
+                            "Unknown").toUpperCase()}
                         </span>
                         <span className="ml-2 bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                          {selectedAsset.network || "Unknown"}
+                          {getNetworkDisplayName(getAssetNetwork(selectedAsset))}
                         </span>
                       </>
                     ) : (
@@ -2488,66 +2121,65 @@ export default function DepositForm({
                     {/* Asset List */}
                     <div className="max-h-60 overflow-y-auto">
                       {sortedSwapAssets.length > 0 ? (
-                        sortedSwapAssets.map(
-                          (asset: SupportedAsset, index: number) => (
-                            <div
-                              key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network}-${index}`}
-                              className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
-                              onClick={() => {
-                                console.log("Asset selected:", {
-                                  ticker: asset.ticker,
-                                  network: asset.network,
-                                  isSimple: isSimpleCalculationAsset(asset),
-                                  image: asset.image_url || asset.asset_image,
-                                });
-                                setSelectedAsset(asset);
-                                // Set the network from the selected asset
-                                setSelectedNetwork({
-                                  network_id: asset.network,
-                                  network_type: asset.network,
-                                });
-                                setIsAssetDropdownOpen(false);
-                                setAssetSearchTerm("");
+                        sortedSwapAssets.map((asset: SupportedAsset, index: number) => (
+                          <div
+                            key={`${asset.asset_id || 'asset'}-${asset.symbol || asset.ticker || asset.name}-${asset.network || 'unknown'}-${index}`}
+                            className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
+                            onClick={() => {
+                              console.log("Asset selected:", {
+                                ticker: asset.ticker,
+                                network: asset.network || 'unknown',
+                                isSimple: isSimpleCalculationAsset(asset),
+                                image: asset.image_url || asset.asset_image
+                              });
+                              setSelectedAsset(asset);
+                              // Set the network from the selected asset
+                              const networkValue = getAssetNetwork(asset);
+                              setSelectedNetwork({
+                                network_id: networkValue,
+                                network_type: networkValue,
+                              });
+                              setIsAssetDropdownOpen(false);
+                              setAssetSearchTerm("");
+                            }}
+                          >
+                            <img
+                              src={
+                                asset?.image_url ||
+                                asset?.asset_image ||
+                                (asset as any)?.image ||
+                                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                              }
+                              alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
+                              className="w-6 h-6 rounded-full object-cover"
+                              onError={(e) => {
+                                console.log("Image failed to load for asset:", asset);
+                                e.currentTarget.src =
+                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                               }}
-                            >
-                              <img
-                                src={
-                                  asset.image_url ||
-                                  asset.asset_image ||
-                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                                }
-                                alt={asset.name || asset.ticker || "Asset"}
-                                className="w-6 h-6 rounded-full object-cover"
-                                onError={(e) => {
-                                  e.currentTarget.src =
-                                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
-                                }}
-                              />
-                              <div className="flex-1">
-                                <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
-                                  {(
-                                    asset.ticker ||
-                                    asset.symbol ||
-                                    asset.name ||
-                                    "Unknown"
-                                  ).toUpperCase()}
-                                  <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                                    {asset.network || "Unknown"}
-                                  </span>
-                                </div>
-                                <div className="text-[#35353e] dark:text-[#788099] text-sm">
-                                  {asset.name ||
-                                    (asset.ticker || "").toUpperCase() ||
-                                    (asset.symbol || "").toUpperCase() ||
-                                    "Unknown Asset"}
-                                </div>
+                            />
+                            <div className="flex-1">
+                              <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
+                                {(asset.ticker ||
+                                  asset.symbol ||
+                                  asset.name ||
+                                  "Unknown").toUpperCase()}
+                                <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                                  {getNetworkDisplayName(getAssetNetwork(asset))}
+                                </span>
                               </div>
-                              {selectedAsset?.asset_id === asset.asset_id && (
-                                <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                              )}
+                              <div className="text-[#35353e] dark:text-[#788099] text-sm">
+                                {asset.name ||
+                                  (asset.ticker || "").toUpperCase() ||
+                                  (asset.symbol || "").toUpperCase() ||
+                                  "Unknown Asset"}
+                              </div>
                             </div>
-                          )
-                        )
+                            {selectedAsset?.asset_id === asset.asset_id && (
+                              <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                            )}
+                          </div>
+                        ))
                       ) : (
                         <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
                           {assetSearchTerm
@@ -2593,77 +2225,67 @@ export default function DepositForm({
           <div className="flex items-center gap-3">
             <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
               <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                <path
-                  d="M12 8v4m0 4h.01"
-                  stroke="white"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" />
+                <path d="M12 8v4m0 4h.01" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2"/>
               </svg>
             </div>
             <span className="text-[#35353e] dark:text-[#788099] text-sm font-medium">
-              {t(
-                "express.estimate.notice",
-                "This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds."
-              )}
+              This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds.
             </span>
           </div>
         </div>
 
         {/* Submit Button for First Card */}
-        {!isFirstCardSubmitted && (
-          <div className="mt-4">
-            <button
-              className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
-                isSubmitting ||
-                !selectedAsset ||
-                (selectedAsset &&
-                  !isSimpleCalculationAsset(selectedAsset) &&
-                  estimateLoading)
-                  ? "bg-gray-500 cursor-not-allowed"
-                  : "bg-[#1D8751] hover:bg-[#166b3e]"
-              }`}
-              onClick={handleFirstCardSubmit}
-              disabled={
-                isSubmitting ||
-                !selectedAsset ||
-                (walletAddress.trim() && !!walletError) ||
-                (selectedAsset &&
-                  !isSimpleCalculationAsset(selectedAsset) &&
-                  estimateLoading)
-              }
-            >
-              {isSubmitting ? (
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#35353e] dark:border-[#788099]"></div>
-                  <span>Posting...</span>
-                </div>
-              ) : (
-                <span className="flex items-center justify-center">
-                  <img
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
-                    alt=""
-                  />
-                  <img
-                    className="mt-2"
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                    alt=""
-                  />
-                </span>
-              )}
-            </button>
-          </div>
-        )}
-      </div>
+          {!isFirstCardSubmitted && (
+            <div className="mt-4">
+              <button
+                className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
+                  isSubmitting ||
+                  !selectedAsset ||
+                  (selectedAsset &&
+                    !isSimpleCalculationAsset(selectedAsset) &&
+                    estimateLoading)
+                    ? "bg-gray-500 cursor-not-allowed"
+                    : "bg-[#1D8751] hover:bg-[#166b3e]"
+                }`}
+                onClick={handleFirstCardSubmit}
+                disabled={
+                  isSubmitting ||
+                  !selectedAsset ||
+                  (walletAddress.trim() && !!walletError) ||
+                  (selectedAsset &&
+                    !isSimpleCalculationAsset(selectedAsset) &&
+                    estimateLoading)
+                }
+              >
+                {isSubmitting ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#35353e] dark:border-[#788099]"></div>
+                    <span>Posting...</span>
+                  </div>
+                ) : (
+                  <span className="flex items-center justify-center">
+                    <img
+                      src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
+                      alt=""
+                    />
+                    <img
+                      className="mt-2"
+                      src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                      alt=""
+                    />
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
+        </div>
 
       {selectedPaymentDetail && isFirstCardSubmitted && (
         <>
           {/* Payment Details Card */}
           <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
-            <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>{" "}
-            Payment Details
+            <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span> Payment Details
           </h2>
           <div
             ref={paymentDetailsRef}
@@ -2749,124 +2371,115 @@ export default function DepositForm({
           {apiResponse && apiResponse.deposit_code && (
             <>
               <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
-                <span className="text-[#7e7e8f] dark:text-[#788099]">3-</span>{" "}
-                Transaction Code
+                <span className="text-[#7e7e8f] dark:text-[#788099]">3-</span> Transaction Code
               </h2>
               <div className="mb-6 flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
-                <div className=" dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-4 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
-                  {/* Transaction Code Row */}
-                  <div className="flex items-center justify-center gap-3 mb-3">
-                    {/* Display deposit code from API response - each character in its own box */}
-                    <div className="flex gap-2">
-                      {apiResponse.deposit_code
-                        .split("")
-                        .map((char: string, index: number) => (
-                          <div
-                            key={index}
-                            className="w-10 h-12 bg-[#35353E] border border-[#4A4A4A] rounded-lg flex items-center justify-center"
-                          >
-                            <span className="text-xl font-bold text-white font-mono">
-                              {char}
-                            </span>
-                          </div>
-                        ))}
-                    </div>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(apiResponse.deposit_code);
-                        showToast.success("Transaction code copied!");
-                      }}
-                      className="flex items-center gap-2 bg-[#35353E] border border-[#1D8751] text-white rounded-full px-4 py-2 font-semibold text-sm hover:bg-[#1D8751] hover:text-white transition-colors"
-                    >
+              <div className=" dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-4 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
+                {/* Transaction Code Row */}
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-3">
+                  {/* Display deposit code from API response - each character in its own box */}
+                  <div className="flex gap-1 sm:gap-2 flex-wrap justify-center">
+                    {apiResponse.deposit_code.split('').map((char: string, index: number) => (
+                      <div
+                        key={index}
+                        className="w-8 h-10 sm:w-10 sm:h-12 bg-[#35353E] border border-[#4A4A4A] rounded-lg flex items-center justify-center"
+                      >
+                        <span className="text-lg sm:text-xl font-bold text-white font-mono">
+                          {char}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(apiResponse.deposit_code);
+                      showToast.success("Transaction code copied!");
+                    }}
+                    className="flex items-center gap-2 bg-[#35353E] border border-[#1D8751] text-white rounded-full px-3 py-2 sm:px-4 font-semibold text-xs sm:text-sm hover:bg-[#1D8751] hover:text-white transition-colors"
+                  >
+                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+                      <rect
+                        x="9"
+                        y="9"
+                        width="13"
+                        height="13"
+                        rx="2"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                      <rect
+                        x="3"
+                        y="3"
+                        width="13"
+                        height="13"
+                        rx="2"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                    </svg>
+                    Copy
+                  </button>
+                </div>
+                {/* Note Section */}
+                <div className="flex flex-col gap-2 mt-2">
+                  <div className="flex items-center mb-2">
+                    <span className="mr-2 text-[#1D8751]">
                       <svg
                         width="16"
                         height="16"
                         fill="none"
                         viewBox="0 0 24 24"
                       >
-                        <rect
-                          x="9"
-                          y="9"
-                          width="13"
-                          height="13"
-                          rx="2"
-                          stroke="currentColor"
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="#1D8751"
                           strokeWidth="2"
                         />
-                        <rect
-                          x="3"
-                          y="3"
-                          width="13"
-                          height="13"
-                          rx="2"
-                          stroke="currentColor"
+                        <line
+                          x1="12"
+                          y1="8"
+                          x2="12"
+                          y2="12"
+                          stroke="#1D8751"
                           strokeWidth="2"
+                          strokeLinecap="round"
                         />
+                        <circle cx="12" cy="16" r="1" fill="#1D8751" />
                       </svg>
-                      Copy
-                    </button>
+                    </span>
+                    <span className="text-sm font-semibold text-[#7e7e8f] dark:text-[#788099]">
+                      Note
+                    </span>
                   </div>
-                  {/* Note Section */}
-                  <div className="flex flex-col gap-2 mt-2">
-                    <div className="flex items-center mb-2">
-                      <span className="mr-2 text-[#1D8751]">
-                        <svg
-                          width="16"
-                          height="16"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="#1D8751"
-                            strokeWidth="2"
-                          />
-                          <line
-                            x1="12"
-                            y1="8"
-                            x2="12"
-                            y2="12"
-                            stroke="#1D8751"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                          />
-                          <circle cx="12" cy="16" r="1" fill="#1D8751" />
-                        </svg>
-                      </span>
-                      <span className="text-sm font-semibold text-[#7e7e8f] dark:text-[#788099]">
-                        Note
-                      </span>
-                    </div>
-                    <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-3">
-                      <ul className="list-none space-y-1">
-                        <li className="flex items-start">
-                          <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-2"></span>
+                  <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-3">
+                    <ul className="list-none space-y-1">
+                      <li className="flex items-start">
+                        <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-2"></span>
                           <span className="text-[#35353e] dark:text-[#788099] text-xs">
-                            Please write this Transaction Code in the bank
-                            message or note section.
-                          </span>
-                        </li>
-                        <li className="flex items-start">
-                          <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-2"></span>
-                          <span className="text-[#35353e] dark:text-[#788099] text-xs">
-                            This helps us process your payment quickly and
-                            accurately.
-                          </span>
-                        </li>
-                      </ul>
-                    </div>
+                          Please write this Transaction Code in the bank message
+                          or note section.
+                        </span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-2"></span>
+                        <span className="text-[#35353e] dark:text-[#788099] text-xs">
+                          This helps us process your payment quickly and
+                          accurately.
+                        </span>
+                      </li>
+                    </ul>
                   </div>
                 </div>
+              </div>
               </div>
             </>
           )}
 
           {/* Wallet Address Section */}
           <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
-            <span className="text-[#7e7e8f] dark:text-[#788099]">4-</span>{" "}
-            Wallet Address
+            <span className="text-[#7e7e8f] dark:text-[#788099]">4-</span> Wallet Address
           </h2>
           <div className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full max-w-4xl mx-auto text-[#35353e] dark:text-[#788099] mb-6">
             {/* Wallet/Account Address Label */}
@@ -2981,6 +2594,10 @@ export default function DepositForm({
               </p>
             )}
 
+          
+
+           
+
             {/* {!walletAddress.trim() && (
               <p className="text-[#7e7e8f] dark:text-[#788099] text-sm mt-2 font-medium">
                 ℹ️ Wallet address is optional. You can provide it later if needed.
@@ -3024,7 +2641,7 @@ export default function DepositForm({
                 </li>
                 <li className="flex items-start">
                   <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                  <span className="text-[#35353e] dark:text-[#788099] text-sm">
+                    <span className="text-[#35353e] dark:text-[#788099] text-sm">
                     Put transaction ID in the description field of the bank
                   </span>
                 </li>
@@ -3037,12 +2654,14 @@ export default function DepositForm({
                 </li>
               </ul>
             </div>
+
+            
           </div>
 
           {/* Validation Errors Display */}
           {validationErrors.length > 0 && (
             <div className="max-w-4xl mx-auto w-full px-2 mb-4">
-              <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-2xl p-4">
+                <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-2xl p-4">
                 <h3 className="text-[#1D8751] font-semibold mb-2">
                   Please fix the following errors:
                 </h3>
@@ -3060,14 +2679,8 @@ export default function DepositForm({
             <div className="flex items-center text-[#35353e] dark:text-[#788099] text-[16px] font-semibold">
               <FaExclamationCircle className="mr-2 text-[#1D8751]" />
               <span>
-                {t(
-                  "express.estimate.line1",
-                  "This is only an estimated price based on current market rates."
-                )}{" "}
-                {t(
-                  "express.estimate.line2",
-                  "The final price will be confirmed when we receive the funds."
-                )}
+                This is only an estimated price based on current market rates.
+                The final price will be confirmed when we receive the funds.
               </span>
             </div>
             <button
@@ -3081,7 +2694,7 @@ export default function DepositForm({
             >
               {isSubmitting ? (
                 <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#35353e] dark:border-[#35353E]"></div>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#35353e] dark:border-[#35353E]"></div>
                   <span>Processing...</span>
                 </div>
               ) : (
@@ -3108,10 +2721,12 @@ export default function DepositForm({
         onClose={() => setIsInfoModalOpen(false)}
         onContactUs={() => {
           // Handle contact us action - you can customize this
-          window.open("https://wa.me/your-whatsapp-number", "_blank");
+          window.open('https://wa.me/your-whatsapp-number', '_blank');
           setIsInfoModalOpen(false);
         }}
       />
+      
+
     </div>
   );
 }

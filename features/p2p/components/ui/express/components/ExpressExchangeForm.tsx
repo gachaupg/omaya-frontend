@@ -35,12 +35,14 @@ interface ExpressExchangeFormProps {
   }) => void;
   initialMode?: "deposit" | "withdrawal";
   balance?: number;
+  skipAmountValidation?: boolean; // New prop to skip amount validation when posting ads
 }
 
 const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
   onExchange,
   initialMode = "deposit",
   balance,
+  skipAmountValidation = false,
 }) => {
   // Debug logging for balance
   console.log("ExpressExchangeForm - Received balance:", balance);
@@ -68,6 +70,7 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
           mode={mode}
           onModeChange={handleModeChange}
           balance={balance}
+          skipAmountValidation={skipAmountValidation}
         />
       ) : (
         <WithdrawalForm

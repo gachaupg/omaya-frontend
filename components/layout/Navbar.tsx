@@ -311,8 +311,11 @@ export default function Navbar() {
   // Check if navbar should show white text (transparent on home page)
   const isTransparentNavbar = pathname === "/" && !scrolled;
   const [theme, setTheme] = useState<{ mode: string } | null>({ mode: "dark" }); // Default to dark theme
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+    
     const getTheme = () => {
       try {
         const themeString = localStorage.getItem("theme");
@@ -338,7 +341,7 @@ export default function Navbar() {
       }
     };
 
-    // Set initial theme
+    // Set initial theme only after mounting
     setTheme(getTheme());
 
     // Listen for theme changes
@@ -363,6 +366,31 @@ export default function Navbar() {
   }, []);
 
   console.log("theme", theme?.mode);
+  
+  // Don't render theme-dependent content until mounted
+  if (!mounted) {
+    return (
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isTransparentNavbar
+          ? "bg-transparent"
+          : "bg-white dark:bg-gray-900 shadow-lg"
+      }`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Placeholder content during SSR */}
+            <div className="flex items-center">
+              <div className="h-8 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+              <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+      </nav>
+    );
+  }
+  
   return (
     <>
       <nav

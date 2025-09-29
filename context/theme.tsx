@@ -44,10 +44,11 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     }
   };
 
+  // Only use theme values after component is mounted to prevent hydration mismatch
   const value: ThemeContextType = {
-    theme,
-    isDark: reduxTheme.isDark,
-    isLight: reduxTheme.isLight,
+    theme: reduxTheme.mounted ? theme : "dark", // Default to dark during SSR
+    isDark: reduxTheme.mounted ? reduxTheme.isDark : true, // Default to dark during SSR
+    isLight: reduxTheme.mounted ? reduxTheme.isLight : false, // Default to false during SSR
     toggleTheme,
     setTheme,
   };

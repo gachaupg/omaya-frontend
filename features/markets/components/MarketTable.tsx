@@ -21,20 +21,18 @@ import { Button } from "@headlessui/react";
 import { ArrowLeftRight, Plus, Repeat, Search, Users, X } from "lucide-react";
 import Link from "next/link";
 import { TiArrowUnsorted } from "react-icons/ti";
-import {
-  fetchAssets,
-  addFavoriteAsset,
-  removeFavoriteAsset,
-  getFavoriteAssets,
-} from "../../exchange/slices/exchangeSlice";
+import { fetchAssets, addFavoriteAsset, removeFavoriteAsset, getFavoriteAssets } from '../../exchange/slices/exchangeSlice'
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
-import { toast } from "sonner";
+import { toast } from "sonner"
 import { Asset, FavoriteAsset } from "../../exchange/types";
-import { useMarketsI18n } from "@/lib/useMarketsI18n";
+
 
 // Utility functions for formatting
-const formatPrice = (price: number): string => {
+const formatPrice = (price: number | null | undefined): string => {
+  if (price === null || price === undefined || isNaN(price)) {
+    return "$0.00";
+  }
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
@@ -43,7 +41,10 @@ const formatPrice = (price: number): string => {
   }).format(price);
 };
 
-const formatVolume = (volume: number): string => {
+const formatVolume = (volume: number | null | undefined): string => {
+  if (volume === null || volume === undefined || isNaN(volume)) {
+    return "$0.00";
+  }
   if (volume >= 1e12) {
     return `$${(volume / 1e12).toFixed(2)}T`;
   } else if (volume >= 1e9) {
@@ -56,7 +57,10 @@ const formatVolume = (volume: number): string => {
   return `$${volume.toFixed(2)}`;
 };
 
-const formatMarketCap = (marketCap: number): string => {
+const formatMarketCap = (marketCap: number | null | undefined): string => {
+  if (marketCap === null || marketCap === undefined || isNaN(marketCap)) {
+    return "$0.00";
+  }
   if (marketCap >= 1e12) {
     return `$${(marketCap / 1e12).toFixed(2)}T`;
   } else if (marketCap >= 1e9) {
@@ -68,15 +72,11 @@ const formatMarketCap = (marketCap: number): string => {
 };
 
 const formatPercentage = (percentage: number | null | undefined): string => {
-  if (
-    percentage === null ||
-    percentage === undefined ||
-    !isFinite(percentage as number)
-  ) {
+  if (percentage === null || percentage === undefined || isNaN(percentage)) {
     return "0.00%";
   }
-  const sign = (percentage as number) >= 0 ? "+" : "";
-  return `${sign}${(percentage as number).toFixed(2)}%`;
+  const sign = percentage >= 0 ? "+" : "";
+  return `${sign}${percentage.toFixed(2)}%`;
 };
 
 // Dynamic coin icon component
@@ -166,13 +166,13 @@ const StarIcon = () => (
   </svg>
 );
 
-const tableHeadersKeys = [
-  "markets.table.name",
-  "markets.table.price",
-  "markets.table.change24h",
-  "markets.table.volume24h",
-  "markets.table.marketCap",
-  "markets.table.more",
+const tableHeaders = [
+  "Name",
+  "Price",
+  "24h Change",
+  "24 Volume",
+  "Market Cap",
+  "More",
 ];
 
 const filterTags = ["Hot", "Gainers", "Losers", "New", "Market Cap"];
@@ -182,11 +182,10 @@ const MarketTable = () => {
   const {
     assets: allAvailableAssets,
     favoriteAssets,
-    loading: loadingAssets,
+    loading : loadingAssets,
   } = useSelector((state: RootState) => state.exchange);
   const { markets, loading, error, lastUpdated, refetch, clearError } =
     useSimpleMarkets(100);
-  const { t } = useMarketsI18n();
 
   const [activeFilter, setActiveFilter] = useState<string>("Hot");
   const [selectedCoinId, setSelectedCoinId] = useState<string | null>(null);
@@ -195,8 +194,7 @@ const MarketTable = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [pendingRemoveAsset, setPendingRemoveAsset] =
-    useState<FavoriteAsset | null>(null);
+  const [pendingRemoveAsset, setPendingRemoveAsset] = useState<FavoriteAsset | null>(null);
 
   useEffect(() => {
     if (!allAvailableAssets) {
@@ -237,17 +235,21 @@ const MarketTable = () => {
     switch (activeFilter) {
       case "Gainers":
         return markets.filter(
-          (market) => market.price_change_percentage_24h > 0
+          (market) => market.price_change_percentage_24h !== null && market.price_change_percentage_24h > 0
         );
       case "Losers":
         return markets.filter(
-          (market) => market.price_change_percentage_24h < 0
+          (market) => market.price_change_percentage_24h !== null && market.price_change_percentage_24h < 0
         );
       case "New":
         // Filter for coins with recent activity (you can customize this logic)
         return markets.slice(0, 10);
       case "Market Cap":
-        return [...markets].sort((a, b) => b.market_cap - a.market_cap);
+        return [...markets].sort((a, b) => {
+          const aCap = a.market_cap || 0;
+          const bCap = b.market_cap || 0;
+          return bCap - aCap;
+        });
       default:
         return markets;
     }
@@ -258,7 +260,7 @@ const MarketTable = () => {
   //   return markets.slice(0, 3);
   // }, [markets]);
 
-  const toggleDropdown = () => {
+    const toggleDropdown = () => {
     setShowDropdown(!showDropdown);
     setSearchTerm("");
   };
@@ -292,27 +294,29 @@ const MarketTable = () => {
     }
   };
 
-  // Helper function to find asset ID from asset name
-  const getAssetIdFromName = (assetName: string): string | null => {
-    const asset = allAvailableAssets?.assets?.find(
-      (asset: Asset) => asset.name === assetName || asset.symbol === assetName
-    );
-    return asset?.asset_id || null;
-  };
+    // Helper function to find asset ID from asset name
+    const getAssetIdFromName = (assetName: string): string | null => {
+      const asset = allAvailableAssets?.assets?.find(
+        (asset: Asset) => asset.name === assetName || asset.symbol === assetName
+      );
+      return asset?.asset_id || null;
+    };
 
-  const filteredAvailableAssets =
-    allAvailableAssets?.assets?.filter((asset: Asset) =>
-      asset.symbol.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredAvailableAssets =
+      allAvailableAssets?.assets?.filter(
+        (asset: Asset) =>
+          asset.symbol.toLowerCase().includes(searchTerm.toLowerCase())
     ) || [];
 
-  // Dummy data for missing fields
-  const DUMMY_ASSET_DATA: Record<
-    string,
-    { symbol: string; price: number; change: string }
-  > = {
-    "USDT Tether": { symbol: "USDT", price: 0.99, change: "+0.01%" },
-    FXPRIMUS: { symbol: "FXP", price: 1.0, change: "+0.00%" },
-  };
+    // Dummy data for missing fields
+    const DUMMY_ASSET_DATA: Record<
+      string,
+      { symbol: string; price: number; change: string }
+    > = {
+      "USDT Tether": { symbol: "USDT", price: 0.99, change: "+0.01%" },
+      FXPRIMUS: { symbol: "FXP", price: 1.0, change: "+0.00%" },
+    };
+
 
   const handleFilterClick = useCallback((filter: string) => {
     setActiveFilter(filter);
@@ -391,13 +395,12 @@ const MarketTable = () => {
       <div className="container mx-auto mb-6 px-6">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-gray-900 dark:text-[#fff] text-2xl font-bold">
-            {t("markets.title", "Market Review")}
+            Market Review
           </h1>
           <div className="flex items-center gap-2">
             {lastUpdated && (
               <span className="text-xs text-gray-600 dark:text-[#788099]">
-                {t("markets.lastUpdated", "Last updated:")}{" "}
-                {new Date(lastUpdated).toLocaleTimeString()}
+                Last updated: {new Date(lastUpdated).toLocaleTimeString()}
               </span>
             )}
             <button
@@ -405,7 +408,7 @@ const MarketTable = () => {
               disabled={loading}
               className="px-3 py-1 bg-gray-100 dark:bg-[#1D1D23] text-gray-700 dark:text-[#788099] rounded border border-gray-300 dark:border-[#35353E] hover:bg-gray-200 dark:hover:bg-[#35353E] disabled:opacity-50"
             >
-              {loading ? "Loading..." : t("markets.refresh", "Refresh")}
+              {loading ? "Loading..." : "Refresh"}
             </button>
           </div>
         </div>
@@ -427,40 +430,30 @@ const MarketTable = () => {
         </div>
 
         <div className="text-sm text-gray-600 dark:text-[#788099] mb-2">
-          {t(
-            "markets.intro1",
-            "Gain a comprehensive overview of all cryptocurrencies through OMAYA Express. This webpage presents the most recent prices, 24-hour trade volumes, price fluctuations, and market capitalizations for every cryptocurrency available on global markets."
-          )}
+          Gain a comprehensive overview of all cryptocurrencies through OMAYA
+          Express. This webpage presents the most recent prices, 24-hour trade
+          volumes, price fluctuations, and market capitalizations for every
+          cryptocurrency available on global markets.
         </div>
         <div className="text-sm text-gray-600 dark:text-[#788099] mb-6">
-          {t(
-            "markets.intro2",
-            "Users can readily obtain crucial details about these digital assets and directly navigate to the trading platform from this point."
-          )}
+          Users can readily obtain crucial details about these digital assets
+          and directly navigate to the trading platform from this point.
         </div>
 
         {/* Favourite Assets Header Row */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2 font-semibold text-gray-900 dark:text-[#fff] text-lg">
-            {t("markets.topFavorites", "Top Favorite Assets")}
-            <button
-              className="bg-none border-none text-[#1D8751] text-xl cursor-pointer p-0 ml-2"
-              onClick={() => {
-                document
-                  .getElementById("fav-scroll")
-                  ?.scrollBy({ left: -300, behavior: "smooth" });
-              }}
-            >
+            Top Assets Favourite Assets
+            <button className="bg-none border-none text-[#1D8751] text-xl cursor-pointer p-0 ml-2"  
+               onClick={() => {
+                document.getElementById("fav-scroll")?.scrollBy({ left: -300, behavior: "smooth" });
+              }}>
               &lt;
             </button>
-            <button
-              className="bg-none border-none text-[#1D8751] text-xl cursor-pointer p-0 ml-1"
+            <button className="bg-none border-none text-[#1D8751] text-xl cursor-pointer p-0 ml-1"
               onClick={() => {
-                document
-                  .getElementById("fav-scroll")
-                  ?.scrollBy({ left: 300, behavior: "smooth" });
-              }}
-            >
+                document.getElementById("fav-scroll")?.scrollBy({ left: 300, behavior: "smooth" });
+              }}>
               &gt;
             </button>
           </div>
@@ -469,7 +462,7 @@ const MarketTable = () => {
               className="flex items-center text-gray-900 dark:text-[#fff] font-medium text-base cursor-pointer gap-1"
               onClick={toggleDropdown}
             >
-              {t("markets.addAsset", "Add Asset")}
+              Add Asset
               <Plus className="w-3 h-3 text-[#1D8751]" />
             </button>
             {/* Dropdown Content */}
@@ -479,7 +472,7 @@ const MarketTable = () => {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1D8751] w-4 h-4" />
                   <input
                     type="text"
-                    placeholder={t("markets.search", "Search")}
+                    placeholder="Search"
                     className="bg-transparent border border-[#2D2E3A] rounded-full pl-10 pr-4 py-2.5 text-sm text-white placeholder-[#9CA3AF] focus:outline-none focus:border-[#10B981] w-44"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -499,7 +492,7 @@ const MarketTable = () => {
                     ))
                   ) : (
                     <li className="px-4 py-2 text-sm text-[#9CA3AF]">
-                      {t("markets.noAssetsFound", "No assets found")}
+                      No assets found
                     </li>
                   )}
                 </ul>
@@ -509,97 +502,94 @@ const MarketTable = () => {
         </div>
 
         {/* Favourite Assets Cards Row */}
-        <div
+        <div     
           id="fav-scroll"
           className="
             flex gap-4 mb-8 w-full overflow-x-auto scrollbar-hide scroll-smooth
           "
           style={{ WebkitOverflowScrolling: "touch" }}
         >
-          {loadingAssets ? (
-            <div className="flex items-center justify-center min-w-[250px]">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#13B562]"></div>
-            </div>
-          ) : favoriteAssets?.length === 0 ? (
-            <div className="col-span-3 text-center text-gray-500">
-              {t(
-                "markets.noFavorites",
-                "No favorite assets found. Add some to see them here."
-              )}
-            </div>
-          ) : (
-            favoriteAssets?.map((asset: FavoriteAsset) => {
-              const dummyData = DUMMY_ASSET_DATA[asset.asset_symbol] || {
-                symbol: (asset.asset_symbol ?? "").split(" ")[0],
-                price: 0,
-                change: "+0.00%",
-              };
 
-              return (
-                <div
-                  key={asset.favorite_asset_id}
-                  className="bg-white dark:bg-[#1D1D23] rounded-2xl p-4 flex items-center gap-3 border border-[#E8EFF5] dark:border-[#35353E] relative flex-shrink-0 w-[80%] sm:w-[45%] md:w-[30%]"
+            {loadingAssets ? (
+              <div className="flex items-center justify-center min-w-[250px]">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#13B562]"></div>
+              </div>
+            ) : favoriteAssets?.length === 0 ? (
+              <div className="col-span-3 text-center text-gray-500">
+                No favorite assets found. Add some to see them here.
+              </div>
+            ) : (
+
+            favoriteAssets?.map((asset: FavoriteAsset) => {
+            const dummyData = DUMMY_ASSET_DATA[asset.asset_symbol] || {
+              symbol: (asset.asset_symbol ?? "").split(" ")[0],
+              price: 0,
+              change: "+0.00%",
+            };
+
+            return (
+              <div
+                key={asset.favorite_asset_id}
+                className="bg-white dark:bg-[#1D1D23] rounded-2xl p-4 flex items-center gap-3 border border-[#E8EFF5] dark:border-[#35353E] relative flex-shrink-0 w-[80%] sm:w-[45%] md:w-[30%]"
+              >
+                <button
+                  onClick={() => {
+                    setPendingRemoveAsset(asset);
+                    setShowConfirmModal(true);
+                  }}
+                  className="absolute top-0 right-2 p-1 rounded-full hover:[#E8EFF5] dark:hover:bg-[#35353E] transition-colors"
+                  title="Remove from favorites"
                 >
-                  <button
-                    onClick={() => {
-                      setPendingRemoveAsset(asset);
-                      setShowConfirmModal(true);
-                    }}
-                    className="absolute top-0 right-2 p-1 rounded-full hover:[#E8EFF5] dark:hover:bg-[#35353E] transition-colors"
-                    title="Remove from favorites"
-                  >
-                    <X className="w-3 h-3 text-[#9CA3AF] hover:text-white" />
-                  </button>
-                  <div className="w-8 h-8 rounded-full">
-                    {asset.asset_image &&
-                    typeof asset.asset_image === "string" &&
-                    asset.asset_image.trim() !== "" ? (
-                      <img
-                        src={asset.asset_image}
-                        alt={asset.asset_symbol}
-                        className="object-cover w-8 h-8 rounded-full"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).style.display =
-                            "none";
-                        }}
-                      />
-                    ) : (
-                      <CoinIcon
-                        image={null}
-                        symbol={asset.asset_symbol || ""}
-                        size={32}
-                      />
-                    )}
+                  <X className="w-3 h-3 text-[#9CA3AF] hover:text-white" />
+                </button>
+                <div className="w-8 h-8 rounded-full">
+                  {asset.asset_image && typeof asset.asset_image === "string" && asset.asset_image.trim() !== "" ? (
+                    <img
+                      src={asset.asset_image}
+                      alt={asset.asset_symbol}
+                      className="object-cover w-8 h-8 rounded-full"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <CoinIcon
+                      image={null}
+                      symbol={asset.asset_symbol || ""}
+                      size={32}
+                    />
+                  )}
+              
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-[#051015] dark:text-white truncate">
+                    {dummyData.symbol}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-[#051015] dark:text-white truncate">
-                      {dummyData.symbol}
-                    </div>
-                    <div className="text-xs text-[#788099] dark:text-[#788099] truncate">
-                      {asset.asset_symbol}
-                    </div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <div className="font-bold text:[#051015] dark:text-white whitespace-nowrap">
-                      $
-                      {dummyData.price.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 8,
-                      })}
-                    </div>
-                    <div
-                      className={`text-xs whitespace-nowrap ${
-                        dummyData.change.startsWith("+")
-                          ? "text-[#1D8751]"
-                          : "text-[#1D8751]"
-                      }`}
-                    >
-                      {dummyData.change}
-                    </div>
+                  <div className="text-xs text-[#788099] dark:text-[#788099] truncate">
+                    {asset.asset_symbol}
                   </div>
                 </div>
-              );
-            })
+                <div className="text-right flex-shrink-0">
+                  <div className="font-bold text:[#051015] dark:text-white whitespace-nowrap">
+                    $
+                    {dummyData.price.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 8,
+                    })}
+                  </div>
+                  <div
+                    className={`text-xs whitespace-nowrap ${
+                      dummyData.change.startsWith("+")
+                        ? "text-[#1D8751]"
+                        : "text-[#1D8751]"
+                    }`}
+                  >
+                    {dummyData.change}
+                  </div>
+                </div>
+              </div>
+            );
+          })
           )}
         </div>
 
@@ -609,21 +599,21 @@ const MarketTable = () => {
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#13B562]"></div>
               <span className="ml-3 text-gray-900 dark:text-[#fff]">
-                {t("markets.loading", "Loading market data...")}
+                Loading market data...
               </span>
             </div>
           ) : (
             <table className="w-full border-separate border-spacing-0">
               <thead>
                 <tr>
-                  {tableHeadersKeys.map((key, idx) => (
+                  {tableHeaders.map((header, idx) => (
                     <th
-                      key={key}
+                      key={header}
                       className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 py-4 text-left font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-base"
                     >
                       <div className="flex items-center gap-1">
-                        {t(key, key)}
-                        {idx !== 0 && idx !== tableHeadersKeys.length - 1 && (
+                        {header}
+                        {idx !== 0 && idx !== tableHeaders.length - 1 && (
                           <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
                         )}
                       </div>
@@ -667,7 +657,7 @@ const MarketTable = () => {
                       </td>
                       <td
                         className={`font-medium px-2 py-3 ${
-                          market.price_change_percentage_24h >= 0
+                          market.price_change_percentage_24h !== null && market.price_change_percentage_24h >= 0
                             ? "text-[#13B562]"
                             : "text-[#FF6B6B]"
                         }`}
@@ -693,7 +683,7 @@ const MarketTable = () => {
                     {selectedCoinId === market.id && (
                       <tr>
                         <td
-                          colSpan={tableHeadersKeys.length}
+                          colSpan={tableHeaders.length}
                           className="bg-gray-100 dark:bg-[#23232a] px-6 py-4 border-t border-gray-200 dark:border-[#35353E]"
                         >
                           {/* Coin details */}
@@ -753,22 +743,13 @@ const MarketTable = () => {
       {showConfirmModal && pendingRemoveAsset && (
         <>
           {/* Overlay */}
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-[999]"
-            style={{ background: "rgba(0,0,0,0.6)" }}
-          />
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-[999]" style={{background: "rgba(0,0,0,0.6)"}} />
           {/* Modal */}
           <div className="fixed inset-0 z-[1000] flex items-center justify-center">
             <div className="bg-[#23242B] rounded-xl p-6 shadow-lg w-full max-w-sm">
-              <h2 className="text-lg font-semibold text-white mb-2">
-                Remove Favorite
-              </h2>
+              <h2 className="text-lg font-semibold text-white mb-2">Remove Favorite</h2>
               <p className="text-[#9CA3AF] mb-4">
-                Are you sure you want to remove{" "}
-                <span className="font-bold text-white">
-                  {pendingRemoveAsset.asset_symbol}
-                </span>{" "}
-                from your favorites?
+                Are you sure you want to remove <span className="font-bold text-white">{pendingRemoveAsset.asset_symbol}</span> from your favorites?
               </p>
               <div className="flex justify-end gap-3">
                 <button
@@ -783,9 +764,7 @@ const MarketTable = () => {
                 <button
                   className="px-4 py-2 rounded bg-[#1D8751] text-white hover:bg-[#166c3a]"
                   onClick={() => {
-                    const assetId = getAssetIdFromName(
-                      pendingRemoveAsset.asset_symbol
-                    );
+                    const assetId = getAssetIdFromName(pendingRemoveAsset.asset_symbol);
                     if (assetId) {
                       handleRemoveFromFavorites(assetId);
                     } else {

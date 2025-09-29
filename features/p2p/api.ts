@@ -250,7 +250,7 @@ export const getAllP2PBuyandSell = async (
 ): Promise<P2PBuySellResponse> => {
   console.log("API call getAllP2PBuyandSell with page:", page);
   return withRetry(async () => {
-    const url = `${API_CONFIG.P2P.BUY_SELL_ORDERS}&page=${page}`;
+    const url = `${API_CONFIG.P2P.ALL_ORDERS}?page=${page}`;
     console.log("Making API request to:", url);
     const response = await get<P2PBuySellResponse>(url);
     console.log("API response for page", page, ":", {

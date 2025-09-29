@@ -136,7 +136,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
 
         {/* OTP Input */}
         <div className="mb-6">
-          <div className="flex justify-center gap-3 mb-4">
+          <div className="flex justify-center gap-2 sm:gap-3 mb-4">
             {otp.map((digit, index) => (
               <input
                 key={index}
@@ -150,7 +150,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
                 onChange={e => handleInputChange(index, e.target.value)}
                 onKeyDown={e => handleKeyDown(index, e)}
                 onPaste={handlePaste}
-                className="w-12 h-12 text-center text-xl font-semibold bg-[#2A2A2A] border-2 border-[#39394a] rounded-xl text-white focus:border-[#1D8751] focus:outline-none transition-colors"
+                className="w-10 h-10 sm:w-12 sm:h-12 text-center text-lg sm:text-xl font-semibold bg-[#2A2A2A] border-2 border-[#39394a] rounded-xl text-white focus:border-[#1D8751] focus:outline-none transition-colors"
                 disabled={isLoading || isExpired}
               />
             ))}
