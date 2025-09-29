@@ -2,42 +2,42 @@ import { TransactionType } from "@/features/p2p/types";
 
 export const navItems = [
   {
-    label: "Dashboard",
+    labelKey: "navigation.dashboard",
     icon: "https://res.cloudinary.com/pitz/image/upload/v1747237691/svgexport-54_1_ldjke6.png",
     href: "/dashboard",
   },
   {
-    label: "Express",
+    labelKey: "navigation.express",
     icon: "https://res.cloudinary.com/pitz/image/upload/v1752243765/Vector_2_xauedx.png",
     href: "/dashboard/express-exchange",
   },
   // {
-  //   label: "Exchange",
+  //   labelKey: "navigation.exchange",
   //   icon: "https://res.cloudinary.com/pitz/image/upload/v1747237692/uil_exchange_tavqwx.png",
   //   href: "/dashboard/exchange",
   // },
   {
-    label: "P2P Trading",
+    labelKey: "navigation.p2pTrading",
     icon: "https://res.cloudinary.com/pitz/image/upload/v1747237692/users-profiles-left_e2oejc.png",
     href: "/dashboard/p2p",
   },
   {
-    label: "Swap Crypto",
+    labelKey: "navigation.swapCrypto",
     icon: "https://res.cloudinary.com/pitz/image/upload/v1747237691/Group_164002_fgt2kf.png",
     href: "/dashboard/swap",
   },
   // {
-  //   label: "Buy Crypto",
+  //   labelKey: "navigation.buyCrypto",
   //   icon: "https://res.cloudinary.com/pitz/image/upload/v1747237691/Group_164004_m9zmz3.png",
   //   href: "/dashboard/buy",
   // },
   {
-    label: "Account",
+    labelKey: "navigation.account",
     icon: "https://res.cloudinary.com/pitz/image/upload/v1747237692/users-profiles-left_e2oejc.png",
     href: "/dashboard/account",
   },
   // {
-  //   label: "Settings",
+  //   labelKey: "navigation.settings",
   //   icon: "https://res.cloudinary.com/pitz/image/upload/v1747237691/settings_hi7ckx.png",
   //   href: "/dashboard/settings",
   // },

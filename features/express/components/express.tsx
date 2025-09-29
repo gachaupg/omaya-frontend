@@ -4,12 +4,16 @@ import ExpressExchangeForm from "./ExpressExchangeForm";
 import Exchanging from "./exchnaging";
 import SuccessPage from "./success";
 import { useTheme } from "@/context/theme";
+import { useExpressI18n } from "@/lib/useExpressI18n";
 
 const Express = () => {
   const [showExchanging, setShowExchanging] = useState(false);
   const [transactionData, setTransactionData] = useState<any>(null);
-  const [currentMode, setCurrentMode] = useState<"deposit" | "withdrawal">("deposit");
+  const [currentMode, setCurrentMode] = useState<"deposit" | "withdrawal">(
+    "deposit"
+  );
   const { isDark } = useTheme();
+  const { t } = useExpressI18n();
   const handleModeToggle = () => {
     setCurrentMode(currentMode === "deposit" ? "withdrawal" : "deposit");
   };
@@ -18,10 +22,15 @@ const Express = () => {
     <div className=" w-full mx-auto">
       <div className=" mb-1">
         {isDark ? (
-          <button 
+          <button
             onClick={handleModeToggle}
             className="hover:opacity-80 transition-opacity"
-            title={`Switch to ${currentMode === "deposit" ? "withdrawal" : "deposit"} mode`}
+            title={t("express.switchMode", "Switch to {{mode}} mode", {
+              mode:
+                currentMode === "deposit"
+                  ? t("express.mode.withdrawal", "withdrawal")
+                  : t("express.mode.deposit", "deposit"),
+            })}
           >
             <span className="flex items-center justify-center">
               <img
@@ -36,10 +45,15 @@ const Express = () => {
             </span>
           </button>
         ) : (
-          <button 
+          <button
             onClick={handleModeToggle}
             className="hover:opacity-80 transition-opacity"
-            title={`Switch to ${currentMode === "deposit" ? "withdrawal" : "deposit"} mode`}
+            title={t("express.switchMode", "Switch to {{mode}} mode", {
+              mode:
+                currentMode === "deposit"
+                  ? t("express.mode.withdrawal", "withdrawal")
+                  : t("express.mode.deposit", "deposit"),
+            })}
           >
             <span className="flex items-center justify-center">
               <img
@@ -69,9 +83,8 @@ const Express = () => {
           initialMode={currentMode}
         />
       )}
-       {/* <SuccessPage transactionData={transactionData} /> */}
+      {/* <SuccessPage transactionData={transactionData} /> */}
       {/* ddhhdhdgdhhdhd */}
-  
     </div>
   );
 };

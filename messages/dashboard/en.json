@@ -1,0 +1,102 @@
+{
+  "navigation": {
+    "dashboard": "Dashboard",
+    "express": "Express",
+    "expressChange": "Change",
+    "p2pTrading": "P2P Trading",
+    "swapCrypto": "Swap Crypto",
+    "account": "Account",
+    "notifications": "Notifications"
+  },
+  "userCard": {
+    "hello": "Hello, {{name}}!",
+    "verifiedProfile": "Verified Profile",
+    "userId": "User ID",
+    "userType": "User Type",
+    "individual": "Individual",
+    "back": "Back",
+    "profileImageUpdated": "Profile image updated successfully",
+    "imageSizeError": "Image size should be less than 5MB",
+    "updateError": "Failed to update profile image"
+  },
+  "transactions": {
+    "title": "Recent Transactions",
+    "viewAll": "View All",
+    "noTransactions": "No transactions found",
+    "loading": "Loading transactions...",
+    "asset": "Asset",
+    "transactionType": "Transaction Type",
+    "amount": "Amount",
+    "paymentMethod": "Payment Method",
+    "when": "When",
+    "types": {
+      "deposit": "Deposit",
+      "withdrawal": "Withdrawal",
+      "p2pBuy": "P2P Buy",
+      "p2pSell": "P2P Sell",
+      "swap": "Swap",
+      "exchange": "Exchange"
+    },
+    "status": {
+      "completed": "Completed",
+      "pending": "Pending",
+      "failed": "Failed",
+      "cancelled": "Cancelled",
+      "processing": "Processing"
+    },
+    "timeAgo": {
+      "minute": "{{count}} min ago",
+      "minutes": "{{count}} mins ago",
+      "hour": "{{count}} hour ago",
+      "hours": "{{count}} hours ago",
+      "day": "{{count}} day ago",
+      "days": "{{count}} days ago",
+      "week": "{{count}} week ago",
+      "weeks": "{{count}} weeks ago",
+      "month": "{{count}} month ago",
+      "months": "{{count}} months ago"
+    }
+  },
+  "volume": {
+    "myTotalVolume": "My Total Volume",
+    "exchange": "Exchange",
+    "p2pVolume": "P2P Volume",
+    "swap": "Swap",
+    "buy": "Buy"
+  },
+  "charts": {
+    "priceChart": "Price Chart",
+    "volumeChart": "Volume Chart",
+    "lineChart": "Line Chart",
+    "noData": "No data available"
+  },
+  "kyc": {
+    "verificationRequired": "KYC Verification Required",
+    "verificationInProgress": "Verification in Progress",
+    "verificationCompleted": "Verification Completed",
+    "verificationFailed": "Verification Failed"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "refresh": "Refresh",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "view": "View",
+    "details": "Details"
+  }
+}

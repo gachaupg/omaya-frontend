@@ -10,17 +10,20 @@ import Link from "next/link";
 import clsx from "clsx";
 import { navItems } from "@/utils/data";
 import { useTheme } from "@/context/theme";
+import { useDashboardI18n } from "@/lib/useDashboardI18n";
 
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useDashboardI18n();
 
-  const handleNavClick = (item: typeof navItems[0], e: React.MouseEvent) => {
+  const handleNavClick = (item: (typeof navItems)[0], e: React.MouseEvent) => {
+    const isInSection =
+      item.href === "/dashboard"
+        ? pathname === item.href
+        : pathname === item.href ||
+          (pathname && pathname.startsWith(item.href + "/"));
 
-    const isInSection = item.href === '/dashboard' 
-      ? pathname === item.href 
-      : pathname === item.href || (pathname && pathname.startsWith(item.href + '/'));
-    
     if (isInSection) {
       e.preventDefault();
       router.push(item.href);
@@ -28,24 +31,22 @@ export default function Sidebar() {
     }
   };
   const { isDark } = useTheme();
-  
+
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside
-        className={clsx(
-          "hidden md:block  left-0  ",
-          "w-[222.28px]"
-        )}
-      >
+      <aside className={clsx("hidden md:block  left-0  ", "w-[222.28px]")}>
         <nav>
           <ul className="space-y-1">
             {navItems.map((item) => {
-              const isActive = item.href === '/dashboard' 
-                ? pathname === item.href 
-                : pathname === item.href || (pathname && pathname.startsWith(item.href + '/'));
+              const isActive =
+                item.href === "/dashboard"
+                  ? pathname === item.href
+                  : pathname === item.href ||
+                    (pathname && pathname.startsWith(item.href + "/"));
+              const label = t(item.labelKey, item.labelKey);
               return (
-                <li key={item.label}>
+                <li key={item.labelKey}>
                   <Link
                     prefetch={true}
                     href={item.href}
@@ -60,10 +61,10 @@ export default function Sidebar() {
                   >
                     <img
                       src={item.icon}
-                      alt={item.label + " icon"}
+                      alt={label + " icon"}
                       className="w-6 h-6 object-contain"
                     />
-                    {item.label === "Express" ? (
+                    {item.labelKey === "navigation.express" ? (
                       <span
                         className={clsx(
                           "flex items-center justify-center gap-1",
@@ -75,16 +76,16 @@ export default function Sidebar() {
                         {isActive ? (
                           isDark ? (
                             <span className="flex items-center justify-center">
-                            <img
-                              src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
-                              alt=""
-                            />
-                            <img
-                              className="mt-2"
-                              src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                              alt=""
-                            />
-                          </span>
+                              <img
+                                src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
+                                alt=""
+                              />
+                              <img
+                                className="mt-2"
+                                src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                                alt=""
+                              />
+                            </span>
                           ) : (
                             <span className="flex items-center justify-center">
                               <img
@@ -113,7 +114,7 @@ export default function Sidebar() {
                         )}
                       </span>
                     ) : (
-                      item.label
+                      label
                     )}
                   </Link>
                 </li>
@@ -128,11 +129,14 @@ export default function Sidebar() {
         <nav className="px-6">
           <ul className="flex items-center space-x-4 py-3">
             {navItems.map((item) => {
-              const isActive = item.href === '/dashboard' 
-                ? pathname === item.href 
-                : pathname === item.href || (pathname && pathname.startsWith(item.href + '/'));
+              const isActive =
+                item.href === "/dashboard"
+                  ? pathname === item.href
+                  : pathname === item.href ||
+                    (pathname && pathname.startsWith(item.href + "/"));
+              const label = t(item.labelKey, item.labelKey);
               return (
-                <li key={item.label}>
+                <li key={item.labelKey}>
                   <Link
                     href={item.href}
                     onClick={(e) => handleNavClick(item, e)}
@@ -145,10 +149,10 @@ export default function Sidebar() {
                   >
                     <img
                       src={item.icon}
-                      alt={item.label + " icon"}
+                      alt={label + " icon"}
                       className="w-5 h-5 object-contain"
                     />
-                    {item.label === "Express" ? (
+                    {item.labelKey === "navigation.express" ? (
                       <span
                         className={clsx(
                           "flex items-center justify-center gap-1 min-h-[20px]",
@@ -160,7 +164,7 @@ export default function Sidebar() {
                         <span
                           className={isActive ? "font-bold" : "font-normal"}
                         >
-                          Express
+                          {t("navigation.express", "Express")}
                         </span>
                         <svg
                           width="28"
@@ -204,11 +208,16 @@ export default function Sidebar() {
                           className={isActive ? "font-bold" : "font-normal"}
                           style={{ marginLeft: "-6px" }}
                         >
-                          {isActive ? "Change" : "CHANGE"}
+                          {isActive
+                            ? t("navigation.expressChange", "Change")
+                            : t(
+                                "navigation.expressChange",
+                                "CHANGE"
+                              ).toUpperCase()}
                         </span>
                       </span>
                     ) : (
-                      item.label
+                      label
                     )}
                   </Link>
                 </li>

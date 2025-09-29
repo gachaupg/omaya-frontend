@@ -26,7 +26,11 @@ import {
 import PaymentMethodsModal from "../../../p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal";
 import InfoModal from "./info";
 import { debugAssetFetching } from "../../../../lib/utils/debugAssets";
-import { useAssetsDisplay, usePaymentMethodsDisplay } from "../../hooks/useDataDisplay";
+import {
+  useAssetsDisplay,
+  usePaymentMethodsDisplay,
+} from "../../hooks/useDataDisplay";
+import { useExpressI18n } from "@/lib/useExpressI18n";
 
 // Add UserPaymentDetail interface
 interface UserPaymentDetail {
@@ -53,9 +57,12 @@ const UserPaymentSelector = ({
   onRemove: (detail: UserPaymentDetail) => void;
   selectedDetails: UserPaymentDetail[];
 }) => {
+  const { t } = useExpressI18n();
   return (
     <div className="bg-[#1D1D23] rounded-2xl border border-[#39394a] p-4">
-      <h3 className="text-white font-semibold mb-3">Select Payment Methods</h3>
+      <h3 className="text-white font-semibold mb-3">
+        {t("express.selectPaymentMethods", "Select Payment Methods")}
+      </h3>
       <div className="space-y-2">
         {userPaymentDetails && userPaymentDetails.length > 0 ? (
           userPaymentDetails.map((detail) => {
@@ -74,8 +81,10 @@ const UserPaymentSelector = ({
                   <div className="text-white font-medium">
                     {detail.payment_provider_name ||
                       detail.provider_name ||
-                      "Unknown Provider"}{" "}
-                    - {detail.payment_method_name || "Unknown Method"}
+                      t("express.unknownProvider", "Unknown Provider")}{" "}
+                    -{" "}
+                    {detail.payment_method_name ||
+                      t("express.unknownMethod", "Unknown Method")}
                   </div>
                   <div className="text-[#788099] text-sm">
                     {detail.account_name} ({detail.account_number})
@@ -95,14 +104,16 @@ const UserPaymentSelector = ({
                       : "bg-[#1D8751] text-white hover:bg-[#166b3e]"
                   }`}
                 >
-                  {isSelected ? "Remove" : "Select"}
+                  {isSelected
+                    ? t("express.remove", "Remove")
+                    : t("express.select", "Select")}
                 </button>
               </div>
             );
           })
         ) : (
           <div className="text-center text-[#788099] py-4">
-            No payment details available
+            {t("express.noPaymentDetails", "No payment details available")}
           </div>
         )}
       </div>
@@ -146,6 +157,7 @@ export default function WithdrawalForm({
   onModeChange,
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
+  const { t } = useExpressI18n();
   const { adminPaymentDetails, loading, error } = useSelector(
     (state: any) => state.payment
   );
@@ -202,14 +214,14 @@ export default function WithdrawalForm({
       console.log("=== Starting debug asset fetch for express withdrawal ===");
       console.log("Current exchange assets:", assets);
       console.log("Current swap assets:", swapAssets);
-      
+
       // Force refresh both asset types
       console.log("🔄 Force refreshing exchange assets...");
       await dispatch(fetchAssets(true)).unwrap();
-      
+
       console.log("🔄 Force refreshing swap assets...");
       await dispatch(fetchSupportedAssets(true)).unwrap();
-      
+
       console.log("✅ Assets force refreshed");
     } catch (error) {
       console.error("Debug failed:", error);
@@ -389,9 +401,9 @@ export default function WithdrawalForm({
         console.log("DEBUG: Exchange assets loaded in express withdrawal:", {
           hasAssets: !!data?.assets,
           assetsLength: data?.assets?.length || 0,
-          totalBalance: data?.total_wallet_balance
+          totalBalance: data?.total_wallet_balance,
         });
-        
+
         // If no assets in cache, force refresh
         if (!data?.assets || data.assets.length === 0) {
           console.log("🔄 No exchange assets in cache, forcing refresh...");
@@ -400,7 +412,10 @@ export default function WithdrawalForm({
         return data;
       })
       .catch((error: unknown) => {
-        console.error("Failed to fetch exchange assets from cache, trying force refresh:", error);
+        console.error(
+          "Failed to fetch exchange assets from cache, trying force refresh:",
+          error
+        );
         // If cache fetch fails, try force refresh
         return dispatch(fetchAssets(true))
           .unwrap()
@@ -429,9 +444,9 @@ export default function WithdrawalForm({
       .then((data) => {
         console.log("DEBUG: Swap assets loaded in express withdrawal:", {
           hasAssets: !!data,
-          assetsLength: data?.length || 0
+          assetsLength: data?.length || 0,
         });
-        
+
         // If no assets in cache, force refresh
         if (!data || data.length === 0) {
           console.log("🔄 No swap assets in cache, forcing refresh...");
@@ -440,25 +455,43 @@ export default function WithdrawalForm({
         return data;
       })
       .catch((error: unknown) => {
-        console.error("Failed to fetch swap assets from cache, trying force refresh:", error);
+        console.error(
+          "Failed to fetch swap assets from cache, trying force refresh:",
+          error
+        );
         // If cache fetch fails, try force refresh
         return dispatch(fetchSupportedAssets(true))
           .unwrap()
           .catch((refreshError: unknown) => {
-            console.error("Failed to fetch swap assets even with force refresh:", refreshError);
-            
+            console.error(
+              "Failed to fetch swap assets even with force refresh:",
+              refreshError
+            );
+
             // Only show error if it's a network issue, not cache issues
             if (refreshError instanceof Error) {
-              if (refreshError.message.includes("Network Error") || refreshError.message.includes("Network connection issue")) {
-                showToast.warning("Network Issue", "Unable to fetch assets due to network problems. Using fallback data.");
+              if (
+                refreshError.message.includes("Network Error") ||
+                refreshError.message.includes("Network connection issue")
+              ) {
+                showToast.warning(
+                  "Network Issue",
+                  "Unable to fetch assets due to network problems. Using fallback data."
+                );
               } else if (refreshError.message.includes("Server Error")) {
-                showToast.error("Server Error", "Unable to fetch assets from server. Please try again later.");
+                showToast.error(
+                  "Server Error",
+                  "Unable to fetch assets from server. Please try again later."
+                );
               } else if (!refreshError.message.includes("Cache")) {
                 // Only show error if it's not a cache-related issue
-                showToast.error("Asset Loading Error", `Failed to fetch swap assets: ${refreshError.message}`);
+                showToast.error(
+                  "Asset Loading Error",
+                  `Failed to fetch swap assets: ${refreshError.message}`
+                );
               }
             }
-            
+
             // Set fallback assets so the form can still work
             const fallbackAssets = [
               {
@@ -468,25 +501,25 @@ export default function WithdrawalForm({
                 network: "BSC",
                 range_commissions: [{ commission: "2" }],
                 commission: "2",
-                fee_rate: "2"
+                fee_rate: "2",
               },
               {
                 ticker: "USDT",
-                symbol: "USDT", 
+                symbol: "USDT",
                 name: "USD Coin",
                 network: "BSC",
                 range_commissions: [{ commission: "2" }],
                 commission: "2",
-                fee_rate: "2"
-              }
+                fee_rate: "2",
+              },
             ];
-            
+
             // Update the Redux store with fallback assets
             dispatch({
               type: "swap/fetchSupportedAssets/fulfilled",
-              payload: fallbackAssets
+              payload: fallbackAssets,
             });
-            
+
             throw refreshError;
           });
       });
@@ -494,7 +527,11 @@ export default function WithdrawalForm({
 
   // Auto-select first asset and calculate received amount when assets are loaded
   useEffect(() => {
-    if (assetsDisplay.shouldShowData && assetsDisplay.displayData.length > 0 && !selectedAsset) {
+    if (
+      assetsDisplay.shouldShowData &&
+      assetsDisplay.displayData.length > 0 &&
+      !selectedAsset
+    ) {
       // Sort assets to get USDT on BSC first, then USDT on BSC, then others
       const sortedAssets = [...assetsDisplay.displayData].sort((a, b) => {
         const tickerA = (a.ticker || a.symbol || a.name || "")
@@ -2261,7 +2298,8 @@ export default function WithdrawalForm({
   return (
     <div className="w-full min-h-screen flex flex-col dark:bg-[#18181D]  ">
       <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
-        <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Transaction Info
+        <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span>{" "}
+        Transaction Info
       </h2>
 
       <div className="w-full max-w-4xl mx-auto text-white">
@@ -3066,11 +3104,13 @@ export default function WithdrawalForm({
                         : "Select Payment Method"}
                   </option>
                   <option value="test">Test Payment Method</option>
-                  {paymentMethodsDisplay.displayData?.map((payment: any, index: number) => (
-                    <option key={index} value={payment.provider_name}>
-                      {payment.provider_name} - {payment.payment_method}
-                    </option>
-                  ))}
+                  {paymentMethodsDisplay.displayData?.map(
+                    (payment: any, index: number) => (
+                      <option key={index} value={payment.provider_name}>
+                        {payment.provider_name} - {payment.payment_method}
+                      </option>
+                    )
+                  )}
                 </select>
               </div>
               {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
@@ -3188,8 +3228,10 @@ export default function WithdrawalForm({
               </svg>
             </div>
             <span className="text-[#35353e] dark:text-[#788099] text-sm font-medium">
-              This is only an estimated price based on current market rates. The
-              final price will be confirmed when we receive the funds.
+              {t(
+                "express.estimate.notice",
+                "This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds."
+              )}
             </span>
           </div>
         </div>
@@ -3459,8 +3501,14 @@ export default function WithdrawalForm({
             <div className="flex items-center text-[#35353e] dark:text-[#788099] text-[16px] font-semibold">
               <FaExclamationCircle className="mr-2 text-[#1D8751]" />
               <span>
-                This is only an estimated price based on current market rates.
-                The final price will be confirmed when we receive the funds.
+                {t(
+                  "express.estimate.line1",
+                  "This is only an estimated price based on current market rates."
+                )}{" "}
+                {t(
+                  "express.estimate.line2",
+                  "The final price will be confirmed when we receive the funds."
+                )}
               </span>
             </div>
 
@@ -3535,7 +3583,6 @@ export default function WithdrawalForm({
       {validationErrors.length > 0 && (
         <div className="max-w-4xl mt-4 mx-auto w-full px-2 mb-4">
           <div className="bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] rounded-2xl p-4">
-            
             <ul className="list-disc list-inside text-[#1D8751] space-y-1">
               {validationErrors.map((error, index) => (
                 <li key={index}>{error}</li>

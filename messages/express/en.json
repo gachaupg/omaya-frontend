@@ -1,0 +1,14 @@
+{
+  "express.mode.deposit": "deposit",
+  "express.mode.withdrawal": "withdrawal",
+  "express.switchMode": "Switch to {{mode}} mode",
+  "express.selectPaymentMethods": "Select Payment Methods",
+  "express.unknownProvider": "Unknown Provider",
+  "express.unknownMethod": "Unknown Method",
+  "express.remove": "Remove",
+  "express.select": "Select",
+  "express.noPaymentDetails": "No payment details available",
+  "express.estimate.notice": "This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds.",
+  "express.estimate.line1": "This is only an estimated price based on current market rates.",
+  "express.estimate.line2": "The final price will be confirmed when we receive the funds."
+}

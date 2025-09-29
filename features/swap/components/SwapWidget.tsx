@@ -28,9 +28,11 @@ import { SupportedAsset, SwapEstimate } from "../types";
 import { showToast } from "@/lib/utils/toast";
 import { handleApiError } from "@/lib/utils/errorHandler";
 import SuccessPage from "@/features/express/components/success";
+import { useSwapI18n } from "@/lib/useSwapI18n";
 
 const SwapWidget = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const { t } = useSwapI18n();
   const {
     fromAsset,
     toAsset,
@@ -114,7 +116,8 @@ const SwapWidget = () => {
     if (
       estimate &&
       !estimateLoading &&
-      (estimate.toAmount !== undefined || estimate.estimated_amount !== undefined)
+      (estimate.toAmount !== undefined ||
+        estimate.estimated_amount !== undefined)
     ) {
       const amount = estimate.toAmount || estimate.estimated_amount;
       if (amount !== undefined) {
@@ -349,15 +352,16 @@ const SwapWidget = () => {
       </div>
     );
   }
-  
- return (
+
+  return (
     <div className="mx-auto dark:text-white text-gray-900 min-h-screen">
-      <h2 className="text-lg font-semibold mb-6 text-gray-900 dark:text-white">Swap Crypto</h2>
+      <h2 className="text-lg font-semibold mb-6 text-gray-900 dark:text-white">
+        {t("swap.title", "Swap Crypto")}
+      </h2>
 
       {/* Step Indicator */}
       {/* <StepIndicator currentStep={currentStep} /> */}
 
-    
       {/* Only render CopyAddressStep as a new page when currentStep is 'copy-address' */}
       {currentStep === "copy-address" ? (
         <CopyAddressStep

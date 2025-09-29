@@ -1,0 +1,19 @@
+{
+  "swap.title": "Swap Crypto",
+  "swap.transactionInfo": "Transaction Info",
+  "swap.youSend": "You Send",
+  "swap.youReceive": "You Receive",
+  "swap.asset": "Asset",
+  "swap.enterAmount": "Enter amount",
+  "swap.selectAsset": "Select Asset",
+  "swap.searchAssets": "Search assets...",
+  "swap.noAssetsFound": "No assets found",
+  "swap.noAssetsAvailable": "No assets available",
+  "swap.disclaimer": "This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds.",
+  "swap.submit": "Submit",
+  "swap.loading": "Loading...",
+  "swap.error.loadingSwap": "Error Loading Swap",
+  "swap.error.tryAgain": "Try Again",
+  "swap.error.estimateTitle": "Estimate Error",
+  "swap.error.genericTitle": "Error"
+}
