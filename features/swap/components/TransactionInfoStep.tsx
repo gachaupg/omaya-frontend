@@ -3,6 +3,7 @@ import AssetDropdown from "./AssetDropdown";
 import EstimatedPriceDisplay from "./EstimatedPriceDisplay";
 import { SupportedAsset, SwapEstimate } from "../types";
 import { useTheme } from "@/context/theme";
+import SuccessPage from "./success";
 
 interface TransactionInfoStepProps {
   fromAsset: SupportedAsset | null;
@@ -478,19 +479,11 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
 
         {/* Disclaimer Banner */}
         <div className="flex items-center rounded-2xl px-4 py-3 mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
-              <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                <path d="M12 8v4m0 4h.01" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2"/>
-              </svg>
-            </div>
-            <span className="text-gray-700 dark:text-white text-sm font-medium">
-              This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds.
-            </span>
-          </div>
+          
         </div>
-
+{/* <SuccessPage
+            // 
+        /> */}
         {/* Submit Button */}
         {!hideContinueButton && (
           <div className="mt-4">

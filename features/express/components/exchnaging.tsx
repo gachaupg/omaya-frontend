@@ -61,6 +61,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
   // Store final websocket data for success page
   const [finalWebsocketData, setFinalWebsocketData] = useState<any>(null);
+  // Store snapshot of websocket data when navigating to success (prevents data changes)
+  const [snapshotWebsocketData, setSnapshotWebsocketData] = useState<any>(null);
   const [liveAmount, setLiveAmount] = useState<number | null>(null);
   const [liveCurrency, setLiveCurrency] = useState<string | null>(null);
   const [amountHistory, setAmountHistory] = useState<
@@ -296,32 +298,73 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           let amountToUpdate: number | null = null;
           let currencyToUpdate: string | null = null;
 
+          // Store websocket data for potential success page use
+          setFinalWebsocketData(data);
+
           // Check regular amount format
           if (data.data?.amount) {
             const amount = parseFloat(data.data.amount);
             if (!isNaN(amount)) {
               amountToUpdate = amount;
-              currencyToUpdate = data.data?.currency || "USDT";
+              currencyToUpdate = data.data?.currency || (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT");
             }
           }
 
-          // Check ChangeNow status update format - only consider amountFrom
+          // Check ChangeNow status update format and direct flow format
           if (data.type === "status_update" && data.data) {
-            const changeNowData = data.data as any; // Type assertion for ChangeNow format
+            const wsData = data.data as any;
 
-            // Store websocket data for potential success page use
-            setFinalWebsocketData(data);
-
-            // Only consider amountFrom from ChangeNow
+            // Handle amount_from (what user sent/paid)
             if (
-              changeNowData.amountFrom !== null &&
-              changeNowData.amountFrom !== undefined
+              wsData.amount_from !== null &&
+              wsData.amount_from !== undefined
             ) {
-              const amountFrom = parseFloat(changeNowData.amountFrom);
+              const amountFrom = parseFloat(wsData.amount_from);
               if (!isNaN(amountFrom)) {
                 amountToUpdate = amountFrom;
-                currencyToUpdate =
-                  changeNowData.fromCurrency?.toUpperCase() || "USDT";
+                currencyToUpdate = wsData.from_currency?.toUpperCase() || 
+                                 (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT");
+              }
+            }
+
+            // Handle amount_to (what user receives) - for display purposes
+            if (
+              wsData.amount_to !== null &&
+              wsData.amount_to !== undefined
+            ) {
+              // Store the received amount for success page
+              setLiveAmount(parseFloat(wsData.amount_to));
+              setLiveCurrency(wsData.to_currency?.toUpperCase() || 
+                            (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT"));
+            }
+
+            // Handle expected amounts if actual amounts are not available
+            if (amountToUpdate === null && wsData.amount_expected_from !== null && wsData.amount_expected_from !== undefined) {
+              const expectedAmount = parseFloat(wsData.amount_expected_from);
+              if (!isNaN(expectedAmount)) {
+                amountToUpdate = expectedAmount;
+                currencyToUpdate = wsData.from_currency?.toUpperCase() || 
+                                 (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT");
+              }
+            }
+
+            // Handle paid_amount for direct flows
+            if (wsData.paid_amount !== null && wsData.paid_amount !== undefined) {
+              const paidAmount = parseFloat(wsData.paid_amount);
+              if (!isNaN(paidAmount)) {
+                amountToUpdate = paidAmount;
+                currencyToUpdate = wsData.from_currency?.toUpperCase() || 
+                                 (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT");
+              }
+            }
+
+            // Handle estimated_amount for direct flows
+            if (wsData.estimated_amount !== null && wsData.estimated_amount !== undefined) {
+              const estimatedAmount = parseFloat(wsData.estimated_amount);
+              if (!isNaN(estimatedAmount)) {
+                setLiveAmount(estimatedAmount);
+                setLiveCurrency(wsData.to_currency?.toUpperCase() || 
+                              (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT"));
               }
             }
           }
@@ -341,14 +384,19 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
             // Track amount changes in history
             setAmountHistory((prev) => {
-              const changeNowData = data.data as any; // Type assertion for ChangeNow format
+              const wsData = data.data as any;
               const newEntry = {
                 amount: amountToUpdate!,
                 timestamp:
+                  data.timestamp ||
+                  wsData?.last_checked ||
+                  wsData?.updatedAt ||
                   data.data?.timestamp ||
-                  (changeNowData as any)?.updatedAt ||
                   new Date().toISOString(),
-                currency: currencyToUpdate || transactionData?.details?.to_currency || "USDT",
+                currency: currencyToUpdate || 
+                         wsData?.from_currency?.toUpperCase() || 
+                         transactionData?.details?.to_currency || 
+                         (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT"),
               };
 
               // Only add if amount is different from last entry
@@ -491,7 +539,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             setCurrentStatus(uiStatus);
 
             // Auto-navigate to success page when transaction is completed
-            const shouldAutoNavigate = status === "completed" && (
+            // Only navigate when the UI status is "completed", not when it's "sending"
+            const shouldAutoNavigate = uiStatus === "completed" && (
               data.type === "final_status" || 
               data.is_final === true || 
               (data as any).is_final === true ||
@@ -501,7 +550,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             );
             console.log("DEBUG: Auto-navigation check:", {
               status,
-              "status === completed": status === "completed",
+              uiStatus,
+              "uiStatus === completed": uiStatus === "completed",
               "data.type": data.type,
               "data.type === final_status": data.type === "final_status",
               "data.is_final": data.is_final,
@@ -515,6 +565,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               console.log("🚀 AUTO-NAVIGATION TRIGGERED! Redirecting to success page in 2 seconds...");
               // Store final websocket data for success page
               setFinalWebsocketData(data);
+              // Create snapshot of websocket data to prevent changes in success page
+              setSnapshotWebsocketData(data);
               // Give users time to see the completion status before redirecting
               setTimeout(() => {
                 console.log("🎉 NAVIGATING TO SUCCESS PAGE NOW!");
@@ -526,6 +578,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             if (status === "agent_approve") {
               // Store final websocket data for success page
               setFinalWebsocketData(data);
+              // Create snapshot of websocket data to prevent changes in success page
+              setSnapshotWebsocketData(data);
               // Give users time to see the completion status before redirecting
               setTimeout(() => {
                 setShowSuccess(true);
@@ -570,6 +624,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               // Check if P2P deposit is completed
               if (depositData.status === "completed") {
                 console.log("🎉 P2P DEPOSIT COMPLETED! Redirecting to success page in 2 seconds...");
+                
+                // Create snapshot of websocket data to prevent changes in success page
+                setSnapshotWebsocketData(data);
                 
                 // Give users time to see the completion status before redirecting
                 setTimeout(() => {
@@ -653,13 +710,13 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     isConnected,
   ]);
 
-  // If showing success page, render it with real transaction data and websocket data
+  // If showing success page, render it with real transaction data and snapshot websocket data
   if (showSuccess) {
     return (
     <div className="w-full min-h-screen flex flex-col items-center justify-center pt-2">
         <SuccessPage
         transactionData={effectiveTransactionData}
-        websocketData={finalWebsocketData}
+        websocketData={snapshotWebsocketData || finalWebsocketData}
       />
     </div>
     );
@@ -714,7 +771,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     effectiveTransactionData?.asset?.symbol ||
                     effectiveTransactionData?.asset?.name ||
                     transactionData?.details?.to_currency ||
-                    "USDT"}
+                    (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
                 </span>
               </span>
             </div>
@@ -724,7 +781,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   isDark ? 'text-[#7B7B7B]' : 'text-gray-600'
                 } text-xs mb-1`}>
                   Initial: {effectiveTransactionData?.amount || 0}{" "}
-                  {effectiveTransactionData?.asset?.ticker || "USDT"}
+                  {effectiveTransactionData?.asset?.ticker || (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
                 </div>
               )} */}
 
@@ -756,7 +813,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                       effectiveTransactionData?.asset?.ticker ||
                       effectiveTransactionData?.asset?.symbol ||
                       effectiveTransactionData?.asset?.name ||
-                      "USDT"}
+                      (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
                   </div>
                   <div className="text-green-400 text-xs">
                     Current: {liveAmount.toFixed(8)}{" "}
@@ -764,7 +821,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                       effectiveTransactionData?.asset?.ticker ||
                       effectiveTransactionData?.asset?.symbol ||
                       effectiveTransactionData?.asset?.name ||
-                      "USDT"}
+                      (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
                   </div>
                 </div>
               )}
@@ -802,7 +859,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                         isDark ? "text-white" : "text-gray-900"
                       } text-sm font-semibold`}
                     >
-                      {effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || "USDT"}
+                      {effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
                     </span>
                     <span className="ml-2 bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
                       {effectiveTransactionData?.asset?.network || effectiveTransactionData?.network?.network_type || "BSC"}
@@ -1457,7 +1514,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     effectiveTransactionData?.asset?.image ||
                     "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                   }
-                  alt={effectiveTransactionData?.asset?.symbol || "USDT"}
+                  alt={effectiveTransactionData?.asset?.symbol || (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
                   className="w-8 h-8 rounded-full"
                   onError={(e) => {
                     e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
@@ -1469,7 +1526,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                       isDark ? "text-white" : "text-gray-900"
                     } text-base font-semibold`}
                   >
-                    {effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || "USDT"}
+                    {effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
                   </div>
                   <div
                     className={`${
@@ -1495,7 +1552,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     effectiveTransactionData?.asset?.image ||
                     "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                   }
-                  alt={effectiveTransactionData?.asset?.symbol || "USDT"}
+                  alt={effectiveTransactionData?.asset?.symbol || (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
                   className="w-8 h-8 rounded-full"
                   onError={(e) => {
                     e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
@@ -1507,7 +1564,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                       isDark ? "text-white" : "text-gray-900"
                     } text-base font-semibold inline-block align-middle`}
                   >
-                    {effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || "USDT"}
+                    {effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
                   </div>
                   <span
                     className={`${
@@ -1563,6 +1620,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           </div>
         </div>
       </div>
+
      
       <div className="w-full max-w-4xl rounded-2xl flex ">
        
@@ -1573,7 +1631,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           <ul className="list-disc list-inside space-y-1">
             <li className="text-white text-sm">
               Only send
-              {`${ transactionData?.asset?.ticker || transactionData?.asset?.symbol || transactionData?.asset?.name || "USDT"} (${transactionData?.asset?.network})`}{" "}
+              {`${ transactionData?.asset?.ticker || transactionData?.asset?.symbol || transactionData?.asset?.name || (transactionData?.type === "withdrawal" ? "USD" : "USDT")} (${transactionData?.asset?.network})`}{" "}
               to this address{" "}
             </li>
             <li className="text-white text-sm">
