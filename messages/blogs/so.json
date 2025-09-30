@@ -1,0 +1,15 @@
+{
+  "blogs.title": "Ku raaxayso Blog-geena oo ku saabsan cusboonaysiinta shirkadda",
+  "blogs.tab.news": "War",
+  "blogs.tab.blog": "Blog",
+  "blogs.search": "Raadi",
+  "blogs.loading": "Qormooyinka blog-ga ayaa la soo dejinayaa...",
+  "blogs.error.title": "Khalad:",
+  "blogs.error.hint": "Fadlan hubi dejinta Sanity-gaaga ka dibna isku day mar kale.",
+  "blogs.error.retry": "Isku day mar kale",
+  "blogs.empty.search": "Qormooyin la mid ah raadintaada lama helin.",
+  "blogs.empty.none": "Qormooyinka {{tab}} lama heli karo.",
+  "blogs.empty.hint": "Fadlan ku dar qormooyin blog-ga ee Sanity CMS.",
+  "blogs.byAuthor": "Qoray {{author}}",
+  "blogs.readArticle": "Akhri Qormada"
+}

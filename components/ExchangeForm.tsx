@@ -1,6 +1,7 @@
 import Image from "next/image";
 import React, { useState, useEffect } from "react";
 import { useTheme } from "@/context/theme";
+import { useMarketingI18n } from "@/lib/useMarketingI18n";
 
 /**
  * ExchangeForm – TypeScript version with BTC ⇄ ETH swap support.
@@ -26,6 +27,7 @@ interface Preset {
 
 export default function ExchangeForm() {
   const { isDark } = useTheme();
+  const { t } = useMarketingI18n();
 
   /* ------------------- State ------------------- */
   const [activeTab, setActiveTab] = useState<Tab>("express");
@@ -115,14 +117,16 @@ export default function ExchangeForm() {
                 : "text-gray-500 dark:text-white/50"
             }`}
           >
-            Swap Crypto
+            {t("marketing.exchange.tabs.swap", "Swap Crypto")}
           </h3>
         </TabButton>
       </div>
 
       {/* Pay card */}
       <div className="flex flex-col p-5 border border-gray-300 dark:border-white/20 rounded-xl -mb-5 mt-10">
-        <h2 className="text-gray-900 dark:text-white text-sm mb-3">You pay</h2>
+        <h2 className="text-gray-900 dark:text-white text-sm mb-3">
+          {t("marketing.exchange.pay", "You pay")}
+        </h2>
         <div className="flex justify-between">
           <div className="flex items-center gap-2">
             <Image
@@ -137,7 +141,7 @@ export default function ExchangeForm() {
           </div>
           <div>
             <p className="text-gray-500 dark:text-[#8C8CA1] text-xs mb-2">
-              Amount
+              {t("marketing.exchange.amount", "Amount")}
             </p>
             <AmountInput amount={payAmount} onChange={setPayAmount} />
           </div>
@@ -158,7 +162,9 @@ export default function ExchangeForm() {
 
       {/* Get card */}
       <div className="flex flex-col p-5 border border-gray-300 dark:border-white/20 -mt-5 rounded-xl">
-        <h2 className="text-gray-900 dark:text-white text-sm mb-3">You get</h2>
+        <h2 className="text-gray-900 dark:text-white text-sm mb-3">
+          {t("marketing.exchange.get", "You get")}
+        </h2>
         <div className="flex justify-between">
           <div className="flex items-center gap-2">
             <Image
@@ -180,7 +186,7 @@ export default function ExchangeForm() {
           </div>
           <div>
             <p className="text-gray-500 dark:text-[#8C8CA1] text-xs mb-2">
-              Amount
+              {t("marketing.exchange.amount", "Amount")}
             </p>
             <AmountInput amount={getAmount} onChange={setGetAmount} />
           </div>
@@ -197,8 +203,10 @@ export default function ExchangeForm() {
             height={24}
           />
           <p className="w-full text-xs text-gray-600 dark:text-white/70">
-            This is only an estimated price based on current market rates. The
-            final price will be confirmed when we receive the funds.
+            {t(
+              "marketing.exchange.note",
+              "This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds."
+            )}
           </p>
         </div>
 

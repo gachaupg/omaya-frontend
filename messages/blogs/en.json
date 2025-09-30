@@ -1,0 +1,15 @@
+{
+  "blogs.title": "Enjoy Our Blog On the Latest Company Updates",
+  "blogs.tab.news": "News",
+  "blogs.tab.blog": "Blog",
+  "blogs.search": "Search",
+  "blogs.loading": "Loading blog posts...",
+  "blogs.error.title": "Error:",
+  "blogs.error.hint": "Please check your Sanity configuration and try again.",
+  "blogs.error.retry": "Try Again",
+  "blogs.empty.search": "No posts found matching your search.",
+  "blogs.empty.none": "No {{tab}} posts available.",
+  "blogs.empty.hint": "Please add some blog posts to your Sanity CMS.",
+  "blogs.byAuthor": "By {{author}}",
+  "blogs.readArticle": "Read Article"
+}

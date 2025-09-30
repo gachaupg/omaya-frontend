@@ -10,7 +10,11 @@ import { fetchUserPaymentDetails } from "../../p2p/slices/paymentMethodsSlice";
 import { Asset } from "../../p2p/types";
 import { AlertCircle } from "lucide-react";
 import { calculateCommission } from "@/features/exchange/components/utils/calculations/commissionCalculator";
-import { calculateNetworkFee, calculateTotalFees } from "@/features/exchange/components/utils/calculations/feeCalculator";
+import {
+  calculateNetworkFee,
+  calculateTotalFees,
+} from "@/features/exchange/components/utils/calculations/feeCalculator";
+import { useRatesI18n } from "@/lib/useRatesI18n";
 
 interface UserPaymentDetail {
   id: number;
@@ -21,6 +25,7 @@ interface UserPaymentDetail {
 }
 
 const RatesCalculator = () => {
+  const { t } = useRatesI18n();
   const [activeTab, setActiveTab] = useState("deposit");
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
@@ -294,49 +299,50 @@ const RatesCalculator = () => {
   };
 
   function mapP2PAssetToExchangeAsset(asset: Asset): any {
-  return {
-    ...asset,
-    name: asset.symbol, // fallback if name missing
-    // Add any other required fields with sensible defaults if missing
-  };
-}
+    return {
+      ...asset,
+      name: asset.symbol, // fallback if name missing
+      // Add any other required fields with sensible defaults if missing
+    };
+  }
 
-// Helper to map P2P Network to Exchange Network type
-function mapP2PNetworkToExchangeNetwork(network: any): any {
-  if (!network) return null;
-  return {
-    ...network,
-    // Add/rename properties as needed to match the expected Network type
-  };
-}
+  // Helper to map P2P Network to Exchange Network type
+  function mapP2PNetworkToExchangeNetwork(network: any): any {
+    if (!network) return null;
+    return {
+      ...network,
+      // Add/rename properties as needed to match the expected Network type
+    };
+  }
 
-const mappedAsset = selectedAsset ? mapP2PAssetToExchangeAsset(selectedAsset) : null;
-const mappedNetwork = selectedAsset?.networks?.[0]
-  ? mapP2PNetworkToExchangeNetwork(selectedAsset.networks[0])
-  : null;
+  const mappedAsset = selectedAsset
+    ? mapP2PAssetToExchangeAsset(selectedAsset)
+    : null;
+  const mappedNetwork = selectedAsset?.networks?.[0]
+    ? mapP2PNetworkToExchangeNetwork(selectedAsset.networks[0])
+    : null;
 
-  
-const amountNum = parseFloat(amount) || 0;
+  const amountNum = parseFloat(amount) || 0;
 
-const { commission, commissionRate } = mappedAsset
-  ? calculateCommission(mappedAsset, amountNum)
-  : { commission: 0, commissionRate: 0 };
+  const { commission, commissionRate } = mappedAsset
+    ? calculateCommission(mappedAsset, amountNum)
+    : { commission: 0, commissionRate: 0 };
 
-const networkFee = calculateNetworkFee("Crypto", mappedNetwork, amountNum);
+  const networkFee = calculateNetworkFee("Crypto", mappedNetwork, amountNum);
 
-const totalFees = calculateTotalFees(commission, networkFee);
+  const totalFees = calculateTotalFees(commission, networkFee);
 
-const assetAmount = amountNum + totalFees;
+  const assetAmount = amountNum + totalFees;
 
   return (
     <div className="bg-white dark:bg-[#18181D] p-6 rounded-2xl border border-gray-200 dark:border-[#35353E] shadow-md container mx-auto">
       <div className="relative flex flex-col gap-2">
         <div className="p-2 border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px]">
-          <p className="mb-2">You send</p>
+          <p className="mb-2">{t("rates.youSend", "You send")}</p>
           <div className="grid grid-cols-2 gap-2 mb-4 items-stretch">
             <div className="relative" ref={dropdownRef}>
               <label className="text-sm text-gray-600 dark:text-[#788099] mb-2 block">
-                Asset
+                {t("rates.asset", "Asset")}
               </label>
               <div
                 className="border border-[#E8EFF5] dark:border-[#35353E] p-3 rounded-[18px] flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors"
@@ -417,7 +423,7 @@ const assetAmount = amountNum + totalFees;
             </div>
             <div>
               <label className="text-sm text-gray-600 dark:text-[#788099] mb-2 block">
-                I want to recieve
+                {t("rates.iWantToReceive", "I want to receive")}
               </label>
               <div className="flex items-center border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px]">
                 <span className="p-3 text-[#1D8751]">$</span>
@@ -435,230 +441,254 @@ const assetAmount = amountNum + totalFees;
             </div>
           </div>
         </div>
-      
+
         {/* Centered Swap Icon */}
         <div className="flex justify-center relative -my-5 z-10">
           <div className="w-10 h-10 flex items-center justify-center rounded-full bg-white dark:bg-[#18181D] border border-[#E8EFF5] dark:border-[#35353E]">
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
               width="24"
               height="24"
               viewBox="0 0 24 24"
-              fill="none" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
+              fill="none"
+              strokeWidth="2"
+              strokeLinecap="round"
               strokeLinejoin="round"
             >
               {/* Down arrow (left side) - Orange */}
-              <path d="m3 16 4 4 4-4" stroke="#F79330"/>
-              <path d="M7 20V4" stroke="#F79330"/>
+              <path d="m3 16 4 4 4-4" stroke="#F79330" />
+              <path d="M7 20V4" stroke="#F79330" />
               {/* Up arrow (right side) - Green */}
-              <path d="m21 8-4-4-4 4" stroke="#1D8751"/>
-              <path d="M17 4v16" stroke="#1D8751"/>
+              <path d="m21 8-4-4-4 4" stroke="#1D8751" />
+              <path d="M17 4v16" stroke="#1D8751" />
             </svg>
           </div>
         </div>
 
         <div className="p-2 border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px]">
-          <p className="mb-2">Method</p>
+          <p className="mb-2">{t("rates.method", "Method")}</p>
           <div className="grid grid-cols-2 gap-2 mb-4 items-stretch">
-          <div className="relative" ref={methodDropdownRef}>
-            <label className="text-sm text-gray-600 dark:text-[#788099] mb-2 block">
-              Bank/Payment Method
-            </label>
-            <div
-              className="border border-[#E8EFF5] dark:border-[#35353E] p-3 rounded-[18px] flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors"
-              onClick={() => setIsMethodDropdownOpen(!isMethodDropdownOpen)}
-            >
-              <div className="flex items-center">
-                <FaUniversity />
-                <span className="ml-2 text-gray-900 dark:text-white">
-                  {selectedPaymentMethod || "Select Method"}
-                </span>
+            <div className="relative" ref={methodDropdownRef}>
+              <label className="text-sm text-gray-600 dark:text-[#788099] mb-2 block">
+                {t("rates.bankPaymentMethod", "Bank/Payment Method")}
+              </label>
+              <div
+                className="border border-[#E8EFF5] dark:border-[#35353E] p-3 rounded-[18px] flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors"
+                onClick={() => setIsMethodDropdownOpen(!isMethodDropdownOpen)}
+              >
+                <div className="flex items-center">
+                  <FaUniversity />
+                  <span className="ml-2 text-gray-900 dark:text-white">
+                    {selectedPaymentMethod ||
+                      t("rates.selectMethod", "Select Method")}
+                  </span>
+                </div>
+                <FiChevronDown
+                  className={`transition-transform duration-200 ${
+                    isMethodDropdownOpen ? "rotate-180" : ""
+                  }`}
+                />
               </div>
-              <FiChevronDown
-                className={`transition-transform duration-200 ${
-                  isMethodDropdownOpen ? "rotate-180" : ""
-                }`}
-              />
-            </div>
 
-            {/* Payment Method Dropdown */}
-            {isMethodDropdownOpen && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1D1D23] rounded-[18px] border border-gray-200 dark:border-gray-700 z-10 max-h-60 overflow-y-auto shadow-lg">
-                {userDetailsLoading ? (
-                  <div className="p-3 text-center text-gray-600 dark:text-[#788099]">
-                    Loading payment methods...
-                  </div>
-                ) : userDetailsError ? (
-                  <div className="p-3 text-center text-red-500">
-                    Error loading payment methods
-                  </div>
-                ) : allPaymentMethods.length > 0 ? (
-                  allPaymentMethods.map((method: string) => (
-                    <div
-                      key={method}
-                      className="p-3 flex items-center hover:bg-gray-100 dark:hover:bg-[#35353E] cursor-pointer transition-colors first:rounded-t-[18px] last:rounded-b-[18px]"
-                      onClick={() => handlePaymentMethodSelect(method)}
-                    >
-                      <FaUniversity />
-                      <span className="ml-2 font-medium text-gray-900 dark:text-white">
-                        {method}
-                      </span>
+              {/* Payment Method Dropdown */}
+              {isMethodDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1D1D23] rounded-[18px] border border-gray-200 dark:border-gray-700 z-10 max-h-60 overflow-y-auto shadow-lg">
+                  {userDetailsLoading ? (
+                    <div className="p-3 text-center text-gray-600 dark:text-[#788099]">
+                      {t("rates.loadingMethods", "Loading payment methods...")}
                     </div>
-                  ))
-                ) : (
-                  <div className="p-3 text-center text-gray-600 dark:text-[#788099]">
-                    No payment methods available
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="relative" ref={providerDropdownRef}>
-            <label className="text-sm text-gray-600 dark:text-[#788099] mb-2 block">
-              Provider
-            </label>
-            <div
-              className={`border border-[#E8EFF5] dark:border-[#35353E] p-3 rounded-[18px] flex items-center justify-between cursor-pointer transition-colors ${
-                selectedPaymentMethod
-                  ? "hover:bg-gray-100 dark:hover:bg-[#35353E]"
-                  : "opacity-50 cursor-not-allowed"
-              }`}
-              onClick={() =>
-                selectedPaymentMethod &&
-                setIsProviderDropdownOpen(!isProviderDropdownOpen)
-              }
-            >
-              <div className="flex items-center">
-                {selectedPaymentDetail ? (
-                  <div className="w-6 h-6 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-bold">
-                    {selectedPaymentDetail.account_name.charAt(0).toUpperCase()}
-                  </div>
-                ) : (
-                  <div className="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center">
-                    <span className="text-xs">?</span>
-                  </div>
-                )}
-                <span className="ml-2 text-gray-900 dark:text-white">
-                  {selectedProvider || "Select Provider"}
-                </span>
-              </div>
-              <FiChevronDown
-                className={`transition-transform duration-200 ${
-                  isProviderDropdownOpen ? "rotate-180" : ""
-                }`}
-              />
-            </div>
-
-            {/* Provider Dropdown */}
-            {isProviderDropdownOpen && selectedPaymentMethod && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1D1D23] rounded-[18px] border border-gray-200 dark:border-gray-700 z-10 max-h-60 overflow-y-auto shadow-lg">
-                {uniqueProviders.length > 0 ? (
-                  uniqueProviders.map((provider: string) => (
-                    <div
-                      key={provider}
-                      className="p-3 flex items-center hover:bg-gray-100 dark:hover:bg-[#35353E] cursor-pointer transition-colors first:rounded-t-[18px] last:rounded-b-[18px]"
-                      onClick={() => handleProviderSelect(provider)}
-                    >
-                      <div className="w-6 h-6 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-bold">
-                        {provider.charAt(0).toUpperCase()}
+                  ) : userDetailsError ? (
+                    <div className="p-3 text-center text-red-500">
+                      {t("rates.errorMethods", "Error loading payment methods")}
+                    </div>
+                  ) : allPaymentMethods.length > 0 ? (
+                    allPaymentMethods.map((method: string) => (
+                      <div
+                        key={method}
+                        className="p-3 flex items-center hover:bg-gray-100 dark:hover:bg-[#35353E] cursor-pointer transition-colors first:rounded-t-[18px] last:rounded-b-[18px]"
+                        onClick={() => handlePaymentMethodSelect(method)}
+                      >
+                        <FaUniversity />
+                        <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                          {method}
+                        </span>
                       </div>
-                      <span className="ml-2 font-medium text-gray-900 dark:text-white">
-                        {provider}
-                      </span>
+                    ))
+                  ) : (
+                    <div className="p-3 text-center text-gray-600 dark:text-[#788099]">
+                      {t("rates.noMethods", "No payment methods available")}
                     </div>
-                  ))
-                ) : (
-                  <div className="p-3 text-center text-gray-600 dark:text-[#788099]">
-                    No providers available for this method
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+                  )}
+                </div>
+              )}
+            </div>
 
+            <div className="relative" ref={providerDropdownRef}>
+              <label className="text-sm text-gray-600 dark:text-[#788099] mb-2 block">
+                {t("rates.provider", "Provider")}
+              </label>
+              <div
+                className={`border border-[#E8EFF5] dark:border-[#35353E] p-3 rounded-[18px] flex items-center justify-between cursor-pointer transition-colors ${
+                  selectedPaymentMethod
+                    ? "hover:bg-gray-100 dark:hover:bg-[#35353E]"
+                    : "opacity-50 cursor-not-allowed"
+                }`}
+                onClick={() =>
+                  selectedPaymentMethod &&
+                  setIsProviderDropdownOpen(!isProviderDropdownOpen)
+                }
+              >
+                <div className="flex items-center">
+                  {selectedPaymentDetail ? (
+                    <div className="w-6 h-6 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-bold">
+                      {selectedPaymentDetail.account_name
+                        .charAt(0)
+                        .toUpperCase()}
+                    </div>
+                  ) : (
+                    <div className="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center">
+                      <span className="text-xs">?</span>
+                    </div>
+                  )}
+                  <span className="ml-2 text-gray-900 dark:text-white">
+                    {selectedProvider ||
+                      t("rates.selectProvider", "Select Provider")}
+                  </span>
+                </div>
+                <FiChevronDown
+                  className={`transition-transform duration-200 ${
+                    isProviderDropdownOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </div>
+
+              {/* Provider Dropdown */}
+              {isProviderDropdownOpen && selectedPaymentMethod && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1D1D23] rounded-[18px] border border-gray-200 dark:border-gray-700 z-10 max-h-60 overflow-y-auto shadow-lg">
+                  {uniqueProviders.length > 0 ? (
+                    uniqueProviders.map((provider: string) => (
+                      <div
+                        key={provider}
+                        className="p-3 flex items-center hover:bg-gray-100 dark:hover:bg-[#35353E] cursor-pointer transition-colors first:rounded-t-[18px] last:rounded-b-[18px]"
+                        onClick={() => handleProviderSelect(provider)}
+                      >
+                        <div className="w-6 h-6 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-bold">
+                          {provider.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                          {provider}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-3 text-center text-gray-600 dark:text-[#788099]">
+                      {t(
+                        "rates.noProviders",
+                        "No providers available for this method"
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
-   
-        {/* Info Row */}
-        <div className="flex items-start text-white text-sm mt-2 mb-4">
-          <AlertCircle className="w-4 h-4 text-[#E23D3A] mr-2 mt-0.5 flex-shrink-0" />
-          <span>This is only estimated price and its based on current Market Price. We will fix the price when we receive the funds.</span>
-        </div>
 
-        {/* Amount & Fees */}
-        <div className="border border-[#E8EFF5] dark:border-[#35353E] rounded-xl p-4 bg-transparent mb-4">
-          <p className="text-[#788099] text-sm font-medium mb-2">Amount & Fees</p>
-          <div className="flex flex-col lg:flex-row gap-4 items-stretch">
-            <div className="flex-1 flex flex-col justify-start">
-              <span className="text-white text-sm mb-2">Net Amount to Transfer</span>
-              <div className="w-full">
-                <div className="w-full bg-white dark:bg-[#35353E] border border-[#E8EFF5] rounded-2xl flex items-center px-2 py-2">
-                  <button className="flex-1 flex items-center justify-center bg-transparent">
-                    <span className="text-[#051015] dark:text-[#BDF4D8] text-sm ml-4">Amount including Total Fees</span>
-                    <span className="bg-[#1D8751] text-white text-lg font-semibold rounded-full px-8 py-1 ml-2">
-                      ${amountNum > 0 ? assetAmount.toFixed(2) : '0.00'}
-                    </span>
-                  </button>
-                </div>
-              </div>
-            </div>
-            {/* Right: Fee Breakdown */}
-            <div className="flex flex-col justify-between min-w-[220px] bg-white dark:bg-[#1D1D23] border border-[#E8EFF5] dark:border-[#35353E] rounded-lg px-4 py-3">
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-[#051015] dark:text-[#E8EFF5]">
-                  Commission: {amountNum > 0 ? `${commissionRate}%` : '0%'}
-                </span>
-                <span className="text-[#1D8751]">
-                  {amountNum > 0 ? `$${commission.toFixed(2)}` : '$0.00'}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-[#051015] dark:text-[#E8EFF5]">Network Fee:</span>
-                <span className="text-[#1D8751]">
-                  {amountNum > 0 ? `$${networkFee.toFixed(2)}` : '$0.00'}
-                </span>
-              </div>
-              <div className="border-t border-[#E8EFF5] dark:border-[#35353E] mt-2 pt-2 flex justify-between text-sm">
-                <span className="text-[#F79330] font-semibold">Total Fees</span>
-                <span className="text-[#F79330] font-semibold">
-                  {amountNum > 0 ? `$${totalFees.toFixed(2)}` : '$0.00'}
-                </span>
+      {/* Info Row */}
+      <div className="flex items-start text-white text-sm mt-2 mb-4">
+        <AlertCircle className="w-4 h-4 text-[#E23D3A] mr-2 mt-0.5 flex-shrink-0" />
+        <span>
+          {t(
+            "rates.alert.estimate",
+            "This is only estimated price and its based on current Market Price. We will fix the price when we receive the funds."
+          )}
+        </span>
+      </div>
+
+      {/* Amount & Fees */}
+      <div className="border border-[#E8EFF5] dark:border-[#35353E] rounded-xl p-4 bg-transparent mb-4">
+        <p className="text-[#788099] text-sm font-medium mb-2">
+          {t("rates.amountAndFees", "Amount & Fees")}
+        </p>
+        <div className="flex flex-col lg:flex-row gap-4 items-stretch">
+          <div className="flex-1 flex flex-col justify-start">
+            <span className="text-white text-sm mb-2">
+              {t("rates.netAmount", "Net Amount to Transfer")}
+            </span>
+            <div className="w-full">
+              <div className="w-full bg-white dark:bg-[#35353E] border border-[#E8EFF5] rounded-2xl flex items-center px-2 py-2">
+                <button className="flex-1 flex items-center justify-center bg-transparent">
+                  <span className="text-[#051015] dark:text-[#BDF4D8] text-sm ml-4">
+                    {t(
+                      "rates.amountIncludingFees",
+                      "Amount including Total Fees"
+                    )}
+                  </span>
+                  <span className="bg-[#1D8751] text-white text-lg font-semibold rounded-full px-8 py-1 ml-2">
+                    ${amountNum > 0 ? assetAmount.toFixed(2) : "0.00"}
+                  </span>
+                </button>
               </div>
             </div>
           </div>
+          {/* Right: Fee Breakdown */}
+          <div className="flex flex-col justify-between min-w-[220px] bg-white dark:bg-[#1D1D23] border border-[#E8EFF5] dark:border-[#35353E] rounded-lg px-4 py-3">
+            <div className="flex justify-between text-sm mb-1">
+              <span className="text-[#051015] dark:text-[#E8EFF5]">
+                {t("rates.commission", "Commission:")}{" "}
+                {amountNum > 0 ? `${commissionRate}%` : "0%"}
+              </span>
+              <span className="text-[#1D8751]">
+                {amountNum > 0 ? `$${commission.toFixed(2)}` : "$0.00"}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm mb-1">
+              <span className="text-[#051015] dark:text-[#E8EFF5]">
+                {t("rates.networkFee", "Network Fee:")}
+              </span>
+              <span className="text-[#1D8751]">
+                {amountNum > 0 ? `$${networkFee.toFixed(2)}` : "$0.00"}
+              </span>
+            </div>
+            <div className="border-t border-[#E8EFF5] dark:border-[#35353E] mt-2 pt-2 flex justify-between text-sm">
+              <span className="text-[#F79330] font-semibold">
+                {t("rates.totalFees", "Total Fees")}
+              </span>
+              <span className="text-[#F79330] font-semibold">
+                {amountNum > 0 ? `$${totalFees.toFixed(2)}` : "$0.00"}
+              </span>
+            </div>
+          </div>
         </div>
+      </div>
 
       <div className="flex items-center text-[#F79330] text-lg mb-6 p-3 rounded-md">
         <FiInfo className="text-[#F79330]" />
         <p className="ml-2 text-gray-700 dark:text-gray-300">
-          Transactions are subject to commission, above is the information on
-          the commission rates
+          {t(
+            "rates.feeInfo",
+            "Transactions are subject to commission, above is the information on the commission rates"
+          )}
         </p>
       </div>
 
       <div className="flex justify-center">
-      <button
-        className={`py-3 px-12 rounded-full font-semibold transition-colors text-white ${
-          isSubmitting
-            ? "bg-gray-500 cursor-not-allowed"
-            : activeTab === "deposit"
-            ? "bg-[#1D8751] hover:bg-opacity-90"
-            : "bg-red-500 hover:bg-opacity-90"
-        }`}
-        onClick={handleSubmit}
-        disabled={isSubmitting}
-      >
-        {isSubmitting
-          ? "Processing..."
-          : activeTab === "deposit"
-          ? "Exchange Now"
-          : "Exchange Now"}
-      </button>
-
+        <button
+          className={`py-3 px-12 rounded-full font-semibold transition-colors text-white ${
+            isSubmitting
+              ? "bg-gray-500 cursor-not-allowed"
+              : activeTab === "deposit"
+                ? "bg-[#1D8751] hover:bg-opacity-90"
+                : "bg-red-500 hover:bg-opacity-90"
+          }`}
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+        >
+          {isSubmitting
+            ? t("rates.processing", "Processing...")
+            : t("rates.exchangeNow", "Exchange Now")}
+        </button>
       </div>
     </div>
   );

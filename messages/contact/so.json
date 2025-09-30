@@ -1,0 +1,10 @@
+{
+  "contact.title": "Caawimo & Taageero",
+  "contact.success": "Mahadsanid! Farriintaada si guul leh ayaa la gudbiyay. Waxaan kula soo xiriiri doonaa goor dhow.",
+  "contact.error.generic": "Waxbaa qaldamay. Fadlan isku day mar kale.",
+  "contact.upload.title": "Soo geli Faylalka Taageeraya",
+  "contact.upload.help": "Waxaad ku lifaaqi kartaa dukumiintiyo, shaashada ama faylal kale oo naga caawin kara inaan si fiican u fahanno arrintaada.",
+  "contact.upload.supported": "Noocyada la taageerayo: PDF, DOC, DOCX, TXT, PNG, JPG, JPEG",
+  "contact.upload.selected": "Fayl la doortay: {{name}}",
+  "contact.liveChat": "Ku Xirnow Live Chat"
+}

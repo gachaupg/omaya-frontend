@@ -8,8 +8,10 @@ import { loginUser } from "@/features/auth/slices/authSlice";
 import { AppDispatch, RootState } from "@/features/auth/store";
 import { useRouter } from "next/navigation";
 import GoogleAuthButton from "./GoogleAuthButton";
+import { useI18n } from "@/lib/useI18n";
 
 export default function LoginPage() {
+  const { t } = useI18n("auth");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -101,7 +103,7 @@ export default function LoginPage() {
           setIsSubmitting(false);
           return;
         }
-        
+
         // Immediately navigate to dashboard without waiting for additional API calls
         router.push("/dashboard");
         // Force a hard navigation to ensure the redirect happens immediately
@@ -206,9 +208,11 @@ export default function LoginPage() {
         <div className="max-w-md mx-auto 2xl:max-w-3/4">
           <div className="mb-6">
             <h1 className="dark:text-white text-gray-900 text-2xl font-semibold">
-              Welcome
+              {t("auth.login.title", "Welcome")}
             </h1>
-            <p className="dark:text-[#788099] text-gray-600">Please Login</p>
+            <p className="dark:text-[#788099] text-gray-600">
+              {t("auth.login.subtitle", "Please Login")}
+            </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -218,7 +222,7 @@ export default function LoginPage() {
                 htmlFor="email"
                 className="block dark:text-white text-gray-900 mb-2"
               >
-                Email
+                {t("auth.login.email", "Email")}
               </label>
               <div className="relative">
                 <input
@@ -231,7 +235,10 @@ export default function LoginPage() {
                       ? "border-[#FDA29B]"
                       : "dark:border-gray-700 border-gray-300"
                   } dark:text-white text-gray-900 focus:outline-none focus:border-[#13B562]`}
-                  placeholder="Email Address"
+                  placeholder={t(
+                    "auth.login.email.placeholder",
+                    "Email Address"
+                  )}
                 />
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg
@@ -287,7 +294,7 @@ export default function LoginPage() {
                 htmlFor="password"
                 className="block dark:text-white text-gray-900 font-medium mb-2"
               >
-                Password
+                {t("auth.login.password", "Password")}
               </label>
               <div className="relative">
                 <input
@@ -300,7 +307,10 @@ export default function LoginPage() {
                       ? "border-[#FDA29B]"
                       : "dark:border-gray-700 border-gray-300"
                   } dark:text-white text-gray-900 focus:outline-none focus:border-[#13B562]`}
-                  placeholder="****************"
+                  placeholder={t(
+                    "auth.login.password.placeholder",
+                    "****************"
+                  )}
                 />
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg
@@ -425,7 +435,7 @@ export default function LoginPage() {
                           : "dark:text-white text-gray-900"
                       }`}
                     >
-                      Remember me
+                      {t("auth.login.remember", "Remember me")}
                     </label>
                   </div>
                 </div>
@@ -471,7 +481,7 @@ export default function LoginPage() {
                           : "dark:text-white text-gray-900"
                       }`}
                     >
-                      I'm not a robot
+                      {t("auth.login.notRobot", "I'm not a robot")}
                     </label>
                   </div>
                 </div>
@@ -483,7 +493,7 @@ export default function LoginPage() {
                   href="/auth/forgotPassword"
                   className="text-[#1D8751] text-sm"
                 >
-                  Forgot Password
+                  {t("auth.login.forgot", "Forgot Password")}
                 </Link>
               </div>
             </div>
@@ -540,22 +550,22 @@ export default function LoginPage() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Logging in...
+                  {t("auth.login.submitting", "Logging in...")}
                 </div>
               ) : (
-                "Log In"
+                t("auth.login.submit", "Log In")
               )}
             </button>
 
             {/* Sign Up Link */}
             <div className="text-center mt-4">
               <p className="text-gray-400">
-                Don't have an account?{" "}
+                {t("auth.login.noAccount", "Don't have an account?")}{" "}
                 <Link
                   href="/auth/register"
                   className="text-[#1D8751] hover:text-[#0E5531]"
                 >
-                  Sign Up
+                  {t("auth.login.signUp", "Sign Up")}
                 </Link>{" "}
                 now
               </p>
@@ -566,7 +576,7 @@ export default function LoginPage() {
             <div className="mt-6">
               <div className="relative flex items-center justify-center">
                 <span className="mx-4 text-gray-400 text-sm">
-                  Or Log in with
+                  {t("auth.login.or", "Or Log in with")}
                 </span>
               </div>
 
