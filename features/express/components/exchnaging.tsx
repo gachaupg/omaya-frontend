@@ -306,7 +306,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             const amount = parseFloat(data.data.amount);
             if (!isNaN(amount)) {
               amountToUpdate = amount;
-              currencyToUpdate = data.data?.currency || (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT");
+              currencyToUpdate = data.data?.currency || (effectiveTransactionData?.type === "deposit" ? "USD" : effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT");
             }
           }
 
@@ -323,7 +323,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               if (!isNaN(amountFrom)) {
                 amountToUpdate = amountFrom;
                 currencyToUpdate = wsData.from_currency?.toUpperCase() || 
-                                 (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT");
+                                 (effectiveTransactionData?.type === "deposit" ? "USD" : effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT");
               }
             }
 
@@ -335,7 +335,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               // Store the received amount for success page
               setLiveAmount(parseFloat(wsData.amount_to));
               setLiveCurrency(wsData.to_currency?.toUpperCase() || 
-                            (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT"));
+                            (effectiveTransactionData?.type === "deposit" ? "USD" : effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT"));
             }
 
             // Handle expected amounts if actual amounts are not available
@@ -344,7 +344,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               if (!isNaN(expectedAmount)) {
                 amountToUpdate = expectedAmount;
                 currencyToUpdate = wsData.from_currency?.toUpperCase() || 
-                                 (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT");
+                                 (effectiveTransactionData?.type === "deposit" ? "USD" : effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT");
               }
             }
 
@@ -354,7 +354,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               if (!isNaN(paidAmount)) {
                 amountToUpdate = paidAmount;
                 currencyToUpdate = wsData.from_currency?.toUpperCase() || 
-                                 (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT");
+                                 (effectiveTransactionData?.type === "deposit" ? "USD" : effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT");
               }
             }
 
@@ -364,7 +364,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               if (!isNaN(estimatedAmount)) {
                 setLiveAmount(estimatedAmount);
                 setLiveCurrency(wsData.to_currency?.toUpperCase() || 
-                              (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT"));
+                              (effectiveTransactionData?.type === "deposit" ? "USD" : effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT"));
               }
             }
           }
@@ -396,7 +396,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 currency: currencyToUpdate || 
                          wsData?.from_currency?.toUpperCase() || 
                          transactionData?.details?.to_currency || 
-                         (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT"),
+                         (effectiveTransactionData?.type === "deposit" ? "USD" : effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT"),
               };
 
               // Only add if amount is different from last entry
@@ -759,14 +759,15 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 {liveAmount !== null
                   ? liveAmount
                   : effectiveTransactionData?.amount || 0}{" "}
-                <span className="uppercase">
+               {effectiveTransactionData?.type === "deposit" ? "USD" :  <span className="uppercase">
                 {liveCurrency ||
                     effectiveTransactionData?.asset?.ticker ||
                     effectiveTransactionData?.asset?.symbol ||
                     effectiveTransactionData?.asset?.name ||
                     transactionData?.details?.to_currency ||
-                    (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
-                </span>
+                    (effectiveTransactionData?.type === "deposit" ? "USD" : 
+                     effectiveTransactionData?.type === "withdrawal" ? "USD" : "USD")}
+                </span>}
               </span>
             </div>
             {/* {liveAmount !== null &&
@@ -775,7 +776,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   isDark ? 'text-[#7B7B7B]' : 'text-gray-600'
                 } text-xs mb-1`}>
                   Initial: {effectiveTransactionData?.amount || 0}{" "}
-                  {effectiveTransactionData?.asset?.ticker || (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
+                  {effectiveTransactionData?.asset?.ticker || (effectiveTransactionData?.type === "deposit" ? "USD" : effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
                 </div>
               )} */}
 
@@ -807,7 +808,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                       effectiveTransactionData?.asset?.ticker ||
                       effectiveTransactionData?.asset?.symbol ||
                       effectiveTransactionData?.asset?.name ||
-                      (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
+                      (effectiveTransactionData?.type === "deposit" ? "USD" : effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
                   </div>
                   <div className="text-green-400 text-xs">
                     Current: {liveAmount.toFixed(8)}{" "}
@@ -815,7 +816,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                       effectiveTransactionData?.asset?.ticker ||
                       effectiveTransactionData?.asset?.symbol ||
                       effectiveTransactionData?.asset?.name ||
-                      (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
+                      (effectiveTransactionData?.type === "deposit" ? "USD" : effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
                   </div>
                 </div>
               )}
@@ -853,7 +854,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                         isDark ? "text-white" : "text-gray-900"
                       } text-sm font-semibold`}
                     >
-                      {effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
+                      {effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || (effectiveTransactionData?.type === "deposit" ? "USD" : effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
                     </span>
                     <span className="ml-2 bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
                       {effectiveTransactionData?.asset?.network || effectiveTransactionData?.network?.network_type || "BSC"}
@@ -1508,7 +1509,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     effectiveTransactionData?.asset?.image ||
                     "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                   }
-                  alt={effectiveTransactionData?.asset?.symbol || (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
+                  alt={effectiveTransactionData?.asset?.symbol || (effectiveTransactionData?.type === "deposit" ? "USD" : effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
                   className="w-8 h-8 rounded-full"
                   onError={(e) => {
                     e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
@@ -1520,7 +1521,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                       isDark ? "text-white" : "text-gray-900"
                     } text-base font-semibold`}
                   >
-                    {effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
+                    {effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || (effectiveTransactionData?.type === "deposit" ? "USD" : effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
                   </div>
                   <div
                     className={`${
@@ -1546,7 +1547,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     effectiveTransactionData?.asset?.image ||
                     "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                   }
-                  alt={effectiveTransactionData?.asset?.symbol || (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
+                  alt={effectiveTransactionData?.asset?.symbol || (effectiveTransactionData?.type === "deposit" ? "USD" : effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
                   className="w-8 h-8 rounded-full"
                   onError={(e) => {
                     e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
@@ -1558,7 +1559,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                       isDark ? "text-white" : "text-gray-900"
                     } text-base font-semibold inline-block align-middle`}
                   >
-                    {effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || (effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
+                    {effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || (effectiveTransactionData?.type === "deposit" ? "USD" : effectiveTransactionData?.type === "withdrawal" ? "USD" : "USDT")}
                   </div>
                   <span
                     className={`${
@@ -1625,7 +1626,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           <ul className="list-disc list-inside space-y-1">
             <li className="text-white text-sm">
               Only send
-              {`${ transactionData?.asset?.ticker || transactionData?.asset?.symbol || transactionData?.asset?.name || (transactionData?.type === "withdrawal" ? "USD" : "USDT")} (${transactionData?.asset?.network})`}{" "}
+              {`${ transactionData?.asset?.ticker || transactionData?.asset?.symbol || transactionData?.asset?.name || (transactionData?.type === "deposit" ? "USD" : transactionData?.type === "withdrawal" ? "USD" : "USDT")} (${transactionData?.asset?.network})`}{" "}
               to this address{" "}
             </li>
             <li className="text-white text-sm">

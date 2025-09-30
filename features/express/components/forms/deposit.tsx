@@ -1867,7 +1867,7 @@ export default function DepositForm({
                 }
               }}
             >
-              {/* Light mode image */}
+             
               <img
                 src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
                 alt="swap icon"

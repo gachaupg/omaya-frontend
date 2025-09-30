@@ -88,6 +88,7 @@ interface MarketRow {
   advertiser: string;
   advertiserInitials: string;
   orders: number;
+  advertiser_photo: string;
   completion: string;
   online: boolean;
   commission: string;
@@ -185,6 +186,7 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
             activeTab === "buy"
               ? order.user_total_buy_orders
               : order.user_total_sell_orders || 0,
+          advertiser_photo: order.advertiser_photo || "",
           completion: `${(order.completion_rate || 0) * 100}%`,
           online: true,
           commission: `${order.commission_rate}%`,

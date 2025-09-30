@@ -3,6 +3,7 @@ export interface MarketRow {
   advertiser: string;
   advertiserInitials: string;
   orders: number;
+  advertiser_photo: string;
   completion: string;
   online: boolean;
   commission: string;

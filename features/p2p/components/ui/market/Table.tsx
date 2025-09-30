@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Button from "../../Common/Button";
-import { FaCheckCircle, FaRegClock } from "react-icons/fa";
+import { FaCheckCircle, FaRegClock, FaTimes } from "react-icons/fa";
 import { ThumbsUp } from "lucide-react";
 import { TiArrowUnsorted } from "react-icons/ti";
 import { MarketTableProps } from "./types";
@@ -35,8 +35,48 @@ const MarketTable: React.FC<MarketTableProps> = ({
     key: string;
     direction: "asc" | "desc";
   } | null>(null);
+  const [imageModal, setImageModal] = useState<{
+    isOpen: boolean;
+    imageUrl: string;
+    advertiserName: string;
+  }>({
+    isOpen: false,
+    imageUrl: "",
+    advertiserName: "",
+  });
 
   const handleTradeClick = (i: number) => setSelectedRowIndex(i);
+  
+  const handleImageClick = (imageUrl: string, advertiserName: string) => {
+    setImageModal({
+      isOpen: true,
+      imageUrl,
+      advertiserName,
+    });
+  };
+
+  const closeImageModal = () => {
+    setImageModal({
+      isOpen: false,
+      imageUrl: "",
+      advertiserName: "",
+    });
+  };
+
+  // Handle escape key to close modal
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && imageModal.isOpen) {
+        closeImageModal();
+      }
+    };
+
+    if (imageModal.isOpen) {
+      document.addEventListener("keydown", handleEscape);
+      return () => document.removeEventListener("keydown", handleEscape);
+    }
+  }, [imageModal.isOpen]);
+
   console.log("data in table", data);
   console.log("currentPage", currentPage);
   const handleSort = (key: string) => {
@@ -106,9 +146,18 @@ const MarketTable: React.FC<MarketTableProps> = ({
                   {/* Advertiser */}
                   <div className="flex flex-col gap-1 min-w-[200px]">
                     <div className="flex items-center gap-2">
+                    {row.advertiser_photo ? (
+                      <img 
+                        src={row.advertiser_photo} 
+                        alt={row.advertiser} 
+                        className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity" 
+                        onClick={() => handleImageClick(row.advertiser_photo, row.advertiser)}
+                      />
+                    ) : (
                       <span className="bg-[#1D8751] text-white h-10 w-10 rounded-[10px] text-xs font-bold flex items-center justify-center">
                         {row.advertiserInitials}
                       </span>
+                    )}
                       <span className="font-medium flex items-center text-sm text-gray-900 dark:text-[#E4E4E6]">
                         {row.advertiser}
                         <FaCheckCircle className="text-[#FFD600] ml-1" />
@@ -228,6 +277,58 @@ const MarketTable: React.FC<MarketTableProps> = ({
           )}
         </div>
       </div>
+
+      {/* Image Modal */}
+      {imageModal.isOpen && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
+          onClick={closeImageModal}
+        >
+          <div 
+            className="relative bg-white dark:bg-[#1D1D23] rounded-2xl max-w-2xl max-h-[90vh] w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-[#35353E]">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {imageModal.advertiserName}'s Photo
+              </h3>
+              <button
+                onClick={closeImageModal}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-[#35353E] rounded-full transition-colors"
+              >
+                <FaTimes className="w-5 h-5 text-gray-500 dark:text-[#8C8CA1]" />
+              </button>
+            </div>
+            
+            {/* Image */}
+            <div className="p-4">
+              <div className="relative w-full h-96 bg-gray-100 dark:bg-[#35353E] rounded-xl overflow-hidden">
+                <img
+                  src={imageModal.imageUrl}
+                  alt={imageModal.advertiserName}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = "https://via.placeholder.com/400x400/1D8751/ffffff?text=Image+Not+Found";
+                  }}
+                />
+              </div>
+            </div>
+            
+            {/* Footer */}
+            <div className="flex justify-end p-4 border-t border-gray-200 dark:border-[#35353E]">
+              <Button
+                onClick={closeImageModal}
+                variant="secondary"
+                size="sm"
+                className="px-6"
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
