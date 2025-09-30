@@ -6,12 +6,14 @@ import { FaSearch } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { useBlog } from "../hooks/blog";
 import { BlogPost } from "../types";
+import { useBlogsI18n } from "@/lib/useBlogsI18n";
 
 const BlogPage = () => {
   const [activeTab, setActiveTab] = useState("News");
   const [searchTerm, setSearchTerm] = useState("");
   const { blogs, news, loading, error } = useBlog();
   const router = useRouter();
+  const { t } = useBlogsI18n();
 
   // Filter posts based on active tab and search term
   const getFilteredPosts = () => {
@@ -80,7 +82,7 @@ const BlogPage = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1D8751] mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">
-            Loading blog posts...
+            {t("blogs.loading", "Loading blog posts...")}
           </p>
         </div>
       </div>
@@ -91,15 +93,20 @@ const BlogPage = () => {
     return (
       <div className="bg-white dark:bg-[#0A0A0A] text-gray-900 dark:text-white min-h-screen p-4 sm:p-6 md:p-8 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-400 mb-4">Error: {error}</p>
+          <p className="text-red-400 mb-4">
+            {t("blogs.error.title", "Error:")} {error}
+          </p>
           <p className="text-gray-400 mb-4 text-sm">
-            Please check your Sanity configuration and try again.
+            {t(
+              "blogs.error.hint",
+              "Please check your Sanity configuration and try again."
+            )}
           </p>
           <button
             onClick={() => window.location.reload()}
             className="bg-[#1D8751] text-white px-4 py-2 rounded-lg hover:bg-[#167a47] transition-colors"
           >
-            Try Again
+            {t("blogs.error.retry", "Try Again")}
           </button>
         </div>
       </div>
@@ -111,60 +118,54 @@ const BlogPage = () => {
       <div className="container mx-auto">
         <header className="mb-4 md:mb-6 text-center md:text-left">
           <h1 className="text-2xl sm:text-2xl md:text-3xl font-bold leading-tight">
-            Enjoy Our <span className="text-[#1D8751]">Blog</span> On the <span className="text-[#1D8751]">Latest</span>
-            <br />
-            <span className="text-[#1D8751]">Company Updates</span>
+            {t("blogs.title", "Enjoy Our Blog On the Latest Company Updates")}
           </h1>
         </header>
 
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
           <div className="flex items-center space-x-2 bg-gray-100 dark:bg-[#161B22] rounded-full border border-gray-300 dark:border-[#30363D]">
-          <button
-                onClick={() => setActiveTab("News")}
-                className={`px-6 py-2 rounded-full text-sm font-medium flex 2xl:text-lg items-center gap-2 transition-colors ${
-                  activeTab === "News"
-                    ? "bg-[#1D8751] text-white"
-                    : "text-[#788099]"
+            <button
+              onClick={() => setActiveTab("News")}
+              className={`px-6 py-2 rounded-full text-sm font-medium flex 2xl:text-lg items-center gap-2 transition-colors ${
+                activeTab === "News"
+                  ? "bg-[#1D8751] text-white"
+                  : "text-[#788099]"
+              }`}
+            >
+              <span
+                className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${
+                  activeTab === "News" ? "border-white" : "border-gray-400"
                 }`}
               >
                 <span
-                  className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${
-                    activeTab === "News"
-                      ? "border-white"
-                      : "border-gray-400"
+                  className={`w-3 h-3 rounded-full ${
+                    activeTab === "News" ? "bg-white" : "bg-transparent"
                   }`}
-                >
-                  <span
-                    className={`w-3 h-3 rounded-full ${
-                      activeTab === "News" ? "bg-white" : "bg-transparent"
-                    }`}
-                  ></span>
-                </span>
-                News
-              </button>
-              <button
-                onClick={() => setActiveTab("Blog")}
-                className={`px-6 py-2 rounded-full text-sm 2xl:text-lg font-medium flex items-center gap-2 transition-colors ${
-                  activeTab === "Blog"
-                    ? "bg-[#1D8751] text-white"
-                    : "text-[#788099]"
+                ></span>
+              </span>
+              {t("blogs.tab.news", "News")}
+            </button>
+            <button
+              onClick={() => setActiveTab("Blog")}
+              className={`px-6 py-2 rounded-full text-sm 2xl:text-lg font-medium flex items-center gap-2 transition-colors ${
+                activeTab === "Blog"
+                  ? "bg-[#1D8751] text-white"
+                  : "text-[#788099]"
+              }`}
+            >
+              <span
+                className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${
+                  activeTab === "Blog" ? "border-white" : "border-gray-400"
                 }`}
               >
                 <span
-                  className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${
-                    activeTab === "Blog"
-                      ? "border-white"
-                      : "border-gray-400"
+                  className={`w-3 h-3 rounded-full ${
+                    activeTab === "Blog" ? "bg-white" : "bg-transparent"
                   }`}
-                >
-                  <span
-                    className={`w-3 h-3 rounded-full ${
-                      activeTab === "Blog" ? "bg-white" : "bg-transparent"
-                    }`}
-                  ></span>
-                </span>
-                Blog
-              </button>
+                ></span>
+              </span>
+              {t("blogs.tab.blog", "Blog")}
+            </button>
           </div>
 
           <div className="relative w-full md:w-auto">
@@ -176,7 +177,7 @@ const BlogPage = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full md:w-72 bg-gray-50 dark:bg-[#161B22] border border-gray-300 dark:border-[#30363D] rounded-full py-2.5 pl-11 pr-4 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
-              placeholder="Search"
+              placeholder={t("blogs.search", "Search")}
             />
           </div>
         </div>
@@ -185,12 +186,22 @@ const BlogPage = () => {
           <div className="text-center py-12">
             <p className="text-gray-600 dark:text-gray-400 text-lg">
               {searchTerm
-                ? "No posts found matching your search."
-                : `No ${activeTab.toLowerCase()} posts available.`}
+                ? t(
+                    "blogs.empty.search",
+                    "No posts found matching your search."
+                  )
+                : t(
+                    "blogs.empty.none",
+                    `No ${activeTab.toLowerCase()} posts available.`,
+                    { tab: activeTab.toLowerCase() }
+                  )}
             </p>
             {!searchTerm && (
               <p className="text-gray-500 text-sm mt-2">
-                Please add some blog posts to your Sanity CMS.
+                {t(
+                  "blogs.empty.hint",
+                  "Please add some blog posts to your Sanity CMS."
+                )}
               </p>
             )}
           </div>
@@ -234,13 +245,15 @@ const BlogPage = () => {
                       : post.description}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-500 mb-6">
-                    By {post.author_name || "Anonymous"}
+                    {t("blogs.byAuthor", "By {{author}}", {
+                      author: post.author_name || "Anonymous",
+                    })}
                   </p>
                   <button
                     onClick={() => handleReadArticle(getPostId(post))}
                     className="mt-auto w-fit text-[#1D8751] border border-[#1D8751] rounded-full px-6 py-2 text-sm font-semibold hover:bg-[#1D8751] hover:text-white transition-colors duration-300 self-start"
                   >
-                    Read Article
+                    {t("blogs.readArticle", "Read Article")}
                   </button>
                 </div>
               </article>

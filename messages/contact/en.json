@@ -1,0 +1,10 @@
+{
+  "contact.title": "Help & Support",
+  "contact.success": "Thank you! Your message has been submitted successfully. We'll get back to you soon.",
+  "contact.error.generic": "Something went wrong. Please try again.",
+  "contact.upload.title": "Upload Supporting Files",
+  "contact.upload.help": "You can attach supporting documents, screenshots, or other files that might help us understand your issue better.",
+  "contact.upload.supported": "Supported formats: PDF, DOC, DOCX, TXT, PNG, JPG, JPEG",
+  "contact.upload.selected": "Selected file: {{name}}",
+  "contact.liveChat": "Connect with Live Chat"
+}

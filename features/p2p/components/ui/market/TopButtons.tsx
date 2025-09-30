@@ -2,6 +2,7 @@
 
 import React from "react";
 import Button from "../../Common/Button";
+import { useP2PI18n } from "@/lib/useP2PI18n";
 
 const TopButtons = ({
   activeTab,
@@ -10,6 +11,7 @@ const TopButtons = ({
   activeTab: string;
   setActiveTab: (tab: string) => void;
 }) => {
+  const { t } = useP2PI18n();
   return (
     <div className="flex border border-[#35353E] rounded-[9px] overflow-hidden w-fit bg-transparent">
       <Button
@@ -18,7 +20,7 @@ const TopButtons = ({
         size="md"
         className="border-r border-[#35353E] rounded-none font-semibold min-w-[90px] h-12 transition-all duration-200"
       >
-        Buy
+        {t("common.buy", "Buy")}
       </Button>
       <Button
         onClick={() => setActiveTab("sell")}
@@ -28,7 +30,7 @@ const TopButtons = ({
           activeTab === "sell" ? "bg-[#E23D3A]" : "bg-transparent"
         }`}
       >
-        Sell
+        {t("common.sell", "Sell")}
       </Button>
     </div>
   );

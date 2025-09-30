@@ -9,6 +9,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { P2PTransaction } from "@/features/p2p/types";
 import { NoDataFound } from "../ui/Transactions";
+import { useDashboardI18n } from "@/lib/useDashboardI18n";
 
 interface RootState {
   p2pTransactions: {
@@ -43,6 +44,7 @@ const ASSET_ICON_URL =
 const P2PTransactions = () => {
   const dispatch = useDispatch<AppDispatch>();
   const [userEmail, setUserEmail] = useState("");
+  const { t } = useDashboardI18n();
   const { transactions, loading, error, currentPage } = useSelector(
     (state: RootState) => state.p2pTransactions
   );
@@ -69,18 +71,26 @@ const P2PTransactions = () => {
     );
   }
   if (error) {
-    return <div className="text-red-500 text-center p-4">Error: {error}</div>;
+    return (
+      <div className="text-red-500 text-center p-4">
+        {t("common.error", "Error")}: {error}
+      </div>
+    );
   }
   if (!transactions?.results?.length) {
     return (
       <div className="text-center p-8 text-gray-500 dark:text-gray-400">
-        No transactions found
+        {t("transactions.noTransactions", "No transactions found")}
       </div>
     );
   }
 
   if (error) {
-    return <div className="text-red-500 text-center p-4">Error: {error}</div>;
+    return (
+      <div className="text-red-500 text-center p-4">
+        {t("common.error", "Error")}: {error}
+      </div>
+    );
   }
 
   if (
@@ -90,8 +100,14 @@ const P2PTransactions = () => {
   ) {
     return (
       <NoDataFound
-        title="No Exchange Transactions Found"
-        message="There are currently no exchange transactions to display. Please check back later or try adjusting your filters."
+        title={t(
+          "transactions.noTransactions",
+          "No Exchange Transactions Found"
+        )}
+        message={t(
+          "transactions.noTransactions",
+          "There are currently no exchange transactions to display. Please check back later or try adjusting your filters."
+        )}
       />
     );
   }
@@ -147,7 +163,7 @@ const P2PTransactions = () => {
                 : "bg-gray-200 dark:bg-gray-600 text-gray-400 cursor-not-allowed border-transparent"
             }`}
         >
-          Previous
+          {t("common.previous", "Previous")}
         </button>
         {startPage > 1 && <span className="text-gray-500">…</span>}
         {pageButtons}
@@ -162,7 +178,7 @@ const P2PTransactions = () => {
                 : "bg-gray-200 dark:bg-gray-600 text-gray-400 cursor-not-allowed border-transparent"
             }`}
         >
-          Next
+          {t("common.next", "Next")}
         </button>
       </div>
     );
@@ -175,11 +191,11 @@ const P2PTransactions = () => {
         <thead className="bg-gray-50 dark:bg-transparent">
           <tr>
             {[
-              "Asset",
-              "Transaction Type",
-              "Amount",
-              "Payment Method",
-              "When",
+              t("transactions.asset", "Asset"),
+              t("transactions.transactionType", "Transaction Type"),
+              t("transactions.amount", "Amount"),
+              t("transactions.paymentMethod", "Payment Method"),
+              t("transactions.when", "When"),
             ].map((h) => (
               <th
                 key={h}
@@ -230,7 +246,7 @@ const P2PTransactions = () => {
               {/* Method */}
               <td className="px-6 py-4 gap-2 flex items-center whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                 <img
-                className="h-4"
+                  className="h-4"
                   src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
                   alt=""
                 />{" "}

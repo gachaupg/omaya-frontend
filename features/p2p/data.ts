@@ -5,10 +5,10 @@ import { Tab, TransactionType } from "./types";
 
 // P2P navigation tabs
 export const p2pTabs: Tab[] = [
-  { id: "dashboard", label: "P2p Dashboard", path: "/p2p/dashboard" },
-  { id: "market", label: "Market", path: "/p2p/market" },
-  { id: "orders", label: "Orders", path: "/p2p/orders" },
-  { id: "center", label: "P2P Center", path: "/p2p/center" },
+  { id: "dashboard", label: "tabs.dashboard", path: "/p2p/dashboard" },
+  { id: "market", label: "tabs.market", path: "/p2p/market" },
+  { id: "orders", label: "tabs.orders", path: "/p2p/orders" },
+  { id: "center", label: "tabs.center", path: "/p2p/center" },
 ];
 
 // Transaction overview data
@@ -635,7 +635,6 @@ export const feedbackTableData: TransactionType[] = [
     comment: "View",
   },
 ];
-
 
 export const ASSETS = [
   {

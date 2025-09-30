@@ -5,6 +5,7 @@ import { useDispatch } from "react-redux";
 import { resetPassword } from "@/features/auth/slices/authSlice";
 import { useSearchParams } from "next/navigation";
 import { AppDispatch } from "@/features/auth/store";
+import { useI18n } from "@/lib/useI18n";
 
 const PASSWORD_REQUIREMENTS = [
   { label: "At least 8 characters", test: (v: string) => v.length >= 8 },
@@ -19,6 +20,7 @@ const PASSWORD_REQUIREMENTS = [
 ];
 
 const ResetPassword = () => {
+  const { t } = useI18n("auth");
   const dispatch = useDispatch<AppDispatch>();
   const searchParams = useSearchParams();
   const email = searchParams?.get("email") || "";
@@ -118,9 +120,11 @@ const ResetPassword = () => {
       <div className="w-1/2 p-8 flex flex-col justify-center">
         <div className="max-w-md mx-auto w-full 2xl:max-w-3/4">
           <h1 className="text-2xl font-semibold text-white mb-2">
-            Forgot Password
+            {t("auth.forgot.title", "Forgot Password")}
           </h1>
-          <p className="text-[#788099] mb-1">Create New Password</p>
+          <p className="text-[#788099] mb-1">
+            {t("auth.reset.subtitle", "Create New Password")}
+          </p>
           <form className="space-y-4" onSubmit={handleResetSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -128,7 +132,7 @@ const ResetPassword = () => {
                   htmlFor="new-password"
                   className="block text-white text-sm mb-2"
                 >
-                  New Password*
+                  {t("auth.reset.newPassword", "New Password*")}
                 </label>
                 <div className="relative">
                   <input
@@ -136,7 +140,10 @@ const ResetPassword = () => {
                     id="new-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter password"
+                    placeholder={t(
+                      "auth.register.password.placeholder",
+                      "Enter password"
+                    )}
                     className="w-full py-2 px-4 pl-9 bg-[#1D1D23] border border-[#35353E] rounded-full text-[#788099] placeholder-[#788099] focus:outline-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent"
                   />
                   <button
@@ -218,7 +225,7 @@ const ResetPassword = () => {
                   htmlFor="confirm-password"
                   className="block text-white text-sm mb-2"
                 >
-                  Confirm password*
+                  {t("auth.register.confirm", "Confirm password*")}
                 </label>
                 <div className="relative">
                   <input
@@ -226,7 +233,10 @@ const ResetPassword = () => {
                     id="confirm-password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm password"
+                    placeholder={t(
+                      "auth.register.confirm.placeholder",
+                      "Confirm password"
+                    )}
                     className="w-full py-2 px-4 pl-9 bg-[#1D1D23] border border-[#35353E] rounded-full text-[#788099] placeholder-[#788099] focus:outline-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent"
                   />
                   <button
@@ -313,7 +323,10 @@ const ResetPassword = () => {
                   }`}
                 ></div>
                 <span className="text-sm text-white">
-                  At least 8 characters
+                  {t(
+                    "auth.register.requirements.8chars",
+                    "At least 8 characters"
+                  )}
                 </span>
               </div>
               <div className="flex items-center space-x-2">
@@ -323,7 +336,10 @@ const ResetPassword = () => {
                   }`}
                 ></div>
                 <span className="text-sm text-white">
-                  At least one number or symbol
+                  {t(
+                    "auth.register.requirements.numberSymbol",
+                    "At least one number or symbol"
+                  )}
                 </span>
               </div>
               <div className="flex items-center space-x-2">
@@ -333,7 +349,10 @@ const ResetPassword = () => {
                   }`}
                 ></div>
                 <span className="text-sm text-white">
-                  Both uppercase and lowercase letters
+                  {t(
+                    "auth.register.requirements.mixedCase",
+                    "Both uppercase and lowercase letters"
+                  )}
                 </span>
               </div>
             </div>
@@ -345,7 +364,9 @@ const ResetPassword = () => {
               className="w-full bg-[#1D8751] text-white py-2 px-4 rounded-full hover:bg-[#0E5531] transition-colors duration-300 mt-4"
               disabled={isLoading}
             >
-              {isLoading ? "Updating..." : "Update Password"}
+              {isLoading
+                ? t("auth.reset.submitting", "Updating...")
+                : t("auth.reset.submit", "Update Password")}
             </button>
           </form>
         </div>
@@ -385,17 +406,17 @@ const ResetPassword = () => {
               </div>
             </div>
             <h2 className="text-white text-xl font-semibold mb-2">
-              Password changed successfully
+              {t("auth.reset.success", "Password changed successfully")}
             </h2>
             <button
               className="w-full bg-[#1D8751] text-white py-2 px-4 rounded-full hover:bg-[#0E5531] transition-colors duration-300 mt-4"
               onClick={() => {
-                if (typeof window !== 'undefined') {
+                if (typeof window !== "undefined") {
                   window.location.href = "/auth/login";
                 }
               }}
             >
-              Log In
+              {t("auth.register.login", "Log In")}
             </button>
           </div>
         </div>

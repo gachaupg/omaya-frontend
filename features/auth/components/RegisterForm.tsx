@@ -11,12 +11,21 @@ import { AppDispatch } from "@/features/auth/store";
 import { useRouter } from "next/navigation";
 import { showToast } from "@/lib/utils/toast";
 // Dynamic imports for client-side only libraries
-const LoginSocialFacebook = React.lazy(() => import("reactjs-social-login").then(module => ({ default: module.LoginSocialFacebook })));
-const FacebookLoginButton = React.lazy(() => import("react-social-login-buttons").then(module => ({ default: module.FacebookLoginButton })));
+const LoginSocialFacebook = React.lazy(() =>
+  import("reactjs-social-login").then((module) => ({
+    default: module.LoginSocialFacebook,
+  }))
+);
+const FacebookLoginButton = React.lazy(() =>
+  import("react-social-login-buttons").then((module) => ({
+    default: module.FacebookLoginButton,
+  }))
+);
 import axios from "axios";
 import { toast } from "react-toastify";
 // Dynamic import for GoogleAuthButton
 const GoogleAuthButton = React.lazy(() => import("./GoogleAuthButton"));
+import { useI18n } from "@/lib/useI18n";
 
 // Email Verification Modal Component
 interface EmailVerificationModalProps {
@@ -102,7 +111,7 @@ function EmailVerificationModal({
         (digit, idx) => idx >= activeIndex && digit === ""
       );
 
-      if (typeof document !== 'undefined') {
+      if (typeof document !== "undefined") {
         if (nextEmptyIndex !== -1 && nextEmptyIndex < 6) {
           const nextInput = document.getElementById(`code-${nextEmptyIndex}`);
           nextInput?.focus();
@@ -124,7 +133,7 @@ function EmailVerificationModal({
     setError("");
 
     // Auto-focus next input
-    if (value && index < 5 && typeof document !== 'undefined') {
+    if (value && index < 5 && typeof document !== "undefined") {
       const nextInput = document.getElementById(`code-${index + 1}`);
       nextInput?.focus();
     }
@@ -132,7 +141,12 @@ function EmailVerificationModal({
 
   // Handle backspace
   const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === "Backspace" && !verificationCode[index] && index > 0 && typeof document !== 'undefined') {
+    if (
+      e.key === "Backspace" &&
+      !verificationCode[index] &&
+      index > 0 &&
+      typeof document !== "undefined"
+    ) {
       const prevInput = document.getElementById(`code-${index - 1}`);
       prevInput?.focus();
     }
@@ -280,6 +294,7 @@ function EmailVerificationModal({
 }
 
 export default function RegistrationPage() {
+  const { t } = useI18n("auth");
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
 
@@ -296,7 +311,7 @@ export default function RegistrationPage() {
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
+
   // Facebook login state
   const [profile, setProfile] = useState<any>(null);
 
@@ -372,7 +387,7 @@ export default function RegistrationPage() {
     // Terms agreement validation
     if (!agreeToTerms) {
       isValid = false;
-      if (typeof document !== 'undefined') {
+      if (typeof document !== "undefined") {
         document.getElementById("terms-container")?.scrollIntoView({
           behavior: "smooth",
           block: "center",
@@ -414,7 +429,7 @@ export default function RegistrationPage() {
       } else {
         // Handle API errors
         if (result.payload) {
-            if (result.payload) {
+          if (result.payload) {
             showToast.error(result.payload as string); // <-- Show all errors in a toast
           }
         }
@@ -501,7 +516,7 @@ export default function RegistrationPage() {
   const handleFaceBookAuth = async (accessToken: string) => {
     try {
       const result = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/auth/facebook/`,
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/auth/facebook/`,
         {
           token: accessToken,
         },
@@ -577,10 +592,13 @@ export default function RegistrationPage() {
           <div className="max-w-md mx-auto 2xl:max-w-3/4">
             <div className="mb-6">
               <h1 className="dark:text-white text-gray-900 text-2xl font-semibold">
-                Registration
+                {t("auth.register.title", "Registration")}
               </h1>
               <p className="dark:text-[#788099] text-gray-600">
-                Please Register with correct Information
+                {t(
+                  "auth.register.subtitle",
+                  "Please Register with correct Information"
+                )}
               </p>
             </div>
 
@@ -591,7 +609,7 @@ export default function RegistrationPage() {
                     htmlFor="first-name"
                     className="block dark:text-white text-gray-900 text-sm mb-2"
                   >
-                    First Name*
+                    {t("auth.register.firstName", "First Name*")}
                   </label>
                   <div className="relative">
                     <input
@@ -604,7 +622,7 @@ export default function RegistrationPage() {
                           ? "border-[#FDA29B]"
                           : "border-gray-700"
                       } dark:text-[#788099] text-gray-900 focus:outline-none focus:border-[#13B562]`}
-                      placeholder="Full Name"
+                      placeholder={t("auth.register.firstName", "Full Name")}
                     />
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <svg
@@ -643,7 +661,7 @@ export default function RegistrationPage() {
                     htmlFor="establishment-date"
                     className="block dark:text-white text-gray-900 text-sm mb-2"
                   >
-                    Last Name*
+                    {t("auth.register.lastName", "Last Name*")}
                   </label>
                   <div className="relative">
                     <input
@@ -654,7 +672,7 @@ export default function RegistrationPage() {
                       className={`w-full py-2 px-4 pl-9 rounded-full dark:bg-[#1D1D23] bg-white border ${
                         errors.lastName ? "border-[#FDA29B]" : "border-gray-700"
                       } dark:text-[#788099] text-gray-900 focus:outline-none focus:border-[#13B562]`}
-                      placeholder="Last Name"
+                      placeholder={t("auth.register.lastName", "Last Name")}
                     />
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <svg
@@ -695,7 +713,7 @@ export default function RegistrationPage() {
                     htmlFor="email"
                     className="block dark:text-white text-gray-900 text-sm mb-2"
                   >
-                    Email*
+                    {t("auth.register.email", "Email*")}
                   </label>
                   <div className="relative">
                     <input
@@ -706,7 +724,10 @@ export default function RegistrationPage() {
                       className={`w-full py-2 px-4 pl-9 rounded-full dark:bg-[#1D1D23] bg-white border ${
                         errors.email ? "border-[#FDA29B]" : "border-gray-700"
                       } dark:text-[#788099] text-gray-900 focus:outline-none focus:border-[#13B562]`}
-                      placeholder="Email Address"
+                      placeholder={t(
+                        "auth.login.email.placeholder",
+                        "Email Address"
+                      )}
                     />
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <svg
@@ -810,7 +831,7 @@ export default function RegistrationPage() {
                     htmlFor="phone"
                     className="block dark:text-white text-gray-900 text-sm mb-2"
                   >
-                    Phone*
+                    {t("auth.register.phone", "Phone*")}
                   </label>
                   <div className="relative">
                     <input
@@ -821,7 +842,7 @@ export default function RegistrationPage() {
                       className={`w-full py-2 px-4 pl-9 rounded-full dark:bg-[#1D1D23] bg-white border ${
                         errors.phone ? "border-[#FDA29B]" : "border-gray-700"
                       } dark:text-[#788099] text-gray-900 focus:outline-none focus:border-[#13B562]`}
-                      placeholder="+12345678"
+                      placeholder={"+12345678"}
                     />
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <svg
@@ -855,7 +876,7 @@ export default function RegistrationPage() {
                     htmlFor="password"
                     className="block dark:text-white text-gray-900 text-sm mb-2"
                   >
-                    Password*
+                    {t("auth.register.password", "Password*")}
                   </label>
                   <div className="relative">
                     <input
@@ -866,7 +887,10 @@ export default function RegistrationPage() {
                       className={`w-full py-2 px-4 pl-9 rounded-full dark:bg-[#1D1D23] bg-white border ${
                         errors.password ? "border-[#FDA29B]" : "border-gray-700"
                       } dark:text-[#788099] text-gray-900 focus:outline-none focus:border-[#13B562]`}
-                      placeholder="Enter password"
+                      placeholder={t(
+                        "auth.register.password.placeholder",
+                        "Enter password"
+                      )}
                     />
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <svg
@@ -988,7 +1012,7 @@ export default function RegistrationPage() {
                     htmlFor="confirm-password"
                     className="block dark:text-white text-gray-900 text-sm mb-2"
                   >
-                    Confirm password*
+                    {t("auth.register.confirm", "Confirm password*")}
                   </label>
                   <div className="relative">
                     <input
@@ -1001,7 +1025,10 @@ export default function RegistrationPage() {
                           ? "border-[#FDA29B]"
                           : "border-gray-700"
                       } dark:text-[#788099] text-gray-900 focus:outline-none focus:border-[#13B562]`}
-                      placeholder="Confirm password"
+                      placeholder={t(
+                        "auth.register.confirm.placeholder",
+                        "Confirm password"
+                      )}
                     />
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <svg
@@ -1127,7 +1154,10 @@ export default function RegistrationPage() {
                     className={`h-2 w-2 rounded-full ${hasMinChars ? "bg-[#1D8751]" : "bg-[#1D8751]"}`}
                   ></div>
                   <span className="text-sm dark:text-white text-gray-900">
-                    At least 8 characters
+                    {t(
+                      "auth.register.requirements.8chars",
+                      "At least 8 characters"
+                    )}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -1135,7 +1165,10 @@ export default function RegistrationPage() {
                     className={`h-2 w-2 rounded-full ${hasNumber || hasSymbol ? "bg-[#1D8751]" : "bg-[#1D8751]"}`}
                   ></div>
                   <span className="text-sm dark:text-white text-gray-900">
-                    At least one number or symbol
+                    {t(
+                      "auth.register.requirements.numberSymbol",
+                      "At least one number or symbol"
+                    )}
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -1143,7 +1176,10 @@ export default function RegistrationPage() {
                     className={`h-2 w-2 rounded-full ${hasMixedCase ? "bg-[#1D8751]" : "bg-[#1D8751]"}`}
                   ></div>
                   <span className="text-sm dark:text-white text-gray-900">
-                    Both uppercase and lowercase letters
+                    {t(
+                      "auth.register.requirements.mixedCase",
+                      "Both uppercase and lowercase letters"
+                    )}
                   </span>
                 </div>
               </div>
@@ -1154,7 +1190,7 @@ export default function RegistrationPage() {
                   htmlFor="referral-code"
                   className="block dark:text-white text-gray-900 text-sm mb-2"
                 >
-                  Referral Code
+                  {t("auth.register.referral", "Referral Code")}
                 </label>
                 <div className="relative">
                   <input
@@ -1163,7 +1199,10 @@ export default function RegistrationPage() {
                     value={referralCode}
                     onChange={(e) => setReferralCode(e.target.value)}
                     className="w-full py-2 px-4 pl-9 rounded-full dark:bg-[#1D1D23] bg-white border dark:border-gray-700 border-gray-300 dark:text-[#788099] text-gray-900 focus:outline-none focus:border-[#13B562]"
-                    placeholder="Paste here your referral code"
+                    placeholder={t(
+                      "auth.register.referral.placeholder",
+                      "Paste here your referral code"
+                    )}
                   />
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <img
@@ -1231,15 +1270,19 @@ export default function RegistrationPage() {
                       htmlFor="terms"
                       className="text-sm dark:text-white text-gray-900 cursor-pointer"
                     >
-                      By clicking Register, you agree to our Terms of Services
-                      and that you have read our Data Use Policy, including our
-                      Cookie Use
+                      {t(
+                        "auth.register.terms",
+                        "By clicking Register, you agree to our Terms of Services and that you have read our Data Use Policy, including our Cookie Use"
+                      )}
                     </label>
                   </div>
                 </div>
                 {!agreeToTerms && errors.firstName && (
                   <p className="mt-1 text-xs text-[#F04438]">
-                    You must agree to the terms and conditions
+                    {t(
+                      "auth.register.mustAgree",
+                      "You must agree to the terms and conditions"
+                    )}
                   </p>
                 )}
               </div>
@@ -1249,18 +1292,18 @@ export default function RegistrationPage() {
                 type="submit"
                 className="w-full bg-[#1D8751] text-white py-3 px-4 rounded-full hover:bg-[#0E5531] transition-colors duration-300 mt-4"
               >
-                Register
+                {t("auth.register.submit", "Register")}
               </button>
 
               {/* Login Link */}
               <div className="text-center mt-2">
                 <p className="text-gray-400">
-                  Already have an account?{" "}
+                  {t("auth.register.haveAccount", "Already have an account?")}{" "}
                   <Link
                     href="/auth/login"
                     className="text-[#1D8751] hover:text-[#0E5531] cursor-pointer"
                   >
-                    Log In
+                    {t("auth.register.login", "Log In")}
                   </Link>
                 </p>
                 <div className="border-t dark:border-gray-700 border-gray-300 flex-grow mt-2"></div>
@@ -1270,52 +1313,76 @@ export default function RegistrationPage() {
               <div className="mt-4">
                 <div className="relative flex items-center justify-center">
                   <span className="mx-4 text-gray-400 text-sm">
-                    Or Sign Up with
+                    {t("auth.register.or", "Or Sign Up with")}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 mt-4">
-                <React.Suspense fallback={<div className="flex items-center justify-center py-3 px-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-transparent w-full">
-                  <span className="text-gray-700 dark:text-gray-300 font-medium text-sm">Loading Google...</span>
-                </div>}>
-                  <GoogleAuthButton
-                    onSuccess={handleGoogleSuccess}
-                    onError={handleGoogleError}
-                  />
-                </React.Suspense>
-                {!profile ? (
-                  <React.Suspense fallback={<div className="flex items-center justify-center py-3 px-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-transparent w-full">
-                    <span className="text-gray-700 dark:text-gray-300 font-medium text-sm">Loading Facebook...</span>
-                  </div>}>
-                    <LoginSocialFacebook
-                      className="flex items-center border border-gray-300 dark:border-gray-600 justify-center  rounded-lg dark:border-gray-600 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-[#2A2A30] transition-colors duration-300 w-full"
-                      appId="9314592348583619"
-                      onResolve={(response: any) => {
-                        setProfile(response.data);
-                        handleFaceBookAuth(response.data.accessToken);
-                      }}
-                      onReject={(error: any) => {
-                        console.error("Facebook login failed:", error);
-                      }}
-                    >
-                      
-                        <div className="flex items-center justify-center">
-                        <span className="text-gray-700  dark:text-gray-300 font-medium text-sm">
-                         <img  className="w-5 h-5 mr-3 bg-white rounded-full" src="https://res.cloudinary.com/pitz/image/upload/v1755777400/channels4_profile_z4k17x-removebg-preview_qf5kzv.png" alt="" />
-                        </span>Facebook
-                        </div>
-                    </LoginSocialFacebook>
+                  <React.Suspense
+                    fallback={
+                      <div className="flex items-center justify-center py-3 px-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-transparent w-full">
+                        <span className="text-gray-700 dark:text-gray-300 font-medium text-sm">
+                          Loading Google...
+                        </span>
+                      </div>
+                    }
+                  >
+                    <GoogleAuthButton
+                      onSuccess={handleGoogleSuccess}
+                      onError={handleGoogleError}
+                    />
                   </React.Suspense>
-                ) : (
-                  <div className="flex items-center justify-center py-3 px-4 rounded-lg border border-green-300 dark:border-green-600 bg-green-50 dark:bg-green-900/20 w-full">
-                    <svg className="w-5 h-5 mr-3 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                    </svg>
-                    <span className="text-green-700 dark:text-green-300 font-medium text-sm">
-                      Facebook Connected
-                    </span>
-                  </div>
-                )}
+                  {!profile ? (
+                    <React.Suspense
+                      fallback={
+                        <div className="flex items-center justify-center py-3 px-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-transparent w-full">
+                          <span className="text-gray-700 dark:text-gray-300 font-medium text-sm">
+                            Loading Facebook...
+                          </span>
+                        </div>
+                      }
+                    >
+                      <LoginSocialFacebook
+                        className="flex items-center border border-gray-300 dark:border-gray-600 justify-center  rounded-lg dark:border-gray-600 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-[#2A2A30] transition-colors duration-300 w-full"
+                        appId="9314592348583619"
+                        onResolve={(response: any) => {
+                          setProfile(response.data);
+                          handleFaceBookAuth(response.data.accessToken);
+                        }}
+                        onReject={(error: any) => {
+                          console.error("Facebook login failed:", error);
+                        }}
+                      >
+                        <div className="flex items-center justify-center">
+                          <span className="text-gray-700  dark:text-gray-300 font-medium text-sm">
+                            <img
+                              className="w-5 h-5 mr-3 bg-white rounded-full"
+                              src="https://res.cloudinary.com/pitz/image/upload/v1755777400/channels4_profile_z4k17x-removebg-preview_qf5kzv.png"
+                              alt=""
+                            />
+                          </span>
+                          Facebook
+                        </div>
+                      </LoginSocialFacebook>
+                    </React.Suspense>
+                  ) : (
+                    <div className="flex items-center justify-center py-3 px-4 rounded-lg border border-green-300 dark:border-green-600 bg-green-50 dark:bg-green-900/20 w-full">
+                      <svg
+                        className="w-5 h-5 mr-3 text-green-600 dark:text-green-400"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span className="text-green-700 dark:text-green-300 font-medium text-sm">
+                        Facebook Connected
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </form>

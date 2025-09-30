@@ -3,8 +3,10 @@
 import React from "react";
 import { tokens } from "@/styles/tokens";
 import { TabsProps } from "../types";
+import { useP2PI18n } from "@/lib/useP2PI18n";
 
 const Tabs = ({ tabs, activeTab, onTabChange }: TabsProps) => {
+  const { t } = useP2PI18n();
   return (
     <div className="flex flex-wrap gap-4 mb-6">
       {tabs.map((tab) => {
@@ -19,7 +21,7 @@ const Tabs = ({ tabs, activeTab, onTabChange }: TabsProps) => {
             }`}
           >
             <span className="relative">
-              {tab.label}
+              {t(tab.label, tab.label)}
               {activeTab === tab.id && (
                 <div className="absolute bottom-[-8px] left-0 h-0.5 w-full bg-[#1D8751]" />
               )}
