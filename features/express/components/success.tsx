@@ -3,6 +3,7 @@ import { FaCheckCircle } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import CopyButton from "@/components/ui/CopyButton";
 import { useTheme } from "@/context/theme";
+import { type } from "os";
 
 const GREEN = "#309A64";
 
@@ -38,6 +39,7 @@ interface SuccessPageProps {
   };
   websocketData?: {
     type: "status_update" | "final_status";
+    timestamp?: string;
     data: {
       id?: string;
       status?: string;
@@ -55,6 +57,38 @@ interface SuccessPageProps {
       payoutHash?: string;
       createdAt?: string;
       updatedAt?: string;
+      // New fields for direct and ChangeNow flows
+      amount_from?: number;
+      amount_to?: number;
+      amount_expected_from?: number;
+      amount_expected_to?: number;
+      from_currency?: string;
+      to_currency?: string;
+      paid_amount?: number;
+      estimated_amount?: number;
+      net_amount?: string;
+      commission?: string;
+      network_fee?: string;
+      payin_hash?: string;
+      payout_hash?: string;
+      transaction_hash?: string;
+      tx_hash?: string;
+      transaction_id?: string;
+      swap_id?: string;
+      is_final?: boolean;
+      message?: string;
+      last_checked?: string;
+      update_count?: number;
+      admin_approved?: boolean;
+      is_conversion?: boolean;
+      rate?: number;
+      changelly_fee?: string;
+      source?: string;
+      original_status?: string;
+      api_status?: string;
+      api_message?: string;
+      api_timestamp?: string;
+      from_database?: boolean;
       [key: string]: any;
     };
   };
@@ -75,15 +109,15 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
   transactionData,
   websocketData,
   transactionId = "TXNWSU09E2DS",
-  date = "6/29/2025, 9:07:43 PM",
+  date = new Date().toLocaleString(),
   paidAmount = "USD 1",
   paidCurrency = "USD",
-  receivedAmount = ".0035 USDT",
+  receivedAmount = ".0035",
   receivedCurrency = "USDT",
   payinMethod = "Salam Bank",
   payoutMethod = "usdt-erc20",
   transactionHash = "0x96ba940eec77c56e7a2806c5c269410303dce20cc2226ca1439659037940ce5b",
-  netAmount = ".99 USDT",
+  netAmount = ".99",
 }) => {
   const router = useRouter();
   const { isDark, isLight } = useTheme();
@@ -111,26 +145,41 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
     const isWithdrawal = transactionData.type === "withdrawal";
     
     // Get currency information with better fallbacks
-    let currency = transactionData.asset?.ticker || 
-                  transactionData.asset?.symbol || 
-                  transactionData.asset?.name ||
-                  transactionData.currency || 
-                  "USDT";
+    let fromCurrency = transactionData.asset?.ticker || 
+                      transactionData.asset?.symbol || 
+                      transactionData.asset?.name ||
+                      transactionData.currency || 
+                      "USDT";
+    
+    let toCurrency = fromCurrency; // Default to same currency
     
     // Override with websocket data if available
-    if (websocketData?.data?.fromCurrency) {
-      currency = websocketData.data.fromCurrency.toUpperCase();
+    if (websocketData?.data) {
+      const wsData = websocketData.data;
+      
+      // Handle from_currency (what user sent)
+      if (wsData.from_currency) {
+        fromCurrency = wsData.from_currency.toUpperCase();
+      } else if (wsData.fromCurrency) {
+        fromCurrency = wsData.fromCurrency.toUpperCase();
+      }
+      
+      // Handle to_currency (what user receives)
+      if (wsData.to_currency) {
+        toCurrency = wsData.to_currency.toUpperCase();
+      } else if (wsData.toCurrency) {
+        toCurrency = wsData.toCurrency.toUpperCase();
+      }
+      
+      // Check for deposit-specific currency from websocket data
+      if (wsData.currency) {
+        fromCurrency = wsData.currency.toUpperCase();
+        toCurrency = wsData.currency.toUpperCase();
+      }
     }
     
-    // Check for deposit-specific currency from websocket data
-    if (websocketData?.data?.currency) {
-      currency = websocketData.data.currency.toUpperCase();
-    }
-    
-    // Check for withdrawal completion currency
-    if (websocketData?.data?.status === "completed" && websocketData?.data?.currency) {
-      currency = websocketData.data.currency.toUpperCase();
-    }
+    // For display purposes, use fromCurrency as the main currency
+    const currency = fromCurrency;
     
     const network = transactionData.network?.network_type || 
                    transactionData.network?.network_id || 
@@ -153,36 +202,64 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
                          transactionData.totalAmountDue || 
                          amount;
     
-          // Use websocket data for amounts if available
-      if (websocketData?.data) {
-        const wsData = websocketData.data;
-        
-        // Use amountFrom for paid amount (what user sent)
-        if (wsData.amountFrom !== null && wsData.amountFrom !== undefined) {
-          amount = wsData.amountFrom;
-        } else if (wsData.expectedAmountFrom !== null && wsData.expectedAmountFrom !== undefined) {
-          amount = wsData.expectedAmountFrom;
-        }
-        
-        // Use amountTo for received amount (what user gets)
-        if (wsData.amountTo !== null && wsData.amountTo !== undefined) {
-          estimatedAmount = wsData.amountTo;
-        } else if (wsData.expectedAmountTo !== null && wsData.expectedAmountTo !== undefined) {
-          estimatedAmount = wsData.expectedAmountTo;
-        }
-        
-        // Check for deposit amount from new format
-        if (wsData.amount && wsData.transaction_type === "deposit") {
+    // Use websocket data for amounts if available
+    if (websocketData?.data) {
+      const wsData = websocketData.data;
+      
+      // Check if this is a direct use flow (same currency) or conversion flow (different currencies)
+      const isDirectFlow = !wsData.from_currency || !wsData.to_currency || 
+                          wsData.from_currency === wsData.to_currency ||
+                          (wsData.amount && wsData.net_amount && !wsData.amount_from && !wsData.amount_to);
+      
+      const isConversionFlow = wsData.from_currency && wsData.to_currency && 
+                              wsData.from_currency !== wsData.to_currency &&
+                              (wsData.amount_from !== null || wsData.amount_to !== null);
+      
+      if (isDirectFlow) {
+        // Direct use flow: use 'amount' for paid and received amounts, 'net_amount' for net amount
+        // For direct flow: "You Paid" = amount, "You Received" = amount, "Net Amount Processed" = net_amount
+        if (wsData.amount !== null && wsData.amount !== undefined) {
           amount = parseFloat(wsData.amount);
-          estimatedAmount = parseFloat(wsData.amount);
+          estimatedAmount = parseFloat(wsData.amount); // "You Received" should be amount
         }
-        
-        // Check for withdrawal amount from completion status
-        if (wsData.amount && wsData.status === "completed") {
-          amount = parseFloat(wsData.amount);
-          estimatedAmount = parseFloat(wsData.amount);
+      } else if (isConversionFlow) {
+        // Conversion flow: use amount_from for paid, amount_to for received
+        // For conversion flow: "You Paid" = amount_from, "You Received" = amount_to
+        if (wsData.amount_from !== null && wsData.amount_from !== undefined) {
+          amount = wsData.amount_from;
         }
+        if (wsData.amount_to !== null && wsData.amount_to !== undefined) {
+          estimatedAmount = wsData.amount_to; // "You Received" should be amount_to
+        }
+      } else {
+        // ChangeNow flow: use amount_from, amount_to, etc.
+      // Handle amount_from (what user sent/paid) - highest priority
+      if (wsData.amount_from !== null && wsData.amount_from !== undefined) {
+        amount = wsData.amount_from;
+      } else if (wsData.amountFrom !== null && wsData.amountFrom !== undefined) {
+        amount = wsData.amountFrom;
+      } else if (wsData.paid_amount !== null && wsData.paid_amount !== undefined) {
+        amount = wsData.paid_amount;
+      } else if (wsData.amount_expected_from !== null && wsData.amount_expected_from !== undefined) {
+        amount = wsData.amount_expected_from;
+      } else if (wsData.expectedAmountFrom !== null && wsData.expectedAmountFrom !== undefined) {
+        amount = wsData.expectedAmountFrom;
       }
+      
+      // Handle amount_to (what user receives) - highest priority
+      if (wsData.amount_to !== null && wsData.amount_to !== undefined) {
+        estimatedAmount = wsData.amount_to;
+      } else if (wsData.amountTo !== null && wsData.amountTo !== undefined) {
+        estimatedAmount = wsData.amountTo;
+      } else if (wsData.estimated_amount !== null && wsData.estimated_amount !== undefined) {
+        estimatedAmount = wsData.estimated_amount;
+      } else if (wsData.amount_expected_to !== null && wsData.amount_expected_to !== undefined) {
+        estimatedAmount = wsData.amount_expected_to;
+      } else if (wsData.expectedAmountTo !== null && wsData.expectedAmountTo !== undefined) {
+        estimatedAmount = wsData.expectedAmountTo;
+      }
+      }
+    }
     
     // Get transaction hash/ID with websocket data priority
     let txId = transactionData.transactionId || 
@@ -191,29 +268,40 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
               "N/A";
     
     // Use websocket ID if available
-    if (websocketData?.data?.id) {
-      txId = websocketData.data.id;
-    }
-    
-    // Check for transaction_id from new deposit format
-    if (websocketData?.data?.transaction_id) {
-      txId = websocketData.data.transaction_id;
+    if (websocketData?.data) {
+      const wsData = websocketData.data;
+      
+      // Check for transaction_id from new deposit format
+      if (wsData.transaction_id) {
+        txId = wsData.transaction_id;
+      } else if (wsData.id) {
+        txId = wsData.id;
+      } else if (wsData.swap_id) {
+        txId = wsData.swap_id;
+      }
     }
     
     // Get transaction hash from websocket data
     let txHash = txId;
     
-    // Check for transaction_hash from withdrawal completion (highest priority)
-    if (websocketData?.data?.transaction_hash) {
-      txHash = websocketData.data.transaction_hash;
-    } else if (websocketData?.data?.tx_hash) {
-      txHash = websocketData.data.tx_hash;
-    } else if (websocketData?.data?.payinHash) {
-      txHash = websocketData.data.payinHash;
-    } else if (websocketData?.data?.payoutHash) {
-      txHash = websocketData.data.payoutHash;
-    } else if (websocketData?.data?.payout_hash) {
-      txHash = websocketData.data.payout_hash;
+    // Check for transaction hash from websocket data (highest priority)
+    if (websocketData?.data) {
+      const wsData = websocketData.data;
+      
+      // Check for payout_hash (what user receives) - highest priority for withdrawals
+      if (wsData.payout_hash) {
+        txHash = wsData.payout_hash;
+      } else if (wsData.payoutHash) {
+        txHash = wsData.payoutHash;
+      } else if (wsData.transaction_hash) {
+        txHash = wsData.transaction_hash;
+      } else if (wsData.tx_hash) {
+        txHash = wsData.tx_hash;
+      } else if (wsData.payin_hash) {
+        txHash = wsData.payin_hash;
+      } else if (wsData.payinHash) {
+        txHash = wsData.payinHash;
+      }
     }
     
     // Format amounts properly
@@ -222,30 +310,67 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
       return isNaN(num) ? "0" : num.toFixed(8).replace(/\.?0+$/, '');
     };
     
+    // Get net amount from websocket data if available, otherwise use estimatedAmount
+    let calculatedNetAmount = estimatedAmount;
+    if (websocketData?.data) {
+      const wsData = websocketData.data;
+      
+      // For conversion flows, use amount_to as net amount
+      if (wsData.from_currency && wsData.to_currency && 
+          wsData.from_currency !== wsData.to_currency &&
+          wsData.amount_to !== null && wsData.amount_to !== undefined) {
+        calculatedNetAmount = wsData.amount_to;
+      }
+      // For direct flows, use net_amount if available
+      else if (wsData.net_amount !== null && wsData.net_amount !== undefined) {
+        calculatedNetAmount = parseFloat(wsData.net_amount);
+      }
+    }
+    
+    // Get date from websocket data if available, otherwise use current time
+    let transactionDate = new Date().toISOString();
+    if (websocketData?.timestamp) {
+      transactionDate = websocketData.timestamp;
+    } else if (websocketData?.data?.last_checked) {
+      transactionDate = websocketData.data.last_checked;
+    }
+    
     return {
       transactionId: txId,
-      date: websocketData?.data?.updated_at ? 
-            websocketData.data.updated_at : 
-            websocketData?.data?.updatedAt ? 
-            websocketData.data.updatedAt : 
-            new Date().toISOString(),
-      paidAmount: `${formatAmount(amount)} ${currency}`,
-      paidCurrency: currency,
+      date: transactionDate,
+      paidAmount: `${formatAmount(amount)} ${isDeposit ? 'USD' : ''}`,
+      paidCurrency: fromCurrency,
       receivedAmount: formatAmount(estimatedAmount),
-      receivedCurrency: currency,
-      payinMethod: isDeposit ? paymentMethod : `${currency} Wallet`,
-      payoutMethod: isWithdrawal ? paymentMethod : `${currency} Wallet`,
+      receivedCurrency: toCurrency,
+      payinMethod: isDeposit ? paymentMethod : `${fromCurrency} Wallet`,
+      payoutMethod: isWithdrawal ? paymentMethod : `${toCurrency} Wallet`,
       transactionHash: txHash,
-      netAmount: formatAmount(estimatedAmount),
+      netAmount: formatAmount(calculatedNetAmount),
     };
   };
 
   const realData = getRealData();
+  
+  // Extract transaction type for use in JSX
+  const isDeposit = transactionData?.type === "deposit";
 
   // Format date on client side to avoid hydration mismatch
   useEffect(() => {
-    if (realData.date) {
-      setFormattedDate(new Date(realData.date).toLocaleString("en-US", {
+    try {
+      const dateObj = new Date(realData.date);
+      if (!isNaN(dateObj.getTime())) {
+        setFormattedDate(dateObj.toLocaleString("en-US", {
+          timeZone: "UTC"
+        }));
+      } else {
+        // Fallback to current date if invalid
+        setFormattedDate(new Date().toLocaleString("en-US", {
+          timeZone: "UTC"
+        }));
+      }
+    } catch (error) {
+      // Fallback to current date if any error occurs
+      setFormattedDate(new Date().toLocaleString("en-US", {
         timeZone: "UTC"
       }));
     }
@@ -314,7 +439,10 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
               <div className={`text-sm mb-1 ${
                 isDark ? "text-gray-400" : "text-gray-600"
               }`}>You Paid</div>
-              <div className={`text-xs ${
+              <div className="font-bold flex items-center gap-2">
+                <span>{realData.paidAmount}</span>
+              </div>
+              <div className={`text-xs mt-1 ${
                 isDark ? "text-gray-400" : "text-gray-600"
               }`}>Via {realData.payinMethod}</div>
             </div>
@@ -323,8 +451,8 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
                 isDark ? "text-gray-400" : "text-gray-600"
               }`}>You Received</div>
               <div className="font-bold flex items-center justify-end gap-2" style={{ color: GREEN }}>
-                <span>{realData.receivedAmount} </span>
-                <span>{realData.receivedCurrency}</span>
+                <span>{isDeposit ? realData.netAmount : realData.netAmount} </span>
+                <span>{isDeposit ? realData.receivedCurrency :'USD'}</span>
               </div>
             </div>
           </div>
@@ -372,6 +500,8 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
             </div>
           </div>
         </div>
+
+   
       </div>
 
       {/* Action Buttons */}

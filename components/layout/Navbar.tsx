@@ -726,68 +726,7 @@ export default function Navbar() {
                         </div>
                       </Link>
 
-                      {/* Buy Option */}
-                      <Link
-                        href="/dashboard/buy"
-                        className="block"
-                        onClick={() => {
-                          setDepositDropdownOpen(false);
-                        }}
-                      >
-                        <div className="flex items-center transition-colors duration-200 group">
-                          <div className="w-10 h-10 rounded-lg flex items-center justify-center mr-4">
-                            <svg
-                              width="50"
-                              height="50"
-                              viewBox="0 0 50 50"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <rect
-                                x="8"
-                                y="15"
-                                width="34"
-                                height="20"
-                                rx="4"
-                                ry="4"
-                                stroke="#1C8F4D"
-                                strokeWidth="3"
-                                fill="none"
-                              />
-                              <rect
-                                x="16"
-                                y="24"
-                                width="8"
-                                height="4"
-                                fill="#F49A29"
-                                rx="1"
-                                ry="1"
-                              />
-                            </svg>
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="dark:text-white text-gray-900 font-medium text-base mb-1">
-                              Buy
-                            </h4>
-                            <p className="dark:text-gray-400 text-gray-600 text-sm">
-                              Buy crypto directly with cash, hassle-free and
-                              suggested for new users
-                            </p>
-                          </div>
-                          <svg
-                            className="w-5 h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
-                            />
-                          </svg>
-                        </div>
-                      </Link>
+                     
                     </div>
                   </div>
                 )}

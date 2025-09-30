@@ -119,7 +119,7 @@ const PasswordSection: React.FC = () => {
               </svg>
               <input
                 type={showPasswords.current ? "text" : "password"}
-                className="bg-transparent flex-1 ml-2 outline-none text-sm text-[#788099] dark:text-white"
+                className="bg-transparent flex-1 ml-2 outline-none text-sm text-[#788099] dark:text-white autofill:bg-transparent autofill:shadow-[inset_0_0_0px_1000px_transparent] dark:autofill:bg-transparent dark:autofill:shadow-[inset_0_0_0px_1000px_transparent]"
                 placeholder="Enter current password"
                 value={formData.current_password}
                 onChange={(e) =>
@@ -183,7 +183,7 @@ const PasswordSection: React.FC = () => {
               </svg>
               <input
                 type={showPasswords.new ? "text" : "password"}
-                className="bg-transparent flex-1 ml-2 outline-none text-sm text-[#788099] dark:text-white"
+                className="bg-transparent flex-1 ml-2 outline-none text-sm text-[#788099] dark:text-white autofill:bg-transparent autofill:shadow-[inset_0_0_0px_1000px_transparent] dark:autofill:bg-transparent dark:autofill:shadow-[inset_0_0_0px_1000px_transparent]"
                 placeholder="Enter new password"
                 value={formData.new_password}
                 onChange={(e) =>
@@ -247,7 +247,7 @@ const PasswordSection: React.FC = () => {
               </svg>
               <input
                 type={showPasswords.confirm ? "text" : "password"}
-                className="bg-transparent flex-1 ml-2 outline-none text-sm text-[#788099] dark:text-white"
+                className="bg-transparent flex-1 ml-2 outline-none text-sm text-[#788099] dark:text-white autofill:bg-transparent autofill:shadow-[inset_0_0_0px_1000px_transparent] dark:autofill:bg-transparent dark:autofill:shadow-[inset_0_0_0px_1000px_transparent]"
                 placeholder="Confirm new password"
                 value={formData.confirm_password}
                 onChange={(e) =>

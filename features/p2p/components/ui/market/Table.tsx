@@ -6,7 +6,6 @@ import { TiArrowUnsorted } from "react-icons/ti";
 import { MarketTableProps } from "./types";
 import TradePreview from "./sections/tradePreview";
 import Loader from "../../Common/Loader";
-import { useP2PI18n } from "@/lib/useP2PI18n";
 
 // Bank icons mapping
 const BANK_ICONS: Record<string, string> = {
@@ -51,17 +50,6 @@ const MarketTable: React.FC<MarketTableProps> = ({
     return <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />;
   };
 
-  // i18n hook MUST be declared before any early returns to preserve hook order
-  const { t } = useP2PI18n();
-
-  /* ------------------------------------------------------------------ */
-  /* Loading state                                                      */
-  /* ------------------------------------------------------------------ */
-  if (loading) return <Loader />;
-
-  /* ------------------------------------------------------------------ */
-  /* Component                                                          */
-  /* ------------------------------------------------------------------ */
   return (
     <div className="w-full">
       <div className="overflow-x-auto rounded-2xl">
@@ -72,30 +60,27 @@ const MarketTable: React.FC<MarketTableProps> = ({
               className="min-w-[200px] flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
               onClick={() => handleSort("advertiser")}
             >
-              {t("table.advertiser", "Advertiser")} {getSortIcon("advertiser")}
+              Advertiser {getSortIcon("advertiser")}
             </div>
             <div
               className="min-w-[120px] flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
               onClick={() => handleSort("commission")}
             >
-              {t("table.commission", "Commission")} {getSortIcon("commission")}
+              Commission {getSortIcon("commission")}
             </div>
             <div
               className="min-w-[180px] flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
               onClick={() => handleSort("available")}
             >
-              {t("table.available", "Available")}/{t("table.limit", "Limit")}{" "}
-              {getSortIcon("available")}
+              Available/Order Limit {getSortIcon("available")}
             </div>
             <div
               className="min-w-[200px] flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
               onClick={() => handleSort("payment")}
             >
-              {t("table.payment", "Payment")} {getSortIcon("payment")}
+              Payment {getSortIcon("payment")}
             </div>
-            <div className="min-w-[120px] text-right">
-              {t("table.actions", "Actions")}
-            </div>
+            <div className="min-w-[120px] text-right">Trade</div>
           </div>
 
           {/* ---------------- empty state --------------- */}
@@ -105,15 +90,12 @@ const MarketTable: React.FC<MarketTableProps> = ({
                 <FaRegClock className="text-gray-400 dark:text-[#788099] text-2xl" />
               </div>
               <h3 className="text-lg font-semibold text-gray-500 dark:text-[#788099] mb-2">
-                {t("filters.allOrders", "All Orders")} -{" "}
-                {t("common.loading", "Loading...")}
+                No Orders Found
               </h3>
               <p className="text-sm text-gray-400 dark:text-[#8C8CA1] text-center max-w-md">
-                {t(
-                  activeTab === "buy" ? "common.buy" : "common.sell",
-                  activeTab === "buy" ? "Buy" : "Sell"
-                )}{" "}
-                {t("common.loading", "Loading...")}
+                There are currently no {activeTab === "buy" ? "buy" : "sell"}{" "}
+                orders available. Please check back later or try adjusting your
+                filters.
               </p>
             </div>
           ) : (
@@ -187,14 +169,12 @@ const MarketTable: React.FC<MarketTableProps> = ({
                       className="min-w-[90px] font-semibold"
                       onClick={() => handleTradeClick(idx)}
                     >
-                      {activeTab === "sell"
-                        ? `${t("common.sell", "Sell").toUpperCase()} USDT`
-                        : `${t("common.buy", "Buy").toUpperCase()} USDT`}
+                      {activeTab === "sell" ? "SELL USDT" : "BUY USDT"}
                     </Button>
                   </div>
                 </div>
                 {selectedRowIndex === idx && (
-                  <div className="mt-4 p-4 w-full">
+                  <div className="mt-4 p-2 sm:p-4 w-full">
                     <TradePreview
                       advertiserData={row}
                       onClose={() => setSelectedRowIndex(null)}

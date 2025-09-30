@@ -190,6 +190,13 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       };
 
       const response = await matchP2POrder(advertiserData.id, orderData);
+      
+      // Store trade_id in local storage
+      if (response && 'trade_id' in response) {
+        localStorage.setItem('p2p_trade_id', (response as any).trade_id);
+        console.log('Trade ID stored in localStorage:', (response as any).trade_id);
+      }
+      
       // Navigate with state using URL search params
       const searchParams = new URLSearchParams();
       searchParams.set(

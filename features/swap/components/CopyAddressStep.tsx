@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { CreateSwapResponse } from "../types";
 import { connectSwapStatusWebSocket } from "./websocket";
 import { API_CONFIG } from "@/lib/appConfig";
-import SuccessPage from "../../express/components/success";
+import SuccessPage from "./success";
 import { Copy } from "lucide-react";
 
 interface CopyAddressStepProps {
@@ -220,16 +220,20 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
     console.log("🎉 Rendering success page for status:", mappedStatus);
     return (
       <SuccessPage
-        transactionId={statusObj?.id || swapResponse?.id || ""}
-        date={statusObj?.updatedAt || statusObj?.createdAt || new Date().toLocaleString()}
-        paidAmount={statusObj?.expectedAmountFrom || swapResponse?.fromAmount || ""}
-        paidCurrency={statusObj?.fromCurrency || swapResponse?.fromCurrency || ""}
-        receivedAmount={statusObj?.expectedAmountTo || swapResponse?.toAmount || ""}
-        receivedCurrency={statusObj?.toCurrency || swapResponse?.toCurrency || ""}
-        payinMethod={statusObj?.fromNetwork || swapResponse?.fromNetwork || ""}
-        payoutMethod={statusObj?.toNetwork || swapResponse?.toNetwork || ""}
-        transactionHash={statusObj?.payinHash || statusObj?.payoutHash || ""}
-        netAmount={statusObj?.amountTo || statusObj?.expectedAmountTo || swapResponse?.toAmount || ""}
+        transactionId={statusObj?.swap_id || statusObj?.id || swapResponse?.id || ""}
+        date={new Date().toLocaleString()}
+        paidAmount={statusObj?.amount_from || swapResponse?.fromAmount || statusObj?.expectedAmountFrom || ""}
+        paidCurrency={statusObj?.from_currency || swapResponse?.fromCurrency || statusObj?.fromCurrency || ""}
+        receivedAmount={statusObj?.amount_to || swapResponse?.toAmount || statusObj?.expectedAmountTo || ""}
+        receivedCurrency={statusObj?.to_currency || swapResponse?.toCurrency || statusObj?.toCurrency || ""}
+        payinMethod={statusObj?.from_currency || swapResponse?.fromNetwork || statusObj?.fromNetwork || ""}
+        payoutMethod={statusObj?.to_currency || swapResponse?.toNetwork || statusObj?.toNetwork || ""}
+        transactionHash={statusObj?.payout_hash || statusObj?.payin_hash || statusObj?.payinHash || statusObj?.payoutHash || ""}
+        netAmount={statusObj?.amount_to || statusObj?.net_amount || swapResponse?.toAmount || statusObj?.expectedAmountTo || ""}
+        websocketData={{
+          type: "status_update",
+          data: statusObj
+        }}
       />
     );
   }
@@ -244,8 +248,10 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
                 Amount:
               </div>
               <div className="text-gray-900 dark:text-white text-base font-semibold mb-1">
-                {swapResponse.fromAmount} {swapResponse.fromCurrency}
+                {statusObj?.amount_from || swapResponse.fromAmount} 
+                <span className='uppercase ml-4'>{statusObj?.from_currency || swapResponse.fromCurrency}</span>
               </div>
+             
               <div className="mt-4">
                 <div className="text-gray-600 dark:text-[#7e7e8f] text-xs font-semibold mb-1">
                   To this address:
@@ -411,7 +417,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
         </div>
         <div className="flex items-center justify-between mt-2">
           <div className="text-gray-900 dark:text-white text-base font-mono font-semibold">
-            {swapResponse.toAmount} {swapResponse.toCurrency}
+            {statusObj?.amount_to || swapResponse.toAmount} {statusObj?.to_currency || swapResponse.toCurrency}
           </div>
           <div className="flex items-center gap-2">
             <span className="text-gray-600 dark:text-[#7e7e8f] text-sm font-mono">
@@ -444,6 +450,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
           alt=""
         />
       </div>
+      
     </div>
   );
 };

@@ -26,7 +26,7 @@ const Express = () => {
       <div className=" mb-1">
         <button
           onClick={handleModeToggle}
-          className="hover:opacity-80 transition-opacity"
+          className="hover:opacity-80  transition-opacity"
           title={`Switch to ${currentMode === "deposit" ? "withdrawal" : "deposit"} mode`}
         >
           <span
@@ -36,6 +36,7 @@ const Express = () => {
             {mounted && isDark ? (
               <>
                 <img
+                  
                   src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
                   alt=""
                 />

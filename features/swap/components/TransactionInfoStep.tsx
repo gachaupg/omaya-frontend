@@ -3,7 +3,7 @@ import AssetDropdown from "./AssetDropdown";
 import EstimatedPriceDisplay from "./EstimatedPriceDisplay";
 import { SupportedAsset, SwapEstimate } from "../types";
 import { useTheme } from "@/context/theme";
-import SuccessPage from "../../express/components/success";
+import SuccessPage from "./success";
 
 interface TransactionInfoStepProps {
   fromAsset: SupportedAsset | null;
