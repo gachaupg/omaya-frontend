@@ -1859,7 +1859,7 @@ export default function DepositForm({
           {/* Swap Circle - positioned to touch both borders equally */}
           <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/3 z-10">
             <button
-              className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105"
+              className="w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105"
               onClick={() => {
                 // Switch between deposit and withdrawal modes
                 if (onModeChange) {
@@ -2725,6 +2725,8 @@ export default function DepositForm({
           setIsInfoModalOpen(false);
         }}
       />
+      
+
     </div>
   );
 }
