@@ -1,0 +1,102 @@
+{
+  "navigation": {
+    "dashboard": "Dashboard",
+    "express": "Express",
+    "expressChange": "Bedel",
+    "p2pTrading": "Ganacsiga P2P",
+    "swapCrypto": "Crypto Bedel",
+    "account": "Akoonka",
+    "notifications": "Ogeysiis"
+  },
+  "userCard": {
+    "hello": "Salaan, {{name}}!",
+    "verifiedProfile": "Profile La Xaqiijiyay",
+    "userId": "Aqoonsiga Isticmaalaha",
+    "userType": "Nooca Isticmaalaha",
+    "individual": "Qof",
+    "back": "Dib",
+    "profileImageUpdated": "Sawirka profile-ka si guul leh ayaa loo cusboonaysiiyay",
+    "imageSizeError": "Cabbirka sawirka waa inuu ka yar yahay 5MB",
+    "updateError": "Lagu guul daray cusboonaysiinta sawirka profile-ka"
+  },
+  "transactions": {
+    "title": "Ganacsiga Dhowaan",
+    "viewAll": "Dhammaan Eeg",
+    "noTransactions": "Lama helin ganacsi",
+    "loading": "Ganacsiga la soo dejinayaa...",
+    "asset": "Hantida",
+    "transactionType": "Nooca Ganacsiga",
+    "amount": "Qadarka",
+    "paymentMethod": "Habka Lacag Bixinta",
+    "when": "Marka",
+    "types": {
+      "deposit": "Gelinta",
+      "withdrawal": "Ka bixinta",
+      "p2pBuy": "Iibka P2P",
+      "p2pSell": "Iibka P2P",
+      "swap": "Bedel",
+      "exchange": "Bedel"
+    },
+    "status": {
+      "completed": "Dhammaaday",
+      "pending": "Sugaya",
+      "failed": "Fashilmay",
+      "cancelled": "La joojiyay",
+      "processing": "La warshadaynayaa"
+    },
+    "timeAgo": {
+      "minute": "{{count}} daqiiqo ka hor",
+      "minutes": "{{count}} daqiiqo ka hor",
+      "hour": "{{count}} saac ka hor",
+      "hours": "{{count}} saac ka hor",
+      "day": "{{count}} maalin ka hor",
+      "days": "{{count}} maalin ka hor",
+      "week": "{{count}} usbuuc ka hor",
+      "weeks": "{{count}} usbuuc ka hor",
+      "month": "{{count}} bil ka hor",
+      "months": "{{count}} bil ka hor"
+    }
+  },
+  "volume": {
+    "myTotalVolume": "Wadarta Dhammaan",
+    "exchange": "Bedel",
+    "p2pVolume": "Cabbirka P2P",
+    "swap": "Bedel",
+    "buy": "Iib"
+  },
+  "charts": {
+    "priceChart": "Charta Qiimaha",
+    "volumeChart": "Charta Cabbirka",
+    "lineChart": "Charta Xariiqda",
+    "noData": "Macluumaad la heli karo ma jiraan"
+  },
+  "kyc": {
+    "verificationRequired": "Xaqiijinta KYC ayaa loo baahan yahay",
+    "verificationInProgress": "Xaqiijinta waa la warshadaynayaa",
+    "verificationCompleted": "Xaqiijinta waa la dhammaaday",
+    "verificationFailed": "Xaqiijinta way fashilantay"
+  },
+  "common": {
+    "loading": "La soo dejinayaa...",
+    "error": "Qalad",
+    "success": "Guul",
+    "retry": "Dib u day",
+    "cancel": "Jooji",
+    "confirm": "Xaqiiji",
+    "save": "Keydi",
+    "edit": "Wax ka beddel",
+    "delete": "Tirtir",
+    "close": "Xidh",
+    "back": "Dib",
+    "next": "Xiga",
+    "previous": "Hore",
+    "search": "Raadi",
+    "filter": "Shaandhayn",
+    "sort": "Kala saar",
+    "refresh": "Cusboonaysii",
+    "copy": "Nuqul",
+    "copied": "La nuqulay!",
+    "view": "Eeg",
+    "details": "Faahfaahin"
+  }
+}

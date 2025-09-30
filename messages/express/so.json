@@ -1,0 +1,14 @@
+{
+  "express.mode.deposit": "gelin",
+  "express.mode.withdrawal": "ka-bixid",
+  "express.switchMode": "U beddel habka {{mode}}",
+  "express.selectPaymentMethods": "Dooro Hababka Bixinta",
+  "express.unknownProvider": "Bixiye Aan La Aqoon",
+  "express.unknownMethod": "Hab Aan La Aqoon",
+  "express.remove": "Ka saar",
+  "express.select": "Dooro",
+  "express.noPaymentDetails": "Faahfaahinta lacag bixinta lama helin",
+  "express.estimate.notice": "Tani waa qiime qiyaas ah oo ku saleysan heerarka suuqa ee hadda jira. Qiimaha kama dambaysta ah waxaa la xaqiijin doonaa marka aan helno lacagta.",
+  "express.estimate.line1": "Tani waa qiime qiyaas ah oo ku saleysan heerarka suuqa ee hadda jira.",
+  "express.estimate.line2": "Qiimaha kama dambaysta ah waxaa la xaqiijin doonaa marka aan helno lacagta."
+}

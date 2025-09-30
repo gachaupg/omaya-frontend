@@ -13,6 +13,14 @@ const Input: React.FC<InputProps> = ({
   bgColor = tokens.colors.dark.card,
   ...props
 }) => {
+  // Normalize `value`: if explicitly provided as null, convert to empty string
+  // If `value` is undefined, omit it to allow uncontrolled usage
+  const { value, ...restProps } = props as {
+    value?: string | number | null;
+  } & React.InputHTMLAttributes<HTMLInputElement>;
+  const finalProps =
+    value === undefined ? restProps : { ...restProps, value: value ?? "" };
+
   return (
     <input
       className={`bg-[${bgColor}] border border-[${borderColor}] ${
@@ -20,7 +28,7 @@ const Input: React.FC<InputProps> = ({
       } px-4 py-2 text-[${tokens.colors.dark.textTitle}] placeholder:text-[${
         tokens.colors.dark.textBody
       }] focus:outline-none transition ${className}`}
-      {...props}
+      {...finalProps}
     />
   );
 };

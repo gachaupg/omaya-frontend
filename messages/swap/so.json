@@ -1,0 +1,19 @@
+{
+  "swap.title": "Beddel Crypto",
+  "swap.transactionInfo": "Macluumaadka Macaamilka",
+  "swap.youSend": "Waxaad Diraysaa",
+  "swap.youReceive": "Waxaad Helaysaa",
+  "swap.asset": "Hanti",
+  "swap.enterAmount": "Geli qadarka",
+  "swap.selectAsset": "Dooro Hanti",
+  "swap.searchAssets": "Raadi hantida...",
+  "swap.noAssetsFound": "Hanti lama helin",
+  "swap.noAssetsAvailable": "Hanti lama heli karo",
+  "swap.disclaimer": "Tani waa qiime qiyaas ah oo ku saleysan heerarka suuqa ee hadda jira. Qiimaha kama dambaysta ah waxaa la xaqiijin doonaa marka aan helno lacagta.",
+  "swap.submit": "Gudbi",
+  "swap.loading": "La soo dejinayo...",
+  "swap.error.loadingSwap": "Khalad ku yimid soo dejinta Swap",
+  "swap.error.tryAgain": "Isku day mar kale",
+  "swap.error.estimateTitle": "Khalad Qiyaasta",
+  "swap.error.genericTitle": "Khalad"
+}
