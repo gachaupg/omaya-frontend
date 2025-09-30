@@ -539,30 +539,24 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             setCurrentStatus(uiStatus);
 
             // Auto-navigate to success page when transaction is completed
-            // Only navigate when the UI status is "completed", not when it's "sending"
-            const shouldAutoNavigate = uiStatus === "completed" && (
-              data.type === "final_status" || 
-              data.is_final === true || 
-              (data as any).is_final === true ||
-              data.data?.is_final === true ||
-              // For direct exchanges, completed status should always trigger navigation
-              (data.type === "status_update" && status === "completed")
-            );
+            // Navigate on ANY completed status - whether from ChangeNow or direct transfer
+            const shouldAutoNavigate = uiStatus === "completed" || status === "completed";
             console.log("DEBUG: Auto-navigation check:", {
               status,
               uiStatus,
               "uiStatus === completed": uiStatus === "completed",
-              "data.type": data.type,
-              "data.type === final_status": data.type === "final_status",
-              "data.is_final": data.is_final,
-              "(data as any).is_final": (data as any).is_final,
-              "data.data?.is_final": data.data?.is_final,
-              "data.type === status_update && status === completed": data.type === "status_update" && status === "completed",
+              "status === completed": status === "completed",
               "shouldAutoNavigate": shouldAutoNavigate
             });
             
             if (shouldAutoNavigate) {
-              console.log("🚀 AUTO-NAVIGATION TRIGGERED! Redirecting to success page in 2 seconds...");
+              console.log("🚀 AUTO-NAVIGATION TRIGGERED! Transaction completed - redirecting to success page in 2 seconds...");
+              console.log("📊 Transaction details:", {
+                transactionId: effectiveTransactionData?.transactionId,
+                status: status,
+                uiStatus: uiStatus,
+                responseType: effectiveTransactionData?.responseType
+              });
               // Store final websocket data for success page
               setFinalWebsocketData(data);
               // Create snapshot of websocket data to prevent changes in success page

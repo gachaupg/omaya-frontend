@@ -248,8 +248,10 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
                 Amount:
               </div>
               <div className="text-gray-900 dark:text-white text-base font-semibold mb-1">
-                {swapResponse.fromAmount} {swapResponse.fromCurrency}
+                {statusObj?.amount_from || swapResponse.fromAmount} 
+                <span className='uppercase ml-4'>{statusObj?.from_currency || swapResponse.fromCurrency}</span>
               </div>
+             
               <div className="mt-4">
                 <div className="text-gray-600 dark:text-[#7e7e8f] text-xs font-semibold mb-1">
                   To this address:
@@ -415,7 +417,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
         </div>
         <div className="flex items-center justify-between mt-2">
           <div className="text-gray-900 dark:text-white text-base font-mono font-semibold">
-            {swapResponse.toAmount} {swapResponse.toCurrency}
+            {statusObj?.amount_to || swapResponse.toAmount} {statusObj?.to_currency || swapResponse.toCurrency}
           </div>
           <div className="flex items-center gap-2">
             <span className="text-gray-600 dark:text-[#7e7e8f] text-sm font-mono">

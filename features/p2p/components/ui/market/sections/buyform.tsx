@@ -49,7 +49,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
     !isNaN(completionTime) && completionTime > 0
       ? completionTime * 60
       : 10 * 60;
-
+const tradeId = localStorage.getItem('p2p_trade_id');
   // Local countdown state for auto-cancel logic
   const [countdown, setCountdown] = useState(displaySeconds);
   const prevStatus = useRef(confirmOrder?.status);
@@ -82,14 +82,16 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
   }, [confirmOrder?.status, countdown]);
 
   useEffect(() => {
-    const orderId = params?.id as string;
+    const orderId = tradeId || params?.id as string;
+    console.log("useEffect debug:", { orderId, tradeId, confirmOrder, singleOrder });
+
 
     console.log("useEffect debug:", { orderId, confirmOrder, singleOrder });
 
     if (isAuthenticated && orderId) {
       dispatch(fetchConfirmOrder(orderId));
     }
-  }, [params?.id, dispatch, isAuthenticated]);
+  }, [params?.id, tradeId, dispatch, isAuthenticated]);
 
   // Separate useEffect for fetching singleOrder when confirmOrder is available
   useEffect(() => {

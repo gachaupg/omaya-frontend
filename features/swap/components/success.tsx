@@ -140,6 +140,11 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
                          transactionData.totalAmountDue || 
                          amount;
     
+    // If amount is null/0, try to get it from websocket data
+    if (!amount && websocketData?.data?.amount_from) {
+      amount = parseFloat(websocketData.data.amount_from);
+    }
+    
           // Use websocket data for amounts if available
       if (websocketData?.data) {
         const wsData = websocketData.data;
@@ -318,6 +323,9 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
               <div className={`text-sm mb-1 ${
                 isDark ? "text-gray-400" : "text-gray-600"
               }`}>You Paid</div>
+              <div className="font-bold flex items-center gap-2" style={{ color: GREEN }}>
+                <span>{realData.paidAmount}</span>
+              </div>
               <div className={`text-xs ${
                 isDark ? "text-gray-400" : "text-gray-600"
               }`}>Via {realData.payinMethod}</div>

@@ -262,6 +262,10 @@ export default function WithdrawalForm({
   const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  // Add state for payment method validation error
+  const [paymentMethodError, setPaymentMethodError] = useState<string | null>(null);
+  // Add state for wallet address copy feedback
+  const [isWalletAddressCopied, setIsWalletAddressCopied] = useState(false);
   // Add state for API response data
   const [withdrawalAddress, setWithdrawalAddress] = useState<string>("");
   const [payoutAddress, setPayoutAddress] = useState<string>("");
@@ -1818,6 +1822,9 @@ export default function WithdrawalForm({
 
   // Validate first card data
   const validateFirstCard = () => {
+    // Clear previous payment method error
+    setPaymentMethodError(null);
+    
     if (!selectedAsset) {
       return false;
     }
@@ -1828,6 +1835,7 @@ export default function WithdrawalForm({
     // Allow any amount including negative values
     // No validation for negative amounts
     if (selectedPaymentDetails.length === 0) {
+      setPaymentMethodError("Please select a payment method");
       return false;
     }
 
@@ -1978,6 +1986,9 @@ export default function WithdrawalForm({
   // Validate form data
   const validateForm = () => {
     const errors: string[] = [];
+    
+    // Clear previous payment method error
+    setPaymentMethodError(null);
 
     if (!payAmount || payAmount <= 0) {
       errors.push("Please enter a valid amount");
@@ -1989,6 +2000,7 @@ export default function WithdrawalForm({
 
     if (selectedPaymentDetails.length === 0) {
       errors.push("Please select at least one payment method");
+      setPaymentMethodError("Please select a payment method");
     }
 
     if (!walletAddress.trim()) {
@@ -3071,8 +3083,14 @@ export default function WithdrawalForm({
                     setSelectedPaymentDetail(selectedPayment || null);
                     // Clear selected payment details when changing bank
                     setSelectedPaymentDetails([]);
+                    // Clear payment method error when selecting a bank
+                    setPaymentMethodError(null);
                   }}
-                  className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-9 py-2 text-lg  focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] appearance-none cursor-pointer relative"
+                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-9 py-2 text-lg focus:outline-none border appearance-none cursor-pointer relative ${
+                    paymentMethodError 
+                      ? "border-red-500 dark:border-red-500" 
+                      : "border-[#A2A4A9FF] dark:border-[#35353E]"
+                  }`}
                   style={{
                     backgroundImage:
                       'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22/%3E%3C/svg%3E")',
@@ -3098,6 +3116,7 @@ export default function WithdrawalForm({
                 </select>
               </div>
               {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+              {paymentMethodError && <p className="text-red-500 text-sm mt-1">{paymentMethodError}</p>}
 
               {/* Registered Account Section */}
               {payBank && (
@@ -3127,9 +3146,15 @@ export default function WithdrawalForm({
                             );
                           if (selectedDetail) {
                             setSelectedPaymentDetails([selectedDetail]);
+                            // Clear payment method error when selecting an account
+                            setPaymentMethodError(null);
                           }
                         }}
-                        className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#788099] rounded-2xl px-9 py-2 text-lg  focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] appearance-none cursor-pointer relative"
+                        className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#788099] rounded-2xl px-9 py-2 text-lg focus:outline-none border appearance-none cursor-pointer relative ${
+                          paymentMethodError 
+                            ? "border-red-500 dark:border-red-500" 
+                            : "border-[#A2A4A9FF] dark:border-[#35353E]"
+                        }`}
                         style={{
                           backgroundImage:
                             'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22/%3E%3C/svg%3E")',
@@ -3302,36 +3327,62 @@ export default function WithdrawalForm({
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(withdrawalAddress);
-                          // showToast.success("Wallet address copied!");
+                          setIsWalletAddressCopied(true);
+                          // Reset the copied state after 2 seconds
+                          setTimeout(() => {
+                            setIsWalletAddressCopied(false);
+                          }, 2000);
                         }}
                         className="flex items-center gap-1 bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] text-[#1D8751] rounded-full px-4 py-1 font-semibold text-base hover:bg-[#1D8751] hover:text-[#35353e] transition-colors"
                       >
-                        <svg
-                          width="16"
-                          height="16"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <rect
-                            x="9"
-                            y="9"
-                            width="13"
-                            height="13"
-                            rx="2"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          />
-                          <rect
-                            x="3"
-                            y="3"
-                            width="13"
-                            height="13"
-                            rx="2"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          />
-                        </svg>
-                        Copy
+                        {isWalletAddressCopied ? (
+                          <>
+                            <svg
+                              width="16"
+                              height="16"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                d="M9 12l2 2 4-4"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                            Copied
+                          </>
+                        ) : (
+                          <>
+                            <svg
+                              width="16"
+                              height="16"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <rect
+                                x="9"
+                                y="9"
+                                width="13"
+                                height="13"
+                                rx="2"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                              />
+                              <rect
+                                x="3"
+                                y="3"
+                                width="13"
+                                height="13"
+                                rx="2"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                              />
+                            </svg>
+                            Copy
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>

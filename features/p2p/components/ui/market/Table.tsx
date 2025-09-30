@@ -50,14 +50,6 @@ const MarketTable: React.FC<MarketTableProps> = ({
     return <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />;
   };
 
-  /* ------------------------------------------------------------------ */
-  /* Loading state                                                      */
-  /* ------------------------------------------------------------------ */
-  if (loading) return <Loader />;
-
-  /* ------------------------------------------------------------------ */
-  /* Component                                                          */
-  /* ------------------------------------------------------------------ */
   return (
     <div className="w-full">
       <div className="overflow-x-auto rounded-2xl">
@@ -182,7 +174,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                   </div>
                 </div>
                 {selectedRowIndex === idx && (
-                  <div className="mt-4 p-4 w-full">
+                  <div className="mt-4 p-2 sm:p-4 w-full">
                     <TradePreview
                       advertiserData={row}
                       onClose={() => setSelectedRowIndex(null)}

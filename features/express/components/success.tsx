@@ -3,6 +3,7 @@ import { FaCheckCircle } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import CopyButton from "@/components/ui/CopyButton";
 import { useTheme } from "@/context/theme";
+import { type } from "os";
 
 const GREEN = "#309A64";
 
@@ -337,7 +338,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
     return {
       transactionId: txId,
       date: transactionDate,
-      paidAmount: `${formatAmount(amount)} ${fromCurrency}`,
+      paidAmount: `${formatAmount(amount)} ${isDeposit ? 'USD' : ''}`,
       paidCurrency: fromCurrency,
       receivedAmount: formatAmount(estimatedAmount),
       receivedCurrency: toCurrency,
@@ -450,8 +451,8 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
                 isDark ? "text-gray-400" : "text-gray-600"
               }`}>You Received</div>
               <div className="font-bold flex items-center justify-end gap-2" style={{ color: GREEN }}>
-                <span>{realData.receivedAmount} </span>
-                <span>{realData.receivedCurrency}</span>
+                <span>{isDeposit ? realData.netAmount : realData.netAmount} </span>
+                <span>{isDeposit ? realData.receivedCurrency :'USD'}</span>
               </div>
             </div>
           </div>
