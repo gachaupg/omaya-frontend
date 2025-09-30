@@ -19,22 +19,21 @@ concurrency:
 env:
   FAIL_ON_DEPS_VULN:  'false'
   FAIL_ON_IMAGE_VULN: 'false'
-  UPLOAD_SARIF:       'false'     # keep false until Code Scanning is enabled
-  ENABLE_CODEQL:      'true'     # flip to 'true' to enable Step 4
-  IMAGE_NAME: 'omaya-frontend'
+  UPLOAD_SARIF:       'false'     
+  ENABLE_CODEQL:      'true'    
+  IMAGE_NAME: 'omaya-backend'
   IMAGE_TAG:  '${{ github.sha }}'
   DOCKERFILE: './Dockerfile'
   BUILD_CONTEXT: '.'
+  UPLOAD_ARTIFACTS: 'false'       
 
-# -------------------------------------------------
-# STEP 1) Build Docker image once and share via artifact
-# -------------------------------------------------
 jobs:
+  # -------------------------------------------------
+  # STEP 1) Build Docker image (no artifact upload)
+  # -------------------------------------------------
   build-image:
     name: Build image
     runs-on: ubuntu-latest
-    outputs:
-      image-tar: image.tar
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,19 +43,11 @@ jobs:
           DOCKER_CONTEXT: default
         run: |
           docker build -t "$IMAGE_NAME:$IMAGE_TAG" -f "$DOCKERFILE" "$BUILD_CONTEXT"
-          docker save "$IMAGE_NAME:$IMAGE_TAG" -o image.tar
-
-      - name: Upload image artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: built-image
-          path: image.tar
-          if-no-files-found: error
-          retention-days: 1
-          compression-level: 9
+          # NOTE: No docker save + upload-artifact here
 
   # -------------------------------------------------
   # STEP 2) Grype: (a) repo deps via Syft SBOM -> Grype, (b) image scan
+  # Rebuilds locally in this job to avoid artifacts.
   # -------------------------------------------------
   grype-scan:
     name: Grype scans (deps + image)
@@ -67,14 +58,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download image artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: built-image
-          path: .
-
-      - name: Load image
-        run: docker load -i image.tar
+      # Rebuild image locally (no artifacts / no external registry)
+      - name: Rebuild image (no artifacts)
+        run: docker build -t "$IMAGE_NAME:$IMAGE_TAG" -f "$DOCKERFILE" "$BUILD_CONTEXT"
 
       # ---- Deps (directory) SBOM -> Grype ----
       - name: Create SBOM (dir) with Syft
@@ -211,31 +197,31 @@ jobs:
           def loc(r):
               try:
                   loc=(r.get("locations") or [{}])[0]
-                  phys=loc.get("physicalLocation",{})
-                  uri=(phys.get("artifactLocation") or {}).get("uri","")
-                  line=(phys.get("region") or {}).get("startLine")
-                  return f"{uri}:{line or 0}" if uri else "-"
               except: return "-"
-          res, rmap = load_results("grype-image.sarif")
-          counts={"CRITICAL":0,"HIGH":0,"MEDIUM":0,"LOW":0,"UNKNOWN":0}
-          rows=[]
-          for r in res:
-              rid=r.get("ruleId","-"); sev=sev_of(r,rid,rmap); counts[sev]=counts.get(sev,0)+1
-              msg=(r.get("message") or {}).get("text","").strip()
-              if len(msg)>140: msg=textwrap.shorten(msg, width=140, placeholder="…")
-              rows.append((sev,rid,loc(r),msg))
-          order={"CRITICAL":0,"HIGH":1,"MEDIUM":2,"LOW":3,"UNKNOWN":4}
-          rows.sort(key=lambda x:(order.get(x[0],9), x[1]))
-          total=sum(counts.values())
-          lines=["## Grype Image Scan", f"- Findings (all severities): **{total}**"]
-          if total:
-              lines+=["", "**By severity**: " + ", ".join([f"{k}: **{v}**" for k,v in counts.items() if v>0]), "",
-                      "### Top 15 findings", "| Severity | ID | Location | Message |",
-                      "|----------|----|----------|---------|"]
-              for sev,rid,lc,msg in rows[:15]:
-                  lines.append(f"| {sev} | {rid} | {lc} | {msg or '-'} |")
-          s=os.environ.get("GITHUB_STEP_SUMMARY"); out="\n".join(lines)+"\n"
-          open(s,"a",encoding="utf-8").write(out) if s else print(out)
+              phys=loc.get("physicalLocation",{}) if isinstance(loc,dict) else {}
+              uri=(phys.get("artifactLocation") or {}).get("uri","")
+              line=(phys.get("region") or {}).get("startLine")
+              print_uri=f"{uri}:{line or 0}" if uri else "-"
+              res, rmap = load_results("grype-image.sarif")
+              counts={"CRITICAL":0,"HIGH":0,"MEDIUM":0,"LOW":0,"UNKNOWN":0}
+              rows=[]
+              for r in res:
+                  rid=r.get("ruleId","-"); sev=sev_of(r,rid,rmap); counts[sev]=counts.get(sev,0)+1
+                  msg=(r.get("message") or {}).get("text","").strip()
+                  if len(msg)>140: import textwrap; msg=textwrap.shorten(msg, width=140, placeholder="…")
+                  rows.append((sev,rid,print_uri,msg))
+              order={"CRITICAL":0,"HIGH":1,"MEDIUM":2,"LOW":3,"UNKNOWN":4}
+              rows.sort(key=lambda x:(order.get(x[0],9), x[1]))
+              total=sum(counts.values())
+              lines=["## Grype Image Scan", f"- Findings (all severities): **{total}**"]
+              if total:
+                  lines+=["", "**By severity**: " + ", ".join([f"{k}: **{v}**" for k,v in counts.items() if v>0]), "",
+                          "### Top 15 findings", "| Severity | ID | Location | Message |",
+                          "|----------|----|----------|---------|"]
+                  for sev,rid,lc,msg in rows[:15]:
+                      lines.append(f"| {sev} | {rid} | {lc} | {msg or '-'} |")
+              s=os.environ.get("GITHUB_STEP_SUMMARY"); out="\n".join(lines)+"\n"
+              open(s,"a",encoding="utf-8").write(out) if s else print(out)
           PY
 
       - name: Upload SARIF (image)
@@ -266,8 +252,9 @@ jobs:
             exit 1
           fi
 
+      # Disable artifact upload entirely to avoid quota
       - name: Upload SARIF artifacts (all grype)
-        if: always() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')
+        if: ${{ env.UPLOAD_ARTIFACTS == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: grype-sarif
@@ -275,11 +262,9 @@ jobs:
             grype-deps.sarif
             grype-image.sarif
           if-no-files-found: warn
-          retention-days: 1
-          compression-level: 9
 
   # -------------------------------------------------
-  # STEP 3) Trivy: FS + Image (using the built image)
+  # STEP 3) Trivy: FS + Image (rebuild image; no artifacts)
   # -------------------------------------------------
   trivy-scan:
     name: Trivy scans (fs + image)
@@ -290,14 +275,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download image artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: built-image
-          path: .
-
-      - name: Load image
-        run: docker load -i image.tar
+      - name: Rebuild image (no artifacts)
+        run: docker build -t "$IMAGE_NAME:$IMAGE_TAG" -f "$DOCKERFILE" "$BUILD_CONTEXT"
 
       - name: Run Trivy FS Scan
         run: |
@@ -316,7 +295,6 @@ jobs:
               try:
                   if os.path.exists(file) and os.path.getsize(file)>0:
                       data = json.load(open(file,encoding='utf-8'))
-                      # Trivy JSON may be a dict with "Results", not a flat list
                       if isinstance(data, dict) and "Results" in data:
                           return sum(len(r.get("Vulnerabilities") or []) for r in data.get("Results") or [])
                       return len(data) if isinstance(data, list) else 0
@@ -332,7 +310,7 @@ jobs:
           PY
 
       - name: Upload Trivy artifacts
-        if: always() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')
+        if: ${{ env.UPLOAD_ARTIFACTS == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: trivy-json
@@ -340,8 +318,6 @@ jobs:
             trivy-fs.json
             trivy-image.json
           if-no-files-found: warn
-          retention-days: 1
-          compression-level: 9
 
   # -------------------------------------------------
   # STEP 4) CodeQL Deep Semantic Analysis (optional)
