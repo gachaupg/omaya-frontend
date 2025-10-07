@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { RootState } from "@/store/rootReducer";
 import Loader from "../../../Common/Loader";
 import { showToast } from "@/lib/utils/toast";
+import { toNumber } from "@/lib/finanacial";
 
 interface TradePreviewProps {
   advertiserData: MarketRow;
@@ -68,11 +69,8 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     }
   }, [dispatch, isAuthenticated]);
 
-  // Get USDT wallet balance from the new wallet response structure
-  const walletBalance = wallets?.wallet?.currency === "USDT" 
-    ? parseFloat(wallets.wallet.balance) 
-    : 0;
-
+  // Get USDT wallet balance from the wallet response structure
+  const walletBalance =wallets?.total_balance ? toNumber(wallets.total_balance) : 0;
   const handleSendAmountChange = (value: string) => {
     setSendAmount(value);
 
@@ -162,39 +160,32 @@ const TradePreview: React.FC<TradePreviewProps> = ({
 
     try {
       setIsSubmitting(true);
+      // Create order data with commission
       const orderData: OrderMatchRequest = {
-        id: advertiserData.id,
-        advertiser_first_name: advertiserData.advertiser.split(" ")[0] || "",
-        advertiser_last_name: advertiserData.advertiser.split(" ")[1] || "",
-        advertiser_email: "", // This should come from the advertiser data
-        asset: "TRON",
-        order_type: tradeType === "buy" ? "sell" : "buy",
-        currency: "USDT",
         amount: sendAmount,
-        min_order_amount: advertiserData.minAmount.toString(),
-        max_order_amount: advertiserData.maxAmount.toString(),
-        commission_rate: advertiserData.commission,
-        exchange_rate: advertiserData.commission,
-        status: "pending",
-        created_on: new Date().toISOString(),
-        limit_duration: advertiserData.timeLimit,
-        completion_time: advertiserData.timeLimit,
-        completion_rate: advertiserData.completion,
-        terms_and_conditions: advertiserData.terms_and_conditions,
-        auto_reply: advertiserData.autoReply || "",
-        user_total_sell_orders: null,
-        user_total_buy_orders: advertiserData.orders,
-        total_trades_as_buyer: 0,
-        total_trades_as_seller: 0,
-        payment_details: advertiserData.payment_details || [],
+        commission: advertiserData.commission,
       };
+
+      console.log("Sending order data:", orderData);
+
+      console.log("Attempting to match order:", {
+        orderId: advertiserData.id,
+        orderData: orderData,
+        tradeType
+      });
 
       const response = await matchP2POrder(advertiserData.id, orderData);
       
+      console.log("Match response:", response);
+      
       // Store trade_id in local storage
+      let tradeIdFromResponse = null;
       if (response && 'trade_id' in response) {
-        localStorage.setItem('p2p_trade_id', (response as any).trade_id);
-        console.log('Trade ID stored in localStorage:', (response as any).trade_id);
+        tradeIdFromResponse = (response as any).trade_id;
+        localStorage.setItem('p2p_trade_id', tradeIdFromResponse);
+        console.log('Trade ID stored in localStorage:', tradeIdFromResponse);
+      } else {
+        console.warn('No trade_id in response:', response);
       }
       
       // Navigate with state using URL search params
@@ -202,12 +193,15 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       searchParams.set(
         "orderData",
         JSON.stringify({
-          order_type: orderData.order_type === "buy" ? "sell" : "buy",
+          order_type: tradeType === "buy" ? "buy" : "sell",
+          commission: advertiserData.commission,
         })
       );
 
+      // Use trade_id in URL instead of advertiserData.id
+      const urlId = tradeIdFromResponse || advertiserData.id;
       router.push(
-        `/p2p/${advertiserData.id}/matched?${searchParams.toString()}`
+        `/p2p/${urlId}/matched?${searchParams.toString()}`
       );
     } catch (error: any) {
       let errorMessage = "";

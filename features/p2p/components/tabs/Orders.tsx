@@ -45,7 +45,7 @@ const Orders = () => {
   };
 
   const processingCount = trades.results.filter(
-  trade => trade.status.toLowerCase() === "matched"
+  trade => trade.status.toLowerCase() === "pending"
 ).length;
 
 const orderStatusTabs = staticOrderStatusTabs.map(tab =>
@@ -69,7 +69,7 @@ const orderStatusTabs = staticOrderStatusTabs.map(tab =>
       if (filters.status !== "all") {
         if (
           filters.status === "processing" &&
-          trade.status.toLowerCase() !== "matched"
+          trade.status.toLowerCase() !== "pending"
         ) {
           return false;
         }

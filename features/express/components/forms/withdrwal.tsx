@@ -6,6 +6,7 @@ import { AppDispatch } from "../../../../store";
 import {
   fetchAdminPaymentDetails,
   fetchUserPaymentDetails,
+  fetchAdminWalletList,
 } from "../../../exchange/slices/paymentSlice";
 import { fetchAssets } from "../../../exchange/slices/exchangeSlice";
 import { createDeposit } from "../../../exchange/slices/exchangeSlice";
@@ -167,7 +168,7 @@ export default function WithdrawalForm({
   onModeChange,
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const { adminPaymentDetails, loading, error } = useSelector(
+  const { adminPaymentDetails, adminWalletList, loading, error } = useSelector(
     (state: any) => state.payment
   );
 
@@ -334,34 +335,35 @@ export default function WithdrawalForm({
     null
   );
 
-  // Filter user payment details based on selected payment method
+  // Filter user payment details based on selected payment type
+  // Match payment_method_name from user payment details with payment_type from admin wallet list
   const filteredUserPaymentDetails = payBank
     ? (userPaymentDetails || []).filter(
-        (detail: any) => detail.payment_provider_name === payBank
+        (detail: any) => detail.payment_method_name === payBank
       )
     : [];
 
   // Enhanced filtering with fallback options
   const enhancedFilteredUserPaymentDetails = payBank
     ? (userPaymentDetails || []).filter((detail: any) => {
-        // Try multiple possible field names for provider name
-        const providerName =
-          detail.payment_provider_name ||
-          detail.provider_name ||
-          detail.payment_provider;
+        // Match payment_method_name with selected payment_type
+        const paymentMethodName =
+          detail.payment_method_name ||
+          detail.payment_method ||
+          detail.method_name;
 
-        return providerName === payBank;
+        return paymentMethodName === payBank;
       })
     : [];
 
-  // Auto-select first account when accounts are available for selected bank
+  // Auto-select first account when accounts are available for selected payment type
   useEffect(() => {
     if (
       payBank &&
       enhancedFilteredUserPaymentDetails.length > 0 &&
       selectedPaymentDetails.length === 0
     ) {
-      console.log("DEBUG: Auto-selecting first account for bank:", payBank);
+      console.log("DEBUG: Auto-selecting first account for payment type:", payBank);
       const firstAccount = enhancedFilteredUserPaymentDetails[0];
       setSelectedPaymentDetails([firstAccount]);
     }
@@ -403,6 +405,37 @@ export default function WithdrawalForm({
       })
       .catch((error: unknown) => {
         showToast.error(`Failed to fetch admin payment details: ${error}`);
+      });
+  }, [dispatch]);
+
+  // Fetch admin wallet list
+  useEffect(() => {
+    console.log("DEBUG: Starting to fetch admin wallet list...");
+    dispatch(fetchAdminWalletList(false))
+      .unwrap()
+      .then((data) => {
+        console.log("DEBUG: Admin wallet list loaded in express withdrawal:", {
+          hasData: !!data,
+          count: data?.count || 0,
+          resultsLength: data?.results?.length || 0
+        });
+        
+        // If no data in cache, force refresh
+        if (!data || !data.results || data.results.length === 0) {
+          console.log("🔄 No admin wallet list in cache, forcing refresh...");
+          return dispatch(fetchAdminWalletList(true)).unwrap();
+        }
+        return data;
+      })
+      .catch((error: unknown) => {
+        console.error("Failed to fetch admin wallet list from cache, trying force refresh:", error);
+        // If cache fetch fails, try force refresh
+        return dispatch(fetchAdminWalletList(true))
+          .unwrap()
+          .catch((refreshError: unknown) => {
+            showToast.error(`Failed to fetch admin wallet list: ${refreshError}`);
+            throw refreshError;
+          });
       });
   }, [dispatch]);
 
@@ -3056,10 +3089,10 @@ export default function WithdrawalForm({
               )}
             </div>
 
-            {/* Bank/Payment Method Section */}
+            {/* Payment Method Section */}
             <div className="flex-1 pl-4">
               <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
-                Bank/Payment Method
+                Payment Method
               </label>
               <div className="relative">
                 <img
@@ -3070,20 +3103,20 @@ export default function WithdrawalForm({
                 <select
                   value={payBank}
                   onChange={(e) => {
-                    console.log("DEBUG: Selected bank:", e.target.value);
+                    console.log("DEBUG: Selected payment type:", e.target.value);
                     console.log(
-                      "DEBUG: Available adminPaymentDetails:",
-                      adminPaymentDetails
+                      "DEBUG: Available adminWalletList:",
+                      adminWalletList
                     );
-                    const selectedPayment = adminPaymentDetails?.find(
-                      (payment: any) => payment.provider_name === e.target.value
+                    const selectedWallet = adminWalletList?.find(
+                      (wallet: any) => wallet.admin_payment_detail?.payment_type === e.target.value
                     );
-                    console.log("DEBUG: Selected payment:", selectedPayment);
+                    console.log("DEBUG: Selected wallet:", selectedWallet);
                     setPayBank(e.target.value);
-                    setSelectedPaymentDetail(selectedPayment || null);
-                    // Clear selected payment details when changing bank
+                    setSelectedPaymentDetail(selectedWallet?.admin_payment_detail || null);
+                    // Clear selected payment details when changing payment type
                     setSelectedPaymentDetails([]);
-                    // Clear payment method error when selecting a bank
+                    // Clear payment method error when selecting a payment type
                     setPaymentMethodError(null);
                   }}
                   className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-9 py-2 text-lg focus:outline-none border appearance-none cursor-pointer relative ${
@@ -3101,18 +3134,24 @@ export default function WithdrawalForm({
                   }}
                 >
                   <option value="">
-                    {paymentMethodsDisplay.isLoading
+                    {loading
                       ? "Loading payment methods..."
-                      : paymentMethodsDisplay.displayData?.length === 0
+                      : adminWalletList?.length === 0
                         ? "No payment methods available"
                         : "Select Payment Method"}
                   </option>
-                  <option value="test">Test Payment Method</option>
-                  {paymentMethodsDisplay.displayData?.map((payment: any, index: number) => (
-                    <option key={index} value={payment.provider_name}>
-                      {payment.provider_name} - {payment.payment_method}
-                    </option>
-                  ))}
+                  {/* Filter unique payment types */}
+                  {Array.from(
+                    new Set(
+                      adminWalletList?.map((wallet: any) => wallet.admin_payment_detail?.payment_type)
+                    )
+                  )
+                    .filter((type) => type) // Remove null/undefined values
+                    .map((paymentType: any, index: number) => (
+                      <option key={index} value={paymentType}>
+                        {paymentType}
+                      </option>
+                    ))}
                 </select>
               </div>
               {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
@@ -3285,10 +3324,7 @@ export default function WithdrawalForm({
                 </div>
               ) : (
                 <span className="flex items-center justify-center">
-                  <img
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
-                    alt=""
-                  />
+                 
                   <img
                     className="mt-2"
                     src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
@@ -3590,10 +3626,7 @@ export default function WithdrawalForm({
                 </div>
               ) : (
                 <span className="flex items-center justify-center">
-                  <img
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
-                    alt=""
-                  />
+                  
                   <img
                     className="mt-2"
                     src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"

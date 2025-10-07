@@ -7,6 +7,10 @@ export interface UserPaymentDetail {
   account_name: string;
   account_number: string;
   provider_logo?: string;
+  wallet_address?: string | null;
+  status?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface UserPaymentSelectorProps {

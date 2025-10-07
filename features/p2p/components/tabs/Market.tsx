@@ -3,8 +3,8 @@
 import React, { useState } from "react";
 import TopButtons from "../ui/market/TopButtons";
 import MarketTransactions from "../ui/market/MarketTransactions";
-
 const Market = () => {
+
   const [activeTab, setActiveTab] = useState<"buy" | "sell">("buy");
 
   return (
@@ -13,6 +13,7 @@ const Market = () => {
         activeTab={activeTab}
         setActiveTab={(tab: string) => setActiveTab(tab as "buy" | "sell")}
       />
+      
       <MarketTransactions activeTab={activeTab} />
     </div>
   );

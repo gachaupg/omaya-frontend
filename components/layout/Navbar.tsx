@@ -799,12 +799,12 @@ export default function Navbar() {
                         </Link>
 
                         <Link
-                          href="/dashboard/settings"
+                          href="/dashboard/account"
                           className="flex items-center w-full px-3 py-2 dark:text-gray-300 text-gray-700 dark:hover:text-white hover:text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 rounded-md transition-colors duration-200"
                           onClick={() => setProfileModalOpen(false)}
                         >
                           <Settings size={16} className="mr-3" />
-                          <span className="text-sm">Settings</span>
+                          <span className="text-sm">Account settings</span>
                         </Link>
 
                         <button

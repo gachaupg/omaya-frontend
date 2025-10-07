@@ -24,6 +24,7 @@ import {
   OrderMatchRequest,
   P2POrderList,
   P2POrder,
+  MatchedTrade,
   Profile,
   P2PResponse,
   WithdrawalAddressesResponse,
@@ -42,7 +43,7 @@ interface P2PState {
   matchLoading: boolean;
   matchError: string | null;
   matchSuccess: boolean;
-  confirmOrder: P2POrder | null;
+  confirmOrder: MatchedTrade | null;
   confirmOrderLoading: boolean;
   confirmOrderError: string | null;
   singleOrder: P2POrder | null;
@@ -263,6 +264,15 @@ export const confirmP2PTradeThunk = createAsyncThunk(
 
       return response;
     } catch (error: any) {
+      // Handle specific backend errors
+      if (error.message?.includes("created_at")) {
+        logger.error("Backend error: P2PTrade model missing created_at field", {
+          tradeId: id,
+          error: error.message
+        });
+        return rejectWithValue("Trade confirmation failed due to a backend configuration issue. Please contact support.");
+      }
+      
       handleP2PError(error);
       return rejectWithValue(error.message || "An error occurred");
     }
@@ -277,6 +287,15 @@ export const completeP2PTradeThunk = createAsyncThunk(
       await dispatch(fetchConfirmOrder(id));
       return response;
     } catch (error: any) {
+      // Handle specific backend errors
+      if (error.message?.includes("created_at")) {
+        logger.error("Backend error: P2PTrade model missing created_at field", {
+          tradeId: id,
+          error: error.message
+        });
+        return rejectWithValue("Trade completion failed due to a backend configuration issue. Please contact support.");
+      }
+      
       handleP2PError(error);
       return rejectWithValue(error.message || "An error occurred");
     }
@@ -450,30 +469,30 @@ const p2pMarketSlice = createSlice({
         console.log("Redux: API response received:", response);
         
         // The API returns all orders in results.results array
-        // We need to separate them by order_type
         const allOrders = response.results?.results || [];
         console.log("Redux: All orders count:", allOrders.length);
         
-        const buyOrders = allOrders.filter((order: any) => order.order_type === 'buy');
-        const sellOrders = allOrders.filter((order: any) => order.order_type === 'sell');
+        // For now, since the API returns all orders and we need to display them
+        // Let's store all orders in both buy and sell orders for display purposes
+        // The component will handle filtering based on activeTab
+        const totalOrdersCount = response.results?.total_orders_count || allOrders.length;
         
-        console.log("Redux: Buy orders count:", buyOrders.length);
-        console.log("Redux: Sell orders count:", sellOrders.length);
+        console.log("Redux: Total orders count:", totalOrdersCount);
         
-        // Update buy orders
+        // Update buy orders - store all orders for now
         state.p2pBuyOrders = {
           next: response.next,
           previous: response.previous,
-          total_orders_count: buyOrders.length,
-          results: buyOrders
+          total_orders_count: totalOrdersCount,
+          results: allOrders
         };
         
-        // Update sell orders
+        // Update sell orders - store all orders for now
         state.p2pSellOrders = {
           next: response.next,
           previous: response.previous,
-          total_orders_count: sellOrders.length,
-          results: sellOrders
+          total_orders_count: totalOrdersCount,
+          results: allOrders
         };
         
         console.log("Redux: Updated state - buy orders:", state.p2pBuyOrders);

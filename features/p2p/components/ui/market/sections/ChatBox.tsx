@@ -18,6 +18,7 @@ interface Message {
   message: string;
   images: string[];
   timestamp: string;
+  seller_photo: string;
 }
 
 const ChatBox: React.FC<{
@@ -25,7 +26,8 @@ const ChatBox: React.FC<{
   userId: string;
   userName: string;
   autoreply: string;
-}> = ({ tradeId, userId, userName, autoreply }) => {
+  seller_photo: string;
+}> = ({ tradeId, userId, userName, autoreply, seller_photo }) => {
   const dispatch = useDispatch();
   const message = useSelector((state: RootState) => state.message.message);
   const uploaded_images = useSelector(
@@ -70,19 +72,10 @@ const ChatBox: React.FC<{
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
-      // Convert to base64 for preview and sending (or use File objects if backend expects FormData)
-      Promise.all(
-        filesArray.map((file) => {
-          return new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-          });
-        })
-      ).then((base64Images) => {
-        dispatch(setUploadedImages(base64Images));
-      });
+      // Store File objects directly for FormData upload
+      dispatch(setUploadedImages(filesArray));
+      // Clear the input to allow selecting the same files again
+      e.target.value = '';
     }
   };
 
@@ -90,7 +83,7 @@ const ChatBox: React.FC<{
   const handleSend = async () => {
     if (!message.trim() && uploaded_images.length === 0) return;
     try {
-      await postTradeMessage(tradeId, { message, uploaded_images });
+      await postTradeMessage(tradeId, { message: message || '', uploaded_images });
       dispatch(clearMessage());
       const data = await getTradeMessages(tradeId);
       setMessages(data as { results: Message[] });
@@ -134,7 +127,7 @@ const ChatBox: React.FC<{
       <div className="chat-container mt-6 flex flex-col pr-10 mb-2 h-96 bg-white dark:bg-[#18181D] border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px] p-2 md:p-4">
         <div>
           <div className="flex items-center justify-center gap-2">
-            <MdAccountCircle  className="w-6 h-6 text-[#1D8751]"/>
+            {seller_photo ? <img className="w-8 h-8 rounded-full" src={seller_photo || ""} alt="" /> : <MdAccountCircle  className="w-6 h-6 text-[#1D8751]"/>}
             <div className="flex-1">
               <div className="font-semibold text-md">{userName}</div>
             </div>
@@ -207,7 +200,8 @@ const ChatBox: React.FC<{
           </button>
           <button
             onClick={handleSend}
-            className="rounded-full h-10 w-10 flex items-center justify-center bg-[#1D8751] text-white"
+            disabled={!message.trim() && uploaded_images.length === 0}
+            className="rounded-full h-10 w-10 flex items-center justify-center bg-[#1D8751] text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg
               width="24"
@@ -228,10 +222,10 @@ const ChatBox: React.FC<{
         {/* Preview selected images */}
         {uploaded_images.length > 0 && (
           <div className="flex gap-2 mt-2 flex-wrap">
-            {uploaded_images.map((img, idx) => (
+            {uploaded_images.map((file, idx) => (
               <img
                 key={idx}
-                src={img}
+                src={URL.createObjectURL(file)}
                 alt={`preview-${idx}`}
                 className="w-12 h-12 object-cover rounded border border-[#35353E]"
               />

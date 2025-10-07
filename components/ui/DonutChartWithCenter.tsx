@@ -1,5 +1,6 @@
 import React from "react";
 import { DonutChartData } from "@/utils/chartData";
+import { formatCurrency } from "@/lib/globalFormatter";
 
 export interface DonutChartWithCenterProps {
   data: DonutChartData[];
@@ -55,7 +56,7 @@ export const DonutChartWithCenter: React.FC<DonutChartWithCenterProps> = ({
         fontSize="13"
         fontWeight="bold"
       >
-        {actualTotal === 0 ? "00" : actualTotal.toLocaleString()} USD
+        {actualTotal === 0 ? "00" : formatCurrency(actualTotal).replace(" USD", "")}
       </text>
       <text
         x={center}

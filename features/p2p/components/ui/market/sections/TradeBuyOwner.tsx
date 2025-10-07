@@ -38,7 +38,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const [showAppealModal, setShowAppealModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isClient, setIsClient] = useState(false);
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
 
   const completionTime = Number(singleOrder?.completion_time);
   const displaySeconds =
@@ -69,31 +69,35 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     return () => clearInterval(timer);
   }, [confirmOrder?.status, countdown]);
 
-  // Auto-cancel when countdown reaches 0 and status is matched
+  // Auto-cancel when countdown reaches 0 and status is matched - DISABLED
   useEffect(() => {
     if (confirmOrder?.status === "matched" && countdown === 0) {
-      if (confirmOrder?.id) {
-        dispatch(cancelP2POrderThunk(confirmOrder.id));
-      }
+      // AUTO-CANCEL DISABLED - Countdown reached 0 but no auto-cancel
+      console.log("Countdown reached 0, auto-cancel is disabled");
+      return;
     }
   }, [confirmOrder?.status, countdown, confirmOrder?.id, dispatch]);
 
+  // Fetch confirm order when authenticated and orderId is available
   useEffect(() => {
     const orderId = params?.id as string;
-    if (orderId) {
+    if (isAuthenticated && orderId) {
       dispatch(fetchConfirmOrder(orderId));
     }
-  }, [params?.id, dispatch]);
+  }, [params?.id, dispatch, isAuthenticated]);
+  
   const saveOrder = localStorage.getItem("new_order")
     ? JSON.parse(localStorage.getItem("new_order")!)
     : null;
   const singgleuseid = confirmOrder?.buy_order;
+  
+  // Fetch single order when confirmOrder is loaded
   useEffect(() => {
     const orderToFetch = confirmOrder?.buy_order || confirmOrder?.sell_order;
-    if (orderToFetch && singgleuseid) {
-      dispatch(fetchSingleOrder(singgleuseid));
+    if (isAuthenticated && orderToFetch && singgleuseid) {
+      dispatch(fetchSingleOrder(singgleuseid.toString()));
     }
-  }, [confirmOrder, dispatch, singgleuseid]);
+  }, [confirmOrder?.buy_order, confirmOrder?.sell_order, dispatch, isAuthenticated, singgleuseid]);
 
   useEffect(() => {
     setIsClient(true);
@@ -402,8 +406,9 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
         <ChatBox
           tradeId={confirmOrder?.id || ""}
           userId={user?.id.toString() || ""}
-          userName={`${saveOrder?.advertiser_name}` || ""}
+          userName={confirmOrder?.advertiser_name || saveOrder?.advertiser_name || ""}
           autoreply={saveOrder?.auto_reply || ""}
+          seller_photo={saveOrder?.seller_photo || ""}
         />
         {/* Advertiser's Terms */}
         <section className="advertiser-terms rounded-lg p-4 bg-gray-50 dark:bg-[#23232B]">
@@ -478,7 +483,9 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               <button
                 onClick={() => {
                   setShowSuccessModal(false);
-                  router.push("/dashboard");
+                  // router.push("/dashboard");
+                  window.location.href = "/dashboard/p2p/";
+
                 }}
                 className="w-full bg-[#1D8751] text-white rounded-lg px-6 py-3 font-semibold hover:bg-[#167a45] transition-colors"
               >

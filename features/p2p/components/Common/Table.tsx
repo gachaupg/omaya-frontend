@@ -551,8 +551,8 @@ export const Table: React.FC<TableProps> = ({
                 <img
                   src={
                     selectedTransaction.asset === "Tron"
-                      ? "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
-                      : "https://cryptologos.cc/logos/bitcoin-btc-logo.png"
+                      ? "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                      : "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                   }
                   alt={selectedTransaction.asset}
                   className="w-10 h-10 rounded-full"
@@ -648,7 +648,7 @@ export const Table: React.FC<TableProps> = ({
                 <span className="text-gray-500 dark:text-[#788099] flex items-center gap-1">
                   Salaam Bank{" "}
                   <img
-                    src="https://upload.wikimedia.org/wikipedia/commons/6/6b/Bitmap_Icon_Bank.png"
+                    src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
                     alt=""
                     className="w-5 h-5"
                   />

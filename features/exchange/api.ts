@@ -31,4 +31,5 @@ export const EXCHANGE_ENDPOINTS = {
     PAYMENT_PROVIDERS: (methodName: string) => `/payments/payment-providers/${methodName}/`,
     USER_PAYMENT_DETAILS: '/payments/user-payment-details/',
     ADMIN_PAYMENT_DETAILS: '/payments/admin/payment-details/',
+    ADMIN_WALLET_LIST: '/administration/admin/wallet-list/',
 }

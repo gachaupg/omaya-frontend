@@ -69,7 +69,7 @@ const ReceiptModal = ({
         <div className="relative z-10 p-6 pb-4">
           <div className="flex items-center justify-center mb-4">
             <img
-              src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747133499/Omaya_green-logo_yva2ah.png"
+              src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
               alt=""
             />
             <button
@@ -79,7 +79,7 @@ const ReceiptModal = ({
               <X className="w-4 h-4" />
             </button>
           </div>
-
+     
           <div className="p-2 border border-[#35353E] rounded-lg">
             {/* Transaction Header */}
             <div className="flex items-center justify-between mb-2 border-b border-[#35353E] p-2">

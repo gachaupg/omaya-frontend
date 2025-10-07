@@ -221,7 +221,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       limit: timeLimit.toString(),
       completion_time: timeLimit.toString(),
       completion_rate: "",
-      asset: "TRON",
+        asset: "TRON",
       advertiser_name: {
         id: 1,
         username: "dennis",

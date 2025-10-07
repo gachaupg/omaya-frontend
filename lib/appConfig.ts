@@ -73,6 +73,8 @@ export const API_CONFIG = {
     WITHDRAWAL_OTP: "/trading_engine/p2pwithdraw-otp/",
     WITHDRAWAL_ADDRESSES: "/trading_engine/withdrawal/addresses/",
     MATCHED_TRADE: "/trading_engine/p2p/trades/",
+    MERCHANT_SUBMIT: "/trading_engine/merchant/submit/",
+    MERCHANT_APPLICATION: "/trading_engine/merchant/application/",
   },
   SWAP: {
     SUPPORTED_ASSETS: "api/changenow/supported-tokens/",

@@ -26,7 +26,7 @@ const P2PCharts = () => {
   const { orders, loading, error, currentPage } = useSelector(
     (state: RootState) => state.p2pBuySell
   );
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
   const [searchQuery, setSearchQuery] = useState("");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("Last Month");
   const [dataKey, setDataKey] = useState(0);
@@ -98,28 +98,34 @@ const P2PCharts = () => {
     });
   };
 
-  // Transform orders data
+  // Transform orders data and filter by logged-in user's email
   const transformedData: TransactionType[] = [
     ...(orders?.results?.results || []),
-  ].map((order: P2POrder) => ({
-    id: order.id,
-    type: order.order_type,
-    date: order.created_on,
-    amount: order.amount,
-    status: order.status,
-    asset: order.asset,
-    assetSymbol: order.currency,
-    rate: order.exchange_rate,
-    payment: order.payment_details.map((payment) => ({
-      bank: payment.provider,
-      logo: "",
-    })),
-    username: `${order.advertiser_first_name} ${order.advertiser_last_name}`,
-    limit: `${order.min_order_amount} - ${order.max_order_amount}`,
-    price: order.exchange_rate,
-    commission: order.commission_rate,
-    lastUpdate: order.created_on,
-  }));
+  ]
+    .filter((order: P2POrder) => {
+      // Only show orders where advertiser_email matches the logged-in user's email
+      return user?.email && order.advertiser_email === user.email;
+    })
+    .map((order: P2POrder) => ({
+      id: order.id,
+      type: order.order_type,
+      advertiser_email: order.advertiser_email,
+      date: order.created_on,
+      amount: order.amount,
+      status: order.status,
+      asset: order.asset,
+      assetSymbol: order.currency,
+      rate: order.exchange_rate,
+      payment: order.payment_details.map((payment) => ({
+        bank: payment.provider,
+        logo: "",
+      })),
+      username: `${order.advertiser_first_name} ${order.advertiser_last_name}`,
+      limit: `${order.min_order_amount} - ${order.max_order_amount}`,
+      price: order.exchange_rate,
+      commission: order.commission_rate,
+      lastUpdate: order.created_on,
+    }));
 
   // Apply time filter to transformed data
   const timeFilteredData = transformedData.filter((item) => {
@@ -160,7 +166,7 @@ const P2PCharts = () => {
 
   // Use filtered data for display, but ensure we're showing the correct data for current page
   const displayData = searchQuery.trim() ? filteredData : transformedData;
-
+ console.log("displayData", displayData);
   // Calculate total pages based on actual count from API
   const totalOrders = orders?.count || 0;
   const pageSize = 10; // Default page size, should match backend

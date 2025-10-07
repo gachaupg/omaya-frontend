@@ -362,7 +362,7 @@ const Overview = () => {
           <div className="flex flex-col">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-medium text-sm dark:text-white text-[#0D0D0D]">
-                P2P Buys
+                P2P Buy / Sell
               </h3>
               <div className="relative">
                 <select

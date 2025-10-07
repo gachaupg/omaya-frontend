@@ -195,11 +195,11 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
 
                   {Array.isArray(trade.payment)
                     ? trade?.payment.map((p: { bank: string }, i: number) => (
-                      <div className="flex items-center gap-2">
+                      <div key={i} className="flex items-center gap-2">
                         <div>
                            <img src={trade.provider_logo || "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png"} alt=""  className="w-4 h-4 rounded"/>
                         </div>
-                          <div key={i} className="text-sm">{p.bank}</div>
+                          <div className="text-sm">{p.bank}</div>
                       </div>
                       ))
                     : trade.payment?.bank}

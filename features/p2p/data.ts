@@ -237,10 +237,10 @@ export const marketTableData = [
 ];
 
 // Order status tabs for Filters
-export const orderStatusTabs = [
+export const orderStatusTabs: Array<{ id: string; label: string; count?: number }> = [
   { id: "all", label: "All Orders" },
   { id: "completed", label: "Completed" },
-  { id: "processing", label: "Processing", count: 2 },
+  { id: "processing", label: "Processing" },
   { id: "canceled", label: "Canceled" },
 ];
 

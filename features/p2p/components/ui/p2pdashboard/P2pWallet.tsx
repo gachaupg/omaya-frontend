@@ -10,6 +10,7 @@ import { fetchMatchedTrades } from "@/features/p2p/slices/matchedTradesSlice";
 import { FinancialCalculator } from "@/lib/utils/financial";
 import { toNumber } from "@/lib/finanacial";
 import { fetchTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
+import { formatCurrency } from "@/lib/globalFormatter";
 
 interface Wallet {
   currency: string;
@@ -107,13 +108,13 @@ const P2pWallet = ({
                 <span
                   className={`text-lg font-bold dark:text-[${tokens.colors.dark.textTitle}] text-gray-900`}
                 >
-                  {`${formatBalance(balance ?? 0, true)} USDT`}
+                  {formatCurrency(balance ?? 0, "USDT")}
                 </span>
                 <span
                   className={`text-base font-semibold dark:text-[${tokens.colors.dark.textBody}] text-gray-600 opacity-80 flex items-center`}
                 >
                   <span className="mx-1 opacity-50 text-lg">≈</span>
-                  {`${formatBalance(balance ?? 0, true)} USDT`}
+                  {formatCurrency(balance ?? 0, "USD")}
                 </span>
               </div>
             </div>

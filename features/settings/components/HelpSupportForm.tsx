@@ -104,9 +104,8 @@ const HelpSupportForm: React.FC = () => {
 
             </div>
             <p className="text-sm text-gray-500 mb-4">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et 
-              dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex 
-              ea commodo consequat
+              Upload relevant files such as screenshots, documents, or error logs to help us better understand and resolve your issue. 
+              Supported formats include images (PNG, JPG), documents (PDF, DOC), and text files.
             </p>
               {formData.file && (
                 <div className="mt-2 text-sm text-[#1D8751]">
