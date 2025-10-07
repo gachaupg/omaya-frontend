@@ -468,32 +468,29 @@ const p2pMarketSlice = createSlice({
         const response = action.payload as any;
         console.log("Redux: API response received:", response);
         
-        // The API returns all orders in results.results array
-        const allOrders = response.results?.results || [];
-        console.log("Redux: All orders count:", allOrders.length);
-        
-        // For now, since the API returns all orders and we need to display them
-        // Let's store all orders in both buy and sell orders for display purposes
-        // The component will handle filtering based on activeTab
-        const totalOrdersCount = response.results?.total_orders_count || allOrders.length;
-        
-        console.log("Redux: Total orders count:", totalOrdersCount);
-        
-        // Update buy orders - store all orders for now
-        state.p2pBuyOrders = {
-          next: response.next,
-          previous: response.previous,
-          total_orders_count: totalOrdersCount,
-          results: allOrders
+        // The API returns buy_orders and sell_orders objects
+        const buyOrders = response.buy_orders || {
+          next: null,
+          previous: null,
+          total_orders_count: 0,
+          results: []
         };
         
-        // Update sell orders - store all orders for now
-        state.p2pSellOrders = {
-          next: response.next,
-          previous: response.previous,
-          total_orders_count: totalOrdersCount,
-          results: allOrders
+        const sellOrders = response.sell_orders || {
+          next: null,
+          previous: null,
+          total_orders_count: 0,
+          results: []
         };
+        
+        console.log("Redux: Buy orders count:", buyOrders.results?.length || 0);
+        console.log("Redux: Sell orders count:", sellOrders.results?.length || 0);
+        
+        // Update buy orders
+        state.p2pBuyOrders = buyOrders;
+        
+        // Update sell orders
+        state.p2pSellOrders = sellOrders;
         
         console.log("Redux: Updated state - buy orders:", state.p2pBuyOrders);
         console.log("Redux: Updated state - sell orders:", state.p2pSellOrders);

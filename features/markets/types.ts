@@ -86,3 +86,21 @@ export interface FavoriteAsset {
   asset_image: string;
   added_on: string; 
 }
+
+/**
+ * Top Assets API Response Types
+ */
+export interface TopAsset {
+  symbol: string;
+  name: string;
+  image: string;
+  volume: number;
+  transaction_count: number;
+}
+
+export interface TopAssetsResponse {
+  success: boolean;
+  time_period: string;
+  timestamp: string;
+  data: TopAsset[];
+}

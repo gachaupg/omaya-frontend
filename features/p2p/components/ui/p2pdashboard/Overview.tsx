@@ -35,16 +35,10 @@ const Overview = () => {
     setError(null);
     try {
       const response = await getAllP2PBuyandSell(1);
-      if (response.results?.results) {
-        const orders = response.results.results;
-        const buyOrders = orders.filter(
-          (order: P2POrder) => order.order_type === "buy"
-        );
-        const sellOrders = orders.filter(
-          (order: P2POrder) => order.order_type === "sell"
-        );
-        setOrderData({ buyOrders, sellOrders });
-      }
+      setOrderData({ 
+        buyOrders: response.buy_orders?.results || [], 
+        sellOrders: response.sell_orders?.results || [] 
+      });
     } catch (error) {
       console.error("Error fetching order data:", error);
       setError("Failed to load order data");

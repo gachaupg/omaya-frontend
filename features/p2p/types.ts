@@ -370,13 +370,8 @@ export interface OrderMatchRequest {
 }
 
 export interface P2PBuySellResponse {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: {
-    total_orders_count: number;
-    results: P2POrder[];
-  };
+  buy_orders: P2POrderList;
+  sell_orders: P2POrderList;
 }
 
 export interface CreateAppealRequest {

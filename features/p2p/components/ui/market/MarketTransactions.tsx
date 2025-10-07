@@ -214,27 +214,34 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
     if (!orders) {
       return [];
     }
-    // Since API returns all orders in both buy_orders and sell_orders
-    // We'll use buy_orders.results which contains all orders and filter by order_type
-    const allOrders = orders.buy_orders?.results || [];
     
-    // Filter orders based on activeTab
-    const filteredOrders = allOrders.filter((order: any) => {
-      if (activeTab === "buy") {
-        return order.order_type === "sell";
-      } else if (activeTab === "sell") {
-        return order.order_type === "buy";
-      }
-      return true; // fallback to show all if activeTab is neither buy nor sell
-    });
+    // When user is on "buy" tab (wants to buy), show sell orders (people selling)
+    // When user is on "sell" tab (wants to sell), show buy orders (people buying)
+    let activeOrdersList = [];
+    
+    if (activeTab === "buy") {
+      // User wants to buy, so show sell orders
+      activeOrdersList = orders.sell_orders?.results || [];
+    } else if (activeTab === "sell") {
+      // User wants to sell, so show buy orders
+      activeOrdersList = orders.buy_orders?.results || [];
+    } else {
+      // Default: combine both
+      activeOrdersList = [
+        ...(orders.buy_orders?.results || []),
+        ...(orders.sell_orders?.results || [])
+      ];
+    }
     
     console.log("getActiveOrders:", { 
       activeTab, 
-      allOrdersCount: allOrders.length,
-      filteredOrdersCount: filteredOrders.length,
-      orderTypes: allOrders.map((o: any) => o.order_type)
+      buyOrdersCount: orders.buy_orders?.results?.length || 0,
+      sellOrdersCount: orders.sell_orders?.results?.length || 0,
+      activeOrdersCount: activeOrdersList.length,
+      firstOrderType: activeOrdersList[0]?.order_type
     });
-    return filteredOrders;
+    
+    return activeOrdersList;
   }, [orders, activeTab]);
 
   const transformedData: MarketRow[] = useMemo(() => {
@@ -375,9 +382,21 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
     dispatch(fetchAllP2PBuyandSell(currentPage) as any);
   };
 
-  const totalPages = Math.ceil(
-    (orders?.buy_orders?.total_orders_count || 0) / 10
-  );
+  const totalPages = useMemo(() => {
+    let totalCount = 0;
+    if (activeTab === "buy") {
+      // User wants to buy, showing sell orders
+      totalCount = orders?.sell_orders?.total_orders_count || 0;
+    } else if (activeTab === "sell") {
+      // User wants to sell, showing buy orders
+      totalCount = orders?.buy_orders?.total_orders_count || 0;
+    } else {
+      // Default: sum both
+      totalCount = (orders?.buy_orders?.total_orders_count || 0) + 
+                   (orders?.sell_orders?.total_orders_count || 0);
+    }
+    return Math.ceil(totalCount / 10);
+  }, [orders, activeTab]);
 
   if (!mounted) {
     return null;

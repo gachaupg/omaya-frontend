@@ -2,8 +2,9 @@
  * Markets API - CoinGecko integration for cryptocurrency market data
  */
 import axios from "axios";
-import { MarketData, MarketDataParams, MarketDataResponse } from "./types";
+import { MarketData, MarketDataParams, MarketDataResponse, TopAssetsResponse } from "./types";
 import { logger } from "@/lib/utils/logger";
+import { get } from "@/lib/apiClient";
 
 const RATE_LIMIT_DELAY = 10000; 
 const MAX_RETRIES = 2;
@@ -531,5 +532,43 @@ export const fetchCoinDetailsPublic = async (id: string) => {
       
       await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY * retries));
     }
+  }
+};
+
+/**
+ * Fetch top trading assets from OMAYA backend
+ * @returns Promise with top assets data
+ */
+export const fetchTopAssets = async (): Promise<TopAssetsResponse> => {
+  try {
+    logger.info("Fetching top trading assets from OMAYA backend");
+
+    const response = await get<TopAssetsResponse>(
+      "/trading_engine/market/top-assets/"
+    );
+
+    logger.info("Top assets fetched successfully", {
+      count: response.data.data?.length || 0,
+    });
+
+    return response.data;
+  } catch (error) {
+    logger.error("Failed to fetch top assets", { error });
+
+    if (axios.isAxiosError(error)) {
+      return {
+        success: false,
+        time_period: "24h",
+        timestamp: new Date().toISOString(),
+        data: [],
+      };
+    }
+
+    return {
+      success: false,
+      time_period: "24h",
+      timestamp: new Date().toISOString(),
+      data: [],
+    };
   }
 };
