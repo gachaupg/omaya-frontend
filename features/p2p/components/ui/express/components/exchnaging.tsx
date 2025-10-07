@@ -61,6 +61,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   const [finalWebsocketData, setFinalWebsocketData] = useState<any>(null);
   const [liveAmount, setLiveAmount] = useState<number | null>(null);
   const [liveCurrency, setLiveCurrency] = useState<string | null>(null);
+  const [liveTransactionId, setLiveTransactionId] = useState<string | null>(null);
   const [amountHistory, setAmountHistory] = useState<
     Array<{ amount: number; timestamp: string; currency: string }>
   >([]);
@@ -228,6 +229,11 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           // Clear any WebSocket errors when we receive a message
           setWsError(null);
           setConnectionAttempts(0); // Reset connection attempts on successful message
+
+          // Update transaction ID from WebSocket data if available
+          if (data.data?.transaction_id) {
+            setLiveTransactionId(data.data.transaction_id);
+          }
 
           // Update amount and currency from WebSocket data
           // Check for both regular amount format and ChangeNow status update format
@@ -1170,10 +1176,10 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 isDark ? "text-white" : "text-gray-900"
               } text-base font-mono font-semibold`}
             >
-              {effectiveTransactionData?.transactionId}
+              {liveTransactionId || effectiveTransactionData?.transactionId}
             </span>
             <CopyButton
-              value={effectiveTransactionData?.transactionId || ""}
+              value={liveTransactionId || effectiveTransactionData?.transactionId || ""}
               className="text-[#FFA200] hover:text-[#FFB833] transition-colors"
               showIcon={true}
             />

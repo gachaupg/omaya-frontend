@@ -74,7 +74,11 @@ const PaymentMethods = () => {
           {" "}
           Payment Methods
         </p>
-        {userPaymentDetails.map((payment: UserPaymentDetail) => (
+        {userPaymentDetails
+          .filter((payment: UserPaymentDetail) => 
+            payment.status?.toLowerCase() === activeButton.toLowerCase()
+          )
+          .map((payment: UserPaymentDetail) => (
           <div
             key={payment.id}
             className="flex dark:bg-[#1D1D23] bg-gray-50 dark:border-[#35353E] border-gray-300 border-2 rounded-xl p-3 justify-between gap-3 items-center"

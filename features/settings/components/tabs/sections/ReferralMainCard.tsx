@@ -7,6 +7,7 @@ import { QrCode } from "lucide-react";
 import Button from "@/components/ui/Button";
 import CopyButton from "@/components/ui/CopyButton";
 import { DonutChartWithCenter } from "@/components/ui/DonutChartWithCenter";
+import { formatCurrency } from "@/lib/globalFormatter";
 
 interface Props {
   user: any;
@@ -47,22 +48,20 @@ const ReferralMainCard: React.FC<Props> = ({
       <div
         className="w-full rounded-2xl p-3 mb-4 flex flex-col lg:flex-row gap-4
                     shadow-lg bg-white border-gray-200
-                    dark:bg-[#1E2329] dark:border-[#35353E]"
+                    dark:bg-transparent dark:border-[#35353E]"
       >
         {/* ───────── left column ───────── */}
         <div className="flex-1 flex flex-col justify-between gap-4">
           {/* copy blurb */}
           <div>
             <p className="text-sm leading-relaxed text-gray-600 dark:text-[#A3A3A3] mb-2">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-              eiusmod tempor…
+              Earn commissions by referring friends to our platform. Share your unique referral code and start earning rewards.
             </p>
             <p className="text-sm leading-relaxed text-gray-600 dark:text-[#A3A3A3] mb-2">
-              …incididunt ut labore et dolore magna aliqua. Ut enim ad minim
-              veniam.
+              You'll receive a percentage of trading fees from users who sign up using your referral code.
             </p>
             <p className="text-sm leading-relaxed text-gray-600 dark:text-[#A3A3A3]">
-              Do eiusmod tempor incididunt ut labore.
+              Track your earnings and withdraw your commissions anytime.
             </p>
           </div>
 
@@ -137,7 +136,7 @@ const ReferralMainCard: React.FC<Props> = ({
                             value ? "text-white" : "text-gray-500"
                           } font-semibold text-sm sm:text-base ml-2`}
                         >
-                          {value.toLocaleString()} USD
+                          {formatCurrency(value)}
                         </span>
                       </div>
                     ))}
@@ -210,7 +209,7 @@ const StatRow: React.FC<{
         highlight ? "text-[#1D8751]" : "text-gray-900 dark:text-white"
       }`}
     >
-      {value.toFixed(2)} USD
+      {formatCurrency(value)}
     </span>
   </div>
 );

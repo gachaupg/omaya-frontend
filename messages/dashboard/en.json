@@ -32,7 +32,7 @@
     "types": {
       "deposit": "Deposit",
       "withdrawal": "Withdrawal",
-      "p2pBuy": "P2P Buy",
+      "p2pBuy": "P2P Buy/Sell",
       "p2pSell": "P2P Sell",
       "swap": "Swap",
       "exchange": "Exchange"
@@ -55,7 +55,13 @@
       "weeks": "{{count}} weeks ago",
       "month": "{{count}} month ago",
       "months": "{{count}} months ago"
-    }
+    },
+    "showing": "Showing",
+    "of": "of",
+    "transactions": "transactions",
+    "showingAll": "Showing all",
+    "loadAll": "Load All Transactions",
+    "backToPages": "Back to Pages"
   },
   "volume": {
     "myTotalVolume": "My Total Volume",

@@ -48,12 +48,9 @@ const KYC = () => {
           {/* Avatar, Name, and Status */}
           {/* KYC Info */}
           <p className="text-sm dark:text-[#808080] text-gray-600">
-            Lorem ipsum dolor sit amet consectetur adipisicing elit. Ipsam
-            impedit, velit nemo doloremque, quae harum voluptatum cum eligendi
-            saepe unde excepturi repellat pariatur officiis culpa, fuga id
-            quaerat molestiae et! Magnam harum iste, consequuntur consequatur
-            quasi saepe sequi, illo eligendi laboriosam similique beatae quod
-            quo, obcaecati fugiat ea quia voluptas.
+            Complete your KYC verification to unlock all platform features and enhance your account security. 
+            This process helps us verify your identity and comply with regulatory requirements, ensuring a 
+            safe and compliant trading environment for all users.
           </p>
           <div className="flex items-center gap-3">
             <div

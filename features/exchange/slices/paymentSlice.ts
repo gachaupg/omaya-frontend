@@ -7,6 +7,8 @@ import {
   PaymentProvider,
   UserPaymentDetail,
   AdminPaymentDetail,
+  AdminWalletListResponse,
+  AdminWalletListItem,
   CreatePaymentMethodData,
   CreatePaymentProviderData,
   AddUserPaymentDetailData,
@@ -33,11 +35,17 @@ export const invalidateAllPaymentCaches = async (): Promise<void> => {
   await sliceCache.clearSlice('payment');
 };
 
+export const invalidateAdminWalletListCache = async (): Promise<void> => {
+  await sliceCache.delete('payment', 'fetchAdminWalletList');
+};
+
 interface PaymentState {
   paymentMethods: PaymentMethod[];
   paymentProviders: PaymentProvider[];
   userPaymentDetails: UserPaymentDetail[];
   adminPaymentDetails: AdminPaymentDetail[];
+  adminWalletList: AdminWalletListItem[];
+  adminWalletListCount: number;
   loading: boolean;
   error: string | null;
 }
@@ -47,6 +55,8 @@ const initialState: PaymentState = {
   paymentProviders: [],
   userPaymentDetails: [],
   adminPaymentDetails: [],
+  adminWalletList: [],
+  adminWalletListCount: 0,
   loading: false,
   error: null,
 };
@@ -153,6 +163,35 @@ export const fetchAdminPaymentDetails = createAsyncThunk<AdminPaymentDetail[], b
   }
 );
 
+// Fetch admin wallet list with caching
+export const fetchAdminWalletList = createAsyncThunk<AdminWalletListResponse, boolean | undefined>(
+  'payment/fetchAdminWalletList',
+  async (forceRefresh = false, { rejectWithValue }) => {
+    try {
+      // If forcing refresh, delete cache first
+      if (forceRefresh) {
+        await sliceCache.delete('payment', 'fetchAdminWalletList');
+      }
+
+      const data = await sliceCache.getOrSet(
+        'payment',
+        'fetchAdminWalletList',
+        async () => {
+          console.log('Fetching admin wallet list from API');
+          const response = await get<AdminWalletListResponse>(EXCHANGE_ENDPOINTS.ADMIN_WALLET_LIST);
+          return response.data;
+        },
+        undefined, // no params
+        5 * 60 * 1000 // 5 minutes cache - admin wallet list changes more frequently
+      );
+      
+      return data;
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to fetch admin wallet list');
+    }
+  }
+);
+
 // Add user payment detail
 export const addUserPaymentDetail = createAsyncThunk<UserPaymentDetail, AddUserPaymentDetailData>(
   'payment/addUserPaymentDetail',
@@ -239,6 +278,20 @@ const paymentSlice = createSlice({
         state.adminPaymentDetails = action.payload;
       })
       .addCase(fetchAdminPaymentDetails.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Admin Wallet List
+      .addCase(fetchAdminWalletList.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAdminWalletList.fulfilled, (state, action: PayloadAction<AdminWalletListResponse>) => {
+        state.loading = false;
+        state.adminWalletList = action.payload.results;
+        state.adminWalletListCount = action.payload.count;
+      })
+      .addCase(fetchAdminWalletList.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })

@@ -5,6 +5,8 @@ import { AppDispatch } from "@/store";
 import {
   fetchP2PTransactions,
   setCurrentPage,
+  loadAllP2PTransactions,
+  toggleViewAll,
 } from "@/features/p2p/slices/p2pTransactionsSlice";
 import { formatDistanceToNow } from "date-fns";
 import { P2PTransaction } from "@/features/p2p/types";
@@ -22,6 +24,8 @@ interface RootState {
     loading: boolean;
     error: string | null;
     currentPage: number;
+    allTransactions: any[];
+    hasLoadedAll: boolean;
   };
 }
 
@@ -45,7 +49,7 @@ const P2PTransactions = () => {
   const dispatch = useDispatch<AppDispatch>();
   const [userEmail, setUserEmail] = useState("");
   const { t } = useDashboardI18n();
-  const { transactions, loading, error, currentPage } = useSelector(
+  const { transactions, loading, error, currentPage, hasLoadedAll } = useSelector(
     (state: RootState) => state.p2pTransactions
   );
 
@@ -112,16 +116,12 @@ const P2PTransactions = () => {
     );
   }
 
-  // Pagination logic for 10 items per page
-  const itemsPerPage = 10;
-
+  // Filter results by user email for display
   const filteredResults =
     transactions.results.filter((t) => t.user_email === userEmail) || [];
-  const totalPages = Math.ceil(filteredResults.length / itemsPerPage) || 1;
-  const paginatedResults = filteredResults.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  
+  // Use server-side pagination info
+  const totalPages = Math.ceil(transactions.count / 10) || 1;
 
   const renderPagination = () => {
     if (totalPages <= 1) return null;
@@ -152,34 +152,67 @@ const P2PTransactions = () => {
     }
 
     return (
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => dispatch(setCurrentPage(currentPage - 1))}
-          disabled={!transactions.previous}
-          className={`px-3 py-1 rounded-md border transition-colors duration-150
-            ${
-              transactions.previous
-                ? "bg-transparent text-gray-600 dark:text-gray-400 border-[#d1d5db] dark:border-[#35353E] hover:bg-[#1D8751] hover:text-white"
-                : "bg-gray-200 dark:bg-gray-600 text-gray-400 cursor-not-allowed border-transparent"
-            }`}
-        >
-          {t("common.previous", "Previous")}
-        </button>
-        {startPage > 1 && <span className="text-gray-500">…</span>}
-        {pageButtons}
-        {endPage < totalPages && <span className="text-gray-500">…</span>}
-        <button
-          onClick={() => dispatch(setCurrentPage(currentPage + 1))}
-          disabled={!transactions.next}
-          className={`px-3 py-1 rounded-md border transition-colors duration-150
-            ${
-              transactions.next
-                ? "bg-transparent text-gray-600 dark:text-gray-400 border-[#d1d5db] dark:border-[#35353E] hover:bg-[#1D8751] hover:text-white"
-                : "bg-gray-200 dark:bg-gray-600 text-gray-400 cursor-not-allowed border-transparent"
-            }`}
-        >
-          {t("common.next", "Next")}
-        </button>
+      <div className="flex flex-col items-center gap-4">
+        {/* Show total count and current page info */}
+        <div className="text-sm text-gray-600 dark:text-gray-400">
+          {hasLoadedAll 
+            ? t("transactions.showingAll", "Showing all") + " " + filteredResults.length + " " + t("transactions.transactions", "transactions")
+            : t("transactions.showing", "Showing") + " " + filteredResults.length + " " + t("transactions.of", "of") + " " + transactions.count + " " + t("transactions.transactions", "transactions")
+          }
+        </div>
+        
+        {/* Load All button */}
+        {!hasLoadedAll && transactions.count > 10 && (
+          <button
+            onClick={() => dispatch(loadAllP2PTransactions())}
+            disabled={loading}
+            className="px-4 py-2 bg-[#1D8751] text-white rounded-md hover:bg-[#1a6b42] transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? t("common.loading", "Loading...") : t("transactions.loadAll", "Load All Transactions")}
+          </button>
+        )}
+        
+        {!hasLoadedAll && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => dispatch(setCurrentPage(currentPage - 1))}
+              disabled={!transactions.previous}
+              className={`px-3 py-1 rounded-md border transition-colors duration-150
+                ${
+                  transactions.previous
+                    ? "bg-transparent text-gray-600 dark:text-gray-400 border-[#d1d5db] dark:border-[#35353E] hover:bg-[#1D8751] hover:text-white"
+                    : "bg-gray-200 dark:bg-gray-600 text-gray-400 cursor-not-allowed border-transparent"
+                }`}
+            >
+              {t("common.previous", "Previous")}
+            </button>
+            {startPage > 1 && <span className="text-gray-500">…</span>}
+            {pageButtons}
+            {endPage < totalPages && <span className="text-gray-500">…</span>}
+            <button
+              onClick={() => dispatch(setCurrentPage(currentPage + 1))}
+              disabled={!transactions.next}
+              className={`px-3 py-1 rounded-md border transition-colors duration-150
+                ${
+                  transactions.next
+                    ? "bg-transparent text-gray-600 dark:text-gray-400 border-[#d1d5db] dark:border-[#35353E] hover:bg-[#1D8751] hover:text-white"
+                    : "bg-gray-200 dark:bg-gray-600 text-gray-400 cursor-not-allowed border-transparent"
+                }`}
+            >
+              {t("common.next", "Next")}
+            </button>
+          </div>
+        )}
+        
+        {/* Back to paginated view button */}
+        {hasLoadedAll && (
+          <button
+            onClick={() => dispatch(fetchP2PTransactions(1))}
+            className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors duration-150"
+          >
+            {t("transactions.backToPages", "Back to Pages")}
+          </button>
+        )}
       </div>
     );
   };
@@ -209,7 +242,7 @@ const P2PTransactions = () => {
         </thead>
 
         <tbody className="divide-y divide-[#d1d5db] dark:divide-[#35353E]">
-          {paginatedResults.map((tx) => (
+          {filteredResults.map((tx) => (
             <tr
               key={tx.transaction_id}
               className="hover:bg-gray-100 dark:hover:bg-[#23232A] transition-colors"

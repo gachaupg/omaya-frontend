@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { tokens } from "@/styles/tokens";
 import { P2POrder } from "@/features/p2p/types";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store/rootReducer";
 import { AppDispatch } from "@/store/index";
@@ -26,6 +26,7 @@ interface FinalBuyProps {
 
 const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
   const params = useParams();
+  const searchParams = useSearchParams();
   const dispatch = useDispatch<AppDispatch>();
   const {
     singleOrder,
@@ -44,12 +45,17 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
   const [showCancelMsg, setShowCancelMsg] = useState(false);
   const router = useRouter();
 
+  // Extract commission from URLSearchParams
+  const orderDataFromUrl = searchParams?.get("orderData");
+  const parsedOrderData = orderDataFromUrl ? JSON.parse(orderDataFromUrl) : null;
+  const commissionFromUrl = parsedOrderData?.commission;
+
   const completionTime = Number(singleOrder?.completion_time);
   const displaySeconds =
     !isNaN(completionTime) && completionTime > 0
       ? completionTime * 60
       : 10 * 60;
-const tradeId = localStorage.getItem('p2p_trade_id');
+// Remove this line - we'll get tradeId from localStorage inside useEffect
   // Local countdown state for auto-cancel logic
   const [countdown, setCountdown] = useState(displaySeconds);
   const prevStatus = useRef(confirmOrder?.status);
@@ -81,17 +87,34 @@ const tradeId = localStorage.getItem('p2p_trade_id');
     return () => clearInterval(timer);
   }, [confirmOrder?.status, countdown]);
 
-  useEffect(() => {
-    const orderId = tradeId || params?.id as string;
-    console.log("useEffect debug:", { orderId, tradeId, confirmOrder, singleOrder });
-
-
-    console.log("useEffect debug:", { orderId, confirmOrder, singleOrder });
+  useEffect(() => {    
+    // Use trade_id from localStorage first, then fallback to params
+    const tradeIdFromStorage = localStorage.getItem('p2p_trade_id');
+    const orderId = tradeIdFromStorage || params?.id as string;
+    
+    console.log("🔍 DEBUG - useEffect:", { 
+      orderId, 
+      tradeIdFromStorage, 
+      paramsId: params?.id,
+      localStorageKeys: Object.keys(localStorage).filter(key => key.includes('p2p')),
+      allLocalStorage: { ...localStorage }
+    });
 
     if (isAuthenticated && orderId) {
-      dispatch(fetchConfirmOrder(orderId));
+      
+      
+      dispatch(fetchConfirmOrder(orderId))
+        .unwrap()
+        .then((result) => {
+          console.log("✅ Fetch confirm order success:", result);
+        })
+        .catch((error) => {
+          console.error("❌ Fetch confirm order error:", error);
+        });
+    } else {
+      console.log("⚠️ Not fetching - missing auth or orderId:", { isAuthenticated, orderId });
     }
-  }, [params?.id, tradeId, dispatch, isAuthenticated]);
+  }, [params?.id, dispatch, isAuthenticated]);
 
   // Separate useEffect for fetching singleOrder when confirmOrder is available
   useEffect(() => {
@@ -106,16 +129,10 @@ const tradeId = localStorage.getItem('p2p_trade_id');
 
     if (isAuthenticated && orderToFetch && !singleOrder?.id) {
       console.log("Fetching single order:", orderToFetch);
-      dispatch(fetchSingleOrder(orderToFetch));
+      dispatch(fetchSingleOrder(orderToFetch.toString()));
     }
   }, [confirmOrder, isAuthenticated, singleOrder?.id, dispatch]);
 
-  // New useEffect to check for completed status and show success modal
-  useEffect(() => {
-    if (confirmOrder?.status === "completed" && !showSuccessModal) {
-      setShowSuccessModal(true);
-    }
-  }, [confirmOrder?.status, showSuccessModal]);
 
   console.log("singleOrder", singleOrder);
   console.log("confirmOrder", confirmOrder);
@@ -131,24 +148,43 @@ const tradeId = localStorage.getItem('p2p_trade_id');
     }
   }, [confirmOrder?.status, displaySeconds]);
 
+  // Show success modal when trade is completed
+  useEffect(() => {
+    if ((confirmOrder?.status as string) === "completed") {
+      setShowSuccessModal(true);
+    }
+  }, [confirmOrder?.status]);
+
   // Get payment details from order data
   const paymentDetails = singleOrder?.payment_details?.[0];
   console.log("singleOrder", singleOrder);
   // --- Calculation logic ---
   const sendAmount = Number(confirmOrder?.amount) || 0;
-  const commissionRate = Number(singleOrder?.commission_rate) || 0;
+  const commissionRate = Number(singleOrder?.commission_rate) || Number(commissionFromUrl) || 0;
   const orderType = singleOrder?.order_type || "buy";
   let receiveAmount = sendAmount;
 
   if (orderType === "buy") {
-    receiveAmount = sendAmount * commissionRate;
+    // For buy orders, multiply by commission rate (assuming rate is in decimal form, e.g., 0.98 for 98%)
+    receiveAmount = commissionRate > 0 ? sendAmount * commissionRate : sendAmount;
   } else {
-    receiveAmount = sendAmount / commissionRate;
+    // For sell orders, divide by commission rate
+    receiveAmount = commissionRate > 0 ? sendAmount / commissionRate : sendAmount;
   }
 
   // Format numbers
   const formatAmount = (amt: number) =>
     amt.toLocaleString(undefined, { maximumFractionDigits: 6 });
+
+  // Debug logging
+  console.log("💰 Calculation Debug:", {
+    sendAmount,
+    commissionRate,
+    commissionFromUrl,
+    orderType,
+    receiveAmount,
+    singleOrderCommissionRate: singleOrder?.commission_rate
+  });
 
   const handleCancelTransaction = () => {
     if (isAuthenticated && confirmOrder?.id) {
@@ -233,14 +269,15 @@ const tradeId = localStorage.getItem('p2p_trade_id');
           <div className="flex flex-col justify-start gap-2">
             <div className="flex items-center gap-2">
               <div className="icon rounded-full w-8 h-8 flex items-center justify-center text-lg font-bold bg-[#1D8751] text-white">
-                {singleOrder?.advertiser_first_name?.[0] || "A"}
+             {singleOrder?.seller_photo ?   <img className="w-8 h-8 rounded-full" src={singleOrder?.seller_photo || ""} alt="" /> : <span className="text-[#1D8751] font-bold text-lg">{singleOrder?.advertiser_name?.[0] || "A"}</span>}
               </div>
               <div
                 className="text-gray-900 dark:text-white text-sm"
               >
-                {singleOrder
-                  ? `${singleOrder.advertiser_first_name} ${singleOrder.advertiser_last_name}`
-                  : "Advertiser User Name"}
+                {singleOrder?.advertiser_name || 
+                 (singleOrder
+                  ? `${singleOrder.advertiser_name} `
+                  : "Advertiser User Name")}
                 <span className="text-[#E23D3A]">✔️</span>
               </div>
             </div>
@@ -251,7 +288,7 @@ const tradeId = localStorage.getItem('p2p_trade_id');
                 {singleOrder?.completion_rate || "99.20"}% Completion
               </div>
               <div className="text-sm text-[#1D8751]">
-                Rating: 99% | Commission: {singleOrder?.commission_rate || "0.5"}%
+                Rating: 99% | Commission: {commissionFromUrl || "0.5"}%
               </div>
             </div>
 
@@ -350,7 +387,7 @@ const tradeId = localStorage.getItem('p2p_trade_id');
               <div className="flex items-center h-[46px] rounded-2xl border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[#35353E] px-2">
                 <span className="text-[#1D8751] text-2xl mr-2">$</span>
                 <span className="text-[#1D8751] text-xl font-semibold">
-                  {commissionRate}%
+                  {commissionFromUrl}%
                 </span>
                 <span className="ml-auto text-gray-900 dark:text-white text-base font-medium">
                   USD
@@ -541,8 +578,9 @@ const tradeId = localStorage.getItem('p2p_trade_id');
         <ChatBox
           tradeId={confirmOrder?.id || ""}
           userId={user?.id.toString() || ""}
-          userName={`${singleOrder?.advertiser_first_name}`}
+          userName={singleOrder?.advertiser_name || ""}
           autoreply={singleOrder?.auto_reply || ""}
+          seller_photo={singleOrder?.seller_photo || ""}
         />
         {/* Advertiser's Terms */}
         <section className="advertiser-terms rounded-lg p-4 bg-white dark:bg-[#23232B]">
@@ -552,7 +590,7 @@ const tradeId = localStorage.getItem('p2p_trade_id');
           </div>
           <div className="text-xs flex flex-col gap-2">
             <div className="text-[#1D8751]">
-              {singleOrder?.terms_and_conditions || ""}
+              {singleOrder?.terms_and_conditions || singleOrder?.terms_and_conditions || ""}
             </div>
           </div>
         </section>
@@ -634,7 +672,8 @@ const tradeId = localStorage.getItem('p2p_trade_id');
                 <button
                   onClick={() => {
                     setShowSuccessModal(false);
-                    router.push("/dashboard");
+                    // router.push("/dashboard");
+                    window.location.href = "/dashboard/p2p/";
                   }}
                   className="w-full bg-[#1D8751] text-white rounded-lg px-6 py-3 font-semibold hover:bg-[#167a45] transition-colors"
                 >

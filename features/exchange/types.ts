@@ -233,3 +233,35 @@ export interface AddUserPaymentDetailData {
   account_number: string;
   wallet_address?: string;
 }
+
+// Admin Wallet List Types
+export interface AdminWalletPaymentDetail {
+  asset: string | null;
+  network: string | null;
+  payment_type: string;
+  account_name: string;
+  provider_name: string;
+  provider_logo: string | null;
+  account_number: string | null;
+  mobile_number: string | null;
+  wallet_address: string | null;
+  how_to_send: string | null;
+  account_type: string;
+}
+
+export interface AdminWalletListItem {
+  admin_wallet_id: string;
+  currency: string;
+  balance: number;
+  created_on: string;
+  last_updated: string;
+  admin_payment_detail_id: string;
+  admin_payment_detail: AdminWalletPaymentDetail;
+}
+
+export interface AdminWalletListResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: AdminWalletListItem[];
+}

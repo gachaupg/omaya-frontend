@@ -34,11 +34,11 @@ export const validateBalance = ({
   );
 
   // For sell orders, check against available balance
-  if (tradeType === "sell" && amount > availableBalance) {
+  if (tradeType === "sell" && amount > walletBalance) {
     return {
       isValid: false,
       availableBalance,
-      errorMessage: `Insufficient balance. Available: ${availableBalance.toFixed(
+      errorMessage: `Insufficient balance. Available: ${walletBalance.toFixed(
         2
       )} USDT`,
     };

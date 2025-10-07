@@ -40,6 +40,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const [showAppealModal, setShowAppealModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [tradeDataJson, setTradeDataJson] = useState<any>({});
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
@@ -71,45 +72,50 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     return () => clearInterval(timer);
   }, [confirmOrder?.status, countdown]);
 
-  // Auto-cancel when countdown reaches 0 and status is matched
+  // Auto-cancel when countdown reaches 0 and status is matched - DISABLED
   useEffect(() => {
     if (isAuthenticated) {
       if (confirmOrder?.status === "matched" && countdown === 0) {
-        if (confirmOrder?.id) {
-          dispatch(cancelP2POrderThunk(confirmOrder.id));
-        }
+        // AUTO-CANCEL DISABLED - Countdown reached 0 but no auto-cancel
+        console.log("Countdown reached 0, auto-cancel is disabled");
+        return;
       }
     }
   }, [confirmOrder?.status, countdown, confirmOrder?.id, dispatch]);
 
+  // Fetch confirm order when authenticated and orderId is available
   useEffect(() => {
     const orderId = params?.id as string;
-    const orderToFetch = confirmOrder?.buy_order || confirmOrder?.sell_order;
-
+    console.log(orderId)
     if (isAuthenticated && orderId) {
       dispatch(fetchConfirmOrder(orderId));
-      if (orderToFetch) {
-        dispatch(fetchSingleOrder(orderToFetch));
-      }
-      if (confirmOrder?.status === "completed") {
-        showToast.success("Order Completed Successfully!");
-        dispatch(fetchConfirmOrder(confirmOrder.id));
-        setTimeout(() => {
-          router.push("/dashboard/p2p");
-        }, 2000);
-      }
     }
-  }, [params?.id, dispatch]);
+  }, [params?.id, dispatch, isAuthenticated]);
 
-  // New useEffect to check for completed status and show success modal
+  // Fetch single order when confirmOrder is loaded
   useEffect(() => {
-    if (confirmOrder?.status === "completed" && !showSuccessModal) {
-      setShowSuccessModal(true);
+    const orderToFetch = confirmOrder?.buy_order || confirmOrder?.sell_order;
+    if (isAuthenticated && orderToFetch) {
+      dispatch(fetchSingleOrder(orderToFetch.toString()));
     }
-  }, [confirmOrder?.status, showSuccessModal]);
+  }, [confirmOrder?.buy_order, confirmOrder?.sell_order, dispatch, isAuthenticated]);
+
 
   useEffect(() => {
     setIsClient(true);
+    // Load trade data from localStorage on client side only
+    if (typeof window !== 'undefined') {
+      const tradeData = localStorage.getItem("new_order");
+      if (tradeData) {
+        try {
+          const parsedData = JSON.parse(tradeData);
+          setTradeDataJson(parsedData);
+        } catch (error) {
+          console.error("Failed to parse trade data from localStorage:", error);
+          setTradeDataJson({});
+        }
+      }
+    }
   }, []);
 
   // Reset countdown to displaySeconds when status is not 'matched'
@@ -119,19 +125,28 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     }
   }, [confirmOrder?.status, displaySeconds]);
 
+  // Show success modal when status becomes "completed"
+  useEffect(() => {
+    if (confirmOrder?.status === "completed") {
+      setShowSuccessModal(true);
+    }
+  }, [confirmOrder?.status]);
+
   // Get payment details from order data
   const paymentDetails = singleOrder?.payment_details?.[0] || null;
 
   // --- Calculation logic ---
   const sendAmount = Number(confirmOrder?.amount) || 0;
-  const commissionRate = Number(singleOrder?.commission_rate) || 0;
+  const commissionRate = Number(singleOrder?.commission_rate) || Number(tradeDataJson?.commission_rate) || 0;
   const orderType = singleOrder?.order_type || "buy";
   let receiveAmount = sendAmount;
 
   if (orderType === "buy") {
-    receiveAmount = sendAmount * commissionRate;
+    // For buy orders, multiply by commission rate
+    receiveAmount = commissionRate > 0 ? sendAmount * commissionRate : sendAmount;
   } else {
-    receiveAmount = sendAmount / commissionRate;
+    // For sell orders, divide by commission rate
+    receiveAmount = commissionRate > 0 ? sendAmount / commissionRate : sendAmount;
   }
 
   // Format numbers
@@ -185,7 +200,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
         {/* Advertiser Info */}
         <section className="advertiser-info rounded-[18px] p-2 flex items-center gap-4 border-2 border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[#23232B]  ">
           <div className="icon rounded-full w-10 h-10 flex items-center justify-center text-xl font-bold bg-[#1D8751] text-white">
-            {singleOrder?.advertiser_first_name?.[0] || "A"}
+         {tradeDataJson?.buy_photo ? <img className="w-8 h-8 rounded-full" src={tradeDataJson?.buy_photo || ""} alt="" /> : <span className="text-[#1D8751] font-bold text-lg">{singleOrder?.advertiser_name?.[0] || "A"}</span>}
           </div>
           <div>
             <div
@@ -193,7 +208,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               style={{ fontSize: "13px" }}
             >
               {singleOrder
-                ? `${singleOrder.advertiser_first_name} ${singleOrder.advertiser_last_name}`
+                ? `${singleOrder.advertiser_name} `
                 : "Advertiser User Name"}
               <span className="text-[#E23D3A]">✔️</span>
             </div>
@@ -202,13 +217,13 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               {singleOrder?.completion_rate || "99.20"}% Completion
             </div>
             <div className="text-xs text-[#1D8751]">
-              Rating: 99% | Commission: {singleOrder?.commission_rate || "0.5"}%
+              Rating: 99% | Commission: {tradeDataJson?.commission_rate || "0.5"}%
             </div>
           </div>
           <div className="ml-auto flex gap-8 text-xs">
             <div>
               <span className="text-[13px] text-gray-900 dark:text-white">
-                {singleOrder?.limit_duration || "10 Minutes"}
+                {tradeDataJson?.limit || "10 Minutes"}
               </span>
               <br />
               <span className="text-gray-500 dark:text-[#788099]">
@@ -217,7 +232,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             </div>
             <div>
               <span className="text-[13px] text-gray-900 dark:text-white">
-                {singleOrder?.completion_time || "2 Minutes"}
+                {tradeDataJson?.completion_time || "2 Minutes"}
               </span>
               <br />
               <span className="text-gray-500 dark:text-[#788099]">
@@ -511,10 +526,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           tradeId={confirmOrder?.id || ""}
           userId={user?.id.toString() || ""}
           userName={
-            `${singleOrder?.advertiser_first_name} ${singleOrder?.advertiser_last_name}` ||
+            `${singleOrder?.advertiser_name} ` ||
             ""
           }
           autoreply={singleOrder?.auto_reply || ""}
+          seller_photo={singleOrder?.buyer_photo || ""}
         />
         {/* Advertiser's Terms */}
         <section className="advertiser-terms rounded-lg p-4 bg-gray-50 dark:bg-[#23232B]">
@@ -600,7 +616,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 <button
                   onClick={() => {
                     setShowSuccessModal(false);
-                    router.push("/dashboard");
+                    window.location.href = "/dashboard/p2p/";
                   }}
                   className="w-full bg-[#1D8751] text-white rounded-lg px-6 py-3 font-semibold hover:bg-[#167a45] transition-colors"
                 >

@@ -125,7 +125,10 @@ const PasswordSection: React.FC = () => {
                 onChange={(e) =>
                   handleInputChange("current_password", e.target.value)
                 }
-                autoComplete="off"
+                autoComplete="new-password"
+                data-form-type="other"
+                data-lpignore="true"
+                data-1p-ignore="true"
               />
               <button
                 type="button"
@@ -189,7 +192,10 @@ const PasswordSection: React.FC = () => {
                 onChange={(e) =>
                   handleInputChange("new_password", e.target.value)
                 }
-                autoComplete="off"
+                autoComplete="new-password"
+                data-form-type="other"
+                data-lpignore="true"
+                data-1p-ignore="true"
               />
               <button
                 type="button"
@@ -253,7 +259,10 @@ const PasswordSection: React.FC = () => {
                 onChange={(e) =>
                   handleInputChange("confirm_password", e.target.value)
                 }
-                autoComplete="off"
+                autoComplete="new-password"
+                data-form-type="other"
+                data-lpignore="true"
+                data-1p-ignore="true"
               />
               <button
                 type="button"

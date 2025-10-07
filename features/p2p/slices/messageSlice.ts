@@ -2,7 +2,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface MessageState {
   message: string;
-  uploaded_images: string[];
+  uploaded_images: File[];
 }
 
 const initialState: MessageState = {
@@ -17,7 +17,7 @@ const messageSlice = createSlice({
     setMessage(state, action: PayloadAction<string>) {
       state.message = action.payload;
     },
-    setUploadedImages(state, action: PayloadAction<string[]>) {
+    setUploadedImages(state, action: PayloadAction<File[]>) {
       state.uploaded_images = action.payload;
     },
     clearMessage(state) {

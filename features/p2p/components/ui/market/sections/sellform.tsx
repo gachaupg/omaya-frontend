@@ -52,7 +52,17 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   useEffect(() => {
     if (initialFetchDone.current) return;
 
-    const orderId = params?.id as string;
+    // Use trade_id from localStorage first, then fallback to params
+    const tradeIdFromStorage = localStorage.getItem('p2p_trade_id');
+    const orderId = tradeIdFromStorage || params?.id as string;
+    
+    console.log("🔍 sellform.tsx useEffect:", { 
+      orderId, 
+      tradeIdFromStorage, 
+      paramsId: params?.id,
+      localStorageKeys: Object.keys(localStorage).filter(key => key.includes('p2p'))
+    });
+
     if (isAuthenticated && orderId) {
       dispatch(fetchConfirmOrder(orderId))
         .unwrap()
@@ -72,7 +82,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   useEffect(() => {
     const orderToFetch = confirmOrder?.buy_order || confirmOrder?.sell_order;
     if (orderToFetch) {
-      dispatch(fetchSingleOrder(orderToFetch))
+      dispatch(fetchSingleOrder(orderToFetch.toString()))
         .unwrap()
         .catch((error) => {
           showToast.error(
@@ -106,19 +116,12 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     return () => clearInterval(timer);
   }, [confirmOrder?.status, countdown]);
 
-  // Auto-cancel when countdown reaches 0
+  // Auto-cancel when countdown reaches 0 - DISABLED
   useEffect(() => {
     if (confirmOrder?.status === "matched" && countdown === 0) {
-      if (isAuthenticated && confirmOrder?.id) {
-        dispatch(cancelP2POrderThunk(confirmOrder.id))
-          .unwrap()
-          .catch((error) => {
-            showToast.error(
-              "Failed to auto-cancel",
-              error.message || "Please try again"
-            );
-          });
-      }
+      // AUTO-CANCEL DISABLED - Countdown reached 0 but no auto-cancel
+      console.log("Countdown reached 0, auto-cancel is disabled");
+      return;
     }
   }, [
     confirmOrder?.status,
@@ -190,7 +193,9 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   };
 
   const handleRefresh = () => {
-    const orderId = params?.id as string;
+    // Use trade_id from localStorage first, then fallback to params
+    const tradeIdFromStorage = localStorage.getItem('p2p_trade_id');
+    const orderId = tradeIdFromStorage || params?.id as string;
     if (orderId) {
       dispatch(fetchConfirmOrder(orderId));
     }
@@ -538,6 +543,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             ""
           }
           autoreply={singleOrder?.auto_reply || ""}
+          seller_photo={singleOrder?.seller_photo || ""}
         />
 
         <section className="advertiser-terms rounded-lg p-4 bg-gray-50 dark:bg-[#23232B]">
@@ -623,7 +629,8 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 <button
                   onClick={() => {
                     setShowSuccessModal(false);
-                    router.push("/dashboard");
+                    // router.push("/dashboard");
+                    window.location.href = "/dashboard/p2p/";
                   }}
                   className="w-full bg-[#1D8751] text-white rounded-lg px-6 py-3 font-semibold hover:bg-[#167a45] transition-colors"
                 >

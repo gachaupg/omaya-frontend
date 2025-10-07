@@ -4,7 +4,7 @@ import Stats from "../ui/p2pcenter/Stats";
 import { fetchWallets } from "../../slices/walletSlice";
 import { useSelector,useDispatch } from "react-redux";
 import { RootState } from "@/store/rootReducer";
-import { selectTransactionSummary } from "../../slices/transactionSummarySlice";
+import { selectTransactionSummary, fetchTransactionSummary } from "../../slices/transactionSummarySlice";
 import { AppDispatch } from "@/store";
 import { p2pBuyandSell } from "../../slices/p2pbuysell";
 import FiterTabs from "../ui/p2pcenter/FilterTabs";
@@ -29,6 +29,7 @@ const P2PCenter: React.FC = () => {
     if (isAuthenticated) {
       dispatch(fetchWallets());
       dispatch(p2pBuyandSell(1));
+      dispatch(fetchTransactionSummary());
     }
   }, [dispatch, isAuthenticated]);
 

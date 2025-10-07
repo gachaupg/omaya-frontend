@@ -275,6 +275,7 @@ export interface P2POrder {
   id: string;
   advertiser_first_name: string;
   advertiser_last_name: string;
+  advertiser_name?: string;
   advertiser_email: string;
   asset: string;
   order_type: "buy" | "sell";
@@ -298,6 +299,8 @@ export interface P2POrder {
   payment_details: PaymentDetail[];
   sell_order: string;
   buy_order: string;
+  seller_photo?: string;
+  buyer_photo?: string;
 }
 
 export interface P2POrderList {
@@ -362,36 +365,8 @@ export interface TransactionSummaryState {
 }
 
 export interface OrderMatchRequest {
-  id: string;
-  advertiser_first_name: string;
-  advertiser_last_name: string;
-  advertiser_email: string;
-  asset: string;
-  order_type: "buy" | "sell";
-  currency: string;
   amount: string;
-  min_order_amount: string;
-  max_order_amount: string;
-  commission_rate: string;
-  exchange_rate: string;
-  status: string;
-  created_on: string;
-  limit_duration: string;
-  completion_time: string;
-  completion_rate: string | null;
-  terms_and_conditions: string;
-  auto_reply: string;
-  user_total_sell_orders: number | null;
-  user_total_buy_orders: number | null;
-  total_trades_as_buyer: number;
-  total_trades_as_seller: number;
-  payment_details: Array<{
-    id: number;
-    provider: string;
-    payment_method: string;
-    account_name: string;
-    account_number: string;
-  }>;
+  commission: string;
 }
 
 export interface P2PBuySellResponse {
@@ -434,9 +409,11 @@ export interface MatchedTrade {
   timestamp: string;
   associated_trade: number;
   order_type: "buy" | "sell";
-  status: "matched" | "half-matched";
+  status: "matched" | "half-matched" | "completed";
   rate: number;
   payment_details: PaymentDetail[];
+  buyer_photo: string | null;
+  seller_photo: string | null;
 }
 
 export interface MatchedTradesResponse {
@@ -552,10 +529,21 @@ export interface Profile {
 }
 
 export interface ReferredUser {
-  id: string;
-  name: string;
+  id: number;
+  user_id: number;
+  user_type: string;
+  company_name: string | null;
+  first_name: string;
+  country: string | null;
+  last_name: string;
+  company_established: string | null;
+  phone_number: string;
   email: string;
-  status: string;
+  role: string;
+  referral_code: string;
+  otp_verified: boolean;
+  device: string;
+  is_merchant: boolean;
 }
 
 export interface ReferralWallet {
@@ -612,4 +600,26 @@ export interface DepositAddressResponse {
     is_active: boolean;
     created_at: string;
   };
+}
+
+// Merchant Application Types
+export interface MerchantApplicationStatus {
+  is_merchant: boolean;
+  status: "not_submitted" | "pending" | "approved" | "rejected";
+  status_display: string;
+  application: MerchantApplication | null;
+}
+
+export interface MerchantApplication {
+  id: number;
+  user: number;
+  bank_account_ownership_proof?: string;
+  business_registration_certificate?: string;
+  tax_identification_number_certificate?: string;
+  articles_of_association?: string;
+  proof_of_address?: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  rejection_reason?: string;
 }

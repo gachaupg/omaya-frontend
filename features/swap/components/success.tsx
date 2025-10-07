@@ -152,7 +152,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
         // Check if this is a direct use flow (first two assets) or ChangeNow flow
         const isDirectFlow = !wsData.from_currency || !wsData.to_currency || 
                             wsData.from_currency === wsData.to_currency ||
-                            (wsData.amount && wsData.net_amount);
+                            (wsData.amount && wsData.net_amount && !wsData.amount_from && !wsData.amount_to);
         
         if (isDirectFlow) {
           // Direct use flow: use 'amount' for both paid and received amounts

@@ -110,7 +110,7 @@ function UserCard() {
       {showHelpSupport ? (
         <div className="w-full mt-2">
           <button
-            className="mb-4 px-4 py-2 bg-gray-200 rounded"
+            className="mb-4 px-4 py-2 bg-gray-200 text-[#1D8751] font-medium text-sm hover:bg-[#1D8751]/10 dark:bg-[#2C2C32] rounded"
             onClick={() => setShowHelpSupport(false)}
           >
             {t("userCard.back", "Back")}
@@ -289,7 +289,11 @@ function UserCard() {
                 variant="ghost"
                 size="sm"
                 className=" flex items-center justify-center p-0"
-                onClick={() => setShowHelpSupport(true)}
+                onClick={
+                  () => {
+                   router.push("/contactUs");
+                  }
+                }
                 icon={
                   <div className="w-10 h-10 rounded-[50%] border border-[#1D8751] flex items-center justify-center p-0">
                     <svg

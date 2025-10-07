@@ -14,7 +14,10 @@ import {
   selectTransactionSummaryLoading,
 } from "@/features/p2p/slices/transactionSummarySlice";
 import { fetchMatchedTrades } from "@/features/p2p/slices/matchedTradesSlice";
+import { fetchReferredUsers } from "@/features/settings/slices/referralSlice";
+import { fetchReferralWallet } from "@/features/settings/slices/referralWalletSlice";
 import { formatNumber } from "@/utils/formatters";
+import { formatCurrency, formatAmount } from "@/lib/globalFormatter";
 import { useRouter } from "next/navigation";
 
 interface StatsProps {
@@ -31,6 +34,14 @@ const Stats = ({ onSupportClick }: StatsProps) => {
   const { data: matchedTrades } = useSelector(
     (state: RootState) => state.matchedTrades
   );
+  const { referredUsers } = useSelector(
+    (state: RootState) => state.referral
+  );
+  const {
+    data: referralWallet,
+    loading: referralWalletLoading,
+    error: referralWalletError,
+  } = useSelector((state: RootState) => state.referralWallet);
   console.log("summary", summary);
   const [profileImage, setProfileImage] = useState("");
   const [depositsTimeFilter, setDepositsTimeFilter] = useState("Month");
@@ -111,8 +122,16 @@ const Stats = ({ onSupportClick }: StatsProps) => {
       dispatch(fetchTransactionSummary());
       dispatch(fetchWallets());
       dispatch(fetchMatchedTrades(1));
+      
+      // Fetch referral data
+      if (user?.referral_code) {
+        dispatch(fetchReferredUsers(user.referral_code));
+        dispatch(fetchReferralWallet()).catch((e) =>
+          console.warn("Referral wallet API not available:", e)
+        );
+      }
     }
-  }, [dispatch, isAuthenticated]);
+  }, [dispatch, isAuthenticated, user?.referral_code]);
 
  return (
     <Card className="w-full p-2 dark:bg-[#1D1D23] bg-gray-50 rounded-2xl dark:border-[#35353E] border-gray-300 border-2 dark:text-white text-gray-900 shadow-lg">
@@ -218,9 +237,11 @@ const Stats = ({ onSupportClick }: StatsProps) => {
           Total Transactions
         </div>
         <div className="text-[15px] font-semibold mt-1 mb-2">
-          {(summary?.total_approved_p2p_combined || 0) +
-            (summary?.total_p2p_orders || 0)}{" "}
-          USDT
+          {formatCurrency(
+            (summary?.total_approved_p2p_combined || 0) +
+            (summary?.total_p2p_orders || 0),
+            "USDT"
+          )}
         </div>
         <div className="border-b dark:border-[#35353E] border-gray-300 mt-2" />
       </div>
@@ -279,13 +300,12 @@ const Stats = ({ onSupportClick }: StatsProps) => {
             </div>
           </div>
           <div className="dark:text-white text-gray-900 font-medium mb-2">
-            {formatNumber(
+            {formatCurrency(
               getFilteredAmount(
                 summary?.total_approved_p2p_deposits || 0,
                 depositsTimeFilter
               )
-            )}{" "}
-            USD
+            )}
           </div>
         </div>
         <div className="w-full h-3 dark:bg-[#35353E] bg-gray-300 rounded-full mb-4">
@@ -359,13 +379,12 @@ const Stats = ({ onSupportClick }: StatsProps) => {
             </div>
           </div>
           <div className="dark:text-white text-gray-900 font-medium mb-2">
-            {formatNumber(
+            {formatCurrency(
               getFilteredAmount(
                 summary?.total_approved_p2p_withdrawals || 0,
                 withdrawalsTimeFilter
               )
-            )}{" "}
-            USD
+            )}
           </div>
         </div>
         <div className="w-full h-3 dark:bg-[#35353E] bg-gray-300 rounded-full mb-4">
@@ -399,7 +418,9 @@ const Stats = ({ onSupportClick }: StatsProps) => {
           <span className="dark:text-[#788099] text-gray-600 text-sm">
             Users Invited:
           </span>
-          <span className="text-[#1D8751] font-semibold">0 Users</span>
+          <span className="text-[#1D8751] font-semibold">
+            {referredUsers?.length || 0} Users
+          </span>
         </div>
         <div className="space-y-2 mt-2">
           <div className="flex items-center justify-between text-sm">
@@ -407,21 +428,27 @@ const Stats = ({ onSupportClick }: StatsProps) => {
               <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block" />
               Deposits
             </span>
-            <span className="font-medium">{formatNumber(0)} USD</span>
+            <span className="font-medium">
+              {formatCurrency(referralWallet?.total_earned || 0)}
+            </span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-[#E23D3A] inline-block" />
               Withdrawals
             </span>
-            <span className="font-medium">{formatNumber(0)} USD</span>
+            <span className="font-medium">
+              {formatCurrency(referralWallet?.total_withdrawn || 0)}
+            </span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-[#3B82F6] inline-block" />
               Total
             </span>
-            <span className="font-medium">{formatNumber(0)} USD</span>
+            <span className="font-medium">
+              {formatCurrency((referralWallet?.total_earned || 0) + (referralWallet?.total_withdrawn || 0))}
+            </span>
           </div>
         </div>
       </div>

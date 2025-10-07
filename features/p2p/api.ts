@@ -18,6 +18,7 @@ import {
   TransactionSummary,
   OrderMatchRequest,
   P2POrder,
+  MatchedTrade,
   MatchedTradesResponse,
   Feedback,
   P2PTransactionResponse,
@@ -26,6 +27,7 @@ import {
   ReferralWallet,
   WithdrawalAddressesResponse,
   DepositAddressResponse,
+  MerchantApplicationStatus,
 } from "./types";
 import { API_CONFIG } from "@/lib/appConfig";
 
@@ -282,6 +284,12 @@ export const matchP2POrder = async (
   data: OrderMatchRequest
 ): Promise<{ message: string }> => {
   return withRetry(async () => {
+    console.log("=== API REQUEST DEBUG ===");
+    console.log("URL:", `${API_CONFIG.P2P.ORDER_MATCH}${id}/match/`);
+    console.log("Data:", data);
+    console.log("Full URL:", `${API_CONFIG.BASE_URL}${API_CONFIG.P2P.ORDER_MATCH}${id}/match/`);
+    console.log("========================");
+    
     const response = await post<{ message: string }>(
       `${API_CONFIG.P2P.ORDER_MATCH}${id}/match/`,
       data
@@ -290,9 +298,9 @@ export const matchP2POrder = async (
   });
 };
 
-export const getConfirmOrder = async (id: string): Promise<P2POrder> => {
+export const getConfirmOrder = async (id: string): Promise<MatchedTrade> => {
   return withRetry(async () => {
-    const response = await get<P2POrder>(
+    const response = await get<MatchedTrade>(
       `${API_CONFIG.P2P.GET_CONFIRM_ORDER}${id}/confirm/`
     );
     return response.data;
@@ -367,6 +375,9 @@ export const confirmP2PTrade = async (
 };
 
 export const getTradeMessages = async (tradeId: string) => {
+  if (!tradeId || tradeId.trim() === '') {
+    throw new Error('Trade ID is required');
+  }
   return withRetry(async () => {
     const response = await get(`${API_CONFIG.P2P.TRADE_MESSAGES(tradeId)}`);
     return response.data;
@@ -375,13 +386,28 @@ export const getTradeMessages = async (tradeId: string) => {
 
 export const postTradeMessage = async (
   tradeId: string,
-  payload: { message: string; uploaded_images: string[] }
+  payload: { message: string; uploaded_images: File[] }
 ) => {
+  if (!tradeId || tradeId.trim() === '') {
+    throw new Error('Trade ID is required');
+  }
   return withRetry(async () => {
+    const formData = new FormData();
+    formData.append('message', payload.message);
+    
+    // Append each file to FormData
+    payload.uploaded_images.forEach((file, index) => {
+      formData.append(`uploaded_images`, file);
+    });
+
     const response = await post(
       `${API_CONFIG.P2P.TRADE_MESSAGES(tradeId)}`,
-      payload,
-      { headers: { "Content-Type": "application/json" } }
+      formData,
+      { 
+        headers: { 
+          "Content-Type": "multipart/form-data" 
+        } 
+      }
     );
     return response.data;
   });
@@ -557,3 +583,28 @@ export const getWithdrawalAddresses =
       return response.data;
     });
   };
+
+// Merchant Application API calls
+export const submitMerchantApplication = async (data: FormData): Promise<P2PResponse> => {
+  return withRetry(async () => {
+    const response = await post<P2PResponse>(
+      API_CONFIG.P2P.MERCHANT_SUBMIT,
+      data,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return response.data;
+  });
+};
+
+export const getMerchantApplicationStatus = async (): Promise<MerchantApplicationStatus> => {
+  return withRetry(async () => {
+    const response = await get<MerchantApplicationStatus>(
+      API_CONFIG.P2P.MERCHANT_APPLICATION
+    );
+    return response.data;
+  });
+};

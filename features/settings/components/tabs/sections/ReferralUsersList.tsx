@@ -1,21 +1,63 @@
 // src/features/p2p/components/ui/referral/sections/ReferralUsersList.tsx
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Button from "@/components/ui/Button";
 
+interface ReferredUser {
+  id: number;
+  user_id: number;
+  user_type: string;
+  company_name: string | null;
+  first_name: string;
+  country: string | null;
+  last_name: string;
+  company_established: string | null;
+  phone_number: string;
+  email: string;
+  role: string;
+  referral_code: string;
+  otp_verified: boolean;
+  device: string;
+  is_merchant: boolean;
+}
+
 interface Props {
-  referredUsers: Array<{
-    id: number | string;
-    name: string;
-    email: string;
-    status: string;
-  }>;
+  referredUsers: ReferredUser[];
   loading: boolean;
 }
 
 const ReferralUsersList: React.FC<Props> = ({ referredUsers, loading }) => {
+  const [expandedUser, setExpandedUser] = useState<number | string | null>(
+    null
+  );
+
   /* ───────── helpers ───────── */
+  const maskEmail = (email: string) => {
+    if (!email) return "Email***@gmail.com";
+    const [username, domain] = email.split("@");
+    const maskedUsername =
+      username.length > 3
+        ? username.substring(0, 3) + "***"
+        : username.substring(0, 1) + "***";
+    return `${maskedUsername}@${domain}`;
+  };
+
+  const maskName = (firstName: string, lastName: string) => {
+    if (!firstName && !lastName) return "Name ***";
+    const maskedFirst = firstName ? `${firstName.substring(0, 2)}***` : "***";
+    const maskedLast = lastName ? `${lastName.substring(0, 2)}***` : "***";
+    return `${maskedFirst} ${maskedLast}`;
+  };
+
+  const getFullName = (firstName: string, lastName: string) => {
+    return `${firstName} ${lastName}`.trim();
+  };
+
+  const getStatus = (otpVerified: boolean, isMerchant: boolean) => {
+    if (isMerchant) return "Merchant";
+    return otpVerified ? "Active" : "Pending Verification";
+  };
   const skeleton = (
     <div className="space-y-2 w-full">
       {Array.from({ length: 3 }).map((_, i) => (
@@ -31,7 +73,7 @@ const ReferralUsersList: React.FC<Props> = ({ referredUsers, loading }) => {
     <div
       className="w-full flex flex-col items-center justify-center py-12 px-4
                     rounded-2xl border bg-gray-50 border-gray-200
-                    dark:bg-[#23232B] dark:border-[#35353F]"
+                     dark:border-[#35353F]"
     >
       <div
         className="w-20 h-20 mb-4 flex items-center justify-center rounded-full
@@ -74,46 +116,116 @@ const ReferralUsersList: React.FC<Props> = ({ referredUsers, loading }) => {
 
       {!loading && referredUsers.length === 0 && emptyState}
 
-      {!loading &&
-        referredUsers.length > 0 &&
-        referredUsers.map((u) => (
-          <div
-            key={u.id}
-            className="flex items-center gap-4 w-full mb-2
-                       rounded-2xl border px-6 py-4
-                       bg-white border-gray-200
-                       dark:bg-[#23232B] dark:border-[#35353F]"
-          >
-            <div
-              className="w-14 h-14 flex items-center justify-center rounded-full
-                            bg-gray-200 text-gray-600 text-2xl font-bold
-                            dark:bg-[#35353F] dark:text-[#A3A3A3]"
-            >
-              {u.name?.charAt(0).toUpperCase()}
-            </div>
+      {!loading && referredUsers.length > 0 && (
+        <div className="space-y-0 border border-[#35353F] rounded-[18px] pl-2 pr-3 w-full">
+          {referredUsers.map((u, index) => (
+            <div key={u.id} className="w-full">
+              {/* User Row */}
+              <div
+                className={`flex items-center gap-4 w-full px-6 py-4
+                           bg-white dark:bg-transparent
+                           ${index !== referredUsers.length - 1 ? "border-b border-[#35353F]" : ""}`}
+              >
+                {/* OA Avatar */}
+                <div
+                  className="w-12 h-12 flex items-center justify-center rounded-lg
+                            bg-[#35353F] text-[#1D8751] text-lg font-bold"
+                >
+                  OA
+                </div>
 
-            <div className="flex flex-col min-w-0">
-              <span className="font-semibold text-gray-800 dark:text-white truncate">
-                {u.email}
-              </span>
-              <span className="text-sm font-medium text-[#1D8751]">
-                Profile status: {u.status}
-              </span>
-            </div>
+                {/* User Info */}
+                <div className="flex flex-col min-w-0 flex-1">
+                  <span className="font-medium text-gray-800 dark:text-white truncate">
+                    {maskEmail(u.email)}
+                  </span>
+                  <span className="text-sm font-medium text-[#1D8751]">
+                    Profile status: {getStatus(u.otp_verified, u.is_merchant)}
+                  </span>
+                </div>
 
-            <Button
-              variant="ghost"
-              size="md"
-              className="ml-auto rounded-full border px-6 py-2
-                         border-gray-300 text-gray-500 bg-gray-50
-                         hover:bg-gray-200
-                         dark:border-[#35353F] dark:bg-[#18181B] dark:text-[#A3A3A3]
-                         dark:hover:bg-[#35353F]"
-            >
-              Close
-            </Button>
-          </div>
-        ))}
+                {/* Details Button */}
+                <Button
+                  onClick={() =>
+                    setExpandedUser(expandedUser === u.id ? null : u.id)
+                  }
+                  variant="ghost"
+                  size="sm"
+                  className="rounded-lg border px-4 py-2
+                             border-[#35353F] text-[#1D8751] bg-[#18181B]
+                             hover:bg-[#35353F]"
+                >
+                  {expandedUser === u.id ? "Close" : "Details"}
+                </Button>
+              </div>
+
+              {/* Expanded Details */}
+              {expandedUser === u.id && (
+                <div className="px-6 py-4 bg-gray-50 dark:bg-[#18181B] border-b border-gray-200 dark:border-[#35353F]">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-[#1D8751] font-medium">
+                        Client Email:
+                      </span>
+                      <span className="text-gray-800 dark:text-white">
+                        {maskEmail(u.email)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-[#1D8751] font-medium">
+                        Client Name:
+                      </span>
+                      <span className="text-gray-800 dark:text-white">
+                        {maskName(u.first_name, u.last_name)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-[#1D8751] font-medium">
+                        Client ID:
+                      </span>
+                      <span className="text-gray-800 dark:text-white">
+                        {u.user_id}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-[#1D8751] font-medium">
+                        Phone Number:
+                      </span>
+                      <span className="text-gray-800 dark:text-white">
+                        {u.phone_number}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-[#1D8751] font-medium">
+                        User Type:
+                      </span>
+                      <span className="text-gray-800 dark:text-white capitalize">
+                        {u.user_type}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-[#1D8751] font-medium">
+                        Referral Code:
+                      </span>
+                      <span className="text-gray-800 dark:text-white">
+                        {u.referral_code}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-[#1D8751] font-medium">
+                        Profile Status:
+                      </span>
+                      <span className="text-gray-800 dark:text-white">
+                        {getStatus(u.otp_verified, u.is_merchant)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 };
