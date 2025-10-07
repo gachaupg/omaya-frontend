@@ -156,15 +156,7 @@ const Referral: React.FC = () => {
         </div>
       )}
 
-      {/* Test button to demonstrate the success modal - remove this in production */}
-      <div className="mt-4 text-center">
-        <button
-          onClick={showApplicationSuccessModal}
-          className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
-        >
-          Test Success Modal
-        </button>
-      </div>
+      
 
       {/* Application Submitted Success Modal */}
       <ApplicationSubmittedModal

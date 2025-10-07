@@ -256,15 +256,12 @@ export const getAllP2PBuyandSell = async (
     console.log("Making API request to:", url);
     const response = await get<P2PBuySellResponse>(url);
     console.log("API response for page", page, ":", {
-      count: response.data.count,
-      resultsCount: response.data.results?.results?.length,
-      totalOrdersCount: response.data.results?.total_orders_count,
-      // Add debugging for the actual data
-      firstItemId: response.data.results?.results?.[0]?.id,
-      lastItemId:
-        response.data.results?.results?.[
-          response.data.results?.results?.length - 1
-        ]?.id,
+      buyOrdersCount: response.data.buy_orders?.results?.length,
+      sellOrdersCount: response.data.sell_orders?.results?.length,
+      totalBuyOrders: response.data.buy_orders?.total_orders_count,
+      totalSellOrders: response.data.sell_orders?.total_orders_count,
+      firstBuyOrderId: response.data.buy_orders?.results?.[0]?.id,
+      firstSellOrderId: response.data.sell_orders?.results?.[0]?.id,
     });
     return response.data;
   });

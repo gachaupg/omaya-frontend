@@ -2,11 +2,17 @@
 import React, { useEffect, useState, ReactElement } from "react";
 import { FaBitcoin, FaEthereum } from "react-icons/fa";
 import { SiTether, SiSolana, SiXrp } from "react-icons/si";
+import { fetchTopAssets } from "@/features/markets/api";
+import { TopAsset } from "@/features/markets/types";
 
 interface CryptoData {
   name: string;
+  symbol: string;
   icon: ReactElement;
+  image?: string;
   price: string;
+  volume?: number;
+  transactionCount?: number;
   color: string;
   chart: string;
   chartBg: string;
@@ -14,9 +20,87 @@ interface CryptoData {
   rate: string;
 }
 
-const cryptoData: CryptoData[] = [
+// Helper function to get icon based on symbol
+const getCryptoIcon = (symbol: string): ReactElement => {
+  const upperSymbol = symbol.toUpperCase();
+  switch (upperSymbol) {
+    case "BTC":
+    case "BITCOIN":
+      return <FaBitcoin className="text-3xl text-orange-400" />;
+    case "ETH":
+    case "ETHEREUM":
+      return <FaEthereum className="text-3xl text-gray-400" />;
+    case "USDT":
+    case "USDTERC20":
+      return <SiTether className="text-3xl text-[#1D8751]" />;
+    case "SOL":
+    case "SOLANA":
+      return <SiSolana className="text-3xl text-purple-700" />;
+    case "XRP":
+      return <SiXrp className="text-3xl text-gray-400" />;
+    default:
+      return <FaBitcoin className="text-3xl text-orange-400" />;
+  }
+};
+
+// Helper function to get color scheme based on symbol
+const getColorScheme = (symbol: string) => {
+  const upperSymbol = symbol.toUpperCase();
+  switch (upperSymbol) {
+    case "BTC":
+    case "BITCOIN":
+      return {
+        color: "red",
+        chart: "#ff3b3b",
+        chartBg: "#F01717",
+        chartBgTrans: "#F0171710",
+      };
+    case "USDT":
+    case "USDTERC20":
+      return {
+        color: "green",
+        chart: "#22c55e",
+        chartBg: "#22c55e",
+        chartBgTrans: "#22c55e10",
+      };
+    case "ETH":
+    case "ETHEREUM":
+      return {
+        color: "#1D8751",
+        chart: "#1D8751",
+        chartBg: "#1D8751",
+        chartBgTrans: "#1D875110",
+      };
+    case "SOL":
+    case "SOLANA":
+      return {
+        color: "purple",
+        chart: "#9333ea",
+        chartBg: "#9333ea",
+        chartBgTrans: "#9333ea10",
+      };
+    case "XRP":
+      return {
+        color: "yellow",
+        chart: "#facc15",
+        chartBg: "#facc15",
+        chartBgTrans: "#facc1510",
+      };
+    default:
+      return {
+        color: "blue",
+        chart: "#3b82f6",
+        chartBg: "#3b82f6",
+        chartBgTrans: "#3b82f610",
+      };
+  }
+};
+
+// Fallback crypto data for when API fails or is loading
+const fallbackCryptoData: CryptoData[] = [
   {
     name: "Bitcoin",
+    symbol: "BTC",
     icon: <FaBitcoin className="text-3xl text-orange-400" />,
     price: "$20,305",
     color: "red",
@@ -27,42 +111,13 @@ const cryptoData: CryptoData[] = [
   },
   {
     name: "Usdt",
+    symbol: "USDT",
     icon: <SiTether className="text-3xl text-[#1D8751]" />,
     price: "$1.05",
     color: "green",
     chart: "#22c55e",
     chartBg: "#22c55e",
     chartBgTrans: "#22c55e10",
-    rate: "1.5%",
-  },
-  {
-    name: "Ethereum",
-    icon: <FaEthereum className="text-3xl text-gray-400" />,
-    price: "$1,950",
-    color: "#1D8751",
-    chart: "#1D8751",
-    chartBg: "#1D8751",
-    chartBgTrans: "#1D875110",
-    rate: "1.5%",
-  },
-  {
-    name: "XRP",
-    icon: <SiXrp className="text-3xl text-gray-400" />,
-    price: "$0.50",
-    color: "yellow",
-    chart: "#facc15",
-    chartBg: "#facc15",
-    chartBgTrans: "#facc1510",
-    rate: "1.5%",
-  },
-  {
-    name: "Solona",
-    icon: <SiSolana className="text-3xl text-purple-700" />,
-    price: "$0.25",
-    color: "yellow",
-    chart: "#facc15",
-    chartBg: "#facc15",
-    chartBgTrans: "#facc1510",
     rate: "1.5%",
   },
 ];
@@ -103,31 +158,55 @@ const MiniChart = ({
 const CryptoCard = ({
   icon,
   name,
+  symbol,
+  image,
   price,
+  volume,
+  transactionCount,
   chart,
   chartBg,
   chartBgTrans,
   rate,
-}: any) => (
+}: CryptoData) => (
 <div className="
   flex-1 min-w-[160px] max-w-[260px] sm:min-w-[180px] sm:max-w-[320px] h-[160px]
   text-[13px] rounded-2xl shadow-lg p-3 flex flex-col justify-between border border-gray-300 relative
 ">
     <div className="flex items-center justify-between mb-1">
       <div className="flex items-center gap-1.5">
-        {icon}
+        {image ? (
+          <img src={image} alt={name} className="w-8 h-8" />
+        ) : (
+          icon
+        )}
+        <div className="flex flex-col">
         <span className="dark:text-white font-semibold text-sm sm:text-base">
-          {name}
+            {symbol}
+          </span>
+          {volume !== undefined && (
+            <span className="text-xs text-gray-500">
+              Vol: {volume.toFixed(3)}
         </span>
+          )}
+        </div>
       </div>
       <span className="bg-[#23262F] text-xs text-white px-1.5 py-0.5 rounded-lg">
         24h
       </span>
     </div>
-    <div className="dark:text-white text-black flex flex-row gap-1.5 text-[13px] font-bold text-base sm:text-lg mb-1">
+    <div className="dark:text-white text-black flex flex-row justify-between items-end gap-1.5 text-[13px] font-bold text-base sm:text-lg mb-1">
+      <div className="flex flex-col gap-0.5">
+        {transactionCount !== undefined ? (
+          <>
+            <p className="text-xs text-gray-500">Transactions</p>
+            <p className="text-lg">{transactionCount}</p>
+          </>
+        ) : (
       <p>{price}</p>
-      <div className="w-16 h-4 rounded-lg mb-1 flex flex-row gap-1.5 items-center justify-center bg-[#48CC544D]">
-        <p className="text-xs text-[#48CC54]">{rate}</p>
+        )}
+      </div>
+      <div className="h-5 px-2 rounded-md flex flex-row gap-1 items-center justify-center bg-[#48CC544D]">
+        <p className="text-xs text-[#48CC54] font-semibold">{rate}</p>
       </div>
     </div>
     <div className="w-full h-8">
@@ -138,10 +217,47 @@ const CryptoCard = ({
 
 const PriceCards = () => {
   const [isMounted, setIsMounted] = useState(false);
+  const [cryptoData, setCryptoData] = useState<CryptoData[]>(fallbackCryptoData);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setIsMounted(true);
+    loadTopAssets();
   }, []);
+
+  const loadTopAssets = async () => {
+    try {
+      setLoading(true);
+      const response = await fetchTopAssets();
+
+      if (response.success && response.data.length > 0) {
+        const mappedData: CryptoData[] = response.data.map((asset: TopAsset) => {
+          const colorScheme = getColorScheme(asset.symbol);
+          return {
+            name: asset.name || asset.symbol,
+            symbol: asset.symbol,
+            icon: getCryptoIcon(asset.symbol),
+            image: asset.image,
+            price: `Vol: ${asset.volume.toFixed(3)}`,
+            volume: asset.volume,
+            transactionCount: asset.transaction_count,
+            rate: `${asset.transaction_count} tx`,
+            ...colorScheme,
+          };
+        });
+        setCryptoData(mappedData);
+      } else {
+        // Use fallback data if API returns no data
+        setCryptoData(fallbackCryptoData);
+      }
+    } catch (error) {
+      console.error("Failed to fetch top assets:", error);
+      // Use fallback data on error
+      setCryptoData(fallbackCryptoData);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!isMounted) {
     return null;
@@ -149,10 +265,12 @@ const PriceCards = () => {
 
   return (
     <div className="w-full">
-      <h2 className="dark:text-white text-[16px] mb-4">Market Overview</h2>
+      <h2 className="dark:text-white text-[16px] mb-4">
+        Market Overview {loading && <span className="text-sm text-gray-500">(Loading...)</span>}
+      </h2>
       <div className="flex flex-row gap-4 overflow-x-auto pb-4">
-        {cryptoData.map((crypto) => (
-          <CryptoCard key={crypto.name} {...crypto} />
+        {cryptoData.map((crypto, index) => (
+          <CryptoCard key={`${crypto.symbol}-${index}`} {...crypto} />
         ))}
       </div>
     </div>
