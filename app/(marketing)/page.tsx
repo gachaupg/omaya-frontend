@@ -111,6 +111,12 @@ export default function MarketingPage() {
         return post.image;
       }
 
+      // Handle Sanity image with asset.url (from the updated query)
+      if (post.image?.asset && 'url' in post.image.asset) {
+        return (post.image.asset as any).url || "/images/placeholder.jpg";
+      }
+
+      // Handle Sanity image with asset._ref (legacy format)
       if (post.image?.asset?._ref) {
         const projectId =
           process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || "your-project-id";

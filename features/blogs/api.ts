@@ -76,6 +76,7 @@ export const blogApi = {
   async fetchBlogs(): Promise<BlogPost[]> {
     try {
       const allPosts = await this.fetchAllPosts();
+      console.log("allPosts", allPosts);
       // Filter for blog category
       return allPosts.filter((blog: BlogPost) => blog.category === "blog");
     } catch (error) {
