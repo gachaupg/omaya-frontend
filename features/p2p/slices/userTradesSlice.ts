@@ -28,6 +28,10 @@ interface UserTrade {
     account_name: string;
     account_number: string;
   }>;
+  buyer_photo: string | null;
+  seller_photo: string | null;
+  commission_amount: number;
+  net_amount: number;
 }
 
 interface UserTradesState {
@@ -71,11 +75,13 @@ export const fetchUserTrades = createAsyncThunk(
 
       // Map filter values to API parameters
       if (type && type !== "all") {
-        url += `&order_type=${type.toUpperCase()}`;
+        url += `&order_type=${type}`;
       }
 
       if (status && status !== "all") {
-        url += `&status=${status.toUpperCase()}`;
+        // Map "processing" to "pending" for API
+        const apiStatus = status === "processing" ? "pending" : status;
+        url += `&status=${apiStatus}`;
       }
 
       if (date && date !== "all") {

@@ -47,6 +47,7 @@ export const API_CONFIG = {
     USER_PAYMENT_DETAILS: "/payments/user-payment-details/",
     ORDERS: "/trading_engine/p2p/orders/",
     ALL_ORDERS: "/trading_engine/p2p/all-orders/",
+    MY_ORDERS: "/trading_engine/p2p/all-orders/",
     BUY_SELL_ORDERS: "trading_engine/p2p/all-orders/?my_orders=true",
     TRANSACTION_SUMMARY: "/trading_engine/transactionsummaryview/",
     ORDER_MATCH: "/trading_engine/p2p/orders/",
@@ -59,6 +60,7 @@ export const API_CONFIG = {
     USER_TRADES: "/trading_engine/p2p/user-trades/",
     FEEDBACK_REVIEW: "/trading_engine/feedback_review/",
     ALL_TRANSACTIONS: "/trading_engine/all-transactions/",
+    USER_TRANSACTIONS: "/trading_engine/transactions/",
     DELETE_ORDER: "/trading_engine/p2p/orders/",
     TOGGLE_ORDER_STATUS: "/trading_engine/orders/",
     DUPLICATE_ORDER: "/trading_engine/p2p/orders/",
@@ -81,6 +83,7 @@ export const API_CONFIG = {
     ESTIMATE_SWAP: "/api/changenow/estimate/",
     CREATE_SWAP: "/api/changenow/create/",
     SWAP_STATUS: "/api/changenow/status/",
+    SWAP_HISTORY: "/api/changenow/user/history/",
     SWAP_STATUS_WS: (swapId: string) =>
       `${getWebSocketBaseUrl()}/ws/changenow/status/${swapId}/`,
   },

@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { selectTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
 import { fetchTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
 import { RootState } from "@/store/rootReducer";
-import { getAllP2PBuyandSell } from "@/features/p2p/api";
+import { getAllP2POrders } from "@/features/p2p/api";
 import { P2POrder } from "@/features/p2p/types";
 
 const Overview = () => {
@@ -34,7 +34,7 @@ const Overview = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await getAllP2PBuyandSell(1);
+      const response = await getAllP2POrders(1);
       setOrderData({ 
         buyOrders: response.buy_orders?.results || [], 
         sellOrders: response.sell_orders?.results || [] 

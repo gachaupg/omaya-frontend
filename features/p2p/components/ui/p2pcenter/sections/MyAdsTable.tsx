@@ -5,7 +5,7 @@ import {
   duplicateP2POrderThunk,
   toggleP2POrderStatusThunk,
 } from "@/features/p2p/slices/orderSlice";
-import { p2pBuyandSell } from "@/features/p2p/slices/p2pbuysell";
+import { fetchMyOrders } from "@/features/p2p/slices/myOrdersSlice";
 import { RootState } from "@/store/rootReducer";
 import { toast } from "sonner";
 import EditAdModal from "./EditAdModal";
@@ -111,7 +111,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
         default:
           return;
       }
-      dispatch(p2pBuyandSell(1) as any);
+      dispatch(fetchMyOrders(1) as any);
       toast.success(`Trade ${action.toLowerCase()}d successfully`);
     } catch {
       toast.error(`Failed to ${action.toLowerCase()} trade`);

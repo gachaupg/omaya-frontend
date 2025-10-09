@@ -346,6 +346,10 @@ export interface TransactionSummary {
   total_approved_p2p_withdrawals: number;
   total_approved_p2p_combined: number;
   total_approved_all: number;
+  total_pending_changenow_swaps: number;
+  total_completed_changenow_swaps: number;
+  total_failed_changenow_swaps: number;
+  total_changenow_swaps: number;
   total_buy_orders_by_status: OrderStatus;
   total_sell_orders_by_status: OrderStatus;
   total_buy_orders: number;
@@ -443,6 +447,10 @@ export interface UserTrade {
     account_name: string;
     account_number: string;
   }>;
+  buyer_photo: string | null;
+  seller_photo: string | null;
+  commission_amount: number;
+  net_amount: number;
 }
 
 export interface UserTradesState {

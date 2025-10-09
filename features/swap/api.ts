@@ -220,3 +220,46 @@ export const getSellableAssets = async (): Promise<SupportedAsset[]> => {
 export const getFeaturedAssets = async (): Promise<SupportedAsset[]> => {
   return getFilteredAssets({ featured: true });
 };
+
+export const getSwapHistory = async (
+  params: { page?: number; limit?: number } = {}
+): Promise<any> => {
+  return withRetry(async () => {
+    try {
+      const { page = 1, limit = 10 } = params;
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+      });
+      
+      const response = await get<any>(
+        `${API_CONFIG.SWAP.SWAP_HISTORY}?${queryParams.toString()}`
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error("Failed to fetch swap history:", error);
+      
+      // Handle network errors gracefully
+      if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
+        throw new Error(
+          "Network connection issue. Please check your internet connection and try again."
+        );
+      }
+
+      if (error.response?.status === 500) {
+        throw new Error(
+          "Server Error: Unable to fetch swap history. Please try again later."
+        );
+      } else if (error.response?.status === 404) {
+        throw new Error("Swap history not available. Please try again later.");
+      } else if (error.response?.status === 401) {
+        throw new Error("Authentication required. Please log in to continue.");
+      }
+
+      // For other errors, provide a generic message
+      throw new Error(
+        "Unable to fetch swap history. Please try again later."
+      );
+    }
+  });
+};

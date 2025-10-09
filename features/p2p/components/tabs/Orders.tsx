@@ -44,15 +44,31 @@ const Orders = () => {
     dispatch(setCurrentPage(1)); // Reset to first page when filters change
   };
 
+  // Count orders by status - map "pending" from API to "processing" in UI
   const processingCount = trades.results.filter(
-  trade => trade.status.toLowerCase() === "pending"
-).length;
+    trade => trade.status.toLowerCase() === "pending" || trade.status.toLowerCase() === "matched"
+  ).length;
+  
+  const completedCount = trades.results.filter(
+    trade => trade.status.toLowerCase() === "completed"
+  ).length;
+  
+  const canceledCount = trades.results.filter(
+    trade => trade.status.toLowerCase() === "canceled"
+  ).length;
 
-const orderStatusTabs = staticOrderStatusTabs.map(tab =>
-  tab.id === "processing"
-    ? { ...tab, count: processingCount }
-    : tab
-);
+  const orderStatusTabs = staticOrderStatusTabs.map(tab => {
+    if (tab.id === "processing") {
+      return { ...tab, count: processingCount };
+    } else if (tab.id === "completed") {
+      return { ...tab, count: completedCount };
+    } else if (tab.id === "canceled") {
+      return { ...tab, count: canceledCount };
+    } else if (tab.id === "all") {
+      return { ...tab, count: trades.count };
+    }
+    return tab;
+  });
 
   // Apply client-side filtering to the data
   const filteredData = useMemo(() => {
@@ -65,19 +81,15 @@ const orderStatusTabs = staticOrderStatusTabs.map(tab =>
         return false;
       }
 
-      // Status filter
+      // Status filter - map UI "processing" to API "pending"/"matched"
       if (filters.status !== "all") {
-        if (
-          filters.status === "processing" &&
-          trade.status.toLowerCase() !== "pending"
-        ) {
-          return false;
-        }
-
-        if (
-          filters.status !== "processing" &&
-          trade.status.toLowerCase() !== filters.status
-        ) {
+        const tradeStatus = trade.status.toLowerCase();
+        if (filters.status === "processing") {
+          // Processing includes both pending and matched statuses
+          if (tradeStatus !== "pending" && tradeStatus !== "matched") {
+            return false;
+          }
+        } else if (tradeStatus !== filters.status.toLowerCase()) {
           return false;
         }
       }

@@ -7,12 +7,16 @@ import { ThumbsDown, ThumbsUp } from "lucide-react";
 
 interface FilterTabsProps {
   transformedTrades: any[];
+  myOrders: any[];
   loading: boolean;
+  myOrdersLoading: boolean;
 }
 
 const FilterTabs: React.FC<FilterTabsProps> = ({
   transformedTrades,
+  myOrders,
   loading,
+  myOrdersLoading,
 }) => {
   /** Local state */
   const [activeTab, setActiveTab] = useState(0);
@@ -36,7 +40,7 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
     {
       label: "My Ads",
       extra: (
-        <span className="text-[#E23D3A]">({transformedTrades.length})</span>
+        <span className="text-[#E23D3A]">({myOrders.length})</span>
       ),
     },
     { label: "+ Post New Ad" },
@@ -47,9 +51,9 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
     if (idx === 3) window.location.href = "/adds?type=buy";
   };
 
-  /** Derived — filtered trades */
+  /** Derived — filtered trades for My Ads */
   const filteredTrades = useMemo(() => {
-    return transformedTrades.filter((trade: any) => {
+    return myOrders.filter((trade: any) => {
       if (filters.token !== "Tether" && trade.currency !== filters.token)
         return false;
       if (
@@ -109,7 +113,7 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
       }
       return true;
     });
-  }, [transformedTrades, filters]);
+  }, [myOrders, filters]);
 
   /** My-Ads filter bar */
   const MyAdsFilterBar = () => (
@@ -227,7 +231,7 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
         {activeTab === 2 && (
           <>
             <MyAdsFilterBar />
-            <MyAdsTable trades={filteredTrades} loading={loading} />
+            <MyAdsTable trades={filteredTrades} loading={myOrdersLoading} />
           </>
         )}
       </div>

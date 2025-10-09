@@ -2,12 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
-import {
-  fetchP2PTransactions,
-  setCurrentPage,
-  loadAllP2PTransactions,
-  toggleViewAll,
-} from "@/features/p2p/slices/p2pTransactionsSlice";
+import { loadAllP2PTransactions } from "@/features/p2p/slices/p2pTransactionsSlice";
 import { formatDistanceToNow } from "date-fns";
 import { P2PTransaction } from "@/features/p2p/types";
 import { NoDataFound } from "../ui/Transactions";
@@ -47,24 +42,18 @@ const ASSET_ICON_URL =
 
 const P2PTransactions = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const [userEmail, setUserEmail] = useState("");
   const { t } = useDashboardI18n();
-  const { transactions, loading, error, currentPage, hasLoadedAll } = useSelector(
+  const { transactions, loading, error } = useSelector(
     (state: RootState) => state.p2pTransactions
   );
-
-  /* ----------------------------- set user ---------------------------- */
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const user = localStorage.getItem("profile");
-      setUserEmail(user ? JSON.parse(user).user.email : "");
-    }
-  }, []);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   /* -------------------------- fetch data ----------------------------- */
   useEffect(() => {
-    dispatch(fetchP2PTransactions(currentPage));
-  }, [dispatch, currentPage]);
+    // Load all transactions immediately
+    dispatch(loadAllP2PTransactions());
+  }, [dispatch]);
 
   /* --------------------------- loading / error ----------------------- */
   if (loading) {
@@ -116,12 +105,19 @@ const P2PTransactions = () => {
     );
   }
 
-  // Filter results by user email for display
-  const filteredResults =
-    transactions.results.filter((t) => t.user_email === userEmail) || [];
+  // Show all transactions without filtering by user
+  const allResults = transactions.results || [];
+  const totalPages = Math.ceil(allResults.length / itemsPerPage);
   
-  // Use server-side pagination info
-  const totalPages = Math.ceil(transactions.count / 10) || 1;
+  // Calculate pagination
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const filteredResults = allResults.slice(indexOfFirstItem, indexOfLastItem);
+
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const renderPagination = () => {
     if (totalPages <= 1) return null;
@@ -130,6 +126,7 @@ const P2PTransactions = () => {
     const maxButtons = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
     let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+    
     if (endPage - startPage < maxButtons - 1) {
       startPage = Math.max(1, endPage - maxButtons + 1);
     }
@@ -138,7 +135,7 @@ const P2PTransactions = () => {
       pageButtons.push(
         <button
           key={i}
-          onClick={() => dispatch(setCurrentPage(i))}
+          onClick={() => handlePageChange(i)}
           className={`mx-1 px-3 py-1 rounded-md border transition-colors duration-150
             ${
               i === currentPage
@@ -153,66 +150,43 @@ const P2PTransactions = () => {
 
     return (
       <div className="flex flex-col items-center gap-4">
-        {/* Show total count and current page info */}
+        {/* Show count info */}
         <div className="text-sm text-gray-600 dark:text-gray-400">
-          {hasLoadedAll 
-            ? t("transactions.showingAll", "Showing all") + " " + filteredResults.length + " " + t("transactions.transactions", "transactions")
-            : t("transactions.showing", "Showing") + " " + filteredResults.length + " " + t("transactions.of", "of") + " " + transactions.count + " " + t("transactions.transactions", "transactions")
-          }
+          {t("transactions.showing", "Showing")} {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, allResults.length)} {t("transactions.of", "of")} {allResults.length} {t("transactions.transactions", "transactions")}
         </div>
         
-        {/* Load All button */}
-        {!hasLoadedAll && transactions.count > 10 && (
+        {/* Pagination controls */}
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => dispatch(loadAllP2PTransactions())}
-            disabled={loading}
-            className="px-4 py-2 bg-[#1D8751] text-white rounded-md hover:bg-[#1a6b42] transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className={`px-3 py-1 rounded-md border transition-colors duration-150
+              ${
+                currentPage > 1
+                  ? "bg-transparent text-gray-600 dark:text-gray-400 border-[#d1d5db] dark:border-[#35353E] hover:bg-[#1D8751] hover:text-white"
+                  : "bg-gray-200 dark:bg-gray-600 text-gray-400 cursor-not-allowed border-transparent"
+              }`}
           >
-            {loading ? t("common.loading", "Loading...") : t("transactions.loadAll", "Load All Transactions")}
+            {t("common.previous", "Previous")}
           </button>
-        )}
-        
-        {!hasLoadedAll && (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => dispatch(setCurrentPage(currentPage - 1))}
-              disabled={!transactions.previous}
-              className={`px-3 py-1 rounded-md border transition-colors duration-150
-                ${
-                  transactions.previous
-                    ? "bg-transparent text-gray-600 dark:text-gray-400 border-[#d1d5db] dark:border-[#35353E] hover:bg-[#1D8751] hover:text-white"
-                    : "bg-gray-200 dark:bg-gray-600 text-gray-400 cursor-not-allowed border-transparent"
-                }`}
-            >
-              {t("common.previous", "Previous")}
-            </button>
-            {startPage > 1 && <span className="text-gray-500">…</span>}
-            {pageButtons}
-            {endPage < totalPages && <span className="text-gray-500">…</span>}
-            <button
-              onClick={() => dispatch(setCurrentPage(currentPage + 1))}
-              disabled={!transactions.next}
-              className={`px-3 py-1 rounded-md border transition-colors duration-150
-                ${
-                  transactions.next
-                    ? "bg-transparent text-gray-600 dark:text-gray-400 border-[#d1d5db] dark:border-[#35353E] hover:bg-[#1D8751] hover:text-white"
-                    : "bg-gray-200 dark:bg-gray-600 text-gray-400 cursor-not-allowed border-transparent"
-                }`}
-            >
-              {t("common.next", "Next")}
-            </button>
-          </div>
-        )}
-        
-        {/* Back to paginated view button */}
-        {hasLoadedAll && (
+          
+          {startPage > 1 && <span className="text-gray-500">…</span>}
+          {pageButtons}
+          {endPage < totalPages && <span className="text-gray-500">…</span>}
+          
           <button
-            onClick={() => dispatch(fetchP2PTransactions(1))}
-            className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors duration-150"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className={`px-3 py-1 rounded-md border transition-colors duration-150
+              ${
+                currentPage < totalPages
+                  ? "bg-transparent text-gray-600 dark:text-gray-400 border-[#d1d5db] dark:border-[#35353E] hover:bg-[#1D8751] hover:text-white"
+                  : "bg-gray-200 dark:bg-gray-600 text-gray-400 cursor-not-allowed border-transparent"
+              }`}
           >
-            {t("transactions.backToPages", "Back to Pages")}
+            {t("common.next", "Next")}
           </button>
-        )}
+        </div>
       </div>
     );
   };
@@ -227,7 +201,7 @@ const P2PTransactions = () => {
               t("transactions.asset", "Asset"),
               t("transactions.transactionType", "Transaction Type"),
               t("transactions.amount", "Amount"),
-              t("transactions.paymentMethod", "Payment Method"),
+              t("transactions.status", "Status"),
               t("transactions.when", "When"),
             ].map((h) => (
               <th
@@ -242,26 +216,26 @@ const P2PTransactions = () => {
         </thead>
 
         <tbody className="divide-y divide-[#d1d5db] dark:divide-[#35353E]">
-          {filteredResults.map((tx) => (
+          {filteredResults.map((tx: any, index: number) => (
             <tr
-              key={tx.transaction_id}
+              key={tx.transaction_id || `tx-${index}`}
               className="hover:bg-gray-100 dark:hover:bg-[#23232A] transition-colors"
             >
               {/* Asset */}
               <td className="px-6 py-4 whitespace-nowrap flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                 <img
                   src={ASSET_ICON_URL}
-                  alt={tx.currency}
+                  alt={tx.currency || "Asset"}
                   className="w-6 h-6 rounded-full"
                 />
-                <span className="font-bold">{tx.currency}</span>
+                <span className="font-bold">{tx.currency || "USDT"}</span>
                 <span className="ml-1 text-gray-500 dark:text-gray-400">
-                  {getAssetName(tx.currency)}
+                  {getAssetName(tx.currency || "USDT")}
                 </span>
               </td>
 
               {/* Type */}
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 capitalize">
                 {tx.transaction_type}
               </td>
 
@@ -273,17 +247,26 @@ const P2PTransactions = () => {
                     : "text-red-500 dark:text-red-400"
                 }`}
               >
-                {tx.amount}
+                {tx.amount || tx.requested_amount || tx.total_amount_due || "0.00"}
               </td>
 
-              {/* Method */}
-              <td className="px-6 py-4 gap-2 flex items-center whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                <img
-                  className="h-4"
-                  src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
-                  alt=""
-                />{" "}
-                {tx.payment_provider}
+              {/* Status */}
+              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                <span
+                  className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    tx.status === "completed"
+                      ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                      : tx.status === "pending" || tx.status === "pending_address" || tx.status === "pending_approval"
+                      ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                      : tx.status === "rejected" || tx.status === "error"
+                      ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+                      : tx.status === "waiting" || tx.status === "awaiting_payment"
+                      ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                      : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
+                  }`}
+                >
+                  {tx.status?.replace(/_/g, " ").toUpperCase() || "N/A"}
+                </span>
               </td>
 
               {/* When */}

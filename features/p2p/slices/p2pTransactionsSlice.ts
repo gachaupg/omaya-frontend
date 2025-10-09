@@ -38,19 +38,24 @@ export const loadAllP2PTransactions = createAsyncThunk(
       return { transactions: allTransactions, count: allTransactions.length };
     }
 
-    const allTxns = [...allTransactions];
+    const response = await getAllP2PTransactions(1);
+    
+    // Handle both array and paginated responses
+    if (Array.isArray(response)) {
+      return { transactions: response, count: response.length };
+    }
+    
+    const allTxns = [...response.results];
     let page = 1;
-    let hasMore = true;
+    let hasMore = !!response.next;
 
     while (hasMore) {
-      const response = await getAllP2PTransactions(page);
-      allTxns.push(...response.results);
+      page++;
+      const nextResponse = await getAllP2PTransactions(page);
+      const nextResults = Array.isArray(nextResponse) ? nextResponse : nextResponse.results;
+      allTxns.push(...nextResults);
       
-      if (!response.next) {
-        hasMore = false;
-      } else {
-        page++;
-      }
+      hasMore = !Array.isArray(nextResponse) && !!nextResponse.next;
     }
 
     return { transactions: allTxns, count: allTxns.length };

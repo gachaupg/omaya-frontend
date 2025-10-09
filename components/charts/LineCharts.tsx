@@ -2,13 +2,8 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
+import { loadAllP2PTransactions } from "@/features/p2p/slices/p2pTransactionsSlice";
 import {
-  fetchP2PTransactions,
-  setCurrentPage,
-} from "@/features/p2p/slices/p2pTransactionsSlice";
-import {
-  exchangeOverviewData,
-  p2pOverviewData,
   overviewTotalData,
   referralCommissionsData,
   overviewTotalSummary,
@@ -20,10 +15,8 @@ import { formatLargeNumber } from "@/utils/formatters";
 import Button from "../ui/Button";
 import { TransactionSummary } from "../types";
 import { fetchUserTrades } from "@/features/p2p/slices/userTradesSlice";
-import { line, curveMonotoneX } from "d3-shape";
 import { RootState } from "@/store";
 import { fetchReferralWallet } from "@/features/settings/slices/referralWalletSlice";
-import { fetchTransactions } from "@/features/exchange/slices/exchangeSlice";
 import { storage } from "@/features/auth/utils/storage";
 
 const months = [
@@ -550,59 +543,50 @@ const LineCharts = ({
   const { transactions: p2pTransactions } = useSelector(
     (state: any) => state.p2pTransactions
   );
-  const { transactions: exchangeTransactions } = useSelector(
-    (state: RootState) => state.exchange
-  );
   const userTrades = useSelector((state: any) => state.userTrades.trades);
 
-  // Fetch exchange transactions when userEmail is set
+  // Fetch all transactions on mount
   useEffect(() => {
-    if (userEmail) {
-      console.log("=== FETCHING EXCHANGE TRANSACTIONS CHART ===", {
-        userEmail,
-      });
-      dispatch(fetchTransactions());
-    }
-  }, [dispatch, userEmail]);
-
-  useEffect(() => {
-    dispatch(fetchP2PTransactions(1));
+    console.log("=== FETCHING ALL TRANSACTIONS FOR CHART ===");
+    dispatch(loadAllP2PTransactions());
     dispatch(fetchUserTrades({ page: 1, currency: "usdt" }));
   }, [dispatch]);
 
   // Process exchange transactions for Exchange Overview
   useEffect(() => {
-    if (exchangeTransactions && Array.isArray(exchangeTransactions) && userEmail) {
+    if (p2pTransactions?.results && userEmail) {
       const depositData = Array(12).fill(0);
       const withdrawalData = Array(12).fill(0);
       const currentDate = new Date();
 
-      console.log("exchange transactions", exchangeTransactions);
-
-      // Filter transactions for the current user
-      const userTransactions = exchangeTransactions.filter(
-        (transaction: any) => transaction.user_email === userEmail
-      );
-
-      console.log("Filtered exchange transactions for chart:", {
-        totalTransactions: exchangeTransactions.length,
-        userTransactions: userTransactions.length,
+      console.log("=== PROCESSING TRANSACTIONS FOR CHART ===", {
+        totalTransactions: p2pTransactions.results.length,
         userEmail,
       });
 
-      userTransactions.forEach((transaction: any) => {
+      // Show all transactions (no filtering by user)
+      const allTransactions = p2pTransactions.results;
+
+      allTransactions.forEach((transaction: any) => {
         const transactionDate = new Date(transaction.timestamp);
         const monthDiff =
           (currentDate.getFullYear() - transactionDate.getFullYear()) * 12 +
           (currentDate.getMonth() - transactionDate.getMonth());
         if (monthDiff < 12) {
           const monthIndex = 11 - monthDiff;
+          const amount = parseFloat(transaction.amount || transaction.requested_amount || transaction.total_amount_due || "0");
+          
           if (transaction.transaction_type === "deposit") {
-            depositData[monthIndex] += parseFloat(transaction.amount);
+            depositData[monthIndex] += amount;
           } else if (transaction.transaction_type === "withdrawal") {
-            withdrawalData[monthIndex] += parseFloat(transaction.amount);
+            withdrawalData[monthIndex] += amount;
           }
         }
+      });
+
+      console.log("=== CHART DATA PROCESSED ===", {
+        depositData,
+        withdrawalData,
       });
 
       setChartData({
@@ -616,7 +600,7 @@ const LineCharts = ({
         },
       });
     }
-  }, [exchangeTransactions, userEmail]);
+  }, [p2pTransactions, userEmail]);
 
   // Process P2P transactions for P2P Overview
   useEffect(() => {
@@ -831,66 +815,18 @@ const LineCharts = ({
             </div>
           </div>
           <div className="flex flex-col lg:flex-row w-full pt-10">
-            {activeTab === "swap" ? (
-              <div className="w-full text-center py-8">
-                <div className="flex flex-col items-center justify-center border border-[#E8EFF5] dark:border-[#35353E] rounded-[24px] p-8 bg-[#23232B]">
-                  <div className="w-16 h-16 mb-4 rounded-full bg-[#35353E] flex items-center justify-center">
-                    <svg
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="text-[#788099]"
-                    >
-                      <path
-                        d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M12 8V12"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <path
-                        d="M12 16H12.01"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-semibold text-[#788099] mb-2">
-                    No Data Found
-                  </h3>
-                  <p className="text-sm text-[#8C8CA1] text-center max-w-md">
-                    There are currently no {activeTab} transactions to display.
-                    Please check back later.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <>
-                <Legend
-                  data={overviewTotalData(transactionSummary, activeTab)}
-                />
-                <div className="flex-1 flex flex-col items-center justify-center mt-4 lg:mt-0">
-                  <DonutChartWithCenter
-                    data={overviewTotalData(transactionSummary, activeTab)}
-                    total={
-                      overviewTotalSummary(transactionSummary, activeTab).total
-                    }
-                    label="Transactions"
-                  />
-                </div>
-              </>
-            )}
+            <Legend
+              data={overviewTotalData(transactionSummary, activeTab)}
+            />
+            <div className="flex-1 flex flex-col items-center justify-center mt-4 lg:mt-0">
+              <DonutChartWithCenter
+                data={overviewTotalData(transactionSummary, activeTab)}
+                total={
+                  overviewTotalSummary(transactionSummary, activeTab).total
+                }
+                label={activeTab === "swap" ? "Swaps" : "Transactions"}
+              />
+            </div>
           </div>
         </Card>
         {/* Referral Commissions */}
