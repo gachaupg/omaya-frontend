@@ -32,6 +32,7 @@ export const fetchBlogs = createAsyncThunk(
 
     try {
       const blogs = await blogApi.fetchBlogs();
+      console.log("blogs slice", blogs);
       // Filter for blog category
       return blogs.filter((blog: BlogPost) => blog.category === 'blog');
     } catch (error) {
