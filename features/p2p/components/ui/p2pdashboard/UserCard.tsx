@@ -350,7 +350,7 @@ const [prevMatchedCount, setPrevMatchedCount] = useState(0);
               variant="ghost"
               size="sm"
               className=" flex items-center justify-center p-0"
-              onClick={() => setShowHelpSupport(true)}
+              onClick={() => router.push("/contactUs")}
               icon={
                 <div className="w-10 h-10 rounded-[50%] border border-[#1D8751] flex items-center justify-center p-0">
                   <svg

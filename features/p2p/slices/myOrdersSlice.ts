@@ -1,20 +1,20 @@
 /**
- * orderSlice.ts – auto‑generated placeholder
+ * myOrdersSlice.ts - Redux slice for fetching user's own P2P orders
  */
 
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { getAllP2PBuyandSell } from "../api";
+import { getMyP2POrders } from "../api";
 import { P2PMyOrders } from "../types";
 import { handleP2PError } from "@/lib/utils/errorHandler";
 
-interface P2PBuySellState {
+interface MyOrdersState {
   orders: P2PMyOrders;
   loading: boolean;
   error: string | null;
   currentPage: number;
 }
 
-const initialState: P2PBuySellState = {
+const initialState: MyOrdersState = {
   orders: {
     count: 0,
     next: null,
@@ -29,16 +29,16 @@ const initialState: P2PBuySellState = {
   currentPage: 1,
 };
 
-export const p2pBuyandSell = createAsyncThunk<
+export const fetchMyOrders = createAsyncThunk<
   P2PMyOrders,
   number,
   { rejectValue: string }
->("buysell/p2pBuyandSell", async (page: number = 1, { rejectWithValue }) => {
-  console.log("Redux thunk p2pBuyandSell called with page:", page);
+>("myOrders/fetchMyOrders", async (page: number = 1, { rejectWithValue }) => {
+  console.log("Redux thunk fetchMyOrders called with page:", page);
   try {
-    const response = await getAllP2PBuyandSell(page);
+    const response = await getMyP2POrders(page);
     console.log(
-      "Redux thunk p2pBuyandSell success for page:",
+      "Redux thunk fetchMyOrders success for page:",
       page,
       "with data:",
       {
@@ -48,7 +48,7 @@ export const p2pBuyandSell = createAsyncThunk<
     );
     return response;
   } catch (err) {
-    console.log("Redux thunk p2pBuyandSell error for page:", page, err);
+    console.log("Redux thunk fetchMyOrders error for page:", page, err);
     try {
       handleP2PError(err);
     } catch (error) {
@@ -60,13 +60,13 @@ export const p2pBuyandSell = createAsyncThunk<
   }
 });
 
-const p2pBuySellSlice = createSlice({
-  name: "buysell",
+const myOrdersSlice = createSlice({
+  name: "myOrders",
   initialState,
   reducers: {
     setCurrentPage: (state, action) => {
       console.log(
-        "setCurrentPage action dispatched:",
+        "myOrders setCurrentPage action dispatched:",
         action.payload,
         "Previous page:",
         state.currentPage
@@ -79,13 +79,13 @@ const p2pBuySellSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(p2pBuyandSell.pending, (state) => {
-        console.log("p2pBuyandSell.pending for page:", state.currentPage);
+      .addCase(fetchMyOrders.pending, (state) => {
+        console.log("fetchMyOrders.pending for page:", state.currentPage);
         state.loading = true;
         state.error = null;
       })
-      .addCase(p2pBuyandSell.fulfilled, (state, action) => {
-        console.log("p2pBuyandSell.fulfilled with data:", {
+      .addCase(fetchMyOrders.fulfilled, (state, action) => {
+        console.log("fetchMyOrders.fulfilled with data:", {
           count: action.payload.count,
           resultsCount: action.payload.results?.results?.length,
           currentPage: state.currentPage,
@@ -94,13 +94,13 @@ const p2pBuySellSlice = createSlice({
         state.orders = action.payload;
         state.error = null;
       })
-      .addCase(p2pBuyandSell.rejected, (state, action) => {
-        console.log("p2pBuyandSell.rejected:", action.payload);
+      .addCase(fetchMyOrders.rejected, (state, action) => {
+        console.log("fetchMyOrders.rejected:", action.payload);
         state.loading = false;
         state.error = (action.payload as string) || "An unexpected error occurred";
       });
   },
 });
 
-export const { setCurrentPage, clearError } = p2pBuySellSlice.actions;
-export default p2pBuySellSlice.reducer;
+export const { setCurrentPage, clearError } = myOrdersSlice.actions;
+export default myOrdersSlice.reducer;

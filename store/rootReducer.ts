@@ -14,6 +14,7 @@ import paymentMethodsReducer from "../features/p2p/slices/paymentMethodsSlice";
 import paymentReducer from "../features/exchange/slices/paymentSlice";
 import p2pMarketReducer from "../features/p2p/slices/orderSlice";
 import p2pBuySellReducer from "../features/p2p/slices/p2pbuysell";
+import myOrdersReducer from "../features/p2p/slices/myOrdersSlice";
 import authReducer from "../features/auth/slices/authSlice";
 import transactionSummaryReducer from "@/features/p2p/slices/transactionSummarySlice";
 import appealReducer from "../features/p2p/slices/appealSlice";
@@ -46,6 +47,7 @@ const rootReducer = combineReducers({
   payment: paymentReducer,
   p2pMarket: p2pMarketReducer,
   p2pBuySell: p2pBuySellReducer,
+  myOrders: myOrdersReducer,
   auth: authReducer,
   transactionSummary: transactionSummaryReducer,
   appeal: appealReducer,

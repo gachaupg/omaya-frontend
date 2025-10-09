@@ -110,3 +110,50 @@ export interface SwapStatus {
   refund_address: string;
   refund_extra_id: string;
 }
+
+export interface SwapTransactionUser {
+  id: number;
+  email: string;
+  first_name: string;
+  profile_type: string;
+  photo: string | null;
+}
+
+export interface SwapTransaction {
+  id: string;
+  user: SwapTransactionUser;
+  status: string;
+  payin_address: string;
+  payout_address: string;
+  refund_address: string;
+  from_currency: string;
+  from_network: string;
+  to_currency: string;
+  to_network: string;
+  from_currency_image: string;
+  to_currency_image: string;
+  amount_expected_from: string;
+  amount_expected_to: string;
+  amount_from: string | null;
+  amount_to: string | null;
+  payin_hash: string | null;
+  payout_hash: string | null;
+  created_at: string;
+  updated_at: string;
+  rate: number | null;
+  fee: number | null;
+  network_fee: number | null;
+  payload: any;
+}
+
+export interface SwapHistoryResponse {
+  data: SwapTransaction[];
+  total: number;
+  page: number;
+  pages: number;
+}
+
+export interface SwapHistoryParams {
+  page?: number;
+  limit?: number;
+}

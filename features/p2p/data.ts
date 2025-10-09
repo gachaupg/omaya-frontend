@@ -267,7 +267,7 @@ export const typeOptions = [
 export const statusOptions = [
   { value: "all", label: "Status" },
   { value: "completed", label: "Completed" },
-  { value: "matched", label: "Processing" },
+  { value: "processing", label: "Processing" },
   { value: "canceled", label: "Canceled" },
 ];
 

@@ -15,6 +15,7 @@ import {
   Wallet,
   WalletResponse,
   P2PBuySellResponse,
+  P2PMyOrders,
   TransactionSummary,
   OrderMatchRequest,
   P2POrder,
@@ -249,19 +250,35 @@ export const getAllP2POrders = async (
 
 export const getAllP2PBuyandSell = async (
   page: number = 1
-): Promise<P2PBuySellResponse> => {
+): Promise<P2PMyOrders> => {
   console.log("API call getAllP2PBuyandSell with page:", page);
   return withRetry(async () => {
     const url = `${API_CONFIG.P2P.ALL_ORDERS}?page=${page}`;
     console.log("Making API request to:", url);
-    const response = await get<P2PBuySellResponse>(url);
+    const response = await get<P2PMyOrders>(url);
     console.log("API response for page", page, ":", {
-      buyOrdersCount: response.data.buy_orders?.results?.length,
-      sellOrdersCount: response.data.sell_orders?.results?.length,
-      totalBuyOrders: response.data.buy_orders?.total_orders_count,
-      totalSellOrders: response.data.sell_orders?.total_orders_count,
-      firstBuyOrderId: response.data.buy_orders?.results?.[0]?.id,
-      firstSellOrderId: response.data.sell_orders?.results?.[0]?.id,
+      count: response.data.count,
+      totalOrders: response.data.results?.total_orders_count,
+      resultsCount: response.data.results?.results?.length,
+      firstOrderId: response.data.results?.results?.[0]?.id,
+    });
+    return response.data;
+  });
+};
+
+export const getMyP2POrders = async (
+  page: number = 1
+): Promise<P2PMyOrders> => {
+  console.log("API call getMyP2POrders with page:", page);
+  return withRetry(async () => {
+    const url = `${API_CONFIG.P2P.MY_ORDERS}?my_orders=true&page=${page}`;
+    console.log("Making API request to:", url);
+    const response = await get<P2PMyOrders>(url);
+    console.log("API response for My Orders page", page, ":", {
+      count: response.data.count,
+      totalOrders: response.data.results?.total_orders_count,
+      resultsCount: response.data.results?.results?.length,
+      firstOrderId: response.data.results?.results?.[0]?.id,
     });
     return response.data;
   });
@@ -459,10 +476,10 @@ export const getFeedbackReviews = async (): Promise<Feedback[]> => {
 
 export const getAllP2PTransactions = async (
   page: number = 1
-): Promise<P2PTransactionResponse> => {
+): Promise<P2PTransactionResponse | any[]> => {
   return withRetry(async () => {
-    const response = await get<P2PTransactionResponse>(
-      `${API_CONFIG.P2P.ALL_TRANSACTIONS}?page=${page}`
+    const response = await get<P2PTransactionResponse | any[]>(
+      `${API_CONFIG.P2P.USER_TRANSACTIONS}`
     );
     return response.data;
   });

@@ -49,7 +49,7 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ transactionSummary }) => {
     },
     {
       title: "Swap ",
-      value: '00',
+      value: formatValue(transactionSummary.total_completed_changenow_swaps),
     },
   ];
 

@@ -443,6 +443,10 @@ export interface UserTrade {
     account_name: string;
     account_number: string;
   }>;
+  buyer_photo: string | null;
+  seller_photo: string | null;
+  commission_amount: number;
+  net_amount: number;
 }
 
 export interface UserTradesState {
