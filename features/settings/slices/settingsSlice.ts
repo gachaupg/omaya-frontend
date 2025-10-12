@@ -15,6 +15,7 @@ import {
   SessionInfo,
   DeviceSession,
   CreateDeviceSessionPayload,
+  SupportRequestPayload,
 } from "../types";
 import { showToast } from "@/lib/utils/toast";
 
@@ -48,6 +49,9 @@ const initialState: SettingsState = {
   deviceSessions: [],
   deviceSessionsLoading: false,
   deviceSessionsError: null,
+  // Support Request
+  supportRequestLoading: false,
+  supportRequestError: null,
 };
 
 // Async thunks
@@ -314,6 +318,23 @@ export const logoutAllDevices = createAsyncThunk(
   }
 );
 
+// Support Request Async Thunk
+export const createSupportRequest = createAsyncThunk(
+  "settings/createSupportRequest",
+  async (payload: SupportRequestPayload, { rejectWithValue }) => {
+    try {
+      const response = await settingsApi.createSupportRequest(payload);
+      showToast.success("Support request submitted successfully");
+      return response.data;
+    } catch (error: any) {
+      showToast.error(error.message || "Failed to submit support request");
+      return rejectWithValue(
+        error.message || "Failed to submit support request"
+      );
+    }
+  }
+);
+
 const settingsSlice = createSlice({
   name: "settings",
   initialState,
@@ -554,6 +575,21 @@ const settingsSlice = createSlice({
       .addCase(logoutAllDevices.fulfilled, (state, action) => {
         state.deviceSessions = [];
         state.success = "All devices logged out successfully";
+      });
+
+    // Support Request
+    builder
+      .addCase(createSupportRequest.pending, (state) => {
+        state.supportRequestLoading = true;
+        state.supportRequestError = null;
+      })
+      .addCase(createSupportRequest.fulfilled, (state, action) => {
+        state.supportRequestLoading = false;
+        state.success = "Support request submitted successfully";
+      })
+      .addCase(createSupportRequest.rejected, (state, action) => {
+        state.supportRequestLoading = false;
+        state.supportRequestError = action.payload as string;
       });
   },
 });

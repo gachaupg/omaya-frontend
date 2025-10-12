@@ -27,6 +27,7 @@ import exchangeReducer from "../features/exchange/slices/exchangeSlice";
 import referralReducer from "@/features/settings/slices/referralSlice";
 import referralWalletReducer from "@/features/settings/slices/referralWalletSlice";
 import settingsReducer from "@/features/settings/slices/settingsSlice";
+import cashWithdrawalReducer from "@/features/settings/slices/cashWithdrawalSlice";
 import swapReducer from "@/features/swap/slices/swapSlice";
 import marketReducer from "@/features/markets/slices/marketSlice";
 
@@ -60,6 +61,7 @@ const rootReducer = combineReducers({
   referral: referralReducer,
   referralWallet: referralWalletReducer,
   settings: settingsReducer,
+  cashWithdrawal: cashWithdrawalReducer,
   swap: swapReducer,
   markets: marketReducer,
   blog: blogReducer,

@@ -5,6 +5,8 @@ export interface MarketRow {
   orders: number;
   advertiser_photo: string;
   completion: string;
+  exchange_rate: string;
+  completion_time: string;
   online: boolean;
   commission: string;
   available: string;

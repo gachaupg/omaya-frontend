@@ -17,6 +17,7 @@ import {
 } from "@/features/p2p/slices/orderSlice";
 import HelpSupportForm from "@/features/settings/components/HelpSupportForm";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
+import { useMatchedTradesWebSocket } from "@/features/p2p/hooks/useMatchedTradesWebSocket";
 
 function UserCard() {
   const [showHelpSupport, setShowHelpSupport] = useState(false);
@@ -32,6 +33,13 @@ function UserCard() {
     (state: RootState) => state.matchedTrades
   );
 
+  // Use WebSocket for real-time matched trades updates with HTTP polling fallback
+  const { isConnected: wsConnected } = useMatchedTradesWebSocket({
+    enabled: isAuthenticated,
+    fallbackToPolling: true,
+    pollingInterval: 30000, // 30 seconds fallback polling
+  });
+
   useEffect(() => {
     if (isAuthenticated) {
       dispatch(fetchMatchedTrades(1));
@@ -43,7 +51,6 @@ function UserCard() {
           }
         })
         .catch((error) => {
-          console.error("Failed to fetch profile:", error);
         });
     }
   }, [dispatch, isAuthenticated]);
@@ -84,7 +91,6 @@ function UserCard() {
             )
           );
         } catch (error: any) {
-          console.error("Profile update error:", error);
           showToast.error(
             error?.message ||
               t("userCard.updateError", "Failed to update profile image")
@@ -282,6 +288,18 @@ function UserCard() {
                           {matchedTrades.results.length}
                         </span>
                       )}
+                    {/* WebSocket connection indicator */}
+                    {wsConnected ? (
+                      <span 
+                        className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#1D8751] rounded-full border border-white dark:border-[#18181D]"
+                        title="Real-time WebSocket updates active"
+                      />
+                    ) : (
+                      <span 
+                        className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#F79330] rounded-full border border-white dark:border-[#18181D]"
+                        title="Using HTTP polling (WebSocket unavailable)"
+                      />
+                    )}
                   </div>
                 }
               />

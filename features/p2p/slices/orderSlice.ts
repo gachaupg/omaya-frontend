@@ -442,6 +442,84 @@ const p2pMarketSlice = createSlice({
       state.getWithdrawalAddressesError = null;
       state.getWithdrawalAddressesSuccess = false;
     },
+    // WebSocket actions - intelligently merge new/updated orders
+    updateOrdersFromWS: (state, action) => {
+      const { buy_orders, sell_orders, pagination, full_refresh } = action.payload;
+      
+      // Helper function to merge orders intelligently
+      const mergeOrders = (existingOrders: P2POrder[], newOrders: P2POrder[]) => {
+        if (!existingOrders || existingOrders.length === 0) {
+          return newOrders;
+        }
+        
+        const orderMap = new Map(existingOrders.map(order => [order.id, order]));
+        
+        // Update existing orders and add new ones
+        newOrders.forEach(newOrder => {
+          orderMap.set(newOrder.id, newOrder);
+        });
+        
+        return Array.from(orderMap.values());
+      };
+      
+      if (buy_orders) {
+        if (full_refresh) {
+          // Full refresh - replace all
+          state.p2pBuyOrders = {
+            next: null,
+            previous: null,
+            total_orders_count: pagination?.total_buy_orders || buy_orders.length,
+            results: buy_orders,
+          };
+        } else {
+          // Incremental update - merge new/updated orders
+          const mergedOrders = mergeOrders(state.p2pBuyOrders?.results || [], buy_orders);
+          state.p2pBuyOrders = {
+            ...state.p2pBuyOrders,
+            total_orders_count: pagination?.total_buy_orders || mergedOrders.length,
+            results: mergedOrders,
+          };
+        }
+      }
+      
+      if (sell_orders) {
+        if (full_refresh) {
+          // Full refresh - replace all
+          state.p2pSellOrders = {
+            next: null,
+            previous: null,
+            total_orders_count: pagination?.total_sell_orders || sell_orders.length,
+            results: sell_orders,
+          };
+        } else {
+          // Incremental update - merge new/updated orders
+          const mergedOrders = mergeOrders(state.p2pSellOrders?.results || [], sell_orders);
+          state.p2pSellOrders = {
+            ...state.p2pSellOrders,
+            total_orders_count: pagination?.total_sell_orders || mergedOrders.length,
+            results: mergedOrders,
+          };
+        }
+      }
+    },
+    // Action to remove a specific order (e.g., when deleted or completed)
+    removeOrderFromWS: (state, action) => {
+      const { orderId, orderType } = action.payload;
+      
+      if (orderType === 'buy') {
+        state.p2pBuyOrders = {
+          ...state.p2pBuyOrders,
+          results: state.p2pBuyOrders?.results?.filter(order => order.id !== orderId) || [],
+          total_orders_count: (state.p2pBuyOrders?.total_orders_count || 1) - 1,
+        };
+      } else if (orderType === 'sell') {
+        state.p2pSellOrders = {
+          ...state.p2pSellOrders,
+          results: state.p2pSellOrders?.results?.filter(order => order.id !== orderId) || [],
+          total_orders_count: (state.p2pSellOrders?.total_orders_count || 1) - 1,
+        };
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -674,5 +752,7 @@ export const {
   resetConfirmOrderState,
   resetSingleOrderState,
   resetWithdrawalAddressesState,
+  updateOrdersFromWS,
+  removeOrderFromWS,
 } = p2pMarketSlice.actions;
 export default p2pMarketSlice.reducer;

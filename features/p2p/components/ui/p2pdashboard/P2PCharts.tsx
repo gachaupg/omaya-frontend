@@ -5,9 +5,9 @@ import { Table } from "../../Common/Table";
 import { AppDispatch } from "@/store";
 import { RootState } from "@/store/rootReducer";
 import {
-  p2pBuyandSell,
-  setCurrentPage,
-} from "@/features/p2p/slices/p2pbuysell";
+  fetchMyOrders,
+  setCurrentPage as setMyOrdersCurrentPage,
+} from "@/features/p2p/slices/myOrdersSlice";
 import { P2POrder, TransactionType } from "@/features/p2p/types";
 import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
@@ -24,7 +24,7 @@ type TimeFilter =
 const P2PCharts = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { orders, loading, error, currentPage } = useSelector(
-    (state: RootState) => state.p2pBuySell
+    (state: RootState) => state.myOrders
   );
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
   const [searchQuery, setSearchQuery] = useState("");
@@ -33,14 +33,14 @@ const P2PCharts = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      dispatch(p2pBuyandSell(currentPage));
+      dispatch(fetchMyOrders(currentPage));
     }
   }, [dispatch, currentPage, isAuthenticated]);
 
   // Reset to first page when component mounts or authentication changes
   useEffect(() => {
     if (isAuthenticated && currentPage !== 1) {
-      dispatch(setCurrentPage(1));
+      dispatch(setMyOrdersCurrentPage(1));
     }
   }, [isAuthenticated, dispatch]);
 
@@ -98,34 +98,29 @@ const P2PCharts = () => {
     });
   };
 
-  // Transform orders data and filter by logged-in user's email
+  // Transform orders data (already filtered to user's orders by API)
   const transformedData: TransactionType[] = [
     ...(orders?.results?.results || []),
-  ]
-    .filter((order: P2POrder) => {
-      // Only show orders where advertiser_email matches the logged-in user's email
-      return user?.email && order.advertiser_email === user.email;
-    })
-    .map((order: P2POrder) => ({
-      id: order.id,
-      type: order.order_type,
-      advertiser_email: order.advertiser_email,
-      date: order.created_on,
-      amount: order.amount,
-      status: order.status,
-      asset: order.asset,
-      assetSymbol: order.currency,
-      rate: order.exchange_rate,
-      payment: order.payment_details.map((payment) => ({
-        bank: payment.provider,
-        logo: "",
-      })),
-      username: `${order.advertiser_first_name} ${order.advertiser_last_name}`,
-      limit: `${order.min_order_amount} - ${order.max_order_amount}`,
-      price: order.exchange_rate,
-      commission: order.commission_rate,
-      lastUpdate: order.created_on,
-    }));
+  ].map((order: P2POrder) => ({
+    id: order.id,
+    type: order.order_type,
+    advertiser_email: order.advertiser_email,
+    date: order.created_on,
+    amount: order.amount,
+    status: order.status,
+    asset: order.asset,
+    assetSymbol: order.currency,
+    rate: order.exchange_rate,
+    payment: order.payment_details.map((payment) => ({
+      bank: payment.provider,
+      logo: "",
+    })),
+    username: `${order.advertiser_first_name} ${order.advertiser_last_name}`,
+    limit: `${order.min_order_amount} - ${order.max_order_amount}`,
+    price: order.exchange_rate,
+    commission: order.commission_rate,
+    lastUpdate: order.created_on,
+  }));
 
   // Apply time filter to transformed data
   const timeFilteredData = transformedData.filter((item) => {
@@ -258,9 +253,9 @@ const P2PCharts = () => {
     // Only update if the page is actually different
     if (page !== currentPage) {
       // Update the current page in Redux store
-      dispatch(setCurrentPage(page));
+      dispatch(setMyOrdersCurrentPage(page));
       // Fetch data for the new page
-      dispatch(p2pBuyandSell(page));
+      dispatch(fetchMyOrders(page));
     }
   };
 
@@ -269,8 +264,8 @@ const P2PCharts = () => {
     // Reset to first page when searching
     if (query.trim() !== searchQuery.trim()) {
       if (currentPage !== 1) {
-        dispatch(setCurrentPage(1));
-        dispatch(p2pBuyandSell(1));
+        dispatch(setMyOrdersCurrentPage(1));
+        dispatch(fetchMyOrders(1));
       }
     }
   };

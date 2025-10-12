@@ -12,6 +12,7 @@ import {
   setCurrentPage,
 } from "@/features/p2p/slices/orderSlice";
 import { RootState } from "@/store/rootReducer";
+import { useP2POrdersWebSocket } from "@/features/p2p/hooks/useP2POrdersWebSocket";
 
 interface Option {
   label: string;
@@ -141,6 +142,8 @@ interface MarketRow {
   orders: number;
   advertiser_photo: string;
   completion: string;
+  exchange_rate: string;
+  completion_time: string;
   online: boolean;
   commission: string;
   available: string;
@@ -185,11 +188,19 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
 
+  // Initialize WebSocket connection for real-time P2P orders updates
+  const { isConnected: wsConnected, connectionError: wsError } = useP2POrdersWebSocket({
+    enabled: isAuthenticated,
+    fallbackToPolling: true,
+    pollingInterval: 30000,
+  });
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
   useEffect(() => {
+    // Always fetch initial data from API when mounted or page changes
     if (mounted && isAuthenticated) {
       const fetchOrders = async () => {
         dispatch(fetchAllP2PBuyandSell(currentPage) as any);
@@ -270,6 +281,18 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
           orders: order.user_total_buy_orders || order.user_total_sell_orders || 0,
           advertiser_photo: order.advertiser_photo || "",
           completion: `${(order.completion_rate || 0) * 100}%`,
+          exchange_rate: `${(parseFloat(order.exchange_rate || 0) * 100).toFixed(0)}`,
+          completion_time: order.completion_time ? (() => {
+            const parts = order.completion_time.split(':');
+            const hours = parseInt(parts[0] || '0');
+            const minutes = parseInt(parts[1] || '0');
+            const seconds = parseInt(parts[2] || '0');
+            // Convert to total minutes, or show seconds if less than a minute
+            if (hours > 0 || minutes > 0) {
+              return (hours * 60 + minutes).toString();
+            }
+            return seconds.toString();
+          })() : '0',
           online: true,
           commission: `${order.commission_rate || 0}%`,
           available: `${parseFloat(order.amount || 0).toFixed(2)} ${order.currency}`,
@@ -379,6 +402,7 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
   };
 
   const handleRefresh = () => {
+    // Always fetch fresh data on manual refresh, even if WebSocket is connected
     dispatch(fetchAllP2PBuyandSell(currentPage) as any);
   };
 
@@ -480,19 +504,35 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
             )}
         </div>
 
-        <Button
-          width={145}
-          height={40}
-          borderRadius={9}
-          variant="primary"
-          size="md"
-          icon={<FaSyncAlt />}
-          iconPosition="left"
-          className="w-full sm:w-auto"
-          onClick={handleRefresh}
-        >
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* WebSocket Connection Status */}
+          {wsConnected && (
+            <div className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              <span className="hidden sm:inline">Live</span>
+            </div>
+          )}
+          {wsError && !wsConnected && (
+            <div className="flex items-center gap-1.5 text-xs text-yellow-600 dark:text-yellow-400">
+              <div className="w-2 h-2 bg-yellow-500 rounded-full" />
+              <span className="hidden sm:inline">Polling</span>
+            </div>
+          )}
+          
+          <Button
+            width={145}
+            height={40}
+            borderRadius={9}
+            variant="primary"
+            size="md"
+            icon={<FaSyncAlt />}
+            iconPosition="left"
+            className="w-full sm:w-auto"
+            onClick={handleRefresh}
+          >
+            Refresh
+          </Button>
+        </div>
       </div>
       <div className="w-full overflow-x-auto">
         <MarketTable

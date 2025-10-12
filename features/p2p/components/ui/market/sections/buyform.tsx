@@ -275,9 +275,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
                 className="text-gray-900 dark:text-white text-sm"
               >
                 {singleOrder?.advertiser_name || 
-                 (singleOrder
-                  ? `${singleOrder.advertiser_name} `
-                  : "Advertiser User Name")}
+                 singleOrder?.advertiser_first_name}
                 <span className="text-[#E23D3A]">✔️</span>
               </div>
             </div>
@@ -288,7 +286,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
                 {singleOrder?.completion_rate || "99.20"}% Completion
               </div>
               <div className="text-sm text-[#1D8751]">
-                Rating: 99% | Commission: {commissionFromUrl || "0.5"}%
+                Rating: 99% | Commission: {commissionFromUrl ||singleOrder?.commission_rate}%
               </div>
             </div>
 
@@ -306,7 +304,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
             </div>
             <div>
               <span className="text-sm text-gray-900 dark:text-white mb-2">
-                {singleOrder?.completion_time || "2 Minutes"}
+                {singleOrder?.completion_time || singleOrder?.limit_duration}
               </span>
               <br />
               <span className="text-gray-500 dark:text-[#788099]">
@@ -315,7 +313,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
             </div>
             <div>
               <span className="text-sm text-gray-900 dark:text-white mb-2">
-                {singleOrder?.amount || "1,200"}{" "}
+                {singleOrder?.amount || singleOrder?.min_order_amount}{" "}
                 {singleOrder?.currency || "USDT"}
               </span>
               <br />
@@ -335,7 +333,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
             Order Number:{" "}
             <span
               className="underline text-[#1D8751] cursor-pointer"
-              onClick={() => handleCopy(singleOrder?.id || "9346457687345")}
+              onClick={() => handleCopy(singleOrder?.id || singleOrder?.buy_order)}
             >
               {singleOrder?.id || "9346457687345"}
             </span>
@@ -387,7 +385,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
               <div className="flex items-center h-[46px] rounded-2xl border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[#35353E] px-2">
                 <span className="text-[#1D8751] text-2xl mr-2">$</span>
                 <span className="text-[#1D8751] text-xl font-semibold">
-                  {commissionFromUrl}%
+                  {commissionFromUrl || singleOrder?.commission_rate}%
                 </span>
                 <span className="ml-auto text-gray-900 dark:text-white text-base font-medium">
                   USD
@@ -578,9 +576,9 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
         <ChatBox
           tradeId={confirmOrder?.id || ""}
           userId={user?.id.toString() || ""}
-          userName={singleOrder?.advertiser_name || ""}
+          userName={singleOrder?.advertiser_name || singleOrder?.advertiser_first_name || ""}
           autoreply={singleOrder?.auto_reply || ""}
-          seller_photo={singleOrder?.seller_photo || ""}
+          seller_photo={singleOrder?.seller_photo || singleOrder?.buyer_photo || ""}
         />
         {/* Advertiser's Terms */}
         <section className="advertiser-terms rounded-lg p-4 bg-white dark:bg-[#23232B]">

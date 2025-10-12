@@ -8,8 +8,10 @@ import {
 import { AppDispatch } from "@/store/rootReducer";
 import { validateWithdrawalForm } from "@/features/p2p/components/ui/p2pdashboard/sections/validation";
 import { useRouter } from "next/navigation";
+import Cash from "./cash";
 
 const Withdraw = () => {
+  const [activeTab, setActiveTab] = useState<"usdt" | "cash">("usdt");
   const [walletAddress, setWalletAddress] = useState("");
   const [amount, setAmount] = useState("");
   const [confirmAddress, setConfirmAddress] = useState(false);
@@ -136,16 +138,34 @@ const Withdraw = () => {
       <div className="min-h-screen dark:text-white text-[#0D0D0D] flex flex-col items-center">
         {/* Withdraw Form Card */}
         <div className="w-full max-w-2xl rounded-2xl p-6 shadow-lg">
-          <form onSubmit={handleWithdraw}>
             {/* Tabs for USDT TRC20 / Cash */}
             <div className="flex gap-2 mb-6 border border-[#EF4444] rounded-lg p-1 w-fit">
-              <button className="px-6 py-2 rounded-lg bg-[#EF4444] text-white font-semibold text-base">
+            <button
+              type="button"
+              onClick={() => setActiveTab("usdt")}
+              className={`px-6 py-2 rounded-lg font-semibold text-base ${
+                activeTab === "usdt"
+                  ? "bg-[#EF4444] text-white"
+                  : "dark:bg-[#23232B] bg-white text-[#A3A3A3]"
+              }`}
+            >
                 USDT TRC20
-              </button>:
-              <button className="px-6 py-2 rounded-lg dark:bg-[#23232B] text-[#A3A3A3] font-semibold text-base">
+              </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("cash")}
+              className={`px-6 py-2 rounded-lg font-semibold text-base ${
+                activeTab === "cash"
+                  ? "bg-[#EF4444] text-white"
+                  : "dark:bg-[#23232B] bg-white text-[#A3A3A3]"
+              }`}
+            >
                 Cash
               </button>
             </div>
+
+          {activeTab === "usdt" ? (
+          <form onSubmit={handleWithdraw}>
             {/* 1- Transaction Info */}
             <div className="text-md font-bold mb-2">1- Transaction Info</div>
 
@@ -406,6 +426,9 @@ const Withdraw = () => {
               </div>
             </div>
           </form>
+          ) : (
+            <Cash />
+          )}
         </div>
       </div>
     </div>

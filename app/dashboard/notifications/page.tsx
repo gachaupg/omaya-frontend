@@ -232,7 +232,7 @@ const Notifications = () => {
           const orderType = getOrderType(trade.order_type);
           const status = getStatus(trade, user?.email || "");
           const name = truncate(trade.advertiser_name || trade.owner || "", 14);
-          const profileImage = trade.buyer_photo
+          const profileImage =trade.order_type === "buy" ? trade.buyer_photo : trade.seller_photo
           return (
             <div
               key={trade.id}

@@ -16,6 +16,10 @@ import {
   DeviceSessionsResponse,
   LogoutDeviceResponse,
   LogoutAllDevicesResponse,
+  SupportRequestPayload,
+  SupportRequestResponse,
+  CashWithdrawalRequest,
+  CashWithdrawalResponse,
 } from "./types";
 
 const SETTINGS_API_BASE = "/api";
@@ -225,6 +229,45 @@ export const settingsApi = {
     return withRetry(async () => {
       const response = await apiClient.post(
         `${SETTINGS_API_BASE}/device-sessions/logout-all/`
+      );
+      return response.data;
+    });
+  },
+
+  // Support Request
+  createSupportRequest: async (
+    payload: SupportRequestPayload
+  ): Promise<SupportRequestResponse> => {
+    return withRetry(async () => {
+      const formData = new FormData();
+      formData.append("email_address", payload.email_address);
+      formData.append("question", payload.question);
+      
+      if (payload.supporting_file) {
+        formData.append("supporting_file", payload.supporting_file);
+      }
+
+      const response = await apiClient.post(
+        "/trading_engine/support-requests/create/",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      return response.data;
+    });
+  },
+
+  // Cash Withdrawal
+  createCashWithdrawal: async (
+    data: CashWithdrawalRequest
+  ): Promise<CashWithdrawalResponse> => {
+    return withRetry(async () => {
+      const response = await apiClient.post(
+        "/trading_engine/referral/withdraw/",
+        data
       );
       return response.data;
     });
