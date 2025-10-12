@@ -15,9 +15,12 @@ import {
 } from "../../../slices/orderSlice";
 import useSound from "use-sound";
 import HelpSupportForm from "@/features/settings/components/HelpSupportForm";
+import { useMatchedTradesWebSocket } from "../../../hooks/useMatchedTradesWebSocket";
+import { cookieUtils } from "@/lib/utils/cookieUtils";
 
 const UserCard = () => {
   const [showHelpSupport, setShowHelpSupport] = useState(false);
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -31,9 +34,19 @@ const UserCard = () => {
 const audioRef = useRef<HTMLAudioElement | null>(null);
 const [audioEnabled, setAudioEnabled] = useState(false);
 const [prevMatchedCount, setPrevMatchedCount] = useState(0);
+const [lastUpdateSource, setLastUpdateSource] = useState<"websocket" | "http" | null>(null);
+const [showUpdateIndicator, setShowUpdateIndicator] = useState(false);
+
+  // Use WebSocket for real-time matched trades updates with HTTP polling fallback
+  const { isConnected: wsConnected, connectionError } = useMatchedTradesWebSocket({
+    enabled: isAuthenticated,
+    fallbackToPolling: true,
+    pollingInterval: 30000, // 30 seconds fallback polling
+  });
 
   useEffect(() => {
     if (isAuthenticated) {
+      // Fetch initial data via HTTP
       dispatch(fetchMatchedTrades(1));
       dispatch(getP2PProfileThunk())
         .unwrap()
@@ -43,7 +56,6 @@ const [prevMatchedCount, setPrevMatchedCount] = useState(0);
           }
         })
         .catch((error) => {
-          console.error("Failed to fetch profile:", error);
         });
     }
   }, [dispatch, isAuthenticated]);
@@ -62,18 +74,47 @@ const [prevMatchedCount, setPrevMatchedCount] = useState(0);
     return () => window.removeEventListener('click', enableAudio);
   }, []);
 
-  // Play when matchedTrades increases
+  // Log WebSocket connection status changes (suppress React StrictMode noise)
+  const hasLoggedStatus = useRef(false);
+  
   useEffect(() => {
-    if (!audioEnabled || !audioRef.current) return;
-    const currentCount = matchedTrades?.results?.length || 0;
-
-    if (currentCount > prevMatchedCount) {
-      audioRef.current.play().catch(err => {
-        console.log('🔕 Play blocked:', err);
-      });
+    if (wsConnected && !hasLoggedStatus.current) {
+      hasLoggedStatus.current = true;
     }
+  }, [wsConnected]);
+
+  // Monitor data updates and determine source
+  useEffect(() => {
+    if (!matchedTrades?.results) return;
+    
+    const currentCount = matchedTrades.results.length;
+    
+    // Detect if this is a new update
+    if (currentCount !== prevMatchedCount && prevMatchedCount !== 0) {
+      // Determine update source
+      const updateSource = wsConnected ? "websocket" : "http";
+      setLastUpdateSource(updateSource);
+      
+    
+      
+      // Log the actual trade data for debugging
+      if (process.env.NODE_ENV === 'development') {
+       
+      }
+      
+      // Show update indicator
+      setShowUpdateIndicator(true);
+      setTimeout(() => setShowUpdateIndicator(false), 2000);
+      
+      // Play audio for new trades
+      if (audioEnabled && audioRef.current && currentCount > prevMatchedCount) {
+        audioRef.current.play().catch(err => {
+        });
+      }
+    }
+    
     setPrevMatchedCount(currentCount);
-  }, [matchedTrades, audioEnabled]);
+  }, [matchedTrades, wsConnected, audioEnabled, prevMatchedCount]);
 
 
   const handleImageClick = () => {
@@ -106,7 +147,6 @@ const [prevMatchedCount, setPrevMatchedCount] = useState(0);
           }
           toast.success("Profile image updated successfully");
         } catch (error: any) {
-          console.error("Profile update error:", error);
           toast.error(error?.message || "Failed to update profile image");
           // Revert the image if update fails
           setProfileImage(
@@ -170,7 +210,8 @@ const [prevMatchedCount, setPrevMatchedCount] = useState(0);
                   >
                     <path
                       d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"
-                      className="stroke-[#788099]"
+                      stroke="currentColor"
+                      className="text-[#788099]"
                       strokeWidth="2"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -179,7 +220,8 @@ const [prevMatchedCount, setPrevMatchedCount] = useState(0);
                       cx="12"
                       cy="7"
                       r="4"
-                      className="stroke-[#788099]"
+                      stroke="currentColor"
+                      className="text-[#788099]"
                       strokeWidth="2"
                     />
                   </svg>
@@ -246,6 +288,14 @@ const [prevMatchedCount, setPrevMatchedCount] = useState(0);
                 </svg>
               </div>
             </div>
+            {/* Data source indicator (dev mode) */}
+            {process.env.NODE_ENV === 'development' && lastUpdateSource && (
+              <div className="flex items-center gap-1 mt-1">
+                <span className="text-[10px] text-[#788099]">
+                  Updates via: {lastUpdateSource === 'websocket' ? '🟢 WebSocket' : '🟡 HTTP'}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -343,6 +393,22 @@ const [prevMatchedCount, setPrevMatchedCount] = useState(0);
                         {matchedTrades.results.length}
                       </span>
                     )}
+                  {/* WebSocket connection indicator */}
+                  {wsConnected ? (
+                    <span 
+                      className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#1D8751] rounded-full border border-white dark:border-[#18181D]"
+                      title="Real-time WebSocket updates active"
+                    />
+                  ) : (
+                    <span 
+                      className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#F79330] rounded-full border border-white dark:border-[#18181D]"
+                      title="Using HTTP polling (WebSocket unavailable)"
+                    />
+                  )}
+                  {/* Update indicator pulse */}
+                  {showUpdateIndicator && (
+                    <span className="absolute inset-0 rounded-full bg-[#1D8751] opacity-75 animate-ping" />
+                  )}
                 </div>
               }
             />
@@ -382,6 +448,8 @@ const [prevMatchedCount, setPrevMatchedCount] = useState(0);
         </div>
       </div>
       )}
+      
+      
     </Card>
   );
 };

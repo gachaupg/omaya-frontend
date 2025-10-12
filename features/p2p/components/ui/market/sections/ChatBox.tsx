@@ -9,6 +9,7 @@ import {
 } from "@/features/p2p/slices/messageSlice";
 import { getTradeMessages, postTradeMessage } from "@/features/p2p/api";
 import { MdAccountCircle } from "react-icons/md";
+import { useTradeMessagesWebSocket } from "@/features/p2p/hooks/useTradeMessagesWebSocket";
 
 interface Message {
   id: string;
@@ -33,9 +34,12 @@ const ChatBox: React.FC<{
   const uploaded_images = useSelector(
     (state: RootState) => state.message.uploaded_images
   );
-  const [messages, setMessages] = useState<{ results: Message[] }>({
-    results: [],
-  });
+  
+  // Get messages from Redux (populated by WebSocket)
+  const messagesFromRedux = useSelector(
+    (state: RootState) => state.message.messages[tradeId] || []
+  );
+  
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Add file input ref
@@ -44,15 +48,80 @@ const ChatBox: React.FC<{
     (state: RootState) => state.auth.isAuthenticated
   );
 
-  // Fetch messages
+  // Use WebSocket for real-time messages
+  const { isConnected: wsConnected } = useTradeMessagesWebSocket({
+    tradeId,
+    enabled: isAuthenticated,
+  });
+
+  // Ref for auto-scroll
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
+  const messagesListRef = React.useRef<HTMLDivElement>(null);
+  const [userHasScrolled, setUserHasScrolled] = React.useState(false);
+  const [isAtBottom, setIsAtBottom] = React.useState(true);
+  const prevMessageCountRef = React.useRef(0);
+
+  // Track user scroll behavior
+  const handleScroll = React.useCallback(() => {
+    if (messagesListRef.current) {
+      const container = messagesListRef.current;
+      const scrollThreshold = 50; // pixels from bottom
+      const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+      const isNearBottom = distanceFromBottom < scrollThreshold;
+      
+      setIsAtBottom(isNearBottom);
+      
+      // If user scrolls up significantly, mark as manually scrolled
+      if (distanceFromBottom > scrollThreshold) {
+        setUserHasScrolled(true);
+      } else {
+        // If user scrolls back to bottom, reset flag
+        setUserHasScrolled(false);
+      }
+    }
+  }, []);
+
+  // Attach scroll listener
+  useEffect(() => {
+    const container = messagesListRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+      return () => container.removeEventListener('scroll', handleScroll);
+    }
+  }, [handleScroll]);
+
+  // Smart auto-scroll when messages update
+  useEffect(() => {
+    const messageCountChanged = prevMessageCountRef.current !== messagesFromRedux.length;
+    prevMessageCountRef.current = messagesFromRedux.length;
+    
+    // Only auto-scroll if:
+    // 1. User hasn't manually scrolled up OR is already at bottom
+    // 2. There are new messages (count changed)
+    if (messageCountChanged && (!userHasScrolled || isAtBottom)) {
+      // Small delay to ensure DOM is updated
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+      }, 100);
+    }
+  }, [messagesFromRedux, userHasScrolled, isAtBottom]);
+
+  // Fetch messages initially (WebSocket will keep them updated)
   const fetchMessages = async () => {
     if (isAuthenticated && tradeId) {
       setIsRefreshing(true);
       try {
         const data = await getTradeMessages(tradeId);
-        setMessages(data as { results: Message[] });
+        // Dispatch to Redux instead of local state
+        const { setMessages } = await import("@/features/p2p/slices/messageSlice");
+        if (data && (data as any).results) {
+          dispatch(setMessages({
+            tradeId,
+            messages: (data as any).results,
+          }));
+        }
       } catch (error) {
-        console.error("Error fetching messages:", error);
+        // Silent error
       } finally {
         setIsRefreshing(false);
       }
@@ -60,6 +129,8 @@ const ChatBox: React.FC<{
   };
 
   useEffect(() => {
+    // Fetch initial messages once on mount
+    // WebSocket will then keep them updated in real-time
     fetchMessages();
   }, [tradeId]);
 
@@ -83,19 +154,36 @@ const ChatBox: React.FC<{
   const handleSend = async () => {
     if (!message.trim() && uploaded_images.length === 0) return;
     try {
+      // Send via HTTP (WebSocket will broadcast back and update automatically)
       await postTradeMessage(tradeId, { message: message || '', uploaded_images });
       dispatch(clearMessage());
-      const data = await getTradeMessages(tradeId);
-      setMessages(data as { results: Message[] });
+      // No need to refetch - WebSocket will broadcast the new message back
     } catch (e) {
-      // handle error (optional)
+      // Silent error - user will see message didn't send
     }
+  };
+
+  // Function to scroll to bottom manually
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    setUserHasScrolled(false);
   };
 
   return (
     <div>
       <div className="flex items-center justify-between text-xs mb-2">
-        <span>Chat with Advertiser</span>
+        <div className="flex items-center gap-2">
+          <span>Chat with Advertiser</span>
+          {wsConnected && (
+            <span className="text-[10px] text-[#1D8751] flex items-center gap-1">
+              <span className="w-1.5 h-1.5 bg-[#1D8751] rounded-full"></span>
+              Live
+            </span>
+          )}
+          <span className="text-[10px] text-[#788099]">
+            ({messagesFromRedux.length} msgs)
+          </span>
+        </div>
         <button
           onClick={handleRefresh}
           disabled={isRefreshing}
@@ -124,7 +212,7 @@ const ChatBox: React.FC<{
           </svg>
         </button>
       </div>
-      <div className="chat-container mt-6 flex flex-col pr-10 mb-2 h-96 bg-white dark:bg-[#18181D] border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px] p-2 md:p-4">
+      <div className="chat-container mt-6 flex flex-col pr-10 mb-2 h-96 bg-white dark:bg-[#18181D] border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px] p-2 md:p-4 relative">
         <div>
           <div className="flex items-center justify-center gap-2">
             {seller_photo ? <img className="w-8 h-8 rounded-full" src={seller_photo || ""} alt="" /> : <MdAccountCircle  className="w-6 h-6 text-[#1D8751]"/>}
@@ -134,9 +222,16 @@ const ChatBox: React.FC<{
           </div>
         </div>
         <hr className="border-[#E8EFF5] dark:border-[#35353E] mt-2" />
-        <div className="messages-list flex-1 flex flex-col gap-2 overflow-y-auto mb-2">
-          <p className="text-[#051015] dark:text-white">{autoreply}</p>
-          {messages.results.map((msg) => (
+        <div 
+          ref={messagesListRef}
+          className="messages-list flex-1 flex flex-col gap-2 overflow-y-auto mb-2"
+        >
+          {autoreply && (
+            <p className="text-[#051015] dark:text-white bg-[#F5F5F5] dark:bg-[#23232B] p-2 rounded-lg text-sm italic">
+              {autoreply}
+            </p>
+          )}
+          {messagesFromRedux.map((msg) => (
             <div
               key={msg.id}
               className={
@@ -163,7 +258,34 @@ const ChatBox: React.FC<{
               </div>
             </div>
           ))}
+          {/* Auto-scroll anchor */}
+          <div ref={messagesEndRef} />
         </div>
+        
+        {/* Scroll to bottom button - only show when user has scrolled up */}
+        {userHasScrolled && !isAtBottom && (
+          <button
+            onClick={scrollToBottom}
+            className="absolute bottom-20 right-14 bg-[#1D8751] text-white rounded-full p-2 shadow-lg hover:bg-[#166339] transition-colors z-10 animate-bounce"
+            title="Scroll to bottom"
+          >
+            <svg
+              width="20"
+              height="20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M19 14l-7 7m0 0l-7-7m7 7V3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        )}
+        
         <hr className="border-[#E8EFF5] dark:border-[#35353E] mt-2" />
         <div className="flex gap-2 mt-2">
           <input

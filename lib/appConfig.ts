@@ -77,6 +77,14 @@ export const API_CONFIG = {
     MATCHED_TRADE: "/trading_engine/p2p/trades/",
     MERCHANT_SUBMIT: "/trading_engine/merchant/submit/",
     MERCHANT_APPLICATION: "/trading_engine/merchant/application/",
+    SOCKETS: {
+      MATCHED_TRADES: (token: string) =>
+        `${getWebSocketBaseUrl()}/ws/matched-trades/?token=${token}`,
+      TRADE_MESSAGES: (tradeId: string, token: string) =>
+        `${getWebSocketBaseUrl()}/ws/p2p-trade-messages/${tradeId}/?token=${token}`,
+      P2P_ORDERS: (token: string) =>
+        `${getWebSocketBaseUrl()}/ws/p2p-orders/?token=${token}`,
+    },
   },
   SWAP: {
     SUPPORTED_ASSETS: "api/changenow/supported-tokens/",

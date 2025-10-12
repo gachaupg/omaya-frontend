@@ -2,6 +2,9 @@
 
 import { Upload } from 'lucide-react'
 import React, { useRef, useState } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import { createSupportRequest } from '../slices/settingsSlice'
+import { AppDispatch, RootState } from '@/store'
 
 interface FormData {
   email: string
@@ -10,6 +13,11 @@ interface FormData {
 }
 
 const HelpSupportForm: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>()
+  const { supportRequestLoading, supportRequestError } = useSelector(
+    (state: RootState) => state.settings
+  )
+  
   const [formData, setFormData] = useState<FormData>({
     email: '',
     description: '',
@@ -37,9 +45,29 @@ const HelpSupportForm: React.FC = () => {
     fileInputRef.current?.click();
   };
 
-  const handleSubmitEmail = () => {
-    console.log('Submit Email clicked', formData)
-    // Handle email submission logic here
+  const handleSubmitEmail = async () => {
+    if (!formData.email || !formData.description) {
+      return
+    }
+
+    try {
+      await dispatch(
+        createSupportRequest({
+          email_address: formData.email,
+          question: formData.description,
+          supporting_file: formData.file,
+        })
+      ).unwrap()
+      
+      // Reset form on success
+      setFormData({
+        email: '',
+        description: '',
+        file: null
+      })
+    } catch (error) {
+      console.error('Failed to submit support request:', error)
+    }
   }
 
   const handleConnectLiveChat = () => {
@@ -86,32 +114,43 @@ const HelpSupportForm: React.FC = () => {
           </div>
 
           {/* Upload Section */}
-          <div>
-            <div className='flex items-center gap-2 mb-4'  onClick={handleUploadClick}>
-                <h3 className="text-lg font-medium text-gray-800 dark:text-white cursor-pointer">Upload</h3>
-                <button
-                className="hover:bg-gray-50 dark:hover:bg-[#2C2C32] transition-colors"
-                >
-                <Upload className="h-5 w-5 text-[#1D8751]" />
-                </button>
-            <input
-              type="file"
-              id="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              className="hidden"
-            />
-
-            </div>
-            <p className="text-sm text-gray-500 mb-4">
-              Upload relevant files such as screenshots, documents, or error logs to help us better understand and resolve your issue. 
-              Supported formats include images (PNG, JPG), documents (PDF, DOC), and text files.
-            </p>
-              {formData.file && (
-                <div className="mt-2 text-sm text-[#1D8751]">
-                    Selected file: {formData.file.name}
+          <div className="border-t border-[#E8EFF5] dark:border-[#35353E] pt-6">
+            <label className="block text-sm font-medium text-[#344054] dark:text-white mb-2">
+              Upload File (Optional)
+            </label>
+            <div 
+              onClick={handleUploadClick}
+              className="border-2 border-dashed border-[#E8EFF5] dark:border-[#35353E] rounded-2xl p-6 cursor-pointer hover:border-[#1D8751] transition-colors"
+            >
+              <div className='flex flex-col items-center gap-3'>
+                <div className="p-3 bg-[#1D8751]/10 rounded-full">
+                  <Upload className="h-6 w-6 text-[#1D8751]" />
                 </div>
-                )}
+                <div className="text-center">
+                  <p className="text-sm font-medium text-gray-800 dark:text-white mb-1">
+                    Click to upload file
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    PNG, JPG, PDF, DOC (Max 10MB)
+                  </p>
+                </div>
+              </div>
+              <input
+                type="file"
+                id="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+                accept=".png,.jpg,.jpeg,.pdf,.doc,.docx,.txt"
+              />
+            </div>
+            {formData.file && (
+              <div className="mt-3 p-3 bg-[#1D8751]/10 rounded-lg">
+                <p className="text-sm text-[#1D8751] font-medium">
+                  ✓ Selected: {formData.file.name}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Buttons */}
@@ -124,9 +163,10 @@ const HelpSupportForm: React.FC = () => {
             </button>
             <button
               onClick={handleSubmitEmail}
-              className="flex-1 bg-white dark:bg-[#18181D] hover:bg-gray-50 text-[#1D8751] font-medium py-3 px-6 rounded-full border border-[#1D8751] transition-colors"
+              disabled={supportRequestLoading || !formData.email || !formData.description}
+              className="flex-1 bg-white dark:bg-[#18181D] hover:bg-gray-50 text-[#1D8751] font-medium py-3 px-6 rounded-full border border-[#1D8751] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Submit Email
+              {supportRequestLoading ? 'Submitting...' : 'Submit Email'}
             </button>
           </div>
         </div>

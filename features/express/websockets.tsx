@@ -102,7 +102,6 @@ export class BaseTransactionStatusWebSocket {
         // Validate WebSocket URL
         if (!this.wsUrl || typeof this.wsUrl !== 'string') {
           const error = new Error(`Invalid WebSocket URL: ${this.wsUrl}`);
-          console.error("WebSocket connection failed:", error.message);
           reject(error);
           return;
         }
@@ -110,34 +109,24 @@ export class BaseTransactionStatusWebSocket {
         // Validate URL format
         if (!this.wsUrl.startsWith('ws://') && !this.wsUrl.startsWith('wss://')) {
           const error = new Error(`WebSocket URL must start with ws:// or wss://, got: ${this.wsUrl}`);
-          console.error("WebSocket connection failed:", error.message);
           reject(error);
           return;
         }
 
-                 console.log(
-           "DEBUG: WebSocket connecting with transactionId:",
-           this.transactionId
-         );
-         console.log("DEBUG: WebSocket URL:", this.wsUrl);
-         console.log("DEBUG: WebSocket URL type:", this.wsUrl.includes("changenow.io") ? "ChangeNow" : "Backend");
-         console.log("DEBUG: WebSocket protocol:", this.wsUrl.startsWith('ws://') ? 'ws://' : this.wsUrl.startsWith('wss://') ? 'wss://' : 'unknown');
+                
         
          this.ws = new WebSocket(this.wsUrl);
 
         // Add connection timeout
         const connectionTimeout = setTimeout(() => {
           if (this.ws && this.ws.readyState !== WebSocket.OPEN) {
-            console.warn("WebSocket connection timeout");
             this.ws.close();
           }
         }, 10000); // 10 second timeout
 
         this.ws.onopen = () => {
           clearTimeout(connectionTimeout);
-          console.log(
-            `WebSocket connected for transaction: ${this.transactionId}`
-          );
+        
           this.reconnectAttempts = 0;
           resolve();
         };
@@ -145,7 +134,6 @@ export class BaseTransactionStatusWebSocket {
         this.ws.onmessage = (event) => {
           try {
             const data: TransactionStatusMessage = JSON.parse(event.data);
-            console.log("Transaction status update:", data);
 
             // Handle database errors gracefully
             if (
@@ -153,17 +141,13 @@ export class BaseTransactionStatusWebSocket {
                 data.data?.message?.includes("database")) ||
               data.data?.message?.includes("column")
             ) {
-              console.warn(
-                "Database error received from WebSocket:",
-                data.data?.message
-              );
+              
               // Don't crash the frontend, just log the error
               return;
             }
 
             this.onMessageCallback?.(data);
           } catch (error) {
-            console.error("Error parsing WebSocket message:", error);
           }
         };
 
@@ -171,23 +155,20 @@ export class BaseTransactionStatusWebSocket {
           const target = error.target as WebSocket | null;
           
           // Simple, focused error logging
-          console.warn("WebSocket connection error occurred");
           
           if (target?.readyState !== undefined) {
             const states = ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'];
-            console.warn(`State: ${states[target.readyState] || target.readyState}`);
+            
           }
           
           if (this.wsUrl) {
-            console.warn(`URL: ${this.wsUrl}`);
           }
           
-          console.warn(`Reconnect attempt: ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts}`);
+        
           
           // Only log additional details if this is a repeated failure
           if (this.reconnectAttempts > 2) {
-            console.warn("Multiple connection failures - check network and server status");
-            console.warn(`Online: ${navigator.onLine}`);
+            
           }
 
           // Don't reject immediately on error - let the onclose handler deal with reconnection
@@ -200,12 +181,7 @@ export class BaseTransactionStatusWebSocket {
 
         this.ws.onclose = (event) => {
           clearTimeout(connectionTimeout);
-          console.log("WebSocket closed:", {
-            code: event.code,
-            reason: event.reason,
-            wasClean: event.wasClean,
-            reconnectAttempts: this.reconnectAttempts,
-          });
+          
 
           this.onCloseCallback?.();
 
@@ -215,24 +191,15 @@ export class BaseTransactionStatusWebSocket {
             this.reconnectAttempts < this.maxReconnectAttempts
           ) {
             this.reconnectAttempts++;
-            console.log(
-              `Attempting to reconnect (${this.reconnectAttempts}/${
-                this.maxReconnectAttempts
-              }) in ${this.reconnectDelay * this.reconnectAttempts}ms...`
-            );
+          
 
             setTimeout(() => {
               this.connect().catch((error) => {
-                console.error(
-                  `Reconnection attempt ${this.reconnectAttempts} failed:`,
-                  error
-                );
+                
               });
             }, this.reconnectDelay * this.reconnectAttempts);
           } else if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-            console.warn(
-              "Max reconnection attempts reached. WebSocket will not reconnect automatically."
-            );
+           
           }
         };
       } catch (error) {
@@ -252,7 +219,6 @@ export class BaseTransactionStatusWebSocket {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(message));
     } else {
-      console.warn("WebSocket is not connected");
     }
   }
 
@@ -281,33 +247,28 @@ export class BaseTransactionStatusWebSocket {
   // Method to perform connection health check
   performHealthCheck(): boolean {
     const diagnostics = this.getConnectionDiagnostics();
-    console.log("WebSocket Health Check:", diagnostics);
     
     // Check if URL is valid
     if (!this.wsUrl || typeof this.wsUrl !== 'string') {
-      console.error("Health Check Failed: Invalid WebSocket URL");
       return false;
     }
 
     // Check if URL format is correct
     if (!this.wsUrl.startsWith('ws://') && !this.wsUrl.startsWith('wss://')) {
-      console.error("Health Check Failed: Invalid WebSocket protocol");
       return false;
     }
 
     // Check transaction ID
     if (!this.transactionId) {
-      console.error("Health Check Failed: Missing transaction ID");
       return false;
     }
 
     // Check connection state
     if (!this.isConnected()) {
-      console.warn("Health Check: WebSocket not connected");
       return false;
     }
 
-    console.log("Health Check Passed: WebSocket connection is healthy");
+   
     return true;
   }
 }
@@ -329,12 +290,7 @@ export class WithdrawalStatusWebSocket extends BaseTransactionStatusWebSocket {
     const finalWsUrl = (wsUrl && wsUrl.trim() !== "") 
       ? wsUrl 
       : API_CONFIG.EXCHANGE.SOCKETS.TRANSACTION_STATUS(transactionId);
-    
-    console.log("DEBUG: WithdrawalStatusWebSocket constructor - wsUrl:", wsUrl);
-    console.log("DEBUG: WithdrawalStatusWebSocket constructor - finalWsUrl:", finalWsUrl);
-    console.log("DEBUG: Using provided URL:", !!wsUrl);
-    console.log("DEBUG: URL is empty/undefined:", !wsUrl || wsUrl.trim() === "");
-    super(transactionId, finalWsUrl, options);
+        super(transactionId, finalWsUrl, options);
   }
 }
 
@@ -355,11 +311,6 @@ export class DepositStatusWebSocket extends BaseTransactionStatusWebSocket {
     const finalWsUrl = (wsUrl && wsUrl.trim() !== "") 
       ? wsUrl 
       : API_CONFIG.EXCHANGE.SOCKETS.DEPOSIT_STATUS(transactionId);
-    
-    console.log("DEBUG: DepositStatusWebSocket constructor - wsUrl:", wsUrl);
-    console.log("DEBUG: DepositStatusWebSocket constructor - finalWsUrl:", finalWsUrl);
-    console.log("DEBUG: Using provided URL:", !!wsUrl);
-    console.log("DEBUG: URL is empty/undefined:", !wsUrl || wsUrl.trim() === "");
     super(transactionId, finalWsUrl, options);
   }
 }
@@ -389,9 +340,7 @@ export const useTransactionStatusWebSocket = (
   React.useEffect(() => {
     if (!transactionId) return;
 
-    console.log("DEBUG: useTransactionStatusWebSocket - transactionId:", transactionId);
-    console.log("DEBUG: useTransactionStatusWebSocket - wsUrl:", wsUrl);
-    console.log("DEBUG: useTransactionStatusWebSocket - transactionType:", transactionType);
+  
 
     // Create appropriate WebSocket class based on transaction type
     const WebSocketClass =

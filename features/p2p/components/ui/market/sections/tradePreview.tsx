@@ -334,10 +334,10 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                   />
                   <select
                     className="rounded px-2 py-2 text-sm min-w-[80px] bg-white dark:bg-[#23242A] text-gray-900 dark:text-white"
-                    value="USD"
+                    value="USDT"
                     disabled
                   >
-                    <option>USD</option>
+                    <option>USDT</option>
                   </select>
                 </div>
                 {!isAmountValid && sendAmount && (

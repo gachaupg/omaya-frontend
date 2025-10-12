@@ -179,7 +179,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   };
 
   return (
-    <div className="final-buy-container grid grid-cols-1 md:grid-cols-3 gap-6 p-2 md:p-6 min-h-screen bg-white dark:bg-[#0A0A0A]">
+    <div className="final-buy-container grid grid-cols-1 md:grid-cols-3 gap-6 p-2 md:p-6 min-h-screen bg-white dark:bg-[#18181D]">
       {/* Left Column: Main Info */}
       <div className="md:col-span-2 flex flex-col mt-6 md:mt-10 gap-6">
         <div className="flex items-center justify-between">
@@ -200,7 +200,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
         {/* Advertiser Info */}
         <section className="advertiser-info rounded-[18px] p-2 flex items-center gap-4 border-2 border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[#23232B]  ">
           <div className="icon rounded-full w-10 h-10 flex items-center justify-center text-xl font-bold bg-[#1D8751] text-white">
-         {tradeDataJson?.buy_photo ? <img className="w-8 h-8 rounded-full" src={tradeDataJson?.buy_photo || ""} alt="" /> : <span className="text-[#1D8751] font-bold text-lg">{singleOrder?.advertiser_name?.[0] || "A"}</span>}
+         {tradeDataJson?.buy_photo ? <img className="w-8 h-8 rounded-full" src={tradeDataJson?.buy_photo || ""} alt="" /> : <span className="text-[#1D8751] font-bold text-lg">{singleOrder?.advertiser_first_name?.[0] || "A"}</span>}
           </div>
           <div>
             <div

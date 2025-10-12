@@ -585,7 +585,8 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
           <div className="flex gap-6 mt-6">
             <Button
               borderRadius={24}
-              className="flex-1 rounded-[24px] border-1 border-[#1D8751] text-white bg-transparent text-base py-2 hover:bg-[#23232B] transition"
+              className="flex-1 rounded-[24px] border-1 border-[#1D8751]
+              dark:text-white text-black bg-transparent text-base py-2 hover:bg-[#23232B] transition"
               variant="outline"
               onClick={() => {
                 setAmount("");

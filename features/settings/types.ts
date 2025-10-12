@@ -76,6 +76,9 @@ export interface SettingsState {
   deviceSessions: DeviceSession[];
   deviceSessionsLoading: boolean;
   deviceSessionsError: string | null;
+  // Support Request
+  supportRequestLoading: boolean;
+  supportRequestError: string | null;
 }
 
 export interface SettingsApiResponse {
@@ -161,5 +164,33 @@ export interface LogoutAllDevicesResponse extends SettingsApiResponse {
   data: {
     message: string;
     logged_out_count: number;
+  };
+}
+
+// Support Request Types
+export interface SupportRequestPayload {
+  email_address: string;
+  question: string;
+  supporting_file?: File | null;
+}
+
+export interface SupportRequestResponse extends SettingsApiResponse {
+  data: {
+    message: string;
+    ticket_id?: string;
+  };
+}
+
+// Cash Withdrawal Types
+export interface CashWithdrawalRequest {
+  requested_amount: string;
+  wallet_address: string;
+  withdrawal_method: string;
+}
+
+export interface CashWithdrawalResponse extends SettingsApiResponse {
+  data: {
+    message: string;
+    success: boolean;
   };
 }
