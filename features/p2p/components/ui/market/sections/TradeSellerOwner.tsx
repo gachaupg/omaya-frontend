@@ -21,6 +21,7 @@ import { showToast } from "@/lib/utils/toast";
 import { handleCopy } from "@/features/p2p/components/Common/utils";
 import { Dialog } from "@headlessui/react";
 import { RefreshCw } from "lucide-react";
+import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebSocket";
 
 interface FinalSellProps {
   orderData?: P2POrder;
@@ -44,6 +45,65 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
+
+  // WebSocket status update callback - use useCallback to prevent reconnections
+  const handleStatusUpdate = React.useCallback((status: any) => {
+    console.log("🔔 Trade status update received in TradeSellerOwner:", status);
+    console.log("📊 Current confirmOrder:", confirmOrder);
+    console.log("📊 Current confirmOrder.id:", confirmOrder?.id);
+    console.log("📊 Current confirmOrder.status:", confirmOrder?.status);
+    console.log("📊 New status:", status.status);
+    
+    const oldStatus = confirmOrder?.status;
+    const newStatus = status.status;
+    
+    // Always refresh if we have a valid status update
+    if (confirmOrder?.id && newStatus) {
+      console.log("✅ Conditions met - will update UI");
+      
+      // Show toast notification for status changes
+      if (oldStatus !== newStatus) {
+        console.log(`📢 Status changed: ${oldStatus} → ${newStatus}`);
+        if (oldStatus === "matched" && newStatus === "half-matched") {
+          showToast.success("Status Updated", "Buyer has sent payment notification");
+        } else if (oldStatus === "half-matched" && newStatus === "completed") {
+          showToast.success("Trade Completed!", "Transaction completed successfully");
+        } else if (newStatus === "cancelled") {
+          showToast.error("Trade Cancelled", "The trade has been cancelled");
+        } else {
+          // Generic status change notification
+          showToast.success("Status Updated", `Trade status is now: ${newStatus}`);
+        }
+      } else {
+        console.log("ℹ️ Status unchanged, still refreshing data");
+      }
+      
+      console.log("🔄 Refreshing trade data for ID:", confirmOrder.id);
+      dispatch(fetchConfirmOrder(confirmOrder.id))
+        .unwrap()
+        .then((updatedOrder) => {
+          console.log("✅ fetchConfirmOrder SUCCESS:", updatedOrder);
+          console.log("✅ Updated status:", updatedOrder?.status);
+        })
+        .catch((error) => {
+          console.error("❌ fetchConfirmOrder FAILED:", error);
+        });
+    } else {
+      console.warn("❌ Conditions NOT met:", {
+        hasConfirmOrderId: !!confirmOrder?.id,
+        hasNewStatus: !!newStatus,
+        confirmOrderId: confirmOrder?.id,
+        newStatus: newStatus
+      });
+    }
+  }, [confirmOrder, dispatch]);
+
+  // WebSocket for real-time trade status updates
+  const { isConnected: statusWsConnected } = useTradeStatusWebSocket({
+    tradeId: confirmOrder?.id || "",
+    enabled: isAuthenticated && !!confirmOrder?.id,
+    onStatusUpdate: handleStatusUpdate,
+  });
 
   const completionTime = Number(singleOrder?.completion_time);
   const displaySeconds =
@@ -183,12 +243,23 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       {/* Left Column: Main Info */}
       <div className="md:col-span-2 flex flex-col mt-6 md:mt-10 gap-6">
         <div className="flex items-center justify-between">
-          <p
-            className="text-gray-900 dark:text-white text-[13px]"
-            style={{ fontSize: "13px" }}
-          >
-            Advertiser Information
-          </p>
+          <div className="flex items-center gap-3">
+            <p
+              className="text-gray-900 dark:text-white text-[13px]"
+              style={{ fontSize: "13px" }}
+            >
+              Advertiser Information
+            </p>
+            {statusWsConnected && (
+              <span className="flex items-center gap-1.5 text-[10px] text-[#1D8751] font-medium">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1D8751] opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1D8751]"></span>
+                </span>
+                Live Status
+              </span>
+            )}
+          </div>
           <button
             onClick={handleRefresh}
             className="flex items-center gap-1 bg-gray-100 dark:bg-[#23232A] text-[#1D8751] rounded-lg px-2 py-1 border border-gray-200 dark:border-[#35353E] hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors"
@@ -200,17 +271,21 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
         {/* Advertiser Info */}
         <section className="advertiser-info rounded-[18px] p-2 flex items-center gap-4 border-2 border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[#23232B]  ">
           <div className="icon rounded-full w-10 h-10 flex items-center justify-center text-xl font-bold bg-[#1D8751] text-white">
-         {tradeDataJson?.buy_photo ? <img className="w-8 h-8 rounded-full" src={tradeDataJson?.buy_photo || ""} alt="" /> : <span className="text-[#1D8751] font-bold text-lg">{singleOrder?.advertiser_first_name?.[0] || "A"}</span>}
+         {tradeDataJson?.buy_photo ? <img className="w-8 h-8 rounded-full" src={tradeDataJson?.buy_photo || ""} alt="" /> : <span className="text-[#1D8751] font-bold text-lg">{(singleOrder?.advertiser_first_name?.[0] || singleOrder?.advertiser_name?.[0] || "?").toUpperCase()}</span>}
           </div>
           <div>
             <div
               className="text-gray-900 dark:text-white text-[13px]"
               style={{ fontSize: "13px" }}
             >
-              {singleOrder
-                ? `${singleOrder.advertiser_name} `
-                : "Advertiser User Name"}
-              <span className="text-[#E23D3A]">✔️</span>
+              {singleOrder ? (
+                <>
+                  {singleOrder.advertiser_first_name && singleOrder.advertiser_last_name 
+                    ? `${singleOrder.advertiser_first_name} ${singleOrder.advertiser_last_name}` 
+                    : singleOrder.advertiser_name || "Advertiser User Name"}
+                </>
+              ) : "Advertiser User Name"}
+              <span className="text-[#E23D3A]"> ✔️</span>
             </div>
             <div className="text-xs text-gray-500 dark:text-[#788099]">
               {singleOrder?.user_total_buy_orders || 120} Orders |{" "}
@@ -526,11 +601,23 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           tradeId={confirmOrder?.id || ""}
           userId={user?.id.toString() || ""}
           userName={
-            `${singleOrder?.advertiser_name} ` ||
-            ""
+            singleOrder?.advertiser_first_name && singleOrder?.advertiser_last_name
+              ? `${singleOrder.advertiser_first_name} ${singleOrder.advertiser_last_name}`
+              : singleOrder?.advertiser_name || ""
           }
           autoreply={singleOrder?.auto_reply || ""}
-          seller_photo={singleOrder?.buyer_photo || ""}
+          seller_photo={confirmOrder?.seller_photo || ""}
+          buyer_photo={confirmOrder?.buyer_photo || ""}
+          buyer={confirmOrder?.buyer || ""}
+          seller={confirmOrder?.seller || ""}
+          currentUserEmail={user?.email || ""}
+          owner={confirmOrder?.owner || ""}
+          sellerName={
+            singleOrder?.advertiser_first_name && singleOrder?.advertiser_last_name
+              ? `${singleOrder.advertiser_first_name} ${singleOrder.advertiser_last_name}`
+              : singleOrder?.advertiser_name || confirmOrder?.advertiser_name || "Seller"
+          }
+          buyerName={user?.email === confirmOrder?.buyer ? `${user?.first_name || ""} ${user?.last_name || ""}`.trim() || "You" : "Buyer"}
         />
         {/* Advertiser's Terms */}
         <section className="advertiser-terms rounded-lg p-4 bg-gray-50 dark:bg-[#23232B]">

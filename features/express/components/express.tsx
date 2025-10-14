@@ -35,28 +35,27 @@ const Express = () => {
           >
             {mounted && isDark ? (
               <>
-                <img
-                  
-                  src="https://res.cloudinary.com/pitz/image/upload/v1752429993/Express_1_ggdxth.png"
-                  alt=""
-                />
-                <img
-                  className="mt-2"
-                  src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                  alt=""
-                />
+                 <span className="flex items-center justify-center">
+                                                          <span className="text-[#727272] text-base uppercase font-bold">E</span>
+
+                            <img
+                              className="mt-2"
+                              src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
+                              alt=""
+                            />
+                          </span>
               </>
             ) : (
               <>
-                <img
-                  src="https://res.cloudinary.com/pitz/image/upload/v1752429831/Express_vkggc2.png"
-                  alt=""
-                />
-                <img
-                  className="mt-2"
-                  src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
-                  alt=""
-                />
+                <span className="flex items-center justify-center">
+                                                          <span className="text-[#727272] text-base uppercase font-bold">E</span>
+
+                            <img
+                              className="mt-2"
+                              src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
+                              alt=""
+                            />
+                          </span>
               </>
             )}
           </span>

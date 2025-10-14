@@ -77,8 +77,8 @@ const Cash = () => {
 
     const withdrawalData = {
       requested_amount: amount,
-      wallet_address: selectedPaymentDetails[0]?.account_number || selectedPaymentDetails[0]?.wallet_address || "",
-      withdrawal_method: "cash"
+      withdrawal_method: "cash",
+      user_payment_detail_id: selectedPaymentDetails[0]?.id
     }
 
     dispatch(createCashWithdrawal(withdrawalData))

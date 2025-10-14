@@ -2326,7 +2326,7 @@ export default function WithdrawalForm({
   }, [selectedPaymentDetail]);
 
   return (
-    <div className="w-full min-h-screen flex flex-col dark:bg-[#18181D]  ">
+    <div className="w-full flex flex-col dark:bg-[#18181D]  ">
       <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
         <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Transaction Info
       </h2>

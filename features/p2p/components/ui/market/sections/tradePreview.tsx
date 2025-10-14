@@ -39,7 +39,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     useState<TransactionSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+ console.log('advertiserData', advertiserData);
   const [sendAmount, setSendAmount] = useState("");
   const [receiveAmount, setReceiveAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
@@ -193,7 +193,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       searchParams.set(
         "orderData",
         JSON.stringify({
-          order_type: tradeType === "buy" ? "buy" : "sell",
+          order_type: tradeType === "buy" ? "sell" : "buy",
           commission: advertiserData.commission,
         })
       );

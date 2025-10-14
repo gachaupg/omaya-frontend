@@ -400,7 +400,7 @@ export const getTradeMessages = async (tradeId: string) => {
 
 export const postTradeMessage = async (
   tradeId: string,
-  payload: { message: string; uploaded_images: File[] }
+  payload: { message: string; uploaded_images: File[]; sender_name?: string }
 ) => {
   if (!tradeId || tradeId.trim() === '') {
     throw new Error('Trade ID is required');
@@ -408,6 +408,11 @@ export const postTradeMessage = async (
   return withRetry(async () => {
     const formData = new FormData();
     formData.append('message', payload.message);
+    
+    // Append sender_name if provided
+    if (payload.sender_name) {
+      formData.append('sender_name', payload.sender_name);
+    }
     
     // Append each file to FormData
     payload.uploaded_images.forEach((file, index) => {
@@ -581,6 +586,7 @@ export const getReferralWallet = async (): Promise<ReferralWallet> => {
 export const createReferralWithdraw = async (data: {
   requested_amount: string;
   wallet_address: string;
+  withdrawal_method: string;
 }) => {
   return withRetry(async () => {
     const response = await post(API_CONFIG.P2P.REFERRAL_WITHDRAW, data);

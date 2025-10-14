@@ -75,6 +75,7 @@ const Withdraw = () => {
       createReferralWithdraw({
         requested_amount: amount,
         wallet_address: walletAddress,
+        withdrawal_method: "crypto",
       })
     );
   };

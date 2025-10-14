@@ -24,9 +24,9 @@ const MatchedOrderPage = () => {
   }
 
   if (trade && trade !== "") {
-    return orderId === "buy" ? <TradeBuyOwner /> : <TradeSellerOwner />;
+    return orderId === "sell" ? <TradeBuyOwner /> : <TradeSellerOwner />;
   } else {
-    return orderType === "buy" ? <FinalBuy /> : <FinalSell />;
+    return orderType === "sell" ? <FinalBuy /> : <FinalSell />;
   }
 };
 

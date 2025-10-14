@@ -936,16 +936,15 @@ export default function ExchangeForm() {
       {/* Tabs */}
       <div className="w-full flex justify-between">
         <TabButton id="express">
-          <Image
-            src={
-              isDark
-                ? "/images/Express Excahnge.svg"
-                : "/images/Express Excahnge-light.svg"
-            }
-            alt="express exchange logo"
-            width={150}
-            height={250}
-          />
+        <span className="flex items-center justify-center">
+                                                          <span className="text-[#727272] text-base uppercase font-bold">E</span>
+
+                            <img
+                              className="mt-2"
+                              src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
+                              alt=""
+                            />
+                          </span>
         </TabButton>
         <TabButton id="swap">
           <h3
@@ -969,16 +968,15 @@ export default function ExchangeForm() {
       {/* Tabs */}
       <div className="w-full flex justify-between">
         <TabButton id="express">
-            <Image
-            src={
-              isDark
-                ? "/images/Express Excahnge.svg"
-                : "/images/Express Excahnge-light.svg"
-            }
-            alt="express exchange logo"
-            width={150}
-            height={250}
-          />
+        <span className="flex items-center justify-center">
+                                                          <span className="text-[#727272] text-base uppercase font-bold">E</span>
+
+                            <img
+                              className="mt-2"
+                              src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
+                              alt=""
+                            />
+                          </span>
         </TabButton>
         <TabButton id="swap">
           <h3

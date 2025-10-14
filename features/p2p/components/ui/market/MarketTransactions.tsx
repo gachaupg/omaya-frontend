@@ -19,6 +19,37 @@ interface Option {
   value: string;
 }
 
+const formatLimitDuration = (duration: string): string => {
+  if (!duration) return "10 Minutes";
+  
+  try {
+    const parts = duration.split(':');
+    const hours = parseInt(parts[0] || '0');
+    const minutes = parseInt(parts[1] || '0');
+    const seconds = parseInt(parts[2] || '0');
+    
+    // If there are hours, convert to minutes
+    if (hours > 0) {
+      const totalMinutes = hours * 60 + minutes;
+      return `${totalMinutes} Minutes`;
+    }
+    
+    // If there are minutes, show minutes
+    if (minutes > 0) {
+      return `${minutes} ${minutes === 1 ? 'Minute' : 'Minutes'}`;
+    }
+    
+    // Otherwise show seconds as minutes (keeping the number, changing the word)
+    if (seconds > 0) {
+      return `${seconds} ${seconds === 1 ? 'Minute' : 'Minutes'}`;
+    }
+    
+    return "0 Minutes";
+  } catch (error) {
+    return "10 Minutes";
+  }
+};
+
 const getCurrencyOptions = (orders: any): Option[] => {
   if (!orders?.buy_orders?.results) return [{ label: "USDT", value: "USDT" }];
 
@@ -172,14 +203,19 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
   const { p2pBuyOrders, p2pSellOrders, loading, error, currentPage } =
     useSelector((state: RootState) => state.p2pMarket || {});
   const orders = { buy_orders: p2pBuyOrders, sell_orders: p2pSellOrders };
-  console.log("orders object:", { 
+  
+  // Log component render and Redux state
+  console.log("🎨 [Component] MarketTransactions render:", { 
     buyOrdersCount: p2pBuyOrders?.results?.length || 0, 
     sellOrdersCount: p2pSellOrders?.results?.length || 0,
-    totalOrdersCount: p2pBuyOrders?.total_orders_count || 0,
+    totalBuyOrdersCount: p2pBuyOrders?.total_orders_count || 0,
+    totalSellOrdersCount: p2pSellOrders?.total_orders_count || 0,
     currentPage: currentPage,
-    buyOrders: p2pBuyOrders,
-    sellOrders: p2pSellOrders
+    activeTab: activeTab,
+    isAuthenticated: isAuthenticated,
+    timestamp: new Date().toISOString()
   });
+  
   const [mounted, setMounted] = useState(false);
   const [amount, setAmount] = useState("");
   const currency = "USDT"; // Fixed to USDT
@@ -189,25 +225,36 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
   const [showSearch, setShowSearch] = useState(false);
 
   // Initialize WebSocket connection for real-time P2P orders updates
+  console.log("🔌 [Component] Initializing WebSocket connection:", { isAuthenticated });
   const { isConnected: wsConnected, connectionError: wsError } = useP2POrdersWebSocket({
     enabled: isAuthenticated,
-    fallbackToPolling: true,
-    pollingInterval: 30000,
+    fallbackToPolling: true, // Enable automatic fallback to polling if WebSocket fails
+    pollingInterval: 30000, // Poll every 30 seconds if WebSocket is unavailable
+  });
+  
+  console.log("🔌 [Component] WebSocket status:", { 
+    wsConnected, 
+    wsError,
+    willUsePolling: !wsConnected && isAuthenticated 
   });
 
   useEffect(() => {
     setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    // Always fetch initial data from API when mounted or page changes
-    if (mounted && isAuthenticated) {
-      const fetchOrders = async () => {
-        dispatch(fetchAllP2PBuyandSell(currentPage) as any);
-      };
-      fetchOrders();
+    // Fetch initial data only once on mount
+    if (isAuthenticated) {
+      console.log("🚀 [Component] Fetching initial P2P orders");
+      dispatch(fetchAllP2PBuyandSell(1) as any);
     }
-  }, [dispatch, mounted, currentPage, isAuthenticated]);
+  }, []); // Only run once on mount
+  
+  // Track Redux state changes
+  useEffect(() => {
+    console.log("🔄 [Component] Redux state changed:", {
+      buyOrdersCount: p2pBuyOrders?.results?.length || 0,
+      sellOrdersCount: p2pSellOrders?.results?.length || 0,
+      timestamp: new Date().toISOString()
+    });
+  }, [p2pBuyOrders, p2pSellOrders]);
 
   const providerOptions = useMemo(() => getProviderOptions(orders), [orders]);
   const paymentMethodOptions = useMemo(
@@ -223,6 +270,7 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
 
   const getActiveOrders = useMemo(() => {
     if (!orders) {
+      console.log("⚠️ [ActiveOrders] No orders object");
       return [];
     }
     
@@ -233,30 +281,37 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
     if (activeTab === "buy") {
       // User wants to buy, so show sell orders
       activeOrdersList = orders.sell_orders?.results || [];
+      console.log("📋 [ActiveOrders] Showing sell orders for buy tab:", activeOrdersList.length);
     } else if (activeTab === "sell") {
       // User wants to sell, so show buy orders
       activeOrdersList = orders.buy_orders?.results || [];
+      console.log("📋 [ActiveOrders] Showing buy orders for sell tab:", activeOrdersList.length);
     } else {
       // Default: combine both
       activeOrdersList = [
         ...(orders.buy_orders?.results || []),
         ...(orders.sell_orders?.results || [])
       ];
+      console.log("📋 [ActiveOrders] Showing combined orders:", activeOrdersList.length);
     }
     
-    console.log("getActiveOrders:", { 
+    console.log("📊 [ActiveOrders] Active orders list:", { 
       activeTab, 
       buyOrdersCount: orders.buy_orders?.results?.length || 0,
       sellOrdersCount: orders.sell_orders?.results?.length || 0,
       activeOrdersCount: activeOrdersList.length,
-      firstOrderType: activeOrdersList[0]?.order_type
+      firstOrderType: activeOrdersList[0]?.order_type,
+      firstOrderId: activeOrdersList[0]?.id
     });
     
     return activeOrdersList;
-  }, [orders, activeTab]);
+  }, [orders, activeTab, p2pBuyOrders, p2pSellOrders]); // Add direct dependencies
 
   const transformedData: MarketRow[] = useMemo(() => {
-    if (!getActiveOrders) {
+    console.log("🔄 [TransformedData] Recalculating with", getActiveOrders.length, "orders");
+    
+    if (!getActiveOrders || getActiveOrders.length === 0) {
+      console.log("⚠️ [TransformedData] No active orders to transform");
       return [];
     }
 
@@ -264,7 +319,7 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
       .map((order: any, index: number) => {
         // Debug: Log the first order to understand the structure
         if (index === 0) {
-          console.log("Sample order structure:", order);
+          console.log("📄 [TransformedData] Sample order structure:", order);
         }
         
         const firstName = order.advertiser_first_name || "";
@@ -282,17 +337,7 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
           advertiser_photo: order.advertiser_photo || "",
           completion: `${(order.completion_rate || 0) * 100}%`,
           exchange_rate: `${(parseFloat(order.exchange_rate || 0) * 100).toFixed(0)}`,
-          completion_time: order.completion_time ? (() => {
-            const parts = order.completion_time.split(':');
-            const hours = parseInt(parts[0] || '0');
-            const minutes = parseInt(parts[1] || '0');
-            const seconds = parseInt(parts[2] || '0');
-            // Convert to total minutes, or show seconds if less than a minute
-            if (hours > 0 || minutes > 0) {
-              return (hours * 60 + minutes).toString();
-            }
-            return seconds.toString();
-          })() : '0',
+          completion_time: formatLimitDuration(order.completion_time || "00:00:00"),
           online: true,
           commission: `${order.commission_rate || 0}%`,
           available: `${parseFloat(order.amount || 0).toFixed(2)} ${order.currency}`,
@@ -308,8 +353,8 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
           minAmount: parseFloat(order.min_order_amount || 0),
           maxAmount: parseFloat(order.max_order_amount || 0),
           currency: order.currency,
-          timeLimit: "10 Minutes",
-          avgRealiseTime: "2 Minutes",
+          timeLimit: formatLimitDuration(order.limit_duration),
+          avgRealiseTime: formatLimitDuration(order.completion_time || "00:02:00"),
           terms_and_conditions: order.terms_and_conditions || "",
           autoReply: order.auto_reply,
           payment_details: order.payment_details || [],
@@ -380,10 +425,11 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
         return true;
       });
 
-    console.log("Transformed data:", {
+    console.log("✅ [TransformedData] Transformed data:", {
       originalCount: getActiveOrders.length,
       filteredCount: data.length,
-      filters: { currency, provider, paymentType, amount, searchQuery }
+      filters: { currency, provider, paymentType, amount, searchQuery },
+      timestamp: new Date().toISOString()
     });
     
     return data;
@@ -395,10 +441,14 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
     amount,
     searchQuery,
     activeTab,
-  ]);
+    p2pBuyOrders,
+    p2pSellOrders,
+  ]); // Add direct Redux state dependencies to ensure re-calculation
 
   const handlePageChange = (newPage: number) => {
     dispatch(setCurrentPage(newPage));
+    // Fetch orders for the new page
+    dispatch(fetchAllP2PBuyandSell(newPage) as any);
   };
 
   const handleRefresh = () => {

@@ -1,9 +1,12 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Button from "../../Common/Button";
 import PaymentMethods from "./sections/PaymentMethods";
 import Feedback from "./sections/Feedback";
 import MyAdsTable from "./sections/MyAdsTable";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState, AppDispatch } from "@/store/rootReducer";
+import { fetchFeedback } from "@/features/p2p/slices/feedbackSlice";
 
 interface FilterTabsProps {
   transformedTrades: any[];
@@ -27,13 +30,33 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
     date: "Date",
   });
 
+  /** Store */
+  const dispatch = useDispatch<AppDispatch>();
+  const { data: feedbackData } = useSelector((state: RootState) => state.feedback);
+
+  // Fetch feedback data on mount
+  useEffect(() => {
+    dispatch(fetchFeedback());
+  }, [dispatch]);
+
+  // Calculate feedback statistics
+  const feedbackStats = useMemo(() => {
+    const total = feedbackData?.length || 0;
+    const positive = feedbackData?.filter((f) => f.is_positive).length || 0;
+    const negative = total - positive;
+    const positivePercentage = total > 0 ? (positive / total) * 100 : 0;
+    const negativePercentage = total > 0 ? (negative / total) * 100 : 0;
+    
+    return { total, positive, negative, positivePercentage, negativePercentage };
+  }, [feedbackData]);
+
   /** Tabs */
   const tabList = [
     { label: "Payment Methods" },
     { 
       label: (
         <>
-          Feedback <span className="text-[#F79330]">(0)</span>
+          Feedback <span className="text-[#F79330]">({feedbackStats.total})</span>
         </>
       )
     },
@@ -205,22 +228,28 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
           ))}
         </div>
     <div className="flex flex-col gap-3 w-full sm:w-auto">
-      {/* Live Ads Status */}
+      {/* Positive Feedback Status */}
       <div className="flex items-center gap-3">
         <ThumbsUp className="w-4 h-4 text-[#1D8751]" />
-        <div className="flex-1 bg-gray-700 rounded-full h-2 min-w-[120px]">
-          <div className="bg-[#1D8751] h-2 rounded-full w-[85%]"></div>
+        <div className="flex-1 bg-gray-700 dark:bg-gray-700 bg-gray-200 rounded-full h-2 min-w-[120px]">
+          <div 
+            className="bg-[#1D8751] h-2 rounded-full transition-all duration-300" 
+            style={{ width: `${feedbackStats.positivePercentage}%` }}
+          ></div>
         </div>
-        <span className="text-[#1D8751] text-sm font-medium">(7)</span>
+        <span className="text-[#1D8751] text-sm font-medium">({feedbackStats.positive})</span>
       </div>
       
-      {/* Offline Ads Status */}
+      {/* Negative Feedback Status */}
       <div className="flex items-center gap-3">
         <ThumbsDown className="w-4 h-4 text-[#FA615F]" />
-        <div className="flex-1 bg-gray-700 rounded-full h-2 min-w-[120px]">
-          <div className="bg-[#FA615F] h-2 rounded-full w-[15%]"></div>
+        <div className="flex-1 bg-gray-700 dark:bg-gray-700 bg-gray-200 rounded-full h-2 min-w-[120px]">
+          <div 
+            className="bg-[#FA615F] h-2 rounded-full transition-all duration-300" 
+            style={{ width: `${feedbackStats.negativePercentage}%` }}
+          ></div>
         </div>
-        <span className="text-[#FA615F] text-sm font-medium">(1)</span>
+        <span className="text-[#FA615F] text-sm font-medium">({feedbackStats.negative})</span>
       </div>
     </div>
       </div>

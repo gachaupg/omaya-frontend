@@ -63,9 +63,10 @@ export class P2POrdersWebSocket {
 
     this.url = API_CONFIG.P2P.SOCKETS.P2P_ORDERS(token);
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log("🔌 Connecting to P2P Orders WebSocket...");
-    }
+    console.log("🔌 [WS Service] Connecting to P2P Orders WebSocket...");
+    console.log("🌐 [WS Service] Full WebSocket URL:", this.url);
+    console.log("🔑 [WS Service] Token preview:", token.substring(0, 30) + "..." + token.substring(token.length - 10));
+    console.log("📏 [WS Service] Token length:", token.length);
 
     try {
       this.ws = new WebSocket(this.url);
@@ -80,15 +81,23 @@ export class P2POrdersWebSocket {
 
       this.ws.onmessage = (event) => {
         try {
+          console.log("📨 [WS Service] Raw WebSocket message received:", event.data);
           const message: WebSocketMessage = JSON.parse(event.data);
           
-          if (process.env.NODE_ENV === 'development') {
-            console.log("📨 P2P Orders WebSocket message:", message.type);
-          }
+          console.log("📨 [WS Service] Parsed P2P Orders WebSocket message:", {
+            type: message.type,
+            hasBuyOrders: !!message.data?.buy_orders,
+            hasSellOrders: !!message.data?.sell_orders,
+            buyOrdersCount: message.data?.buy_orders?.length || 0,
+            sellOrdersCount: message.data?.sell_orders?.length || 0,
+            fullMessage: message
+          });
           
+          console.log("🔔 [WS Service] Notifying", this.messageHandlers.size, "message handlers");
           this.messageHandlers.forEach((handler) => handler(message));
         } catch (error) {
-          console.error("❌ Error parsing P2P Orders WebSocket message:", error);
+          console.error("❌ [WS Service] Error parsing P2P Orders WebSocket message:", error);
+          console.error("📄 [WS Service] Raw data that failed to parse:", event.data);
         }
       };
 

@@ -184,8 +184,9 @@ export interface SupportRequestResponse extends SettingsApiResponse {
 // Cash Withdrawal Types
 export interface CashWithdrawalRequest {
   requested_amount: string;
-  wallet_address: string;
+  wallet_address?: string;
   withdrawal_method: string;
+  user_payment_detail_id?: number;
 }
 
 export interface CashWithdrawalResponse extends SettingsApiResponse {
