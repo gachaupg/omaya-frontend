@@ -21,7 +21,7 @@ const getStatus = (trade: any, userEmail: string) => {
     return { text: "Pending Incoming Trade", color: "text-[#1D8751]" };
   } else {
     return {
-      text: `Pending ${trade.order_type} Trade`,
+      text: `Pending ${trade.order_type==="sell"?"Buy":"Sell"} Trade`,
       color: "text-yellow-500",
     };
   }
@@ -120,7 +120,7 @@ const Notifications = () => {
       if (trade.owner === user?.email) {
         router.push(
           `/p2p/${trade.id}/matched?order_type=${
-            trade.order_type === "buy" ? "sell" : "buy"
+            trade.order_type === "sell" ? "sell" : "buy"
           }&trade=buyer`
         );
       } else {
@@ -128,18 +128,24 @@ const Notifications = () => {
         searchParams.set(
           "orderData",
           JSON.stringify({
-            order_type: trade.order_type === "buy" ? "sell" : "buy",
+            order_type: trade.order_type === "sell" ? "sell" : "buy",
           })
         );
 
         router.push(`/p2p/${trade.id}/matched?${searchParams.toString()}`);
       }
     } else {
-      router.push(
+    {
+      trade.owner===user?.email?  router.push(
+        `/p2p/${trade.id}/matched?order_type=${
+          trade.order_type === "sell" ? "sell" : "buy"
+        }&trade=seller`
+      ) : router.push(
         `/p2p/${trade.id}/matched?order_type=${
           trade.order_type === "buy" ? "sell" : "buy"
-        }&trade=seller`
-      );
+        }&trade=buyer`
+      )
+    }
     }
   };
 
@@ -231,8 +237,9 @@ const Notifications = () => {
         {matchedTrades.results.map((trade: any) => {
           const orderType = getOrderType(trade.order_type);
           const status = getStatus(trade, user?.email || "");
-          const name = truncate(trade.advertiser_name || trade.owner || "", 14);
-          const profileImage =trade.order_type === "buy" ? trade.buyer_photo : trade.seller_photo
+          const name = trade.advertiser_name===user?.first_name?trade.order_type==="sell" ? truncate(trade.buyer, 10): truncate(trade.seller, 10) : trade.advertiser_name
+          const profileImage =trade.order_type === "sell" && 
+          trade.owner===user?.email? trade.seller_photo : trade.buyer_photo
           return (
             <div
               key={trade.id}

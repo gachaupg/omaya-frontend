@@ -39,7 +39,7 @@ export const fetchReferralWallet = createAsyncThunk(
 export const createReferralWithdraw = createAsyncThunk(
   "referralWallet/withdraw",
   async (
-    data: { requested_amount: string; wallet_address: string },
+    data: { requested_amount: string; wallet_address: string; withdrawal_method: string },
     { rejectWithValue }
   ) => {
     try {

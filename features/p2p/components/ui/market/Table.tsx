@@ -174,7 +174,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                         <ThumbsUp height={10} /> {row.exchange_rate || '0'} %
                       </span>
                       <span className="flex items-center gap-1 text-xs text-[#1D8751] font-semibold">
-                        <FaRegClock className="text-xs" />{row.completion_time || '0'} min
+                        <FaRegClock className="text-xs" /> {row.avgRealiseTime || '0'}
                       </span>
                     </div>
                   </div>

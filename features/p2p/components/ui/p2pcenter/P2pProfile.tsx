@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { formatNumber } from "@/utils/formatters";
 import { formatCurrency } from "@/lib/globalFormatter";
 import { useSelector, useDispatch } from "react-redux";
@@ -6,6 +6,7 @@ import { RootState } from "@/store";
 import { toNumber } from "@/lib/finanacial";
 import { useRouter } from "next/navigation";
 import { fetchMerchantApplicationStatusThunk } from "@/features/p2p/slices/merchantSlice";
+import { fetchFeedback } from "@/features/p2p/slices/feedbackSlice";
 
 const P2pProfile = ({
   wallets,
@@ -24,11 +25,24 @@ const P2pProfile = ({
   const { status: merchantStatus } = useSelector(
     (state: RootState) => state.merchant
   );
+  const { data: feedbackData } = useSelector(
+    (state: RootState) => state.feedback
+  );
 
-  // Fetch merchant status on component mount
+  // Fetch merchant status and feedback on component mount
   useEffect(() => {
     dispatch(fetchMerchantApplicationStatusThunk() as any);
+    dispatch(fetchFeedback() as any);
   }, [dispatch]);
+
+  // Calculate feedback statistics
+  const feedbackStats = useMemo(() => {
+    const total = feedbackData?.length || 0;
+    const positive = feedbackData?.filter((f) => f.is_positive).length || 0;
+    const positivePercentage = total > 0 ? ((positive / total) * 100).toFixed(1) : "0.0";
+    
+    return { total, positive, positivePercentage };
+  }, [feedbackData]);
   
   console.log("P2pProfile user:", user);
   console.log("P2pProfile wallets:", wallets);
@@ -44,14 +58,7 @@ const P2pProfile = ({
   const balance = isUSDTWallet && walletBalance > 0 ? walletBalance : 
                   (totalBalance && !isNaN(totalBalance) && totalBalance > 0) ? totalBalance : walletBalance;
   
-  console.log("P2pProfile - total_balance:", wallets?.total_balance);
-  console.log("P2pProfile - wallet.balance:", wallets?.wallet?.balance);
-  console.log("P2pProfile - wallet.currency:", wallets?.wallet?.currency);
-  console.log("P2pProfile - totalBalance (toNumber):", totalBalance);
-  console.log("P2pProfile - walletBalance (parseFloat):", walletBalance);
-  console.log("P2pProfile - isUSDTWallet:", isUSDTWallet);
-  console.log("P2pProfile - final balance:", balance);
-  console.log("P2pProfile - summary.total_volume:", summary?.total_volume);
+
   return (
     <div className="w-full h-[130px] rounded-[24px] border-2 bg-white dark:bg-[#18181D] border-gray-200 dark:border-[#35353E] flex flex-col sm:flex-row justify-between items-start sm:items-center p-2 sm:p-4 box-border gap-4 sm:gap-0">
       {/* Left Section */}
@@ -90,19 +97,7 @@ const P2pProfile = ({
                 {user?.first_name}
               </span>
               {/* Edit Icon (simple pencil SVG) */}
-              <svg
-                className="w-6 h-6 text-[#1D8751] cursor-pointer"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828A2 2 0 019 17H7v-2a2 2 0 01.586-1.414z"
-                />
-              </svg>
+              
             </div>
 
           </div>
@@ -124,6 +119,20 @@ const P2pProfile = ({
                   />
                 </svg>
                 Verified Merchant
+              </span>
+            )}
+
+            {/* Feedback Rating Badge */}
+            {feedbackStats.total > 0 && (
+              <span className="flex items-center text-xs text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 rounded-full px-3 py-1">
+                <svg
+                  className="w-3 h-3 mr-1"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                </svg>
+                {feedbackStats.positivePercentage}% ({feedbackStats.positive}/{feedbackStats.total})
               </span>
             )}
             

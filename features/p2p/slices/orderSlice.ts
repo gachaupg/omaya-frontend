@@ -444,11 +444,22 @@ const p2pMarketSlice = createSlice({
     },
     // WebSocket actions - intelligently merge new/updated orders
     updateOrdersFromWS: (state, action) => {
+      console.log("🔄 [Redux] updateOrdersFromWS called with payload:", action.payload);
       const { buy_orders, sell_orders, pagination, full_refresh } = action.payload;
+      
+      console.log("📊 [Redux] Update details:", {
+        hasBuyOrders: !!buy_orders,
+        hasSellOrders: !!sell_orders,
+        buyOrdersCount: buy_orders?.length || 0,
+        sellOrdersCount: sell_orders?.length || 0,
+        fullRefresh: full_refresh,
+        pagination
+      });
       
       // Helper function to merge orders intelligently
       const mergeOrders = (existingOrders: P2POrder[], newOrders: P2POrder[]) => {
         if (!existingOrders || existingOrders.length === 0) {
+          console.log("📝 [Redux] No existing orders, using new orders directly");
           return newOrders;
         }
         
@@ -459,12 +470,19 @@ const p2pMarketSlice = createSlice({
           orderMap.set(newOrder.id, newOrder);
         });
         
-        return Array.from(orderMap.values());
+        const mergedResults = Array.from(orderMap.values());
+        console.log("🔀 [Redux] Merged orders:", {
+          existingCount: existingOrders.length,
+          newCount: newOrders.length,
+          mergedCount: mergedResults.length
+        });
+        return mergedResults;
       };
       
       if (buy_orders) {
         if (full_refresh) {
           // Full refresh - replace all
+          console.log("♻️ [Redux] Full refresh of buy orders");
           state.p2pBuyOrders = {
             next: null,
             previous: null,
@@ -473,6 +491,7 @@ const p2pMarketSlice = createSlice({
           };
         } else {
           // Incremental update - merge new/updated orders
+          console.log("➕ [Redux] Incremental update of buy orders");
           const mergedOrders = mergeOrders(state.p2pBuyOrders?.results || [], buy_orders);
           state.p2pBuyOrders = {
             ...state.p2pBuyOrders,
@@ -480,11 +499,13 @@ const p2pMarketSlice = createSlice({
             results: mergedOrders,
           };
         }
+        console.log("✅ [Redux] Buy orders updated:", state.p2pBuyOrders);
       }
       
       if (sell_orders) {
         if (full_refresh) {
           // Full refresh - replace all
+          console.log("♻️ [Redux] Full refresh of sell orders");
           state.p2pSellOrders = {
             next: null,
             previous: null,
@@ -493,6 +514,7 @@ const p2pMarketSlice = createSlice({
           };
         } else {
           // Incremental update - merge new/updated orders
+          console.log("➕ [Redux] Incremental update of sell orders");
           const mergedOrders = mergeOrders(state.p2pSellOrders?.results || [], sell_orders);
           state.p2pSellOrders = {
             ...state.p2pSellOrders,
@@ -500,7 +522,13 @@ const p2pMarketSlice = createSlice({
             results: mergedOrders,
           };
         }
+        console.log("✅ [Redux] Sell orders updated:", state.p2pSellOrders);
       }
+      
+      console.log("✨ [Redux] Final state after WS update:", {
+        buyOrdersCount: state.p2pBuyOrders?.results?.length || 0,
+        sellOrdersCount: state.p2pSellOrders?.results?.length || 0
+      });
     },
     // Action to remove a specific order (e.g., when deleted or completed)
     removeOrderFromWS: (state, action) => {

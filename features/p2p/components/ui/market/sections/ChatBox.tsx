@@ -28,7 +28,37 @@ const ChatBox: React.FC<{
   userName: string;
   autoreply: string;
   seller_photo: string;
-}> = ({ tradeId, userId, userName, autoreply, seller_photo }) => {
+  buyer_photo?: string;
+  buyer?: string;
+  seller?: string;
+  currentUserEmail?: string;
+  owner: string;
+  buyerName?: string;
+  sellerName?: string;
+}> = ({ tradeId, userId, userName, autoreply, seller_photo, buyer_photo, buyer, seller, currentUserEmail, owner, buyerName, sellerName }) => {
+  
+  // Determine which photo and name to show for the other person
+  const otherPersonData = React.useMemo(() => {
+    if (currentUserEmail && owner) {
+      // If current user is the owner, show buyer's info (the other person)
+      if (currentUserEmail === owner) {
+        return {
+          photo: buyer_photo,
+          name: buyerName || userName || "Buyer"
+        };
+      }
+      // If current user is not the owner, show seller's info (the owner's info)
+      return {
+        photo: seller_photo,
+        name: sellerName || userName || "Seller"
+      };
+    }
+    // Fallback
+    return {
+      photo: seller_photo || buyer_photo,
+      name: userName || "Other Person"
+    };
+  }, [currentUserEmail, owner, seller_photo, buyer_photo, buyerName, sellerName, userName]);
   const dispatch = useDispatch();
   const message = useSelector((state: RootState) => state.message.message);
   const uploaded_images = useSelector(
@@ -49,6 +79,13 @@ const ChatBox: React.FC<{
   );
 
   // Use WebSocket for real-time messages
+  console.log("💬 Messages WebSocket Config:", {
+    tradeId,
+    enabled: isAuthenticated,
+    tradeIdType: typeof tradeId,
+    tradeIdValue: tradeId
+  });
+  
   const { isConnected: wsConnected } = useTradeMessagesWebSocket({
     tradeId,
     enabled: isAuthenticated,
@@ -150,12 +187,17 @@ const ChatBox: React.FC<{
     }
   };
 
-  // Update handleSend to include images
+  // Update handleSend to include images and sender email
   const handleSend = async () => {
     if (!message.trim() && uploaded_images.length === 0) return;
     try {
       // Send via HTTP (WebSocket will broadcast back and update automatically)
-      await postTradeMessage(tradeId, { message: message || '', uploaded_images });
+      // Include sender_name as the current user's email
+      await postTradeMessage(tradeId, { 
+        message: message || '', 
+        uploaded_images,
+        sender_name: currentUserEmail || ""
+      });
       dispatch(clearMessage());
       // No need to refetch - WebSocket will broadcast the new message back
     } catch (e) {
@@ -171,9 +213,9 @@ const ChatBox: React.FC<{
 
   return (
     <div>
-      <div className="flex items-center justify-between text-xs mb-2">
-        <div className="flex items-center gap-2">
-          <span>Chat with Advertiser</span>
+        <div className="flex items-center justify-between text-xs mb-2">
+          <div className="flex items-center gap-2">
+            <span>Chat with {otherPersonData.name}</span>
           {wsConnected && (
             <span className="text-[10px] text-[#1D8751] flex items-center gap-1">
               <span className="w-1.5 h-1.5 bg-[#1D8751] rounded-full"></span>
@@ -215,9 +257,9 @@ const ChatBox: React.FC<{
       <div className="chat-container mt-6 flex flex-col pr-10 mb-2 h-96 bg-white dark:bg-[#18181D] border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px] p-2 md:p-4 relative">
         <div>
           <div className="flex items-center justify-center gap-2">
-            {seller_photo ? <img className="w-8 h-8 rounded-full" src={seller_photo || ""} alt="" /> : <MdAccountCircle  className="w-6 h-6 text-[#1D8751]"/>}
+            {otherPersonData.photo ? <img className="w-8 h-8 rounded-full object-cover" src={otherPersonData.photo} alt={otherPersonData.name} /> : <MdAccountCircle  className="w-6 h-6 text-[#1D8751]"/>}
             <div className="flex-1">
-              <div className="font-semibold text-md">{userName}</div>
+              <div className="font-semibold text-md">{otherPersonData.name}</div>
             </div>
           </div>
         </div>
@@ -231,33 +273,85 @@ const ChatBox: React.FC<{
               {autoreply}
             </p>
           )}
-          {messagesFromRedux.map((msg) => (
-            <div
-              key={msg.id}
-              className={
-                Number(msg.sender) === Number(userId)
-                  ? "bg-[#1D8751] text-[#051015] dark:text-white rounded-lg p-2 self-end max-w-xs"
-                  : "dark:bg-[#23232B] bg-gray-200 dark:text-white text-gray-900 rounded-lg p-2 self-start max-w-xs"
+          {messagesFromRedux.map((msg) => {
+            // Use sender_name (email) to determine if this is the current user's message
+            const isSender = msg.sender_name?.trim() === currentUserEmail?.trim();
+            
+            console.log("💬 Message comparison:", {
+              msgSenderName: msg.sender_name,
+              currentUserEmail: currentUserEmail,
+              isSender: isSender,
+              message: msg.message.substring(0, 20)
+            });
+            
+            // Determine photo and name for this specific message based on sender_name
+            let messagePhoto = otherPersonData.photo;
+            let messageName = otherPersonData.name;
+            
+            if (!isSender && msg.sender_name) {
+              // This is the other person's message - determine which photo to show based on sender_name
+              if (msg.sender_name === seller) {
+                // Message is from seller
+                messagePhoto = seller_photo;
+                messageName = sellerName || msg.sender_name;
+              } else if (msg.sender_name === buyer) {
+                // Message is from buyer
+                messagePhoto = buyer_photo;
+                messageName = buyerName || msg.sender_name;
               }
-            >
-              <div>{msg.message}</div>
-              {msg.images && msg.images.length > 0 && (
-                <div className="flex gap-1 mt-1">
-                  {msg.images.map((img, idx) => (
-                    <img
-                      key={idx}
-                      src={img}
-                      alt="attachment"
-                      className="w-8 h-8 rounded"
-                    />
-                  ))}
+            }
+            
+            return (
+              <div
+                key={msg.id}
+                className={`flex gap-2 items-end ${isSender ? "flex-row-reverse" : "flex-row"}`}
+              >
+                {/* Show photo only for receiver messages */}
+                {!isSender && (
+                  <div className="flex-shrink-0">
+                    {messagePhoto ? (
+                      <img 
+                        className="w-8 h-8 rounded-full object-cover" 
+                        src={messagePhoto} 
+                        alt={messageName} 
+                      />
+                    ) : (
+                      <MdAccountCircle className="w-8 h-8 text-[#1D8751]" />
+                    )}
+                  </div>
+                )}
+                
+                <div
+                  className={
+                    isSender
+                      ? "bg-[#1D8751] text-white rounded-lg p-3 max-w-xs"
+                      : "dark:bg-[#23232B] bg-gray-200 dark:text-white text-gray-900 rounded-lg p-3 max-w-xs"
+                  }
+                >
+                  {/* Show sender name - "You" for own messages, other person's name for their messages */}
+                  <div className={`text-xs font-semibold mb-1 ${isSender ? "text-green-100" : "text-[#1D8751] dark:text-[#1D8751]"}`}>
+                    {isSender ? "You" : (messageName || msg.sender_name || "Other person")}
+                  </div>
+                  <div className="text-sm break-words">{msg.message}</div>
+                  {msg.images && msg.images.length > 0 && (
+                    <div className="flex gap-1 mt-2">
+                      {msg.images.map((img, idx) => (
+                        <img
+                          key={idx}
+                          src={img}
+                          alt="attachment"
+                          className="w-16 h-16 rounded object-cover"
+                        />
+                      ))}
+                    </div>
+                  )}
+                  <div className={`text-xs mt-1 ${isSender ? "text-green-100" : "text-gray-500 dark:text-gray-400"}`}>
+                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </div>
                 </div>
-              )}
-              <div className="text-xs text-gray-400 mt-1">
-                {new Date(msg.timestamp).toLocaleString()}
               </div>
-            </div>
-          ))}
+            );
+          })}
           {/* Auto-scroll anchor */}
           <div ref={messagesEndRef} />
         </div>

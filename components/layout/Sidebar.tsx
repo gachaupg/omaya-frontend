@@ -76,7 +76,7 @@ export default function Sidebar() {
                         {isActive ? (
                           isDark ? (
                             <span className="flex items-center justify-center">
-                              
+                              <span className="text-white">E</span>
                               <img
                                 className="mt-2"
                                 src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
@@ -85,7 +85,8 @@ export default function Sidebar() {
                             </span>
                           ) : (
                             <span className="flex items-center justify-center">
-                            
+                                                          <span className="text-white">E</span>
+
                               <img
                                 className="mt-2"
                                 src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
@@ -95,7 +96,8 @@ export default function Sidebar() {
                           )
                         ) : (
                           <span className="flex items-center justify-center">
-                            
+                                                          <span className="text-[#727272] text-base uppercase font-bold">E</span>
+
                             <img
                               className="mt-2"
                               src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
