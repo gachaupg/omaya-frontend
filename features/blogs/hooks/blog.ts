@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { BlogPost } from "../types";
+import { imageBuilder } from "@/sanity/lib/client";
 
 export const useBlog = () => {
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
@@ -27,7 +28,7 @@ export const useBlog = () => {
           id: index + 1, // Generate numeric ID for UI compatibility
           created_at: blog.createdAt || blog.created_at || new Date().toISOString(),
           updated_at: blog.createdAt || blog.created_at || new Date().toISOString(),
-          image: getImageUrl(blog.image),
+          image: imageBuilder(blog.image),
           author_name: blog.author_name || "Anonymous",
         }));
 
@@ -101,30 +102,3 @@ export const useBlog = () => {
   };
 };
 
-// Helper function to get image URL from Sanity data
-const getImageUrl = (image: any): string => {
-  if (!image) return "/images/placeholder.jpg";
-
-  if (typeof image === "string") {
-    return image;
-  }
-
-  // Handle Sanity image with asset.url (from the updated query)
-  if (image.asset && 'url' in image.asset) {
-    return (image.asset as any).url || "/images/placeholder.jpg";
-  }
-
-  // Handle Sanity image with asset._ref (legacy format)
-  if (image.asset?._ref) {
-    const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || "your-project-id";
-    const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
-    const imageId = image.asset._ref
-      .replace("image-", "")
-      .replace("-jpg", ".jpg")
-      .replace("-png", ".png")
-      .replace("-webp", ".webp");
-    return `https://cdn.sanity.io/images/${projectId}/${dataset}/${imageId}`;
-  }
-
-  return "/images/placeholder.jpg";
-};

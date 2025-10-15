@@ -3,6 +3,7 @@
  */
 
 import { BlogPost } from "./types";
+import { imageBuilder } from "@/sanity/lib/client";
 
 export const blogApi = {
   async fetchAllPosts(): Promise<BlogPost[]> {
@@ -21,7 +22,7 @@ export const blogApi = {
           blog.createdAt || blog.created_at || new Date().toISOString(),
         updated_at:
           blog.createdAt || blog.created_at || new Date().toISOString(),
-        image: this.getImageUrl(blog.image),
+        image: imageBuilder(blog.image),
         author_name: blog.author_name || "Anonymous",
       }));
     } catch (error) {
@@ -50,28 +51,6 @@ export const blogApi = {
     }
   },
 
-  getImageUrl(image: any): string {
-    if (!image) return "/images/placeholder.jpg";
-
-    if (typeof image === "string") {
-      return image;
-    }
-
-    if (image.asset?._ref) {
-      // Convert Sanity image reference to URL
-      const projectId =
-        process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || "your-project-id";
-      const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
-      const imageId = image.asset._ref
-        .replace("image-", "")
-        .replace("-jpg", ".jpg")
-        .replace("-png", ".png")
-        .replace("-webp", ".webp");
-      return `https://cdn.sanity.io/images/${projectId}/${dataset}/${imageId}`;
-    }
-
-    return "/images/placeholder.jpg";
-  },
 
   async fetchBlogs(): Promise<BlogPost[]> {
     try {

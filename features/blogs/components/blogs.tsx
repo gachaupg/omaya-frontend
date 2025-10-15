@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useBlog } from "../hooks/blog";
 import { BlogPost } from "../types";
 import { useBlogsI18n } from "@/lib/useBlogsI18n";
+import { imageBuilder } from "@/sanity/lib/client";
 
 const BlogPage = () => {
   const [activeTab, setActiveTab] = useState("News");
@@ -49,32 +50,9 @@ const BlogPage = () => {
     router.push(`/blog/${postId}`);
   };
 
-  // Get image URL from Sanity data structure
+  // Get image URL using centralized image builder
   const getImageUrl = (post: BlogPost) => {
-    if (typeof post.image === "string") {
-      return post.image;
-    }
-
-    // Handle Sanity image with asset.url (from the updated query)
-    if (post.image?.asset && 'url' in post.image.asset) {
-      return (post.image.asset as any).url || "/images/placeholder.jpg";
-    }
-
-    // Handle Sanity image with asset._ref (legacy format)
-    if (post.image?.asset?._ref) {
-      // Convert Sanity image reference to URL
-      const projectId =
-        process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || "your-project-id";
-      const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
-      const imageId = post.image.asset._ref
-        .replace("image-", "")
-        .replace("-jpg", ".jpg")
-        .replace("-png", ".png")
-        .replace("-webp", ".webp");
-      return `https://cdn.sanity.io/images/${projectId}/${dataset}/${imageId}`;
-    }
-
-    return "/images/placeholder.jpg";
+    return imageBuilder(post.image);
   };
 
   // Get post ID for routing

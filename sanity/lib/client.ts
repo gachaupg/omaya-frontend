@@ -16,13 +16,38 @@ export const client = config.isConfigured ? createClient({
   timeout: 10000, // 10 second timeout
 }) : null;
 
-// Simple image URL builder
+// Enhanced image URL builder
 export const imageBuilder = (source: any) => {
-  if (!source) return null;
+  if (!source) return '/images/placeholder.jpg';
   
   try {
-    const url = `https://cdn.sanity.io/images/${process.env.NEXT_PUBLIC_SANITY_PROJECT_ID}/${process.env.NEXT_PUBLIC_SANITY_DATASET}/${source.asset._ref.replace('image-', '').replace('-jpg', '.jpg').replace('-png', '.png').replace('-webp', '.webp')}`;
-    return url;
+    // If we have the direct URL from the expanded asset
+    if (source.asset?.url) {
+      return source.asset.url;
+    }
+    
+    // Fallback to building URL from asset reference
+    if (source.asset?._ref) {
+      const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
+      const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || 'production';
+      
+      if (!projectId) {
+        console.warn('Sanity project ID not configured');
+        return '/images/placeholder.jpg';
+      }
+      
+      const imageId = source.asset._ref
+        .replace('image-', '')
+        .replace('-jpg', '.jpg')
+        .replace('-png', '.png')
+        .replace('-webp', '.webp')
+        .replace('-gif', '.gif')
+        .replace('-svg', '.svg');
+        
+      return `https://cdn.sanity.io/images/${projectId}/${dataset}/${imageId}`;
+    }
+    
+    return '/images/placeholder.jpg';
   } catch (error) {
     console.error('Image builder error:', error);
     return '/images/placeholder.jpg';
