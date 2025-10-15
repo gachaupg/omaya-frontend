@@ -15,3 +15,18 @@ export const createExpressWithdrawal = async (data: {
 export const getExpressWithdrawalStatus = (transactionId: string) => {
   return API_CONFIG.EXPRESS.SOCKETS.WITHDRAWAL_STATUS(transactionId);
 };
+
+// Cancel deposit transaction
+export const cancelDepositTransaction = async (transactionId: string) => {
+  return post(API_CONFIG.EXPRESS.CANCEL_DEPOSIT(transactionId), {});
+};
+
+// Cancel withdrawal transaction
+export const cancelWithdrawalTransaction = async (transactionId: string) => {
+  return post(API_CONFIG.EXPRESS.CANCEL_WITHDRAWAL(transactionId), {});
+};
+
+// Cancel P2P deposit transaction
+export const cancelP2PDepositTransaction = async (transactionId: string) => {
+  return post(API_CONFIG.EXPRESS.CANCEL_P2P_DEPOSIT(transactionId), {});
+};

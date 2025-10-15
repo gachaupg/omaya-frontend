@@ -258,7 +258,9 @@ const Cash = () => {
               
               {/* User Payment Selector - Same as Adds.tsx */}
               <UserPaymentSelector
-                userPaymentDetails={userPaymentDetails || []}
+                userPaymentDetails={(userPaymentDetails || []).filter(
+                  (detail: UserPaymentDetail) => detail.payment_method_name?.toLowerCase() !== 'crypto'
+                )}
                 onSelect={handleSelectPaymentDetail}
                 onRemove={handleRemovePaymentDetail}
                 selectedDetails={selectedPaymentDetails}

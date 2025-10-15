@@ -16,6 +16,8 @@ export interface KYCState {
 export interface KYCVerificationPayload {
   user_id: string;
   status: boolean;
+  facial_id?: string;
+  face_data?: any;
 }
 
 export interface KYCVerificationResponse {

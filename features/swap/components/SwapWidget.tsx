@@ -414,7 +414,7 @@ const SwapWidget = () => {
   }
   
  return (
-    <div className="mx-auto dark:text-white text-gray-900 min-h-screen">
+    <div className="mx-auto dark:text-white text-gray-900">
       <h2 className="text-lg font-semibold mb-6 text-gray-900 dark:text-white">Swap Crypto</h2>
 
       {/* Step Indicator */}

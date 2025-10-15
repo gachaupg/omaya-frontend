@@ -119,6 +119,12 @@ export const API_CONFIG = {
   },
   EXPRESS: {
     WITHDRAW: "/trading_engine/withdraw/",
+    CANCEL_DEPOSIT: (transactionId: string) => 
+      `/trading_engine/transactions/cancel/exchange_deposit/${transactionId}/`,
+    CANCEL_WITHDRAWAL: (transactionId: string) => 
+      `/trading_engine/transactions/cancel/exchange_withdrawal/${transactionId}/`,
+    CANCEL_P2P_DEPOSIT: (transactionId: string) => 
+      `/trading_engine/transactions/cancel/p2p_deposit/${transactionId}/`,
     SOCKETS: {
       WITHDRAWAL_STATUS: (transactionId: string) =>
         `${getWebSocketBaseUrl()}/ws/withdrawal-status/${transactionId}/`,
