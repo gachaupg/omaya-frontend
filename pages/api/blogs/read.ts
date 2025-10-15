@@ -31,7 +31,18 @@ export const fetchBlogs = async (): Promise<Blog[]> => {
             category,
             author_name, 
             createdAt,
-            image
+            image {
+              asset->{
+                _id,
+                url,
+                metadata {
+                  dimensions {
+                    width,
+                    height
+                  }
+                }
+              }
+            }
           }`
       );
       

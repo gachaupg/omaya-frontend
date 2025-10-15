@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { FaArrowLeft, FaCalendar, FaUser, FaTag } from "react-icons/fa";
 import { useBlog } from "../../hooks/blog";
 import { BlogPost } from "../../types";
+import { imageBuilder } from "@/sanity/lib/client";
 
 const SingleBlogPage = () => {
   const params = useParams();
@@ -34,21 +35,9 @@ const SingleBlogPage = () => {
     });
   };
 
-  // Get image URL from Sanity data structure
+  // Get image URL using centralized image builder
   const getImageUrl = (post: BlogPost) => {
-    if (typeof post.image === 'string') {
-      return post.image;
-    }
-    
-    if (post.image?.asset?._ref) {
-      // Convert Sanity image reference to URL
-      const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || 'your-project-id';
-      const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || 'production';
-      const imageId = post.image.asset._ref.replace('image-', '').replace('-jpg', '.jpg').replace('-png', '.png').replace('-webp', '.webp');
-      return `https://cdn.sanity.io/images/${projectId}/${dataset}/${imageId}`;
-    }
-    
-    return '/images/placeholder.jpg';
+    return imageBuilder(post.image);
   };
 
   if (loading) {
