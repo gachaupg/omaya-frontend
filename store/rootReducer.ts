@@ -37,6 +37,7 @@ import googleOAuthReducer from "@/features/auth/slices/googleOAuthSlice";
 import contactReducer from "@/features/contact/slices/contactSlice";
 import kycReducer from "@/features/kyc/slices/kycSlice";
 import merchantReducer from "@/features/p2p/slices/merchantSlice";
+import expressTransactionReducer from "@/features/express/slices/transactionSlice";
 
 const rootReducer = combineReducers({
   deposits: depositReducer,
@@ -70,6 +71,7 @@ const rootReducer = combineReducers({
   contact: contactReducer,
   kyc: kycReducer,
   merchant: merchantReducer,
+  expressTransaction: expressTransactionReducer,
   // Add other reducers here
 });
 

@@ -289,13 +289,7 @@ const [showUpdateIndicator, setShowUpdateIndicator] = useState(false);
               </div>
             </div>
             {/* Data source indicator (dev mode) */}
-            {process.env.NODE_ENV === 'development' && lastUpdateSource && (
-              <div className="flex items-center gap-1 mt-1">
-                <span className="text-[10px] text-[#788099]">
-                  Updates via: {lastUpdateSource === 'websocket' ? '🟢 WebSocket' : '🟡 HTTP'}
-                </span>
-              </div>
-            )}
+           
           </div>
         </div>
 

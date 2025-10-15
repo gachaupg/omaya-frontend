@@ -150,7 +150,7 @@ const Withdraw = () => {
                   : "dark:bg-[#23232B] bg-white text-[#A3A3A3]"
               }`}
             >
-                USDT TRC20
+                USDT BEP20
               </button>
             <button
               type="button"

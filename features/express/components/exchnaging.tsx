@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import SuccessPage from "./success";
 import {
   useTransactionStatusWebSocket,
@@ -8,6 +8,12 @@ import {
 import { API_CONFIG } from "@/lib/appConfig";
 import { useTheme } from "@/context/theme";
 import CopyButton from "@/components/ui/CopyButton";
+import { useDispatch } from "react-redux";
+import { AppDispatch } from "@/store/rootReducer";
+import {
+  cancelDepositTransaction,
+  cancelWithdrawalTransaction,
+} from "../slices/transactionSlice";
 
 interface ExchangingProps {
   transactionData?: {
@@ -51,6 +57,8 @@ interface ExchangingProps {
 
 export default function Exchanging({ transactionData }: ExchangingProps) {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
   const { isDark } = useTheme();
   const [showSuccess, setShowSuccess] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<string>("pending");
@@ -58,6 +66,10 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     useState<any>(null);
   const [wsError, setWsError] = useState<string | null>(null);
   const [connectionAttempts, setConnectionAttempts] = useState<number>(0);
+  
+  // Timer state - 15 minutes in seconds
+  const [timeRemaining, setTimeRemaining] = useState<number>(15 * 60);
+  const [timerActive, setTimerActive] = useState<boolean>(true);
 
   // Store final websocket data for success page
   const [finalWebsocketData, setFinalWebsocketData] = useState<any>(null);
@@ -114,6 +126,67 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       }
     };
   }, [pollingInterval]);
+
+  // Timer countdown effect
+  useEffect(() => {
+    if (!timerActive || showSuccess) return;
+
+    const interval = setInterval(() => {
+      setTimeRemaining((prev) => {
+        if (prev <= 1) {
+          setTimerActive(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [timerActive, showSuccess]);
+
+  // Auto-cancel when timer expires
+  useEffect(() => {
+    if (timeRemaining === 0 && effectiveTransactionData?.transactionId) {
+      handleCancelTransaction();
+    }
+  }, [timeRemaining]);
+
+  // Format time as MM:SS
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Handle transaction cancellation
+  const handleCancelTransaction = async () => {
+    if (!effectiveTransactionData?.transactionId) return;
+
+    try {
+      if (effectiveTransactionData.type === "deposit") {
+        await dispatch(cancelDepositTransaction(effectiveTransactionData.transactionId)).unwrap();
+      } else if (effectiveTransactionData.type === "withdrawal") {
+        await dispatch(cancelWithdrawalTransaction(effectiveTransactionData.transactionId)).unwrap();
+      }
+      
+      // Clear localStorage
+      localStorage.removeItem("express_transaction_data");
+      
+      // Redirect to home page
+      router.push("/");
+    } catch (error) {
+      console.error("Failed to cancel transaction:", error);
+      // Still redirect even if cancel fails
+      router.push("/");
+    }
+  };
+
+  // Stop timer when transaction is completed
+  useEffect(() => {
+    if (currentStatus === "completed" || showSuccess) {
+      setTimerActive(false);
+    }
+  }, [currentStatus, showSuccess]);
 
   // This will be moved after isConnected is declared
 
@@ -739,6 +812,62 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
   return (
     <div className={`w-full min-h-screen flex flex-col items-center pt-2`}>
+      {/* Timer Banner */}
+      {timerActive && timeRemaining > 0 && (
+        <div className={`w-full max-w-4xl mb-4 ${
+          timeRemaining <= 60 
+            ? 'bg-red-500/20 border-red-500' 
+            : timeRemaining <= 300 
+              ? 'bg-orange-500/20 border-orange-500'
+              : 'bg-[#1D8751]/20 border-[#1D8751]'
+        } border-2 rounded-2xl p-4 flex items-center justify-between`}>
+          <div className="flex items-center gap-3">
+            <svg 
+              className={`w-6 h-6 ${
+                timeRemaining <= 60 
+                  ? 'text-red-500' 
+                  : timeRemaining <= 300 
+                    ? 'text-orange-500'
+                    : 'text-[#1D8751]'
+              }`}
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2} 
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" 
+              />
+            </svg>
+            <div>
+              <div className={`text-sm font-semibold ${
+                isDark ? 'text-white' : 'text-gray-900'
+              }`}>
+                Transaction Timeout
+              </div>
+              <div className={`text-xs ${
+                isDark ? 'text-gray-300' : 'text-gray-600'
+              }`}>
+                {timeRemaining <= 60 
+                  ? 'Transaction will be cancelled soon!' 
+                  : 'Complete your transaction before time expires'}
+              </div>
+            </div>
+          </div>
+          <div className={`text-2xl font-bold ${
+            timeRemaining <= 60 
+              ? 'text-red-500' 
+              : timeRemaining <= 300 
+                ? 'text-orange-500'
+                : 'text-[#1D8751]'
+          }`}>
+            {formatTime(timeRemaining)}
+          </div>
+        </div>
+      )}
+      
       {/* Top Card */}
       <div
         className={`flex flex-col md:flex-row justify-between items-stretch bg-[#FFFFFF] dark:${
