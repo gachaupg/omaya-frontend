@@ -115,6 +115,7 @@ const ChatBox: React.FC<{
   const [userHasScrolled, setUserHasScrolled] = React.useState(false);
   const [isAtBottom, setIsAtBottom] = React.useState(true);
   const prevMessageCountRef = React.useRef(0);
+  const [imageLoadingStates, setImageLoadingStates] = React.useState<Record<string, boolean>>({});
 
   // Track user scroll behavior
   const handleScroll = React.useCallback(() => {
@@ -188,6 +189,83 @@ const ChatBox: React.FC<{
     // WebSocket will then keep them updated in real-time
     fetchMessages();
   }, [tradeId]);
+
+  // Auto-refresh when new messages with images arrive via WebSocket
+  const lastMessageIdRef = React.useRef<string | null>(null);
+  const refreshTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  
+  useEffect(() => {
+    // Check if the latest message has images and needs refresh
+    if (sortedMessages.length > 0) {
+      const latestMessage = sortedMessages[sortedMessages.length - 1];
+      
+      // Only process if this is a new message (different ID from last processed)
+      if (latestMessage.id !== lastMessageIdRef.current) {
+        lastMessageIdRef.current = latestMessage.id;
+        
+        // If latest message has images, check if they need refreshing
+        if (latestMessage.images && latestMessage.images.length > 0) {
+          const needsRefresh = latestMessage.images.some((img: any) => {
+            if (!img) return true; // Null/undefined image needs refresh
+            
+            const url = isMessageImage(img) ? (img.image_url || img.image) : img;
+            
+            console.log("🔍 Checking image for refresh:", {
+              img,
+              url: url ? url.substring(0, 60) + '...' : 'EMPTY',
+              needsRefresh: !url || url.trim() === '' || (typeof url === 'string' && url.startsWith('blob:'))
+            });
+            
+            // Need refresh if:
+            // 1. URL is missing or empty
+            // 2. URL is a blob/temp URL
+            // 3. Image object exists but no valid URL
+            return !url || 
+                   url.trim() === '' || 
+                   (typeof url === 'string' && (url.startsWith('blob:') || url.includes('temp-'))) ||
+                   (isMessageImage(img) && !img.image_url && !img.image);
+          });
+          
+          // Also refresh if message ID looks temporary
+          const hasTemporaryId = latestMessage.id && latestMessage.id.toString().startsWith('temp-');
+          
+          if (needsRefresh || hasTemporaryId) {
+            console.log("🔄 Detected new message with images that need S3 URLs, scheduling refresh...");
+            
+            // Clear any existing timeout
+            if (refreshTimeoutRef.current) {
+              clearTimeout(refreshTimeoutRef.current);
+            }
+            
+            // Schedule refresh with multiple retries
+            const attemptRefresh = (attemptNumber: number = 1) => {
+              console.log(`🔄 Refresh attempt ${attemptNumber} for message images...`);
+              fetchMessages();
+              
+              // Schedule another refresh if this is not the last attempt
+              if (attemptNumber < 3) {
+                refreshTimeoutRef.current = setTimeout(() => {
+                  attemptRefresh(attemptNumber + 1);
+                }, 2000 * attemptNumber); // Increasing delays: 2s, 4s
+              }
+            };
+            
+            // Start first refresh after 2 seconds
+            refreshTimeoutRef.current = setTimeout(() => {
+              attemptRefresh(1);
+            }, 2000);
+          }
+        }
+      }
+    }
+    
+    // Cleanup timeout on unmount
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+    };
+  }, [sortedMessages.length, sortedMessages]); // Trigger when messages change
 
   // Handle manual refresh
   const handleRefresh = () => {
@@ -286,14 +364,14 @@ const ChatBox: React.FC<{
         <button
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className="flex items-center justify-center w-6 h-6 dark:bg-[#23232B] bg-gray-200 rounded dark:hover:bg-[#35353E] hover:bg-gray-300 transition-colors disabled:opacity-50"
-          title="Refresh messages"
+          className="flex items-center gap-1 px-2 py-1 dark:bg-[#1D8751] bg-[#1D8751] text-white rounded hover:bg-[#166b3e] transition-colors disabled:opacity-50 text-xs font-medium"
+          title="Refresh messages and load images"
         >
           <svg
-            width="16"
-            height="16"
+            width="14"
+            height="14"
             fill="none"
-            stroke="#1D8751"
+            stroke="currentColor"
             strokeWidth="2"
             viewBox="0 0 24 24"
             className={`${isRefreshing ? "animate-spin" : ""}`}
@@ -309,6 +387,7 @@ const ChatBox: React.FC<{
               strokeLinejoin="round"
             />
           </svg>
+          {isRefreshing ? "Refreshing..." : "Refresh"}
         </button>
       </div>
       <div className="chat-container mt-6 flex flex-col pr-10 mb-2 h-96 bg-white dark:bg-[#18181D] border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px] p-2 md:p-4 relative">
@@ -331,12 +410,24 @@ const ChatBox: React.FC<{
             </p>
           )}
           {sortedMessages.map((msg) => {
-            console.log("Message in list:", { 
+            // Detailed logging for debugging
+            const imageDetails = msg.images?.map((img: any, idx: number) => {
+              const url = isMessageImage(img) ? (img.image_url || img.image) : img;
+              return {
+                index: idx,
+                hasUrl: !!url,
+                url: url?.substring(0, 50) + '...',
+                isObject: isMessageImage(img),
+                isEmpty: !url || url.trim() === ''
+              };
+            });
+            
+            console.log("📬 Message in list:", { 
               id: msg.id, 
               hasImages: msg.images && msg.images.length > 0,
               imageCount: msg.images?.length || 0,
-              message: msg.message,
-              images: msg.images,
+              imageDetails,
+              message: msg.message?.substring(0, 30) || '(no text)',
               timestamp: msg.timestamp
             });
             
@@ -383,52 +474,94 @@ const ChatBox: React.FC<{
                 <div
                   className={
                     isSender
-                      ? "bg-[#1D8751] text-white rounded-lg p-3 max-w-xs"
-                      : "dark:bg-[#23232B] bg-gray-200 dark:text-white text-gray-900 rounded-lg p-3 max-w-xs"
+                      ? "bg-[#1D8751] text-white rounded-lg p-3 max-w-xs min-w-[120px]"
+                      : "dark:bg-[#23232B] bg-gray-200 dark:text-white text-gray-900 rounded-lg p-3 max-w-xs min-w-[120px]"
                   }
                 >
                   {/* Show sender email - "You" for own messages, email for their messages */}
                   <div className={`text-xs font-semibold mb-1 ${isSender ? "text-green-100" : "text-[#1D8751] dark:text-[#1D8751]"}`}>
                     {isSender ? "You" : messageEmail}
                   </div>
-                  {msg.message && <div className="text-sm break-words">{msg.message}</div>}
+                  {msg.message && msg.message.trim() && <div className="text-sm break-words mb-2">{msg.message}</div>}
                   
-                  {/* DEBUG: Show if images exist */}
-                  {msg.images && msg.images.length > 0 ? (
-                    <div className="mt-2 p-3 bg-yellow-100 dark:bg-yellow-900 rounded border-2 border-yellow-500">
-                      <div className="text-sm font-bold text-yellow-800 dark:text-yellow-200 mb-2">
-                        📷 {msg.images.length} image(s) attached
-                      </div>
-                      <div className="flex gap-2 flex-wrap">
+                  {/* Image attachments */}
+                  {msg.images && msg.images.length > 0 && (
+                    <div className={msg.message && msg.message.trim() ? "mt-0" : "mt-0"}>
+                      <div className="flex gap-2 flex-wrap justify-start">
                         {msg.images.map((img: any, idx: number) => {
                           // Handle both string URLs and image objects
-                          const imageUrl = isMessageImage(img) ? (img.image_url || img.image) : img;
-                          const imageKey = isMessageImage(img) ? img.id : idx;
-                          console.log("🖼️ Rendering image:", { img, imageUrl, isObject: isMessageImage(img) });
+                          let imageUrl = '';
+                          
+                          if (typeof img === 'string') {
+                            // Direct string URL
+                            imageUrl = img;
+                          } else if (isMessageImage(img)) {
+                            // Image object with image_url or image property
+                            imageUrl = img.image_url || img.image || '';
+                          }
+                          
+                          const imageKey = isMessageImage(img) ? img.id : `img-${idx}`;
+                          
+                          console.log("🖼️ Rendering image:", { 
+                            idx, 
+                            img, 
+                            imageUrl: imageUrl ? imageUrl.substring(0, 60) + '...' : 'EMPTY', 
+                            isObject: isMessageImage(img),
+                            messageId: msg.id 
+                          });
+                          
+                          // If no valid URL, show loading placeholder
+                          if (!imageUrl || imageUrl.trim() === '') {
+                            console.warn("⚠️ Image has no URL, showing loading placeholder at index", idx);
+                            return (
+                              <div key={imageKey} className="relative inline-block">
+                                <div className="w-24 h-24 rounded bg-gray-100 dark:bg-gray-800 border-2 border-dashed border-[#1D8751] flex items-center justify-center">
+                                  <div className="text-center">
+                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1D8751] mx-auto mb-1"></div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">Loading...</div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+                          
                           return (
-                            <div key={imageKey} className="relative">
-                              <img
-                                src={imageUrl}
-                          alt="attachment"
-                                className="w-24 h-24 rounded object-cover cursor-pointer hover:opacity-80 transition-opacity border-2 border-[#1D8751] bg-white"
-                                onClick={() => window.open(imageUrl, '_blank')}
-                                onLoad={(e) => {
-                                  console.log("✅ Image loaded successfully:", imageUrl);
-                                }}
-                                onError={(e) => {
-                                  console.error("❌ Image failed to load:", imageUrl);
-                                  (e.target as HTMLImageElement).style.border = "4px solid red";
-                                  (e.target as HTMLImageElement).style.backgroundColor = "pink";
-                                }}
-                              />
+                            <div key={imageKey} className="relative inline-block">
+                              {/* Loading spinner overlay */}
+                              {imageLoadingStates[imageKey] && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-gray-800/80 rounded z-10">
+                                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1D8751]"></div>
+                                </div>
+                              )}
+                              <div className="relative w-24 h-24">
+                                <img
+                                  src={imageUrl}
+                                  alt={`attachment-${idx + 1}`}
+                                  className="w-full h-full rounded object-cover cursor-pointer hover:opacity-80 transition-opacity border-2 border-[#1D8751] bg-white dark:bg-gray-800"
+                                  onClick={() => window.open(imageUrl, '_blank')}
+                                  onLoadStart={() => {
+                                    console.log("🔄 Image loading started:", imageUrl);
+                                    setImageLoadingStates(prev => ({ ...prev, [imageKey]: true }));
+                                  }}
+                                  onLoad={(e) => {
+                                    console.log("✅ Image loaded successfully:", imageUrl);
+                                    setImageLoadingStates(prev => ({ ...prev, [imageKey]: false }));
+                                  }}
+                                  onError={(e) => {
+                                    console.error("❌ Image failed to load:", imageUrl);
+                                    setImageLoadingStates(prev => ({ ...prev, [imageKey]: false }));
+                                  }}
+                                  style={{ display: 'block' }}
+                                />
+                              </div>
                               <div className="text-xs mt-1 text-center">
                                 <a 
                                   href={imageUrl} 
                                   target="_blank" 
                                   rel="noopener noreferrer"
-                                  className="text-blue-600 dark:text-blue-400 underline"
+                                  className="text-[#1D8751] dark:text-[#1D8751] hover:underline font-medium"
                                 >
-                                  Open
+                                  View Full
                                 </a>
                               </div>
                             </div>
@@ -436,7 +569,7 @@ const ChatBox: React.FC<{
                         })}
                       </div>
                     </div>
-                  ) : null}
+                  )}
                   <div className={`text-xs mt-1 ${isSender ? "text-green-100" : "text-gray-500 dark:text-gray-400"}`}>
                     {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>

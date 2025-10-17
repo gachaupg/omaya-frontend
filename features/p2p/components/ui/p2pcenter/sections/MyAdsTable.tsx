@@ -119,9 +119,15 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
   };
 
   const handleEditSave = async (formData: any) => {
-    // TODO: implement update thunk
-    toast.success("Trade updated successfully");
-    setIsEditModalOpen(false);
+    try {
+      // TODO: implement update thunk
+      toast.success("Trade updated successfully");
+      setIsEditModalOpen(false);
+      // Refetch the data after successful edit
+      dispatch(fetchMyOrders(1) as any);
+    } catch (error) {
+      toast.error("Failed to update trade");
+    }
   };
 
   // Add check for empty trades

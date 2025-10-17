@@ -154,23 +154,46 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
           case "message_received":
             // New message received - the data IS the message itself
             if (message.data && message.data.id) {
-              console.log("📨 New message received via WebSocket:", message.data.message);
+              // Log detailed info about incoming message
+              console.log("📨 New message received via WebSocket:", {
+                id: message.data.id,
+                hasText: !!message.data.message,
+                text: message.data.message?.substring(0, 30) || '(no text)',
+                hasImages: Array.isArray(message.data.images) && message.data.images.length > 0,
+                imageCount: message.data.images?.length || 0,
+                images: message.data.images,
+              });
+              
               const newMessage: TradeMessage = {
                 id: message.data.id,
                 trade: message.data.trade || parseInt(tradeId),
                 sender: message.data.sender,
                 sender_name: message.data.sender_name,
                 message: message.data.message,
+                // IMPORTANT: Set images array even if empty - this signals that refresh is needed
                 images: message.data.images || [],
                 timestamp: message.data.timestamp,
                 seller_photo: message.data.seller_photo || "",
               };
+              
               dispatch(
                 addMessageFromWS({
                   tradeId,
                   message: newMessage,
                 })
               );
+              
+              // If message has images but no valid URLs, log warning
+              if (newMessage.images && newMessage.images.length > 0) {
+                const hasValidUrls = newMessage.images.some((img: any) => {
+                  const url = (img?.image_url || img?.image || img);
+                  return url && typeof url === 'string' && url.trim() !== '' && !url.startsWith('blob:');
+                });
+                
+                if (!hasValidUrls) {
+                  console.warn("⚠️ WebSocket message has images but no valid S3 URLs yet - auto-refresh should trigger");
+                }
+              }
             }
             setIsConnected(true);
             break;

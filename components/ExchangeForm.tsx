@@ -816,7 +816,7 @@ export default function ExchangeForm() {
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
       placeholder="0"
-      className={`border border-gray-300 dark:border-gray-300/20 text-gray-900 dark:text-white w-full px-5 py-4 rounded-3xl ${
+      className={`border border-gray-300 dark:border-gray-300/20 bg-white dark:bg-transparent text-gray-900 dark:text-white w-full px-5 py-4 rounded-3xl placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent ${
         disabled ? "opacity-50 cursor-not-allowed" : ""
       }`}
     />
@@ -932,12 +932,12 @@ export default function ExchangeForm() {
   // If Swap Crypto tab is active, render SwapWidget with tab controls
   if (activeTab === "swap") {
   return (
-      <div className="w-full bg-[#18181D] rounded-3xl px-6 py-2 shadow-lg mr-8 ml-4">
+      <div className="w-full bg-white dark:bg-[#18181D] rounded-3xl px-6 py-2 shadow-lg mr-8 ml-4 border border-gray-200 dark:border-transparent">
       {/* Tabs */}
       <div className="w-full flex justify-between">
         <TabButton id="express">
         <span className="flex items-center justify-center">
-                                                          <span className="text-[#727272] text-base uppercase font-bold">E</span>
+                                                          <span className="text-gray-600 dark:text-[#727272] text-base uppercase font-bold">E</span>
 
                             <img
                               className="mt-2"
@@ -964,7 +964,7 @@ export default function ExchangeForm() {
   }
 
   return (
-    <div className="w-full bg-[#18181D] rounded-3xl px-6 py-2 shadow-lg mr-8 ml-4">
+    <div className="w-full bg-white dark:bg-[#18181D] rounded-3xl px-6 py-2 shadow-lg mr-8 ml-4 border border-gray-200 dark:border-transparent">
       {/* Tabs */}
       <div className="w-full flex justify-between">
        

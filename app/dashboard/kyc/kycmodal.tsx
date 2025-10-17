@@ -303,31 +303,11 @@ const KYCVerificationModal: React.FC = () => {
 
       console.log("KYC Verification Response:", result);
       
-      // Check if response indicates pending status
-      const responseData = result as any;
-      const isPending = responseData?.data?.status === "pending" || 
-                       responseData?.status === "pending" ||
-                       responseData?.data?.is_verified === false;
-      
-      // Store pending status in localStorage
-      if (isPending) {
-        localStorage.setItem('kyc_verification_status', JSON.stringify({
-          status: 'pending',
-          submittedAt: new Date().toISOString(),
-          user_id: user.user_id
-        }));
-        
-        // Show pending verification modal
-        setShowManualVerification(false);
-        setShowPendingModal(true);
-        showToast.info("Verification Pending", "Your verification is under review");
-      } else {
-        // Verified immediately - clear localStorage and show success
-        localStorage.removeItem('kyc_verification_status');
+      // Always show success modal and close
+      localStorage.removeItem('kyc_verification_status');
       setShowManualVerification(false);
       setShowSuccessModal(true);
-        showToast.success("Verification Approved", "Your verification has been approved");
-      }
+      showToast.success("Verification Submitted", "Your verification has been submitted successfully");
       
       // Refetch KYC status after successful verification
       dispatch(checkKYCStatus());
@@ -420,7 +400,7 @@ const KYCVerificationModal: React.FC = () => {
     <div className="fixed inset-0 flex items-center justify-center z-50" 
          style={{ background: "rgba(24, 24, 29, 0.5)" }}>
       
-      {/* Success Modal - Verified Immediately */}
+      {/* Success Modal - Submitted Successfully */}
       {showSuccessModal && (
         <div className="bg-[#1A1A1A] rounded-lg p-6 max-w-md w-full mx-4 border border-[#35353E]">
           <div className="flex flex-col items-center justify-center text-center">
@@ -428,25 +408,20 @@ const KYCVerificationModal: React.FC = () => {
               <svg className="w-8 h-8 text-[#1D8751]" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
-              <h2 className="text-xl font-semibold text-white">Verification Approved!</h2>
+              <h2 className="text-xl font-semibold text-white">Verification Submitted!</h2>
             </div>
             <p className="text-gray-300 text-sm mb-6">
-              Your verification has been approved. You can now access all platform features.
+              Your verification has been submitted successfully. You can now continue using the platform.
             </p>
             
             <button
-              onClick={handleFinalSubmit}
-              className="bg-[#1D8751] hover:bg-[#167a47] text-white w-full h-10 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              disabled={isSubmitting}
+              onClick={() => {
+                setShowSuccessModal(false);
+                dispatch(closeKYCModal());
+              }}
+              className="bg-[#1D8751] hover:bg-[#167a47] text-white w-full h-10 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
             >
-              {isSubmitting ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Processing...</span>
-                </>
-              ) : (
-                "Continue to Dashboard"
-              )}
+              Continue to Dashboard
             </button>
           </div>
               </div>
@@ -487,41 +462,57 @@ const KYCVerificationModal: React.FC = () => {
               </div>
             </div>
             
-            <button
-              onClick={handleClosePendingModal}
-              disabled={isSubmitting}
-              className="bg-[#1D8751] hover:bg-[#167a47] text-white w-full h-10 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>Checking Status...</span>
-                </>
-              ) : (
-                "OK"
-              )}
-            </button>
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={handleClosePendingModal}
+                disabled={isSubmitting}
+                className="flex-1 bg-[#1D8751] hover:bg-[#167a47] text-white h-10 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Checking Status...</span>
+                  </>
+                ) : (
+                  "OK"
+                )}
+              </button>
+              
+              <button
+                onClick={() => {
+                  dispatch(logout());
+                  handleClose();
+                }}
+                disabled={isSubmitting}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white h-10 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* Step-by-Step Verification Form */}
       {showManualVerification && !showSuccessModal && !showPendingModal && (
-        <div className="bg-[#1A1A1A] rounded-lg p-6 max-w-2xl w-full mx-4 border border-[#35353E] max-h-[90vh] overflow-y-auto">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-white">Identity Verification - Step {currentStep} of 3</h2>
+        <div className="bg-[#1A1A1A] rounded-lg p-4 max-w-2xl w-full mx-4 border border-[#35353E] max-h-[90vh] overflow-y-auto">
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="text-lg font-semibold text-white">Identity Verification - Step {currentStep} of 3</h2>
             <button
               onClick={handleClose}
               className="text-gray-400 hover:text-white transition-colors"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
 
           {/* Progress Bar */}
-          <div className="w-full bg-gray-700 rounded-full h-2 mb-6">
+          <div className="w-full bg-gray-700 rounded-full h-2 mb-4">
             <div 
               className="bg-[#1D8751] h-2 rounded-full transition-all duration-300" 
               style={{ width: `${(currentStep / 3) * 100}%` }}
@@ -529,31 +520,31 @@ const KYCVerificationModal: React.FC = () => {
           </div>
           
           {error && (
-            <div className="bg-red-900/20 border border-red-500 text-red-400 p-3 rounded-lg mb-4">
+            <div className="bg-red-900/20 border border-red-500 text-red-400 p-2 rounded-lg mb-3 text-sm">
               {error}
             </div>
           )}
 
           {/* Step 1: Document Information */}
           {currentStep === 1 && (
-            <div className="space-y-4">
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-[#1D8751]/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="space-y-3">
+              <div className="text-center mb-4">
+                <div className="w-12 h-12 bg-[#1D8751]/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <svg className="w-6 h-6 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-white mb-2">Document Information</h3>
-                <p className="text-gray-400 text-sm">Please provide your document details</p>
+                <h3 className="text-lg font-semibold text-white mb-1">Document Information</h3>
+                <p className="text-gray-400 text-xs">Please provide your document details</p>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-3">
                  <div>
-                   <label className="block text-sm font-medium text-gray-300 mb-2">Country *</label>
+                   <label className="block text-xs font-medium text-gray-300 mb-1.5">Country *</label>
                    <select
                      value={verificationData.country}
                      onChange={(e) => handleInputChange('country', e.target.value)}
-                     className="w-full px-3 py-2 bg-[#2A2A2A] border border-[#35353E] rounded-lg text-white focus:outline-none focus:border-[#1D8751]"
+                     className="w-full px-3 py-1.5 text-sm bg-[#2A2A2A] border border-[#35353E] rounded-lg text-white focus:outline-none focus:border-[#1D8751]"
                    >
                      <option value="Somalia">Somalia</option>
                      <option value="Kenya">Kenya</option>
@@ -569,11 +560,11 @@ const KYCVerificationModal: React.FC = () => {
                  </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Document Type *</label>
+                  <label className="block text-xs font-medium text-gray-300 mb-1.5">Document Type *</label>
                   <select
                     value={verificationData.documentType}
                     onChange={(e) => handleInputChange('documentType', e.target.value)}
-                    className="w-full px-3 py-2 bg-[#2A2A2A] border border-[#35353E] rounded-lg text-white focus:outline-none focus:border-[#1D8751]"
+                    className="w-full px-3 py-1.5 text-sm bg-[#2A2A2A] border border-[#35353E] rounded-lg text-white focus:outline-none focus:border-[#1D8751]"
                   >
                     <option value="">Select document type</option>
                     <option value="passport">Passport</option>
@@ -583,12 +574,12 @@ const KYCVerificationModal: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Document Number *</label>
+                  <label className="block text-xs font-medium text-gray-300 mb-1.5">Document Number *</label>
                   <input
                     type="text"
                     value={verificationData.documentNumber}
                     onChange={(e) => handleInputChange('documentNumber', e.target.value)}
-                    className="w-full px-3 py-2 bg-[#2A2A2A] border border-[#35353E] rounded-lg text-white focus:outline-none focus:border-[#1D8751]"
+                    className="w-full px-3 py-1.5 text-sm bg-[#2A2A2A] border border-[#35353E] rounded-lg text-white focus:outline-none focus:border-[#1D8751]"
                     placeholder="Enter your document number"
                   />
                 </div>
@@ -598,47 +589,48 @@ const KYCVerificationModal: React.FC = () => {
 
           {/* Step 2: Document Upload */}
           {currentStep === 2 && (
-            <div className="space-y-6">
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-[#1D8751]/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="space-y-3">
+              <div className="text-center mb-4">
+                <div className="w-12 h-12 bg-[#1D8751]/20 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <svg className="w-6 h-6 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-white mb-2">Document Photos</h3>
-                <p className="text-gray-400 text-sm">Upload clear photos of both sides of your document</p>
+                <h3 className="text-lg font-semibold text-white mb-1">Document Photos</h3>
+                <p className="text-gray-400 text-xs">Upload clear photos of both sides</p>
               </div>
 
+              {/* Document Upload Grid - Two columns */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {/* Front Side Upload */}
               <div>
-                <h4 className="text-white font-medium mb-3 flex items-center gap-2">
-                  <span className="bg-[#1D8751] text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">1</span>
-                  Front Side of Document *
+                <h4 className="text-white text-sm font-medium mb-2 flex items-center gap-1">
+                  <span className="bg-[#1D8751] text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">1</span>
+                  Front Side *
                 </h4>
-                <div className="border-2 border-dashed border-[#35353E] rounded-lg p-6 text-center">
+                <div className="border-2 border-dashed border-[#35353E] rounded-lg p-3 text-center">
                   {documentFrontImage && documentFrontPreview ? (
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                       <div className="relative inline-block">
                         <img
                           src={documentFrontPreview}
                           alt="Document front preview"
-                          className="max-w-full max-h-48 rounded-lg border border-[#35353E]"
+                          className="max-w-full max-h-32 rounded-lg border border-[#35353E]"
                         />
                         <button
                           onClick={() => {
                             setDocumentFrontImage(null);
                             setDocumentFrontPreview(null);
                           }}
-                          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-sm font-bold transition-colors duration-200"
+                          className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-colors duration-200"
                         >
                           ×
                         </button>
                       </div>
-                      <p className="text-green-400 font-medium">Front side uploaded successfully</p>
-                      <p className="text-gray-400 text-sm">{documentFrontImage.name}</p>
+                      <p className="text-green-400 text-xs font-medium">✓ Uploaded</p>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                       <input
                         type="file"
                         accept="image/*"
@@ -648,14 +640,14 @@ const KYCVerificationModal: React.FC = () => {
                       />
                       <label
                         htmlFor="document-front-upload"
-                        className="cursor-pointer inline-flex items-center px-4 py-2 bg-[#1D8751] hover:bg-[#167a47] text-white rounded-lg transition-colors duration-200"
+                        className="cursor-pointer inline-flex items-center px-3 py-1.5 bg-[#1D8751] hover:bg-[#167a47] text-white text-sm rounded-lg transition-colors duration-200"
                       >
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
-                        Upload Front Side
+                        Upload
                       </label>
-                      <p className="text-gray-400 text-sm">Max file size: 5MB</p>
+                      <p className="text-gray-400 text-xs">Max: 5MB</p>
                     </div>
                   )}
                 </div>
@@ -663,34 +655,33 @@ const KYCVerificationModal: React.FC = () => {
 
               {/* Back Side Upload */}
               <div>
-                <h4 className="text-white font-medium mb-3 flex items-center gap-2">
-                  <span className="bg-[#1D8751] text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">2</span>
-                  Back Side of Document *
+                <h4 className="text-white text-sm font-medium mb-2 flex items-center gap-1">
+                  <span className="bg-[#1D8751] text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">2</span>
+                  Back Side *
                 </h4>
-                <div className="border-2 border-dashed border-[#35353E] rounded-lg p-6 text-center">
+                <div className="border-2 border-dashed border-[#35353E] rounded-lg p-3 text-center">
                   {documentBackImage && documentBackPreview ? (
-                   <div className="space-y-4">
+                   <div className="space-y-2">
                      <div className="relative inline-block">
                        <img
                           src={documentBackPreview}
                           alt="Document back preview"
-                          className="max-w-full max-h-48 rounded-lg border border-[#35353E]"
+                          className="max-w-full max-h-32 rounded-lg border border-[#35353E]"
                        />
                        <button
                          onClick={() => {
                             setDocumentBackImage(null);
                             setDocumentBackPreview(null);
                          }}
-                         className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-sm font-bold transition-colors duration-200"
+                         className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-colors duration-200"
                        >
                          ×
                        </button>
                      </div>
-                      <p className="text-green-400 font-medium">Back side uploaded successfully</p>
-                      <p className="text-gray-400 text-sm">{documentBackImage.name}</p>
+                      <p className="text-green-400 text-xs font-medium">✓ Uploaded</p>
                    </div>
                  ) : (
-                   <div className="space-y-4">
+                   <div className="space-y-2">
                      <input
                        type="file"
                        accept="image/*"
@@ -700,38 +691,39 @@ const KYCVerificationModal: React.FC = () => {
                      />
                      <label
                         htmlFor="document-back-upload"
-                       className="cursor-pointer inline-flex items-center px-4 py-2 bg-[#1D8751] hover:bg-[#167a47] text-white rounded-lg transition-colors duration-200"
+                       className="cursor-pointer inline-flex items-center px-3 py-1.5 bg-[#1D8751] hover:bg-[#167a47] text-white text-sm rounded-lg transition-colors duration-200"
                      >
-                       <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                        </svg>
-                        Upload Back Side
+                        Upload
                      </label>
-                     <p className="text-gray-400 text-sm">Max file size: 5MB</p>
+                     <p className="text-gray-400 text-xs">Max: 5MB</p>
                    </div>
                  )}
                 </div>
+               </div>
                </div>
             </div>
           )}
 
            {/* Step 3: Face Verification with AI Detection */}
            {currentStep === 3 && (
-             <div className="space-y-4">
+             <div className="space-y-3">
                <FaceDetectionKYC
                  onVerificationComplete={handleFaceDetectionComplete}
                />
                
                {/* Face Verification Status Indicator */}
                {faceDetectionData && faceDetectionData.faceDetected && (
-                 <div className="bg-green-900/20 border border-green-500 text-green-400 p-4 rounded-lg flex items-start gap-3">
-                   <svg className="w-6 h-6 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                 <div className="bg-green-900/20 border border-green-500 text-green-400 p-3 rounded-lg flex items-start gap-2">
+                   <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                    </svg>
                    <div className="flex-1">
-                     <p className="font-semibold mb-1">Face Verification Complete!</p>
-                     <p className="text-sm text-green-300">
-                       Your face has been successfully captured and verified. You can now proceed to submit your verification.
+                     <p className="font-semibold mb-1 text-sm">Face Verification Complete!</p>
+                     <p className="text-xs text-green-300">
+                       Your face has been successfully captured and verified.
                      </p>
                    </div>
                  </div>
@@ -740,11 +732,11 @@ const KYCVerificationModal: React.FC = () => {
            )}
 
           {/* Navigation Buttons */}
-          <div className="flex gap-3 mt-8">
+          <div className="flex gap-2 mt-4">
             {currentStep > 1 && (
               <button
                 onClick={prevStep}
-                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white h-10 rounded-lg transition-colors duration-200"
+                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white h-9 rounded-lg transition-colors duration-200 text-sm"
               >
                 Previous
               </button>
@@ -753,19 +745,19 @@ const KYCVerificationModal: React.FC = () => {
             {currentStep < 3 ? (
               <button
                 onClick={nextStep}
-                className="flex-1 bg-[#1D8751] hover:bg-[#167a47] text-white h-10 rounded-lg transition-colors duration-200"
+                className="flex-1 bg-[#1D8751] hover:bg-[#167a47] text-white h-9 rounded-lg transition-colors duration-200 text-sm"
               >
                 Next
               </button>
             ) : (
               <button
                 onClick={handleManualVerificationSubmit}
-                className="flex-1 bg-[#1D8751] hover:bg-[#167a47] text-white h-10 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 bg-[#1D8751] hover:bg-[#167a47] text-white h-9 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
                     <span>Submitting...</span>
                   </>
                 ) : (

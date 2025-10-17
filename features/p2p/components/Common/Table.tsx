@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { tokens } from "@/styles/tokens";
 import { TransactionType } from "@/features/p2p/types";
 import Button from "./Button";
 import { MoreHorizontal, Download, Search, X, ArrowLeft, Pointer } from "lucide-react";
 import { formatDate, formatNumber } from "@/utils/formatters";
 import { TiArrowUnsorted } from "react-icons/ti";
+import html2canvas from "html2canvas";
 
 type TableProps = {
   title?: string;
@@ -39,6 +40,7 @@ export const Table: React.FC<TableProps> = ({
     useState<TransactionType | null>(null);
   const [tooltipId, setTooltipId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const modalContentRef = useRef<HTMLDivElement>(null);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -71,6 +73,25 @@ export const Table: React.FC<TableProps> = ({
     console.log("Setting selected transaction:", row);
     setSelectedTransaction(row);
     onViewTransaction && onViewTransaction(row);
+  };
+
+  // Function to download modal as image
+  const handleDownloadCard = async () => {
+    if (!modalContentRef.current) return;
+    
+    try {
+      const canvas = await html2canvas(modalContentRef.current);
+      
+      const image = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = image;
+      link.download = `OMAYA_Receipt_${selectedTransaction?.id?.substring(0, 8) || 'transaction'}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Failed to download card:', error);
+    }
   };
 
   // Add effect to monitor selectedTransaction changes
@@ -568,6 +589,7 @@ export const Table: React.FC<TableProps> = ({
           onClick={() => setSelectedTransaction(null)}
         >
           <div
+            ref={modalContentRef}
             className="bg-white dark:bg-[#23232B] rounded-[24px] p-6 w-full max-w-[500px] mx-4"
             onClick={(e) => e.stopPropagation()}
           >
@@ -647,45 +669,11 @@ export const Table: React.FC<TableProps> = ({
                     <path d="M15.41 6.51l-6.82 3.98" />
                   </svg>
                 </button>
-                {/* Download PDF button */}
+                {/* Download Card as Image button */}
                 <button
-                  onClick={() => {
-                    // Generate and download receipt
-                    const transactionType = String(selectedTransaction.type || '').toUpperCase();
-                    const transactionStatus = String(selectedTransaction.status || '').toUpperCase();
-                    const paymentBank = Array.isArray(selectedTransaction.payment) 
-                      ? selectedTransaction.payment[0]?.bank 
-                      : selectedTransaction.payment?.bank;
-                    
-                    const receiptContent = `
-Transaction Receipt
-====================
-
-Transaction ID: ${selectedTransaction.id}
-Type: ${transactionType}
-Amount: ${selectedTransaction.amount} ${selectedTransaction.assetSymbol || 'USDT'}
-Status: ${transactionStatus}
-Date: ${formatDate(selectedTransaction.date)}
-Rate: ${selectedTransaction.rate || 'N/A'}
-
-Payment Details:
-${paymentBank ? `Bank: ${paymentBank}` : 'N/A'}
-
-Generated on: ${new Date().toLocaleString()}
-                    `.trim();
-                    
-                    const blob = new Blob([receiptContent], { type: 'text/plain' });
-                    const url = window.URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `OMAYA_Receipt_${selectedTransaction.id.substring(0, 8)}.txt`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    window.URL.revokeObjectURL(url);
-                  }}
+                  onClick={handleDownloadCard}
                   className="text-[#1D8751] hover:text-[#166b3e] transition-colors"
-                  title="Download Receipt"
+                  title="Download Receipt as Image"
                 >
                   <Download size={18} />
                 </button>
@@ -779,119 +767,13 @@ Generated on: ${new Date().toLocaleString()}
                 </span>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => {
-                      // Generate HTML receipt for download
-                      const transactionType = String(selectedTransaction.type || '').toUpperCase();
-                      const transactionStatus = String(selectedTransaction.status || '').toUpperCase();
-                      const paymentBank = Array.isArray(selectedTransaction.payment) 
-                        ? selectedTransaction.payment[0]?.bank 
-                        : selectedTransaction.payment?.bank;
-                      
-                      const receiptHTML = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Transaction Receipt - ${selectedTransaction.id.substring(0, 8)}</title>
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; }
-    .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #1D8751; padding-bottom: 20px; }
-    .title { color: #1D8751; font-size: 28px; font-weight: bold; margin-bottom: 10px; }
-    .subtitle { color: #666; font-size: 14px; }
-    .section { margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 8px; }
-    .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
-    .row:last-child { border-bottom: none; }
-    .label { color: #666; font-weight: 600; }
-    .value { color: #333; font-weight: 500; }
-    .amount { font-size: 24px; color: #1D8751; font-weight: bold; text-align: center; margin: 20px 0; }
-    .footer { margin-top: 40px; text-align: center; color: #999; font-size: 12px; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <div class="title">OMAYA EXCHANGE</div>
-    <div class="subtitle">Transaction Receipt</div>
-  </div>
-  
-  <div class="amount">${selectedTransaction.amount} ${selectedTransaction.assetSymbol || 'USDT'}</div>
-  
-  <div class="section">
-    <div class="row">
-      <span class="label">Transaction ID:</span>
-      <span class="value">${selectedTransaction.id}</span>
-    </div>
-    <div class="row">
-      <span class="label">Type:</span>
-      <span class="value">${transactionType}</span>
-    </div>
-    <div class="row">
-      <span class="label">Status:</span>
-      <span class="value">${transactionStatus}</span>
-    </div>
-    <div class="row">
-      <span class="label">Date:</span>
-      <span class="value">${formatDate(selectedTransaction.date)}</span>
-    </div>
-    <div class="row">
-      <span class="label">Exchange Rate:</span>
-      <span class="value">${selectedTransaction.rate || 'N/A'}</span>
-    </div>
-  </div>
-  
-  ${paymentBank ? `
-  <div class="section">
-    <h3 style="margin-top: 0; color: #333;">Payment Details</h3>
-    <div class="row">
-      <span class="label">Bank/Provider:</span>
-      <span class="value">${paymentBank}</span>
-    </div>
-  </div>
-  ` : ''}
-  
-  <div class="footer">
-    Generated on ${new Date().toLocaleString()}<br>
-    This is an official receipt from OMAYA Exchange
-  </div>
-</body>
-</html>`;
-                      
-                      const blob = new Blob([receiptHTML], { type: 'text/html' });
-                      const url = window.URL.createObjectURL(blob);
-                      const link = document.createElement('a');
-                      link.href = url;
-                      link.download = `OMAYA_Receipt_${selectedTransaction.id.substring(0, 8)}.html`;
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                      window.URL.revokeObjectURL(url);
-                    }}
+                    onClick={handleDownloadCard}
                     className="text-[#1D8751] hover:text-[#166b3e] transition-colors cursor-pointer"
-                    title="Download Receipt (HTML)"
+                    title="Download Receipt as Image"
                   >
                     <Download size={18} />
                   </button>
-                  <button
-                    onClick={() => {
-                      // View receipt (placeholder - could open in new tab)
-                      console.log("View receipt for:", selectedTransaction.id);
-                    }}
-                    className="text-[#1D8751] hover:text-[#166b3e] transition-colors cursor-pointer"
-                    title="View Receipt"
-                  >
-                  <svg
-                    width="18"
-                    height="18"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                  </button>
+                  
                 </div>
               </div>
               <div className="flex justify-between items-center">
