@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
 import {
@@ -22,8 +22,17 @@ interface UseTradeMessagesWebSocketOptions {
 export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOptions) => {
   const { tradeId, enabled = true } = options;
   const dispatch = useDispatch<AppDispatch>();
-  const wsRef = useRef(getTradeMessagesWebSocket(tradeId));
   const mountedRef = useRef(true);
+  const [isConnected, setIsConnected] = useState(false);
+  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Get or create WebSocket instance when tradeId changes
+  const wsRef = useRef(getTradeMessagesWebSocket(tradeId));
+  
+  // Update wsRef when tradeId changes
+  useEffect(() => {
+    wsRef.current = getTradeMessagesWebSocket(tradeId);
+  }, [tradeId]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -31,6 +40,46 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
       mountedRef.current = false;
     };
   }, []);
+
+  // Periodic connection check
+  useEffect(() => {
+    if (!enabled || !tradeId) return;
+
+    // Check connection status every 5 seconds
+    heartbeatIntervalRef.current = setInterval(() => {
+      const ws = wsRef.current;
+      const connected = ws.isConnected();
+      
+      if (mountedRef.current) {
+        setIsConnected(connected);
+      }
+
+      // If disconnected and not permanently failed, try to reconnect
+      if (!connected && !ws.hasFailed()) {
+        const getAccessToken = (): string | null => {
+          const cookieToken = cookieUtils.getCookie("access_token");
+          if (cookieToken) return cookieToken;
+          if (typeof window !== "undefined") {
+            const localToken = localStorage.getItem("access_token");
+            if (localToken) return localToken;
+          }
+          return null;
+        };
+
+        const token = getAccessToken();
+        if (token && token.includes('.')) {
+          ws.resetPermanentFailure();
+          ws.connect(tradeId, token);
+        }
+      }
+    }, 5000);
+
+    return () => {
+      if (heartbeatIntervalRef.current) {
+        clearInterval(heartbeatIntervalRef.current);
+      }
+    };
+  }, [enabled, tradeId]);
 
   useEffect(() => {
     if (!enabled || !tradeId) {
@@ -76,13 +125,21 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
         switch (message.type) {
           case "connection_established":
             // Silent - connection established
+            setIsConnected(true);
+            break;
+
+          case "pong":
+            // Pong response - connection is alive
+            setIsConnected(true);
             break;
 
           case "messages_list":
           case "initial_messages":
+          case "recent_messages":
             // Initial list of messages - handle both formats
             const messagesList = message.data.messages || message.data;
             if (messagesList && Array.isArray(messagesList)) {
+              console.log("📨 Received message list via WebSocket:", messagesList.length, "messages");
               dispatch(
                 setMessages({
                   tradeId,
@@ -90,12 +147,14 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
                 })
               );
             }
+            setIsConnected(true);
             break;
 
           case "new_message":
           case "message_received":
             // New message received - the data IS the message itself
             if (message.data && message.data.id) {
+              console.log("📨 New message received via WebSocket:", message.data.message);
               const newMessage: TradeMessage = {
                 id: message.data.id,
                 trade: message.data.trade || parseInt(tradeId),
@@ -113,14 +172,17 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
                 })
               );
             }
+            setIsConnected(true);
             break;
 
           case "error":
             // Silent error handling
+            console.warn("⚠️ WebSocket error message:", message.data);
             break;
 
           default:
-            // Silent - unknown message type
+            // Log unknown message types for debugging
+            console.log("❓ Unknown WebSocket message type:", message.type, message.data);
             break;
         }
       } catch (error) {
@@ -136,12 +198,14 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
     // Handle WebSocket close
     const unsubscribeClose = ws.onClose(() => {
       if (!mountedRef.current) return;
+      setIsConnected(false);
       // Silent close handling
     });
 
     // Handle WebSocket open
     const unsubscribeOpen = ws.onOpen(() => {
       if (!mountedRef.current) return;
+      setIsConnected(true);
       // Silent open handling
     });
 
@@ -163,7 +227,7 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
     sendMessage: (message: string, images: File[] = []) => {
       wsRef.current.sendMessage(message, images);
     },
-    isConnected: wsRef.current.isConnected(),
+    isConnected,
   };
 };
 

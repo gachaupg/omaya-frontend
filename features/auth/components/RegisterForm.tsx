@@ -1290,9 +1290,17 @@ export default function RegistrationPage() {
               {/* Register Button */}
               <button
                 type="submit"
-                className="w-full bg-[#1D8751] text-white py-3 px-4 rounded-full hover:bg-[#0E5531] transition-colors duration-300 mt-4"
+                disabled={isSubmitting}
+                className="w-full bg-[#1D8751] text-white py-3 px-4 rounded-full hover:bg-[#0E5531] transition-colors duration-300 mt-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {t("auth.register.submit", "Register")}
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <span>{t("auth.register.registering", "Registering...")}</span>
+                  </>
+                ) : (
+                  t("auth.register.submit", "Register")
+                )}
               </button>
 
               {/* Login Link */}

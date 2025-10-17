@@ -20,7 +20,9 @@ import {
   SupportRequestResponse,
   CashWithdrawalRequest,
   CashWithdrawalResponse,
+  ReferralFeeCalculationResponse,
 } from "./types";
+import { API_CONFIG } from "@/lib/appConfig";
 
 const SETTINGS_API_BASE = "/api";
 
@@ -268,6 +270,28 @@ export const settingsApi = {
       const response = await apiClient.post(
         "/trading_engine/referral/withdraw/",
         data
+      );
+      return response.data;
+    });
+  },
+
+  // Referral Withdrawal History
+  getReferralWithdrawalHistory: async (): Promise<any> => {
+    return withRetry(async () => {
+      const response = await apiClient.get(
+        "/trading_engine/user-referral/withdrawals/"
+      );
+      return response.data;
+    });
+  },
+
+  // Calculate Referral Withdrawal Fees
+  calculateReferralFees: async (
+    requestedAmount: string
+  ): Promise<ReferralFeeCalculationResponse> => {
+    return withRetry(async () => {
+      const response = await apiClient.get(
+        `${API_CONFIG.REFERRAL.CALCULATE_FEES}?requested_amount=${requestedAmount}`
       );
       return response.data;
     });

@@ -20,6 +20,7 @@ import { FaSearch } from "react-icons/fa";
 import InfoModal from "./info";
 import { useTheme } from "@/context/theme";
 import { useAssetsDisplay, usePaymentMethodsDisplay } from "../../hooks/useDataDisplay";
+import ForexDeposit from "./ForexDeposit";
 
 interface DepositFormProps {
   onExchange?: (transactionData: {
@@ -85,6 +86,7 @@ export default function DepositForm({
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  const [transactionMode, setTransactionMode] = useState<"crypto" | "forex">("crypto");
   const { adminPaymentDetails, loading, error } = useSelector(
     (state: any) => state.payment
   );
@@ -182,6 +184,7 @@ export default function DepositForm({
 
   // Add validation state for minimum receive amount
   const [receiveAmountError, setReceiveAmountError] = useState<string | null>(null);
+
 
   useEffect(() => {
     // Try to fetch from cache first, then API if needed
@@ -933,15 +936,26 @@ export default function DepositForm({
   const validateFirstCard = () => {
     const errors: string[] = [];
 
-    if (!payAmount || payAmount <= 0) {
-      errors.push("Please enter a valid amount");
+    // Check if amount is entered
+    if (!payAmountInput || payAmountInput.trim() === "") {
+      errors.push("Please enter an amount");
+      showToast.error("Please enter an amount");
+    } else if (!payAmount || payAmount <= 0) {
+      errors.push("Please enter a valid amount greater than 0");
+      showToast.error("Please enter a valid amount greater than 0");
     }
 
+    // Check if asset is selected
     if (!selectedAsset) {
       errors.push("Please select an asset");
+      showToast.error("Please select an asset");
     }
 
-    // Wallet address is optional - no validation needed here
+    // Check if payment method is selected
+    if (!selectedPaymentDetail || !payBank) {
+      errors.push("Please select a payment method");
+      showToast.error("Please select a payment method");
+    }
 
     setValidationErrors(errors);
     return errors.length === 0;
@@ -1679,6 +1693,40 @@ export default function DepositForm({
 
   return (
     <div className="w-full flex flex-col dark:bg-[#18181D]  ">
+      {/* Crypto/Forex Toggle Buttons */}
+      <div className="w-full mb-4">
+        <div className="bg-white dark:bg-[#1D1D23] border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-2">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setTransactionMode("crypto")}
+              className={`flex-1 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${
+                transactionMode === "crypto"
+                  ? "bg-[#1D8751] text-white shadow-md"
+                  : "bg-transparent text-[#788099] hover:bg-[#F5F6F7] dark:hover:bg-[#23232B]"
+              }`}
+            >
+              Crypto Deposit
+            </button>
+            <button
+              type="button"
+              onClick={() => setTransactionMode("forex")}
+              className={`flex-1 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${
+                transactionMode === "forex"
+                  ? "bg-[#1D8751] text-white shadow-md"
+                  : "bg-transparent text-[#788099] hover:bg-[#F5F6F7] dark:hover:bg-[#23232B]"
+              }`}
+            >
+              Forex Deposit
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {transactionMode === "forex" ? (
+        <ForexDeposit />
+      ) : (
+        <>
       <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
         <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Transaction Info
       </h2>
@@ -1708,7 +1756,7 @@ export default function DepositForm({
           </p>
         </div>
       )}
-      <div className="w-full max-w-4xl mx-auto text-white">
+      <div className="w-full text-white">
         {/* Top Section - Amount and Bank/Payment Method in one card */}
         <div className="relative mb-4">
           {/* Top Card Container */}
@@ -1834,6 +1882,7 @@ export default function DepositForm({
                     const selectedPayment = adminPaymentDetails?.find(
                       (payment: any) => payment.provider_name === e.target.value
                     );
+                    
                     setPayBank(e.target.value);
                     setSelectedPaymentDetail(selectedPayment || null);
                   }}
@@ -2288,7 +2337,7 @@ export default function DepositForm({
           </h2>
           <div
             ref={paymentDetailsRef}
-            className="mt-1 mb-2 w-full flex flex-col gap-3 max-w-4xl mx-auto px-2 "
+            className="mt-1 mb-2 w-full flex flex-col gap-3 px-2 "
           >
             <div className="flex-1  dark:bg-[#1D1D23] rounded-2xl border border-[#39394a] dark:border-[#35353E] flex flex-col justify-between p-5 relative min-h-[120px]">
               {/* Bank and logo */}
@@ -2372,7 +2421,7 @@ export default function DepositForm({
               <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
                 <span className="text-[#7e7e8f] dark:text-[#788099]">3-</span> Transaction Code
               </h2>
-              <div className="mb-6 flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
+              <div className="mb-6 flex flex-col gap-3 w-full px-2">
               <div className=" dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-4 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
                 {/* Transaction Code Row */}
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-3">
@@ -2480,7 +2529,7 @@ export default function DepositForm({
           <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
             <span className="text-[#7e7e8f] dark:text-[#788099]">4-</span> Wallet Address
           </h2>
-          <div className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full max-w-4xl mx-auto text-[#35353e] dark:text-[#788099] mb-6">
+          <div className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-6">
             {/* Wallet/Account Address Label */}
             <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
               Wallet/Account Address
@@ -2659,7 +2708,7 @@ export default function DepositForm({
 
           {/* Validation Errors Display */}
           {validationErrors.length > 0 && (
-            <div className="max-w-4xl mx-auto w-full px-2 mb-4">
+            <div className="w-full px-2 mb-4">
                 <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-2xl p-4">
                 <h3 className="text-[#1D8751] font-semibold mb-2">
                   Please fix the following errors:
@@ -2674,7 +2723,7 @@ export default function DepositForm({
           )}
 
           {/* Disclaimer and Button outside the card */}
-          <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
+          <div className="flex flex-col gap-3 w-full px-2">
             <div className="flex items-center text-[#35353e] dark:text-[#788099] text-[16px] font-semibold">
               <FaExclamationCircle className="mr-2 text-[#1D8751]" />
               <span>
@@ -2721,8 +2770,8 @@ export default function DepositForm({
           setIsInfoModalOpen(false);
         }}
       />
-      
-
+        </>
+      )}
     </div>
   );
 }

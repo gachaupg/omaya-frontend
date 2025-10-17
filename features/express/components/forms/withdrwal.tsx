@@ -28,6 +28,7 @@ import PaymentMethodsModal from "../../../p2p/components/ui/p2pdashboard/section
 import InfoModal from "./info";
 import { debugAssetFetching } from "../../../../lib/utils/debugAssets";
 import { useAssetsDisplay, usePaymentMethodsDisplay } from "../../hooks/useDataDisplay";
+import ForexWithdrawal from "./ForexWithdrawal";
 
 // Add UserPaymentDetail interface
 interface UserPaymentDetail {
@@ -168,6 +169,7 @@ export default function WithdrawalForm({
   onModeChange,
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
+  const [transactionMode, setTransactionMode] = useState<"crypto" | "forex">("crypto");
   const { adminPaymentDetails, adminWalletList, loading, error } = useSelector(
     (state: any) => state.payment
   );
@@ -221,20 +223,13 @@ export default function WithdrawalForm({
   // Debug function to test asset fetching
   const handleDebugAssets = async () => {
     try {
-      console.log("=== Starting debug asset fetch for express withdrawal ===");
-      console.log("Current exchange assets:", assets);
-      console.log("Current swap assets:", swapAssets);
-      
-      // Force refresh both asset types
-      console.log("🔄 Force refreshing exchange assets...");
+     
       await dispatch(fetchAssets(true)).unwrap();
       
-      console.log("🔄 Force refreshing swap assets...");
+      
       await dispatch(fetchSupportedAssets(true)).unwrap();
       
-      console.log("✅ Assets force refreshed");
     } catch (error) {
-      console.error("Debug failed:", error);
     }
   };
 
@@ -307,6 +302,7 @@ export default function WithdrawalForm({
   );
   const [previousValidAmount, setPreviousValidAmount] = useState<string>("");
   const [isUserModifiedAmount, setIsUserModifiedAmount] = useState(false);
+
 
   // Add caching for API responses with timestamp
   const [estimateCache, setEstimateCache] = useState<
@@ -1855,20 +1851,37 @@ export default function WithdrawalForm({
 
   // Validate first card data
   const validateFirstCard = () => {
+    const errors: string[] = [];
+    
     // Clear previous payment method error
     setPaymentMethodError(null);
     
-    if (!selectedAsset) {
+    // Check if amount is entered
+    if (!payAmountInput || payAmountInput.trim() === "") {
+      errors.push("Please enter an amount");
+      showToast.error("Please enter an amount");
       return false;
     }
-    if (!payAmount) {
+    
+    // Check if amount is valid
+    if (!payAmount || payAmount <= 0) {
+      errors.push("Please enter a valid amount greater than 0");
+      showToast.error("Please enter a valid amount greater than 0");
       return false;
     }
 
-    // Allow any amount including negative values
-    // No validation for negative amounts
+    // Check if asset is selected
+    if (!selectedAsset) {
+      errors.push("Please select an asset");
+      showToast.error("Please select an asset");
+      return false;
+    }
+
+    // Check if payment method is selected
     if (selectedPaymentDetails.length === 0) {
       setPaymentMethodError("Please select a payment method");
+      errors.push("Please select a payment method");
+      showToast.error("Please select a payment method");
       return false;
     }
 
@@ -1876,10 +1889,12 @@ export default function WithdrawalForm({
     if (getAmount > 0) {
       const validationError = validateReceiveAmount(getAmount, selectedAsset);
       if (validationError) {
+        errors.push(validationError);
         return false;
       }
     }
 
+    setValidationErrors(errors);
     return true;
   };
 
@@ -2327,11 +2342,45 @@ export default function WithdrawalForm({
 
   return (
     <div className="w-full flex flex-col dark:bg-[#18181D]  ">
+      {/* Crypto/Forex Toggle Buttons */}
+      <div className="w-full mb-4">
+        <div className="bg-white dark:bg-[#1D1D23] border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-2">
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setTransactionMode("crypto")}
+              className={`flex-1 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${
+                transactionMode === "crypto"
+                  ? "bg-[#1D8751] text-white shadow-md"
+                  : "bg-transparent text-[#788099] hover:bg-[#F5F6F7] dark:hover:bg-[#23232B]"
+              }`}
+            >
+              Crypto Withdrawal
+            </button>
+            <button
+              type="button"
+              onClick={() => setTransactionMode("forex")}
+              className={`flex-1 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${
+                transactionMode === "forex"
+                  ? "bg-[#1D8751] text-white shadow-md"
+                  : "bg-transparent text-[#788099] hover:bg-[#F5F6F7] dark:hover:bg-[#23232B]"
+              }`}
+            >
+              Forex Withdrawal
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {transactionMode === "forex" ? (
+        <ForexWithdrawal />
+      ) : (
+        <>
       <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
         <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Transaction Info
       </h2>
 
-      <div className="w-full max-w-4xl mx-auto text-white">
+      <div className="w-full text-white">
         {/* Top Section - You Send and You Get in one card */}
         <div className="relative mb-4">
           {/* Top Card Container */}
@@ -3103,17 +3152,13 @@ export default function WithdrawalForm({
                 <select
                   value={payBank}
                   onChange={(e) => {
-                    console.log("DEBUG: Selected payment type:", e.target.value);
-                    console.log(
-                      "DEBUG: Available adminWalletList:",
-                      adminWalletList
-                    );
                     const selectedWallet = adminWalletList?.find(
                       (wallet: any) => wallet.admin_payment_detail?.payment_type === e.target.value
                     );
-                    console.log("DEBUG: Selected wallet:", selectedWallet);
+                    
                     setPayBank(e.target.value);
                     setSelectedPaymentDetail(selectedWallet?.admin_payment_detail || null);
+                    
                     // Clear selected payment details when changing payment type
                     setSelectedPaymentDetails([]);
                     // Clear payment method error when selecting a payment type
@@ -3341,7 +3386,7 @@ export default function WithdrawalForm({
       {isTransactionSubmitted && (
         <div
           key={`wallet-section-${forceUpdate}`}
-          className="mb-6 flex flex-col gap-3 max-w-4xl mx-auto w-full px-2"
+          className="mb-6 flex flex-col gap-3 w-full px-2"
         >
           <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
             <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>
@@ -3566,7 +3611,7 @@ export default function WithdrawalForm({
             </div>
           </div>
           {/* Disclaimer and Button outside the card */}
-          <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
+          <div className="flex flex-col gap-3 w-full px-2">
             <div className="flex items-center text-[#35353e] dark:text-[#788099] text-[16px] font-semibold">
               <FaExclamationCircle className="mr-2 text-[#1D8751]" />
               <span>
@@ -3641,7 +3686,7 @@ export default function WithdrawalForm({
 
       {/* Validation Errors Display */}
       {validationErrors.length > 0 && (
-        <div className="max-w-4xl mt-4 mx-auto w-full px-2 mb-4">
+        <div className="w-full mt-4 px-2 mb-4">
           <div className="bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] rounded-2xl p-4">
             
             <ul className="list-disc list-inside text-[#1D8751] space-y-1">
@@ -3677,6 +3722,8 @@ export default function WithdrawalForm({
           setIsInfoModalOpen(false);
         }}
       />
+        </>
+      )}
     </div>
   );
 }

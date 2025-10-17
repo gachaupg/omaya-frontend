@@ -967,17 +967,7 @@ export default function ExchangeForm() {
     <div className="w-full bg-[#18181D] rounded-3xl px-6 py-2 shadow-lg mr-8 ml-4">
       {/* Tabs */}
       <div className="w-full flex justify-between">
-        <TabButton id="express">
-        <span className="flex items-center justify-center">
-                                                          <span className="text-[#727272] text-base uppercase font-bold">E</span>
-
-                            <img
-                              className="mt-2"
-                              src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
-                              alt=""
-                            />
-                          </span>
-        </TabButton>
+       
         <TabButton id="swap">
           <h3
             className={`text-lg font-bold transition-colors ${

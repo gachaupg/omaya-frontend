@@ -63,3 +63,43 @@ export interface DirectTransferResponse {
 export type ExpressWithdrawalResponse =
   | ChangeNowSwapResponse
   | DirectTransferResponse;
+
+// Forex types
+export interface ForexDepositPayload {
+  transaction_type: "deposit";
+  from_currency: string;
+  from_amount: string;
+  to_currency: string;
+  to_amount: string;
+  exchange_rate: string;
+  additional_info?: string;
+  user_notes?: string;
+  user_forex_account?: string;
+  admin_payment_detail_id: string;
+}
+
+export interface ForexWithdrawalPayload {
+  transaction_type: "withdrawal";
+  user_payment_detail_id: string;
+  from_currency: string;
+  from_amount: string;
+  to_currency: string;
+  to_amount: string;
+  exchange_rate: string;
+  additional_info?: string;
+  user_notes?: string;
+}
+
+export type ForexExchangePayload = ForexDepositPayload | ForexWithdrawalPayload;
+
+export interface ForexExchangeResponse {
+  id: number;
+  transaction_type: string;
+  from_currency: string;
+  from_amount: string;
+  to_currency: string;
+  to_amount: string;
+  exchange_rate: string;
+  status: string;
+  message?: string;
+}

@@ -195,3 +195,16 @@ export interface CashWithdrawalResponse extends SettingsApiResponse {
     success: boolean;
   };
 }
+
+// Referral Fee Calculation Types
+export interface ReferralFeeCalculation {
+  commission_fee: string;
+  network_fee: string;
+  total_fees: string;
+}
+
+export interface ReferralFeeCalculationResponse {
+  commission_fee: string;
+  network_fee: string;
+  total_fees: string;
+}

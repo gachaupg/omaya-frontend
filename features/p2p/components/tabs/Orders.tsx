@@ -36,7 +36,10 @@ const Orders = () => {
   }, [fetchTrades]);
 
   const handlePageChange = (page: number) => {
+    console.log("handlePageChange called with page:", page);
     dispatch(setCurrentPage(page));
+    // Fetch data for the new page
+    dispatch(fetchUserTrades({ page, ...filters }));
   };
 
   const handleFilterChange = (newFilters: typeof filters) => {
@@ -132,7 +135,7 @@ const Orders = () => {
   const transformedData: TransactionType[] = filteredData.map((trade) => ({
     id: trade.id,
     type: trade.order_type.toLowerCase(),
-    date: new Date(trade.timestamp).toLocaleString(),
+    date: trade.timestamp, // Keep as ISO string for formatDate to parse correctly
     amount: parseFloat(trade.amount).toFixed(2),
     status: trade.status.toLowerCase(),
     asset: parseFloat(trade.amount).toFixed(2),
@@ -144,6 +147,8 @@ const Orders = () => {
           logo: "",
         }
       : undefined,
+    // Add all trade data for modal
+    rawData: trade,
   }));
 
   return (

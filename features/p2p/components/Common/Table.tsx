@@ -415,92 +415,124 @@ export const Table: React.FC<TableProps> = ({
                 >
                     &lt;
                 </button>
-                {totalPages <= 10 ? (
-                  // Show all pages if total pages is 10 or less
-                  Array.from({ length: totalPages }, (_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => {
-                        console.log(
-                          "Page number clicked:",
-                          i + 1,
-                          "Current page:",
-                          currentPage
-                        );
-                        if (onPageChange) {
-                          console.log("Calling onPageChange with:", i + 1);
-                          onPageChange(i + 1);
-                        } else {
-                          console.log("onPageChange is not provided");
-                        }
-                      }}
-                      className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
-                        currentPage === i + 1
-                          ? "bg-[#1D8751] text-white"
-                          : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[#23232B] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
-                      }`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))
-                ) : (
-                  // Show first 5 and last 5 pages with ellipsis
-                  <>
-                    {/* First 5 pages */}
-                    {Array.from({ length: 5 }, (_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => {
-                          console.log(
-                            "First 5 page clicked:",
-                            i + 1,
-                            "Current:",
-                            currentPage
-                          );
-                          onPageChange?.(i + 1);
-                        }}
-                        className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
-                          currentPage === i + 1
-                            ? "bg-[#1D8751] text-white"
-                            : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[#23232B] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
-                        }`}
-                      >
-                        {i + 1}
-                      </button>
-                    ))}
-
-                    {/* Ellipsis */}
-                    <span className="text-gray-400 dark:text-[#8C8CA1]">
-                      ...
-                    </span>
-
-                    {/* Last 5 pages */}
-                    {Array.from({ length: 5 }, (_, i) => {
-                      const pageNum = totalPages - 4 + i;
-                      return (
+                {(() => {
+                  const pageButtons = [];
+                  const maxPagesToShow = 7; // Show up to 7 page numbers
+                  const sidePages = 2; // Pages to show on each side of current page
+                  
+                  if (totalPages <= maxPagesToShow) {
+                    // Show all pages if total is 7 or less
+                    for (let i = 1; i <= totalPages; i++) {
+                      pageButtons.push(
                         <button
-                          key={pageNum}
+                          key={i}
                           onClick={() => {
-                            console.log(
-                              "Last 5 page clicked:",
-                              pageNum,
-                              "Current:",
-                              currentPage
-                            );
-                            onPageChange?.(pageNum);
+                            console.log("Page clicked:", i);
+                            onPageChange?.(i);
                           }}
                           className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
-                            currentPage === pageNum
+                            currentPage === i
                               ? "bg-[#1D8751] text-white"
                               : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[#23232B] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
                           }`}
                         >
-                          {pageNum}
+                          {i}
                         </button>
                       );
-                    })}
-                  </>
-                )}
+                    }
+                  } else {
+                    // Smart pagination with ellipsis
+                    // Always show first page
+                    pageButtons.push(
+                      <button
+                        key={1}
+                        onClick={() => onPageChange?.(1)}
+                        className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
+                          currentPage === 1
+                            ? "bg-[#1D8751] text-white"
+                            : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[#23232B] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
+                        }`}
+                      >
+                        1
+                      </button>
+                    );
+
+                    // Calculate range around current page
+                    let startPage = Math.max(2, currentPage - sidePages);
+                    let endPage = Math.min(totalPages - 1, currentPage + sidePages);
+
+                    // Adjust if we're near the start
+                    if (currentPage <= 4) {
+                      startPage = 2;
+                      endPage = Math.min(6, totalPages - 1);
+                    }
+                    // Adjust if we're near the end
+                    else if (currentPage >= totalPages - 3) {
+                      startPage = Math.max(2, totalPages - 5);
+                      endPage = totalPages - 1;
+                    }
+
+                    // Left ellipsis
+                    if (startPage > 2) {
+                      pageButtons.push(
+                        <span key="ellipsis-left" className="px-2 text-gray-400 dark:text-[#8C8CA1]">
+                          ...
+                        </span>
+                      );
+                    }
+
+                    // Pages around current page
+                    for (let i = startPage; i <= endPage; i++) {
+                      pageButtons.push(
+                        <button
+                          key={i}
+                          onClick={() => {
+                            console.log("Page clicked:", i);
+                            onPageChange?.(i);
+                          }}
+                          className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
+                            currentPage === i
+                              ? "bg-[#1D8751] text-white"
+                              : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[#23232B] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
+                          }`}
+                        >
+                          {i}
+                        </button>
+                      );
+                    }
+
+                    // Right ellipsis
+                    if (endPage < totalPages - 1) {
+                      pageButtons.push(
+                        <span key="ellipsis-right" className="px-2 text-gray-400 dark:text-[#8C8CA1]">
+                          ...
+                        </span>
+                      );
+                    }
+
+                    // Always show last page
+                    if (totalPages > 1) {
+                      pageButtons.push(
+                        <button
+                          key={totalPages}
+                          onClick={() => {
+                            console.log("Last page clicked:", totalPages);
+                            onPageChange?.(totalPages);
+                          }}
+                          className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
+                            currentPage === totalPages
+                              ? "bg-[#1D8751] text-white"
+                              : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[#23232B] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
+                          }`}
+                        >
+                          {totalPages}
+                        </button>
+                      );
+                    }
+                  }
+                  
+                  return pageButtons;
+                })()}
                 <button
                   onClick={() => {
                     console.log("Next page clicked, current:", currentPage);
@@ -578,8 +610,26 @@ export const Table: React.FC<TableProps> = ({
                 </div>
               </div>
               <div className="flex gap-2">
-                {/* Placeholder for Share icon */}
-                <button className="text-[#1D8751]" title="Share">
+                {/* Share button */}
+                <button 
+                  onClick={() => {
+                    const shareData = {
+                      title: `${selectedTransaction.asset} ${selectedTransaction.type} Transaction`,
+                      text: `Transaction ID: ${selectedTransaction.id}\nAmount: ${selectedTransaction.amount} ${selectedTransaction.assetSymbol}\nStatus: ${selectedTransaction.status}`,
+                      url: window.location.href
+                    };
+                    
+                    if (navigator.share) {
+                      navigator.share(shareData).catch(err => console.log('Share failed:', err));
+                    } else {
+                      // Fallback - copy to clipboard
+                      navigator.clipboard.writeText(`Transaction ID: ${selectedTransaction.id}\nAmount: ${selectedTransaction.amount} ${selectedTransaction.assetSymbol}\nStatus: ${selectedTransaction.status}`);
+                      alert('Transaction details copied to clipboard!');
+                    }
+                  }}
+                  className="text-[#1D8751] hover:text-[#166b3e] transition-colors" 
+                  title="Share Transaction"
+                >
                   <svg
                     width="18"
                     height="18"
@@ -597,24 +647,47 @@ export const Table: React.FC<TableProps> = ({
                     <path d="M15.41 6.51l-6.82 3.98" />
                   </svg>
                 </button>
-                {/* Placeholder for Eye icon */}
+                {/* Download PDF button */}
                 <button
-                  className="text-gray-500 dark:text-[#788099]"
-                  title="Note"
+                  onClick={() => {
+                    // Generate and download receipt
+                    const transactionType = String(selectedTransaction.type || '').toUpperCase();
+                    const transactionStatus = String(selectedTransaction.status || '').toUpperCase();
+                    const paymentBank = Array.isArray(selectedTransaction.payment) 
+                      ? selectedTransaction.payment[0]?.bank 
+                      : selectedTransaction.payment?.bank;
+                    
+                    const receiptContent = `
+Transaction Receipt
+====================
+
+Transaction ID: ${selectedTransaction.id}
+Type: ${transactionType}
+Amount: ${selectedTransaction.amount} ${selectedTransaction.assetSymbol || 'USDT'}
+Status: ${transactionStatus}
+Date: ${formatDate(selectedTransaction.date)}
+Rate: ${selectedTransaction.rate || 'N/A'}
+
+Payment Details:
+${paymentBank ? `Bank: ${paymentBank}` : 'N/A'}
+
+Generated on: ${new Date().toLocaleString()}
+                    `.trim();
+                    
+                    const blob = new Blob([receiptContent], { type: 'text/plain' });
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `OMAYA_Receipt_${selectedTransaction.id.substring(0, 8)}.txt`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url);
+                  }}
+                  className="text-[#1D8751] hover:text-[#166b3e] transition-colors"
+                  title="Download Receipt"
                 >
-                  <svg
-                    width="18"
-                    height="18"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
+                  <Download size={18} />
                 </button>
               </div>
             </div>
@@ -704,8 +777,107 @@ export const Table: React.FC<TableProps> = ({
                 <span className="text-gray-400 dark:text-[#8C8CA1]">
                   Receipt:
                 </span>
-                <span className="text-[#1D8751]">
-                  {/* Placeholder for Eye icon */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      // Generate HTML receipt for download
+                      const transactionType = String(selectedTransaction.type || '').toUpperCase();
+                      const transactionStatus = String(selectedTransaction.status || '').toUpperCase();
+                      const paymentBank = Array.isArray(selectedTransaction.payment) 
+                        ? selectedTransaction.payment[0]?.bank 
+                        : selectedTransaction.payment?.bank;
+                      
+                      const receiptHTML = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Transaction Receipt - ${selectedTransaction.id.substring(0, 8)}</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; }
+    .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #1D8751; padding-bottom: 20px; }
+    .title { color: #1D8751; font-size: 28px; font-weight: bold; margin-bottom: 10px; }
+    .subtitle { color: #666; font-size: 14px; }
+    .section { margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 8px; }
+    .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+    .row:last-child { border-bottom: none; }
+    .label { color: #666; font-weight: 600; }
+    .value { color: #333; font-weight: 500; }
+    .amount { font-size: 24px; color: #1D8751; font-weight: bold; text-align: center; margin: 20px 0; }
+    .footer { margin-top: 40px; text-align: center; color: #999; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="title">OMAYA EXCHANGE</div>
+    <div class="subtitle">Transaction Receipt</div>
+  </div>
+  
+  <div class="amount">${selectedTransaction.amount} ${selectedTransaction.assetSymbol || 'USDT'}</div>
+  
+  <div class="section">
+    <div class="row">
+      <span class="label">Transaction ID:</span>
+      <span class="value">${selectedTransaction.id}</span>
+    </div>
+    <div class="row">
+      <span class="label">Type:</span>
+      <span class="value">${transactionType}</span>
+    </div>
+    <div class="row">
+      <span class="label">Status:</span>
+      <span class="value">${transactionStatus}</span>
+    </div>
+    <div class="row">
+      <span class="label">Date:</span>
+      <span class="value">${formatDate(selectedTransaction.date)}</span>
+    </div>
+    <div class="row">
+      <span class="label">Exchange Rate:</span>
+      <span class="value">${selectedTransaction.rate || 'N/A'}</span>
+    </div>
+  </div>
+  
+  ${paymentBank ? `
+  <div class="section">
+    <h3 style="margin-top: 0; color: #333;">Payment Details</h3>
+    <div class="row">
+      <span class="label">Bank/Provider:</span>
+      <span class="value">${paymentBank}</span>
+    </div>
+  </div>
+  ` : ''}
+  
+  <div class="footer">
+    Generated on ${new Date().toLocaleString()}<br>
+    This is an official receipt from OMAYA Exchange
+  </div>
+</body>
+</html>`;
+                      
+                      const blob = new Blob([receiptHTML], { type: 'text/html' });
+                      const url = window.URL.createObjectURL(blob);
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.download = `OMAYA_Receipt_${selectedTransaction.id.substring(0, 8)}.html`;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      window.URL.revokeObjectURL(url);
+                    }}
+                    className="text-[#1D8751] hover:text-[#166b3e] transition-colors cursor-pointer"
+                    title="Download Receipt (HTML)"
+                  >
+                    <Download size={18} />
+                  </button>
+                  <button
+                    onClick={() => {
+                      // View receipt (placeholder - could open in new tab)
+                      console.log("View receipt for:", selectedTransaction.id);
+                    }}
+                    className="text-[#1D8751] hover:text-[#166b3e] transition-colors cursor-pointer"
+                    title="View Receipt"
+                  >
                   <svg
                     width="18"
                     height="18"
@@ -719,7 +891,8 @@ export const Table: React.FC<TableProps> = ({
                     <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
                     <circle cx="12" cy="12" r="3" />
                   </svg>
-                </span>
+                  </button>
+                </div>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-400 dark:text-[#8C8CA1]">

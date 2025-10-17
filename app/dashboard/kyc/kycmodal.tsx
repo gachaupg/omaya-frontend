@@ -9,6 +9,7 @@ import {
 } from "@/features/auth/slices/authSlice";
 import { checkKYCStatus, verifyKYCStatus } from "@/features/kyc/slices/kycSlice";
 import { showToast } from "@/lib/utils/toast";
+import { FaceDetectionKYC } from "@/features/kyc/components";
 
 const KYCVerificationModal: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -17,6 +18,7 @@ const KYCVerificationModal: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showManualVerification, setShowManualVerification] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showPendingModal, setShowPendingModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [verificationData, setVerificationData] = useState({
     country: 'Somalia',
@@ -25,16 +27,13 @@ const KYCVerificationModal: React.FC = () => {
     email: user?.email || '',
   });
   const [currentStep, setCurrentStep] = useState(1);
-  const [documentImage, setDocumentImage] = useState<File | null>(null);
+  const [documentFrontImage, setDocumentFrontImage] = useState<File | null>(null);
+  const [documentBackImage, setDocumentBackImage] = useState<File | null>(null);
   const [faceImage, setFaceImage] = useState<File | null>(null);
-  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
-  const [isCapturing, setIsCapturing] = useState(false);
-  const [captureProgress, setCaptureProgress] = useState(0);
-  const [captureInstructions, setCaptureInstructions] = useState("Look at the camera");
-  const [isRotating, setIsRotating] = useState(false);
-  const [documentPreview, setDocumentPreview] = useState<string | null>(null);
+  const [faceDetectionData, setFaceDetectionData] = useState<any>(null);
+  const [documentFrontPreview, setDocumentFrontPreview] = useState<string | null>(null);
+  const [documentBackPreview, setDocumentBackPreview] = useState<string | null>(null);
   const [facePreview, setFacePreview] = useState<string | null>(null);
-  const videoRef = React.useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     // Update email when user changes
@@ -42,6 +41,35 @@ const KYCVerificationModal: React.FC = () => {
       setVerificationData(prev => ({ ...prev, email: user.email }));
     }
   }, [user?.email]);
+
+  // Check localStorage for pending verification status on mount
+  useEffect(() => {
+    if (kycModalOpen && user?.user_id) {
+      const storedStatus = localStorage.getItem('kyc_verification_status');
+      if (storedStatus) {
+        try {
+          const parsed = JSON.parse(storedStatus);
+          // Check if stored status is for current user and is pending
+          if (parsed.user_id === user.user_id && parsed.status === 'pending') {
+            // Fetch current KYC status from API
+            dispatch(checkKYCStatus()).then((result: any) => {
+              const isVerified = (result.payload as any)?.is_verified;
+              if (isVerified) {
+                // Verified! Clear localStorage
+                localStorage.removeItem('kyc_verification_status');
+                dispatch(closeKYCModal());
+              } else {
+                // Still pending, show pending modal
+                setShowPendingModal(true);
+              }
+            });
+          }
+        } catch (error) {
+          console.error("Error parsing KYC status from localStorage:", error);
+        }
+      }
+    }
+  }, [kycModalOpen, user?.user_id, dispatch]);
 
   const handleManualVerificationClick = () => {
     setShowManualVerification(true);
@@ -64,132 +92,99 @@ const KYCVerificationModal: React.FC = () => {
         }
         return true;
       case 2:
-        if (!documentImage) {
-          setError("Please upload a clear image of your document");
+        if (!documentFrontImage) {
+          setError("Please upload the front side of your document");
+          showToast.error("Please upload the front side of your document");
+          return false;
+        }
+        if (!documentBackImage) {
+          setError("Please upload the back side of your document");
+          showToast.error("Please upload the back side of your document");
           return false;
         }
         return true;
       case 3:
-        if (!faceImage) {
-          setError("Please capture your face for verification");
+        if (!faceDetectionData || !faceDetectionData.faceDetected) {
+          setError("Please complete face verification");
+          showToast.error("Please complete face verification");
           return false;
         }
+        // Face image validation is optional - face detection data is sufficient
+        // The image will be included if available, but not required for submission
         return true;
       default:
         return true;
     }
   };
 
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          facingMode: 'user',
-          width: { ideal: 640 },
-          height: { ideal: 480 }
-        } 
-      });
-      setCameraStream(stream);
-      
-      // Set video source and play after a short delay
-      setTimeout(() => {
-        if (videoRef.current && stream) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play().catch(console.error);
-        }
-      }, 100);
-    } catch (error) {
-      setError("Unable to access camera. Please check permissions.");
-      console.error("Camera error:", error);
-    }
-  };
-
-  const stopCamera = () => {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach(track => track.stop());
-      setCameraStream(null);
-    }
-  };
-
-  const captureFace = () => {
-    setIsCapturing(true);
-    setIsRotating(true);
-    setCaptureProgress(0);
-    setCaptureInstructions("Look at the camera and follow the green arc");
+  const handleFaceDetectionComplete = async (data: any) => {
+    console.log("Face Detection Data:", data);
+    setFaceDetectionData(data);
     
-    // Face rotation capture steps like SumSub
-    const rotationSteps = [
-      { progress: 20, instruction: "Look straight at the camera" },
-      { progress: 40, instruction: "Turn your head to the right" },
-      { progress: 60, instruction: "Turn your head to the left" },
-      { progress: 80, instruction: "Look up slightly" },
-      { progress: 100, instruction: "Look down slightly" }
-    ];
-    
-    let currentStep = 0;
-    const rotationInterval = setInterval(() => {
-      if (currentStep < rotationSteps.length) {
-        const step = rotationSteps[currentStep];
-        setCaptureProgress(step.progress);
-        setCaptureInstructions(step.instruction);
-        currentStep++;
-      } else {
-        // Capture complete - actually capture from video
-        clearInterval(rotationInterval);
-        
-        if (videoRef.current) {
-          // Create canvas to capture frame from video
-          const canvas = document.createElement('canvas');
-          const context = canvas.getContext('2d');
-          canvas.width = videoRef.current.videoWidth;
-          canvas.height = videoRef.current.videoHeight;
-          
-          if (context) {
-            context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-            
-            // Convert canvas to blob
-            canvas.toBlob((blob) => {
-              if (blob) {
-                const file = new File([blob], 'face-capture.jpg', { type: 'image/jpeg' });
-                setFaceImage(file);
-                
-                // Create preview URL
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                  setFacePreview(e.target?.result as string);
-                };
-                reader.readAsDataURL(file);
-              }
-            }, 'image/jpeg', 0.8);
-          }
-        }
-        
-        setIsCapturing(false);
-        setIsRotating(false);
-        setCaptureProgress(100);
-        setCaptureInstructions("Face captured successfully!");
-        stopCamera();
+    // Convert base64 face image to File object if available
+    if (data.faceImage) {
+      try {
+        const response = await fetch(data.faceImage);
+        const blob = await response.blob();
+        const file = new File([blob], "face-verification.jpg", { type: "image/jpeg" });
+        setFaceImage(file);
+        setFacePreview(data.faceImage);
+        console.log("Face image file created successfully:", file);
+      } catch (error) {
+        console.error("Error converting face image:", error);
+        // Still set the face preview even if file conversion fails
+        setFacePreview(data.faceImage);
       }
-    }, 2000); // Increased time for each step
+    }
+    
+    showToast.success("Face Verified", "Your face has been successfully captured and verified");
   };
 
-  const handleDocumentUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDocumentFrontUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) { // 5MB limit
         setError("File size must be less than 5MB");
+        showToast.error("File size must be less than 5MB");
         return;
       }
       if (!file.type.startsWith('image/')) {
         setError("Please upload an image file");
+        showToast.error("Please upload an image file");
         return;
       }
-      setDocumentImage(file);
+      setDocumentFrontImage(file);
       
       // Create preview URL
       const reader = new FileReader();
       reader.onload = (e) => {
-        setDocumentPreview(e.target?.result as string);
+        setDocumentFrontPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+      
+      setError(null);
+    }
+  };
+
+  const handleDocumentBackUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        setError("File size must be less than 5MB");
+        showToast.error("File size must be less than 5MB");
+        return;
+      }
+      if (!file.type.startsWith('image/')) {
+        setError("Please upload an image file");
+        showToast.error("Please upload an image file");
+        return;
+      }
+      setDocumentBackImage(file);
+      
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setDocumentBackPreview(e.target?.result as string);
       };
       reader.readAsDataURL(file);
       
@@ -223,21 +218,119 @@ const KYCVerificationModal: React.FC = () => {
       }
 
       console.log("Submitting KYC verification for user:", user.user_id);
+      console.log("Face Detection Data:", faceDetectionData);
+      console.log("Verification Data:", {
+        country: verificationData.country,
+        documentType: verificationData.documentType,
+        documentNumber: verificationData.documentNumber,
+      });
+      
+      // Validate required fields before submission
+      if (!verificationData.documentType || !verificationData.documentNumber) {
+        setError("Document type and number are required");
+        showToast.error("Document type and number are required");
+        return;
+      }
+      
+      // Prepare FormData with images (for logging only - actual FormData created in thunk)
+      const formData = new FormData();
+      formData.append('user_id', user.user_id.toString());
+      formData.append('status', 'true');
+      formData.append('is_verified', 'true');
+      formData.append('verification_method', 'manual_with_face_detection');
+      formData.append('country', verificationData.country);
+      formData.append('document_type', verificationData.documentType);
+      formData.append('document_number', verificationData.documentNumber);
+      
+      // Add images to kyc_images array
+      if (documentFrontImage) {
+        formData.append('kyc_images', documentFrontImage, 'document-front.jpg');
+      }
+      if (documentBackImage) {
+        formData.append('kyc_images', documentBackImage, 'document-back.jpg');
+      }
+      // Only add face image if it has been successfully converted to a File
+      if (faceImage && faceImage instanceof File) {
+        formData.append('kyc_images', faceImage, 'face-verification.jpg');
+      } else if (facePreview) {
+        // If face image File is not ready but we have preview, include it as base64 in face_data
+        console.log("Face image file not ready, including in face_data");
+      }
+      
+      // Add face detection data
+      if (faceDetectionData) {
+        formData.append('face_data', JSON.stringify(faceDetectionData));
+      }
+      
+      console.log("FormData entries:");
+      for (let [key, value] of formData.entries()) {
+        console.log(key, value);
+      }
       
       // Call the KYC verification API using the thunk
+      // Only include images that are valid File objects
+      const kycImages = [documentFrontImage, documentBackImage, faceImage].filter(
+        (img): img is File => img instanceof File
+      );
+      
+      console.log("KYC Images to submit:", kycImages.length, "files");
+      console.log("Verification Data to submit:", {
+        user_id: user.user_id,
+        status: true,
+        is_verified: true,
+        verification_method: 'manual_with_face_detection',
+        country: verificationData.country,
+        document_type: verificationData.documentType,
+        document_number: verificationData.documentNumber,
+        images_count: kycImages.length
+      });
+      
       const result = await dispatch(verifyKYCStatus({
         user_id: user.user_id,
-        status: true
+        status: true,
+        is_verified: true,
+        verification_method: 'manual_with_face_detection',
+        face_data: {
+          ...faceDetectionData,
+          // Include face preview if face image file is not ready
+          faceImagePreview: facePreview || faceDetectionData.faceImage,
+        },
+        kyc_images: kycImages.length > 0 ? kycImages : undefined,
+        country: verificationData.country,
+        document_type: verificationData.documentType,
+        document_number: verificationData.documentNumber,
       })).unwrap();
 
       console.log("KYC Verification Response:", result);
       
-      // Refetch KYC status after successful verification
-      dispatch(checkKYCStatus());
+      // Check if response indicates pending status
+      const responseData = result as any;
+      const isPending = responseData?.data?.status === "pending" || 
+                       responseData?.status === "pending" ||
+                       responseData?.data?.is_verified === false;
       
-      showToast.success("Verification Submitted", "Your verification details have been submitted for review");
+      // Store pending status in localStorage
+      if (isPending) {
+        localStorage.setItem('kyc_verification_status', JSON.stringify({
+          status: 'pending',
+          submittedAt: new Date().toISOString(),
+          user_id: user.user_id
+        }));
+        
+        // Show pending verification modal
+        setShowManualVerification(false);
+        setShowPendingModal(true);
+        showToast.info("Verification Pending", "Your verification is under review");
+      } else {
+        // Verified immediately - clear localStorage and show success
+        localStorage.removeItem('kyc_verification_status');
       setShowManualVerification(false);
       setShowSuccessModal(true);
+        showToast.success("Verification Approved", "Your verification has been approved");
+      }
+      
+      // Refetch KYC status after successful verification
+      dispatch(checkKYCStatus());
     } catch (error) {
       console.error("KYC Verification Error:", error);
       const errorMessage = typeof error === 'string' ? error : "An error occurred during verification submission";
@@ -252,14 +345,48 @@ const KYCVerificationModal: React.FC = () => {
     setIsSubmitting(true);
     try {
       // Refetch KYC status to get the latest verification state
-      dispatch(checkKYCStatus());
+      const kycResult = await dispatch(checkKYCStatus());
       
+      if ((kycResult.payload as any)?.is_verified) {
+        // Clear localStorage when verified
+        localStorage.removeItem('kyc_verification_status');
       showToast.success("Account Verified", "Your account verification is complete");
       setShowSuccessModal(false);
+        setShowPendingModal(false);
       dispatch(closeKYCModal());
+      } else {
+        showToast.info("Verification Pending", "Your verification is still under review");
+      }
     } catch (error) {
       setError("An error occurred");
       showToast.error("Verification Error", "An error occurred");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClosePendingModal = async () => {
+    setIsSubmitting(true);
+    try {
+      // Query KYC status to check if verified
+      const kycResult = await dispatch(checkKYCStatus());
+      
+      if ((kycResult.payload as any)?.is_verified) {
+        // Verified! Clear localStorage and close
+        localStorage.removeItem('kyc_verification_status');
+        showToast.success("Account Verified", "Your account verification is complete");
+        setShowPendingModal(false);
+        dispatch(closeKYCModal());
+      } else {
+        // Still pending, just close modal but keep localStorage
+        showToast.info("Verification Pending", "Your verification is still under review");
+        setShowPendingModal(false);
+        dispatch(closeKYCModal());
+      }
+    } catch (error) {
+      console.error("Error checking KYC status:", error);
+      setShowPendingModal(false);
+      dispatch(closeKYCModal());
     } finally {
       setIsSubmitting(false);
     }
@@ -270,12 +397,15 @@ const KYCVerificationModal: React.FC = () => {
     setShowManualVerification(false);
     setError(null);
     setShowSuccessModal(false);
+    setShowPendingModal(false);
     setCurrentStep(1);
-    setDocumentImage(null);
+    setDocumentFrontImage(null);
+    setDocumentBackImage(null);
     setFaceImage(null);
-    setDocumentPreview(null);
+    setFaceDetectionData(null);
+    setDocumentFrontPreview(null);
+    setDocumentBackPreview(null);
     setFacePreview(null);
-    stopCamera();
     setVerificationData({
       country: 'Somalia',
       documentType: '',
@@ -284,28 +414,13 @@ const KYCVerificationModal: React.FC = () => {
     });
   };
 
-  // Handle video stream updates
-  useEffect(() => {
-    if (videoRef.current && cameraStream) {
-      videoRef.current.srcObject = cameraStream;
-      videoRef.current.play().catch(console.error);
-    }
-  }, [cameraStream]);
-
-  // Cleanup camera on unmount
-  useEffect(() => {
-    return () => {
-      stopCamera();
-    };
-  }, []);
-
   if (!kycModalOpen) return null;
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50" 
          style={{ background: "rgba(24, 24, 29, 0.5)" }}>
       
-      {/* Success Modal */}
+      {/* Success Modal - Verified Immediately */}
       {showSuccessModal && (
         <div className="bg-[#1A1A1A] rounded-lg p-6 max-w-md w-full mx-4 border border-[#35353E]">
           <div className="flex flex-col items-center justify-center text-center">
@@ -313,25 +428,85 @@ const KYCVerificationModal: React.FC = () => {
               <svg className="w-8 h-8 text-[#1D8751]" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
-              <h2 className="text-xl font-semibold text-white">Verification Submitted</h2>
+              <h2 className="text-xl font-semibold text-white">Verification Approved!</h2>
             </div>
             <p className="text-gray-300 text-sm mb-6">
-              Your verification details have been submitted for review. 
-              You will be notified once the verification process is complete.
+              Your verification has been approved. You can now access all platform features.
             </p>
+            
             <button
               onClick={handleFinalSubmit}
-              className="bg-[#1D8751] hover:bg-[#167a47] text-white w-full h-10 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-[#1D8751] hover:bg-[#167a47] text-white w-full h-10 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Processing..." : "Continue to Dashboard"}
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Processing...</span>
+                </>
+              ) : (
+                "Continue to Dashboard"
+              )}
+            </button>
+          </div>
+              </div>
+            )}
+
+      {/* Pending Verification Modal - Waiting for Admin Review */}
+      {showPendingModal && (
+        <div className="bg-[#1A1A1A] rounded-lg p-6 max-w-md w-full mx-4 border border-[#35353E]">
+          <div className="flex flex-col items-center justify-center text-center">
+            {/* Animated pending icon */}
+            <div className="relative mb-4">
+              <div className="w-16 h-16 bg-[#F79330]/20 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-[#F79330] animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+            
+            <h2 className="text-xl font-semibold text-white mb-2">Verification Pending</h2>
+            <p className="text-gray-300 text-sm mb-6">
+              Your verification documents have been submitted successfully and are currently under review by our team. 
+              We'll notify you once the verification is complete.
+            </p>
+            
+            <div className="bg-[#2A2A2A] border border-[#35353E] rounded-lg p-4 mb-6 w-full">
+              <div className="flex items-start gap-3 text-left">
+                <svg className="w-5 h-5 text-[#1D8751] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+                <div className="text-sm text-gray-300">
+                  <p className="font-medium text-white mb-1">What's Next?</p>
+                  <ul className="space-y-1 text-gray-400">
+                    <li>• Our team will review your documents</li>
+                    <li>• This usually takes 24-48 hours</li>
+                    <li>• You'll receive a notification via email</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <button
+              onClick={handleClosePendingModal}
+              disabled={isSubmitting}
+              className="bg-[#1D8751] hover:bg-[#167a47] text-white w-full h-10 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Checking Status...</span>
+                </>
+              ) : (
+                "OK"
+              )}
             </button>
           </div>
         </div>
       )}
 
       {/* Step-by-Step Verification Form */}
-      {showManualVerification && !showSuccessModal && (
+      {showManualVerification && !showSuccessModal && !showPendingModal && (
         <div className="bg-[#1A1A1A] rounded-lg p-6 max-w-2xl w-full mx-4 border border-[#35353E] max-h-[90vh] overflow-y-auto">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold text-white">Identity Verification - Step {currentStep} of 3</h2>
@@ -423,212 +598,144 @@ const KYCVerificationModal: React.FC = () => {
 
           {/* Step 2: Document Upload */}
           {currentStep === 2 && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-[#1D8751]/20 rounded-full flex items-center justify-center mx-auto mb-4">
                   <svg className="w-8 h-8 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-white mb-2">Document Photo</h3>
-                <p className="text-gray-400 text-sm">Upload a clear photo of your document</p>
+                <h3 className="text-lg font-semibold text-white mb-2">Document Photos</h3>
+                <p className="text-gray-400 text-sm">Upload clear photos of both sides of your document</p>
               </div>
 
-               <div className="border-2 border-dashed border-[#35353E] rounded-lg p-8 text-center">
-                 {documentImage && documentPreview ? (
+              {/* Front Side Upload */}
+              <div>
+                <h4 className="text-white font-medium mb-3 flex items-center gap-2">
+                  <span className="bg-[#1D8751] text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">1</span>
+                  Front Side of Document *
+                </h4>
+                <div className="border-2 border-dashed border-[#35353E] rounded-lg p-6 text-center">
+                  {documentFrontImage && documentFrontPreview ? (
+                    <div className="space-y-4">
+                      <div className="relative inline-block">
+                        <img
+                          src={documentFrontPreview}
+                          alt="Document front preview"
+                          className="max-w-full max-h-48 rounded-lg border border-[#35353E]"
+                        />
+                        <button
+                          onClick={() => {
+                            setDocumentFrontImage(null);
+                            setDocumentFrontPreview(null);
+                          }}
+                          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-sm font-bold transition-colors duration-200"
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <p className="text-green-400 font-medium">Front side uploaded successfully</p>
+                      <p className="text-gray-400 text-sm">{documentFrontImage.name}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleDocumentFrontUpload}
+                        className="hidden"
+                        id="document-front-upload"
+                      />
+                      <label
+                        htmlFor="document-front-upload"
+                        className="cursor-pointer inline-flex items-center px-4 py-2 bg-[#1D8751] hover:bg-[#167a47] text-white rounded-lg transition-colors duration-200"
+                      >
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        Upload Front Side
+                      </label>
+                      <p className="text-gray-400 text-sm">Max file size: 5MB</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Back Side Upload */}
+              <div>
+                <h4 className="text-white font-medium mb-3 flex items-center gap-2">
+                  <span className="bg-[#1D8751] text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">2</span>
+                  Back Side of Document *
+                </h4>
+                <div className="border-2 border-dashed border-[#35353E] rounded-lg p-6 text-center">
+                  {documentBackImage && documentBackPreview ? (
                    <div className="space-y-4">
                      <div className="relative inline-block">
                        <img
-                         src={documentPreview}
-                         alt="Document preview"
-                         className="max-w-full max-h-64 rounded-lg border border-[#35353E]"
+                          src={documentBackPreview}
+                          alt="Document back preview"
+                          className="max-w-full max-h-48 rounded-lg border border-[#35353E]"
                        />
                        <button
                          onClick={() => {
-                           setDocumentImage(null);
-                           setDocumentPreview(null);
+                            setDocumentBackImage(null);
+                            setDocumentBackPreview(null);
                          }}
                          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-sm font-bold transition-colors duration-200"
                        >
                          ×
                        </button>
                      </div>
-                     <p className="text-green-400 font-medium">Document uploaded successfully</p>
-                     <p className="text-gray-400 text-sm">{documentImage.name}</p>
+                      <p className="text-green-400 font-medium">Back side uploaded successfully</p>
+                      <p className="text-gray-400 text-sm">{documentBackImage.name}</p>
                    </div>
                  ) : (
                    <div className="space-y-4">
                      <input
                        type="file"
                        accept="image/*"
-                       onChange={handleDocumentUpload}
+                        onChange={handleDocumentBackUpload}
                        className="hidden"
-                       id="document-upload"
+                        id="document-back-upload"
                      />
                      <label
-                       htmlFor="document-upload"
+                        htmlFor="document-back-upload"
                        className="cursor-pointer inline-flex items-center px-4 py-2 bg-[#1D8751] hover:bg-[#167a47] text-white rounded-lg transition-colors duration-200"
                      >
                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                        </svg>
-                       Upload Document Photo
+                        Upload Back Side
                      </label>
                      <p className="text-gray-400 text-sm">Max file size: 5MB</p>
                    </div>
                  )}
+                </div>
                </div>
             </div>
           )}
 
-           {/* Step 3: Face Verification with Rotation */}
+           {/* Step 3: Face Verification with AI Detection */}
            {currentStep === 3 && (
              <div className="space-y-4">
-               <div className="text-center mb-6">
-                 <div className="w-16 h-16 bg-[#1D8751]/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                   <svg className="w-8 h-8 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+               <FaceDetectionKYC
+                 onVerificationComplete={handleFaceDetectionComplete}
+               />
+               
+               {/* Face Verification Status Indicator */}
+               {faceDetectionData && faceDetectionData.faceDetected && (
+                 <div className="bg-green-900/20 border border-green-500 text-green-400 p-4 rounded-lg flex items-start gap-3">
+                   <svg className="w-6 h-6 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                    </svg>
+                   <div className="flex-1">
+                     <p className="font-semibold mb-1">Face Verification Complete!</p>
+                     <p className="text-sm text-green-300">
+                       Your face has been successfully captured and verified. You can now proceed to submit your verification.
+                     </p>
+                   </div>
                  </div>
-                 <h3 className="text-lg font-semibold text-white mb-2">Face Verification</h3>
-                 <p className="text-gray-400 text-sm">Please look at the camera and follow the rotation guide</p>
-               </div>
-
-               <div className="space-y-6">
-                 {!cameraStream && !faceImage && (
-                   <div className="text-center">
-                     <button
-                       onClick={startCamera}
-                       className="inline-flex items-center px-6 py-3 bg-[#1D8751] hover:bg-[#167a47] text-white rounded-lg transition-colors duration-200"
-                     >
-                       <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                       </svg>
-                       Start Camera
-                     </button>
-                   </div>
-                 )}
-
-                 {cameraStream && !faceImage && (
-                   <div className="space-y-6">
-                     {/* Camera Feed with Overlay */}
-                     <div className="relative flex justify-center">
-                       <div className="relative w-80 h-60 bg-black rounded-lg overflow-hidden">
-                         <video
-                           ref={videoRef}
-                           className="w-full h-full object-cover"
-                           autoPlay
-                           muted
-                           playsInline
-                         />
-                         
-                         {/* Rotation Progress Overlay */}
-                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                           <div className="relative w-32 h-32">
-                             <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 100 100">
-                               {/* Background circle */}
-                               <circle
-                                 cx="50"
-                                 cy="50"
-                                 r="45"
-                                 fill="none"
-                                 stroke="rgba(55, 65, 81, 0.5)"
-                                 strokeWidth="3"
-                               />
-                               {/* Progress arc */}
-                               <circle
-                                 cx="50"
-                                 cy="50"
-                                 r="45"
-                                 fill="none"
-                                 stroke="#1D8751"
-                                 strokeWidth="4"
-                                 strokeDasharray={`${2 * Math.PI * 45}`}
-                                 strokeDashoffset={`${2 * Math.PI * 45 * (1 - captureProgress / 100)}`}
-                                 strokeLinecap="round"
-                               />
-                             </svg>
-                             <div className="absolute inset-0 flex items-center justify-center">
-                               <div className="text-center">
-                                 <div className="text-xl font-bold text-white drop-shadow-lg">{captureProgress}%</div>
-                                 <div className="text-xs text-gray-300 drop-shadow-lg">Complete</div>
-                               </div>
-                             </div>
-                           </div>
-                         </div>
-                       </div>
-                     </div>
-
-                     {/* Instructions */}
-                     <div className="text-center">
-                       <p className="text-white text-lg font-medium mb-2">{captureInstructions}</p>
-                       {isRotating && (
-                         <div className="flex items-center justify-center space-x-2">
-                           <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
-                           <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                           <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-                         </div>
-                       )}
-                     </div>
-
-                     {/* Camera Controls */}
-                     <div className="text-center">
-                       <div className="space-y-2">
-                         <button
-                           onClick={captureFace}
-                           disabled={isCapturing}
-                           className="px-6 py-2 bg-[#1D8751] hover:bg-[#167a47] disabled:opacity-50 text-white rounded-lg transition-colors duration-200"
-                         >
-                           {isCapturing ? "Capturing..." : "Capture Face"}
-                         </button>
-                         <button
-                           onClick={stopCamera}
-                           className="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors duration-200 ml-2"
-                         >
-                           Stop Camera
-                         </button>
-                       </div>
-                     </div>
-                   </div>
-                 )}
-
-                 {faceImage && facePreview && (
-                   <div className="text-center space-y-4">
-                     <div className="relative inline-block">
-                       <img
-                         src={facePreview}
-                         alt="Face capture preview"
-                         className="w-48 h-36 object-cover rounded-lg border border-[#35353E]"
-                       />
-                       <button
-                         onClick={() => {
-                           setFaceImage(null);
-                           setFacePreview(null);
-                           setCaptureProgress(0);
-                           setCaptureInstructions("Look at the camera");
-                           startCamera();
-                         }}
-                         className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-sm font-bold transition-colors duration-200"
-                       >
-                         ×
-                       </button>
-                     </div>
-                     <p className="text-green-400 font-medium">Face captured successfully!</p>
-                     <button
-                       onClick={() => {
-                         setFaceImage(null);
-                         setFacePreview(null);
-                         setCaptureProgress(0);
-                         setCaptureInstructions("Look at the camera");
-                         startCamera();
-                       }}
-                       className="text-blue-400 hover:text-blue-300 text-sm"
-                     >
-                       Capture again
-                     </button>
-                   </div>
-                 )}
-               </div>
+               )}
              </div>
            )}
 
@@ -653,10 +760,17 @@ const KYCVerificationModal: React.FC = () => {
             ) : (
               <button
                 onClick={handleManualVerificationSubmit}
-                className="flex-1 bg-[#1D8751] hover:bg-[#167a47] text-white h-10 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 bg-[#1D8751] hover:bg-[#167a47] text-white h-10 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Submitting..." : "Submit Verification"}
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Submitting...</span>
+                  </>
+                ) : (
+                  "Submit Verification"
+                )}
               </button>
             )}
           </div>
@@ -664,7 +778,7 @@ const KYCVerificationModal: React.FC = () => {
       )}
 
       {/* Main KYC Modal */}
-      {!showManualVerification && !showSuccessModal && (
+      {!showManualVerification && !showSuccessModal && !showPendingModal && (
         <div className="bg-[#1A1A1A] rounded-lg p-6 max-w-md w-full mx-4 border border-[#35353E]">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-white">Identity Verification Required</h2>
@@ -708,11 +822,18 @@ const KYCVerificationModal: React.FC = () => {
               
               <div className="flex justify-between mb-6 items-center w-full mt-6">
                 <button
-                  className="bg-[#1D8751] hover:bg-[#167a47] text-white w-full h-10 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-[#1D8751] hover:bg-[#167a47] text-white w-full h-10 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 onClick={handleManualVerificationClick}
                 disabled={loading}
                 >
-                Start Manual Verification
+                  {loading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Loading...</span>
+                    </>
+                  ) : (
+                    "Start Manual Verification"
+                  )}
                 </button>
               </div>
             </div>

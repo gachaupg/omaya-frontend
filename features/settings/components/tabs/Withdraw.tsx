@@ -4,11 +4,15 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   createReferralWithdraw,
   clearSuccess,
+  verifyReferralOtp,
+  closeOtpModal,
+  calculateReferralFees,
 } from "@/features/settings/slices/referralWalletSlice";
 import { AppDispatch } from "@/store/rootReducer";
 import { validateWithdrawalForm } from "@/features/p2p/components/ui/p2pdashboard/sections/validation";
 import { useRouter } from "next/navigation";
 import Cash from "./cash";
+import { useDebounce } from "@/hooks/useDebounce";
 
 const Withdraw = () => {
   const [activeTab, setActiveTab] = useState<"usdt" | "cash">("usdt");
@@ -16,6 +20,7 @@ const Withdraw = () => {
   const [amount, setAmount] = useState("");
   const [confirmAddress, setConfirmAddress] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [otp, setOtp] = useState("");
   const [errors, setErrors] = useState<{
     amount?: string;
     walletAddress?: string;
@@ -23,9 +28,13 @@ const Withdraw = () => {
   }>({});
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const { loading, error, success } = useSelector(
+  const { loading, error, success, showOtpModal, withdrawalId, otpVerifying, otpError, fees, feesLoading } = useSelector(
     (state: any) => state.referralWallet
   );
+  
+  // Debounce amount to avoid too many API calls
+  const debouncedAmount = useDebounce(amount, 500);
+
 
   const handlePaste = async () => {
     try {
@@ -44,7 +53,7 @@ const Withdraw = () => {
         file: null,
         confirmPayment: true,
       },
-      "TRC20"
+      "BEP20"
     );
     const errorObj: {
       amount?: string;
@@ -70,6 +79,8 @@ const Withdraw = () => {
 
   const handleWithdraw = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Handle regular USDT withdrawal
     if (!validate()) return;
     dispatch(
       createReferralWithdraw({
@@ -80,7 +91,14 @@ const Withdraw = () => {
     );
   };
 
-  // Handle success and navigation
+  const handleOtpSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (withdrawalId && otp) {
+      dispatch(verifyReferralOtp({ withdrawal_id: withdrawalId, otp }));
+    }
+  };
+
+  // Handle success
   useEffect(() => {
     if (success) {
       setShowSuccess(true);
@@ -89,20 +107,21 @@ const Withdraw = () => {
       setWalletAddress("");
       setConfirmAddress(false);
       setErrors({});
-
-      setTimeout(() => {
-        setShowSuccess(false);
-        dispatch(clearSuccess()); // Clear success state
-        router.back();
-      }, 2000);
     }
-  }, [success, router, dispatch]);
+  }, [success]);
 
-  const commission = 0;
-  const networkFee = 0;
-  const totalFees = commission + networkFee;
-  const netAmount = amount;
-  const totalWithFees = Number(amount || 0) + totalFees;
+  // Fetch fees when amount changes
+  useEffect(() => {
+    if (debouncedAmount && Number(debouncedAmount) > 0) {
+      dispatch(calculateReferralFees(debouncedAmount));
+    }
+  }, [debouncedAmount, dispatch]);
+
+  const commission = fees?.commission_fee ? Number(fees.commission_fee) : 0;
+  const networkFee = fees?.network_fee ? Number(fees.network_fee) : 0;
+  const totalFees = fees?.total_fees ? Number(fees.total_fees) : 0;
+  const netAmount = amount ? Number(amount) : 0;
+  const totalWithFees = netAmount + totalFees;
 
   return (
     <div className="min-h-screen text-white flex flex-col items-center">
@@ -128,10 +147,19 @@ const Withdraw = () => {
             <h3 className="text-xl font-bold text-white mb-2">
               Withdrawal Successful!
             </h3>
-            <p className="text-[#A3A3A3] mb-4">
+            <p className="text-[#A3A3A3] mb-6">
               Your withdrawal request has been submitted successfully.
-              Redirecting back...
             </p>
+            <button
+              onClick={() => {
+                setShowSuccess(false);
+                dispatch(clearSuccess());
+                router.push("/dashboard/account?tab=referral&view=history");
+              }}
+              className="w-full bg-[#1D8751] text-white py-3 rounded-xl text-lg font-medium hover:bg-[#166b3e] transition-colors"
+            >
+              OK
+            </button>
           </div>
         </div>
       )}
@@ -139,8 +167,8 @@ const Withdraw = () => {
       <div className="min-h-screen dark:text-white text-[#0D0D0D] flex flex-col items-center">
         {/* Withdraw Form Card */}
         <div className="w-full max-w-2xl rounded-2xl p-6 shadow-lg">
-            {/* Tabs for USDT TRC20 / Cash */}
-            <div className="flex gap-2 mb-6 border border-[#EF4444] rounded-lg p-1 w-fit">
+            {/* Tabs for USDT BEP20 / Cash */}
+            <div className="flex gap-2 mb-6 border border-[#EF4444] rounded-lg p-1 w-fit flex-wrap">
             <button
               type="button"
               onClick={() => setActiveTab("usdt")}
@@ -178,7 +206,7 @@ const Withdraw = () => {
                     className={`w-full  bg-white dark:bg-[#18181B] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-1 py-1 text-[#788099] dark:text-white text-lg focus:outline-none ${
                       errors.amount ? "border-red-500" : ""
                     }`}
-                    placeholder="102"
+                    placeholder="100"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                   />
@@ -194,7 +222,7 @@ const Withdraw = () => {
                   </label>
                   <div className="flex items-center bg-white dark:bg-[#18181B] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-1 py-1">
                     <span className="text-[#1D8751] text-2xl font-bold mr-2">
-                      $ {netAmount || "0"}
+                      $ {netAmount ? netAmount.toFixed(2) : "0.00"}
                     </span>
                     <span className="ml-auto text-[#A3A3A3] flex items-center">
                       USD
@@ -252,18 +280,34 @@ const Withdraw = () => {
                   <button className="w-full bg-[#EEF1F4] dark:bg-[#35353F] text-[#051015] dark:text-white font-medium text-sm rounded-[18px] px-2 py-2">
                     Amount including Total Fees{" "}
                     <span className="bg-[#1D8751] rounded-full px-4 py-1 text-white text-12">
-                      ${totalWithFees}
+                      {feesLoading ? (
+                        <span className="animate-pulse">...</span>
+                      ) : (
+                        `$${totalWithFees.toFixed(2)}`
+                      )}
                     </span>
                   </button>
                 </div>
                 <div className="flex-1 border rounded-lg border-[#E8EFF5] dark:border-[#35353F] p-3 flex flex-col gap-1 text-sm">
                   <div className="flex justify-between">
                     <span className="text-[#051015] dark:text-[#A3A3A3]">Commission:</span>
-                    <span className="text-[#1D8751]">$0</span>
+                    <span className="text-[#1D8751]">
+                      {feesLoading ? (
+                        <span className="animate-pulse">...</span>
+                      ) : (
+                        `$${commission.toFixed(2)}`
+                      )}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[#051015] dark:text-[#A3A3A3]">Network Fee:</span>
-                    <span className="text-[#1D8751]">$0</span>
+                    <span className="text-[#1D8751]">
+                      {feesLoading ? (
+                        <span className="animate-pulse">...</span>
+                      ) : (
+                        `$${networkFee.toFixed(2)}`
+                      )}
+                    </span>
                   </div>
 
                   {/* Divider line between Network Fee and Total Fees */}
@@ -271,7 +315,13 @@ const Withdraw = () => {
 
                   <div className="flex justify-between font-bold">
                     <span className="text:[#051015] dark:text-[#A3A3A3]">Total Fees</span>
-                    <span className="text-[#EF4444]">${totalFees}</span>
+                    <span className="text-[#EF4444]">
+                      {feesLoading ? (
+                        <span className="animate-pulse">...</span>
+                      ) : (
+                        `$${totalFees.toFixed(2)}`
+                      )}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -430,6 +480,70 @@ const Withdraw = () => {
           ) : (
             <Cash />
           )}
+
+          {/* OTP Modal */}
+          {showOtpModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-[#1D1D23] border border-[#1D8751] rounded-2xl p-8 max-w-md mx-4">
+                <h3 className="text-xl font-bold text-white mb-4">Enter OTP</h3>
+                <p className="text-[#A3A3A3] mb-4">
+                  Please enter the OTP sent to verify your withdrawal.
+                </p>
+                <form onSubmit={handleOtpSubmit}>
+                  <input
+                    type="text"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    placeholder="Enter 6-digit OTP"
+                    maxLength={6}
+                    className="w-full bg-[#18181B] border border-[#35353F] rounded-xl px-4 py-3 text-white text-lg text-center tracking-widest focus:outline-none focus:border-[#1D8751] mb-4"
+                  />
+                  {otpError && (
+                    <div className="text-red-500 text-sm mb-4 text-center">
+                      {typeof otpError === "string" ? otpError : JSON.stringify(otpError)}
+                    </div>
+                  )}
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => dispatch(closeOtpModal())}
+                      className="flex-1 bg-[#35353F] text-white py-3 rounded-xl text-lg font-medium hover:bg-[#2A2A32] transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={otpVerifying || !otp || otp.length !== 6}
+                      className="flex-1 bg-[#1D8751] text-white py-3 rounded-xl text-lg font-medium hover:bg-[#166b3e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                    >
+                      {otpVerifying && (
+                        <svg
+                          className="animate-spin h-5 w-5 mr-2 text-white"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            fill="none"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v8z"
+                          />
+                        </svg>
+                      )}
+                      {otpVerifying ? "Verifying..." : "Verify OTP"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -437,3 +551,4 @@ const Withdraw = () => {
 };
 
 export default Withdraw;
+                {/* Currency Selection */}

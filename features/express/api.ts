@@ -1,5 +1,6 @@
 import { post, get } from "@/lib/apiClient";
 import { API_CONFIG } from "@/lib/appConfig";
+import { ForexExchangePayload, ForexExchangeResponse } from "./types";
 
 // Express withdrawal API
 export const createExpressWithdrawal = async (data: {
@@ -29,4 +30,12 @@ export const cancelWithdrawalTransaction = async (transactionId: string) => {
 // Cancel P2P deposit transaction
 export const cancelP2PDepositTransaction = async (transactionId: string) => {
   return post(API_CONFIG.EXPRESS.CANCEL_P2P_DEPOSIT(transactionId), {});
+};
+
+// Forex exchange API
+export const createForexExchange = async (
+  data: ForexExchangePayload
+): Promise<ForexExchangeResponse> => {
+  const response = await post(API_CONFIG.FOREX.CREATE_EXCHANGE, data);
+  return response.data as ForexExchangeResponse;
 };

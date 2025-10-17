@@ -6,7 +6,7 @@ import Loader from "../../../Common/Loader";
 import { showToast } from "@/lib/utils/toast";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
-import { verifyWithdrawal } from "@/features/p2p/slices/withdrawSlice";
+import { verifyWithdrawal, resendWithdrawalOTP } from "@/features/p2p/slices/withdrawSlice";
 import { useRouter } from "next/navigation";
 
 interface OTPModalProps {
@@ -140,13 +140,11 @@ const OTPModal: React.FC<OTPModalProps> = ({
   const handleResendOTP = async () => {
     setIsResending(true);
     try {
-      // You'll need to implement resend OTP API call here
-      // const resultAction = await dispatch(resendWithdrawalOTP({ withdrawal_id: withdrawalId }));
-
+      await dispatch(resendWithdrawalOTP({ withdrawal_id: withdrawalId })).unwrap();
       showToast.success("OTP resent successfully!");
       setCountdown(60); // 60 seconds countdown
-    } catch (error) {
-      showToast.error("Failed to resend OTP");
+    } catch (error: any) {
+      showToast.error(error.message || "Failed to resend OTP");
     } finally {
       setIsResending(false);
     }
