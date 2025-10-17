@@ -52,7 +52,12 @@ const BlogPage = () => {
 
   // Get image URL using centralized image builder
   const getImageUrl = (post: BlogPost) => {
-    return imageBuilder(post.image);
+    try {
+      return imageBuilder(post.image);
+    } catch (error) {
+      console.error('Error getting image URL for post:', post.title, error);
+      return '/images/alert-circle.svg';
+    }
   };
 
   // Get post ID for routing

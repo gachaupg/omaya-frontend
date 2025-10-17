@@ -18,9 +18,14 @@ export const client = config.isConfigured ? createClient({
 
 // Enhanced image URL builder
 export const imageBuilder = (source: any) => {
-  if (!source) return '/images/placeholder.jpg';
+  if (!source) return '/images/alert-circle.svg'; // Use existing SVG as fallback
   
   try {
+    // If source is already a string URL, return it
+    if (typeof source === 'string') {
+      return source;
+    }
+    
     // If we have the direct URL from the expanded asset
     if (source.asset?.url) {
       return source.asset.url;
@@ -33,7 +38,7 @@ export const imageBuilder = (source: any) => {
       
       if (!projectId) {
         console.warn('Sanity project ID not configured');
-        return '/images/placeholder.jpg';
+        return '/images/alert-circle.svg';
       }
       
       const imageId = source.asset._ref
@@ -47,9 +52,9 @@ export const imageBuilder = (source: any) => {
       return `https://cdn.sanity.io/images/${projectId}/${dataset}/${imageId}`;
     }
     
-    return '/images/placeholder.jpg';
+    return '/images/alert-circle.svg';
   } catch (error) {
     console.error('Image builder error:', error);
-    return '/images/placeholder.jpg';
+    return '/images/alert-circle.svg';
   }
 };
