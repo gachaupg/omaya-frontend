@@ -196,7 +196,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
             <span className="text-[#788099]">Didn't receive code?</span>
             <button
               onClick={handleResend}
-              disabled={isLoading || (!isExpired && timeLeft > 240)} // Allow resend only after 1 minute or if expired
+              disabled={isLoading || !isExpired} // Allow resend only after 5 minutes when timer expires
               className="text-[#1D8751] hover:underline disabled:text-[#39394a] disabled:cursor-not-allowed"
             >
               Resend Code
