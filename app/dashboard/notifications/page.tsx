@@ -239,7 +239,7 @@ const Notifications = () => {
           const status = getStatus(trade, user?.email || "");
           const name = trade.advertiser_name===user?.first_name?trade.order_type==="sell" ? truncate(trade.buyer, 10): truncate(trade.seller, 10) : trade.advertiser_name
           const profileImage =trade.order_type === "sell" && 
-          trade.owner===user?.email? trade.seller_photo : trade.buyer_photo
+          trade.owner===user?.email? trade.buyer_photo : trade.seller_photo
           return (
             <div
               key={trade.id}
