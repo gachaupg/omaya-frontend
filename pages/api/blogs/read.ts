@@ -65,7 +65,7 @@ const getFallbackBlogs = (): Blog[] => [
     category: "system",
     author_name: "System",
     createdAt: new Date().toISOString(),
-    image: null,
+    image: "/images/alert-circle.svg",
   },
 ];
 

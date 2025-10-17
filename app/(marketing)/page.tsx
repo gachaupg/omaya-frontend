@@ -152,7 +152,7 @@ export default function MarketingPage() {
         return `https://cdn.sanity.io/images/${projectId}/${dataset}/${imageId}`;
       }
 
-      return "/images/placeholder.jpg";
+      return "/images/alert-circle.svg";
     };
 
     // Format date

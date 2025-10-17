@@ -10,7 +10,14 @@ export interface BlogPost {
   image?:
     | {
         asset: {
-          _ref: string;
+          _ref?: string;
+          url?: string;
+          metadata?: {
+            dimensions?: {
+              width: number;
+              height: number;
+            };
+          };
         };
       }
     | string;

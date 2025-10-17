@@ -28,7 +28,7 @@ export const useBlog = () => {
           id: index + 1, // Generate numeric ID for UI compatibility
           created_at: blog.createdAt || blog.created_at || new Date().toISOString(),
           updated_at: blog.createdAt || blog.created_at || new Date().toISOString(),
-          image: imageBuilder(blog.image),
+          image: blog.image, // Keep image as object for proper handling in components
           author_name: blog.author_name || "Anonymous",
         }));
 
@@ -55,7 +55,7 @@ export const useBlog = () => {
             description: "Our blog service is currently experiencing technical difficulties. Please check back later for the latest updates and articles.",
             content: "Our blog service is currently experiencing technical difficulties. Please check back later for the latest updates and articles.",
             slug: "service-unavailable",
-            image: "/images/placeholder.jpg",
+            image: "/images/alert-circle.svg",
             author_name: "System",
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
@@ -73,7 +73,7 @@ export const useBlog = () => {
             description: "Our news service is currently experiencing technical difficulties. Please check back later for the latest news updates.",
             content: "Our news service is currently experiencing technical difficulties. Please check back later for the latest news updates.",
             slug: "news-service-unavailable",
-            image: "/images/placeholder.jpg",
+            image: "/images/alert-circle.svg",
             author_name: "System",
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
