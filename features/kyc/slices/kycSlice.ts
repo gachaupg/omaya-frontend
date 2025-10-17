@@ -74,6 +74,11 @@ export const verifyKYCStatus = createAsyncThunk<KYCVerificationResponse, KYCVeri
         formData.append('user_id', payload.user_id);
         formData.append('status', payload.status.toString());
         
+        // Add is_verified field
+        if (payload.is_verified !== undefined) {
+          formData.append('is_verified', payload.is_verified.toString());
+        }
+        
         if (payload.verification_method) {
           formData.append('verification_method', payload.verification_method);
         }

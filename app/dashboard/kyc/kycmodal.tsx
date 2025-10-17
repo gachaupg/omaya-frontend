@@ -18,6 +18,7 @@ const KYCVerificationModal: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showManualVerification, setShowManualVerification] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showPendingModal, setShowPendingModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [verificationData, setVerificationData] = useState({
     country: 'Somalia',
@@ -40,6 +41,35 @@ const KYCVerificationModal: React.FC = () => {
       setVerificationData(prev => ({ ...prev, email: user.email }));
     }
   }, [user?.email]);
+
+  // Check localStorage for pending verification status on mount
+  useEffect(() => {
+    if (kycModalOpen && user?.user_id) {
+      const storedStatus = localStorage.getItem('kyc_verification_status');
+      if (storedStatus) {
+        try {
+          const parsed = JSON.parse(storedStatus);
+          // Check if stored status is for current user and is pending
+          if (parsed.user_id === user.user_id && parsed.status === 'pending') {
+            // Fetch current KYC status from API
+            dispatch(checkKYCStatus()).then((result: any) => {
+              const isVerified = (result.payload as any)?.is_verified;
+              if (isVerified) {
+                // Verified! Clear localStorage
+                localStorage.removeItem('kyc_verification_status');
+                dispatch(closeKYCModal());
+              } else {
+                // Still pending, show pending modal
+                setShowPendingModal(true);
+              }
+            });
+          }
+        } catch (error) {
+          console.error("Error parsing KYC status from localStorage:", error);
+        }
+      }
+    }
+  }, [kycModalOpen, user?.user_id, dispatch]);
 
   const handleManualVerificationClick = () => {
     setShowManualVerification(true);
@@ -79,30 +109,32 @@ const KYCVerificationModal: React.FC = () => {
           showToast.error("Please complete face verification");
           return false;
         }
-        if (!faceImage) {
-          setError("Face image is required");
-          showToast.error("Face image is required");
-          return false;
-        }
+        // Face image validation is optional - face detection data is sufficient
+        // The image will be included if available, but not required for submission
         return true;
       default:
         return true;
     }
   };
 
-  const handleFaceDetectionComplete = (data: any) => {
+  const handleFaceDetectionComplete = async (data: any) => {
     console.log("Face Detection Data:", data);
     setFaceDetectionData(data);
     
     // Convert base64 face image to File object if available
     if (data.faceImage) {
-      fetch(data.faceImage)
-        .then(res => res.blob())
-        .then(blob => {
-          const file = new File([blob], "face-verification.jpg", { type: "image/jpeg" });
-          setFaceImage(file);
-          setFacePreview(data.faceImage);
-        });
+      try {
+        const response = await fetch(data.faceImage);
+        const blob = await response.blob();
+        const file = new File([blob], "face-verification.jpg", { type: "image/jpeg" });
+        setFaceImage(file);
+        setFacePreview(data.faceImage);
+        console.log("Face image file created successfully:", file);
+      } catch (error) {
+        console.error("Error converting face image:", error);
+        // Still set the face preview even if file conversion fails
+        setFacePreview(data.faceImage);
+      }
     }
     
     showToast.success("Face Verified", "Your face has been successfully captured and verified");
@@ -187,11 +219,24 @@ const KYCVerificationModal: React.FC = () => {
 
       console.log("Submitting KYC verification for user:", user.user_id);
       console.log("Face Detection Data:", faceDetectionData);
+      console.log("Verification Data:", {
+        country: verificationData.country,
+        documentType: verificationData.documentType,
+        documentNumber: verificationData.documentNumber,
+      });
       
-      // Prepare FormData with images
+      // Validate required fields before submission
+      if (!verificationData.documentType || !verificationData.documentNumber) {
+        setError("Document type and number are required");
+        showToast.error("Document type and number are required");
+        return;
+      }
+      
+      // Prepare FormData with images (for logging only - actual FormData created in thunk)
       const formData = new FormData();
       formData.append('user_id', user.user_id.toString());
       formData.append('status', 'true');
+      formData.append('is_verified', 'true');
       formData.append('verification_method', 'manual_with_face_detection');
       formData.append('country', verificationData.country);
       formData.append('document_type', verificationData.documentType);
@@ -204,8 +249,12 @@ const KYCVerificationModal: React.FC = () => {
       if (documentBackImage) {
         formData.append('kyc_images', documentBackImage, 'document-back.jpg');
       }
-      if (faceImage) {
+      // Only add face image if it has been successfully converted to a File
+      if (faceImage && faceImage instanceof File) {
         formData.append('kyc_images', faceImage, 'face-verification.jpg');
+      } else if (facePreview) {
+        // If face image File is not ready but we have preview, include it as base64 in face_data
+        console.log("Face image file not ready, including in face_data");
       }
       
       // Add face detection data
@@ -219,12 +268,34 @@ const KYCVerificationModal: React.FC = () => {
       }
       
       // Call the KYC verification API using the thunk
+      // Only include images that are valid File objects
+      const kycImages = [documentFrontImage, documentBackImage, faceImage].filter(
+        (img): img is File => img instanceof File
+      );
+      
+      console.log("KYC Images to submit:", kycImages.length, "files");
+      console.log("Verification Data to submit:", {
+        user_id: user.user_id,
+        status: true,
+        is_verified: true,
+        verification_method: 'manual_with_face_detection',
+        country: verificationData.country,
+        document_type: verificationData.documentType,
+        document_number: verificationData.documentNumber,
+        images_count: kycImages.length
+      });
+      
       const result = await dispatch(verifyKYCStatus({
         user_id: user.user_id,
         status: true,
+        is_verified: true,
         verification_method: 'manual_with_face_detection',
-        face_data: faceDetectionData,
-        kyc_images: [documentFrontImage, documentBackImage, faceImage].filter(Boolean),
+        face_data: {
+          ...faceDetectionData,
+          // Include face preview if face image file is not ready
+          faceImagePreview: facePreview || faceDetectionData.faceImage,
+        },
+        kyc_images: kycImages.length > 0 ? kycImages : undefined,
         country: verificationData.country,
         document_type: verificationData.documentType,
         document_number: verificationData.documentNumber,
@@ -232,12 +303,34 @@ const KYCVerificationModal: React.FC = () => {
 
       console.log("KYC Verification Response:", result);
       
-      // Refetch KYC status after successful verification
-      dispatch(checkKYCStatus());
+      // Check if response indicates pending status
+      const responseData = result as any;
+      const isPending = responseData?.data?.status === "pending" || 
+                       responseData?.status === "pending" ||
+                       responseData?.data?.is_verified === false;
       
-      showToast.success("Verification Submitted", "Your verification details have been submitted for review");
+      // Store pending status in localStorage
+      if (isPending) {
+        localStorage.setItem('kyc_verification_status', JSON.stringify({
+          status: 'pending',
+          submittedAt: new Date().toISOString(),
+          user_id: user.user_id
+        }));
+        
+        // Show pending verification modal
+        setShowManualVerification(false);
+        setShowPendingModal(true);
+        showToast.info("Verification Pending", "Your verification is under review");
+      } else {
+        // Verified immediately - clear localStorage and show success
+        localStorage.removeItem('kyc_verification_status');
       setShowManualVerification(false);
       setShowSuccessModal(true);
+        showToast.success("Verification Approved", "Your verification has been approved");
+      }
+      
+      // Refetch KYC status after successful verification
+      dispatch(checkKYCStatus());
     } catch (error) {
       console.error("KYC Verification Error:", error);
       const errorMessage = typeof error === 'string' ? error : "An error occurred during verification submission";
@@ -252,14 +345,48 @@ const KYCVerificationModal: React.FC = () => {
     setIsSubmitting(true);
     try {
       // Refetch KYC status to get the latest verification state
-      dispatch(checkKYCStatus());
+      const kycResult = await dispatch(checkKYCStatus());
       
+      if ((kycResult.payload as any)?.is_verified) {
+        // Clear localStorage when verified
+        localStorage.removeItem('kyc_verification_status');
       showToast.success("Account Verified", "Your account verification is complete");
       setShowSuccessModal(false);
+        setShowPendingModal(false);
       dispatch(closeKYCModal());
+      } else {
+        showToast.info("Verification Pending", "Your verification is still under review");
+      }
     } catch (error) {
       setError("An error occurred");
       showToast.error("Verification Error", "An error occurred");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClosePendingModal = async () => {
+    setIsSubmitting(true);
+    try {
+      // Query KYC status to check if verified
+      const kycResult = await dispatch(checkKYCStatus());
+      
+      if ((kycResult.payload as any)?.is_verified) {
+        // Verified! Clear localStorage and close
+        localStorage.removeItem('kyc_verification_status');
+        showToast.success("Account Verified", "Your account verification is complete");
+        setShowPendingModal(false);
+        dispatch(closeKYCModal());
+      } else {
+        // Still pending, just close modal but keep localStorage
+        showToast.info("Verification Pending", "Your verification is still under review");
+        setShowPendingModal(false);
+        dispatch(closeKYCModal());
+      }
+    } catch (error) {
+      console.error("Error checking KYC status:", error);
+      setShowPendingModal(false);
+      dispatch(closeKYCModal());
     } finally {
       setIsSubmitting(false);
     }
@@ -270,6 +397,7 @@ const KYCVerificationModal: React.FC = () => {
     setShowManualVerification(false);
     setError(null);
     setShowSuccessModal(false);
+    setShowPendingModal(false);
     setCurrentStep(1);
     setDocumentFrontImage(null);
     setDocumentBackImage(null);
@@ -292,7 +420,7 @@ const KYCVerificationModal: React.FC = () => {
     <div className="fixed inset-0 flex items-center justify-center z-50" 
          style={{ background: "rgba(24, 24, 29, 0.5)" }}>
       
-      {/* Success Modal */}
+      {/* Success Modal - Verified Immediately */}
       {showSuccessModal && (
         <div className="bg-[#1A1A1A] rounded-lg p-6 max-w-md w-full mx-4 border border-[#35353E]">
           <div className="flex flex-col items-center justify-center text-center">
@@ -300,21 +428,11 @@ const KYCVerificationModal: React.FC = () => {
               <svg className="w-8 h-8 text-[#1D8751]" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
-              <h2 className="text-xl font-semibold text-white">Verification Submitted</h2>
+              <h2 className="text-xl font-semibold text-white">Verification Approved!</h2>
             </div>
             <p className="text-gray-300 text-sm mb-6">
-              Your verification details have been submitted for review. 
-              You will be notified once the verification process is complete.
+              Your verification has been approved. You can now access all platform features.
             </p>
-            
-            {faceDetectionData && (
-              <div className="text-sm text-gray-400 mb-4 p-3 bg-[#0a0a0a] rounded border border-[#35353E]">
-                <p className="font-semibold text-white mb-2">Face Verification Data:</p>
-                <p>Age: {faceDetectionData.age} years</p>
-                <p>Gender: {faceDetectionData.gender}</p>
-                <p>Confidence: {faceDetectionData.confidence}%</p>
-              </div>
-            )}
             
             <button
               onClick={handleFinalSubmit}
@@ -331,11 +449,64 @@ const KYCVerificationModal: React.FC = () => {
               )}
             </button>
           </div>
+              </div>
+            )}
+
+      {/* Pending Verification Modal - Waiting for Admin Review */}
+      {showPendingModal && (
+        <div className="bg-[#1A1A1A] rounded-lg p-6 max-w-md w-full mx-4 border border-[#35353E]">
+          <div className="flex flex-col items-center justify-center text-center">
+            {/* Animated pending icon */}
+            <div className="relative mb-4">
+              <div className="w-16 h-16 bg-[#F79330]/20 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-[#F79330] animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </div>
+            
+            <h2 className="text-xl font-semibold text-white mb-2">Verification Pending</h2>
+            <p className="text-gray-300 text-sm mb-6">
+              Your verification documents have been submitted successfully and are currently under review by our team. 
+              We'll notify you once the verification is complete.
+            </p>
+            
+            <div className="bg-[#2A2A2A] border border-[#35353E] rounded-lg p-4 mb-6 w-full">
+              <div className="flex items-start gap-3 text-left">
+                <svg className="w-5 h-5 text-[#1D8751] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+                <div className="text-sm text-gray-300">
+                  <p className="font-medium text-white mb-1">What's Next?</p>
+                  <ul className="space-y-1 text-gray-400">
+                    <li>• Our team will review your documents</li>
+                    <li>• This usually takes 24-48 hours</li>
+                    <li>• You'll receive a notification via email</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <button
+              onClick={handleClosePendingModal}
+              disabled={isSubmitting}
+              className="bg-[#1D8751] hover:bg-[#167a47] text-white w-full h-10 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Checking Status...</span>
+                </>
+              ) : (
+                "OK"
+              )}
+            </button>
+          </div>
         </div>
       )}
 
       {/* Step-by-Step Verification Form */}
-      {showManualVerification && !showSuccessModal && (
+      {showManualVerification && !showSuccessModal && !showPendingModal && (
         <div className="bg-[#1A1A1A] rounded-lg p-6 max-w-2xl w-full mx-4 border border-[#35353E] max-h-[90vh] overflow-y-auto">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold text-white">Identity Verification - Step {currentStep} of 3</h2>
@@ -498,49 +669,49 @@ const KYCVerificationModal: React.FC = () => {
                 </h4>
                 <div className="border-2 border-dashed border-[#35353E] rounded-lg p-6 text-center">
                   {documentBackImage && documentBackPreview ? (
-                    <div className="space-y-4">
-                      <div className="relative inline-block">
-                        <img
+                   <div className="space-y-4">
+                     <div className="relative inline-block">
+                       <img
                           src={documentBackPreview}
                           alt="Document back preview"
                           className="max-w-full max-h-48 rounded-lg border border-[#35353E]"
-                        />
-                        <button
-                          onClick={() => {
+                       />
+                       <button
+                         onClick={() => {
                             setDocumentBackImage(null);
                             setDocumentBackPreview(null);
-                          }}
-                          className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-sm font-bold transition-colors duration-200"
-                        >
-                          ×
-                        </button>
-                      </div>
+                         }}
+                         className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-sm font-bold transition-colors duration-200"
+                       >
+                         ×
+                       </button>
+                     </div>
                       <p className="text-green-400 font-medium">Back side uploaded successfully</p>
                       <p className="text-gray-400 text-sm">{documentBackImage.name}</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <input
-                        type="file"
-                        accept="image/*"
+                   </div>
+                 ) : (
+                   <div className="space-y-4">
+                     <input
+                       type="file"
+                       accept="image/*"
                         onChange={handleDocumentBackUpload}
-                        className="hidden"
+                       className="hidden"
                         id="document-back-upload"
-                      />
-                      <label
+                     />
+                     <label
                         htmlFor="document-back-upload"
-                        className="cursor-pointer inline-flex items-center px-4 py-2 bg-[#1D8751] hover:bg-[#167a47] text-white rounded-lg transition-colors duration-200"
-                      >
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
+                       className="cursor-pointer inline-flex items-center px-4 py-2 bg-[#1D8751] hover:bg-[#167a47] text-white rounded-lg transition-colors duration-200"
+                     >
+                       <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                       </svg>
                         Upload Back Side
-                      </label>
-                      <p className="text-gray-400 text-sm">Max file size: 5MB</p>
-                    </div>
-                  )}
+                     </label>
+                     <p className="text-gray-400 text-sm">Max file size: 5MB</p>
+                   </div>
+                 )}
                 </div>
-              </div>
+               </div>
             </div>
           )}
 
@@ -551,6 +722,20 @@ const KYCVerificationModal: React.FC = () => {
                  onVerificationComplete={handleFaceDetectionComplete}
                />
                
+               {/* Face Verification Status Indicator */}
+               {faceDetectionData && faceDetectionData.faceDetected && (
+                 <div className="bg-green-900/20 border border-green-500 text-green-400 p-4 rounded-lg flex items-start gap-3">
+                   <svg className="w-6 h-6 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                   </svg>
+                   <div className="flex-1">
+                     <p className="font-semibold mb-1">Face Verification Complete!</p>
+                     <p className="text-sm text-green-300">
+                       Your face has been successfully captured and verified. You can now proceed to submit your verification.
+                     </p>
+                   </div>
+                 </div>
+               )}
              </div>
            )}
 
@@ -593,7 +778,7 @@ const KYCVerificationModal: React.FC = () => {
       )}
 
       {/* Main KYC Modal */}
-      {!showManualVerification && !showSuccessModal && (
+      {!showManualVerification && !showSuccessModal && !showPendingModal && (
         <div className="bg-[#1A1A1A] rounded-lg p-6 max-w-md w-full mx-4 border border-[#35353E]">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-white">Identity Verification Required</h2>
@@ -638,8 +823,8 @@ const KYCVerificationModal: React.FC = () => {
               <div className="flex justify-between mb-6 items-center w-full mt-6">
                 <button
                   className="bg-[#1D8751] hover:bg-[#167a47] text-white w-full h-10 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  onClick={handleManualVerificationClick}
-                  disabled={loading}
+                onClick={handleManualVerificationClick}
+                disabled={loading}
                 >
                   {loading ? (
                     <>
