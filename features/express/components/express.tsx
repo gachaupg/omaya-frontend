@@ -5,7 +5,11 @@ import Exchanging from "./exchnaging";
 import SuccessPage from "./success";
 import { useTheme } from "@/context/theme";
 
-const Express = () => {
+interface ExpressProps {
+  isHomePage?: boolean;
+}
+
+const Express = ({ isHomePage = false }: ExpressProps) => {
   const [showExchanging, setShowExchanging] = useState(false);
   const [transactionData, setTransactionData] = useState<any>(null);
   const [currentMode, setCurrentMode] = useState<"deposit" | "withdrawal">(
@@ -23,6 +27,7 @@ const Express = () => {
 
   return (
     <div className=" w-full mx-auto">
+      {!isHomePage && (
       <div className=" mb-1">
         <button
           onClick={handleModeToggle}
@@ -64,6 +69,7 @@ const Express = () => {
           Current Mode: <span className="font-semibold capitalize">{currentMode}</span>
         </div> */}
       </div>
+      )}
       {showExchanging ? (
         <Exchanging transactionData={transactionData} />
       ) : (
@@ -73,6 +79,7 @@ const Express = () => {
             setShowExchanging(true);
           }}
           initialMode={currentMode}
+          isHomePage={isHomePage}
         />
       )}
       {/* <Exchanging transactionData={transactionData} /> */}

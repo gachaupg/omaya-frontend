@@ -140,6 +140,7 @@ interface DepositFormProps {
   }) => void;
   mode: "deposit" | "withdrawal";
   onModeChange?: (mode: "deposit" | "withdrawal") => void;
+  isHomePage?: boolean;
 }
 
 // Network mapping function
@@ -167,6 +168,7 @@ export default function WithdrawalForm({
   onExchange,
   mode,
   onModeChange,
+  isHomePage = false,
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const [transactionMode, setTransactionMode] = useState<"crypto" | "forex">("crypto");
@@ -2342,7 +2344,8 @@ export default function WithdrawalForm({
 
   return (
     <div className="w-full flex flex-col dark:bg-[#18181D]  ">
-      {/* Crypto/Forex Toggle Buttons */}
+      {/* Crypto/Forex Toggle Buttons - Hidden on home page */}
+      {!isHomePage && (
       <div className="w-full mb-4">
         <div className="bg-white dark:bg-[#1D1D23] border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-2">
           <div className="flex gap-2">
@@ -2371,6 +2374,7 @@ export default function WithdrawalForm({
           </div>
         </div>
       </div>
+      )}
 
       {transactionMode === "forex" ? (
         <ForexWithdrawal />

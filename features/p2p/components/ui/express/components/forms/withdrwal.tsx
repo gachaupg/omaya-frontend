@@ -205,6 +205,7 @@ interface DepositFormProps {
   mode: "deposit" | "withdrawal";
   onModeChange?: (mode: "deposit" | "withdrawal") => void;
   balance?: number;
+  isHomePage?: boolean;
 }
 
 export default function WithdrawalForm({
@@ -212,6 +213,7 @@ export default function WithdrawalForm({
   mode,
   onModeChange,
   balance,
+  isHomePage = false,
 }: DepositFormProps) {
   // Debug logging for balance
   console.log("WithdrawalForm - Received balance:", balance);

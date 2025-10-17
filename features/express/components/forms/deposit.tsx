@@ -41,6 +41,7 @@ interface DepositFormProps {
   }) => void;
   mode: "deposit" | "withdrawal";
   onModeChange?: (mode: "deposit" | "withdrawal") => void;
+  isHomePage?: boolean;
 }
 
 // Network mapping function
@@ -83,6 +84,7 @@ export default function DepositForm({
   onExchange,
   mode,
   onModeChange,
+  isHomePage = false,
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -1693,7 +1695,8 @@ export default function DepositForm({
 
   return (
     <div className="w-full flex flex-col dark:bg-[#18181D]  ">
-      {/* Crypto/Forex Toggle Buttons */}
+      {/* Crypto/Forex Toggle Buttons - Hidden on home page */}
+      {!isHomePage && (
       <div className="w-full mb-4">
         <div className="bg-white dark:bg-[#1D1D23] border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-2">
           <div className="flex gap-2">
@@ -1722,6 +1725,7 @@ export default function DepositForm({
           </div>
         </div>
       </div>
+      )}
 
       {transactionMode === "forex" ? (
         <ForexDeposit />
@@ -1907,6 +1911,7 @@ export default function DepositForm({
 
           {/* Swap Circle - positioned to touch both borders equally */}
           <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/3 z-10">
+            {!isHomePage && (
             <button
               className="w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105"
               onClick={() => {
@@ -1931,6 +1936,7 @@ export default function DepositForm({
                 className="w-16 h-16 hidden dark:block"
               />
             </button>
+            )}
           </div>
         </div>
 

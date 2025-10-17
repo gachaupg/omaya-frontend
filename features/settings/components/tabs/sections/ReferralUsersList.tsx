@@ -72,13 +72,13 @@ const ReferralUsersList: React.FC<Props> = ({ referredUsers, loading }) => {
   const emptyState = (
     <div
       className="w-full flex flex-col items-center justify-center py-12 px-4
-                    rounded-2xl border bg-gray-50 border-gray-200
+                    rounded-2xl border bg-gray-50 dark:bg-[#1D1D23] border-gray-200
                      dark:border-[#35353F]"
     >
       <div
         className="w-20 h-20 mb-4 flex items-center justify-center rounded-full
-                      bg-gray-100 border border-gray-200
-                      dark:bg-[#18181B] dark:border-[#35353F]"
+                      bg-gray-100 dark:bg-[#18181B] border border-gray-200
+                      dark:border-[#35353F]"
       >
         <svg
           width="40"

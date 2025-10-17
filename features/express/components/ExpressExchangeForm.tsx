@@ -34,11 +34,13 @@ interface ExpressExchangeFormProps {
     };
   }) => void;
   initialMode?: "deposit" | "withdrawal";
+  isHomePage?: boolean;
 }
 
 const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
   onExchange,
   initialMode = "deposit",
+  isHomePage = false,
 }) => {
   const [mode, setMode] = useState<"deposit" | "withdrawal">(initialMode);
 
@@ -62,12 +64,14 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
           onExchange={onExchange}
           mode={mode}
           onModeChange={handleModeChange}
+          isHomePage={isHomePage}
         />
       ) : (
         <WithdrawalForm
           onExchange={onExchange}
           mode={mode}
           onModeChange={handleModeChange}
+          isHomePage={isHomePage}
         />
       )}
     </div>
