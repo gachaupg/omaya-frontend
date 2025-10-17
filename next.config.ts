@@ -36,6 +36,19 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: process.env.SKIP_LINT === "true",
   },
+  webpack: (config, { isServer }) => {
+    // Fix for face-api.js trying to use Node.js modules in the browser
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+        crypto: false,
+        encoding: false,
+      };
+    }
+    return config;
+  },
 };
 
 export default nextConfig;

@@ -68,11 +68,57 @@ export const verifyKYCStatus = createAsyncThunk<KYCVerificationResponse, KYCVeri
   "kyc/verifyStatus",
   async (payload, { rejectWithValue }) => {
     try {
-      const response = await post<KYCVerificationResponse>(
-        API_CONFIG.AUTH.KYC_VERIFY,
-        payload
-      );
-      return response.data;
+      // If kyc_images are provided, send as FormData
+      if (payload.kyc_images && payload.kyc_images.length > 0) {
+        const formData = new FormData();
+        formData.append('user_id', payload.user_id);
+        formData.append('status', payload.status.toString());
+        
+        if (payload.verification_method) {
+          formData.append('verification_method', payload.verification_method);
+        }
+        if (payload.country) {
+          formData.append('country', payload.country);
+        }
+        if (payload.document_type) {
+          formData.append('document_type', payload.document_type);
+        }
+        if (payload.document_number) {
+          formData.append('document_number', payload.document_number);
+        }
+        if (payload.face_data) {
+          formData.append('face_data', JSON.stringify(payload.face_data));
+        }
+        if (payload.facial_id) {
+          formData.append('facial_id', payload.facial_id);
+        }
+        
+        // Append all images
+        payload.kyc_images.forEach((image, index) => {
+          if (image) {
+            formData.append('kyc_images', image);
+          }
+        });
+        
+        // Send FormData
+        const response = await post<KYCVerificationResponse>(
+          API_CONFIG.AUTH.KYC_VERIFY,
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          }
+        );
+        return response.data;
+      } else {
+        // Send as JSON if no images
+        const response = await post<KYCVerificationResponse>(
+          API_CONFIG.AUTH.KYC_VERIFY,
+          payload
+        );
+        return response.data;
+      }
     } catch (error) {
       return rejectWithValue(handleApiError(error));
     }

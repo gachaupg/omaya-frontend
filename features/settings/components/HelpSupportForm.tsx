@@ -7,9 +7,9 @@ import { createSupportRequest } from '../slices/settingsSlice'
 import { AppDispatch, RootState } from '@/store'
 
 interface FormData {
-  email: string
-  description: string
-  file: File | null
+  email_address: string
+  question: string
+  supporting_file: File | null
 }
 
 const HelpSupportForm: React.FC = () => {
@@ -19,9 +19,9 @@ const HelpSupportForm: React.FC = () => {
   )
   
   const [formData, setFormData] = useState<FormData>({
-    email: '',
-    description: '',
-    file: null
+    email_address: '',
+    question: '',
+    supporting_file: null
   })
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -37,7 +37,7 @@ const HelpSupportForm: React.FC = () => {
     const file = e.target.files?.[0] || null
     setFormData(prev => ({
       ...prev,
-      file
+      supporting_file: file
     }))
   }
 
@@ -46,24 +46,24 @@ const HelpSupportForm: React.FC = () => {
   };
 
   const handleSubmitEmail = async () => {
-    if (!formData.email || !formData.description) {
+    if (!formData.email_address || !formData.question) {
       return
     }
 
     try {
       await dispatch(
         createSupportRequest({
-          email_address: formData.email,
-          question: formData.description,
-          supporting_file: formData.file,
+          email_address: formData.email_address,
+          question: formData.question,
+          supporting_file: formData.supporting_file,
         })
       ).unwrap()
       
       // Reset form on success
       setFormData({
-        email: '',
-        description: '',
-        file: null
+        email_address: '',
+        question: '',
+        supporting_file: null
       })
     } catch (error) {
       console.error('Failed to submit support request:', error)
@@ -78,36 +78,36 @@ const HelpSupportForm: React.FC = () => {
   return (
     <div className="min-h-screen">
       <div>
-        <h1 className="text-lg font-medium text-[#788099] mb-4">Help & Support</h1>
+        <h1 className="text-lg font-medium text-[#788099] mb-4">Help &j Support</h1>
         
         <div className="container mx-auto bg-white dark:bg-[#18181D] border border-[#E8EFF5] dark:border-[#35353E] rounded-2xl shadow-sm p-8 space-y-6">
-          {/* Subject/Email Field */}
+          {/* Email Address Field */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-[#344054] dark:text-white mb-2">
-              Subject
+            <label htmlFor="email_address" className="block text-sm font-medium text-[#344054] dark:text-white mb-2">
+              Email Address
             </label>
             <input
               type="email"
-              id="email"
-              name="email"
-              value={formData.email}
+              id="email_address"
+              name="email_address"
+              value={formData.email_address}
               onChange={handleInputChange}
               placeholder="Your email address"
               className="w-full px-4 py-3 border border-[#E8EFF5]  dark:border-[#35353E] rounded-2xl focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors"
             />
           </div>
 
-          {/* Text/Description Field */}
+          {/* Question Field */}
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-[#344054] dark:text-white mb-2">
-              Text
+            <label htmlFor="question" className="block text-sm font-medium text-[#344054] dark:text-white mb-2">
+              Your Question
             </label>
             <textarea
-              id="description"
-              name="description"
-              value={formData.description}
+              id="question"
+              name="question"
+              value={formData.question}
               onChange={handleInputChange}
-              placeholder="Description"
+              placeholder="Please describe your question or issue..."
               rows={4}
               className="w-full px-4 py-3 border border-[#E8EFF5] dark:border-[#35353E] rounded-2xl focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors resize-none"
             />
@@ -115,9 +115,13 @@ const HelpSupportForm: React.FC = () => {
 
           {/* Upload Section */}
           <div className="border-t border-[#E8EFF5] dark:border-[#35353E] pt-6">
-            <label className="block text-sm font-medium text-[#344054] dark:text-white mb-2">
-              Upload File (Optional)
-            </label>
+            <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-2">
+              Upload Supjjjjporting Files
+            </h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              You can attach supporting documents, screenshots, or other files that might help us understand your issue better. Supported formats: PDF, DOC, DOCX, TXT, PNG, JPG, JPEG
+            </p>
+            
             <div 
               onClick={handleUploadClick}
               className="border-2 border-dashed border-[#E8EFF5] dark:border-[#35353E] rounded-2xl p-6 cursor-pointer hover:border-[#1D8751] transition-colors"
@@ -130,8 +134,8 @@ const HelpSupportForm: React.FC = () => {
                   <p className="text-sm font-medium text-gray-800 dark:text-white mb-1">
                     Click to upload file
                   </p>
-                  <p className="text-xs text-gray-500">
-                    PNG, JPG, PDF, DOC (Max 10MB)
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    PDF, DOC, DOCX, TXT, PNG, JPG, JPEG (Max 10MB)
                   </p>
                 </div>
               </div>
@@ -141,20 +145,21 @@ const HelpSupportForm: React.FC = () => {
                 ref={fileInputRef}
                 onChange={handleFileChange}
                 className="hidden"
-                accept=".png,.jpg,.jpeg,.pdf,.doc,.docx,.txt"
+                accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
               />
             </div>
-            {formData.file && (
+            
+            {formData.supporting_file && (
               <div className="mt-3 p-3 bg-[#1D8751]/10 rounded-lg">
                 <p className="text-sm text-[#1D8751] font-medium">
-                  ✓ Selected: {formData.file.name}
+                  ✓ Selected: {formData.supporting_file.name}
                 </p>
               </div>
             )}
           </div>
 
           {/* Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 pt-4">
+          <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-[#E8EFF5] dark:border-[#35353E]">
             <button
               onClick={handleConnectLiveChat}
               className="flex-1 bg-[#1D8751] text-white font-medium py-3 px-6 rounded-full transition-colors"
@@ -163,10 +168,10 @@ const HelpSupportForm: React.FC = () => {
             </button>
             <button
               onClick={handleSubmitEmail}
-              disabled={supportRequestLoading || !formData.email || !formData.description}
+              disabled={supportRequestLoading || !formData.email_address || !formData.question}
               className="flex-1 bg-white dark:bg-[#18181D] hover:bg-gray-50 text-[#1D8751] font-medium py-3 px-6 rounded-full border border-[#1D8751] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {supportRequestLoading ? 'Submitting...' : 'Submit Email'}
+              {supportRequestLoading ? 'Submitting...' : 'Submit Request'}
             </button>
           </div>
         </div>

@@ -27,6 +27,7 @@
     "core-js": "^3.45.1",
     "date-fns": "^4.1.0",
     "decimal.js": "^10.5.0",
+    "encoding": "^0.1.13",
     "face-api.js": "^0.22.2",
     "framer-motion": "^12.12.1",
     "js-cookie": "^3.0.5",

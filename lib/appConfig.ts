@@ -72,7 +72,10 @@ export const API_CONFIG = {
     REFERRAL_USERS: (code: string) => `/api/referred-users/${code}/`,
     REFERRAL_WALLET: "/api/wallet/referral-wallet/",
     REFERRAL_WITHDRAW: "/trading_engine/referral/withdraw/",
+    REFERRAL_VERIFY_OTP: "/trading_engine/verify-referral/otp/",
     WITHDRAWAL_OTP: "/trading_engine/p2pwithdraw-otp/",
+    WITHDRAWAL_OTP_RESEND: (withdrawalId: string) => 
+      `/trading_engine/p2pwithdraw/resend-otp/${withdrawalId}/`,
     WITHDRAWAL_ADDRESSES: "/trading_engine/withdrawal/addresses/",
     MATCHED_TRADE: "/trading_engine/p2p/trades/",
     MERCHANT_SUBMIT: "/trading_engine/merchant/submit/",
@@ -130,10 +133,19 @@ export const API_CONFIG = {
         `${getWebSocketBaseUrl()}/ws/withdrawal-status/${transactionId}/`,
     },
   },
+  FOREX: {
+    CREATE_EXCHANGE: "/trading_engine/forex/create-exchange/",
+  },
   GOOGLE_AUTH: {
     GOOGLE_AUTH: "/api/auth/google/",
   },
   CONTACT: {
-    SUBMIT_CONTACT: "/trading_engine/contact/",
+    SUBMIT_CONTACT: "/trading_engine/support-requests/create/",
+  },
+  MARKETING: {
+    HIGHLIGHT_STATISTICS: "/trading_engine/highlight-statistics/",
+  },
+  REFERRAL: {
+    CALCULATE_FEES: "/trading_engine/referral/calculate-fees/",
   },
 };

@@ -30,9 +30,9 @@ export interface GoogleUserInfo {
 
 // Default configuration
 export const GOOGLE_OAUTH_CONFIG: GoogleOAuthConfig = {
-  clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "271869110142-pipollidmfj2v26dvgt9oumru543v84p.apps.googleusercontent.com",
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET || "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",
-  redirectUri: typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'),
+  clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "866830600136-atu6lg341gn9snr1pkbmjhssebh9luqb.apps.googleusercontent.com",
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET || "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",
+  redirectUri: typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   scope: "email profile",
   uxMode: "popup",
   flow: "auth-code",

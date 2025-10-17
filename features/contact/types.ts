@@ -1,13 +1,15 @@
 export interface ContactFormData {
-  email: string;
+  email_address: string;
   question: string;
+  supporting_file?: File | null;
 }
 
 export interface ContactSubmission {
-  contact_id: string;
-  email: string;
+  id: string;
+  email_address: string;
   question: string;
-  submitted_at: string;
+  supporting_file?: string;
+  created_at: string;
 }
 
 export interface ContactState {
@@ -19,10 +21,11 @@ export interface ContactState {
 }
 
 export interface ContactApiResponse {
-  contact_id: string;
-  email: string;
+  id: string;
+  email_address: string;
   question: string;
-  submitted_at: string;
+  supporting_file?: string;
+  created_at: string;
   message?: string;
 }
 

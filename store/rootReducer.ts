@@ -26,6 +26,7 @@ import p2pTransactionsReducer from "../features/p2p/slices/p2pTransactionsSlice"
 import exchangeReducer from "../features/exchange/slices/exchangeSlice";
 import referralReducer from "@/features/settings/slices/referralSlice";
 import referralWalletReducer from "@/features/settings/slices/referralWalletSlice";
+import referralWithdrawalHistoryReducer from "@/features/settings/slices/referralWithdrawalHistorySlice";
 import settingsReducer from "@/features/settings/slices/settingsSlice";
 import cashWithdrawalReducer from "@/features/settings/slices/cashWithdrawalSlice";
 import swapReducer from "@/features/swap/slices/swapSlice";
@@ -38,6 +39,8 @@ import contactReducer from "@/features/contact/slices/contactSlice";
 import kycReducer from "@/features/kyc/slices/kycSlice";
 import merchantReducer from "@/features/p2p/slices/merchantSlice";
 import expressTransactionReducer from "@/features/express/slices/transactionSlice";
+import forexReducer from "@/features/express/slices/forexSlice";
+import statisticsReducer from "@/features/marketing/slices/statisticsSlice";
 
 const rootReducer = combineReducers({
   deposits: depositReducer,
@@ -61,6 +64,7 @@ const rootReducer = combineReducers({
   exchange: exchangeReducer,
   referral: referralReducer,
   referralWallet: referralWalletReducer,
+  referralWithdrawalHistory: referralWithdrawalHistoryReducer,
   settings: settingsReducer,
   cashWithdrawal: cashWithdrawalReducer,
   swap: swapReducer,
@@ -72,6 +76,8 @@ const rootReducer = combineReducers({
   kyc: kycReducer,
   merchant: merchantReducer,
   expressTransaction: expressTransactionReducer,
+  forex: forexReducer,
+  statistics: statisticsReducer,
   // Add other reducers here
 });
 

@@ -12,7 +12,7 @@ export interface TradeMessage {
 }
 
 export interface WebSocketMessage {
-  type: "connection_established" | "message_received" | "new_message" | "messages_list" | "initial_messages" | "error";
+  type: "connection_established" | "message_received" | "new_message" | "messages_list" | "initial_messages" | "recent_messages" | "error" | "pong";
   data: any;
 }
 
@@ -31,6 +31,7 @@ export class TradeMessagesWebSocket {
   private closeHandlers: Set<CloseHandler> = new Set();
   private openHandlers: Set<OpenHandler> = new Set();
   private reconnectTimeout: NodeJS.Timeout | null = null;
+  private pingInterval: NodeJS.Timeout | null = null;
   private isIntentionallyClosed = false;
   private url: string = "";
   private lastTradeId: string = "";
@@ -90,6 +91,9 @@ export class TradeMessagesWebSocket {
         this.reconnectAttempts = 0;
         this.hasPermanentFailure = false;
         this.openHandlers.forEach((handler) => handler());
+        
+        // Start ping interval to keep connection alive (every 30 seconds)
+        this.startPingInterval();
       };
 
       this.ws.onmessage = (event) => {
@@ -164,6 +168,29 @@ export class TradeMessagesWebSocket {
     }, delay);
   }
 
+  private startPingInterval(): void {
+    // Clear any existing ping interval
+    this.stopPingInterval();
+    
+    // Send ping every 30 seconds to keep connection alive
+    this.pingInterval = setInterval(() => {
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        try {
+          this.ws.send(JSON.stringify({ type: "ping" }));
+        } catch (error) {
+          // Silent error - connection might be broken
+        }
+      }
+    }, 30000);
+  }
+
+  private stopPingInterval(): void {
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
+    }
+  }
+
   disconnect(): void {
     this.isIntentionallyClosed = true;
     
@@ -171,6 +198,8 @@ export class TradeMessagesWebSocket {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
     }
+
+    this.stopPingInterval();
 
     if (this.ws) {
       // Close with normal closure code

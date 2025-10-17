@@ -100,7 +100,7 @@ export const validateWithdrawal = {
   walletAddress: (address: string) => {
     if (!address || address.trim() === "") return "Wallet address is required";
     if (!/^T[A-Za-z1-9]{33}$/.test(address)) {
-      return "Please enter a valid TRC20 wallet address";
+      return "Please enter a valid BEP20 wallet address";
     }
     return "";
   },

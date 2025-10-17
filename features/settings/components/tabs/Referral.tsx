@@ -12,6 +12,7 @@ import { fetchReferralWallet } from "../../slices/referralWalletSlice";
 import ReferralTabs from "./sections/ReferralTabs";
 import ReferralMainCard from "./sections/ReferralMainCard";
 import ReferralUsersList from "./sections/ReferralUsersList";
+import ReferralWithdrawalHistory from "./sections/ReferralWithdrawalHistory";
 import Withdraw from "./Withdraw";
 
 // Application Submitted Success Modal Component
@@ -151,8 +152,8 @@ const Referral: React.FC = () => {
         </div>
       )}
       {activeTab === "History" && (
-        <div className="py-12 text-center text-lg text-gray-500 dark:text-gray-400">
-          History page content goes here.
+        <div className="border border-[#35353F] rounded-[18px] p-4">
+          <ReferralWithdrawalHistory />
         </div>
       )}
 

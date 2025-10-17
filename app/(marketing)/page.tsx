@@ -10,6 +10,7 @@ import { useBlog } from "@/features/blogs/hooks/blog";
 import { BlogPost } from "@/features/blogs/types";
 import { useFAQ } from "@/features/faq/hooks/useFAQ";
 import { ContactForm } from "@/features/contact/components";
+import { useHighlightStatistics } from "@/features/contact/hooks/useHighlightStatistics";
 
 const steps = [
   {
@@ -34,7 +35,8 @@ const steps = [
   },
 ];
 
-const achievements = [
+// Static fallback achievements (used while loading or on error)
+const fallbackAchievements = [
   {
     value: "50M+",
     label: "USD Total Transactions",
@@ -93,6 +95,27 @@ export default function MarketingPage() {
   const [contactErrorMessage, setContactErrorMessage] = useState("");
   const { blogs, news, loading, error } = useBlog();
   const { faqs: faqItems, loading: faqLoading, error: faqError } = useFAQ();
+  const { statistics, loading: statsLoading, error: statsError } = useHighlightStatistics();
+
+  // Transform API statistics to achievements format
+  const achievements = statistics ? [
+    {
+      value: statistics.total_transactions_usdt,
+      label: "USD Total Transactions",
+    },
+    {
+      value: statistics.satisfied_clients,
+      label: "Satisfied Clients",
+    },
+    {
+      value: statistics.successful_transactions,
+      label: "Successful Transactions",
+    },
+    {
+      value: statistics.years_of_experience,
+      label: "Years Of Experience",
+    },
+  ] : fallbackAchievements;
 
   const tags = [
     { id: 1, name: "Crypto" },
@@ -1010,10 +1033,10 @@ export default function MarketingPage() {
           {/* See all button */}
           <div className="mt-10 text-center">
             <Link
-              href={`/${activeCategory.toLowerCase()}`}
+              href={`/blog/`}
               className="inline-block bg-[#1D8751] text-white rounded-full px-6 py-3 font-medium text-sm transition-colors hover:bg-[#1D8751]"
             >
-              {t("marketing.buttons.goToCategory", `Go To ${activeCategory}`)}
+              All Articles
             </Link>
           </div>
         </div>

@@ -116,6 +116,13 @@ export interface KYCResponse {
 export interface KYCVerifyPayload {
   user_id: string;
   status: boolean;
+  facial_id?: string;
+  face_data?: any;
+  verification_method?: string;
+  kyc_images?: (File | null)[];
+  country?: string;
+  document_type?: string;
+  document_number?: string;
 }
 
 export interface SumSubInitiatePayload {

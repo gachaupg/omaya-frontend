@@ -124,10 +124,10 @@ export const resendWithdrawalOTP = async (data: {
   withdrawal_id: string;
 }): Promise<P2PResponse> => {
   return withRetry(async () => {
-    const response = await post<P2PResponse>(API_CONFIG.P2P.WITHDRAWAL_OTP, {
-      withdrawal_id: data.withdrawal_id,
-      action: "resend"
-    });
+    const response = await post<P2PResponse>(
+      API_CONFIG.P2P.WITHDRAWAL_OTP_RESEND(data.withdrawal_id),
+      {}
+    );
     return response.data;
   });
 };
@@ -590,6 +590,16 @@ export const createReferralWithdraw = async (data: {
 }) => {
   return withRetry(async () => {
     const response = await post(API_CONFIG.P2P.REFERRAL_WITHDRAW, data);
+    return response.data;
+  });
+};
+
+export const verifyReferralOtp = async (data: {
+  withdrawal_id: string;
+  otp: string;
+}) => {
+  return withRetry(async () => {
+    const response = await post(API_CONFIG.P2P.REFERRAL_VERIFY_OTP, data);
     return response.data;
   });
 };

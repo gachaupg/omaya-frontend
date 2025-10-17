@@ -21,7 +21,7 @@ export const validateWalletAddress = (
       if (!/^T[A-Za-z1-9]{33}$/.test(address)) {
         return {
           isValid: false,
-          message: "Please enter a valid TRC20 wallet address",
+          message: "Please enter a valid BEP20 wallet address",
         };
       }
       break;

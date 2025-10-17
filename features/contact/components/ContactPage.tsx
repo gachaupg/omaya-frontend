@@ -11,9 +11,9 @@ interface ContactPageProps {
 
 const ContactPage: React.FC<ContactPageProps> = ({ showFileUpload = true }) => {
   const [formData, setFormData] = useState({
-    email: "",
-    description: "",
-    file: null as File | null,
+    email_address: "",
+    question: "",
+    supporting_file: null as File | null,
   });
   const { t } = useContactI18n();
   const [showSuccess, setShowSuccess] = useState(false);
@@ -36,7 +36,7 @@ const ContactPage: React.FC<ContactPageProps> = ({ showFileUpload = true }) => {
     const file = e.target.files?.[0] || null;
     setFormData((prev) => ({
       ...prev,
-      file,
+      supporting_file: file,
     }));
   };
 
@@ -52,7 +52,7 @@ const ContactPage: React.FC<ContactPageProps> = ({ showFileUpload = true }) => {
   const handleContactSuccess = () => {
     setShowSuccess(true);
     setShowError(false);
-    setFormData({ email: "", description: "", file: null });
+    setFormData({ email_address: "", question: "", supporting_file: null });
 
     // Hide success message after 3 seconds
     setTimeout(() => {
@@ -109,51 +109,6 @@ const ContactPage: React.FC<ContactPageProps> = ({ showFileUpload = true }) => {
             onSuccess={handleContactSuccess}
             onError={handleContactError}
           />
-
-          {/* File Upload Section (Optional) */}
-          {showFileUpload && (
-            <div className="border-t border-[#E8EFF5] dark:border-[#35353E] pt-6">
-              <div
-                className="flex items-center gap-2 mb-4"
-                onClick={handleUploadClick}
-              >
-                <h3 className="text-lg font-medium text-gray-800 dark:text-white cursor-pointer">
-                  {t("contact.upload.title", "Upload Supporting Files")}
-                </h3>
-                <button
-                  className="hover:bg-gray-50 dark:hover:bg-[#2C2C32] transition-colors"
-                  type="button"
-                >
-                  <Upload className="h-5 w-5 text-[#1D8751]" />
-                </button>
-                <input
-                  type="file"
-                  id="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  className="hidden"
-                  accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
-                />
-              </div>
-              <p className="text-sm text-gray-500 mb-4">
-                {t(
-                  "contact.upload.help",
-                  "You can attach supporting documents, screenshots, or other files that might help us understand your issue better."
-                )}{" "}
-                {t(
-                  "contact.upload.supported",
-                  "Supported formats: PDF, DOC, DOCX, TXT, PNG, JPG, JPEG"
-                )}
-              </p>
-              {formData.file && (
-                <div className="mt-2 text-sm text-[#1D8751]">
-                  {t("contact.upload.selected", "Selected file: {{name}}", {
-                    name: formData.file.name,
-                  })}
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Live Chat Button */}
           <div className="border-t border-[#E8EFF5] dark:border-[#35353E] pt-6">

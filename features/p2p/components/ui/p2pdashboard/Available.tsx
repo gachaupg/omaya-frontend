@@ -39,15 +39,14 @@ const Available = () => {
     ? parseFloat(wallets.wallet.balance) 
     : 0;
 
-  // Calculate available balance (total approved - pending withdrawals)
-  const availableBalance = summary
-    ? walletBalance -
-      summary.total_pending_p2p_withdrawals -
+  // Calculate in escrow / locked amount (pending withdrawals + pending sells)
+  const lockedAmount = summary
+    ? summary.total_pending_p2p_withdrawals +
       summary.total_sell_orders_by_status.pending
     : 0;
 
-  // Calculate locked amount (pending deposits + pending withdrawals)
-  const lockedAmount = 0;
+  // Calculate available balance (wallet balance - locked amount)
+  const availableBalance = walletBalance - lockedAmount;
 
   return (
     <div className="mt-3">
