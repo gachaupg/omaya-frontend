@@ -327,7 +327,7 @@ export default function MarketingPage() {
                   className="2xl:w-[369.55px] 2xl:h-[695.7px]"
                 />
               </div> */}
-              <ExchangeForm />
+              <ExchangeForm isHomePage={true} />
             </div>
           </div>
         </div>

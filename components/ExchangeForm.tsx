@@ -281,7 +281,11 @@ const calculateAmounts = (
   }
 };
 
-export default function ExchangeForm() {
+interface ExchangeFormProps {
+  isHomePage?: boolean;
+}
+
+export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) {
   const { isDark } = useTheme();
   const { t } = useMarketingI18n();
   const dispatch = useDispatch<AppDispatch>();
@@ -936,24 +940,12 @@ export default function ExchangeForm() {
       {/* Tabs */}
       <div className="w-full flex justify-between">
         <TabButton id="express">
-        <span className="flex items-center justify-center">
-                                                          <span className="text-gray-600 dark:text-[#727272] text-base uppercase font-bold">E</span>
-
-                            <img
-                              className="mt-2"
-                              src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
-                              alt=""
-                            />
-                          </span>
+          <h3 className="text-lg font-bold transition-colors text-gray-500 dark:text-white/50">
+            {t("marketing.exchange.tabs.express", "Express Exchange")}
+          </h3>
         </TabButton>
         <TabButton id="swap">
-          <h3
-            className={`text-lg font-bold transition-colors ${
-                activeTab === ("swap" as Tab)
-                ? "text-gray-900 dark:text-white"
-                : "text-gray-500 dark:text-white/50"
-            }`}
-          >
+          <h3 className="text-lg font-bold transition-colors text-gray-900 dark:text-white">
             {t("marketing.exchange.tabs.swap", "Swap Crypto")}
           </h3>
         </TabButton>
@@ -967,22 +959,20 @@ export default function ExchangeForm() {
     <div className="w-full bg-white dark:bg-[#18181D] rounded-3xl px-6 py-2 shadow-lg mr-8 ml-4 border border-gray-200 dark:border-transparent">
       {/* Tabs */}
       <div className="w-full flex justify-between">
-       
+        <TabButton id="express">
+          <h3 className="text-lg font-bold transition-colors text-gray-900 dark:text-white">
+            {t("marketing.exchange.tabs.express", "Express Exchange")}
+          </h3>
+        </TabButton>
         <TabButton id="swap">
-          <h3
-            className={`text-lg font-bold transition-colors ${
-              activeTab === ("swap" as Tab)
-                ? "text-gray-900 dark:text-white"
-                : "text-gray-500 dark:text-white/50"
-            }`}
-          >
+          <h3 className="text-lg font-bold transition-colors text-gray-500 dark:text-white/50">
             {t("marketing.exchange.tabs.swap", "Swap Crypto")}
           </h3>
         </TabButton>
       </div>
 
       {/* Express Exchange Content */}
-      <Express />
+      <Express isHomePage={isHomePage} />
     </div>
   );
 }
