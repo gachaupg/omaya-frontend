@@ -569,7 +569,7 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
             </div>
           )}
           
-          <Button
+          {/* <Button
             width={145}
             height={40}
             borderRadius={9}
@@ -581,7 +581,7 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
             onClick={handleRefresh}
           >
             Refresh
-          </Button>
+          </Button> */}
         </div>
       </div>
       <div className="w-full overflow-x-auto">
