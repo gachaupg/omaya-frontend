@@ -81,9 +81,30 @@ const ChatBox: React.FC<{
     (state: RootState) => state.message.messages[tradeId] || []
   );
   
-  // Sort messages by timestamp (oldest first, newest last)
+  // Sort messages by timestamp and filter out duplicate optimistic messages
   const sortedMessages = React.useMemo(() => {
-    return [...messagesFromRedux].sort((a, b) => {
+    const messages = [...messagesFromRedux];
+    
+    // Separate temp messages from real messages
+    const tempMessages = messages.filter(msg => msg.id.toString().startsWith('temp-'));
+    const realMessages = messages.filter(msg => !msg.id.toString().startsWith('temp-'));
+    
+    // Remove temp messages that have a matching real message (same content and similar timestamp)
+    const filteredTempMessages = tempMessages.filter(tempMsg => {
+      const hasDuplicate = realMessages.some(realMsg => {
+        const isSameSender = realMsg.sender_name === tempMsg.sender_name;
+        const isSameMessage = realMsg.message === tempMsg.message;
+        const timeDiff = Math.abs(
+          new Date(realMsg.timestamp).getTime() - new Date(tempMsg.timestamp).getTime()
+        );
+        // Consider it a duplicate if sent within 10 seconds
+        return isSameSender && isSameMessage && timeDiff < 10000;
+      });
+      return !hasDuplicate;
+    });
+    
+    // Combine and sort
+    return [...realMessages, ...filteredTempMessages].sort((a, b) => {
       return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
     });
   }, [messagesFromRedux]);
