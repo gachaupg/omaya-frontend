@@ -163,14 +163,14 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
   // --- Calculation logic ---
   const sendAmount = Number(confirmOrder?.amount) || 0;
-  const commissionRate = Number(singleOrder?.commission_rate) || 0;
+  const commissionRate = Number(confirmOrder?.commission_rate) || 0;
   const orderType = singleOrder?.order_type || "buy";
   let receiveAmount = sendAmount;
 
   if (orderType === "buy") {
-    receiveAmount = sendAmount * commissionRate;
-  } else {
     receiveAmount = sendAmount / commissionRate;
+  } else {
+    receiveAmount = sendAmount * commissionRate;
   }
 
   // Format numbers
@@ -296,7 +296,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             <div className="flex flex-col gap-2 w-full">
               <p className="text-[#788099] text-sm">Commission</p>
               <div className="flex f w-full flex-row  justify-between items-center bg-[#EEF1F4] dark:bg-[#35353E] rounded-xl px-6 py-2">
-                <span className="text-[#1D8751] text-xl">$ {saveOrder?.commission_rate ?? commissionRate}%</span>
+                <span className="text-[#1D8751] text-xl">$ {confirmOrder?.commission_rate ?? commissionRate}%</span>
                 <span className="text-sm text-[#051015] dark:text-[#F79330]">USD</span>
               </div>             
             </div>
@@ -312,9 +312,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                     height={20}
                   />
                   <span className="text-[#1D8751] text-lg font-bold">
-                    {formatAmount(saveOrder?.amount)}
-
-                    {formatAmount(receiveAmount)}
+                    {formatAmount((saveOrder?.amount ?? 0) / (confirmOrder?.commission_rate ?? commissionRate))}
                   </span>
                 </div>
                 <span className="text-xs text-[#F79330] dark:text-[#A3A3C2]">

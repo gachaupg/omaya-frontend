@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { FaBitcoin, FaUniversity } from "react-icons/fa";
 import { FiChevronDown, FiInfo, FiPlus, FiMinus } from "react-icons/fi";
 import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
 import { AppDispatch } from "../../../store";
 import { RootState } from "../../../store/rootReducer";
 import {
@@ -69,6 +70,7 @@ const isSimpleCalculationAsset = (asset: any) => {
 
 const RatesCalculator = () => {
   const { t } = useRatesI18n();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("deposit");
   const [isDepositMode, setIsDepositMode] = useState(true);
 
@@ -129,6 +131,9 @@ const RatesCalculator = () => {
   );
 
   const dispatch = useDispatch<AppDispatch>();
+
+  // Auth state
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
 
   // Exchange assets state
   const {
@@ -833,6 +838,12 @@ const RatesCalculator = () => {
   };
 
   const handleSubmit = async () => {
+    // Check if user is authenticated first, before any validation
+    if (!isAuthenticated) {
+      router.push("/auth/login");
+      return;
+    }
+
     if (!selectedAsset || !selectedPaymentMethod || !selectedPaymentDetail) {
       showToast.error("Please select all required fields");
       return;
@@ -1367,7 +1378,7 @@ const RatesCalculator = () => {
                         <div className="p-3 text-center text-red-500">
                           {t(
                             "rates.errorMethods",
-                            "Error loading payment methods"
+                            "No payment methods available, Login to Proceed"
                           )}
                         </div>
                       ) : allPaymentMethods.length > 0 ? (
@@ -1710,11 +1721,11 @@ const RatesCalculator = () => {
                           )}
                     </div>
                   ) : userDetailsError ? (
-                    <div className="p-3 text-center text-red-500">
-                          {t(
-                            "rates.errorMethods",
-                            "Error loading payment methods"
-                          )}
+                    <div className="p-3 text-center text-[#F79330]">
+                        
+                          
+                            No payment methods available, Login to Proceed
+                        
                     </div>
                   ) : allPaymentMethods.length > 0 ? (
                     allPaymentMethods.map((method: string) => (

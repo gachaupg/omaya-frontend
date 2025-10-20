@@ -178,8 +178,8 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
   // Get payment details from order data
   const paymentDetails = singleOrder?.payment_details?.[0];
   // --- Calculation logic ---
-  const sendAmount = Number(confirmOrder?.amount) || 0;
-  const commissionRate = Number(singleOrder?.commission_rate) || Number(commissionFromUrl) || 0;
+  const sendAmount = Number(confirmOrder?.amount ) || 0;
+  const commissionRate = Number(confirmOrder?.commission_rate) || Number(commissionFromUrl) || 0;
   const orderType = singleOrder?.order_type || "buy";
   let receiveAmount = sendAmount;
 
@@ -307,7 +307,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
                 {singleOrder?.completion_rate || "99.20"}% Completion
               </div>
               <div className="text-sm text-[#1D8751]">
-                Rating: 99% | Commission: {commissionFromUrl ||singleOrder?.commission_rate}%
+                Rating: 99% | Commission: {commissionFromUrl ||confirmOrder?.commission_rate}Commission
               </div>
             </div>
 
@@ -370,7 +370,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
               <div className="flex items-center h-[46px] rounded-2xl border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[#18181D] px-2">
                 <span className="text-[#1D8751] text-2xl mr-2">$</span>
                 <span className="text-[#1D8751] text-xl font-semibold">
-                  {formatAmount(sendAmount)}
+                  {formatAmount(sendAmount) }
                 </span>
                 <span className="ml-auto text-gray-900 dark:text-white text-base font-medium">
                   USD
@@ -406,7 +406,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
               <div className="flex items-center h-[46px] rounded-2xl border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[#35353E] px-2">
                 <span className="text-[#1D8751] text-2xl mr-2">$</span>
                 <span className="text-[#1D8751] text-xl font-semibold">
-                  {commissionFromUrl || singleOrder?.commission_rate}%
+                  {commissionFromUrl || confirmOrder?.commission_rate}
                 </span>
                 <span className="ml-auto text-gray-900 dark:text-white text-base font-medium">
                   USD

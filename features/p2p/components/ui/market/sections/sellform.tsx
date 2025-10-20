@@ -191,7 +191,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
   const paymentDetails = singleOrder?.payment_details?.[0];
   const sendAmount = Number(confirmOrder?.amount) || 0;
-  const commissionRate = Number(singleOrder?.commission_rate) || 0;
+  const commissionRate = Number(confirmOrder?.commission_rate) || 0;
   const orderType = singleOrder?.order_type || "buy";
   let receiveAmount = sendAmount;
 
