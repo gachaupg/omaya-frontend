@@ -1,4 +1,6 @@
 # Use an official Node.js runtime as the base image
+# Alternative: Use mirror registry if Docker Hub is unavailable
+# FROM docker.mirrors.ustc.edu.cn/library/node:20-alpine AS base
 FROM node:20-alpine AS base
 
 # Install dependencies only when needed
