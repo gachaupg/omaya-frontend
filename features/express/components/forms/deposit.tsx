@@ -20,7 +20,6 @@ import { FaSearch } from "react-icons/fa";
 import InfoModal from "./info";
 import { useTheme } from "@/context/theme";
 import { useAssetsDisplay, usePaymentMethodsDisplay } from "../../hooks/useDataDisplay";
-import ForexDeposit from "./ForexDeposit";
 
 interface DepositFormProps {
   onExchange?: (transactionData: {
