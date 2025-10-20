@@ -43,22 +43,16 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
   // WebSocket status update callback - use useCallback to prevent reconnections
   const handleStatusUpdate = React.useCallback((status: any) => {
-    console.log("🔔 Trade status update received in TradeBuyOwner:", status);
-    console.log("📊 Current confirmOrder:", confirmOrder);
-    console.log("📊 Current confirmOrder.id:", confirmOrder?.id);
-    console.log("📊 Current confirmOrder.status:", confirmOrder?.status);
-    console.log("📊 New status:", status.status);
+   
     
     const oldStatus = confirmOrder?.status;
     const newStatus = status.status;
     
     // Always refresh if we have a valid status update
     if (confirmOrder?.id && newStatus) {
-      console.log("✅ Conditions met - will update UI");
       
       // Show toast notification for status changes
       if (oldStatus !== newStatus) {
-        console.log(`📢 Status changed: ${oldStatus} → ${newStatus}`);
         if (oldStatus === "matched" && newStatus === "half-matched") {
           showToast.success("Status Updated", "Seller has notified payment sent");
         } else if (oldStatus === "half-matched" && newStatus === "completed") {
@@ -69,26 +63,15 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           showToast.success("Status Updated", `Trade status is now: ${newStatus}`);
         }
       } else {
-        console.log("ℹ️ Status unchanged, still refreshing data");
       }
       
-      console.log("🔄 Refreshing trade data for ID:", confirmOrder.id);
       dispatch(fetchConfirmOrder(confirmOrder.id))
         .unwrap()
         .then((updatedOrder) => {
-          console.log("✅ fetchConfirmOrder SUCCESS:", updatedOrder);
-          console.log("✅ Updated status:", updatedOrder?.status);
         })
         .catch((error) => {
-          console.error("❌ fetchConfirmOrder FAILED:", error);
         });
     } else {
-      console.warn("❌ Conditions NOT met:", {
-        hasConfirmOrderId: !!confirmOrder?.id,
-        hasNewStatus: !!newStatus,
-        confirmOrderId: confirmOrder?.id,
-        newStatus: newStatus
-      });
     }
   }, [confirmOrder, dispatch]);
 
@@ -132,7 +115,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   useEffect(() => {
     if (confirmOrder?.status === "matched" && countdown === 0) {
       // AUTO-CANCEL DISABLED - Countdown reached 0 but no auto-cancel
-      console.log("Countdown reached 0, auto-cancel is disabled");
       return;
     }
   }, [confirmOrder?.status, countdown, confirmOrder?.id, dispatch]);
@@ -181,14 +163,14 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
   // --- Calculation logic ---
   const sendAmount = Number(confirmOrder?.amount) || 0;
-  const commissionRate = Number(singleOrder?.commission_rate) || 0;
+  const commissionRate = Number(confirmOrder?.commission_rate) || 0;
   const orderType = singleOrder?.order_type || "buy";
   let receiveAmount = sendAmount;
 
   if (orderType === "buy") {
-    receiveAmount = sendAmount * commissionRate;
-  } else {
     receiveAmount = sendAmount / commissionRate;
+  } else {
+    receiveAmount = sendAmount * commissionRate;
   }
 
   // Format numbers
@@ -239,7 +221,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     }
   };
 
-  console.log(confirmOrder);
   return (
     <div className="grid grid-cols-1 mt-10 md:grid-cols-3 gap-6 p-6 min-h-screen bg-[#EEF1F4] dark:bg-[#18181D]">
       {/* Left: Timeline/Steps */}
@@ -315,7 +296,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             <div className="flex flex-col gap-2 w-full">
               <p className="text-[#788099] text-sm">Commission</p>
               <div className="flex f w-full flex-row  justify-between items-center bg-[#EEF1F4] dark:bg-[#35353E] rounded-xl px-6 py-2">
-                <span className="text-[#1D8751] text-xl">$ {saveOrder?.commission_rate ?? commissionRate}%</span>
+                <span className="text-[#1D8751] text-xl">$ {confirmOrder?.commission_rate ?? commissionRate}%</span>
                 <span className="text-sm text-[#051015] dark:text-[#F79330]">USD</span>
               </div>             
             </div>
@@ -331,9 +312,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                     height={20}
                   />
                   <span className="text-[#1D8751] text-lg font-bold">
-                    {formatAmount(saveOrder?.amount)}
-
-                    {formatAmount(receiveAmount)}
+                    {formatAmount((saveOrder?.amount ?? 0) / (confirmOrder?.commission_rate ?? commissionRate))}
                   </span>
                 </div>
                 <span className="text-xs text-[#F79330] dark:text-[#A3A3C2]">

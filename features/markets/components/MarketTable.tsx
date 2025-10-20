@@ -6,9 +6,8 @@ import { tokens } from "../../../styles/tokens";
 import {
   fetchCoinDetailsPublic,
   fetchCoinMarketChartPublic,
-  debugChartAPI,
-  debugDetailsAPI,
 } from "../api";
+import { setupMarketDebugFunctions } from "../slices/marketSlice";
 import {
   LineChart,
   Line,
@@ -206,26 +205,7 @@ const MarketTable = () => {
 
   // Make debug functions available globally for testing
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      (window as any).debugChartAPI = debugChartAPI;
-      (window as any).debugDetailsAPI = debugDetailsAPI;
-      (window as any).testPublicAPI = async () => {
-        try {
-          console.log("Testing public API endpoints...");
-          const response = await fetch(
-            "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=1&interval=hourly"
-          );
-          const data = await response.json();
-          console.log("Public API test result:", data);
-          return data;
-        } catch (error) {
-          console.error("Public API test failed:", error);
-        }
-      };
-      console.log(
-        "Debug functions available: window.debugChartAPI, window.debugDetailsAPI, window.testPublicAPI"
-      );
-    }
+    setupMarketDebugFunctions();
   }, []);
 
   // Filter markets based on active filter - memoized to prevent unnecessary recalculations

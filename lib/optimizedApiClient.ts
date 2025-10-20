@@ -90,7 +90,6 @@ class OptimizedApiClient {
   private async getFromCache<T>(key: string): Promise<T | null> {
     const entry = this.cache.get(key);
     if (entry && this.isCacheValid(entry)) {
-      logger.debug('Cache hit', { key });
       return entry.data;
     }
     
@@ -128,11 +127,6 @@ class OptimizedApiClient {
         
         if (attempt < config.retries) {
           const delay = config.retryDelay * (attempt + 1);
-          logger.warn(`Request failed, retrying in ${delay}ms`, { 
-            attempt: attempt + 1, 
-            error: lastError.message,
-            apiName 
-          });
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
@@ -158,7 +152,6 @@ class OptimizedApiClient {
 
     // Check for pending request deduplication
     if (OPTIMIZED_CONFIG.enableRequestDeduplication && this.pendingRequests.has(cacheKey)) {
-      logger.debug('Deduplicating request', { url, cacheKey });
       return this.pendingRequests.get(cacheKey)!;
     }
 

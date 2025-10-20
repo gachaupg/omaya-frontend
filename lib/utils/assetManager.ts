@@ -29,11 +29,10 @@ class AssetManager {
    */
   async getSwapAssets(options: AssetManagerOptions = {}): Promise<any[]> {
     const { ttl = 2 * 60 * 60 * 1000, forceRefresh = false } = options;
-    const cacheKey = 'swap_assets_global';
+    const cacheKey = "swap_assets_global";
 
     // Check if request is already pending
     if (this.pendingRequests.has(cacheKey)) {
-      console.log('[AssetManager] Deduplicating swap assets request');
       return this.pendingRequests.get(cacheKey)!;
     }
 
@@ -58,7 +57,6 @@ class AssetManager {
 
     // Check if request is already pending
     if (this.pendingRequests.has(cacheKey)) {
-      console.log('[AssetManager] Deduplicating exchange assets request');
       return this.pendingRequests.get(cacheKey)!;
     }
 
@@ -82,12 +80,10 @@ class AssetManager {
       // Try to get from cache first
       const cached = await sliceCache.get<any[]>('swap', 'fetchSupportedAssets');
       if (cached) {
-        console.log('[AssetManager] Cache hit for swap assets');
         return cached;
       }
     }
 
-    console.log('[AssetManager] Cache miss for swap assets, fetching...');
     const assets = await getSupportedAssets();
     
     // Cache the result
@@ -104,12 +100,10 @@ class AssetManager {
       // Try to get from cache first
       const cached = await sliceCache.get<any>('exchange', 'fetchAssets');
       if (cached) {
-        console.log('[AssetManager] Cache hit for exchange assets');
         return cached;
       }
     }
 
-    console.log('[AssetManager] Cache miss for exchange assets, fetching...');
     const response = await cachedGet(EXCHANGE_ENDPOINTS.ASSETS, {
       timeout: 10000,
       ttl: ttl,
@@ -130,7 +124,6 @@ class AssetManager {
   async clearAssetCaches(): Promise<void> {
     await sliceCache.delete('swap', 'fetchSupportedAssets');
     await sliceCache.delete('exchange', 'fetchAssets');
-    console.log('[AssetManager] Cleared all asset caches');
   }
 
   /**

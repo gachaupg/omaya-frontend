@@ -31,7 +31,6 @@ const OrdersTransactions = ({
   };
 
   // Debug log for selectedTransaction
-  console.log("selectedTransaction:", selectedTransaction);
 
   if (loading) {
     return (

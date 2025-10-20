@@ -43,16 +43,6 @@ const P2PDashboard = () => {
   const balance = isUSDTWallet && walletBalance > 0 ? walletBalance : 
                   (totalBalance && !isNaN(totalBalance) && totalBalance > 0) ? totalBalance : walletBalance;
   
-  // Debug logging for balance
-  console.log("P2PDashboard - wallets:", wallets);
-  console.log("P2PDashboard - total_balance:", wallets?.total_balance);
-  console.log("P2PDashboard - wallet.balance:", wallets?.wallet?.balance);
-  console.log("P2PDashboard - wallet.currency:", wallets?.wallet?.currency);
-  console.log("P2PDashboard - totalBalance (toNumber):", totalBalance);
-  console.log("P2PDashboard - walletBalance (parseFloat):", walletBalance);
-  console.log("P2PDashboard - isUSDTWallet:", isUSDTWallet);
-  console.log("P2PDashboard - final calculated balance:", balance);
-  
   return (
     <div className="flex flex-col gap-4">
       <UserCard />

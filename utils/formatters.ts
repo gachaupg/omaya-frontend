@@ -20,14 +20,14 @@ export const formatDate = (date: string | Date): string => {
 };
 
 /**
- * Formats a number to 2 decimal places
+ * Formats a number to 3 decimal places
  * @param value - The number to format
  * @returns Formatted number string
  */
 export const formatNumber = (value: number): string => {
   return new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 3,
   }).format(value);
 };
 

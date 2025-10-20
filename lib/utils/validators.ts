@@ -25,6 +25,7 @@ export const validateP2PAd = {
     if (isNaN(Number(value))) return "Maximum order amount must be a number";
     if (Number(value) <= 0)
       return "Maximum order amount must be greater than 0";
+    if (Number(value) < 10) return "Maximum order amount must be at least 10";
     if (Number(value) <= Number(minAmount)) {
       return "Maximum order amount must be greater than minimum order amount";
     }

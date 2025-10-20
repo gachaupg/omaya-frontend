@@ -136,10 +136,25 @@ const addRefreshTokenInterceptor = (instance: AxiosInstance): AxiosInstance => {
           return instance(originalRequest);
         } catch (refreshError) {
           storage.removeProfile();
-          window.location.href = "/auth/login";
+          // Don't redirect on home page - let the component handle it
+          if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+            window.location.href = "/auth/login";
+          }
           return Promise.reject(refreshError);
         }
       }
+      
+      // For 401 errors without refresh token (unauthenticated users on home page)
+      // Silently reject without showing error
+      if (error.response?.status === 401 && !profile?.tokens?.refresh) {
+        // Completely silent - no logs, no messages
+        return Promise.reject({ 
+          ...error, 
+          message: '',
+          suppressed: true 
+        });
+      }
+      
       return Promise.reject(error);
     }
   );

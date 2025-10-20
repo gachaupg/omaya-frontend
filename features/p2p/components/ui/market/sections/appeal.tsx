@@ -32,16 +32,6 @@ const AppealModal: React.FC<AppealModalProps> = ({
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Debug logging for state changes
-  useEffect(() => {
-    console.log("AppealModal state:", {
-      open,
-      tradeId,
-      reason,
-      loading,
-      success,
-    });
-  }, [open, tradeId, reason, loading, success]);
 
   useEffect(() => {
     if (success) {
@@ -68,27 +58,19 @@ const AppealModal: React.FC<AppealModalProps> = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      console.log("File selected:", file.name);
       setScreenshot(file);
     }
   };
 
   const handleReasonChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedReason = e.target.value;
-    console.log("Reason changed to:", selectedReason);
     setReason(selectedReason);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Submit attempted with:", {
-      reason,
-      tradeId,
-      hasScreenshot: !!screenshot,
-    });
 
     if (!reason || !tradeId) {
-      console.log("Form validation failed:", { reason, tradeId });
       return;
     }
 
@@ -99,18 +81,12 @@ const AppealModal: React.FC<AppealModalProps> = ({
       formData.append("screenshot", screenshot);
     }
 
-    console.log("Submitting appeal with:", {
-      tradeId,
-      reason,
-      hasScreenshot: !!screenshot,
-    });
     dispatch(createAppealThunk(formData) as any);
   };
 
   // Simplified validation - only require reason to be selected
   const isFormValid = reason.trim() !== "";
 
-  console.log("Form validation:", { isFormValid, reason, tradeId });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -216,9 +192,6 @@ const AppealModal: React.FC<AppealModalProps> = ({
                   : "bg-[#35353E] text-[#888] cursor-not-allowed"
               }`}
               disabled={loading || !isFormValid}
-              onClick={() =>
-                console.log("Button clicked! Form valid:", isFormValid)
-              }
             >
               {loading ? "Submitting..." : "Appeal"}
             </button>

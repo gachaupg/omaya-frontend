@@ -29,9 +29,9 @@ export default function ForexWithdrawal() {
   const [selectedUserPaymentId, setSelectedUserPaymentId] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // Load payment details
+  // Load payment details - try cache first
   useEffect(() => {
-    dispatch(fetchAdminPaymentDetails());
+    dispatch(fetchAdminPaymentDetails(false)); // false = use cache if available
     dispatch(fetchUserPaymentDetails() as any);
   }, [dispatch]);
 
@@ -118,13 +118,6 @@ export default function ForexWithdrawal() {
     (detail: any) => detail.payment_type?.toLowerCase() === 'forex'
   );
 
-  // Debug logs
-  useEffect(() => {
-    console.log('ForexWithdrawal - User Payment Details:', userPaymentDetails);
-    console.log('ForexWithdrawal - Filtered User Payments:', filteredUserPayments);
-    console.log('ForexWithdrawal - Admin Payment Details:', adminPaymentDetails);
-    console.log('ForexWithdrawal - Admin Forex Accounts:', adminForexAccounts);
-  }, [userPaymentDetails, filteredUserPayments, adminPaymentDetails, adminForexAccounts]);
 
   return (
     <div className="w-full flex flex-col dark:bg-[#18181D]">
@@ -158,12 +151,12 @@ export default function ForexWithdrawal() {
                   onChange={(e) => setFromCurrency(e.target.value)}
                   className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#D1D2D4] rounded-xl px-3 py-2.5 text-base focus:outline-none border border-[#D1D2D4FF] dark:border-[#35353E]"
                 >
-                  <option value="EUR">EUR</option>
-                  <option value="USD">USD</option>
-                  <option value="GBP">GBP</option>
-                  <option value="JPY">JPY</option>
-                  <option value="AUD">AUD</option>
-                  <option value="CAD">CAD</option>
+                  <option value="EUR" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">EUR</option>
+                  <option value="USD" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">USD</option>
+                  <option value="GBP" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">GBP</option>
+                  <option value="JPY" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">JPY</option>
+                  <option value="AUD" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">AUD</option>
+                  <option value="CAD" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">CAD</option>
                 </select>
               </div>
 
@@ -176,12 +169,12 @@ export default function ForexWithdrawal() {
                   onChange={(e) => setToCurrency(e.target.value)}
                   className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#D1D2D4] rounded-xl px-3 py-2.5 text-base focus:outline-none border border-[#D1D2D4FF] dark:border-[#35353E]"
                 >
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
-                  <option value="GBP">GBP</option>
-                  <option value="JPY">JPY</option>
-                  <option value="AUD">AUD</option>
-                  <option value="CAD">CAD</option>
+                  <option value="USD" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">USD</option>
+                  <option value="EUR" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">EUR</option>
+                  <option value="GBP" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">GBP</option>
+                  <option value="JPY" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">JPY</option>
+                  <option value="AUD" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">AUD</option>
+                  <option value="CAD" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">CAD</option>
                 </select>
               </div>
             </div>
@@ -243,9 +236,9 @@ export default function ForexWithdrawal() {
                   onChange={(e) => setSelectedUserPaymentId(e.target.value)}
                   className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#D1D2D4] rounded-xl px-3 py-2.5 text-base focus:outline-none border border-[#D1D2D4FF] dark:border-[#35353E]"
                 >
-                  <option value="">Select your bank account</option>
+                  <option value="" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">Select your bank account</option>
                   {filteredUserPayments.map((detail: any) => (
-                    <option key={detail.id} value={detail.user_payment_detail_id}>
+                    <option key={detail.id} value={detail.user_payment_detail_id} className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">
                       {detail.payment_method_name} - {detail.payment_provider_name}
                       {detail.account_number && ` (${detail.account_number})`}
                     </option>

@@ -80,7 +80,6 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
       setIsModelLoaded(true);
       setIsLoading(false);
     } catch (error) {
-      console.error('Error loading models:', error);
       setIsLoading(false);
     }
   };
@@ -109,7 +108,6 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
       // Stop all tracks (video and audio if any)
       tracks.forEach(track => {
         track.stop();
-        console.log('Camera track stopped:', track.kind);
       });
       
       // Clear the video source
@@ -118,7 +116,6 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
       // Pause the video element
       videoRef.current.pause();
       
-      console.log('Camera fully stopped');
     }
   };
 
@@ -274,24 +271,20 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
         // Convert to base64 image
         const imageData = captureCanvas.toDataURL('image/jpeg', 0.95);
         
-        console.log('Image captured:', imageData.substring(0, 50) + '...');
-        console.log('Image data length:', imageData.length);
+       
         
         // Set captured image FIRST
         setCapturedImage(imageData);
         
         // THEN set verified (this will stop the detection loop)
         setIsVerified(true);
-        
-        console.log('Verification complete, image set');
-        
+                
         // Stop the video stream immediately
         stopVideo();
         
         // Automatically trigger onVerificationComplete after a short delay to show the captured image
         setTimeout(() => {
           if (onVerificationComplete) {
-            console.log('Auto-submitting verification data');
             onVerificationComplete({
               faceDetected: true,
               age: Math.round(age),
@@ -332,7 +325,7 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
   // Debug effect for captured image
   useEffect(() => {
     if (capturedImage) {
-      console.log('Captured image state updated, length:', capturedImage.length);
+    
     }
   }, [capturedImage]);
 

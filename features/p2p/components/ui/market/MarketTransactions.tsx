@@ -204,17 +204,7 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
     useSelector((state: RootState) => state.p2pMarket || {});
   const orders = { buy_orders: p2pBuyOrders, sell_orders: p2pSellOrders };
   
-  // Log component render and Redux state
-  console.log("🎨 [Component] MarketTransactions render:", { 
-    buyOrdersCount: p2pBuyOrders?.results?.length || 0, 
-    sellOrdersCount: p2pSellOrders?.results?.length || 0,
-    totalBuyOrdersCount: p2pBuyOrders?.total_orders_count || 0,
-    totalSellOrdersCount: p2pSellOrders?.total_orders_count || 0,
-    currentPage: currentPage,
-    activeTab: activeTab,
-    isAuthenticated: isAuthenticated,
-    timestamp: new Date().toISOString()
-  });
+ 
   
   const [mounted, setMounted] = useState(false);
   const [amount, setAmount] = useState("");
@@ -224,36 +214,24 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
 
-  // Initialize WebSocket connection for real-time P2P orders updates
-  console.log("🔌 [Component] Initializing WebSocket connection:", { isAuthenticated });
+ 
   const { isConnected: wsConnected, connectionError: wsError } = useP2POrdersWebSocket({
     enabled: isAuthenticated,
     fallbackToPolling: true, // Enable automatic fallback to polling if WebSocket fails
     pollingInterval: 30000, // Poll every 30 seconds if WebSocket is unavailable
   });
   
-  console.log("🔌 [Component] WebSocket status:", { 
-    wsConnected, 
-    wsError,
-    willUsePolling: !wsConnected && isAuthenticated 
-  });
-
+ 
   useEffect(() => {
     setMounted(true);
     // Fetch initial data only once on mount
     if (isAuthenticated) {
-      console.log("🚀 [Component] Fetching initial P2P orders");
       dispatch(fetchAllP2PBuyandSell(1) as any);
     }
   }, []); // Only run once on mount
   
   // Track Redux state changes
   useEffect(() => {
-    console.log("🔄 [Component] Redux state changed:", {
-      buyOrdersCount: p2pBuyOrders?.results?.length || 0,
-      sellOrdersCount: p2pSellOrders?.results?.length || 0,
-      timestamp: new Date().toISOString()
-    });
   }, [p2pBuyOrders, p2pSellOrders]);
 
   const providerOptions = useMemo(() => getProviderOptions(orders), [orders]);
@@ -262,15 +240,9 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
     [orders]
   );
 
-  // Debug: Log available options
-  console.log("Filter options:", {
-    providerOptions,
-    paymentMethodOptions
-  });
 
   const getActiveOrders = useMemo(() => {
     if (!orders) {
-      console.log("⚠️ [ActiveOrders] No orders object");
       return [];
     }
     
@@ -281,46 +253,29 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
     if (activeTab === "buy") {
       // User wants to buy, so show sell orders
       activeOrdersList = orders.sell_orders?.results || [];
-      console.log("📋 [ActiveOrders] Showing sell orders for buy tab:", activeOrdersList.length);
     } else if (activeTab === "sell") {
       // User wants to sell, so show buy orders
       activeOrdersList = orders.buy_orders?.results || [];
-      console.log("📋 [ActiveOrders] Showing buy orders for sell tab:", activeOrdersList.length);
     } else {
       // Default: combine both
       activeOrdersList = [
         ...(orders.buy_orders?.results || []),
         ...(orders.sell_orders?.results || [])
       ];
-      console.log("📋 [ActiveOrders] Showing combined orders:", activeOrdersList.length);
     }
     
-    console.log("📊 [ActiveOrders] Active orders list:", { 
-      activeTab, 
-      buyOrdersCount: orders.buy_orders?.results?.length || 0,
-      sellOrdersCount: orders.sell_orders?.results?.length || 0,
-      activeOrdersCount: activeOrdersList.length,
-      firstOrderType: activeOrdersList[0]?.order_type,
-      firstOrderId: activeOrdersList[0]?.id
-    });
     
     return activeOrdersList;
   }, [orders, activeTab, p2pBuyOrders, p2pSellOrders]); // Add direct dependencies
 
   const transformedData: MarketRow[] = useMemo(() => {
-    console.log("🔄 [TransformedData] Recalculating with", getActiveOrders.length, "orders");
     
     if (!getActiveOrders || getActiveOrders.length === 0) {
-      console.log("⚠️ [TransformedData] No active orders to transform");
       return [];
     }
 
     const data = getActiveOrders
       .map((order: any, index: number) => {
-        // Debug: Log the first order to understand the structure
-        if (index === 0) {
-          console.log("📄 [TransformedData] Sample order structure:", order);
-        }
         
         const firstName = order.advertiser_first_name || "";
         const lastName = order.advertiser_last_name || "";
@@ -425,13 +380,7 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
         return true;
       });
 
-    console.log("✅ [TransformedData] Transformed data:", {
-      originalCount: getActiveOrders.length,
-      filteredCount: data.length,
-      filters: { currency, provider, paymentType, amount, searchQuery },
-      timestamp: new Date().toISOString()
-    });
-    
+      
     return data;
   }, [
     getActiveOrders,

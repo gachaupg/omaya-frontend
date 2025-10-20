@@ -29,7 +29,11 @@ import { showToast } from "@/lib/utils/toast";
 import { handleApiError } from "@/lib/utils/errorHandler";
 import SuccessPage from "@/features/express/components/success";
 
-const SwapWidget = () => {
+interface SwapWidgetProps {
+  isHomePage?: boolean;
+}
+
+const SwapWidget = ({ isHomePage = false }: SwapWidgetProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const {
     fromAsset,
@@ -87,12 +91,16 @@ const SwapWidget = () => {
   }, [toAmount]);
 
   useEffect(() => {
+    // Skip API calls on home page
+    if (isHomePage) {
+      return;
+    }
+    
     dispatch(resetErrorToastFlag());
     dispatch(fetchSupportedAssets(false)).catch((error) => {
-      console.error("Failed to fetch supported assets:", error);
       handleApiError(error);
     });
-  }, [dispatch]);
+  }, [dispatch, isHomePage]);
 
   // Fetch swap estimate when assets or amount changes
   useEffect(() => {
@@ -127,15 +135,11 @@ const SwapWidget = () => {
       dispatch(
         fetchSwapEstimate(estimateParams)
       ).catch((error) => {
-        console.error("Failed to fetch swap estimate:", error);
-        console.log("Estimate params:", estimateParams);
-        console.log("Active input field:", activeInputField);
         // Don't show error toast for reverse calculation failures
         // as they might be expected (unsupported pairs, etc.)
         if (activeInputField === 'from') {
           handleApiError(error);
-        } else {
-          console.warn("Reverse calculation failed, this might be expected:", error);
+        } else {    
         }
       });
     } else {
@@ -177,15 +181,11 @@ const SwapWidget = () => {
   // Handle estimate errors
   useEffect(() => {
     if (estimateError) {
-      console.error("Swap estimate error:", estimateError);
-      console.log("Active input field during error:", activeInputField);
-      
       // Only show error toast for forward calculation errors
       // Reverse calculation errors might be expected (unsupported pairs)
       if (activeInputField === 'from') {
         showToast.error("Estimate Error", estimateError);
       } else {
-        console.warn("Reverse calculation error (might be expected):", estimateError);
         
         // Try fallback calculation using last successful estimate
         if (lastSuccessfulEstimate && debouncedToAmount) {
@@ -198,12 +198,9 @@ const SwapWidget = () => {
               const rate = toAmount / fromAmount;
               const calculatedFromAmount = parseFloat(debouncedToAmount) / rate;
               dispatch(setFromAmount(calculatedFromAmount.toString()));
-              console.log("Fallback calculation successful:", { rate, calculatedFromAmount, toAmount, fromAmount });
             } else {
-              console.warn("Fallback calculation skipped: invalid amounts", { toAmount, fromAmount });
             }
           } catch (fallbackError) {
-            console.error("Fallback calculation failed:", fallbackError);
           }
         }
       }
@@ -212,8 +209,7 @@ const SwapWidget = () => {
 
   // Handle swap errors
   useEffect(() => {
-    if (swapError) {
-      console.error("Swap error:", swapError);
+    if (swapError) {    
       showToast.error("Swap Error", swapError);
     }
   }, [swapError]);
@@ -296,17 +292,13 @@ const SwapWidget = () => {
   };
 
   const handleSubmit = async () => {
-    console.log("handleSubmit called");
-    if (!fromAsset || !toAsset || !walletAddress || !estimate) {
-      console.error("Missing required fields");
+        if (!fromAsset || !toAsset || !walletAddress || !estimate) {
       showToast.error(
         "Missing required fields",
         "Please fill in all required information"
       );
       return;
     }
-
-    console.log("All fields present, creating swap...");
 
     try {
       dispatch(resetErrorToastFlag()); // Reset error toast flag before creating swap
@@ -320,37 +312,44 @@ const SwapWidget = () => {
           address: walletAddress,
         })
       ).unwrap();
-      console.log("Swap created successfully");
       setCurrentStep("copy-address");
     } catch (error: any) {
-      console.error("Failed to create swap:", error);
-      console.error("Error response:", error.response?.data);
-      console.error("Error status:", error.response?.status);
 
       // Handle specific error cases
       if (error.response?.status === 500) {
-        showToast.error(
-          "Server Error",
-          "The server encountered an error. Please try again later."
-        );
+        if (!isHomePage) {
+          showToast.error(
+            "Server Error",
+            "The server encountered an error. Please try again later."
+          );
+        }
       } else if (error.response?.status === 400) {
-        showToast.error(
-          "Invalid Request",
-          error.response?.data?.message ||
-            "Please check your input and try again"
-        );
+        if (!isHomePage) {
+          showToast.error(
+            "Invalid Request",
+            error.response?.data?.message ||
+              "Please check your input and try again"
+          );
+        }
       } else if (error.response?.status === 401) {
-        showToast.error("Authentication Required", "Please log in to continue");
+        // Suppress all errors on home page - silent
+        if (!isHomePage) {
+          showToast.error("Authentication Required", "Please log in to continue");
+        }
       } else if (error.response?.status === 403) {
-        showToast.error(
-          "Access Denied",
-          "You don't have permission to perform this action"
-        );
+        if (!isHomePage) {
+          showToast.error(
+            "Access Denied",
+            "You don't have permission to perform this action"
+          );
+        }
       } else if (error.response?.status === 429) {
-        showToast.error(
-          "Too Many Requests",
-          "Please wait a moment before trying again"
-        );
+        if (!isHomePage) {
+          showToast.error(
+            "Too Many Requests",
+            "Please wait a moment before trying again"
+          );
+        }
       } else {
         // Use the general error handler for other cases
         handleApiError(error);
@@ -368,7 +367,6 @@ const SwapWidget = () => {
         setCopyMessage("");
       }, 2000);
     } catch (err) {
-      console.error("Failed to copy:", err);
       setCopyMessage("Failed");
       showToast.error(
         "Failed to copy address",
@@ -482,3 +480,4 @@ const SwapWidget = () => {
 };
 
 export default SwapWidget;
+export type { SwapWidgetProps };

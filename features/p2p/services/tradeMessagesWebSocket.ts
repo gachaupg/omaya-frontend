@@ -41,7 +41,6 @@ export class TradeMessagesWebSocket {
   connect(tradeId: string, token: string): void {
     // Check for permanent failure
     if (this.hasPermanentFailure) {
-      console.warn("⚠️ WebSocket has permanent failure, skipping connection attempt");
       return;
     }
 
@@ -53,7 +52,6 @@ export class TradeMessagesWebSocket {
 
     // If connected to different trade, close existing connection
     if (this.ws?.readyState === WebSocket.OPEN && this.lastTradeId !== tradeId) {
-      console.log("🔄 Switching to different trade, closing current connection");
       this.disconnect();
     }
 
@@ -77,17 +75,9 @@ export class TradeMessagesWebSocket {
     try {
       this.url = API_CONFIG.P2P.SOCKETS.TRADE_MESSAGES(tradeId, token);
       
-      // Only log on first connection attempt
-      if (this.reconnectAttempts === 0) {
-        console.log("🔌 Connecting to Trade Messages WebSocket...");
-      }
-
       this.ws = new WebSocket(this.url);
 
       this.ws.onopen = () => {
-        if (this.reconnectAttempts === 0) {
-          console.log("✅ Trade Messages WebSocket connected");
-        }
         this.reconnectAttempts = 0;
         this.hasPermanentFailure = false;
         this.openHandlers.forEach((handler) => handler());
@@ -99,45 +89,30 @@ export class TradeMessagesWebSocket {
       this.ws.onmessage = (event) => {
         try {
           const message: WebSocketMessage = JSON.parse(event.data);
-          // Silent message handling - only log errors
           this.messageHandlers.forEach((handler) => handler(message));
         } catch (error) {
-          // Only log parse errors as they indicate real issues
-          console.warn("⚠️ Failed to parse WebSocket message:", error);
+          // Silent error handling
         }
       };
 
       this.ws.onerror = (error) => {
-        // Silent error handling - errors will be reported via onclose event
-        // Only log on first failure for debugging
-        if (this.reconnectAttempts === 0) {
-          console.warn("⚠️ Trade Messages WebSocket connection failed (will retry silently)");
-        }
-        
         this.errorHandlers.forEach((handler) => handler(error));
       };
 
       this.ws.onclose = (event) => {
         // Handle different close codes silently
         switch (event.code) {
-          case 1000: // Normal closure - completely silent
+          case 1000: // Normal closure
             break;
           case 1008: // Policy violation
             this.hasPermanentFailure = true;
-            if (this.reconnectAttempts === 0) {
-              console.warn("⚠️ WebSocket auth failed - check token permissions");
-            }
             break;
           case 4001: // Unauthorized
           case 4003: // Forbidden
             this.hasPermanentFailure = true;
-            if (this.reconnectAttempts === 0) {
-              console.warn("⚠️ WebSocket unauthorized - check authentication");
-            }
             break;
-          case 1006: // Abnormal closure - silent, will retry
+          case 1006: // Abnormal closure
           default:
-            // Silent for common connection issues
             break;
         }
         
@@ -147,7 +122,6 @@ export class TradeMessagesWebSocket {
         if (!this.isIntentionallyClosed && 
             !this.hasPermanentFailure && 
             this.reconnectAttempts < this.maxReconnectAttempts) {
-          // Silent reconnection
           this.scheduleReconnect(tradeId, token);
         }
       };

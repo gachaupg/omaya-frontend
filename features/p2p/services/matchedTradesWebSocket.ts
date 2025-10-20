@@ -20,6 +20,7 @@ export interface MatchedTrade {
   order_type: string;
   status: string;
   rate: string;
+  commission_rate?: number;
   payment_details: Array<{
     provider: string;
     account_name: string;

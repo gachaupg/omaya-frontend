@@ -20,7 +20,6 @@ export const useBlog = () => {
         }
 
         const data = await response.json();
-        console.log("Raw blog data:", data);
 
         // Transform Sanity data to match UI expectations
         const transformedBlogs = data.map((blog: BlogPost, index: number) => ({
@@ -32,20 +31,14 @@ export const useBlog = () => {
           author_name: blog.author_name || "Anonymous",
         }));
 
-        console.log("Transformed blogs:", transformedBlogs);
 
         // Filter blogs and news
         const blogPosts = transformedBlogs.filter((blog: BlogPost) => blog.category === "blog");
         const newsPosts = transformedBlogs.filter((blog: BlogPost) => blog.category === "news");
 
-        console.log("Filtered blogs:", blogPosts);
-        console.log("Filtered news:", newsPosts);
-
         setBlogs(blogPosts);
         setNews(newsPosts);
       } catch (err) {
-        console.error("Error fetching blogs:", err);
-
         // Provide fallback data instead of showing error to user
         const fallbackBlogs: BlogPost[] = [
           {
@@ -85,7 +78,7 @@ export const useBlog = () => {
 
         setBlogs(fallbackBlogs);
         setNews(fallbackNews);
-        setError("Blog service is temporarily unavailable. Please try again later.");
+        setError("Blog service is temporarily unavailable. Please check back later for the latest updates and articles.");
       } finally {
         setLoading(false);
       }

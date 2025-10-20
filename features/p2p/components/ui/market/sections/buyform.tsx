@@ -48,22 +48,16 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
 
   // WebSocket status update callback - use useCallback to prevent reconnections
   const handleStatusUpdate = React.useCallback((status: any) => {
-    console.log("🔔 Trade status update received in buyform:", status);
-    console.log("📊 Current confirmOrder:", confirmOrder);
-    console.log("📊 Current confirmOrder.id:", confirmOrder?.id);
-    console.log("📊 Current confirmOrder.status:", confirmOrder?.status);
-    console.log("📊 New status:", status.status);
+   
     
     const oldStatus = confirmOrder?.status;
     const newStatus = status.status;
     
     // Always refresh if we have a valid status update
     if (confirmOrder?.id && newStatus) {
-      console.log("✅ Conditions met - will update UI");
       
       // Show toast notification for status changes
       if (oldStatus !== newStatus) {
-        console.log(`📢 Status changed: ${oldStatus} → ${newStatus}`);
         if (oldStatus === "matched" && newStatus === "half-matched") {
           showToast.success("Status Updated", "Payment notification sent to seller");
         } else if (oldStatus === "half-matched" && newStatus === "completed") {
@@ -74,26 +68,15 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
           showToast.success("Status Updated", `Trade status is now: ${newStatus}`);
         }
       } else {
-        console.log("ℹ️ Status unchanged, still refreshing data");
       }
       
-      console.log("🔄 Refreshing trade data for ID:", confirmOrder.id);
       dispatch(fetchConfirmOrder(confirmOrder.id))
         .unwrap()
         .then((updatedOrder) => {
-          console.log("✅ fetchConfirmOrder SUCCESS:", updatedOrder);
-          console.log("✅ Updated status:", updatedOrder?.status);
         })
         .catch((error) => {
-          console.error("❌ fetchConfirmOrder FAILED:", error);
         });
     } else {
-      console.warn("❌ Conditions NOT met:", {
-        hasConfirmOrderId: !!confirmOrder?.id,
-        hasNewStatus: !!newStatus,
-        confirmOrderId: confirmOrder?.id,
-        newStatus: newStatus
-      });
     }
   }, [confirmOrder, dispatch]);
 
@@ -114,7 +97,6 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
     !isNaN(completionTime) && completionTime > 0
       ? completionTime * 60
       : 10 * 60;
-// Remove this line - we'll get tradeId from localStorage inside useEffect
   // Local countdown state for auto-cancel logic
   const [countdown, setCountdown] = useState(displaySeconds);
   const prevStatus = useRef(confirmOrder?.status);
@@ -136,7 +118,6 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
       setCountdown((prev) => {
         if (prev <= 1) {
           // When countdown reaches 0, auto-cancel the transaction
-          console.log("Countdown reached 0, auto-cancelling transaction");
           handleCancelTransaction();
           return 0;
         }
@@ -151,13 +132,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
     const tradeIdFromStorage = localStorage.getItem('p2p_trade_id');
     const orderId = tradeIdFromStorage || params?.id as string;
     
-    console.log("🔍 DEBUG - useEffect:", { 
-      orderId, 
-      tradeIdFromStorage, 
-      paramsId: params?.id,
-      localStorageKeys: Object.keys(localStorage).filter(key => key.includes('p2p')),
-      allLocalStorage: { ...localStorage }
-    });
+
 
     if (isAuthenticated && orderId) {
       
@@ -165,13 +140,10 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
       dispatch(fetchConfirmOrder(orderId))
         .unwrap()
         .then((result) => {
-          console.log("✅ Fetch confirm order success:", result);
         })
         .catch((error) => {
-          console.error("❌ Fetch confirm order error:", error);
         });
     } else {
-      console.log("⚠️ Not fetching - missing auth or orderId:", { isAuthenticated, orderId });
     }
   }, [params?.id, dispatch, isAuthenticated]);
 
@@ -179,22 +151,11 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
   useEffect(() => {
     const orderToFetch = confirmOrder?.buy_order || confirmOrder?.sell_order;
 
-    console.log("SingleOrder useEffect:", {
-      orderToFetch,
-      confirmOrder,
-      singleOrder,
-      confirmOrderId: confirmOrder?.id,
-    });
-
     if (isAuthenticated && orderToFetch && !singleOrder?.id) {
-      console.log("Fetching single order:", orderToFetch);
       dispatch(fetchSingleOrder(orderToFetch.toString()));
     }
   }, [confirmOrder, isAuthenticated, singleOrder?.id, dispatch]);
 
-
-  console.log("singleOrder", singleOrder);
-  console.log("confirmOrder", confirmOrder);
 
   useEffect(() => {
     setIsClient(true);
@@ -216,10 +177,9 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
 
   // Get payment details from order data
   const paymentDetails = singleOrder?.payment_details?.[0];
-  console.log("singleOrder", singleOrder);
   // --- Calculation logic ---
-  const sendAmount = Number(confirmOrder?.amount) || 0;
-  const commissionRate = Number(singleOrder?.commission_rate) || Number(commissionFromUrl) || 0;
+  const sendAmount = Number(confirmOrder?.amount ) || 0;
+  const commissionRate = Number(confirmOrder?.commission_rate) || Number(commissionFromUrl) || 0;
   const orderType = singleOrder?.order_type || "buy";
   let receiveAmount = sendAmount;
 
@@ -235,15 +195,6 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
   const formatAmount = (amt: number) =>
     amt.toLocaleString(undefined, { maximumFractionDigits: 6 });
 
-  // Debug logging
-  console.log("💰 Calculation Debug:", {
-    sendAmount,
-    commissionRate,
-    commissionFromUrl,
-    orderType,
-    receiveAmount,
-    singleOrderCommissionRate: singleOrder?.commission_rate
-  });
 
   const handleCancelTransaction = () => {
     if (isAuthenticated && confirmOrder?.id) {
@@ -356,7 +307,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
                 {singleOrder?.completion_rate || "99.20"}% Completion
               </div>
               <div className="text-sm text-[#1D8751]">
-                Rating: 99% | Commission: {commissionFromUrl ||singleOrder?.commission_rate}%
+                Rating: 99% | Commission: {commissionFromUrl ||confirmOrder?.commission_rate}Commission
               </div>
             </div>
 
@@ -419,7 +370,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
               <div className="flex items-center h-[46px] rounded-2xl border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[#18181D] px-2">
                 <span className="text-[#1D8751] text-2xl mr-2">$</span>
                 <span className="text-[#1D8751] text-xl font-semibold">
-                  {formatAmount(sendAmount)}
+                  {formatAmount(sendAmount) }
                 </span>
                 <span className="ml-auto text-gray-900 dark:text-white text-base font-medium">
                   USD
@@ -455,7 +406,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
               <div className="flex items-center h-[46px] rounded-2xl border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[#35353E] px-2">
                 <span className="text-[#1D8751] text-2xl mr-2">$</span>
                 <span className="text-[#1D8751] text-xl font-semibold">
-                  {commissionFromUrl || singleOrder?.commission_rate}%
+                  {commissionFromUrl || confirmOrder?.commission_rate}
                 </span>
                 <span className="ml-auto text-gray-900 dark:text-white text-base font-medium">
                   USD

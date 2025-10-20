@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useTheme } from "@/context/theme";
 import { useMarketingI18n } from "@/lib/useMarketingI18n";
 import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
 import { AppDispatch } from "@/store";
 import { fetchAssets } from "@/features/exchange/slices/exchangeSlice";
 import { fetchSupportedAssets, fetchSwapEstimate } from "@/features/swap/slices/swapSlice";
@@ -289,6 +290,7 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
   const { isDark } = useTheme();
   const { t } = useMarketingI18n();
   const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
 
   /* ------------------- Redux State ------------------- */
   const { assets, loading: assetsLoading } = useSelector(
@@ -300,6 +302,7 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
   const { adminPaymentDetails, loading: paymentLoading } = useSelector(
     (state: any) => state.payment
   );
+  const { isAuthenticated } = useSelector((state: any) => state.auth);
 
   /* ------------------- State ------------------- */
   const [activeTab, setActiveTab] = useState<Tab>("express");
@@ -359,45 +362,52 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
 
   /* ------------------- Data Fetching ------------------- */
   useEffect(() => {
+    // Skip API calls on home page - no data needed, buttons redirect to login
+    if (isHomePage) {
+      return;
+    }
+    
     // Fetch assets
     dispatch(fetchAssets(false))
       .unwrap()
       .catch((error: unknown) => {
         console.error("Failed to fetch exchange assets:", error);
       });
-  }, [dispatch]);
+  }, [dispatch, isHomePage]);
 
   useEffect(() => {
+    // Skip API calls on home page
+    if (isHomePage) {
+      return;
+    }
+    
     // Fetch swap assets
     dispatch(fetchSupportedAssets(false))
       .unwrap()
       .catch((error: unknown) => {
         console.error("Failed to fetch swap assets:", error);
       });
-  }, [dispatch]);
+  }, [dispatch, isHomePage]);
 
   useEffect(() => {
+    // Skip API calls on home page
+    if (isHomePage) {
+      return;
+    }
+    
     // Fetch payment methods
     dispatch(fetchAdminPaymentDetails(false))
       .unwrap()
       .catch((error: unknown) => {
         console.error("Failed to fetch payment details:", error);
       });
-  }, [dispatch]);
+  }, [dispatch, isHomePage]);
 
   /* ------------------- Asset Selection ------------------- */
   // Auto-select first asset when assets are loaded
   useEffect(() => {
     if (assetsDisplay.shouldShowData && assetsDisplay.displayData.length > 0 && !selectedAsset) {
-      console.log("Assets loaded for dropdown:", assetsDisplay.displayData.slice(0, 3).map(asset => ({
-        ticker: asset?.ticker,
-        symbol: asset?.symbol,
-        name: asset?.name,
-        image_url: asset?.image_url,
-        asset_image: asset?.asset_image,
-        icon: asset?.icon,
-        image: (asset as any)?.image
-      })));
+
       // Sort assets based on active tab
       const sortedAssets = [...assetsDisplay.displayData].sort((a, b) => {
         if (activeTab === "express") {
@@ -683,25 +693,10 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
 
   /* ------------------- Asset Selection ------------------- */
   const handleAssetSelect = (asset: Asset) => {
-    console.log("=== ASSET SELECTION START ===");
-    console.log("Asset selected for display:", {
-      asset,
-      image_url: asset?.image_url,
-      asset_image: asset?.asset_image,
-      icon: asset?.icon,
-      image: (asset as any)?.image,
-      ticker: asset?.ticker,
-      symbol: asset?.symbol,
-      name: asset?.name
-    });
     
-    console.log("Setting selected asset...");
     setSelectedAsset(asset);
-    console.log("Closing dropdown...");
     setIsAssetDropdownOpen(false);
-    console.log("Clearing search term...");
     setAssetSearchTerm(""); // Clear search term when asset is selected
-    console.log("=== ASSET SELECTION END ===");
     
     // Update currency display based on current mode
     if (mode === "deposit") {
@@ -795,12 +790,21 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
   };
 
   /* ------------------- Helpers ------------------- */
+  const handleTabClick = (tabId: Tab) => {
+    // If on home page and not authenticated, navigate to login
+    if (isHomePage && !isAuthenticated) {
+      router.push("/auth/login");
+      return;
+    }
+    setActiveTab(tabId);
+  };
+
   const TabButton: React.FC<{ id: Tab; children: React.ReactNode }> = ({
     id,
     children,
   }) => (
     <button
-      onClick={() => setActiveTab(id)}
+      onClick={() => handleTabClick(id)}
       className={`w-1/2 flex justify-center p-5 transition-opacity ${
         activeTab === id ? "opacity-100" : "opacity-50 hover:opacity-75"
       }`}
@@ -865,18 +869,9 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
                 key={`${asset.asset_id || 'asset'}-${asset.symbol || asset.ticker || asset.name}-${asset.network || 'unknown'}-${index}`}
                 className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0 min-w-0"
                 onClick={(e) => {
-                  console.log("=== ASSET CLICK START ===");
                   e.preventDefault();
                   e.stopPropagation();
-                  console.log("Asset clicked:", {
-                    ticker: asset.ticker,
-                    network: asset.network || 'unknown',
-                    image: asset.image_url || asset.icon,
-                    asset
-                  });
-                  console.log("Calling onSelect...");
                   onSelect(asset);
-                  console.log("=== ASSET CLICK END ===");
                 }}
               >
                 <img
@@ -884,14 +879,7 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
                   alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
                   className="w-6 h-6 rounded-full object-cover"
                   onError={(e) => {
-                    console.log("Image failed to load for asset:", {
-                      asset,
-                      attemptedUrl: e.currentTarget.src,
-                      image_url: asset?.image_url,
-                      asset_image: asset?.asset_image,
-                      icon: asset?.icon,
-                      image: (asset as any)?.image
-                    });
+                   
                     e.currentTarget.src =
                       "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                   }}
@@ -950,7 +938,7 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
           </h3>
         </TabButton>
       </div>
-        <SwapWidget />
+        <SwapWidget isHomePage={isHomePage} />
       </div>
     );
   }

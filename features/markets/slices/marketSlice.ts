@@ -8,6 +8,8 @@ import {
   fetchTopMarkets,
   fetchTrendingMarkets,
   searchMarkets,
+  debugChartAPI,
+  debugDetailsAPI,
 } from "../api";
 import { sliceCache } from "../../../lib/utils/sliceCache";
 
@@ -217,6 +219,33 @@ export const selectMarketsError = (state: { markets: MarketDataState }) =>
   state.markets.error;
 export const selectMarketsLastUpdated = (state: { markets: MarketDataState }) =>
   state.markets.lastUpdated;
+
+/**
+ * Setup debug functions to be available globally for testing
+ * This function should be called once during app initialization
+ * Makes debugChartAPI, debugDetailsAPI, and testPublicAPI available on window object
+ */
+export const setupMarketDebugFunctions = () => {
+  if (typeof window !== "undefined") {
+    (window as any).debugChartAPI = debugChartAPI;
+    (window as any).debugDetailsAPI = debugDetailsAPI;
+    (window as any).testPublicAPI = async () => {
+      try {
+        const response = await fetch(
+          "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=1&interval=hourly"
+        );
+        const data = await response.json();
+        console.log("Public API test result:", data);
+        return data;
+      } catch (error) {
+        console.error("Public API test failed:", error);
+      }
+    };
+    console.log(
+      "Debug functions available: window.debugChartAPI, window.debugDetailsAPI, window.testPublicAPI"
+    );
+  }
+};
 
 // Export reducer
 export default marketSlice.reducer;

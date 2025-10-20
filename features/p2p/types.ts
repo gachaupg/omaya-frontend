@@ -410,6 +410,7 @@ export interface MatchedTrade {
   order_type: "buy" | "sell";
   status: "matched" | "half-matched" | "completed";
   rate: number;
+  commission_rate?: number;
   payment_details: PaymentDetail[];
   buyer_photo: string | null;
   seller_photo: string | null;

@@ -77,8 +77,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
     }
   }, [imageModal.isOpen]);
 
-  console.log("data in table", data);
-  console.log("currentPage", currentPage);
+  
   const handleSort = (key: string) => {
     setSortConfig((prev) => ({
       key,
@@ -104,9 +103,9 @@ const MarketTable: React.FC<MarketTableProps> = ({
             </div>
             <div
               className="min-w-[120px] flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
-              onClick={() => handleSort("commission")}
+              onClick={() => handleSort("rate")}
             >
-              Commission {getSortIcon("commission")}
+            Rate {getSortIcon("rate")}
             </div>
             <div
               className="min-w-[180px] flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"

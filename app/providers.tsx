@@ -9,6 +9,7 @@ import { setAuthCallback } from "@/lib/utils/errorHandler";
 import { logout } from "@/features/auth/slices/authSlice";
 import { useEffect } from "react";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import { HomePage401Suppressor } from "@/components/HomePage401Suppressor";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -29,7 +30,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
               "866830600136-atu6lg341gn9snr1pkbmjhssebh9luqb.apps.googleusercontent.com"
             }
           >
-            {children}
+            <HomePage401Suppressor>
+              {children}
+            </HomePage401Suppressor>
           </GoogleOAuthProvider>
         </LanguageProvider>
       </ThemeProvider>

@@ -70,17 +70,6 @@ export const verifyKYCStatus = createAsyncThunk<KYCVerificationResponse, KYCVeri
     try {
       // If kyc_images are provided, send as FormData
       if (payload.kyc_images && payload.kyc_images.length > 0) {
-        console.log('📤 KYC Verification Payload (FormData):', {
-          user_id: payload.user_id,
-          status: payload.status,
-          is_verified: payload.is_verified,
-          verification_method: payload.verification_method,
-          country: payload.country,
-          document_type: payload.document_type,
-          document_number: payload.document_number,
-          images_count: payload.kyc_images.length,
-        });
-        
         const formData = new FormData();
         formData.append('user_id', payload.user_id);
         formData.append('status', payload.status.toString());
@@ -116,16 +105,6 @@ export const verifyKYCStatus = createAsyncThunk<KYCVerificationResponse, KYCVeri
           }
         });
         
-        // Log FormData entries
-        console.log('📋 FormData entries being sent:');
-        for (let [key, value] of formData.entries()) {
-          if (value instanceof File) {
-            console.log(`  ${key}: [File: ${value.name}, Size: ${value.size} bytes]`);
-          } else {
-            console.log(`  ${key}:`, value);
-          }
-        }
-        
         // Send FormData (First request with all document data)
         const response = await post<KYCVerificationResponse>(
           API_CONFIG.AUTH.KYC_VERIFY,
@@ -137,22 +116,16 @@ export const verifyKYCStatus = createAsyncThunk<KYCVerificationResponse, KYCVeri
           }
         );
         
-        console.log('✅ KYC Verification Response (FormData - First Request):', response.data);
-        
         // Send second request with just user_id and status
-        console.log('📤 Sending second KYC verification request with user_id and status...');
         const secondRequestPayload = {
           user_id: payload.user_id,
           status: true,
         };
-        console.log('📤 Second Request Payload:', secondRequestPayload);
         
         const secondResponse = await post<KYCVerificationResponse>(
           API_CONFIG.AUTH.KYC_VERIFY,
           secondRequestPayload
         );
-        
-        console.log('✅ KYC Verification Response (Second Request):', secondResponse.data);
         
         // Return the first response data
         return response.data;
@@ -160,36 +133,26 @@ export const verifyKYCStatus = createAsyncThunk<KYCVerificationResponse, KYCVeri
         // Send as JSON if no images - payload already includes user_id and status
         const jsonPayload = payload;
         
-        console.log('📤 KYC Verification Payload (JSON - First Request):', jsonPayload);
-        
         const response = await post<KYCVerificationResponse>(
           API_CONFIG.AUTH.KYC_VERIFY,
           jsonPayload
         );
         
-        console.log('✅ KYC Verification Response (First Request):', response.data);
-        
         // Send second request with just user_id and status
-        console.log('📤 Sending second KYC verification request with user_id and status...');
         const secondRequestPayload = {
           user_id: payload.user_id,
           status: true,
         };
-        console.log('📤 Second Request Payload:', secondRequestPayload);
         
         const secondResponse = await post<KYCVerificationResponse>(
           API_CONFIG.AUTH.KYC_VERIFY,
           secondRequestPayload
         );
         
-        console.log('✅ KYC Verification Response (Second Request):', secondResponse.data);
-        
         // Return the first response data
         return response.data;
       }
     } catch (error) {
-      console.error('❌ KYC Verification Error:', error);
-      console.error('Error details:', handleApiError(error));
       return rejectWithValue(handleApiError(error));
     }
   }

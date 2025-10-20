@@ -77,7 +77,6 @@ const EnhancedKYCModal: React.FC = () => {
     } catch (error) {
       setError("An error occurred during verification setup");
       showToast.error("Verification Error", "An error occurred during verification setup");
-      console.error("Error during KYC verification:", error);
     } finally {
       setVerifying(false);
     }

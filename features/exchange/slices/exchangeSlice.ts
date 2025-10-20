@@ -54,12 +54,7 @@ const initialState: ExchangeState = {
 const handleApiError = (error: unknown): string => {
   let errorMessage = "An unexpected error occurred";
   if (error instanceof AxiosError) {
-    console.error("DEBUG: API Error details:", {
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message,
-    });
-
+   
     // Handle specific status codes
     if (error.response?.status === 400) {
       const responseData = error.response.data;
@@ -117,9 +112,7 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>
 
     // Check circuit breaker before making the call
     if (!CircuitBreaker.isCallAllowed(endpoint)) {
-      console.warn(
-        `Circuit breaker OPEN for ${endpoint} - returning empty assets`
-      );
+      
       return { total_wallet_balance: "0.00", assets: [] };
     }
 
@@ -127,7 +120,7 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>
       let data;
       
       if (forceRefresh) {
-        console.log("🔄 Force refresh - bypassing cache for exchange assets...");
+       
         // Clear cache first
         await sliceCache.delete('exchange', 'fetchAssets');
         // Fetch fresh data
@@ -136,7 +129,6 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>
           ttl: 2 * 60 * 60 * 1000, // 2 hours cache for assets
           cache: true
         });
-        console.log("✅ Force refresh API response received:", response?.data?.assets?.length || 0, "assets");
         // Cache the fresh data
         await sliceCache.set('exchange', 'fetchAssets', response.data, undefined, 2 * 60 * 60 * 1000);
         data = response.data;
@@ -146,13 +138,13 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>
           'exchange',
           'fetchAssets',
           async () => {
-            console.log("🔄 Cache miss - fetching exchange assets from API...");
+            
             const response = await cachedGet<AssetsResponse>(endpoint, {
               timeout: 30000,
               ttl: 2 * 60 * 60 * 1000, // 2 hours cache for assets
               cache: true
             });
-            console.log("✅ API response received:", response?.data?.assets?.length || 0, "assets");
+           
             return response.data;
           },
           undefined, // no params
@@ -161,16 +153,14 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>
       }
 
       CircuitBreaker.onSuccess(endpoint);
-      console.log("✅ Fetched Assets:", data?.assets?.length || 0, "assets");
       return data;
     } catch (error: any) {
       CircuitBreaker.onFailure(endpoint, error);
 
-      console.warn(`Exchange assets API failed:`, {
-        endpoint,
-        error: error.message,
-        status: error.response?.status,
-      });
+      // Suppress console warnings for 401s
+      if (error.response?.status !== 401) {
+       
+      }
 
       // Return empty assets instead of throwing
       return { total_wallet_balance: "0.00", assets: [] };
@@ -256,9 +246,7 @@ export const updateDepositAddress = createAsyncThunk<
     try {
       // Debug logging
       const endpoint = EXCHANGE_ENDPOINTS.UPDATE_DEPOSIT_ADDRESS;
-      console.log("DEBUG: Update deposit address endpoint:", endpoint);
-      console.log("DEBUG: Transaction ID:", transactionId);
-      console.log("DEBUG: Deposit address:", depositAddress);
+     
       
       // Use the exact payload format you specified
       const payload = {
@@ -266,7 +254,6 @@ export const updateDepositAddress = createAsyncThunk<
         deposit_address: depositAddress
       };
       
-      console.log("DEBUG: Payload being sent:", payload);
       
       const response = await post<{ message: string; exchange_transaction_id: string; status: string }>(
         endpoint,
@@ -329,9 +316,7 @@ export const fetchExchangeStatistics = createAsyncThunk<
 
   // Check circuit breaker before making the call
   if (!CircuitBreaker.isCallAllowed(endpoint)) {
-    console.warn(
-      `Circuit breaker OPEN for ${endpoint} - returning empty statistics`
-    );
+   
     return {
       total_pending_exchange_deposits: 0,
       total_pending_exchange_withdrawals: 0,
@@ -351,12 +336,7 @@ export const fetchExchangeStatistics = createAsyncThunk<
   } catch (error: any) {
     CircuitBreaker.onFailure(endpoint, error);
 
-    console.warn(`Exchange statistics API failed:`, {
-      endpoint,
-      error: error.message,
-      status: error.response?.status,
-    });
-
+   
     // Return empty statistics instead of throwing
     return {
       total_pending_exchange_deposits: 0,
@@ -375,9 +355,7 @@ export const fetchTransactions = createAsyncThunk<TransactionsResponse, void>(
 
     // Check circuit breaker before making the call
     if (!CircuitBreaker.isCallAllowed(endpoint)) {
-      console.warn(
-        `Circuit breaker OPEN for ${endpoint} - returning empty transactions`
-      );
+     
       return []; // Return empty array for TransactionsResponse
     }
 
@@ -393,13 +371,7 @@ export const fetchTransactions = createAsyncThunk<TransactionsResponse, void>(
       // Record failure with circuit breaker
       CircuitBreaker.onFailure(endpoint, error);
 
-      console.warn(`Exchange transactions API failed:`, {
-        endpoint,
-        error: error.message,
-        status: error.response?.status,
-        code: error.code,
-      });
-
+     
       // Return empty array instead of throwing to prevent infinite retries
       return [];
     }

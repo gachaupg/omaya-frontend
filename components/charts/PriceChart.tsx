@@ -96,31 +96,6 @@ const getColorScheme = (symbol: string) => {
   }
 };
 
-// Fallback crypto data for when API fails or is loading
-const fallbackCryptoData: CryptoData[] = [
-  {
-    name: "Bitcoin",
-    symbol: "BTC",
-    icon: <FaBitcoin className="text-3xl text-orange-400" />,
-    price: "$20,305",
-    color: "red",
-    chart: "#ff3b3b",
-    chartBg: "#F01717",
-    chartBgTrans: "#F0171710",
-    rate: "1.2%",
-  },
-  {
-    name: "Usdt",
-    symbol: "USDT",
-    icon: <SiTether className="text-3xl text-[#1D8751]" />,
-    price: "$1.05",
-    color: "green",
-    chart: "#22c55e",
-    chartBg: "#22c55e",
-    chartBgTrans: "#22c55e10",
-    rate: "1.5%",
-  },
-];
 
 const MiniChart = ({
   color,
@@ -198,7 +173,7 @@ const CryptoCard = ({
       <div className="flex flex-col gap-0.5">
         {transactionCount !== undefined ? (
           <>
-            <p className="text-xs text-gray-500">Transactions</p>
+            <p className="text-xs text-gray-500"> Omaya Transactions</p>
             <p className="text-lg">{transactionCount}</p>
           </>
         ) : (
@@ -217,7 +192,7 @@ const CryptoCard = ({
 
 const PriceCards = () => {
   const [isMounted, setIsMounted] = useState(false);
-  const [cryptoData, setCryptoData] = useState<CryptoData[]>(fallbackCryptoData);
+  const [cryptoData, setCryptoData] = useState<CryptoData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -247,13 +222,13 @@ const PriceCards = () => {
         });
         setCryptoData(mappedData);
       } else {
-        // Use fallback data if API returns no data
-        setCryptoData(fallbackCryptoData);
+        // Set empty array if no data available
+        setCryptoData([]);
       }
     } catch (error) {
       console.error("Failed to fetch top assets:", error);
-      // Use fallback data on error
-      setCryptoData(fallbackCryptoData);
+      // Set empty array on error - no fallback data
+      setCryptoData([]);
     } finally {
       setLoading(false);
     }
@@ -268,11 +243,16 @@ const PriceCards = () => {
       <h2 className="dark:text-white text-[16px] mb-4">
         Market Overview {loading && <span className="text-sm text-gray-500">(Loading...)</span>}
       </h2>
-      <div className="flex flex-row gap-4 overflow-x-auto pb-4">
-        {cryptoData.map((crypto, index) => (
-          <CryptoCard key={`${crypto.symbol}-${index}`} {...crypto} />
-        ))}
-      </div>
+      {cryptoData.length > 0 ? (
+        <div className="flex flex-row gap-4 overflow-x-auto pb-4">
+          {cryptoData.map((crypto, index) => (
+            <CryptoCard key={`${crypto.symbol}-${index}`} {...crypto} />
+          ))}
+        </div>
+      ) : !loading ? (
+        <div className="">
+        </div>
+      ) : null}
     </div>
   );
 };

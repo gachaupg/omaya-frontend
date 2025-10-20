@@ -28,39 +28,41 @@ export const getSupportedAssets = async (): Promise<SupportedAsset[]> => {
       
       // Extract the results array from the ChangeNow response
       if (data && data.results) {
-        console.log(`Successfully retrieved ${data.total_changenow_tokens} ChangeNow tokens`);
         return data.results;
       }
       
       // Fallback: if response is directly an array (backward compatibility)
       if (Array.isArray(data)) {
-        console.log(`Retrieved ${data.length} supported assets`);
         return data;
       }
       
-      console.warn("Unexpected response format, returning empty array");
       return [];
     } catch (error: any) {
-      console.error("Failed to fetch supported assets:", error);
+      // Suppress console errors for 401s
+      if (error.response?.status !== 401) {
+      }
 
       // Handle different error scenarios
       if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND" || error.message?.includes("Network Error")) {
-        console.warn("Network connection issue, returning empty assets list");
+        if (error.response?.status !== 401) {
+        }
         return [];
       }
 
       if (error.response?.status === 500) {
-        console.warn("Server error, returning empty assets list");
         return [];
       }
 
       if (error.response?.status === 404) {
-        console.warn("Endpoint not found, returning empty assets list");
+        return [];
+      }
+
+      // For 401 errors, silently return empty array
+      if (error.response?.status === 401) {
         return [];
       }
 
       // For other errors, return empty array instead of throwing
-      console.warn("Unknown error, returning empty assets list");
       return [];
     }
   });
@@ -81,7 +83,6 @@ export const getEstimateSwap = async (
       );
       return response.data;
     } catch (error: any) {
-      console.error("Failed to fetch swap estimate:", error);
 
       // Handle network errors gracefully
       if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
@@ -112,21 +113,14 @@ export const createSwap = async (
   swapData: CreateSwapRequest
 ): Promise<CreateSwapResponse> => {
   return withRetry(async () => {
-    console.log("Creating swap with data:", swapData);
-    console.log("API endpoint:", API_CONFIG.SWAP.CREATE_SWAP);
 
     try {
       const response = await post<CreateSwapResponse>(
         API_CONFIG.SWAP.CREATE_SWAP,
         swapData
       );
-      console.log("Swap response:", response.data);
       return response.data;
     } catch (error: any) {
-      console.error("Swap creation error:", error);
-      console.error("Error response:", error.response?.data);
-      console.error("Error status:", error.response?.status);
-
       // Provide user-friendly error messages for different status codes
       if (error.response?.status === 500) {
         throw new Error(
@@ -138,7 +132,8 @@ export const createSwap = async (
           "Invalid swap request. Please check your input.";
         throw new Error(`Bad Request: ${errorMessage}`);
       } else if (error.response?.status === 401) {
-        throw new Error("Authentication required. Please log in to continue.");
+        // Silent error for 401
+        throw new Error("");
       } else if (error.response?.status === 403) {
         throw new Error(
           "Access denied. You don't have permission to perform this action."
@@ -172,7 +167,7 @@ export const getSwapStatus = async (swapId: string): Promise<SwapStatus> => {
       );
       return response.data;
     } catch (error: any) {
-      console.error("Failed to fetch swap status:", error);
+      
       if (error.response?.status === 500) {
         throw new Error(
           "Server Error: Unable to fetch swap status. Please try again later."
@@ -253,7 +248,8 @@ export const getSwapHistory = async (
       } else if (error.response?.status === 404) {
         throw new Error("Swap history not available. Please try again later.");
       } else if (error.response?.status === 401) {
-        throw new Error("Authentication required. Please log in to continue.");
+        // Silent error for 401
+        throw new Error("");
       }
 
       // For other errors, provide a generic message

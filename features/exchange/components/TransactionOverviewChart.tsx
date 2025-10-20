@@ -23,31 +23,23 @@ const TransactionOverviewChart: React.FC = () => {
   useEffect(() => {
     const profile = storage.getProfile();
     const email = profile?.user?.email || "";
-    console.log('=== USER PROFILE CHART ===', { profile, email });
     setUserEmail(email);
   }, []);
 
   // Fetch transactions when userEmail is set
   useEffect(() => {
     if (userEmail) {
-      console.log('=== FETCHING TRANSACTIONS CHART ===', { userEmail });
       dispatch(fetchTransactions());
     }
   }, [dispatch, userEmail]);
 
   const aggregateData = (txs: Transaction[]) => {
     if (!txs || !userEmail) {
-      console.log('No transactions or user email available for chart:', { transactions: txs, userEmail });
       return [];
     }
 
     // Filter transactions for the current user
     const userTransactions = txs.filter(tx => tx.user_email === userEmail);
-    console.log('Filtered transactions for chart:', {
-      totalTransactions: txs.length,
-      userTransactions: userTransactions.length,
-      userEmail
-    });
 
     const now = new Date();
     const currentYear = now.getFullYear();

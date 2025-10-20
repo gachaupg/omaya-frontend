@@ -35,15 +35,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   const { isAuthenticated, user } = useSelector(
     (state: RootState) => state.auth
   );
-  console.log("adminMethods", adminMethods);
-  console.log("Redux state", {
-    loading,
-    error,
-    postLoading,
-    postError,
-    postSuccess,
-  });
-  console.log("Auth state", { isAuthenticated, user });
+ 
   const [method, setMethod] = useState("");
   const [provider, setProvider] = useState("");
   const [name, setName] = useState("");
@@ -75,7 +67,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
        try {
          dispatch(fetchAdminPaymentMethods() as any);
        } catch (error) {
-         console.log("Error fetching admin methods:", error);
+         // Silent error handling
        }
        setMethod("");
        setProvider("");
@@ -107,21 +99,14 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
      ? hardcodedProviders[method as keyof typeof hardcodedProviders].map(name => ({ provider_name: name }))
      : (adminMethods || []).filter((m: any) => m.payment_method_type === method);
 
-   console.log("DEBUG: adminMethods:", adminMethods);
-   console.log("DEBUG: methodTypes:", methodTypes);
-   console.log("DEBUG: selected method:", method);
-   console.log("DEBUG: providers for method:", providers);
 
      // Handle Add
    const handleAdd = () => {
-     console.log("handleAdd called", { method, provider, name, account });
      if (!isAuthenticated) {
-       console.log("User not authenticated");
        showToast.error("Please log in to add payment methods");
        return;
      }
      if (!method || !provider || !name || !account) {
-       console.log("Validation failed", { method, provider, name, account });
        showToast.error("Please fill all required fields");
        return;
      }
@@ -129,7 +114,6 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
      const selectedProvider = providers.find(
        (p: any) => p.provider_name === provider
      );
-     console.log("Selected provider", selectedProvider);
      const payload = {
        account_name: name,
        account_number: account,
@@ -138,15 +122,12 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
        provider_name: provider,
        wallet_address: selectedProvider?.wallet_address || null,
      };
-     console.log("Dispatching payload", payload);
      dispatch(postUserPaymentDetail(payload));
    };
 
   // Close modal on success
   useEffect(() => {
-    console.log("postSuccess effect triggered", postSuccess);
     if (postSuccess) {
-      console.log("Payment method added successfully!");
       showToast.success("Payment method added!");
       if (onAdd) onAdd();
       onClose();
@@ -158,7 +139,6 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   // Handle errors
   useEffect(() => {
     if (postError) {
-      console.log("Post error occurred:", postError);
       showToast.error(postError);
     }
   }, [postError]);

@@ -536,8 +536,7 @@ const LineCharts = ({
   useEffect(() => {
     const profile = storage.getProfile();
     const email = profile?.user?.email || "";
-    console.log("=== USER PROFILE CHART ===", { profile, email });
-    setUserEmail(email);
+      setUserEmail(email);
   }, []);
 
   const { transactions: p2pTransactions } = useSelector(
@@ -547,7 +546,6 @@ const LineCharts = ({
 
   // Fetch all transactions on mount
   useEffect(() => {
-    console.log("=== FETCHING ALL TRANSACTIONS FOR CHART ===");
     dispatch(loadAllP2PTransactions());
     dispatch(fetchUserTrades({ page: 1, currency: "usdt" }));
   }, [dispatch]);
@@ -558,11 +556,6 @@ const LineCharts = ({
       const depositData = Array(12).fill(0);
       const withdrawalData = Array(12).fill(0);
       const currentDate = new Date();
-
-      console.log("=== PROCESSING TRANSACTIONS FOR CHART ===", {
-        totalTransactions: p2pTransactions.results.length,
-        userEmail,
-      });
 
       // Show all transactions (no filtering by user)
       const allTransactions = p2pTransactions.results;
@@ -582,11 +575,6 @@ const LineCharts = ({
             withdrawalData[monthIndex] += amount;
           }
         }
-      });
-
-      console.log("=== CHART DATA PROCESSED ===", {
-        depositData,
-        withdrawalData,
       });
 
       setChartData({
@@ -658,10 +646,7 @@ const LineCharts = ({
         try {
           await Promise.all([
             dispatch(fetchReferralWallet()).catch((error) => {
-              console.warn(
-                "Referral wallet API not available in LineCharts:",
-                error
-              );
+
               return null;
             }),
           ]);

@@ -99,18 +99,12 @@ const Merchant = () => {
     // Add files to FormData
     Object.entries(files).forEach(([key, file]) => {
       if (file) {
-        console.log('Adding file to FormData:', key, file.name)
         formData.append(key, file)
       } else {
-        console.log('No file for:', key)
       }
     })
 
     // Debug: Log all FormData entries
-    console.log('FormData entries:')
-    for (let [key, value] of formData.entries()) {
-      console.log(key, value)
-    }
 
     // Check if required files are missing
     const requiredFiles = ['bank_account_ownership_proof', 'proof_of_address']
@@ -125,8 +119,7 @@ const Merchant = () => {
       await dispatch(submitMerchantApplicationThunk(formData) as any)
       // Refresh status after successful submission
       dispatch(fetchMerchantApplicationStatusThunk() as any)
-    } catch (err) {
-      console.error('Error submitting merchant application:', err)
+    } catch (err) { 
     }
   }
 
