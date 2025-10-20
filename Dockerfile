@@ -1,7 +1,18 @@
 # Use an official Node.js runtime as the base image
-# Alternative: Use mirror registry if Docker Hub is unavailable
-# FROM docker.mirrors.ustc.edu.cn/library/node:20-alpine AS base
-FROM node:20-alpine AS base
+# Using multiple registry options in case Docker Hub is down
+# Uncomment one of the alternatives if docker.io fails
+
+# Primary: Docker Hub (default)
+# FROM node:20-alpine AS base
+
+# Alternative 1: GitHub Container Registry
+# FROM ghcr.io/library/node:20-alpine AS base
+
+# Alternative 2: Microsoft Container Registry (most reliable)
+FROM mcr.microsoft.com/oss/nodejs/node:20-alpine AS base
+
+# Alternative 3: Alibaba Cloud Mirror
+# FROM registry.cn-hangzhou.aliyuncs.com/acs/node:20-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps

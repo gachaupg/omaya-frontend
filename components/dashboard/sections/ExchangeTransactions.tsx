@@ -106,7 +106,9 @@ const P2PTransactions = () => {
   }
 
   // Show all transactions without filtering by user, sorted by created_at (newest first)
-  const allResults = [...(transactions.results || [])].sort((a: any, b: any) => {
+  // Ensure transactions.results is an array before spreading
+  const resultsArray = Array.isArray(transactions.results) ? transactions.results : [];
+  const allResults = [...resultsArray].sort((a: any, b: any) => {
     const dateA = new Date(a.created_at).getTime();
     const dateB = new Date(b.created_at).getTime();
     return dateB - dateA; // Sort in descending order (newest first)

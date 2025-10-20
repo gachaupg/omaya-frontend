@@ -30,8 +30,10 @@ const P2PTransactions = () => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const [page, setPage] = useState(1);
   const itemsPerPage = 8;
-  const totalPages = Math.ceil(trades.results.length / itemsPerPage);
-  const paginatedData = trades.results.slice(
+  // Ensure trades.results is an array
+  const tradesArray = Array.isArray(trades?.results) ? trades.results : [];
+  const totalPages = Math.ceil(tradesArray.length / itemsPerPage);
+  const paginatedData = tradesArray.slice(
     (page - 1) * itemsPerPage,
     page * itemsPerPage
   );

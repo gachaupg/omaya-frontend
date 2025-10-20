@@ -60,8 +60,8 @@ export const Table: React.FC<TableProps> = ({
   const getAmountColor = (type: string | undefined | null) => {
     if (!type)
       return `text-gray-500 dark:text-[${tokens.colors.dark.textBody}]`;
-    if (type.toLowerCase() === "buy") return "text-[#1D8751]";
-    if (type.toLowerCase() === "sell") return "text-[#FF4D4D]";
+    if (type.toLowerCase() === "buy") return "text-[#FF4D4D]";
+    if (type.toLowerCase() === "sell") return "text-[#1D8751]";
     return `text-gray-500 dark:text-[${tokens.colors.dark.textBody}]`;
   };
 

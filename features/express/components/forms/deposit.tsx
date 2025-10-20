@@ -88,7 +88,6 @@ export default function DepositForm({
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const [transactionMode, setTransactionMode] = useState<"crypto" | "forex">("crypto");
   const { adminPaymentDetails, loading, error } = useSelector(
     (state: any) => state.payment
   );
@@ -1546,42 +1545,6 @@ export default function DepositForm({
 
   return (
     <div className="w-full flex flex-col dark:bg-[#18181D]  ">
-      {/* Crypto/Forex Toggle Buttons - Hidden on home page */}
-      {!isHomePage && (
-      <div className="w-full mb-4">
-        <div className="bg-white dark:bg-[#1D1D23] border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-2">
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setTransactionMode("crypto")}
-              className={`flex-1 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${
-                transactionMode === "crypto"
-                  ? "bg-[#1D8751] text-white shadow-md"
-                  : "bg-transparent text-[#788099] hover:bg-[#F5F6F7] dark:hover:bg-[#23232B]"
-              }`}
-            >
-              Crypto Deposit
-            </button>
-            <button
-              type="button"
-              onClick={() => setTransactionMode("forex")}
-              className={`flex-1 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${
-                transactionMode === "forex"
-                  ? "bg-[#1D8751] text-white shadow-md"
-                  : "bg-transparent text-[#788099] hover:bg-[#F5F6F7] dark:hover:bg-[#23232B]"
-              }`}
-            >
-              Forex Deposit
-            </button>
-          </div>
-        </div>
-      </div>
-      )}
-
-      {transactionMode === "forex" ? (
-        <ForexDeposit />
-      ) : (
-        <>
       <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
         <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Transaction Info
       </h2>
@@ -2725,8 +2688,6 @@ export default function DepositForm({
           setIsInfoModalOpen(false);
         }}
       />
-        </>
-      )}
     </div>
   );
 }
