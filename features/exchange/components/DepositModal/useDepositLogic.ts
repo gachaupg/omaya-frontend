@@ -92,7 +92,7 @@ export function useDepositLogic(
       dispatch(fetchAdminPaymentDetails())
         .unwrap()
         .catch((error: unknown) => {
-          toast.error(`Failed to fetch admin payment details: ${error}`);
+          // Silent - no error display
         });
     }
   }, [dispatch, selectedMethod, selectedProvider]);

@@ -48,22 +48,17 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
   // WebSocket status update callback - use useCallback to prevent reconnections
   const handleStatusUpdate = React.useCallback((status: any) => {
-    console.log("🔔 Trade status update received in TradeSellerOwner:", status);
-    console.log("📊 Current confirmOrder:", confirmOrder);
-    console.log("📊 Current confirmOrder.id:", confirmOrder?.id);
-    console.log("📊 Current confirmOrder.status:", confirmOrder?.status);
-    console.log("📊 New status:", status.status);
+
     
     const oldStatus = confirmOrder?.status;
     const newStatus = status.status;
     
     // Always refresh if we have a valid status update
     if (confirmOrder?.id && newStatus) {
-      console.log("✅ Conditions met - will update UI");
-      
+     
       // Show toast notification for status changes
       if (oldStatus !== newStatus) {
-        console.log(`📢 Status changed: ${oldStatus} → ${newStatus}`);
+      
         if (oldStatus === "matched" && newStatus === "half-matched") {
           showToast.success("Status Updated", "Buyer has sent payment notification");
         } else if (oldStatus === "half-matched" && newStatus === "completed") {
@@ -75,26 +70,20 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           showToast.success("Status Updated", `Trade status is now: ${newStatus}`);
         }
       } else {
-        console.log("ℹ️ Status unchanged, still refreshing data");
+       
       }
       
-      console.log("🔄 Refreshing trade data for ID:", confirmOrder.id);
+     
       dispatch(fetchConfirmOrder(confirmOrder.id))
         .unwrap()
         .then((updatedOrder) => {
-          console.log("✅ fetchConfirmOrder SUCCESS:", updatedOrder);
-          console.log("✅ Updated status:", updatedOrder?.status);
+         
         })
         .catch((error) => {
-          console.error("❌ fetchConfirmOrder FAILED:", error);
+         
         });
     } else {
-      console.warn("❌ Conditions NOT met:", {
-        hasConfirmOrderId: !!confirmOrder?.id,
-        hasNewStatus: !!newStatus,
-        confirmOrderId: confirmOrder?.id,
-        newStatus: newStatus
-      });
+     
     }
   }, [confirmOrder, dispatch]);
 
@@ -137,7 +126,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     if (isAuthenticated) {
       if (confirmOrder?.status === "matched" && countdown === 0) {
         // AUTO-CANCEL DISABLED - Countdown reached 0 but no auto-cancel
-        console.log("Countdown reached 0, auto-cancel is disabled");
+       
         return;
       }
     }
@@ -146,7 +135,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   // Fetch confirm order when authenticated and orderId is available
   useEffect(() => {
     const orderId = params?.id as string;
-    console.log(orderId)
+   
     if (isAuthenticated && orderId) {
       dispatch(fetchConfirmOrder(orderId));
     }
@@ -171,7 +160,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           const parsedData = JSON.parse(tradeData);
           setTradeDataJson(parsedData);
         } catch (error) {
-          console.error("Failed to parse trade data from localStorage:", error);
+          
           setTradeDataJson({});
         }
       }

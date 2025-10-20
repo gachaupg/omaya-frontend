@@ -153,32 +153,13 @@ export const fetchSingleOrder = createAsyncThunk(
     // and the ID format looks like a UUID that could be either trade or order,
     // let's try the trade endpoint first as it's more likely to be correct
     try {
-      logger.debug("Attempting to fetch single order via trade endpoint", {
-        id,
-      });
       return await SingleOrder1(id);
     } catch (err: any) {
       // If we get a 500 error from trade endpoint, it might be an order ID
       if (err.response?.status === 500) {
-        logger.warn("Trade endpoint returned 500, trying order endpoint", {
-          id,
-          error: err.message,
-        });
-
         try {
-          logger.debug("Attempting to fetch single order via order endpoint", {
-            id,
-          });
           return await SingleOrder(id);
         } catch (orderErr: any) {
-          logger.error("Both endpoints failed", {
-            id,
-            tradeError: err.message,
-            orderError: orderErr.message,
-            tradeStatus: err.response?.status,
-            orderStatus: orderErr.response?.status,
-          });
-
           // If both fail with 500 errors, this might be a backend issue
           if (orderErr.response?.status === 500) {
             return rejectWithValue(
@@ -193,29 +174,9 @@ export const fetchSingleOrder = createAsyncThunk(
         }
       } else {
         // For non-500 errors from trade endpoint, try order endpoint as fallback
-        logger.warn(
-          "Trade endpoint failed with non-500 error, trying order endpoint",
-          {
-            id,
-            error: err.message,
-            status: err.response?.status,
-          }
-        );
-
         try {
-          logger.debug("Attempting to fetch single order via order endpoint", {
-            id,
-          });
           return await SingleOrder(id);
         } catch (orderErr: any) {
-          logger.error("Both trade and order endpoints failed", {
-            id,
-            tradeError: err.message,
-            orderError: orderErr.message,
-            tradeStatus: err.response?.status,
-            orderStatus: orderErr.response?.status,
-          });
-
           handleP2PError(orderErr);
           return rejectWithValue(
             orderErr.message || "Failed to fetch single order"
@@ -250,26 +211,13 @@ export const confirmP2PTradeThunk = createAsyncThunk(
       // Step 2: Wait for order data to be refreshed
       const refreshResult = await dispatch(fetchConfirmOrder(id));
 
-      // Step 3: Verify the refresh succeeded
-      if (fetchConfirmOrder.rejected.match(refreshResult)) {
-        logger.warn("Trade confirmed but failed to refresh order data", {
-          tradeId: id,
-          error: refreshResult.error,
-        });
-        // Don't fail the entire operation, just log the warning
-      }
-
-      // Step 4: Update related data if needed
+      // Step 3: Update related data if needed
       await dispatch(fetchWallets()); // Refresh wallet balances
 
       return response;
     } catch (error: any) {
       // Handle specific backend errors
       if (error.message?.includes("created_at")) {
-        logger.error("Backend error: P2PTrade model missing created_at field", {
-          tradeId: id,
-          error: error.message
-        });
         return rejectWithValue("Trade confirmation failed due to a backend configuration issue. Please contact support.");
       }
       
@@ -289,10 +237,6 @@ export const completeP2PTradeThunk = createAsyncThunk(
     } catch (error: any) {
       // Handle specific backend errors
       if (error.message?.includes("created_at")) {
-        logger.error("Backend error: P2PTrade model missing created_at field", {
-          tradeId: id,
-          error: error.message
-        });
         return rejectWithValue("Trade completion failed due to a backend configuration issue. Please contact support.");
       }
       
@@ -444,22 +388,11 @@ const p2pMarketSlice = createSlice({
     },
     // WebSocket actions - intelligently merge new/updated orders
     updateOrdersFromWS: (state, action) => {
-      console.log("🔄 [Redux] updateOrdersFromWS called with payload:", action.payload);
       const { buy_orders, sell_orders, pagination, full_refresh } = action.payload;
-      
-      console.log("📊 [Redux] Update details:", {
-        hasBuyOrders: !!buy_orders,
-        hasSellOrders: !!sell_orders,
-        buyOrdersCount: buy_orders?.length || 0,
-        sellOrdersCount: sell_orders?.length || 0,
-        fullRefresh: full_refresh,
-        pagination
-      });
       
       // Helper function to merge orders intelligently
       const mergeOrders = (existingOrders: P2POrder[], newOrders: P2POrder[]) => {
         if (!existingOrders || existingOrders.length === 0) {
-          console.log("📝 [Redux] No existing orders, using new orders directly");
           return newOrders;
         }
         
@@ -471,18 +404,12 @@ const p2pMarketSlice = createSlice({
         });
         
         const mergedResults = Array.from(orderMap.values());
-        console.log("🔀 [Redux] Merged orders:", {
-          existingCount: existingOrders.length,
-          newCount: newOrders.length,
-          mergedCount: mergedResults.length
-        });
         return mergedResults;
       };
       
       if (buy_orders) {
         if (full_refresh) {
           // Full refresh - replace all
-          console.log("♻️ [Redux] Full refresh of buy orders");
           state.p2pBuyOrders = {
             next: null,
             previous: null,
@@ -491,7 +418,6 @@ const p2pMarketSlice = createSlice({
           };
         } else {
           // Incremental update - merge new/updated orders
-          console.log("➕ [Redux] Incremental update of buy orders");
           const mergedOrders = mergeOrders(state.p2pBuyOrders?.results || [], buy_orders);
           state.p2pBuyOrders = {
             ...state.p2pBuyOrders,
@@ -499,13 +425,11 @@ const p2pMarketSlice = createSlice({
             results: mergedOrders,
           };
         }
-        console.log("✅ [Redux] Buy orders updated:", state.p2pBuyOrders);
       }
       
       if (sell_orders) {
         if (full_refresh) {
           // Full refresh - replace all
-          console.log("♻️ [Redux] Full refresh of sell orders");
           state.p2pSellOrders = {
             next: null,
             previous: null,
@@ -514,7 +438,6 @@ const p2pMarketSlice = createSlice({
           };
         } else {
           // Incremental update - merge new/updated orders
-          console.log("➕ [Redux] Incremental update of sell orders");
           const mergedOrders = mergeOrders(state.p2pSellOrders?.results || [], sell_orders);
           state.p2pSellOrders = {
             ...state.p2pSellOrders,
@@ -522,13 +445,7 @@ const p2pMarketSlice = createSlice({
             results: mergedOrders,
           };
         }
-        console.log("✅ [Redux] Sell orders updated:", state.p2pSellOrders);
       }
-      
-      console.log("✨ [Redux] Final state after WS update:", {
-        buyOrdersCount: state.p2pBuyOrders?.results?.length || 0,
-        sellOrdersCount: state.p2pSellOrders?.results?.length || 0
-      });
     },
     // Action to remove a specific order (e.g., when deleted or completed)
     removeOrderFromWS: (state, action) => {
@@ -572,7 +489,6 @@ const p2pMarketSlice = createSlice({
       .addCase(fetchAllP2PBuyandSell.fulfilled, (state, action) => {
         state.loading = false;
         const response = action.payload as any;
-        console.log("Redux: API response received:", response);
         
         // The API returns buy_orders and sell_orders objects
         const buyOrders = response.buy_orders || {
@@ -589,17 +505,11 @@ const p2pMarketSlice = createSlice({
           results: []
         };
         
-        console.log("Redux: Buy orders count:", buyOrders.results?.length || 0);
-        console.log("Redux: Sell orders count:", sellOrders.results?.length || 0);
-        
         // Update buy orders
         state.p2pBuyOrders = buyOrders;
         
         // Update sell orders
         state.p2pSellOrders = sellOrders;
-        
-        console.log("Redux: Updated state - buy orders:", state.p2pBuyOrders);
-        console.log("Redux: Updated state - sell orders:", state.p2pSellOrders);
       })
       .addCase(fetchAllP2PBuyandSell.rejected, (state, action) => {
         state.loading = false;

@@ -43,7 +43,6 @@ const use2FAState = () => {
   const [twoFA, setTwoFA] = useState<boolean>(() => {
     // Initialize from localStorage immediately
     const stored2FA = localStorage.getItem('twoFA_enabled');
-    console.log(`Initializing 2FA state from localStorage: ${stored2FA}`);
     // Check if the stored value indicates 2FA is enabled
     return stored2FA === 'true' || stored2FA === '{"error":"2FA already enabled."}' || stored2FA?.includes('2FA already enabled') || false;
   });
@@ -52,18 +51,15 @@ const use2FAState = () => {
   useEffect(() => {
     // Load 2FA status from localStorage on component mount
     const stored2FA = localStorage.getItem('twoFA_enabled');
-    console.log(`Component mounted, localStorage value: ${stored2FA}`);
     if (stored2FA !== null) {
       // Check if the stored value indicates 2FA is enabled
       const newState = stored2FA === 'true' || stored2FA === '{"error":"2FA already enabled."}' || stored2FA?.includes('2FA already enabled') || false;
       setTwoFA(newState);
-      console.log(`Set 2FA state to: ${newState}`);
     }
     setIsInitialized(true);
   }, []);
 
   const update2FA = (enabled: boolean, responseText?: string) => {
-    console.log(`Updating 2FA state from ${twoFA} to ${enabled}`);
     setTwoFA(enabled);
     
     // Always store the actual response text, never boolean
@@ -74,7 +70,6 @@ const use2FAState = () => {
     } else {
       localStorage.setItem('twoFA_enabled', '{"status":"2FA disabled"}');
     }
-    console.log(`2FA state updated to: ${enabled}, localStorage set to: ${localStorage.getItem('twoFA_enabled')}`);
   };
 
   return { twoFA, update2FA, isInitialized };
@@ -140,13 +135,8 @@ const PrivacySecurity = () => {
     dispatch(fetchDeviceSessions())
       .unwrap()
       .then((data) => {
-        console.log("Device sessions loaded from API:", data);
-        console.log("Data type:", typeof data);
-        console.log("Is array:", Array.isArray(data));
-        console.log("Data length:", data?.length);
       })
       .catch(async (error: unknown) => {
-        console.error("Error loading device sessions:", error);
         
         // Only use fallback if it's a network error, not an auth error
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -157,12 +147,9 @@ const PrivacySecurity = () => {
             const deviceSessions =
               convertBrowserSessionsToDeviceSessions(browserSessions);
             setFallbackSessions(deviceSessions);
-            console.log("Using fallback browser sessions:", deviceSessions);
           } catch (fallbackError) {
-            console.error("Error loading fallback sessions:", fallbackError);
           }
         } else {
-          console.log("Auth error detected, not using fallback sessions");
         }
       });
 
@@ -172,16 +159,13 @@ const PrivacySecurity = () => {
         const result = await dispatch(enable2FA()).unwrap();
         // If we reach here, 2FA was not enabled, so we can show QR code
         update2FA(false);
-        console.log("2FA is not enabled on server");
       } catch (error: any) {
         // If we get "2FA already enabled" error, update local state
         if (error?.error === "2FA already enabled." || 
             error?.message === "2FA already enabled." ||
             error?.includes("2FA already enabled")) {
           update2FA(true, error.message); // Store the actual error message
-          console.log("2FA is already enabled on server - setting state to enabled");
         } else {
-          console.error("Failed to check 2FA status:", error);
           // Keep the current local state if we can't check server status
         }
       }
@@ -197,7 +181,6 @@ const PrivacySecurity = () => {
       const storedValue = stored2FA === 'true' || stored2FA === '{"error":"2FA already enabled."}' || stored2FA?.includes('2FA already enabled') || false;
       // Use update2FA but pass the existing stored value to prevent overwriting
       update2FA(storedValue, stored2FA);
-      console.log(`Using stored 2FA value: ${storedValue}`);
     }
   }, [dispatch, isAuthenticated]); // Added isAuthenticated to dependencies
 
@@ -300,7 +283,6 @@ const PrivacySecurity = () => {
         window.location.href = "/auth/login";
       }
     } catch (error) {
-      console.error("Failed to logout all devices:", error);
       showToast.error("Failed to logout all devices");
     } finally {
       setLogoutLoading(false);
@@ -340,7 +322,6 @@ const PrivacySecurity = () => {
 
       showToast.success("All other devices logged out successfully");
     } catch (error) {
-      console.error("Failed to logout devices one by one:", error);
       showToast.error("Failed to logout some devices");
     } finally {
       setLogoutLoading(false);
@@ -363,7 +344,6 @@ const PrivacySecurity = () => {
       await dispatch(logoutDevice(sessionToRemove.session_id)).unwrap();
       showToast.success("Device session removed successfully");
     } catch (error) {
-      console.error("Failed to remove device session:", error);
     }
   };
 
@@ -392,7 +372,6 @@ const PrivacySecurity = () => {
         session.browser;
 
       if (!isValid) {
-        console.log("Invalid session filtered out:", session);
       }
 
       return isValid;
@@ -434,19 +413,10 @@ const PrivacySecurity = () => {
         typeof window !== "undefined" &&
         !window.location.pathname.includes('/auth/')
       ) {
-        console.log("No active devices detected, auto logging out...");
-        console.log("Sessions state:", {
-          totalSessions: allSessions.length,
-          activeSessions: allSessions.filter((s: DeviceSession) => s.is_active).length,
-          deviceSessionsLoading,
-          isAuthenticated
-        });
-        
         showToast.info("No active devices detected, logging out automatically");
 
         // Auto logout after a short delay
         setTimeout(() => {
-          console.log("Executing auto logout...");
           dispatch(logout());
           if (typeof window !== "undefined") {
             // Clear all localStorage data
@@ -486,15 +456,6 @@ const PrivacySecurity = () => {
     currentPage * sessionsPerPage
   );
 
-  // Debug logging
-  console.log("Device sessions state:", {
-    deviceSessions,
-    deviceSessionsLoading,
-    deviceSessionsError,
-    validDeviceSessions: validDeviceSessions.length,
-    fallbackSessions: fallbackSessions.length,
-    allSessions: allSessions.length,
-  });
 
   return (
     <>
@@ -743,23 +704,7 @@ const PrivacySecurity = () => {
               >
                 {deviceSessionsLoading ? "Refreshing..." : "Refresh"}
               </button>
-              {/* <button
-              onClick={async () => {
-                // Load fallback sessions for testing
-                try {
-                  const browserSessions = await getActiveSessions();
-                  const deviceSessions =
-                    convertBrowserSessionsToDeviceSessions(browserSessions);
-                  setFallbackSessions(deviceSessions);
-                  console.log("Loaded fallback sessions:", deviceSessions);
-                } catch (error) {
-                  console.error("Error loading fallback sessions:", error);
-                }
-              }}
-              className="text-[#FACC15] text-sm hover:underline"
-            >
-              Load Local
-            </button> */}
+             
             </div>
           </div>
           <div className="dark:text-[#808080] text-gray-600 text-sm mb-3">
@@ -829,7 +774,6 @@ const PrivacySecurity = () => {
                        );
                        
                        if (existingSessionWithSameIP) {
-                         console.log("Session with IP address already exists:", existingSessionWithSameIP);
                          showToast.info("Session with this IP address already exists");
                          return;
                        }
@@ -847,7 +791,6 @@ const PrivacySecurity = () => {
                        dispatch(fetchDeviceSessions(undefined));
                        showToast.success("Session created successfully!");
                      } catch (error) {
-                       console.error("Failed to create session:", error);
                        showToast.error("Failed to create session");
                      } finally {
                        setIsCreatingSession(false);

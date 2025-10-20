@@ -31,9 +31,9 @@ export default function ForexDeposit() {
   const [selectedAdminBankId, setSelectedAdminBankId] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // Load admin payment details
+  // Load admin payment details - try cache first
   useEffect(() => {
-    dispatch(fetchAdminPaymentDetails());
+    dispatch(fetchAdminPaymentDetails(false)); // false = use cache if available
   }, [dispatch]);
 
   // Update exchange rate when currencies change
@@ -154,12 +154,12 @@ export default function ForexDeposit() {
                   onChange={(e) => setFromCurrency(e.target.value)}
                   className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#D1D2D4] rounded-xl px-3 py-2.5 text-base focus:outline-none border border-[#D1D2D4FF] dark:border-[#35353E]"
                 >
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
-                  <option value="GBP">GBP</option>
-                  <option value="JPY">JPY</option>
-                  <option value="AUD">AUD</option>
-                  <option value="CAD">CAD</option>
+                  <option value="USD" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">USD</option>
+                  <option value="EUR" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">EUR</option>
+                  <option value="GBP" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">GBP</option>
+                  <option value="JPY" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">JPY</option>
+                  <option value="AUD" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">AUD</option>
+                  <option value="CAD" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">CAD</option>
                 </select>
               </div>
 
@@ -172,12 +172,12 @@ export default function ForexDeposit() {
                   onChange={(e) => setToCurrency(e.target.value)}
                   className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#D1D2D4] rounded-xl px-3 py-2.5 text-base focus:outline-none border border-[#D1D2D4FF] dark:border-[#35353E]"
                 >
-                  <option value="EUR">EUR</option>
-                  <option value="USD">USD</option>
-                  <option value="GBP">GBP</option>
-                  <option value="JPY">JPY</option>
-                  <option value="AUD">AUD</option>
-                  <option value="CAD">CAD</option>
+                  <option value="EUR" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">EUR</option>
+                  <option value="USD" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">USD</option>
+                  <option value="GBP" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">GBP</option>
+                  <option value="JPY" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">JPY</option>
+                  <option value="AUD" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">AUD</option>
+                  <option value="CAD" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">CAD</option>
                 </select>
               </div>
             </div>
@@ -253,9 +253,9 @@ export default function ForexDeposit() {
                   onChange={(e) => setSelectedAdminBankId(e.target.value)}
                   className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#D1D2D4] rounded-xl px-3 py-2.5 text-base focus:outline-none border border-[#D1D2D4FF] dark:border-[#35353E]"
                 >
-                  <option value="">Select admin bank account</option>
+                  <option value="" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">Select admin bank account</option>
                   {adminBankAccounts.map((account: any) => (
-                    <option key={account.id} value={account.admin_payment_detail_id}>
+                    <option key={account.id} value={account.admin_payment_detail_id} className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">
                       {account.payment_method_type} - {account.provider_name}
                       {account.account_number && ` (${account.account_number})`}
                       {account.mobile_number && ` (${account.mobile_number})`}

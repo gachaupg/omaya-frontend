@@ -105,8 +105,12 @@ const P2PTransactions = () => {
     );
   }
 
-  // Show all transactions without filtering by user
-  const allResults = transactions.results || [];
+  // Show all transactions without filtering by user, sorted by created_at (newest first)
+  const allResults = [...(transactions.results || [])].sort((a: any, b: any) => {
+    const dateA = new Date(a.created_at).getTime();
+    const dateB = new Date(b.created_at).getTime();
+    return dateB - dateA; // Sort in descending order (newest first)
+  });
   const totalPages = Math.ceil(allResults.length / itemsPerPage);
   
   // Calculate pagination
@@ -271,7 +275,7 @@ const P2PTransactions = () => {
 
               {/* When */}
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
-                {formatDistanceToNow(new Date(tx.timestamp), {
+                {formatDistanceToNow(new Date(tx.created_at), {
                   addSuffix: true,
                 })}
               </td>

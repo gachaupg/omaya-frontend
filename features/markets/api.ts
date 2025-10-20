@@ -20,7 +20,6 @@ const delayIfNeeded = async () => {
   // If we've made more than 10 requests in the last minute, delay
   if (requestCount > 10 && timeSinceLastRequest < REQUEST_WINDOW) {
     const delay = REQUEST_WINDOW - timeSinceLastRequest;
-    console.warn(`Rate limiting: delaying request by ${delay}ms`);
     await new Promise(resolve => setTimeout(resolve, delay));
     requestCount = 0;
   }
@@ -59,8 +58,6 @@ export const fetchMarketData = async (
   params: MarketDataParams = {}
 ): Promise<MarketDataResponse> => {
   try {
-    logger.info("Fetching market data from CoinGecko", { params });
-
     // Set default parameters
     const defaultParams: MarketDataParams = {
       vs_currency: "usd",
@@ -87,18 +84,12 @@ export const fetchMarketData = async (
 
     // Type guard to check if response.data has the expected structure
     const data = response.data as any;
-    
-    logger.info("Market data fetched successfully", {
-      count: data.length,
-      firstCoin: data[0]?.name,
-    });
 
     return {
       data: data,
       success: true,
     };
   } catch (error) {
-    logger.error("Failed to fetch market data", { error });
 
     if (axios.isAxiosError(error)) {
       return {
@@ -127,8 +118,6 @@ export const fetchCoinData = async (
   currency: string = "usd"
 ): Promise<MarketDataResponse> => {
   try {
-    logger.info("Fetching coin data", { id, currency });
-
     const response = await coingeckoClient.get<MarketData[]>(
       `/coins/markets?vs_currency=${currency}&ids=${id}&order=market_cap_desc&per_page=1&page=1&sparkline=false&price_change_percentage=24h&locale=en`
     );
@@ -138,8 +127,6 @@ export const fetchCoinData = async (
       success: true,
     };
   } catch (error) {
-    logger.error("Failed to fetch coin data", { id, error });
-
     if (axios.isAxiosError(error)) {
       return {
         data: [],
@@ -201,8 +188,6 @@ export const searchMarkets = async (
   currency: string = "usd"
 ): Promise<MarketDataResponse> => {
   try {
-    logger.info("Searching markets", { query, currency });
-
     // First get all markets and filter by query
     const allMarkets = await fetchMarketData({
       vs_currency: currency,
@@ -225,8 +210,6 @@ export const searchMarkets = async (
       success: true,
     };
   } catch (error) {
-    logger.error("Failed to search markets", { query, error });
-
     return {
       data: [],
       success: false,
@@ -244,7 +227,6 @@ export const testApiConnection = async (): Promise<boolean> => {
     const response = await fetchTopMarkets(5, "usd");
     return response.success && response.data.length > 0;
   } catch (error) {
-    logger.error("API connection test failed", { error });
     return false;
   }
 };
@@ -270,7 +252,6 @@ export const fetchCoinDetails = async (id: string) => {
       );
     } catch (apiKeyError) {
       // If API key fails, try without it (public endpoint)
-      console.warn("API key failed, trying public endpoint:", apiKeyError);
       response = await axios.get(
         `https://api.coingecko.com/api/v3/coins/${id}`,
         {
@@ -282,7 +263,6 @@ export const fetchCoinDetails = async (id: string) => {
 
     return response.data;
   } catch (error) {
-    logger.error("Failed to fetch coin details", { id, error });
     if (axios.isAxiosError(error)) {
       if (error.response?.status === 401) {
         throw new Error(
@@ -325,7 +305,6 @@ export const fetchCoinMarketChart = async (
       );
     } catch (apiKeyError) {
       // If API key fails, try without it (public endpoint)
-      console.warn("API key failed, trying public endpoint:", apiKeyError);
       response = await axios.get(
         `https://api.coingecko.com/api/v3/coins/${id}/market_chart`,
         {
@@ -344,12 +323,6 @@ export const fetchCoinMarketChart = async (
 
     return data.prices;
   } catch (error) {
-    logger.error("Failed to fetch coin market chart", {
-      id,
-      days,
-      vs_currency,
-      error,
-    });
     if (axios.isAxiosError(error)) {
       if (error.response?.status === 401) {
         throw new Error(
@@ -396,7 +369,6 @@ export const fetchCoinMarketChartFallback = async (
 
     return data;
   } catch (error) {
-    console.error("Fallback API call failed:", error);
     throw error;
   }
 };
@@ -407,15 +379,9 @@ export const fetchCoinMarketChartFallback = async (
  */
 export const debugChartAPI = async (id: string = "bitcoin") => {
   try {
-    console.log(`Testing chart API for ${id}...`);
     const result = await fetchCoinMarketChart(id, 1, "usd");
-    console.log("Chart API result:", result);
-    console.log("Data points:", result.length);
-    console.log("First data point:", result[0]);
-    console.log("Last data point:", result[result.length - 1]);
     return result;
   } catch (error) {
-    console.error("Chart API test failed:", error);
     throw error;
   }
 };
@@ -426,12 +392,9 @@ export const debugChartAPI = async (id: string = "bitcoin") => {
  */
 export const debugDetailsAPI = async (id: string = "bitcoin") => {
   try {
-    console.log(`Testing details API for ${id}...`);
     const result = await fetchCoinDetails(id);
-    console.log("Details API result:", result);
     return result;
   } catch (error) {
-    console.error("Details API test failed:", error);
     throw error;
   }
 };
@@ -541,19 +504,12 @@ export const fetchCoinDetailsPublic = async (id: string) => {
  */
 export const fetchTopAssets = async (): Promise<TopAssetsResponse> => {
   try {
-    logger.info("Fetching top trading assets from OMAYA backend");
-
     const response = await get<TopAssetsResponse>(
       "/trading_engine/market/top-assets/"
     );
 
-    logger.info("Top assets fetched successfully", {
-      count: response.data.data?.length || 0,
-    });
-
     return response.data;
   } catch (error) {
-    logger.error("Failed to fetch top assets", { error });
 
     if (axios.isAxiosError(error)) {
       return {

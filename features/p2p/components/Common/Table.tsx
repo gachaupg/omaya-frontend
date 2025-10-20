@@ -70,7 +70,6 @@ export const Table: React.FC<TableProps> = ({
   };
 
   const handleViewTransaction = (row: TransactionType) => {
-    console.log("Setting selected transaction:", row);
     setSelectedTransaction(row);
     onViewTransaction && onViewTransaction(row);
   };
@@ -90,14 +89,9 @@ export const Table: React.FC<TableProps> = ({
       link.click();
       document.body.removeChild(link);
     } catch (error) {
-      console.error('Failed to download card:', error);
+      // Silent error handling
     }
   };
-
-  // Add effect to monitor selectedTransaction changes
-  React.useEffect(() => {
-    console.log("Selected transaction updated:", selectedTransaction);
-  }, [selectedTransaction]);
 
   if (loading) {
     return (
@@ -376,9 +370,9 @@ export const Table: React.FC<TableProps> = ({
                   )}
                   <div>
                     <div
-                      className={`text-sm ${getAmountColor(String(row.type))}`}
+                      className={`text-sm ${row.type=== "sell" ? "text-[#1D8751]" : "text-[#FF4D4D]"}`}
                     >
-                      {row.type}
+                      {row.type=== "buy" ? "Sell" : "Buy"}
                     </div>
                   </div>
                   <div>
@@ -416,15 +410,8 @@ export const Table: React.FC<TableProps> = ({
               <div className="flex justify-center items-center gap-2 py-4 bg-transparent rounded-b-[24px]">
                 <button
                   onClick={() => {
-                    console.log("Previous page clicked, current:", currentPage);
                     if (onPageChange) {
-                      console.log(
-                        "Calling onPageChange with:",
-                        currentPage - 1
-                      );
                       onPageChange(currentPage - 1);
-                    } else {
-                      console.log("onPageChange is not provided");
                     }
                   }}
                   disabled={currentPage === 1}
@@ -448,7 +435,6 @@ export const Table: React.FC<TableProps> = ({
                         <button
                           key={i}
                           onClick={() => {
-                            console.log("Page clicked:", i);
                             onPageChange?.(i);
                           }}
                           className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
@@ -508,7 +494,6 @@ export const Table: React.FC<TableProps> = ({
                         <button
                           key={i}
                           onClick={() => {
-                            console.log("Page clicked:", i);
                             onPageChange?.(i);
                           }}
                           className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
@@ -537,7 +522,6 @@ export const Table: React.FC<TableProps> = ({
                         <button
                           key={totalPages}
                           onClick={() => {
-                            console.log("Last page clicked:", totalPages);
                             onPageChange?.(totalPages);
                           }}
                           className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
@@ -556,15 +540,8 @@ export const Table: React.FC<TableProps> = ({
                 })()}
                 <button
                   onClick={() => {
-                    console.log("Next page clicked, current:", currentPage);
                     if (onPageChange) {
-                      console.log(
-                        "Calling onPageChange with:",
-                        currentPage + 1
-                      );
                       onPageChange(currentPage + 1);
-                    } else {
-                      console.log("onPageChange is not provided");
                     }
                   }}
                   disabled={currentPage === totalPages}
@@ -642,7 +619,7 @@ export const Table: React.FC<TableProps> = ({
                     };
                     
                     if (navigator.share) {
-                      navigator.share(shareData).catch(err => console.log('Share failed:', err));
+                      navigator.share(shareData).catch(err => {});
                     } else {
                       // Fallback - copy to clipboard
                       navigator.clipboard.writeText(`Transaction ID: ${selectedTransaction.id}\nAmount: ${selectedTransaction.amount} ${selectedTransaction.assetSymbol}\nStatus: ${selectedTransaction.status}`);

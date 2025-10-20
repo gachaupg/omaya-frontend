@@ -18,6 +18,7 @@ import { RootState } from "@/store/rootReducer";
 import { validateP2PAd } from "@/lib/utils/validators";
 import PaymentMethodsModal from "./PaymentMethodsModal";
 import UserPaymentSelector, { UserPaymentDetail } from "./UserPaymentSelector";
+import { usePendingTotal } from "@/utils/pending";
 
 interface AddsProps {
   filterType: "buy" | "sell";
@@ -72,13 +73,16 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
     (state: RootState) => state.p2pAds
   );
 
+  // Get available balance from pending hook
+  const { availableBalance } = usePendingTotal();
+
   const searchParams = useSearchParams();
   const queryType = searchParams ? (searchParams.get("type") as "buy" | "sell" | null) : null;
 
 
   const [type, setType] = useState<"buy" | "sell">(queryType || filterType);
   const [asset] = useState("Tether USDT TRC20");
-  const [commission, setCommission] = useState(0.1);
+  const [commission, setCommission] = useState("1.00");
   const [amount, setAmount] = useState("");
   const [orderMin, setOrderMin] = useState("");
   const [orderMax, setOrderMax] = useState("");
@@ -123,7 +127,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
     }
     if (postOrderSuccess) {
       showToast.success("Ad created successfully");
-      router.push("/dashboard/p2p/");
+      router.push("/dashboard/p2p/?tab=market");
       dispatch({ type: "p2pAds/clearPostOrderStatus" });
     }
   }, [postOrderError, postOrderSuccess, router, dispatch]);
@@ -144,6 +148,24 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       isValid = false;
     }
 
+    // Additional validation: check minimum 10 USDT for both buy and sell
+    if (amount) {
+      const amountNum = Number(amount);
+      if (!isNaN(amountNum) && amountNum < 10) {
+        newErrors.amount = "Minimum amount is 10 USDT";
+        isValid = false;
+      }
+    }
+    
+    // Additional validation for sell ads: check available balance
+    if (type === "sell" && amount) {
+      const amountNum = Number(amount);
+      if (!isNaN(amountNum) && amountNum > availableBalance) {
+        newErrors.amount = `Amount cannot exceed available balance (${availableBalance.toFixed(2)} USDT)`;
+        isValid = false;
+      }
+    }
+
     const minOrderError = validateP2PAd.minOrderAmount(orderMin);
     if (minOrderError) {
       newErrors.orderMin = minOrderError;
@@ -156,7 +178,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       isValid = false;
     }
 
-    const commissionError = validateP2PAd.commission(commission);
+    const commissionError = validateP2PAd.commission(parseFloat(commission) || 0);
     if (commissionError) {
       newErrors.commission = commissionError;
       isValid = false;
@@ -316,7 +338,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
             {/* Commission */}
             <div className="flex-1 flex flex-col">
               <span className="text-xs text-gray-600 dark:text-[#788099] mb-2">
-                Commission
+                Rate
               </span>
               <div
                 className={`flex w-full items-center justify-between bg-white dark:bg-[#18181D] border ${
@@ -325,7 +347,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                     : "border-gray-200 dark:border-[#35353E]"
                 } rounded-[19px] min-h-[40px]`}
               >
-                <div className="flex items-center">
+                <div className="flex items-center flex-1">
                   <svg
                     className="w-6 h-6 text-[#1D8751] mr-2"
                     fill="none"
@@ -337,17 +359,32 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                     <path d="M12 17v2a2 2 0 002 2h4a2 2 0 002-2v-2" />
                     <circle cx="12" cy="13" r="4" />
                   </svg>
-                  <span className="text-gray-900 dark:text-white text-base mr-4">
-                    {commission}%
+                  <input
+                    type="text"
+                    value={commission}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Only allow numbers and decimals
+                      if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                        setCommission(value);
+                        setErrors((prev) => ({ ...prev, commission: undefined }));
+                      }
+                    }}
+                    className="bg-transparent border-none text-gray-900 dark:text-white text-base focus:outline-none w-16"
+                    placeholder="1.00"
+                  />
+                  <span className="text-gray-900 dark:text-white text-base ml-1">
+                    %
                   </span>
                 </div>
                 <div className="flex items-center">
                   <button
                     className="text-[#1D8751] text-xl w-8 h-8 rounded-full hover:bg-[#1D8751]/10 flex items-center justify-center transition mr-2"
                     onClick={() => {
-                      setCommission((c) =>
-                        Math.min(1, Number((c + 0.1).toFixed(1)))
-                      );
+                      setCommission((c) => {
+                        const current = parseFloat(c) || 0;
+                        return Number((current + 0.1).toFixed(1)).toString();
+                      });
                       setErrors((prev) => ({ ...prev, commission: undefined }));
                     }}
                   >
@@ -356,9 +393,10 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                   <button
                     className="text-[#1D8751] text-xl w-8 h-8 rounded-full hover:bg-[#1D8751]/10 flex items-center justify-center transition"
                     onClick={() => {
-                      setCommission((c) =>
-                        Math.max(0, Number((c - 0.1).toFixed(1)))
-                      );
+                      setCommission((c) => {
+                        const current = parseFloat(c) || 0;
+                        return Math.max(0, Number((current - 0.1).toFixed(1))).toString();
+                      });
                       setErrors((prev) => ({ ...prev, commission: undefined }));
                     }}
                   >
@@ -383,8 +421,13 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
           <div className="flex flex-col md:flex-row gap-4 mb-6 p-2">
             {/* I want to Buy */}
             <div className="flex-1 flex flex-col">
-              <label className="text-xs text-gray-600 dark:text-[#788099] mb-1">
-                I want to {type.charAt(0).toUpperCase() + type.slice(1)}
+              <label className="text-xs text-gray-600 dark:text-[#788099] mb-1 flex justify-between items-center">
+                <span>I want to {type.charAt(0).toUpperCase() + type.slice(1)}</span>
+                {type === "sell" && (
+                  <span className="text-xs text-[#1D8751] dark:text-[#1D8751]">
+                    Available: {availableBalance.toFixed(2)} USDT
+                  </span>
+                )}
               </label>
               <div className="flex items-center bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-[19px] px-2 py-2 min-h-[40px]">
                 <img
@@ -396,8 +439,32 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                   type="text"
                   value={amount}
                   onChange={(e) => {
-                    setAmount(e.target.value);
-                    setErrors((prev) => ({ ...prev, amount: undefined }));
+                    const newAmount = e.target.value;
+                    setAmount(newAmount);
+                    
+                    // Real-time validation
+                    if (newAmount) {
+                      const amountNum = Number(newAmount);
+                      
+                      // Check minimum 10 USDT for both buy and sell
+                      if (!isNaN(amountNum) && amountNum < 10) {
+                        setErrors((prev) => ({ 
+                          ...prev, 
+                          amount: "Minimum amount is 10 USDT" 
+                        }));
+                      }
+                      // Additional check for sell ads - cannot exceed available balance
+                      else if (type === "sell" && !isNaN(amountNum) && amountNum > availableBalance) {
+                        setErrors((prev) => ({ 
+                          ...prev, 
+                          amount: `Amount cannot exceed available balance (${availableBalance.toFixed(2)} USDT)` 
+                        }));
+                      } else {
+                        setErrors((prev) => ({ ...prev, amount: undefined }));
+                      }
+                    } else {
+                      setErrors((prev) => ({ ...prev, amount: undefined }));
+                    }
                   }}
                   className={`w-full bg-transparent border-none text-gray-900 dark:text-white text-base focus:outline-none ${
                     errors.amount
@@ -592,7 +659,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                 setAmount("");
                 setOrderMin("");
                 setOrderMax("");
-                setCommission(0.1);
+                setCommission("1.00");
                 setPaymentMethod(paymentMethods[0].value);
                 setProvider(providers[0].value);
                 setTimeLimit(timeLimits[0].value);
@@ -609,9 +676,25 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                 type === "buy"
                   ? "bg-[#1D8751] border-[#1D8751]"
                   : "bg-[#E23D3A] border-[#E23D3A]"
+              } ${
+                postOrderLoading || 
+                Object.values(errors).some(error => error !== undefined) || 
+                !amount.trim() || 
+                !orderMin.trim() || 
+                !orderMax.trim() ||
+                selectedPaymentDetails.length === 0
+                  ? "opacity-50 cursor-not-allowed"
+                  : ""
               }`}
               onClick={handleSubmit}
-              disabled={postOrderLoading}
+              disabled={
+                postOrderLoading || 
+                Object.values(errors).some(error => error !== undefined) || 
+                !amount.trim() || 
+                !orderMin.trim() || 
+                !orderMax.trim() ||
+                selectedPaymentDetails.length === 0
+              }
             >
               {postOrderLoading ? <Loader size="sm" /> : "Post Ad"}
             </Button>

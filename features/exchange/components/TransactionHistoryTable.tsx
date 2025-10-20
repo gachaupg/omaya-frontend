@@ -306,12 +306,10 @@ const TransactionHistoryTable: React.FC<TransactionHistoryTableProps> = () => {
   // Fetch transactions when userEmail is set
   useEffect(() => {
     if (userEmail) {
-      console.log("=== FETCHING TRANSACTIONS ===", { userEmail });
       dispatch(fetchTransactions());
     }
   }, [dispatch, userEmail]);
 
-  console.log(userEmail);
 
   // Handle search with debounce
   useEffect(() => {
@@ -343,29 +341,17 @@ const TransactionHistoryTable: React.FC<TransactionHistoryTableProps> = () => {
 
   const getFilteredTransactions = (): Transaction[] => {
     if (!transactions || !userEmail) {
-      console.log("No transactions or user email available:", {
-        transactions,
-        userEmail,
-      });
+     
       return [];
     }
 
-    console.log("Filtering transactions:", {
-      totalTransactions: transactions.length,
-      userEmail,
-      firstTransaction: transactions[0],
-    });
-
+   
     const filtered = transactions.filter((tx) => {
       const matches = tx.user_email === userEmail;
       return matches;
     });
 
-    console.log("Filtered transactions:", {
-      totalFiltered: filtered.length,
-      firstFiltered: filtered[0],
-    });
-
+    
     return filtered;
   };
 

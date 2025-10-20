@@ -144,6 +144,37 @@ export interface ExchangeStatistics {
   total_approved_exchange_deposits: number;
   total_approved_exchange_withdrawals: number;
   total_approved_exchange_combined: number;
+  total_pending_p2p_deposits?: number;
+  total_pending_p2p_withdrawals?: number;
+  total_approved_p2p_deposits?: number;
+  total_approved_p2p_withdrawals?: number;
+  total_approved_p2p_combined?: number;
+  total_approved_all?: number;
+  total_buy_orders_by_status?: {
+    pending: number;
+    completed: number;
+    canceled: number;
+    offline: number;
+  };
+  total_sell_orders_by_status?: {
+    pending: number;
+    completed: number;
+    canceled: number;
+    offline: number;
+  };
+  total_buy_orders?: number;
+  total_sell_orders?: number;
+  total_p2p_orders?: number;
+  total_trades?: number;
+  avg_release_time?: string;
+  avg_payment_time?: string;
+  rating?: string;
+  total_volume?: string;
+  total_pending_changenow_swaps?: number;
+  total_completed_changenow_swaps?: number;
+  total_failed_changenow_swaps?: number;
+  total_changenow_swaps?: number;
+  created?: string;
 }
 
 export interface DepositTransactionPayload {

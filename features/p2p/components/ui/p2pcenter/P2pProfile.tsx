@@ -44,9 +44,7 @@ const P2pProfile = ({
     return { total, positive, positivePercentage };
   }, [feedbackData]);
   
-  console.log("P2pProfile user:", user);
-  console.log("P2pProfile wallets:", wallets);
-  console.log("P2pProfile summary:", summary);
+
 
   // Get balance from wallet response - try multiple sources (same logic as P2pWallet.tsx)
   const totalBalance = wallets?.total_balance ? toNumber(wallets.total_balance) : 0;

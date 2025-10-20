@@ -39,7 +39,6 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     useState<TransactionSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
- console.log('advertiserData', advertiserData);
   const [sendAmount, setSendAmount] = useState("");
   const [receiveAmount, setReceiveAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
@@ -122,7 +121,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
 
     // Calculate receive amount based on trade type
     const calculatedReceive =
-      tradeType === "buy"
+      tradeType === "sell"
         ? (numericAmount * commissionRate).toFixed(2)
         : (numericAmount / commissionRate).toFixed(2);
     setReceiveAmount(calculatedReceive);
@@ -133,7 +132,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     const numericAmount = parseFloat(value);
     setNumericAmount(numericAmount);
     const calculatedSend =
-      tradeType === "buy"
+      tradeType === "sell"
         ? (numericAmount / commissionRate).toFixed(2)
         : (numericAmount * commissionRate).toFixed(2);
     setSendAmount(calculatedSend);
@@ -166,26 +165,18 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         commission: advertiserData.commission,
       };
 
-      console.log("Sending order data:", orderData);
 
-      console.log("Attempting to match order:", {
-        orderId: advertiserData.id,
-        orderData: orderData,
-        tradeType
-      });
+
 
       const response = await matchP2POrder(advertiserData.id, orderData);
       
-      console.log("Match response:", response);
       
       // Store trade_id in local storage
       let tradeIdFromResponse = null;
       if (response && 'trade_id' in response) {
         tradeIdFromResponse = (response as any).trade_id;
         localStorage.setItem('p2p_trade_id', tradeIdFromResponse);
-        console.log('Trade ID stored in localStorage:', tradeIdFromResponse);
       } else {
-        console.warn('No trade_id in response:', response);
       }
       
       // Navigate with state using URL search params

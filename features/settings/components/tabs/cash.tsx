@@ -99,10 +99,8 @@ const Cash = () => {
 
   // Handle success - show modal
   useEffect(() => {
-    console.log("Cash withdrawal success effect:", { success, withdrawalData })
     if (success && withdrawalData) {
-      console.log("Showing success modal with data:", withdrawalData)
-      showToast.success(withdrawalData.message || "Withdrawal submitted successfully!")
+        showToast.success(withdrawalData.message || "Withdrawal submitted successfully!")
       setShowSuccessModal(true)
       setAmount("")
       setSelectedPaymentDetails([])
@@ -114,7 +112,6 @@ const Cash = () => {
   // Handle errors - show toast
   useEffect(() => {
     if (error) {
-      console.error("Cash withdrawal error:", error)
       showToast.error(typeof error === "string" ? error : "Failed to submit withdrawal")
       setIsSubmitting(false)
     }

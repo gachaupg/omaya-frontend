@@ -53,17 +53,14 @@ export const fetchSupportedAssets = createAsyncThunk<SupportedAsset[], boolean |
   "swap/fetchSupportedAssets",
   async (forceRefresh: boolean = false, { rejectWithValue }) => {
     try {
-      console.log("🔄 Starting fetchSupportedAssets...");
       
       let data;
       
       if (forceRefresh) {
-        console.log("🔄 Force refresh - bypassing cache...");
         // Clear cache first
         await sliceCache.delete('swap', 'fetchSupportedAssets');
         // Fetch fresh data
         const response = await getSupportedAssets();
-        console.log("✅ Force refresh API response received:", response?.length || 0, "assets");
         // Cache the fresh data
         await sliceCache.set('swap', 'fetchSupportedAssets', response, undefined, 2 * 60 * 60 * 1000);
         data = response;
@@ -72,9 +69,7 @@ export const fetchSupportedAssets = createAsyncThunk<SupportedAsset[], boolean |
           'swap',
           'fetchSupportedAssets',
           async () => {
-            console.log("🔄 Cache miss - fetching from API...");
             const response = await getSupportedAssets();
-            console.log("✅ API response received:", response?.length || 0, "assets");
             return response;
           },
           undefined, // no params
@@ -82,10 +77,8 @@ export const fetchSupportedAssets = createAsyncThunk<SupportedAsset[], boolean |
         );
       }
       
-      console.log("✅ fetchSupportedAssets completed:", data?.length || 0, "assets");
       return data;
     } catch (error) {
-      console.error("❌ Failed to fetch supported assets:", error);
       
       // Provide fallback assets if API fails
       const fallbackAssets: SupportedAsset[] = [
@@ -133,7 +126,6 @@ export const fetchSupportedAssets = createAsyncThunk<SupportedAsset[], boolean |
         }
       ];
       
-      console.log("🔄 Using fallback assets:", fallbackAssets.length);
       
       // Only show toast if it's a network error or server error
       if (error instanceof Error) {
@@ -196,7 +188,6 @@ export const fetchSwapEstimate = createAsyncThunk(
       );
       return data;
     } catch (error) {
-      console.error("Failed to fetch swap estimate:", error);
       // Only show toast for server errors or network issues
       if (error instanceof Error) {
         if (
@@ -219,8 +210,7 @@ export const createSwapTransaction = createAsyncThunk(
     try {
       const response = await createSwap(swapData);
       return response;
-    } catch (error) {
-      console.error("Failed to create swap transaction:", error);
+    } catch (error) { 
 
       // Get current state to check if error toast has been shown
       const state = getState() as { swap: SwapState };
@@ -247,12 +237,10 @@ export const createSwapTransaction = createAsyncThunk(
             );
           } else if (
             error.message.includes("401") ||
-            error.message.includes("Unauthorized")
+            error.message.includes("Unauthorized") ||
+            error.message.includes("status code 401")
           ) {
-            showToast.error(
-              "Authentication Required",
-              "Please log in to continue"
-            );
+            // Suppress 401 errors - silent
           } else if (
             error.message.includes("403") ||
             error.message.includes("Forbidden")
@@ -331,13 +319,8 @@ const swapSlice = createSlice({
         state.hasShownErrorToast = false;
       })
       .addCase(fetchSupportedAssets.fulfilled, (state, action) => {
-        console.log("🎯 Redux: fetchSupportedAssets.fulfilled", {
-          payloadLength: action.payload?.length || 0,
-          payload: action.payload
-        });
         state.loading = false;
         state.supportedAssets = action.payload;
-        console.log("🎯 Redux: supportedAssets set to:", state.supportedAssets?.length || 0, "assets");
         
         // Set default assets if not set - BTC for fromAsset, ETH for toAsset
         if (!state.fromAsset && action.payload.length > 0) {
@@ -347,7 +330,6 @@ const swapSlice = createSlice({
             asset?.symbol?.toLowerCase() === 'btc'
           );
           state.fromAsset = btcAsset || action.payload[0];
-          console.log("🎯 Redux: fromAsset set to:", state.fromAsset);
         }
         if (!state.toAsset && action.payload.length > 1) {
           // Find ETH asset, fallback to second asset if ETH not found
@@ -356,7 +338,6 @@ const swapSlice = createSlice({
             asset?.symbol?.toLowerCase() === 'eth'
           );
           state.toAsset = ethAsset || action.payload[1];
-          console.log("🎯 Redux: toAsset set to:", state.toAsset);
         }
       })
       .addCase(fetchSupportedAssets.rejected, (state, action) => {

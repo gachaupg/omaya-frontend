@@ -48,7 +48,6 @@ export class TradeStatusWebSocket {
   connect(tradeId: string, token: string): void {
     // Check for permanent failure
     if (this.hasPermanentFailure) {
-      console.warn("⚠️ Trade Status WebSocket has permanent failure, skipping connection attempt");
       return;
     }
 
@@ -60,7 +59,6 @@ export class TradeStatusWebSocket {
 
     // If connected to different trade, close existing connection
     if (this.ws?.readyState === WebSocket.OPEN && this.lastTradeId !== tradeId) {
-      console.log("🔄 Switching to different trade, closing current connection");
       this.disconnect();
     }
 
@@ -84,20 +82,9 @@ export class TradeStatusWebSocket {
     try {
       this.url = API_CONFIG.P2P.SOCKETS.TRADE_STATUS(tradeId, token);
       
-      // Only log on first connection attempt
-      if (this.reconnectAttempts === 0) {
-        console.log("🔌 Connecting to Trade Status WebSocket...");
-        console.log("📍 WebSocket URL:", this.url);
-        console.log("🔑 Token length:", token?.length || 0);
-        console.log("🆔 Trade ID:", tradeId);
-      }
-
       this.ws = new WebSocket(this.url);
 
       this.ws.onopen = () => {
-        if (this.reconnectAttempts === 0) {
-          console.log("✅ Trade Status WebSocket connected");
-        }
         this.reconnectAttempts = 0;
         this.hasPermanentFailure = false;
         this.openHandlers.forEach((handler) => handler());
@@ -105,28 +92,14 @@ export class TradeStatusWebSocket {
 
       this.ws.onmessage = (event) => {
         try {
-          console.log("📨 Raw WebSocket message received:", event.data);
           const message: WebSocketMessage = JSON.parse(event.data);
-          console.log("📨 Parsed Trade Status Update:", message);
-          console.log("📊 Message type:", message.type);
-          console.log("📊 Message status:", message.status || message.data?.status);
           this.messageHandlers.forEach((handler) => handler(message));
         } catch (error) {
-          console.warn("⚠️ Failed to parse WebSocket message:", error);
-          console.warn("📄 Raw data:", event.data);
+          // Silent error handling
         }
       };
 
       this.ws.onerror = (error) => {
-        if (this.reconnectAttempts === 0) {
-          console.warn("⚠️ Trade Status WebSocket connection failed");
-          console.error("❌ Error details:", {
-            url: this.url,
-            readyState: this.ws?.readyState,
-            error: error
-          });
-        }
-        
         this.errorHandlers.forEach((handler) => handler(error));
       };
 
@@ -137,16 +110,10 @@ export class TradeStatusWebSocket {
             break;
           case 1008: // Policy violation
             this.hasPermanentFailure = true;
-            if (this.reconnectAttempts === 0) {
-              console.warn("⚠️ WebSocket auth failed - check token permissions");
-            }
             break;
           case 4001: // Unauthorized
           case 4003: // Forbidden
             this.hasPermanentFailure = true;
-            if (this.reconnectAttempts === 0) {
-              console.warn("⚠️ WebSocket unauthorized - check authentication");
-            }
             break;
           case 1006: // Abnormal closure
           default:

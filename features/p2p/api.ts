@@ -207,15 +207,11 @@ export const addUserPaymentDetail = async (data: {
   provider_name: string;
   wallet_address?: string | null;
 }): Promise<P2PResponse> => {
-  console.log("API: addUserPaymentDetail called with data:", data);
-  console.log("API: endpoint:", API_CONFIG.P2P.USER_PAYMENT_DETAILS);
   return withRetry(async () => {
-    console.log("API: Making POST request...");
     const response = await post<P2PResponse>(
       API_CONFIG.P2P.USER_PAYMENT_DETAILS,
       data
     );
-    console.log("API: Response received:", response);
     return response.data;
   });
 };
@@ -251,17 +247,9 @@ export const getAllP2POrders = async (
 export const getAllP2PBuyandSell = async (
   page: number = 1
 ): Promise<P2PMyOrders> => {
-  console.log("API call getAllP2PBuyandSell with page:", page);
   return withRetry(async () => {
     const url = `${API_CONFIG.P2P.ALL_ORDERS}?page=${page}`;
-    console.log("Making API request to:", url);
     const response = await get<P2PMyOrders>(url);
-    console.log("API response for page", page, ":", {
-      count: response.data.count,
-      totalOrders: response.data.results?.total_orders_count,
-      resultsCount: response.data.results?.results?.length,
-      firstOrderId: response.data.results?.results?.[0]?.id,
-    });
     return response.data;
   });
 };
@@ -269,17 +257,9 @@ export const getAllP2PBuyandSell = async (
 export const getMyP2POrders = async (
   page: number = 1
 ): Promise<P2PMyOrders> => {
-  console.log("API call getMyP2POrders with page:", page);
   return withRetry(async () => {
     const url = `${API_CONFIG.P2P.MY_ORDERS}?my_orders=true&page=${page}`;
-    console.log("Making API request to:", url);
     const response = await get<P2PMyOrders>(url);
-    console.log("API response for My Orders page", page, ":", {
-      count: response.data.count,
-      totalOrders: response.data.results?.total_orders_count,
-      resultsCount: response.data.results?.results?.length,
-      firstOrderId: response.data.results?.results?.[0]?.id,
-    });
     return response.data;
   });
 };
@@ -298,12 +278,6 @@ export const matchP2POrder = async (
   data: OrderMatchRequest
 ): Promise<{ message: string }> => {
   return withRetry(async () => {
-    console.log("=== API REQUEST DEBUG ===");
-    console.log("URL:", `${API_CONFIG.P2P.ORDER_MATCH}${id}/match/`);
-    console.log("Data:", data);
-    console.log("Full URL:", `${API_CONFIG.BASE_URL}${API_CONFIG.P2P.ORDER_MATCH}${id}/match/`);
-    console.log("========================");
-    
     const response = await post<{ message: string }>(
       `${API_CONFIG.P2P.ORDER_MATCH}${id}/match/`,
       data
@@ -327,33 +301,15 @@ export const SingleOrder = async (id: string): Promise<P2POrder> => {
       `${API_CONFIG.P2P.SINGLE_ORDER}${id}/`
     );
 
-    console.log("SingleOrder API response:", {
-      status: response.status,
-      data: response.data,
-      headers: response.headers,
-    });
-
     return response.data;
   });
 };
 
 export const SingleOrder1 = async (id: string): Promise<P2POrder> => {
   return withRetry(async () => {
-    console.log("SingleOrder1 API call:", {
-      url: `${API_CONFIG.P2P.MATCHED_TRADE}${id}/`,
-      id,
-      timestamp: new Date().toISOString(),
-    });
-
     const response = await get<P2POrder>(
       `${API_CONFIG.P2P.MATCHED_TRADE}${id}/`
     );
-
-    console.log("SingleOrder1 API response:", {
-      status: response.status,
-      data: response.data,
-      headers: response.headers,
-    });
 
     return response.data;
   });

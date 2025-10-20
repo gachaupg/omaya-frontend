@@ -27,7 +27,6 @@ export const useThemeToggle = () => {
         }
       }
     } catch (error) {
-      console.log("Failed to load theme from localStorage:", error);
       // Fallback to default theme
       dispatch(setThemeMode("dark"));
     }

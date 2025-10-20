@@ -18,7 +18,6 @@ let refreshTokensAction: any = null;
 export const initializeTokenRefresh = (dispatch: any, refreshAction: any) => {
   storeDispatch = dispatch;
   refreshTokensAction = refreshAction;
-  logger.info("Token refresh utility initialized");
 };
 
 /**
@@ -29,11 +28,8 @@ export const refreshAccessToken = async (): Promise<string | null> => {
     const profile = storage.getProfile();
     
     if (!profile?.tokens?.refresh) {
-      logger.warn("No refresh token available");
       return null;
     }
-
-    logger.info("Attempting to refresh access token");
 
     const response = await axios.post(
       `${API_BASE_URL}/api/token/refresh/`,
@@ -48,8 +44,6 @@ export const refreshAccessToken = async (): Promise<string | null> => {
     );
 
     const { access, refresh } = response.data;
-    
-    logger.info("Access token refreshed successfully");
 
     // Update storage
     const updatedProfile = {
@@ -79,8 +73,6 @@ export const refreshAccessToken = async (): Promise<string | null> => {
 
     return access;
   } catch (error: any) {
-    logger.error("Token refresh failed", error);
-    
     // Clear invalid tokens
     storage.removeProfile();
     cookieUtils.removeCookie("access_token");
@@ -107,7 +99,6 @@ export const isTokenExpired = (token: string): boolean => {
     // Consider token expired if it expires in less than 5 minutes
     return timeUntilExpiry < 5 * 60 * 1000;
   } catch (error) {
-    logger.error("Error checking token expiration", error);
     return true; // Treat as expired if we can't parse it
   }
 };
@@ -123,7 +114,6 @@ export const proactiveTokenRefresh = async (): Promise<void> => {
   }
 
   if (isTokenExpired(profile.tokens.access)) {
-    logger.info("Token is expired or about to expire, refreshing proactively");
     await refreshAccessToken();
   }
 };

@@ -121,25 +121,15 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
     let reconnectTimeout: NodeJS.Timeout | null = null;
     let closedByUser = false;
     const wsUrl = API_CONFIG.SWAP.SWAP_STATUS_WS(swapResponse.id);
-    console.log("WebSocket URL (actual):", wsUrl);
 
     function connect() {
       if (!swapResponse?.id) return; // Ensure swapResponse is not null
       ws = connectSwapStatusWebSocket(swapResponse.id, {
         onOpen: (event: Event) => {
-          console.log("WebSocket connection opened", event);
           setWsConnected(true);
           setReconnectAttempts(0); // Reset on successful connect
         },
         onClose: (event: CloseEvent) => {
-          console.log(
-            "WebSocket closed",
-            event,
-            "code:",
-            event.code,
-            "reason:",
-            event.reason
-          );
           setWsConnected(false);
           if (
             !closedByUser &&
@@ -149,26 +139,16 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
             // Abnormal closure, try to reconnect
             const nextAttempt = reconnectAttempts + 1;
             setReconnectAttempts(nextAttempt);
-            console.log(
-              `Attempting to reconnect WebSocket (#${nextAttempt}) in ${
-                reconnectDelay / 1000
-              }s...`
-            );
             reconnectTimeout = setTimeout(connect, reconnectDelay);
           }
         },
         onError: (event: Event) => {
-          console.log("WebSocket error", event);
           setWsConnected(false);
         },
         onMessage: (event: MessageEvent) => {
-          console.log(status);
-
-          console.log("WebSocket message received:", event.data);
           try {
             const msg = JSON.parse(event.data);
             const sts = msg.data?.status;
-            console.log("new data check", sts, msg);
 
             if (msg.type === "status_update" && msg.data) {
               const backendStatus = msg.data.status;
@@ -179,14 +159,11 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
               
               // Auto-navigate to success page when status is completed
               if (backendStatus === "completed") {
-                console.log("✅ Swap completed, automatically showing success page");
-                console.log("Status changed to completed, triggering success page");
                 // Keep the status as "completed" to trigger success page
                 setStatus("completed");
               }
             }
           } catch (e) {
-            console.error("Failed to parse WebSocket message", e, event.data);
           }
         },
       });
@@ -206,18 +183,9 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
   // Always map the status before using it in the stepper
   const mappedStatus = mapBackendStatusToStepperStatus(status);
   const currentStepIndex = statusSteps.findIndex((s) => s.key === mappedStatus);
-  console.log(
-    "status:",
-    status,
-    "mappedStatus:",
-    mappedStatus,
-    "currentStepIndex:",
-    currentStepIndex
-  );
 
   // If status is completed, show the SuccessPage with real data
   if (mappedStatus === "completed" || mappedStatus === "finished") {
-    console.log("🎉 Rendering success page for status:", mappedStatus);
     return (
       <SuccessPage
         transactionId={statusObj?.swap_id || statusObj?.id || swapResponse?.id || ""}

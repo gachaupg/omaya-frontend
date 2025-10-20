@@ -118,7 +118,6 @@ const KYCVerificationModal: React.FC = () => {
   };
 
   const handleFaceDetectionComplete = async (data: any) => {
-    console.log("Face Detection Data:", data);
     setFaceDetectionData(data);
     
     // Convert base64 face image to File object if available
@@ -129,7 +128,6 @@ const KYCVerificationModal: React.FC = () => {
         const file = new File([blob], "face-verification.jpg", { type: "image/jpeg" });
         setFaceImage(file);
         setFacePreview(data.faceImage);
-        console.log("Face image file created successfully:", file);
       } catch (error) {
         console.error("Error converting face image:", error);
         // Still set the face preview even if file conversion fails
@@ -217,14 +215,7 @@ const KYCVerificationModal: React.FC = () => {
         return;
       }
 
-      console.log("Submitting KYC verification for user:", user.user_id);
-      console.log("Face Detection Data:", faceDetectionData);
-      console.log("Verification Data:", {
-        country: verificationData.country,
-        documentType: verificationData.documentType,
-        documentNumber: verificationData.documentNumber,
-      });
-      
+     
       // Validate required fields before submission
       if (!verificationData.documentType || !verificationData.documentNumber) {
         setError("Document type and number are required");
@@ -254,17 +245,11 @@ const KYCVerificationModal: React.FC = () => {
         formData.append('kyc_images', faceImage, 'face-verification.jpg');
       } else if (facePreview) {
         // If face image File is not ready but we have preview, include it as base64 in face_data
-        console.log("Face image file not ready, including in face_data");
       }
       
       // Add face detection data
       if (faceDetectionData) {
         formData.append('face_data', JSON.stringify(faceDetectionData));
-      }
-      
-      console.log("FormData entries:");
-      for (let [key, value] of formData.entries()) {
-        console.log(key, value);
       }
       
       // Call the KYC verification API using the thunk
@@ -273,18 +258,7 @@ const KYCVerificationModal: React.FC = () => {
         (img): img is File => img instanceof File
       );
       
-      console.log("KYC Images to submit:", kycImages.length, "files");
-      console.log("Verification Data to submit:", {
-        user_id: user.user_id,
-        status: true,
-        is_verified: true,
-        verification_method: 'manual_with_face_detection',
-        country: verificationData.country,
-        document_type: verificationData.documentType,
-        document_number: verificationData.documentNumber,
-        images_count: kycImages.length
-      });
-      
+     
       const result = await dispatch(verifyKYCStatus({
         user_id: user.user_id,
         status: true,
@@ -301,8 +275,6 @@ const KYCVerificationModal: React.FC = () => {
         document_number: verificationData.documentNumber,
       })).unwrap();
 
-      console.log("KYC Verification Response:", result);
-      
       // Always show success modal and close
       localStorage.removeItem('kyc_verification_status');
       setShowManualVerification(false);

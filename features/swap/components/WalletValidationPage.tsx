@@ -57,10 +57,7 @@ const WalletValidationPage: React.FC<WalletValidationPageProps> = ({
         return { isValid: false, message: "Please select an asset first" };
       }
 
-      // Debug: Log the network type being validated
-      console.log("Validating address for network:", asset.network);
-      console.log("Asset details:", asset);
-
+      
       // Normalize network type to handle variations
       let normalizedNetwork = asset.network.toUpperCase();
 
@@ -84,7 +81,6 @@ const WalletValidationPage: React.FC<WalletValidationPageProps> = ({
         normalizedNetwork = "ERC20";
       }
 
-      console.log("Normalized network type:", normalizedNetwork);
 
       return validateWalletAddress(address, normalizedNetwork);
     },

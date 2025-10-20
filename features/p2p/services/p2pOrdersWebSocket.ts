@@ -50,94 +50,39 @@ export class P2POrdersWebSocket {
     
     // Validate token before attempting connection
     if (!token || token.length < 10) {
-      console.warn("⚠️ Invalid token provided to P2P Orders WebSocket");
       return;
     }
 
     // Check if token looks like a JWT
     const tokenParts = token.split('.');
     if (tokenParts.length !== 3) {
-      console.warn("⚠️ Token does not appear to be a valid JWT");
       return;
     }
 
     this.url = API_CONFIG.P2P.SOCKETS.P2P_ORDERS(token);
 
-    console.log("🔌 [WS Service] Connecting to P2P Orders WebSocket...");
-    console.log("🌐 [WS Service] Full WebSocket URL:", this.url);
-    console.log("🔑 [WS Service] Token preview:", token.substring(0, 30) + "..." + token.substring(token.length - 10));
-    console.log("📏 [WS Service] Token length:", token.length);
-
     try {
       this.ws = new WebSocket(this.url);
 
       this.ws.onopen = () => {
-        if (process.env.NODE_ENV === 'development') {
-          console.log("✅ P2P Orders WebSocket connected");
-        }
         this.reconnectAttempts = 0;
         this.openHandlers.forEach((handler) => handler());
       };
 
       this.ws.onmessage = (event) => {
         try {
-          console.log("📨 [WS Service] Raw WebSocket message received:", event.data);
           const message: WebSocketMessage = JSON.parse(event.data);
-          
-          console.log("📨 [WS Service] Parsed P2P Orders WebSocket message:", {
-            type: message.type,
-            hasBuyOrders: !!message.data?.buy_orders,
-            hasSellOrders: !!message.data?.sell_orders,
-            buyOrdersCount: message.data?.buy_orders?.length || 0,
-            sellOrdersCount: message.data?.sell_orders?.length || 0,
-            fullMessage: message
-          });
-          
-          console.log("🔔 [WS Service] Notifying", this.messageHandlers.size, "message handlers");
           this.messageHandlers.forEach((handler) => handler(message));
         } catch (error) {
-          console.error("❌ [WS Service] Error parsing P2P Orders WebSocket message:", error);
-          console.error("📄 [WS Service] Raw data that failed to parse:", event.data);
+          // Silent error handling
         }
       };
 
       this.ws.onerror = (error) => {
-        if (this.ws?.readyState !== WebSocket.CONNECTING) {
-          console.error("❌ P2P Orders WebSocket error:", error);
-          
-          if (this.ws?.readyState === WebSocket.CLOSED) {
-            console.error("WebSocket is closed");
-          }
-        }
-        
         this.errorHandlers.forEach((handler) => handler(error));
       };
 
       this.ws.onclose = (event) => {
-        if (event.code !== 1000 && event.code !== 1001) {
-          console.warn(`⚠️ P2P Orders WebSocket closed with code ${event.code}`);
-          
-          if (event.reason) {
-            console.warn("Close reason:", event.reason);
-          }
-          
-          const closeCodeDescriptions: Record<number, string> = {
-            1002: "Protocol error",
-            1003: "Unsupported data",
-            1006: "Abnormal closure (no close frame received)",
-            1007: "Invalid frame payload data",
-            1008: "Policy violation",
-            1009: "Message too big",
-            1010: "Missing extension",
-            1011: "Internal server error",
-            1015: "TLS handshake failure"
-          };
-          
-          if (closeCodeDescriptions[event.code]) {
-            console.warn(`Description: ${closeCodeDescriptions[event.code]}`);
-          }
-        }
-        
         this.closeHandlers.forEach((handler) => handler());
 
         if (!this.isIntentionallyClosed && this.reconnectAttempts < this.maxReconnectAttempts) {
@@ -145,7 +90,6 @@ export class P2POrdersWebSocket {
         }
       };
     } catch (error) {
-      console.error("❌ Error creating P2P Orders WebSocket:", error);
       this.scheduleReconnect(token);
     }
   }
@@ -153,10 +97,6 @@ export class P2POrdersWebSocket {
   private scheduleReconnect(token: string): void {
     this.reconnectAttempts++;
     const delay = this.reconnectDelay * Math.min(this.reconnectAttempts, 5);
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🔄 Reconnecting P2P Orders WebSocket in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
-    }
 
     this.reconnectTimeout = setTimeout(() => {
       this.connect(token);
@@ -174,10 +114,6 @@ export class P2POrdersWebSocket {
     if (this.ws) {
       this.ws.close();
       this.ws = null;
-    }
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log("🔌 P2P Orders WebSocket disconnected");
     }
   }
 

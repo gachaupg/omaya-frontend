@@ -132,25 +132,7 @@ export default function DepositForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
-  // Debug function to test asset fetching
-  const handleDebugAssets = async () => {
-    try {
-      console.log("=== Starting debug asset fetch for express deposit ===");
-      console.log("Current exchange assets:", assets);
-      console.log("Current swap assets:", swapAssets);
-      
-      // Force refresh both asset types
-      console.log("🔄 Force refreshing exchange assets...");
-      await dispatch(fetchAssets(true)).unwrap();
-      
-      console.log("🔄 Force refreshing swap assets...");
-      await dispatch(fetchSupportedAssets(true)).unwrap();
-      
-      console.log("✅ Assets force refreshed");
-    } catch (error) {
-      console.error("Debug failed:", error);
-    }
-  };
+
   // Add transaction code state
   const [transactionCode, setTransactionCode] = useState<string>("");
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
@@ -189,34 +171,38 @@ export default function DepositForm({
 
 
   useEffect(() => {
+    // Skip API calls on home page - buttons will redirect to login
+    if (isHomePage) {
+      return;
+    }
+    
     // Try to fetch from cache first, then API if needed
     dispatch(fetchAdminPaymentDetails(false)) // false = don't force refresh
       .unwrap()
       .catch((error: unknown) => {
         showToast.error(`Failed to fetch admin payment details: ${error}`);
       });
-  }, [dispatch]);
+  }, [dispatch, isHomePage]);
 
   useEffect(() => {
+    // Skip API calls on home page - buttons will redirect to login
+    if (isHomePage) {
+      return;
+    }
+    
     // First try to get from cache, then force refresh if no data
     dispatch(fetchAssets(false))
       .unwrap()
       .then((data) => {
-        console.log("DEBUG: Exchange assets loaded in express deposit:", {
-          hasAssets: !!data?.assets,
-          assetsLength: data?.assets?.length || 0,
-          totalBalance: data?.total_wallet_balance
-        });
+        
         
         // If no assets in cache, force refresh
         if (!data?.assets || data.assets.length === 0) {
-          console.log("🔄 No exchange assets in cache, forcing refresh...");
           return dispatch(fetchAssets(true)).unwrap();
         }
         return data;
       })
       .catch((error: unknown) => {
-        console.error("Failed to fetch exchange assets from cache, trying force refresh:", error);
         // If cache fetch fails, try force refresh
         return dispatch(fetchAssets(true))
           .unwrap()
@@ -229,28 +215,25 @@ export default function DepositForm({
 
   // Fetch swap assets
   useEffect(() => {
+    // Skip API calls on home page - buttons will redirect to login
+    if (isHomePage) {
+      return;
+    }
+    
     dispatch(fetchSupportedAssets(false))
       .unwrap()
       .then((data) => {
-        console.log("DEBUG: Swap assets loaded in express deposit:", {
-          hasAssets: !!data,
-          assetsLength: data?.length || 0
-        });
-        
         // If no assets in cache, force refresh
         if (!data || data.length === 0) {
-          console.log("🔄 No swap assets in cache, forcing refresh...");
           return dispatch(fetchSupportedAssets(true)).unwrap();
         }
         return data;
       })
       .catch((error: unknown) => {
-        console.error("Failed to fetch swap assets from cache, trying force refresh:", error);
         // If cache fetch fails, try force refresh
         return dispatch(fetchSupportedAssets(true))
           .unwrap()
           .catch((refreshError: unknown) => {
-            console.error("Failed to fetch swap assets even with force refresh:", refreshError);
             
             // Only show error if it's a network issue, not cache issues
             if (refreshError instanceof Error) {
@@ -357,12 +340,6 @@ export default function DepositForm({
 
   // Fetch estimate for non-direct assets - triggers immediately on asset or amount change
   useEffect(() => {
-    console.log("Estimate useEffect triggered:", {
-      selectedAsset: selectedAsset?.ticker,
-      isSimple: selectedAsset ? isSimpleCalculationAsset(selectedAsset) : null,
-      payAmount,
-      shouldFetch: selectedAsset && !isSimpleCalculationAsset(selectedAsset) && payAmount && payAmount > 0
-    });
     
     if (
       selectedAsset &&
@@ -396,8 +373,16 @@ export default function DepositForm({
         timeoutPromise
       ])
         .then((result: any) => {
-          if (result.payload) {
+          if (result.payload && (result.payload as any)?.estimated_amount) {
             setEstimate(result.payload);
+            
+            // Update UI immediately instead of waiting for another useEffect
+            const estimatedAmount = (result.payload as any).estimated_amount;
+            if (estimatedAmount > 0) {
+              setGetAmount(estimatedAmount);
+              setGetAmountInput(estimatedAmount.toString());
+              setReceiveAmountError(null);
+            }
           }
           
           // Clear loading states after successful calculation
@@ -410,15 +395,12 @@ export default function DepositForm({
           // Handle different types of errors gracefully
           if (error.message?.includes("Request timeout")) {
             setEstimateError("Request timeout: Using fallback calculation");
-            console.log("Using fallback calculation due to request timeout");
             showToast.warning("Request timeout: Using estimated rate");
           } else if (error.message?.includes("Network Error") || error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
             setEstimateError("Network error: Using fallback calculation");
-            console.log("Using fallback calculation due to network error");
             showToast.warning("Using estimated rate due to network issues");
           } else if (error.message?.includes("Server Error")) {
             setEstimateError("Server error: Using fallback calculation");
-            console.log("Using fallback calculation due to server error");
             showToast.warning("Using estimated rate due to server issues");
           } else if (error.message?.includes("Invalid swap parameters")) {
             setEstimateError("Invalid parameters: Using fallback calculation");
@@ -455,13 +437,6 @@ export default function DepositForm({
 
   // Fetch reverse estimate for non-direct assets when calculating from receive amount
   useEffect(() => {
-    console.log("Reverse estimate useEffect triggered:", {
-      selectedAsset: selectedAsset?.ticker,
-      isSimple: selectedAsset ? isSimpleCalculationAsset(selectedAsset) : null,
-      getAmount,
-      shouldFetch: selectedAsset && !isSimpleCalculationAsset(selectedAsset) && getAmount && getAmount > 0 && !isCalculatingFromPay
-    });
-    
     if (
       selectedAsset &&
       !isSimpleCalculationAsset(selectedAsset) &&
@@ -475,13 +450,6 @@ export default function DepositForm({
       // For reverse calculation, we need to estimate the pay amount from the receive amount
       // We'll call the API with the correct direction to get the required USDT amount
       
-      console.log("Fetching reverse estimate for deposit:", {
-        fromCurrency: selectedAsset.ticker, // We're converting FROM the selected asset
-        fromNetwork: getAssetNetwork(selectedAsset), 
-        toCurrency: "USDT", // TO USDT (since we want to know how much USDT we need)
-        toNetwork: "BSC", 
-        amount: getAmount, // Use the receive amount directly
-      });
 
       // Add timeout to prevent hanging API calls
       const timeoutPromise = new Promise((_, reject) => {
@@ -501,50 +469,38 @@ export default function DepositForm({
         timeoutPromise
       ])
         .then((result: any) => {
-          console.log("Reverse estimate result:", result);
           if (result.payload && (result.payload as any)?.estimated_amount) {
-            // The API now returns how much USDT we need to get the desired amount
             const requiredUsdtAmount = (result.payload as any)?.estimated_amount;
             
             if (requiredUsdtAmount && requiredUsdtAmount > 0) {
-              // Set the pay amount to the required USDT amount
+              // Update UI immediately
               setPayAmount(requiredUsdtAmount);
               setPayAmountInput(requiredUsdtAmount.toString());
               setEstimate(result.payload);
-              console.log("Reverse calculation successful:", { 
-                desiredReceive: getAmount, 
-                requiredPay: requiredUsdtAmount 
-              });
             }
-            
-            // Clear loading states after successful calculation
-            setIsCalculating(false);
-            setIsCalculatingReceive(false);
           }
+          
+          // Clear loading states immediately after successful calculation
+          setIsCalculating(false);
+          setIsCalculatingReceive(false);
         })
         .catch((error) => {
-          console.error("Failed to fetch reverse estimate:", error);
           
           // Handle different types of errors gracefully
           if (error.message?.includes("Request timeout")) {
             setEstimateError("Request timeout: Using fallback calculation");
-            console.log("Using fallback calculation due to request timeout");
             showToast.warning("Request timeout: Using estimated rate");
           } else if (error.message?.includes("Network Error") || error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
             setEstimateError("Network error: Using fallback calculation");
-            console.log("Using fallback calculation due to network error");
             showToast.warning("Using estimated rate due to network issues");
           } else if (error.message?.includes("Server Error")) {
             setEstimateError("Server error: Using fallback calculation");
-            console.log("Using fallback calculation due to server error");
             showToast.warning("Using estimated rate due to server issues");
           } else if (error.message?.includes("Invalid swap parameters")) {
             setEstimateError("Invalid parameters: Using fallback calculation");
-            console.log("Using fallback calculation due to invalid API parameters");
             showToast.warning("Invalid parameters: Using estimated rate");
           } else {
             setEstimateError("API error: Using fallback calculation");
-            console.log("Using fallback calculation due to API error");
             showToast.warning("Using estimated rate due to API unavailability");
           }
           
@@ -579,7 +535,6 @@ export default function DepositForm({
   useEffect(() => {
     const safetyTimeout = setTimeout(() => {
       if (isCalculating || isCalculatingReceive) {
-        console.log("Safety timeout: Clearing stuck loading states");
         setIsCalculating(false);
         setIsCalculatingReceive(false);
       }
@@ -660,14 +615,6 @@ export default function DepositForm({
 
   // Stable calculation function with debouncing
   const calculateAmounts = (fromAmount: number, fromPay: boolean = true) => {
-    console.log("calculateAmounts called:", { 
-      fromAmount, 
-      fromPay, 
-      selectedAsset: selectedAsset?.ticker,
-      isCalculating,
-      isCalculatingReceive,
-      isCalculatingFromPay
-    });
     
     // Clear any existing timeout
     if (calculationTimeout) {
@@ -690,7 +637,6 @@ export default function DepositForm({
 
     // Ensure we're not in an infinite loop
     if (isCalculating || isCalculatingReceive) {
-      console.log("Already calculating, skipping...");
       return;
     }
 
@@ -723,7 +669,6 @@ export default function DepositForm({
         const networkFee = 0;
         const totalFees = networkFee + commissionAmount;
         const calculatedGetAmount = fromAmount - totalFees;
-            console.log("Forward calculation result:", { fromAmount, calculatedGetAmount, totalFees });
             setGetAmount(calculatedGetAmount);
             setGetAmountInput(calculatedGetAmount.toString());
         } else {
@@ -732,7 +677,6 @@ export default function DepositForm({
           const networkFee = 0;
           const totalFees = networkFee + commissionAmount;
           const calculatedPayAmount = fromAmount + totalFees;
-          console.log("Reverse calculation result:", { fromAmount, calculatedPayAmount, totalFees, commissionRate });
           setPayAmount(calculatedPayAmount);
           setPayAmountInput(calculatedPayAmount.toString());
           }
@@ -775,7 +719,6 @@ export default function DepositForm({
             } else {
               calculatedGetAmount = Math.max(0, fromAmount - 2); // Simply subtract 2 for direct assets
             }
-            console.log("Direct asset forward calculation result:", { fromAmount, calculatedGetAmount });
             setGetAmount(calculatedGetAmount);
             setGetAmountInput(calculatedGetAmount.toString());
             setReceiveAmountError(null);
@@ -808,7 +751,6 @@ export default function DepositForm({
             } else {
               calculatedPayAmount = fromAmount + 2; // Simply add 2 for direct assets
             }
-            console.log("Direct asset reverse calculation result:", { fromAmount, calculatedPayAmount });
             setPayAmount(calculatedPayAmount);
             setPayAmountInput(calculatedPayAmount.toString());
             setReceiveAmountError(null);
@@ -831,7 +773,6 @@ export default function DepositForm({
           }
         }
       } catch (error) {
-        console.error("Calculation error:", error);
         setReceiveAmountError("Calculation error occurred");
       } finally {
         setIsCalculating(false);
@@ -865,50 +806,15 @@ export default function DepositForm({
   // Forward calculations are now handled directly in the input handlers
   // This useEffect was causing duplicate calculations and loading state conflicts
 
-  // Update amounts when estimate is received or for direct assets
+  // This useEffect is now simplified - UI updates happen immediately in API response handlers
+  // This just acts as a safety net to clear loading states if they get stuck
   useEffect(() => {
-    console.log("Estimate effect triggered:", { 
-      hasEstimate: !!estimate, 
-    estimateLoading,
-    isCalculatingFromPay,
-      payAmount,
-      getAmount,
-      estimateAmount: (estimate as any)?.estimated_amount 
-    });
-    
     if (estimate && !estimateLoading) {
-      if (isCalculatingFromPay && payAmount > 0) {
-        // Forward calculation: update receive amount
-        console.log("Estimate received, updating receive amount:", (estimate as any)?.estimated_amount);
-        
-        if ((estimate as any)?.estimated_amount && (estimate as any)?.estimated_amount > 0) {
-          setGetAmount((estimate as any).estimated_amount);
-          setGetAmountInput((estimate as any).estimated_amount.toString());
-          setReceiveAmountError(null);
-        setIsCalculating(false);
-        setIsCalculatingReceive(false);
-      } else {
-          console.log("DEBUG: Invalid estimate received, clearing loading state");
-        setGetAmount(0);
-        setGetAmountInput("");
-          setReceiveAmountError("Invalid estimate received");
-          setIsCalculating(false);
-          setIsCalculatingReceive(false);
-        }
-      } else if (!isCalculatingFromPay && getAmount > 0) {
-        // Reverse calculation: estimate already handled in reverse useEffect
-        setIsCalculating(false);
-        setIsCalculatingReceive(false);
-              setReceiveAmountError(null);
-            }
-    } else if (estimateLoading) {
-      // Loading states are managed by the input handlers and calculateAmounts function
-      // Don't interfere with them here
-    } else if (!estimate && !estimateLoading) {
-      // No estimate available - loading states are managed elsewhere
-      // Don't interfere with them here
+      // Ensure loading states are cleared when we have an estimate
+      setIsCalculating(false);
+      setIsCalculatingReceive(false);
     }
-  }, [estimate, estimateLoading, isCalculatingFromPay, payAmount, getAmount, selectedAsset]);
+  }, [estimate, estimateLoading]);
 
   // Reverse calculations are now handled directly in the input handlers
   // This useEffect was causing duplicate calculations and loading state conflicts
@@ -968,12 +874,7 @@ export default function DepositForm({
       setIsSubmitting(true);
 
       try {
-        // Debug logging
-        console.log("DEBUG: Form data being submitted:", {
-          payAmount,
-          selectedPaymentDetail,
-          selectedAsset,
-        });
+        
 
         // Create FormData for API submission
         const depositPayload = new FormData();
@@ -1000,8 +901,7 @@ export default function DepositForm({
         // Handle currency field - try multiple properties to get the currency value
         let currencyValue = "";
         
-        // Debug: Log the selected asset to see its structure
-        console.log("DEBUG: Selected asset in handleFirstCardSubmit:", selectedAsset);
+      
         
         // Ensure selectedAsset exists
         if (!selectedAsset) {
@@ -1020,9 +920,7 @@ export default function DepositForm({
         
         // Clean up the currency value (remove any extra spaces, etc.)
         currencyValue = currencyValue?.trim();
-        
-        console.log("DEBUG: Extracted currency value:", currencyValue);
-        
+                
         // Fallback: if still no currency value, try to extract from any available property
         if (!currencyValue) {
           // Try to get any string value from the asset object
@@ -1031,14 +929,12 @@ export default function DepositForm({
             const value = selectedAsset[key];
             if (typeof value === 'string' && value.trim()) {
               currencyValue = value.trim();
-              console.log(`DEBUG: Using fallback currency from ${key}:`, currencyValue);
               break;
             }
           }
         }
         
         if (!currencyValue) {
-          console.error("DEBUG: Selected asset for currency extraction:", selectedAsset);
           throw new Error("Currency information is missing");
         }
         depositPayload.append("currency", currencyValue);
@@ -1087,12 +983,6 @@ export default function DepositForm({
         // For direct crypto deposits, set minimal additional info
         depositPayload.append("additional_info", "Direct crypto deposit");
 
-        // Log the complete FormData for debugging
-        console.log("DEBUG: Complete FormData entries:");
-        for (let [key, value] of depositPayload.entries()) {
-          console.log(`${key}:`, value);
-        }
-
         // Submit to API - let axios set the correct Content-Type for FormData
         const depositResponse = (await dispatch(
           createDeposit({
@@ -1103,19 +993,12 @@ export default function DepositForm({
           })
         ).unwrap()) as unknown as DepositResponse;
 
-        console.log("DEBUG: Deposit response:", depositResponse);
        
      
         // Store the API response and update transaction code
         setApiResponse(depositResponse);
         setTransactionCode(depositResponse.deposit_code || "");
         
-        // Debug log the stored websocket_url and deposit_code
-        console.log("DEBUG: Storing API response with websocket_url:", depositResponse.websocket_url);
-        console.log("DEBUG: API response type check - websocket_url exists:", 'websocket_url' in depositResponse);
-        console.log("DEBUG: Deposit code received:", depositResponse.deposit_code);
-        console.log("DEBUG: Full API response:", depositResponse);
-
         // Show success message
         showToast.success("Deposit request submitted successfully!");
 
@@ -1277,21 +1160,7 @@ export default function DepositForm({
             showToast.success("Proceeding without wallet address!");
           }
       } else {
-        // For other assets, implement two-step process
-        console.log("DEBUG: Implementing two-step process for complex asset:", selectedAsset?.ticker);
-        console.log("DEBUG: Expected flow: First response -> update address -> Second response with additional details");
-        
-        // According to user description, the expected flow for complex assets is:
-        // 1. First API response: { transaction_id, deposit_code, status: "pending_address", requires_deposit_address: true, websocket_url }
-        // 2. After updating address, second response: { transaction_id, deposit_address, websocket_url (different), changenow_id, expected_amount, net_amount, status: "pending" }
-        // 
-        // The second response should be used for the final transaction data, including:
-        // - New websocket_url (different from first response)
-        // - expected_amount and net_amount for accurate calculations
-        // - changenow_id for tracking
-        // - deposit_address for final confirmation
-        
-        // Step 1: Update deposit address (this triggers the second response)
+      
         if (walletAddress.trim()) {
           updateResponse = await dispatch(
             updateDepositAddress({
@@ -1352,8 +1221,6 @@ export default function DepositForm({
         ...(finalResponse.changenow_id && { changenowId: finalResponse.changenow_id }),
         ...(finalResponse.deposit_address && { finalDepositAddress: finalResponse.deposit_address }),
       };
-
-      console.log("DEBUG: Final transaction data:", transactionData);
 
       // Navigate to the exchanging status page automatically
       if (onExchange) {
@@ -1428,15 +1295,7 @@ export default function DepositForm({
     setIsSubmitting(true);
 
     try {
-      // Debug logging
-      console.log("DEBUG: Form data being submitted:", {
-        payAmount,
-        walletAddress,
-        selectedPaymentDetail,
-        selectedAsset,
-        selectedNetwork,
-      });
-
+     
       // Create FormData for API submission
       const depositPayload = new FormData();
 
@@ -1580,12 +1439,6 @@ export default function DepositForm({
         `Account: ${selectedPaymentDetail.account_name}, Account Number: ${selectedPaymentDetail.account_number}`
       );
 
-      // Log the complete FormData for debugging
-      console.log("DEBUG: Complete FormData entries:");
-      for (let [key, value] of depositPayload.entries()) {
-        console.log(`${key}:`, value);
-      }
-
       // Submit to API - let axios set the correct Content-Type for FormData
       const depositResponse = (await dispatch(
         createDeposit({
@@ -1596,7 +1449,6 @@ export default function DepositForm({
         })
       ).unwrap()) as unknown as DepositResponse;
 
-      console.log("DEBUG: Deposit response:", depositResponse);
     
 
       // Store the API response and update transaction code
@@ -1626,7 +1478,6 @@ export default function DepositForm({
           currency: depositResponse.currency,
           websocketUrl: depositResponse.websocket_url,
         };
-        console.log("DEBUG: Calling onExchange with:", transactionData);
         onExchange(transactionData);
       }
     } catch (error: any) {
@@ -1781,12 +1632,19 @@ export default function DepositForm({
                   value={payAmountInput}
                   onChange={(e) => {
                     const value = e.target.value;
-                    console.log("You Send input changed:", { value, selectedAsset: selectedAsset?.ticker });
+                    
+                    // Don't do anything if the value hasn't actually changed
+                    if (value === payAmountInput) {
+                      return;
+                    }
                     
                     // Only allow numbers and decimals (including 0.006 format)
                     if (value === "" || /^\d*\.?\d*$/.test(value)) {
-                      setPayAmountInput(value); // Store the string value for display
                       const newAmount = parseFloat(value) || 0;
+                      
+                      // Only update and calculate if the numeric value actually changed
+                      if (newAmount !== payAmount || value !== payAmountInput) {
+                        setPayAmountInput(value); // Store the string value for display
                       setPayAmount(newAmount);
                       setIsCalculatingFromPay(true);
                       
@@ -1800,7 +1658,6 @@ export default function DepositForm({
                       
                       // For direct assets, calculate immediately
                       if (selectedAsset && newAmount > 0 && isSimpleCalculationAsset(selectedAsset)) {
-                        console.log("Triggering immediate forward calculation for direct asset:", newAmount);
                         const calculatedGetAmount = newAmount < 2 ? newAmount : Math.max(0, newAmount - 2);
                         setGetAmount(calculatedGetAmount);
                         setGetAmountInput(calculatedGetAmount.toString());
@@ -1808,7 +1665,6 @@ export default function DepositForm({
                         // Simple assets don't need loading states - calculation is instant
                       } else if (selectedAsset && newAmount > 0) {
                         // For complex assets, trigger API calculation
-                        console.log("Triggering API forward calculation for complex asset:", newAmount);
                         
                         // Set loading states to show spinner in "You Receive" field
                         setIsCalculating(true);
@@ -1820,10 +1676,10 @@ export default function DepositForm({
                         // No calculation needed, ensure loading states are off
                         setIsCalculatingReceive(false);
                         setIsCalculating(false);
+                        }
                       }
                     }
                   }}
-                  onFocus={() => setIsCalculatingFromPay(true)}
                   placeholder="Enter amount"
                   className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg  focus:outline-none border appearance-none ${
                     (isCalculating || isCalculatingReceive) && isCalculatingFromPay ? 'border-[#1D8751]' : 'border-[#A2A4A9FF] dark:border-[#35353E]'
@@ -1883,23 +1739,23 @@ export default function DepositForm({
                 <select
                   value={payBank}
                   onChange={(e) => {
-                    const selectedPayment = adminPaymentDetails?.find(
+                    const selectedPayment = paymentMethodsDisplay.displayData?.find(
                       (payment: any) => payment.provider_name === e.target.value
                     );
                     
                     setPayBank(e.target.value);
                     setSelectedPaymentDetail(selectedPayment || null);
                   }}
-                  disabled={loading}
+                  disabled={paymentMethodsDisplay.isLoading}
                   className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-9 py-2 text-lg  focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] appearance-none disabled:opacity-50"
                 >
-                  <option value="">
+                  <option value="" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">
                     {paymentMethodsDisplay.isLoading
                       ? "Loading payment methods..."
                       : "Select Payment Method"}
                   </option>
                   {paymentMethodsDisplay.displayData?.map((payment: any, index: number) => (
-                    <option key={index} value={payment.provider_name}>
+                    <option key={index} value={payment.provider_name} className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">
                       {payment.provider_name} - {payment.payment_method_type}
                     </option>
                   ))}
@@ -1962,18 +1818,24 @@ export default function DepositForm({
                   value={getAmountInput}
                   onChange={(e) => {
                     const value = e.target.value;
-                    console.log("You Receive input changed:", { value, selectedAsset: selectedAsset?.ticker });
+                    
+                    // Don't do anything if the value hasn't actually changed
+                    if (value === getAmountInput) {
+                      return;
+                    }
                     
                     // Only allow numbers and decimals (including 0.006 format)
                     if (value === "" || /^\d*\.?\d*$/.test(value)) {
-                      setGetAmountInput(value); // Store the string value for display
                       const newAmount = parseFloat(value) || 0;
+                      
+                      // Only update and calculate if the numeric value actually changed
+                      if (newAmount !== getAmount || value !== getAmountInput) {
+                        setGetAmountInput(value); // Store the string value for display
                       setGetAmount(newAmount);
                       setIsCalculatingFromPay(false);
                       
                       // For direct assets, calculate immediately
                       if (selectedAsset && newAmount > 0 && isSimpleCalculationAsset(selectedAsset)) {
-                        console.log("Triggering immediate reverse calculation for direct asset:", newAmount);
                         const calculatedPayAmount = newAmount < 2 ? newAmount : newAmount + 2;
                         setPayAmount(calculatedPayAmount);
                         setPayAmountInput(calculatedPayAmount.toString());
@@ -1981,7 +1843,6 @@ export default function DepositForm({
                         // Simple assets don't need loading states - calculation is instant
                       } else if (selectedAsset && newAmount > 0) {
                         // For complex assets, trigger API calculation
-                        console.log("Triggering API reverse calculation for complex asset:", newAmount);
                         
                         // Set loading states to show spinner in "You Send" field
                         setIsCalculating(true);
@@ -1993,10 +1854,10 @@ export default function DepositForm({
                         // No calculation needed, ensure loading states are off
                         setIsCalculatingReceive(false);
                         setIsCalculating(false);
+                        }
                       }
                     }
                   }}
-                  onFocus={() => setIsCalculatingFromPay(false)}
                   placeholder="Enter amount"
                   className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg  focus:outline-none border appearance-none ${
                     receiveAmountError && (receiveAmountError.includes('Rough estimate') || receiveAmountError.includes('Using estimated rate')) ? 'border-[#F79330]' : 
@@ -2098,7 +1959,7 @@ export default function DepositForm({
                     setIsAssetDropdownOpen(!isAssetDropdownOpen);
                   }}
                 >
-                  <div className="flex items-center gap-3">
+                   <div className="flex items-center gap-3">
                     {selectedAsset ? (
                       <>
                         <img
@@ -2111,20 +1972,27 @@ export default function DepositForm({
                           alt={selectedAsset?.name || selectedAsset?.ticker || selectedAsset?.symbol || "Asset"}
                           className="w-6 h-6 rounded-full object-cover"
                           onError={(e) => {
-                            console.log("Image failed to load for selected asset:", selectedAsset);
                             e.currentTarget.src =
                               "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                           }}
                         />
-                        <span className="text-[#35353e] dark:text-[#788099]">
-                          {(selectedAsset.ticker ||
-                            selectedAsset.symbol ||
-                            selectedAsset.name ||
-                            "Unknown").toUpperCase()}
-                        </span>
-                        <span className="ml-2 bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                          {getNetworkDisplayName(getAssetNetwork(selectedAsset))}
-                        </span>
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[#35353e] dark:text-[#788099] font-medium">
+                              {(selectedAsset.ticker ||
+                                selectedAsset.symbol ||
+                                selectedAsset.name ||
+                                "Unknown").toUpperCase()}
+                            </span>
+                            <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                              {getNetworkDisplayName(getAssetNetwork(selectedAsset))}
+                            </span>
+                          </div>
+                          <span className="text-[#788099] text-xs">
+                            {selectedAsset.name || 
+                             (selectedAsset.ticker || selectedAsset.symbol || "Unknown")} ({getNetworkDisplayName(getAssetNetwork(selectedAsset))})
+                          </span>
+                        </div>
                       </>
                     ) : (
                       <>
@@ -2178,19 +2046,86 @@ export default function DepositForm({
                     {/* Asset List */}
                     <div className="max-h-60 overflow-y-auto">
                       {sortedSwapAssets.length > 0 ? (
-                        sortedSwapAssets.map((asset: SupportedAsset, index: number) => (
+                        <>
+                          {/* Popular Section - First 2 assets only if no search */}
+                          {!assetSearchTerm && sortedSwapAssets.length > 2 && (
+                            <>
+                              <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+                                <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
+                                  Popular
+                                </span>
+                              </div>
+                              {sortedSwapAssets.slice(0, 2).map((asset: SupportedAsset, index: number) => (
+                                <div
+                                  key={`popular-${asset.asset_id || 'asset'}-${asset.symbol || asset.ticker || asset.name}-${asset.network || 'unknown'}-${index}`}
+                                  className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E]"
+                                  onClick={() => {
+                                    setSelectedAsset(asset);
+                                    const networkValue = getAssetNetwork(asset);
+                                    setSelectedNetwork({
+                                      network_id: networkValue,
+                                      network_type: networkValue,
+                                    });
+                                    setIsAssetDropdownOpen(false);
+                                    setAssetSearchTerm("");
+                                  }}
+                                >
+                                  <img
+                                    src={
+                                      asset?.image_url ||
+                                      asset?.asset_image ||
+                                      (asset as any)?.image ||
+                                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                                    }
+                                    alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
+                                    className="w-6 h-6 rounded-full object-cover"
+                                    onError={(e) => {
+                                      e.currentTarget.src =
+                                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                                    }}
+                                  />
+                                  <div className="flex-1">
+                                    <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
+                                      {(asset.ticker ||
+                                        asset.symbol ||
+                                        asset.name ||
+                                        "Unknown").toUpperCase()}
+                                      <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                                        {getNetworkDisplayName(getAssetNetwork(asset))}
+                                      </span>
+                                    </div>
+                                    <div className="text-[#35353e] dark:text-[#788099] text-sm">
+                                      {asset.name ||
+                                        (asset.ticker || "").toUpperCase() ||
+                                        (asset.symbol || "").toUpperCase() ||
+                                        "Unknown Asset"}
+                                    </div>
+                                  </div>
+                                  {selectedAsset?.asset_id === asset.asset_id && (
+                                    <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                                  )}
+                                </div>
+                              ))}
+                              
+                              {/* Separator Line */}
+                              <div className="border-t-2 border-[#D1D2D4FF] dark:border-[#35353E]"></div>
+                              
+                              {/* All Assets Header */}
+                              <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+                                <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
+                                  All Assets
+                                </span>
+                              </div>
+                            </>
+                          )}
+                          
+                          {/* Rest of the assets or all assets if searching */}
+                          {(assetSearchTerm ? sortedSwapAssets : sortedSwapAssets.slice(2)).map((asset: SupportedAsset, index: number) => (
                           <div
                             key={`${asset.asset_id || 'asset'}-${asset.symbol || asset.ticker || asset.name}-${asset.network || 'unknown'}-${index}`}
                             className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
                             onClick={() => {
-                              console.log("Asset selected:", {
-                                ticker: asset.ticker,
-                                network: asset.network || 'unknown',
-                                isSimple: isSimpleCalculationAsset(asset),
-                                image: asset.image_url || asset.asset_image
-                              });
                               setSelectedAsset(asset);
-                              // Set the network from the selected asset
                               const networkValue = getAssetNetwork(asset);
                               setSelectedNetwork({
                                 network_id: networkValue,
@@ -2210,7 +2145,6 @@ export default function DepositForm({
                               alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
                               className="w-6 h-6 rounded-full object-cover"
                               onError={(e) => {
-                                console.log("Image failed to load for asset:", asset);
                                 e.currentTarget.src =
                                   "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                               }}
@@ -2236,7 +2170,8 @@ export default function DepositForm({
                               <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
                             )}
                           </div>
-                        ))
+                          ))}
+                        </>
                       ) : (
                         <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
                           {assetSearchTerm
@@ -2294,25 +2229,39 @@ export default function DepositForm({
 
         {/* Submit Button for First Card */}
           {!isFirstCardSubmitted && (
-            <div className="mt-4">
+            <div 
+              className="mt-4 relative"
+              onClick={(e) => {
+                // On home page, redirect to login on any click
+                if (isHomePage) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  router.push("/auth/login");
+                }
+              }}
+            >
               <button
                 className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
-                  isSubmitting ||
-                  !selectedAsset ||
-                  (selectedAsset &&
-                    !isSimpleCalculationAsset(selectedAsset) &&
-                    estimateLoading)
-                    ? "bg-gray-500 cursor-not-allowed"
-                    : "bg-[#1D8751] hover:bg-[#166b3e]"
+                  isHomePage 
+                    ? "bg-[#1D8751] hover:bg-[#166b3e] cursor-pointer"
+                    : isSubmitting ||
+                      !selectedAsset ||
+                      (selectedAsset &&
+                        !isSimpleCalculationAsset(selectedAsset) &&
+                        estimateLoading)
+                      ? "bg-gray-500 cursor-not-allowed"
+                      : "bg-[#1D8751] hover:bg-[#166b3e]"
                 }`}
-                onClick={handleFirstCardSubmit}
+                onClick={isHomePage ? undefined : handleFirstCardSubmit}
                 disabled={
-                  isSubmitting ||
-                  !selectedAsset ||
-                  (walletAddress.trim() && !!walletError) ||
-                  (selectedAsset &&
-                    !isSimpleCalculationAsset(selectedAsset) &&
-                    estimateLoading)
+                  isHomePage ? false : (
+                    isSubmitting ||
+                    !selectedAsset ||
+                    (walletAddress.trim() && !!walletError) ||
+                    (selectedAsset &&
+                      !isSimpleCalculationAsset(selectedAsset) &&
+                      estimateLoading)
+                  )
                 }
               >
                 {isSubmitting ? (

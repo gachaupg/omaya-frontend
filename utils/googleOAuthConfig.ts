@@ -48,7 +48,7 @@ export const GOOGLE_API_ENDPOINTS = {
 
 // Debug function to log URL construction
 export const debugGoogleOAuthUrls = () => {
-  console.group("🔧 Google OAuth URL Debug");
+  console.group("Google OAuth URL Debug");  
   console.log("API_CONFIG.BASE_URL:", API_CONFIG.BASE_URL);
   console.log("API_CONFIG.GOOGLE_AUTH.GOOGLE_AUTH:", API_CONFIG.GOOGLE_AUTH.GOOGLE_AUTH);
   console.log("Constructed backendAuth URL:", GOOGLE_API_ENDPOINTS.backendAuth);

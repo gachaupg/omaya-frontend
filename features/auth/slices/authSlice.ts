@@ -205,15 +205,10 @@ export const verifyKYCStatus = createAsyncThunk<string, KYCVerifyPayload>(
         });
         
         // Debug log FormData contents
-        console.log("=== FormData being sent to KYC API ===");
         for (let [key, value] of formData.entries()) {
           if (value instanceof File) {
-            console.log(`${key}:`, `[File] ${value.name} (${value.size} bytes)`);
-          } else {
-            console.log(`${key}:`, value);
           }
         }
-        console.log("=== End FormData ===");
         
         // Send FormData
         const response = await post<{ message: string }>(
@@ -226,7 +221,6 @@ export const verifyKYCStatus = createAsyncThunk<string, KYCVerifyPayload>(
           }
         );
         
-        console.log("KYC API Response:", response.data);
         return response.data.message;
       } else {
         // Send as JSON if no images

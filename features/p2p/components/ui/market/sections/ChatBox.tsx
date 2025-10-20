@@ -118,12 +118,7 @@ const ChatBox: React.FC<{
   );
 
   // Use WebSocket for real-time messages
-  console.log("💬 Messages WebSocket Config:", {
-    tradeId,
-    enabled: isAuthenticated,
-    tradeIdType: typeof tradeId,
-    tradeIdValue: tradeId
-  });
+
   
   const { isConnected: wsConnected } = useTradeMessagesWebSocket({
     tradeId,
@@ -231,11 +226,7 @@ const ChatBox: React.FC<{
             
             const url = isMessageImage(img) ? (img.image_url || img.image) : img;
             
-            console.log("🔍 Checking image for refresh:", {
-              img,
-              url: url ? url.substring(0, 60) + '...' : 'EMPTY',
-              needsRefresh: !url || url.trim() === '' || (typeof url === 'string' && url.startsWith('blob:'))
-            });
+          
             
             // Need refresh if:
             // 1. URL is missing or empty
@@ -251,7 +242,7 @@ const ChatBox: React.FC<{
           const hasTemporaryId = latestMessage.id && latestMessage.id.toString().startsWith('temp-');
           
           if (needsRefresh || hasTemporaryId) {
-            console.log("🔄 Detected new message with images that need S3 URLs, scheduling refresh...");
+            
             
             // Clear any existing timeout
             if (refreshTimeoutRef.current) {
@@ -260,7 +251,7 @@ const ChatBox: React.FC<{
             
             // Schedule refresh with multiple retries
             const attemptRefresh = (attemptNumber: number = 1) => {
-              console.log(`🔄 Refresh attempt ${attemptNumber} for message images...`);
+            
               fetchMessages();
               
               // Schedule another refresh if this is not the last attempt
@@ -339,7 +330,7 @@ const ChatBox: React.FC<{
         sender_name: currentUserEmail || ""
       });
       
-      console.log("Message sent successfully, response:", response);
+      
       
       // Refresh messages to get the real message with proper IDs and S3 URLs
       setTimeout(() => {
@@ -349,7 +340,6 @@ const ChatBox: React.FC<{
       // On error, restore the message and images
       dispatch(setMessage(messageContent));
       dispatch(setUploadedImages(images));
-      console.error("Failed to send message:", e);
       
       // Remove the optimistic message
       fetchMessages();
@@ -443,14 +433,7 @@ const ChatBox: React.FC<{
               };
             });
             
-            console.log("📬 Message in list:", { 
-              id: msg.id, 
-              hasImages: msg.images && msg.images.length > 0,
-              imageCount: msg.images?.length || 0,
-              imageDetails,
-              message: msg.message?.substring(0, 30) || '(no text)',
-              timestamp: msg.timestamp
-            });
+           
             
             // Use sender_name (email) to determine if this is the current user's message
             const isSender = msg.sender_name?.trim() === currentUserEmail?.trim();
@@ -523,17 +506,9 @@ const ChatBox: React.FC<{
                           
                           const imageKey = isMessageImage(img) ? img.id : `img-${idx}`;
                           
-                          console.log("🖼️ Rendering image:", { 
-                            idx, 
-                            img, 
-                            imageUrl: imageUrl ? imageUrl.substring(0, 60) + '...' : 'EMPTY', 
-                            isObject: isMessageImage(img),
-                            messageId: msg.id 
-                          });
                           
                           // If no valid URL, show loading placeholder
                           if (!imageUrl || imageUrl.trim() === '') {
-                            console.warn("⚠️ Image has no URL, showing loading placeholder at index", idx);
                             return (
                               <div key={imageKey} className="relative inline-block">
                                 <div className="w-24 h-24 rounded bg-gray-100 dark:bg-gray-800 border-2 border-dashed border-[#1D8751] flex items-center justify-center">
@@ -561,15 +536,14 @@ const ChatBox: React.FC<{
                                   className="w-full h-full rounded object-cover cursor-pointer hover:opacity-80 transition-opacity border-2 border-[#1D8751] bg-white dark:bg-gray-800"
                                   onClick={() => window.open(imageUrl, '_blank')}
                                   onLoadStart={() => {
-                                    console.log("🔄 Image loading started:", imageUrl);
                                     setImageLoadingStates(prev => ({ ...prev, [imageKey]: true }));
                                   }}
                                   onLoad={(e) => {
-                                    console.log("✅ Image loaded successfully:", imageUrl);
+                                    
                                     setImageLoadingStates(prev => ({ ...prev, [imageKey]: false }));
                                   }}
                                   onError={(e) => {
-                                    console.error("❌ Image failed to load:", imageUrl);
+                                  
                                     setImageLoadingStates(prev => ({ ...prev, [imageKey]: false }));
                                   }}
                                   style={{ display: 'block' }}

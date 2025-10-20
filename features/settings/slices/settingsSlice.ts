@@ -554,12 +554,7 @@ const settingsSlice = createSlice({
       })
       .addCase(fetchDeviceSessions.fulfilled, (state, action) => {
         state.deviceSessionsLoading = false;
-        console.log(
-          "Redux: fetchDeviceSessions.fulfilled payload:",
-          action.payload
-        );
-        console.log("Redux: payload type:", typeof action.payload);
-        console.log("Redux: is array:", Array.isArray(action.payload));
+        
         state.deviceSessions = action.payload;
       })
       .addCase(fetchDeviceSessions.rejected, (state, action) => {

@@ -44,7 +44,6 @@ const P2pWallet = ({
   const { data: wallets, loading } = useSelector(
     (state: RootState) => state.wallets
   );
-  console.log("wallets", wallets);
   const { data: matchedTrades, loading: matchedTradesLoading } = useSelector(
     (state: RootState) => state.matchedTrades
   );
@@ -66,22 +65,12 @@ const P2pWallet = ({
   // Get balance from wallet response - try multiple sources
   const totalBalance = wallets?.total_balance ? toNumber(wallets.total_balance) : 0;
   const walletBalance = wallets?.wallet?.balance ? parseFloat(wallets.wallet.balance) : 0;
-  
-  // For USDT wallets, prioritize the individual wallet balance
-  // This handles cases where total_balance might not be accurate
   const isUSDTWallet = wallets?.wallet?.currency === "USDT";
   const balance = isUSDTWallet && walletBalance > 0 ? walletBalance : 
                   (totalBalance && !isNaN(totalBalance) && totalBalance > 0) ? totalBalance : walletBalance;
   const usdValue = balance;
   
-  console.log("P2pWallet - wallets:", wallets);
-  console.log("P2pWallet - total_balance:", wallets?.total_balance);
-  console.log("P2pWallet - wallet.balance:", wallets?.wallet?.balance);
-  console.log("P2pWallet - wallet.currency:", wallets?.wallet?.currency);
-  console.log("P2pWallet - totalBalance (toNumber):", totalBalance);
-  console.log("P2pWallet - walletBalance (parseFloat):", walletBalance);
-  console.log("P2pWallet - isUSDTWallet:", isUSDTWallet);
-  console.log("P2pWallet - final balance:", balance);
+
   return (
     <div>
       <p

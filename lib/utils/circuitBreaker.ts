@@ -28,7 +28,6 @@ export class CircuitBreaker {
       case "OPEN":
         if (Date.now() >= circuit.nextAttemptTime) {
           circuit.state = "HALF_OPEN";
-          logger.info(`Circuit breaker moving to HALF_OPEN for ${endpoint}`);
           return true;
         }
         return false;
@@ -47,7 +46,6 @@ export class CircuitBreaker {
     if (circuit.state === "HALF_OPEN") {
       circuit.state = "CLOSED";
       circuit.failureCount = 0;
-      logger.info(`Circuit breaker CLOSED for ${endpoint} - service recovered`);
     }
 
     circuit.failureCount = 0;
@@ -63,12 +61,6 @@ export class CircuitBreaker {
     if (circuit.failureCount >= this.FAILURE_THRESHOLD) {
       circuit.state = "OPEN";
       circuit.nextAttemptTime = Date.now() + this.RECOVERY_TIMEOUT;
-
-      logger.warn(`Circuit breaker OPEN for ${endpoint} - too many failures`, {
-        failureCount: circuit.failureCount,
-        nextAttemptTime: new Date(circuit.nextAttemptTime).toISOString(),
-        error: error.message,
-      });
     }
 
     this.circuits.set(endpoint, circuit);
@@ -86,7 +78,6 @@ export class CircuitBreaker {
     circuit.nextAttemptTime = 0;
 
     this.circuits.set(endpoint, circuit);
-    logger.info(`Circuit breaker manually reset for ${endpoint}`);
   }
 
   static getAllCircuits(): Record<string, CircuitBreakerState> {

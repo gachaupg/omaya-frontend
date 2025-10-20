@@ -26,6 +26,7 @@ import { FinancialCalculator } from "@/lib/utils/financial";
 import { useTransactionValidation } from "@/features/p2p/hooks/useTransactionValidation";
 import OTPModal from "./otpModal";
 import { Copy, HelpCircle } from "lucide-react";
+import { useAvailableBalance, usePendingTotal } from "@/utils/pending";
 
 const Withdraw: React.FC = () => {
   /* --------------------------------------------------------------------- */
@@ -40,6 +41,9 @@ const Withdraw: React.FC = () => {
     (state: RootState) => state.assets
   );
   const { validateTransaction } = useTransactionValidation();
+  
+  // Get available balance, wallet balance, and locked amounts (all exportable from pending utility)
+  const { total: pendingTotal, balance: walletBalance, availableBalance, totalLocked } = usePendingTotal();
 
   /* --------------------------------------------------------------------- */
   /*                               Component state                         */
@@ -121,6 +125,15 @@ const Withdraw: React.FC = () => {
       validateTransaction
     );
 
+    // Additional validation: Check if withdrawal amount exceeds available balance
+    if (amount && Number(amount) >( availableBalance - totalLocked)) {
+      validationErrors.push({
+        field: "amount",
+        message: `Insufficient balance. Available: ${(availableBalance - totalLocked).toFixed(3)} USDT`,
+      });
+      showToast.error(`Insufficient balance. Available: ${availableBalance.toFixed(3)} USDT`);
+    }
+
     if (validationErrors.length) {
       setErrors(validationErrors);
       return;
@@ -173,6 +186,29 @@ const Withdraw: React.FC = () => {
                        px-4 sm:px-8 md:px-12 pt-4"
       >
         <form onSubmit={handleSubmit}>
+          {/* ----------------------------------------------------------------- */}
+          {/*                       BALANCE INFO SECTION                         */}
+          {/* ----------------------------------------------------------------- */}
+          <div className="mb-4 p-3 bg-blue-50 dark:bg-[#35353E] rounded-lg border border-blue-200 dark:border-[#1D8751]">
+            <div className="grid grid-cols-3 gap-4 text-xs">
+              <div>
+                <span className="text-gray-600 dark:text-gray-400">Wallet Balance:</span>
+                <p className="font-semibold text-sm">{walletBalance.toFixed(3)} USDT</p>
+              </div>
+              <div>
+                <span className="text-gray-600 dark:text-gray-400">Total Locked:</span>
+                <p className="font-semibold text-sm text-orange-600">-{totalLocked.toFixed(3)} USDT</p>
+                <p className="text-[9px] text-gray-500 mt-0.5">
+                  (Exchange + Sell Orders + P2P)
+                </p>
+              </div>
+              <div>
+                <span className="text-gray-600 dark:text-gray-400">Available:</span>
+                <p className="font-semibold text-sm text-[#1D8751]">{availableBalance.toFixed(3)} USDT</p>
+              </div>
+            </div>
+          </div>
+
           {/* ----------------------------------------------------------------- */}
           {/*                       ASSET & NETWORK SELECTORS                    */}
           {/* ----------------------------------------------------------------- */}
@@ -276,8 +312,16 @@ const Withdraw: React.FC = () => {
                   min="0"
                   disabled={!selectedAssetId || !selectedNetworkId}
                 />
-                <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
-                  <span className="text-[#1D8751]">Max.</span> USDT
+                <span className="ml-2 text-xs text-gray-500 dark:text-gray-400 flex flex-col sm:flex-row sm:items-center gap-1">
+                  <span 
+                    className="text-[#1D8751] cursor-pointer hover:underline"
+                    onClick={() => setAmount(availableBalance.toString())}
+                    title={`Wallet: ${walletBalance.toFixed(3)} USDT\nLocked: ${totalLocked.toFixed(3)} USDT\nAvailable: ${availableBalance.toFixed(3)} USDT`}
+                  >
+                    Max.
+                  </span> 
+                  <span className="font-semibold text-[#1D8751]">{availableBalance.toFixed(3)} USDT</span>
+                  <span className="text-[10px] text-gray-400">(Available)</span>
                 </span>
               </div>
               {getFieldError("amount", errors) && (

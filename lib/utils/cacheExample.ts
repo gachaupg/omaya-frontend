@@ -47,10 +47,8 @@ export const exampleBrowserCacheUsage = async () => {
       60 * 60 * 1000 // 1 hour cache
     );
     
-    console.log('Market data:', marketData);
     return marketData;
   } catch (error) {
-    console.error('Failed to fetch market data:', error);
     throw error;
   }
 };
@@ -64,10 +62,8 @@ export const exampleCachedApiUsage = async () => {
       // cache: true is default for GET requests
     });
     
-    console.log('Assets data:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Failed to fetch assets:', error);
     throw error;
   }
 };
@@ -86,20 +82,16 @@ export const exampleManualCacheManagement = async () => {
 
     // Get data
     const data = await sliceCache.get('custom', 'myData', { id: '123' });
-    console.log('Retrieved data:', data);
 
     // Check if data exists
     const exists = await sliceCache.has('custom', 'myData', { id: '123' });
-    console.log('Data exists:', exists);
 
     // Delete data
     await sliceCache.delete('custom', 'myData', { id: '123' });
 
     // Get cache statistics
-    const stats = await sliceCache.getStats();
-    console.log('Cache stats:', stats);
+    const stats = await sliceCache.getStats();  
   } catch (error) {
-    console.error('Cache management error:', error);
   }
 };
 
@@ -115,9 +107,7 @@ export const exampleCacheInvalidation = async () => {
     // Clear browser cache
     await browserCache.clear();
     
-    console.log('Cache cleared successfully');
   } catch (error) {
-    console.error('Cache clearing error:', error);
   }
 };
 
@@ -142,10 +132,7 @@ export const exampleDifferentTTLs = async () => {
       24 * 60 * 60 * 1000 // 24 hours
     );
 
-    console.log('Short-term data:', shortTermData);
-    console.log('Long-term data:', longTermData);
   } catch (error) {
-    console.error('TTL example error:', error);
   }
 };
 

@@ -29,14 +29,7 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
   }, []);
 
   useEffect(() => {
-    console.log("🔌 useTradeStatusWebSocket effect triggered:", { 
-      enabled, 
-      tradeId,
-      hasCallback: !!onStatusUpdate 
-    });
-    
     if (!enabled || !tradeId) {
-      console.log("⚠️ WebSocket not enabled or no tradeId:", { enabled, tradeId });
       return;
     }
 
@@ -78,15 +71,11 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
       try {
         switch (message.type) {
           case "connection_established":
-            console.log("✅ Trade status connection established");
             break;
 
           case "status_update":
           case "trade_update":
-            // Trade status update - handle both nested and flat data structures
-            console.log("🔍 Processing status_update/trade_update...");
-            const data = message.data || message; // Support both formats
-            console.log("📦 Data to process:", data);
+            const data = message.data || message;
             
             if (data && data.status) {
               const tradeStatus: TradeStatus = {
@@ -98,49 +87,38 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
                 ...data,
               };
               
-              console.log("✅ Extracted Trade Status:", tradeStatus);
-              console.log("🎯 Calling onStatusUpdate with status:", tradeStatus.status);
-              
               if (onStatusUpdate) {
                 onStatusUpdate(tradeStatus);
-              } else {
-                console.warn("⚠️ onStatusUpdate callback not provided!");
               }
-            } else {
-              console.warn("⚠️ Status update missing 'status' field:", message);
-              console.warn("📦 Data object:", data);
-              console.warn("📦 Message object:", message);
             }
             break;
 
           case "error":
-            console.warn("⚠️ Trade status error:", message.data || message);
             break;
 
           default:
-            console.log("📨 Unknown message type:", message);
             break;
         }
       } catch (error) {
-        console.error("❌ Error handling trade status message:", error);
+        // Silent error handling
       }
     });
 
     // Handle WebSocket errors
     const unsubscribeError = ws.onError((error) => {
-      console.warn("⚠️ Trade status WebSocket error:", error);
+      // Silent error handling
     });
 
     // Handle WebSocket close
     const unsubscribeClose = ws.onClose(() => {
       if (!mountedRef.current) return;
-      console.log("🔌 Trade status WebSocket closed");
+      // Silent close handling
     });
 
     // Handle WebSocket open
     const unsubscribeOpen = ws.onOpen(() => {
       if (!mountedRef.current) return;
-      console.log("🔓 Trade status WebSocket opened");
+      // Silent open handling
     });
 
     // Connect to WebSocket

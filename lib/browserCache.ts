@@ -121,12 +121,10 @@ class BrowserCache {
       // Try to get from cache first
       const cached = await this.get<T>(cacheKey);
       if (cached) {
-        console.log(`[BrowserCache] Cache hit for ${url}`);
-        return cached;
+            return cached;
       }
 
       // Fetch fresh data
-      console.log(`[BrowserCache] Cache miss for ${url}, fetching...`);
       const response = await fetch(url, options);
       
       if (!response.ok) {
@@ -145,7 +143,6 @@ class BrowserCache {
 
       return data;
     } catch (error) {
-      console.error(`[BrowserCache] Fetch failed for ${url}:`, error);
       throw error;
     }
   }
@@ -182,12 +179,10 @@ class BrowserCache {
         };
 
         request.onerror = () => {
-          console.error(`[BrowserCache] Failed to get ${key}:`, request.error);
           resolve(null);
         };
       });
     } catch (error) {
-      console.error(`[BrowserCache] Error getting ${key}:`, error);
       return null;
     }
   }
@@ -215,17 +210,14 @@ class BrowserCache {
 
       return new Promise((resolve, reject) => {
         request.onsuccess = () => {
-          console.log(`[BrowserCache] Cached ${key} with TTL ${entry.ttl}ms`);
           resolve();
         };
 
         request.onerror = () => {
-          console.error(`[BrowserCache] Failed to set ${key}:`, request.error);
           reject(request.error);
         };
       });
     } catch (error) {
-      console.error(`[BrowserCache] Error setting ${key}:`, error);
       throw error;
     }
   }
@@ -239,7 +231,6 @@ class BrowserCache {
       // Use JSON.parse(JSON.stringify()) to remove functions and circular references
       return JSON.parse(JSON.stringify(data));
     } catch (error) {
-      console.warn('[BrowserCache] Failed to serialize data, storing as-is:', error);
       return data;
     }
   }
@@ -264,17 +255,14 @@ class BrowserCache {
 
       return new Promise((resolve, reject) => {
         request.onsuccess = () => {
-          console.log(`[BrowserCache] Deleted ${key}`);
           resolve();
         };
 
         request.onerror = () => {
-          console.error(`[BrowserCache] Failed to delete ${key}:`, request.error);
           reject(request.error);
         };
       });
     } catch (error) {
-      console.error(`[BrowserCache] Error deleting ${key}:`, error);
       throw error;
     }
   }
@@ -291,17 +279,14 @@ class BrowserCache {
 
       return new Promise((resolve, reject) => {
         request.onsuccess = () => {
-          console.log('[BrowserCache] Cleared all cache entries');
           resolve();
         };
 
         request.onerror = () => {
-          console.error('[BrowserCache] Failed to clear cache:', request.error);
           reject(request.error);
         };
       });
     } catch (error) {
-      console.error('[BrowserCache] Error clearing cache:', error);
       throw error;
     }
   }
@@ -329,8 +314,7 @@ class BrowserCache {
         };
       });
     } catch (error) {
-      console.error('[BrowserCache] Error getting stats:', error);
-      return { totalEntries: 0, totalSize: 0 };
+          return { totalEntries: 0, totalSize: 0 };
     }
   }
 

@@ -34,21 +34,10 @@ export const fetchMyOrders = createAsyncThunk<
   number,
   { rejectValue: string }
 >("myOrders/fetchMyOrders", async (page: number = 1, { rejectWithValue }) => {
-  console.log("Redux thunk fetchMyOrders called with page:", page);
   try {
     const response = await getMyP2POrders(page);
-    console.log(
-      "Redux thunk fetchMyOrders success for page:",
-      page,
-      "with data:",
-      {
-        count: response.count,
-        resultsCount: response.results?.results?.length,
-      }
-    );
     return response;
   } catch (err) {
-    console.log("Redux thunk fetchMyOrders error for page:", page, err);
     try {
       handleP2PError(err);
     } catch (error) {
@@ -65,12 +54,6 @@ const myOrdersSlice = createSlice({
   initialState,
   reducers: {
     setCurrentPage: (state, action) => {
-      console.log(
-        "myOrders setCurrentPage action dispatched:",
-        action.payload,
-        "Previous page:",
-        state.currentPage
-      );
       state.currentPage = action.payload;
     },
     clearError: (state) => {
@@ -80,22 +63,15 @@ const myOrdersSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchMyOrders.pending, (state) => {
-        console.log("fetchMyOrders.pending for page:", state.currentPage);
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchMyOrders.fulfilled, (state, action) => {
-        console.log("fetchMyOrders.fulfilled with data:", {
-          count: action.payload.count,
-          resultsCount: action.payload.results?.results?.length,
-          currentPage: state.currentPage,
-        });
         state.loading = false;
         state.orders = action.payload;
         state.error = null;
       })
       .addCase(fetchMyOrders.rejected, (state, action) => {
-        console.log("fetchMyOrders.rejected:", action.payload);
         state.loading = false;
         state.error = (action.payload as string) || "An unexpected error occurred";
       });
