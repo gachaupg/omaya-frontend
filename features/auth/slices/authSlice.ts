@@ -332,6 +332,10 @@ const authSlice = createSlice({
       storage.removeProfile();
       // Clear access token cookie
       cookieUtils.removeCookie("access_token");
+      // Clear forex exchange from localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('currentForexExchange');
+      }
     },
     clearError(state) {
       state.error = null;
