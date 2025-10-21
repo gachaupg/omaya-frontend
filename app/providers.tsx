@@ -18,6 +18,40 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       store.dispatch(logout());
       window.location.href = "/auth/login";
     });
+
+    // Check for valid profile on app load - force logout if invalid
+    const checkAuth = () => {
+      if (typeof window === 'undefined') return;
+      
+      const profile = localStorage.getItem('profile');
+      const currentPath = window.location.pathname;
+      const isAuthPage = currentPath.startsWith('/auth/') || currentPath === '/';
+      
+      if (!profile && !isAuthPage) {
+        console.log('🔒 No profile found on app load, forcing logout...');
+        localStorage.clear();
+        window.location.href = '/auth/login';
+      } else if (profile) {
+        try {
+          const parsed = JSON.parse(profile);
+          if (!parsed.tokens?.access || !parsed.user) {
+            console.log('🔒 Invalid profile structure, forcing logout...');
+            localStorage.clear();
+            if (!isAuthPage) {
+              window.location.href = '/auth/login';
+            }
+          }
+        } catch (e) {
+          console.log('🔒 Corrupted profile data, forcing logout...');
+          localStorage.clear();
+          if (!isAuthPage) {
+            window.location.href = '/auth/login';
+          }
+        }
+      }
+    };
+
+    checkAuth();
   }, []);
 
   return (

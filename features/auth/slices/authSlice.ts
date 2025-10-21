@@ -329,24 +329,68 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.profile = null;
       state.kycModalOpen = false;
+      state.twoFAModalOpen = false;
       storage.removeProfile();
       // Clear access token cookie
       cookieUtils.removeCookie("access_token");
-      // Clear forex exchange from localStorage
+      // Clear ALL localStorage on logout (including access_token)
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('currentForexExchange');
+        localStorage.clear();
+        sessionStorage.clear();
       }
     },
     clearError(state) {
       state.error = null;
     },
     initializeAuth(state) {
+      // Ensure loading is set to false when initializing
+      state.loading = false;
+      state.error = null;
+      
       const authData = storage.getProfile();
-      if (authData) {
+      
+      // Valid auth requires BOTH token AND user data
+      if (authData && authData.tokens?.access && authData.user) {
         state.user = authData.user;
         state.tokens = authData.tokens;
         state.isAuthenticated = true;
         state.profile = authData.profile || null;
+        
+        // Ensure access_token is in localStorage for WebSocket
+        if (typeof window !== 'undefined' && authData.tokens?.access) {
+          const storedToken = localStorage.getItem('access_token');
+          if (!storedToken) {
+            localStorage.setItem('access_token', authData.tokens.access);
+          }
+        }
+      } else {
+        // Invalid/incomplete profile - trigger automatic logout
+        state.user = null;
+        state.tokens = null;
+        state.isAuthenticated = false;
+        state.profile = null;
+        state.loading = false; // Explicitly set loading to false
+        
+        // Clear ALL localStorage and cookies
+        if (typeof window !== 'undefined') {
+          localStorage.clear();
+          cookieUtils.removeCookie("access_token");
+          
+          // Only redirect if not already on auth/public pages
+          const currentPath = window.location.pathname;
+          const isPublicPage = currentPath === '/' || 
+                                currentPath.startsWith('/auth/') ||
+                                currentPath.includes('/about') ||
+                                currentPath.includes('/contact');
+          
+          if (!isPublicPage) {
+            console.log('🔒 Invalid or incomplete profile found, redirecting to login...');
+            // Use setTimeout to ensure state is updated before redirect
+            setTimeout(() => {
+              window.location.href = '/auth/login';
+            }, 100);
+          }
+        }
       }
     },
     openKYCModal(state) {
@@ -417,6 +461,11 @@ const authSlice = createSlice({
           },
           profile: action.payload.profile,
         });
+
+        // Store access_token separately for WebSocket and easy access
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('access_token', action.payload.access);
+        }
 
         // Set access token as cookie
         cookieUtils.setCookie("access_token", action.payload.access, {
@@ -588,6 +637,11 @@ const authSlice = createSlice({
           },
           profile: action.payload.profile,
         });
+
+        // Store access_token separately for easy access
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('access_token', action.payload.access);
+        }
 
         // Set access token as cookie
         cookieUtils.setCookie("access_token", action.payload.access, {
