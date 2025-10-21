@@ -2163,37 +2163,7 @@ export default function WithdrawalForm({
 
   return (
     <div className="w-full flex flex-col dark:bg-[#18181D]  ">
-      {/* Crypto/Forex Toggle Buttons - Hidden on home page */}
-      {!isHomePage && (
-      <div className="w-full mb-4">
-        <div className="bg-white dark:bg-[#1D1D23] border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-2">
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setTransactionMode("crypto")}
-              className={`flex-1 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${
-                transactionMode === "crypto"
-                  ? "bg-[#1D8751] text-white shadow-md"
-                  : "bg-transparent text-[#788099] hover:bg-[#F5F6F7] dark:hover:bg-[#23232B]"
-              }`}
-            >
-              Crypto Withdrawal
-            </button>
-            <button
-              type="button"
-              onClick={() => setTransactionMode("forex")}
-              className={`flex-1 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${
-                transactionMode === "forex"
-                  ? "bg-[#1D8751] text-white shadow-md"
-                  : "bg-transparent text-[#788099] hover:bg-[#F5F6F7] dark:hover:bg-[#23232B]"
-              }`}
-            >
-              Forex Withdrawal
-            </button>
-          </div>
-        </div>
-      </div>
-      )}
+      {/* Crypto/Forex Toggle Buttons Removed */}
 
       {transactionMode === "forex" ? (
         <ForexWithdrawal />

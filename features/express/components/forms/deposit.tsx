@@ -174,13 +174,18 @@ export default function DepositForm({
       return;
     }
     
-    // Try to fetch from cache first, then API if needed
+    // Eagerly fetch payment details - optimized to show cached data immediately
+    // The fetchAdminPaymentDetails now uses a race condition to prevent long waits
     dispatch(fetchAdminPaymentDetails(false)) // false = don't force refresh
       .unwrap()
       .catch((error: unknown) => {
-        showToast.error(`Failed to fetch admin payment details: ${error}`);
+        // Only show error if we have no payment methods at all
+        if (!adminPaymentDetails || adminPaymentDetails.length === 0) {
+          console.error('Failed to fetch admin payment details:', error);
+          // Don't show toast error to avoid annoying users - fallback will handle it
+        }
       });
-  }, [dispatch, isHomePage]);
+  }, [dispatch, isHomePage, adminPaymentDetails]);
 
   useEffect(() => {
     // Skip API calls on home page - buttons will redirect to login

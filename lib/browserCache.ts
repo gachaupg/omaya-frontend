@@ -32,7 +32,7 @@ class BrowserCache {
   }
 
   /**
-   * Initialize IndexedDB connection
+   * Initialize IndexedDB connection with timeout
    */
   private async initDB(): Promise<IDBDatabase> {
     if (this.db) {
@@ -40,14 +40,21 @@ class BrowserCache {
     }
 
     return new Promise((resolve, reject) => {
+      // Set a timeout to prevent indefinite waiting
+      const timeout = setTimeout(() => {
+        reject(new Error('IndexedDB initialization timeout'));
+      }, 3000); // 3 second timeout
+
       const request = indexedDB.open(this.dbName, this.dbVersion);
 
       request.onerror = () => {
+        clearTimeout(timeout);
         console.error('Failed to open IndexedDB:', request.error);
         reject(request.error);
       };
 
       request.onsuccess = () => {
+        clearTimeout(timeout);
         this.db = request.result;
         resolve(this.db);
       };
@@ -148,7 +155,7 @@ class BrowserCache {
   }
 
   /**
-   * Get data from cache
+   * Get data from cache with timeout
    */
   async get<T>(key: string): Promise<T | null> {
     try {
@@ -158,7 +165,13 @@ class BrowserCache {
       const request = store.get(key);
 
       return new Promise((resolve) => {
+        // Set a timeout for the read operation
+        const timeout = setTimeout(() => {
+          resolve(null);
+        }, 2000); // 2 second timeout for reads
+
         request.onsuccess = () => {
+          clearTimeout(timeout);
           const entry = request.result as CacheEntry<T> | undefined;
           
           if (!entry) {
@@ -179,6 +192,7 @@ class BrowserCache {
         };
 
         request.onerror = () => {
+          clearTimeout(timeout);
           resolve(null);
         };
       });
@@ -353,6 +367,14 @@ export const browserCache = new BrowserCache({
   maxSize: 1000,
   autoCleanup: true,
 });
+
+// Pre-initialize IndexedDB on module load to avoid delays later
+if (typeof window !== 'undefined' && typeof indexedDB !== 'undefined') {
+  // Warm up IndexedDB connection in the background
+  browserCache.getStats().catch(() => {
+    // Ignore errors during pre-initialization
+  });
+}
 
 // Export the class for custom instances
 export { BrowserCache };
