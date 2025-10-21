@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { MarketRow } from "../types";
 import { validateBalance } from "@/utils/balanceValidator";
 import { useDispatch, useSelector } from "react-redux";
@@ -41,10 +41,12 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sendAmount, setSendAmount] = useState("");
   const [receiveAmount, setReceiveAmount] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<string[]>([]);
+  const [isPaymentDropdownOpen, setIsPaymentDropdownOpen] = useState(false);
   const [isAmountValid, setIsAmountValid] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [numericAmount, setNumericAmount] = useState(0);
+  const paymentDropdownRef = useRef<HTMLDivElement>(null);
 
   const commissionRate = parseFloat(advertiserData.commission);
   const minAmount = advertiserData.minAmount;
@@ -67,6 +69,26 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       fetchData();
     }
   }, [dispatch, isAuthenticated]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        paymentDropdownRef.current &&
+        !paymentDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsPaymentDropdownOpen(false);
+      }
+    };
+
+    if (isPaymentDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isPaymentDropdownOpen]);
 
   // Get USDT wallet balance from the wallet response structure
   const walletBalance =wallets?.total_balance ? toNumber(wallets.total_balance) : 0;
@@ -139,7 +161,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   };
 
   const isFormValid = () => {
-    if (!sendAmount || !paymentMethod) {
+    if (!sendAmount || paymentMethod.length === 0) {
       return false;
     }
     return isAmountValid;
@@ -150,9 +172,9 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       if (!sendAmount) {
         setErrorMessage("Please enter an amount");
         showToast.error("Validation Error", "Please enter an amount");
-      } else if (!paymentMethod) {
-        setErrorMessage("Please select a payment method");
-        showToast.error("Validation Error", "Please select a payment method");
+      } else if (paymentMethod.length === 0) {
+        setErrorMessage("Please select at least one payment method");
+        showToast.error("Validation Error", "Please select at least one payment method");
       }
       return;
     }
@@ -161,8 +183,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       setIsSubmitting(true);
       // Create order data with commission
       const orderData: OrderMatchRequest = {
-        amount: sendAmount,
-        commission: advertiserData.commission,
+        amount: receiveAmount,
       };
 
 
@@ -298,7 +319,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
           <div className="flex-1 flex flex-col gap-3">
               {/* Commission */}
             <div className="text-left text-base font-medium text-gray-900 dark:text-white mt-4">
-              Commission:{" "}
+              Rate:{" "}
               <span className="text-[#1D8751]">{advertiserData.commission}</span>
             </div>
             {/* I Want to Send */}
@@ -328,7 +349,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                     value="USDT"
                     disabled
                   >
-                    <option>USDT</option>
+                    <option>USD</option>
                   </select>
                 </div>
                 {!isAmountValid && sendAmount && (
@@ -354,21 +375,64 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                 />
               </div>
             </div>
-            {/* Payment Method Select */}
-            <select
-              className="rounded-xl px-4 py-2 text-sm border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#23242A] text-gray-900 dark:text-[#788099]"
-              value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value)}
-            >
-              <option value="" disabled>
-                Set my payment method
-              </option>
+            {/* Payment Method Multi-Select Dropdown */}
+            <div className="relative" ref={paymentDropdownRef}>
+              <div
+                onClick={() => setIsPaymentDropdownOpen(!isPaymentDropdownOpen)}
+                className="rounded-xl px-4 py-2 text-sm border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#23242A] cursor-pointer flex justify-between items-center"
+              >
+                <span className="text-gray-900 dark:text-white">
+                  {paymentMethod.length === 0
+                    ? "Select payment method"
+                    : `${paymentMethod.length} method(s) selected`}
+                </span>
+                <svg
+                  className={`w-4 h-4 text-gray-500 dark:text-[#788099] transition-transform ${
+                    isPaymentDropdownOpen ? "rotate-180" : ""
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </div>
+              {isPaymentDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#23242A] border border-gray-300 dark:border-[#35353E] rounded-xl shadow-lg z-10">
+                  <div className="p-2">
               {paymentOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
+                      <label
+                        key={opt.value}
+                        className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-[#35353E] rounded-lg cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={paymentMethod.includes(opt.value)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setPaymentMethod([...paymentMethod, opt.value]);
+                            } else {
+                              setPaymentMethod(
+                                paymentMethod.filter((m) => m !== opt.value)
+                              );
+                            }
+                          }}
+                          className="w-4 h-4 text-[#1D8751] bg-white dark:bg-[#23242A] border-gray-300 dark:border-[#35353E] rounded focus:ring-[#1D8751] focus:ring-2"
+                        />
+                        <span className="text-gray-900 dark:text-white text-sm">
                   {opt.label}
-                </option>
+                        </span>
+                      </label>
               ))}
-            </select>
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="flex gap-4">
               <button
                 className="flex-1 py-2 rounded-lg border font-semibold transition border-gray-400 dark:border-[#788099] text-gray-700 dark:text-[#788099] hover:bg-gray-200 dark:hover:bg-[#23242A]"

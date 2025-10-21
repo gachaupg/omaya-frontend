@@ -294,7 +294,7 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
           exchange_rate: `${(parseFloat(order.exchange_rate || 0) * 100).toFixed(0)}`,
           completion_time: formatLimitDuration(order.completion_time || "00:00:00"),
           online: true,
-          commission: `${order.commission_rate || 0}%`,
+          commission: `${order.commission_rate || 0}`,
           available: `${parseFloat(order.amount || 0).toFixed(2)} ${order.currency}`,
           limit: `${parseFloat(order.min_order_amount || 0).toFixed(
             2
@@ -442,7 +442,7 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
               />
               <span className="text-gray-500 dark:text-gray-400 text-sm font-medium">|</span>
               <span className="text-gray-900 dark:text-white text-sm font-semibold px-1">
-                USDT
+                USD
               </span>
             </div>
           </div>

@@ -12,6 +12,7 @@ import {
   fetchConfirmOrder,
   cancelP2POrderThunk,
   completeP2PTradeThunk,
+  updateConfirmOrderStatus,
 } from "@/features/p2p/slices/orderSlice";
 import { FileIcon, SendIcon, RefreshCw, CopyIcon, AlertCircle } from "lucide-react";
 import AppealModal from "./appeal";
@@ -38,42 +39,38 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   } = useSelector((state: RootState) => state.p2pMarket);
   const [showAppealModal, setShowAppealModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showCancelledModal, setShowCancelledModal] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
+  
+  // Ref to track previous status to prevent duplicate status updates
+  const previousStatusRef = useRef<string | null>(null);
 
   // WebSocket status update callback - use useCallback to prevent reconnections
   const handleStatusUpdate = React.useCallback((status: any) => {
-   
-    
-    const oldStatus = confirmOrder?.status;
     const newStatus = status.status;
+    const oldStatus = previousStatusRef.current;
     
-    // Always refresh if we have a valid status update
-    if (confirmOrder?.id && newStatus) {
+    // Only update if the status has actually changed
+    if (newStatus && oldStatus !== newStatus) {
+      // Update the ref to the new status
+      previousStatusRef.current = newStatus;
+      
+      // Update Redux store directly with WebSocket status
+      dispatch(updateConfirmOrderStatus({ status: newStatus }));
       
       // Show toast notification for status changes
-      if (oldStatus !== newStatus) {
-        if (oldStatus === "matched" && newStatus === "half-matched") {
-          showToast.success("Status Updated", "Seller has notified payment sent");
-        } else if (oldStatus === "half-matched" && newStatus === "completed") {
-          showToast.success("Trade Completed!", "Transaction completed successfully");
-        } else if (newStatus === "cancelled") {
-          showToast.error("Trade Cancelled", "The trade has been cancelled");
-        } else {
-          showToast.success("Status Updated", `Trade status is now: ${newStatus}`);
-        }
+      if (oldStatus === "matched" && newStatus === "half-matched") {
+        showToast.success("Status Updated", "Seller has notified payment sent");
+      } else if (oldStatus === "half-matched" && newStatus === "completed") {
+        showToast.success("Trade Completed!", "Transaction completed successfully");
+      } else if (newStatus === "cancelled") {
+        showToast.error("Trade Cancelled", "The trade has been cancelled");
       } else {
+        showToast.success("Status Updated", `Trade status is now: ${newStatus}`);
       }
-      
-      dispatch(fetchConfirmOrder(confirmOrder.id))
-        .unwrap()
-        .then((updatedOrder) => {
-        })
-        .catch((error) => {
-        });
-    } else {
     }
-  }, [confirmOrder, dispatch]);
+  }, [dispatch]);
 
   // WebSocket for real-time trade status updates
   const { isConnected: statusWsConnected } = useTradeStatusWebSocket({
@@ -81,6 +78,13 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     enabled: isAuthenticated && !!confirmOrder?.id,
     onStatusUpdate: handleStatusUpdate,
   });
+
+  // Initialize previousStatusRef with current status when confirmOrder first loads
+  useEffect(() => {
+    if (confirmOrder?.status && previousStatusRef.current === null) {
+      previousStatusRef.current = confirmOrder.status;
+    }
+  }, [confirmOrder?.status]);
 
   const completionTime = Number(singleOrder?.completion_time);
   const displaySeconds =
@@ -158,6 +162,13 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     }
   }, [confirmOrder?.status]);
 
+  // Show cancelled modal when trade is cancelled
+  useEffect(() => {
+    if (confirmOrder?.status === "cancelled") {
+      setShowCancelledModal(true);
+    }
+  }, [confirmOrder?.status]);
+
   // Get payment details from order data
   const paymentDetails = saveOrder?.payment_details?.[0] || null;
 
@@ -179,13 +190,21 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
   const handleCancelTransaction = () => {
     if (confirmOrder?.id) {
-      dispatch(cancelP2POrderThunk(confirmOrder.id));
+      dispatch(cancelP2POrderThunk(confirmOrder.id))
+        .unwrap()
+        .then(() => {
+          showToast.success("Transaction cancelled successfully!");
+          setTimeout(() => {
+            router.push("/dashboard/p2p");
+          }, 2000);
+        })
+        .catch((error) => {
+          showToast.error(
+            "Failed to cancel transaction",
+            error.message || "Please try again"
+          );
+        });
     }
-  };
-
-  const getButtonText = () => {
-    if (confirmTradeLoading) return "Notifying seller...";
-    return "Payments Received Notify Seller";
   };
 
   const handleRefresh = () => {
@@ -206,8 +225,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             "Trade completed successfully!",
             "You will be redirected to the dashboard"
           );
-          // Refresh confirm order after successful trade
-          dispatch(fetchConfirmOrder(confirmOrder.id));
+          // WebSocket will automatically update the status
           // setTimeout(() => {
           //   router.push("/dashboard");
           // }, 2000);
@@ -223,6 +241,8 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
   return (
     <div className="grid grid-cols-1 mt-10 md:grid-cols-3 gap-6 p-6 min-h-screen bg-[#EEF1F4] dark:bg-[#18181D]">
+     
+      
       {/* Left: Timeline/Steps */}
       <div className="md:col-span-2 flex flex-col gap-4">
         {/* Step 1: Order Created */}
@@ -244,6 +264,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                   Live Status
                 </span>
               )}
+             
             </div>
             <div className="flex items-center gap-1.5">
             <svg width="24" height="24" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
@@ -266,7 +287,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                   className="text-[#1D8751] underline ml-1"
                   onClick={() => handleCopy(singleOrder?.id)}
                 >
-                  {singleOrder?.id}
+                  {confirmOrder?.id}
                 </button>
               </span>
               <CopyIcon className="w-4 h-4 text-[#1D8751] ml-1"  onClick={() => handleCopy(singleOrder?.id)}/>
@@ -294,9 +315,9 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             </div>
 
             <div className="flex flex-col gap-2 w-full">
-              <p className="text-[#788099] text-sm">Commission</p>
+              <p className="text-[#788099] text-sm">Rate</p>
               <div className="flex f w-full flex-row  justify-between items-center bg-[#EEF1F4] dark:bg-[#35353E] rounded-xl px-6 py-2">
-                <span className="text-[#1D8751] text-xl">$ {confirmOrder?.commission_rate ?? commissionRate}%</span>
+                <span className="text-[#1D8751] text-xl">$ {confirmOrder?.commission_rate ?? commissionRate}</span>
                 <span className="text-sm text-[#051015] dark:text-[#F79330]">USD</span>
               </div>             
             </div>
@@ -312,7 +333,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                     height={20}
                   />
                   <span className="text-[#1D8751] text-lg font-bold">
-                    {formatAmount((saveOrder?.amount ?? 0) / (confirmOrder?.commission_rate ?? commissionRate))}
+                    {formatAmount((saveOrder?.amount ?? 0) )}
                   </span>
                 </div>
                 <span className="text-xs text-[#F79330] dark:text-[#A3A3C2]">
@@ -417,23 +438,27 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           <span className="text-gray-900 dark:text-white font-semibold text-lg">
             Confirm payment is received.
           </span>
-          <div className="text-md text-gray-500 dark:text-[#A3A3C2] mt-2">
-            After confirming the payment, be sure to click Payment Received
-            button below
+          <div className="text-md text-gray-500 dark:text-[#A3A3C2] mt-2 flex items-center gap-2">
+            After confirming the payment, be sure to click Payment Received button below
+            
           </div>
           <div className="flex gap-4 mt-6">
-            <button className="bg-gray-100 dark:bg-[#23232A] text-gray-600 dark:text-[#A3A3C2] rounded-lg px-6 py-2 border border-gray-200 dark:border-[#35353E]">
-              Appeal After 9:45
+            <button 
+              className="bg-gray-100 dark:bg-[#23232A] text-gray-600 dark:text-[#A3A3C2] rounded-lg px-6 py-2 border border-gray-200 dark:border-[#35353E]"
+              onClick={() => setShowAppealModal(true)}
+            >
+              Appeal
             </button>
             <button
               className={`${
-                confirmOrder?.status === "matched"
-                  ? "bg-gray-100 dark:bg-[#23232A]"
+                confirmOrder?.status === "matched" || confirmOrder?.status === "completed"
+                  ? "bg-gray-100 dark:bg-[#23232A] text-gray-600 dark:text-[#A3A3C2]"
                   : "bg-[#1D8751] text-white"
-              }  dark:text-white rounded-lg px-6 py-2 font-semibold ${
+              } rounded-lg px-6 py-2 font-semibold ${
                 confirmTradeLoading ||
                 !confirmOrder?.id ||
-                confirmOrder?.status === "matched"
+                confirmOrder?.status === "matched" ||
+                confirmOrder?.status === "completed"
                   ? "opacity-50 cursor-not-allowed"
                   : ""
               }`}
@@ -441,10 +466,17 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               disabled={
                 confirmTradeLoading ||
                 !confirmOrder?.id ||
-                confirmOrder?.status === "matched"
+                confirmOrder?.status === "matched" ||
+                confirmOrder?.status === "completed"
               }
             >
-              {getButtonText()}
+              {confirmTradeLoading 
+                ? "Processing..." 
+                : confirmOrder?.status === "half-matched" 
+                ? "Payment Received, Release USDT"
+                : confirmOrder?.status === "completed"
+                ? "Trade Completed"
+                : "Waiting for Buyer Payment"}
             </button>
           </div>
         </div>
@@ -523,10 +555,10 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 </div>
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-gray-600 dark:text-[#A3A3C2]">
-                    Commission:
+                    Rate:
                   </span>
                   <span className="text-[#1D8751] font-semibold">
-                    {commissionRate}%
+                    {commissionRate}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -534,7 +566,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                     Amount Received:
                   </span>
                   <span className="text-[#1D8751] font-semibold">
-                    {formatAmount(receiveAmount)} USDT
+                    {formatAmount(sendAmount)} USDT
                   </span>
                 </div>
               </div>
@@ -546,6 +578,60 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                   // router.push("/dashboard");
                   window.location.href = "/dashboard/p2p/";
 
+                }}
+                className="w-full bg-[#1D8751] text-white rounded-lg px-6 py-3 font-semibold hover:bg-[#167a45] transition-colors"
+              >
+                Go to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Appeal Modal */}
+      <AppealModal
+        open={showAppealModal}
+        onClose={() => setShowAppealModal(false)}
+        tradeId={confirmOrder?.id || ""}
+      />
+
+      {/* Cancelled Modal */}
+      {showCancelledModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-[#23232A] rounded-2xl p-8 max-w-md w-full mx-4 border border-gray-200 dark:border-[#35353E]">
+            <div className="text-center">
+              {/* Cancelled Icon */}
+              <div className="w-16 h-16 bg-[#E23D3A] rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg
+                  className="w-8 h-8 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </div>
+
+              {/* Cancelled Title */}
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+                Trade Cancelled
+              </h2>
+
+              {/* Message */}
+              <p className="text-gray-600 dark:text-[#A3A3C2] mb-6">
+                This trade has been cancelled. If you have any questions or concerns, please contact support.
+              </p>
+
+              {/* Go to Dashboard Button */}
+              <button
+                onClick={() => {
+                  setShowCancelledModal(false);
+                  window.location.href = "/dashboard/p2p/";
                 }}
                 className="w-full bg-[#1D8751] text-white rounded-lg px-6 py-3 font-semibold hover:bg-[#167a45] transition-colors"
               >

@@ -465,6 +465,17 @@ const p2pMarketSlice = createSlice({
         };
       }
     },
+    // Action to update confirmOrder status from WebSocket
+    updateConfirmOrderStatus: (state, action) => {
+      const { status } = action.payload;
+      
+      if (state.confirmOrder) {
+        state.confirmOrder = {
+          ...state.confirmOrder,
+          status: status,
+        };
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -692,5 +703,6 @@ export const {
   resetWithdrawalAddressesState,
   updateOrdersFromWS,
   removeOrderFromWS,
+  updateConfirmOrderStatus,
 } = p2pMarketSlice.actions;
 export default p2pMarketSlice.reducer;

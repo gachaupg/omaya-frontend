@@ -127,8 +127,8 @@ const Withdraw = () => {
     <div className="min-h-screen text-white flex flex-col items-center">
       {/* Success Message */}
       {showSuccess && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-[#1D1D23] border border-[#1D8751] rounded-2xl p-8 max-w-md mx-4 text-center">
+        <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
+          <div className="bg-[#1D1D23] border border-[#1D8751] rounded-2xl p-8 max-w-md mx-4 text-center shadow-2xl pointer-events-auto">
             <div className="mb-4">
               <svg
                 className="w-16 h-16 text-[#1D8751] mx-auto"

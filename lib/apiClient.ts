@@ -27,10 +27,11 @@ interface ApiClientConfig {
 
 const DEFAULT_CONFIG: ApiClientConfig = {
   timeout: 30000, // 30 seconds for financial operations
-  retries: 3,
+  retries: 2, // Reduced from 3 to 2 to prevent excessive retries
   retryDelay: 1000,
   retryCondition: (error: AxiosError) => {
-    // Retry on network errors and 5xx server errors
+    // Only retry on network errors and 5xx server errors
+    // Don't retry on 4xx client errors
     return (
       !error.response ||
       (error.response.status >= 500 && error.response.status < 600)
@@ -48,6 +49,8 @@ const ENDPOINT_SPECIFIC_CONFIG: Record<string, Partial<ApiClientConfig>> = {
   "/api/auth/register/": { timeout: 10000, retries: 1 }, // Faster registration
   "/api/kyc/status/": { timeout: 15000, retries: 2 }, // KYC status check
   "/api/kyc/verify/": { timeout: 30000, retries: 1 }, // KYC verification
+  "/payments/admin/payment-details/": { timeout: 10000, retries: 1 }, // Reduce retries for payment details
+  "/payments/admin/wallet-list/": { timeout: 10000, retries: 1 }, // Reduce retries for wallet list
 };
 
 const generateRequestId = (): string => {
@@ -161,7 +164,7 @@ const addRefreshTokenInterceptor = (instance: AxiosInstance): AxiosInstance => {
   return instance;
 };
 
-// Enhanced retry logic
+// Enhanced retry logic with strict limits
 const addRetryInterceptor = (
   instance: AxiosInstance,
   config: ApiClientConfig
@@ -182,25 +185,51 @@ const addRetryInterceptor = (
         ApiHealthChecker.recordFailure(originalRequest.url, error);
       }
 
-      if (!originalRequest || originalRequest._retryCount >= config.retries) {
+      // Initialize retry count if not set
+      if (!originalRequest._retryCount) {
+        originalRequest._retryCount = 0;
+      }
+
+      // Get endpoint-specific retry limit (hard cap at 3 retries max)
+      const endpoint = originalRequest?.url || "";
+      const endpointConfig = ENDPOINT_SPECIFIC_CONFIG[endpoint];
+      const maxRetries = Math.min(endpointConfig?.retries ?? config.retries, 3); // HARD CAP: Never exceed 3 retries
+
+      // STRICT LIMIT: Stop at max retries for this endpoint
+      if (!originalRequest || originalRequest._retryCount >= maxRetries) {
+        console.warn(`🚫 Max retries (${maxRetries}) reached for ${endpoint} - STOPPING`);
         return Promise.reject(error);
       }
 
+      // Emergency brake: If somehow retry count exceeds 3, force stop
+      if (originalRequest._retryCount >= 3) {
+        console.error(`🛑 EMERGENCY STOP: Retry count exceeded safety limit for ${endpoint}`);
+        return Promise.reject(error);
+      }
+
+      // Don't retry on client errors (4xx) - only network/server errors
+      if (error.response?.status && error.response.status >= 400 && error.response.status < 500) {
+        console.log(`⚠️ Client error (${error.response.status}) - not retrying ${endpoint}`);
+        return Promise.reject(error);
+      }
+
+      // Only retry on network errors or 5xx errors
       if (config.retryCondition(error)) {
-        originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
+        originalRequest._retryCount = originalRequest._retryCount + 1;
 
-        logger.warn("Retrying API request", {
-          url: originalRequest.url,
-          attempt: originalRequest._retryCount,
-          error: error.message,
-        });
+        console.log(`🔄 Retry ${originalRequest._retryCount}/${maxRetries} for ${endpoint}`);
 
-        // Wait before retrying
-        await new Promise((resolve) =>
-          setTimeout(resolve, config.retryDelay * originalRequest._retryCount)
-        );
+        // Exponential backoff: 1s, 2s, 4s
+        const backoffDelay = config.retryDelay * Math.pow(2, originalRequest._retryCount - 1);
+        await new Promise((resolve) => setTimeout(resolve, backoffDelay));
 
-        return instance(originalRequest);
+        // Make the retry request
+        try {
+          return await instance(originalRequest);
+        } catch (retryError) {
+          // If this retry also fails, let it propagate
+          return Promise.reject(retryError);
+        }
       }
 
       return Promise.reject(error);

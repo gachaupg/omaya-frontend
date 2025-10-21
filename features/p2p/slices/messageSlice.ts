@@ -5,6 +5,7 @@ export interface TradeMessage {
   trade: number;
   sender: number | string;
   sender_name: string;
+  sender_username?: string;
   message: string;
   images: string[];
   timestamp: string;

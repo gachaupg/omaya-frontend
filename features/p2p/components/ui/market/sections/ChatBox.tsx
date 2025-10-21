@@ -6,6 +6,7 @@ import {
   setMessage,
   setUploadedImages,
   clearMessage,
+  TradeMessage,
 } from "@/features/p2p/slices/messageSlice";
 import { getTradeMessages, postTradeMessage } from "@/features/p2p/api";
 import { MdAccountCircle } from "react-icons/md";
@@ -15,17 +16,6 @@ interface MessageImage {
   id: string;
   image: string;
   image_url: string;
-}
-
-interface Message {
-  id: string;
-  trade: number;
-  sender: number | string;
-  sender_name: string;
-  message: string;
-  images: any[];
-  timestamp: string;
-  seller_photo: string;
 }
 
 // Type guard to check if image is a MessageImage object
@@ -48,26 +38,26 @@ const ChatBox: React.FC<{
   sellerName?: string;
 }> = ({ tradeId, userId, userName, autoreply, seller_photo, buyer_photo, buyer, seller, currentUserEmail, owner, buyerName, sellerName }) => {
   
-  // Determine which photo and email to show for the other person
+  // Determine which photo and display name to show for the other person
   const otherPersonData = React.useMemo(() => {
     if (currentUserEmail && owner) {
       // If current user is the owner, show buyer's info (the other person)
       if (currentUserEmail === owner) {
         return {
           photo: buyer_photo,
-          email: buyer || buyerName || userName || "Buyer"
+          displayName: buyerName || userName || buyer || "Buyer"
         };
       }
       // If current user is not the owner, show seller's info (the owner's info)
       return {
         photo: seller_photo,
-        email: seller || sellerName || userName || "Seller"
+        displayName: sellerName || userName || seller || "Seller"
       };
     }
     // Fallback
     return {
       photo: seller_photo || buyer_photo,
-      email: userName || seller || buyer || "Unknown"
+      displayName: userName || sellerName || buyerName || seller || buyer || "Unknown"
     };
   }, [currentUserEmail, owner, seller_photo, buyer_photo, buyer, seller, buyerName, sellerName, userName]);
   const dispatch = useDispatch();
@@ -303,11 +293,12 @@ const ChatBox: React.FC<{
     const images = uploaded_images;
     
     // Create optimistic message to show immediately
-    const optimisticMessage: Message = {
+    const optimisticMessage: TradeMessage = {
       id: `temp-${Date.now()}`,
       trade: parseInt(tradeId),
       sender: currentUserEmail || '',
       sender_name: currentUserEmail || '',
+      sender_username: userName || '',
       message: messageContent,
       images: images.map(file => URL.createObjectURL(file)), // Create preview URLs
       timestamp: new Date().toISOString(),
@@ -356,7 +347,7 @@ const ChatBox: React.FC<{
     <div>
         <div className="flex items-center justify-between text-xs mb-2">
           <div className="flex items-center gap-2">
-            <span>Chat with {otherPersonData.email}</span>
+            <span>Chat with {otherPersonData.displayName}</span>
           {wsConnected ? (
             <span className="text-[10px] text-[#1D8751] flex items-center gap-1">
               <span className="w-1.5 h-1.5 bg-[#1D8751] rounded-full animate-pulse"></span>
@@ -404,9 +395,9 @@ const ChatBox: React.FC<{
       <div className="chat-container mt-6 flex flex-col pr-10 mb-2 h-96 bg-white dark:bg-[#18181D] border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px] p-2 md:p-4 relative">
         <div>
           <div className="flex items-center justify-center gap-2">
-            {otherPersonData.photo ? <img className="w-8 h-8 rounded-full object-cover" src={otherPersonData.photo} alt={otherPersonData.email} /> : <MdAccountCircle  className="w-6 h-6 text-[#1D8751]"/>}
+            {otherPersonData.photo ? <img className="w-8 h-8 rounded-full object-cover" src={otherPersonData.photo} alt={otherPersonData.displayName} /> : <MdAccountCircle  className="w-6 h-6 text-[#1D8751]"/>}
             <div className="flex-1">
-              <div className="font-semibold text-md">{otherPersonData.email}</div>
+              <div className="font-semibold text-md">{otherPersonData.displayName}</div>
             </div>
           </div>
         </div>
@@ -438,20 +429,23 @@ const ChatBox: React.FC<{
             // Use sender_name (email) to determine if this is the current user's message
             const isSender = msg.sender_name?.trim() === currentUserEmail?.trim();
             
-            // Determine photo and email for this specific message based on sender_name
+            // Determine photo and display name for this specific message
             let messagePhoto = otherPersonData.photo;
-            let messageEmail = msg.sender_name; // Always use email from message
+            // ALWAYS prioritize sender_username from WebSocket message
+            let displayName = msg.sender_username || "Unknown User";
             
             if (!isSender && msg.sender_name) {
               // This is the other person's message - determine which photo to show
               if (msg.sender_name === seller) {
                 // Message is from seller
                 messagePhoto = seller_photo;
-                messageEmail = msg.sender_name; // Use email
+                // Prioritize sender_username, fallback to sellerName, then sender_name (email)
+                displayName = msg.sender_username || sellerName || msg.sender_name;
               } else if (msg.sender_name === buyer) {
                 // Message is from buyer
                 messagePhoto = buyer_photo;
-                messageEmail = msg.sender_name; // Use email
+                // Prioritize sender_username, fallback to buyerName, then sender_name (email)
+                displayName = msg.sender_username || buyerName || msg.sender_name;
               }
             }
             
@@ -467,7 +461,7 @@ const ChatBox: React.FC<{
                       <img 
                         className="w-8 h-8 rounded-full object-cover" 
                         src={messagePhoto} 
-                        alt={messageEmail} 
+                        alt={displayName} 
                       />
                     ) : (
                       <MdAccountCircle className="w-8 h-8 text-[#1D8751]" />
@@ -482,9 +476,9 @@ const ChatBox: React.FC<{
                       : "dark:bg-[#23232B] bg-gray-200 dark:text-white text-gray-900 rounded-lg p-3 max-w-xs min-w-[120px]"
                   }
                 >
-                  {/* Show sender email - "You" for own messages, email for their messages */}
+                  {/* Show sender username - "You" for own messages, username for their messages */}
                   <div className={`text-xs font-semibold mb-1 ${isSender ? "text-green-100" : "text-[#1D8751] dark:text-[#1D8751]"}`}>
-                    {isSender ? "You" : messageEmail}
+                    {isSender ? "You" : displayName}
                   </div>
                   {msg.message && msg.message.trim() && <div className="text-sm break-words mb-2">{msg.message}</div>}
                   

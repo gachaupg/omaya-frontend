@@ -167,10 +167,22 @@ export default function DepositForm({
   // Add validation state for minimum receive amount
   const [receiveAmountError, setReceiveAmountError] = useState<string | null>(null);
 
+  // Add retry counters to prevent infinite loops
+  const [adminPaymentRetryCount, setAdminPaymentRetryCount] = useState(0);
+  const [hasFetchedAdminPayment, setHasFetchedAdminPayment] = useState(false);
+  const MAX_RETRIES = 3;
+
 
   useEffect(() => {
     // Skip API calls on home page - buttons will redirect to login
-    if (isHomePage) {
+    if (isHomePage || hasFetchedAdminPayment) {
+      return;
+    }
+    
+    // Prevent infinite retries - max 3 attempts
+    if (adminPaymentRetryCount >= MAX_RETRIES) {
+      console.warn('⚠️ Max retries reached for admin payment details');
+      setHasFetchedAdminPayment(true);
       return;
     }
     
@@ -178,14 +190,23 @@ export default function DepositForm({
     // The fetchAdminPaymentDetails now uses a race condition to prevent long waits
     dispatch(fetchAdminPaymentDetails(false)) // false = don't force refresh
       .unwrap()
+      .then(() => {
+        console.log('✅ Admin payment details fetched successfully');
+        setHasFetchedAdminPayment(true);
+        setAdminPaymentRetryCount(0); // Reset retry count on success
+      })
       .catch((error: unknown) => {
-        // Only show error if we have no payment methods at all
-        if (!adminPaymentDetails || adminPaymentDetails.length === 0) {
-          console.error('Failed to fetch admin payment details:', error);
+        console.error(`❌ Failed to fetch admin payment details (attempt ${adminPaymentRetryCount + 1}/${MAX_RETRIES}):`, error);
+        setAdminPaymentRetryCount(prev => prev + 1);
+        
+        // Only show error on final retry
+        if (adminPaymentRetryCount + 1 >= MAX_RETRIES) {
+          console.error('Failed to fetch admin payment details after max retries');
+          setHasFetchedAdminPayment(true);
           // Don't show toast error to avoid annoying users - fallback will handle it
         }
       });
-  }, [dispatch, isHomePage, adminPaymentDetails]);
+  }, [dispatch, isHomePage, hasFetchedAdminPayment, adminPaymentRetryCount]);
 
   useEffect(() => {
     // Skip API calls on home page - buttons will redirect to login
@@ -2238,7 +2259,7 @@ export default function DepositForm({
                   </div>
                 ) : (
                   <span className="flex items-center justify-center">
-                   
+                    <span className="text-base font-medium dark:text-white text-white">E</span>
                     <img
                       className="mt-2"
                       src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
@@ -2644,15 +2665,8 @@ export default function DepositForm({
             </div>
           )}
 
-          {/* Disclaimer and Button outside the card */}
+          {/* Button outside the card */}
           <div className="flex flex-col gap-3 w-full px-2">
-            <div className="flex items-center text-[#35353e] dark:text-[#788099] text-[16px] font-semibold">
-              <FaExclamationCircle className="mr-2 text-[#1D8751]" />
-              <span>
-                This is only an estimated price based on current market rates.
-                The final price will be confirmed when we receive the funds.
-              </span>
-            </div>
             <button
               className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
                 isSubmitting

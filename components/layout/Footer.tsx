@@ -388,16 +388,7 @@ export default function Footer() {
           <p className="text-sm text-white">Copyright © 2024, OMAYA.io</p>
           <div className="flex justify-center items-center mt-2">
             <span className="text-xs text-white">Powered by</span>
-            <div className="ml-2 text-green-500 font-bold">
-              <Image
-                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746548004/Omaya-green_g7uk8r.png"
-                alt="Play Store QR Code"
-                width={100}
-                height={100}
-                style={{ width: 'auto', height: 'auto' }}
-                className="mb-2"
-              />
-            </div>
+            Omaya Technologies
           </div>
         </div>
       </div>
