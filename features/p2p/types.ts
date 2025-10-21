@@ -370,7 +370,7 @@ export interface TransactionSummaryState {
 
 export interface OrderMatchRequest {
   amount: string;
-  commission: string;
+  commission?: string;
 }
 
 export interface P2PBuySellResponse {
@@ -408,7 +408,7 @@ export interface MatchedTrade {
   timestamp: string;
   associated_trade: number;
   order_type: "buy" | "sell";
-  status: "matched" | "half-matched" | "completed";
+  status: "matched" | "half-matched" | "completed" | "cancelled";
   rate: number;
   commission_rate?: number;
   payment_details: PaymentDetail[];

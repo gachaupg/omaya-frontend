@@ -336,6 +336,19 @@ export default function WithdrawalForm({
     null
   );
 
+  // Add retry counters to prevent infinite loops
+  const [adminPaymentRetryCount, setAdminPaymentRetryCount] = useState(0);
+  const [adminWalletRetryCount, setAdminWalletRetryCount] = useState(0);
+  const [userPaymentRetryCount, setUserPaymentRetryCount] = useState(0);
+  const [assetsRetryCount, setAssetsRetryCount] = useState(0);
+  const [swapAssetsRetryCount, setSwapAssetsRetryCount] = useState(0);
+  const [hasFetchedAdminPayment, setHasFetchedAdminPayment] = useState(false);
+  const [hasFetchedAdminWallet, setHasFetchedAdminWallet] = useState(false);
+  const [hasFetchedUserPayment, setHasFetchedUserPayment] = useState(false);
+  const [hasFetchedAssets, setHasFetchedAssets] = useState(false);
+  const [hasFetchedSwapAssets, setHasFetchedSwapAssets] = useState(false);
+  const MAX_RETRIES = 3;
+
   // Filter user payment details based on selected payment type
   // Match payment_method_name from user payment details with payment_type from admin wallet list
   const filteredUserPaymentDetails = payBank
@@ -416,7 +429,14 @@ export default function WithdrawalForm({
 
   useEffect(() => {
     // Skip API calls on home page - buttons will redirect to login
-    if (isHomePage) {
+    if (isHomePage || hasFetchedAdminPayment) {
+      return;
+    }
+    
+    // Prevent infinite retries - max 3 attempts
+    if (adminPaymentRetryCount >= MAX_RETRIES) {
+      console.warn('⚠️ Max retries reached for admin payment details');
+      setHasFetchedAdminPayment(true);
       return;
     }
     
@@ -424,50 +444,79 @@ export default function WithdrawalForm({
     dispatch(fetchAdminPaymentDetails(false)) // false = don't force refresh
       .unwrap()
       .then((data) => {
-        // console.log("DEBUG: Admin payment details fetched:", data);
+        console.log("✅ Admin payment details fetched successfully");
+        setHasFetchedAdminPayment(true);
+        setAdminPaymentRetryCount(0); // Reset retry count on success
       })
       .catch((error: unknown) => {
-        showToast.error(`Failed to fetch admin payment details: ${error}`);
+        console.error(`❌ Failed to fetch admin payment details (attempt ${adminPaymentRetryCount + 1}/${MAX_RETRIES}):`, error);
+        setAdminPaymentRetryCount(prev => prev + 1);
+        
+        // Only show toast on final retry
+        if (adminPaymentRetryCount + 1 >= MAX_RETRIES) {
+          showToast.error(`Failed to fetch admin payment details after ${MAX_RETRIES} attempts`);
+          setHasFetchedAdminPayment(true);
+        }
       });
-  }, [dispatch, isHomePage]);
+  }, [dispatch, isHomePage, hasFetchedAdminPayment, adminPaymentRetryCount]);
 
   // Fetch admin wallet list
   useEffect(() => {
     // Skip API calls on home page
-    if (isHomePage) {
+    if (isHomePage || hasFetchedAdminWallet) {
+      return;
+    }
+    
+    // Prevent infinite retries - max 3 attempts
+    if (adminWalletRetryCount >= MAX_RETRIES) {
+      console.warn('⚠️ Max retries reached for admin wallet list');
+      setHasFetchedAdminWallet(true);
       return;
     }
     
     dispatch(fetchAdminWalletList(false))
       .unwrap()
       .then((data) => {
+        console.log("✅ Admin wallet list fetched successfully");
+        setHasFetchedAdminWallet(true);
+        setAdminWalletRetryCount(0); // Reset retry count on success
         
-        // If no data in cache, force refresh
-        if (!data || !data.results || data.results.length === 0) {
-          return dispatch(fetchAdminWalletList(true)).unwrap();
+        // If no data in cache, try one force refresh (counts as a retry)
+        if ((!data || !data.results || data.results.length === 0) && adminWalletRetryCount === 0) {
+          setAdminWalletRetryCount(1);
+          dispatch(fetchAdminWalletList(true)).unwrap()
+            .then(() => {
+              setHasFetchedAdminWallet(true);
+            })
+            .catch(() => {
+              setHasFetchedAdminWallet(true);
+            });
         }
-        return data;
       })
       .catch((error: unknown) => {
-        if (!isHomePage) {
+        console.error(`❌ Failed to fetch admin wallet list (attempt ${adminWalletRetryCount + 1}/${MAX_RETRIES}):`, error);
+        setAdminWalletRetryCount(prev => prev + 1);
+        
+        // Only show toast on final retry
+        if (adminWalletRetryCount + 1 >= MAX_RETRIES) {
+          if (!isHomePage) {
+            showToast.error(`Failed to fetch admin wallet list after ${MAX_RETRIES} attempts`);
+          }
+          setHasFetchedAdminWallet(true);
         }
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchAdminWalletList(true))
-          .unwrap()
-          .catch((refreshError: unknown) => {
-            // Suppress all errors on home page - silent
-            if (isHomePage) {
-              return;
-            }
-            showToast.error(`Failed to fetch admin wallet list: ${refreshError}`);
-            throw refreshError;
-          });
       });
-  }, [dispatch, isHomePage]);
+  }, [dispatch, isHomePage, hasFetchedAdminWallet, adminWalletRetryCount]);
 
   useEffect(() => {
     // Skip API calls on home page
-    if (isHomePage) {
+    if (isHomePage || hasFetchedAssets) {
+      return;
+    }
+    
+    // Prevent infinite retries - max 3 attempts
+    if (assetsRetryCount >= MAX_RETRIES) {
+      console.warn('⚠️ Max retries reached for assets');
+      setHasFetchedAssets(true);
       return;
     }
     
@@ -475,119 +524,171 @@ export default function WithdrawalForm({
     dispatch(fetchAssets(false))
       .unwrap()
       .then((data) => {
-        // If no assets in cache, force refresh
-        if (!data?.assets || data.assets.length === 0) {
-          return dispatch(fetchAssets(true)).unwrap();
+        console.log("✅ Assets fetched successfully");
+        setHasFetchedAssets(true);
+        setAssetsRetryCount(0); // Reset retry count on success
+        
+        // If no assets in cache, try one force refresh (counts as a retry)
+        if ((!data?.assets || data.assets.length === 0) && assetsRetryCount === 0) {
+          setAssetsRetryCount(1);
+          dispatch(fetchAssets(true)).unwrap()
+            .then(() => {
+              setHasFetchedAssets(true);
+            })
+            .catch(() => {
+              setHasFetchedAssets(true);
+            });
         }
-        return data;
       })
       .catch((error: unknown) => {
-        if (!isHomePage) {
+        console.error(`❌ Failed to fetch assets (attempt ${assetsRetryCount + 1}/${MAX_RETRIES}):`, error);
+        setAssetsRetryCount(prev => prev + 1);
+        
+        // Only show toast on final retry
+        if (assetsRetryCount + 1 >= MAX_RETRIES) {
+          if (!isHomePage) {
+            showToast.error(`Failed to fetch assets after ${MAX_RETRIES} attempts`);
+          }
+          setHasFetchedAssets(true);
         }
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchAssets(true))
-          .unwrap()
-          .catch((refreshError: unknown) => {
-            // Suppress all errors on home page - silent
-            if (isHomePage) {
-              return;
-            }
-            showToast.error(`Failed to fetch assets: ${refreshError}`);
-            throw refreshError;
-          });
       });
-  }, [dispatch, isHomePage]);
+  }, [dispatch, isHomePage, hasFetchedAssets, assetsRetryCount]);
 
   // Fetch user payment details
   useEffect(() => {
     // Skip API calls on home page
-    if (isHomePage) {
+    if (isHomePage || hasFetchedUserPayment) {
+      return;
+    }
+    
+    // Prevent infinite retries - max 3 attempts
+    if (userPaymentRetryCount >= MAX_RETRIES) {
+      console.warn('⚠️ Max retries reached for user payment details');
+      setHasFetchedUserPayment(true);
       return;
     }
     
     // Try to fetch from cache first, then API if needed
     dispatch(fetchUserPaymentDetails(false)) // false = don't force refresh
       .unwrap()
+      .then(() => {
+        console.log("✅ User payment details fetched successfully");
+        setHasFetchedUserPayment(true);
+        setUserPaymentRetryCount(0); // Reset retry count on success
+      })
       .catch((error: unknown) => {
-        showToast.error(`Failed to fetch user payment details: ${error}`);
+        console.error(`❌ Failed to fetch user payment details (attempt ${userPaymentRetryCount + 1}/${MAX_RETRIES}):`, error);
+        setUserPaymentRetryCount(prev => prev + 1);
+        
+        // Only show toast on final retry
+        if (userPaymentRetryCount + 1 >= MAX_RETRIES) {
+          showToast.error(`Failed to fetch user payment details after ${MAX_RETRIES} attempts`);
+          setHasFetchedUserPayment(true);
+        }
       });
-  }, [dispatch, isHomePage]);
+  }, [dispatch, isHomePage, hasFetchedUserPayment, userPaymentRetryCount]);
 
   // Fetch swap assets
   useEffect(() => {
     // Skip API calls on home page
-    if (isHomePage) {
+    if (isHomePage || hasFetchedSwapAssets) {
+      return;
+    }
+    
+    // Prevent infinite retries - max 3 attempts
+    if (swapAssetsRetryCount >= MAX_RETRIES) {
+      console.warn('⚠️ Max retries reached for swap assets');
+      setHasFetchedSwapAssets(true);
+      
+      // Set fallback assets after max retries
+      const fallbackAssets = [
+        {
+          ticker: "USDT",
+          symbol: "USDT",
+          name: "Tether USD",
+          network: "BSC",
+          range_commissions: [{ commission: "2" }],
+          commission: "2",
+          fee_rate: "2"
+        },
+        {
+          ticker: "USDT",
+          symbol: "USDT", 
+          name: "USD Coin",
+          network: "BSC",
+          range_commissions: [{ commission: "2" }],
+          commission: "2",
+          fee_rate: "2"
+        }
+      ];
+      
+      dispatch({
+        type: "swap/fetchSupportedAssets/fulfilled",
+        payload: fallbackAssets
+      });
       return;
     }
     
     dispatch(fetchSupportedAssets(false))
       .unwrap()
       .then((data) => {
-        // If no assets in cache, force refresh
-        if (!data || data.length === 0) {
-          return dispatch(fetchSupportedAssets(true)).unwrap();
+        console.log("✅ Swap assets fetched successfully");
+        setHasFetchedSwapAssets(true);
+        setSwapAssetsRetryCount(0); // Reset retry count on success
+        
+        // If no assets in cache, try one force refresh (counts as a retry)
+        if ((!data || data.length === 0) && swapAssetsRetryCount === 0) {
+          setSwapAssetsRetryCount(1);
+          dispatch(fetchSupportedAssets(true)).unwrap()
+            .then(() => {
+              setHasFetchedSwapAssets(true);
+            })
+            .catch(() => {
+              setHasFetchedSwapAssets(true);
+            });
         }
-        return data;
       })
       .catch((error: unknown) => {
-        if (!isHomePage) {
-        }
-        // If cache fetch fails, try force refresh
-        return dispatch(fetchSupportedAssets(true))
-          .unwrap()
-          .catch((refreshError: unknown) => {
-            if (!isHomePage) {
+        console.error(`❌ Failed to fetch swap assets (attempt ${swapAssetsRetryCount + 1}/${MAX_RETRIES}):`, error);
+        setSwapAssetsRetryCount(prev => prev + 1);
+        
+        // Only show toast on final retry
+        if (swapAssetsRetryCount + 1 >= MAX_RETRIES) {
+          if (!isHomePage) {
+            showToast.warning("Unable to fetch swap assets. Using fallback data.");
+          }
+          
+          // Set fallback assets
+          const fallbackAssets = [
+            {
+              ticker: "USDT",
+              symbol: "USDT",
+              name: "Tether USD",
+              network: "BSC",
+              range_commissions: [{ commission: "2" }],
+              commission: "2",
+              fee_rate: "2"
+            },
+            {
+              ticker: "USDT",
+              symbol: "USDT", 
+              name: "USD Coin",
+              network: "BSC",
+              range_commissions: [{ commission: "2" }],
+              commission: "2",
+              fee_rate: "2"
             }
-            
-            // Only show error if it's a network issue, not cache issues
-            if (refreshError instanceof Error) {
-              // Suppress all errors on home page - silent
-              if (isHomePage) {
-                return;
-              }
-              
-              if (refreshError.message.includes("Network Error") || refreshError.message.includes("Network connection issue")) {
-                showToast.warning("Network Issue", "Unable to fetch assets due to network problems. Using fallback data.");
-              } else if (refreshError.message.includes("Server Error")) {
-                showToast.error("Server Error", "Unable to fetch assets from server. Please try again later.");
-              } else if (!refreshError.message.includes("Cache")) {
-                // Only show error if it's not a cache-related issue
-                showToast.error("Asset Loading Error", `Failed to fetch swap assets: ${refreshError.message}`);
-              }
-            }
-            
-            // Set fallback assets so the form can still work
-            const fallbackAssets = [
-              {
-                ticker: "USDT",
-                symbol: "USDT",
-                name: "Tether USD",
-                network: "BSC",
-                range_commissions: [{ commission: "2" }],
-                commission: "2",
-                fee_rate: "2"
-              },
-              {
-                ticker: "USDT",
-                symbol: "USDT", 
-                name: "USD Coin",
-                network: "BSC",
-                range_commissions: [{ commission: "2" }],
-                commission: "2",
-                fee_rate: "2"
-              }
-            ];
-            
-            // Update the Redux store with fallback assets
-            dispatch({
-              type: "swap/fetchSupportedAssets/fulfilled",
-              payload: fallbackAssets
-            });
-            
-            throw refreshError;
+          ];
+          
+          dispatch({
+            type: "swap/fetchSupportedAssets/fulfilled",
+            payload: fallbackAssets
           });
+          
+          setHasFetchedSwapAssets(true);
+        }
       });
-  }, [dispatch]);
+  }, [dispatch, isHomePage, hasFetchedSwapAssets, swapAssetsRetryCount]);
 
   // Auto-select first asset and calculate received amount when assets are loaded
   useEffect(() => {

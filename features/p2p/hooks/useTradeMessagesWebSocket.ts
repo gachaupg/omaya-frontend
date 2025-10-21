@@ -158,6 +158,7 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
                 trade: message.data.trade || parseInt(tradeId),
                 sender: message.data.sender,
                 sender_name: message.data.sender_name,
+                sender_username: message.data.sender_username, // Map username from WebSocket
                 message: message.data.message,
                 images: message.data.images || [],
                 timestamp: message.data.timestamp,
