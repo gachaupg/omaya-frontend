@@ -1,109 +1,92 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
 import { AppDispatch } from "../../../../store";
-import { fetchAdminPaymentDetails, fetchUserPaymentDetails } from "../../../exchange/slices/paymentSlice";
-import { createForexTransaction, resetForexState } from "../../slices/forexSlice";
+import { fetchUserPaymentDetails } from "../../../exchange/slices/paymentSlice";
+import { createForexExchangeThunk } from "../../slices/forexSlice";
 import { showToast } from "../../../../lib/utils/toast";
-import { useForexRates } from "../../hooks/useForexRates";
-import ForexSuccessModal from "../ForexSuccessModal";
 
-// Forex Withdrawal: User sends forex to us, we send them USD
-// We need: user payment detail (their bank), admin forex account (where they send forex)
+// FXP Withdrawal: User sends FXP from forex account, receives USD in bank
+// Exchange rate: FXP to USD = 1 FXP : 1.1 USD (inverse of deposit rate 1.06)
+const FXP_TO_USD_RATE = 1.1;
+
 export default function ForexWithdrawal() {
   const dispatch = useDispatch<AppDispatch>();
-  const { getRate } = useForexRates();
+  const router = useRouter();
   
   // Redux state
-  const { loading: forexLoading, error: forexError, success: forexSuccess } = useSelector((state: any) => state.forex);
-  const { adminPaymentDetails, userPaymentDetails, loading: adminLoading } = useSelector((state: any) => state.payment);
+  const { loading: forexLoading, error: forexError } = useSelector((state: any) => state.forex);
+  const { userPaymentDetails, loading: adminLoading } = useSelector((state: any) => state.payment);
 
-  // Form state
-  const [fromCurrency, setFromCurrency] = useState("EUR");
+  // Form state - Fixed currencies for FXP withdrawal
   const [fromAmount, setFromAmount] = useState("");
-  const [toCurrency, setToCurrency] = useState("USD");
   const [toAmount, setToAmount] = useState("");
-  const [exchangeRate, setExchangeRate] = useState("1.10");
   const [additionalInfo, setAdditionalInfo] = useState("");
   const [userNotes, setUserNotes] = useState("");
   const [selectedUserPaymentId, setSelectedUserPaymentId] = useState<string | null>(null);
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Load payment details - try cache first
+  // Load user payment details
   useEffect(() => {
-    dispatch(fetchAdminPaymentDetails(false)); // false = use cache if available
     dispatch(fetchUserPaymentDetails() as any);
   }, [dispatch]);
 
-  // Update exchange rate when currencies change
+  // Calculate toAmount (USD) from fromAmount (FXP)
   useEffect(() => {
-    const rate = getRate(fromCurrency, toCurrency);
-    setExchangeRate(rate.toFixed(4));
-  }, [fromCurrency, toCurrency, getRate]);
-
-  // Calculate toAmount
-  useEffect(() => {
-    if (fromAmount && exchangeRate) {
-      const calculated = (Number(fromAmount) * Number(exchangeRate)).toFixed(2);
+    if (fromAmount) {
+      const calculated = (Number(fromAmount) * FXP_TO_USD_RATE).toFixed(2);
       setToAmount(calculated);
     } else {
       setToAmount("");
     }
-  }, [fromAmount, exchangeRate]);
-
-  // Handle success
-  useEffect(() => {
-    if (forexSuccess) {
-      showToast.success("Forex withdrawal submitted successfully!");
-      setShowSuccess(true);
-      // Reset form
-      setFromAmount("");
-      setToAmount("");
-      setAdditionalInfo("");
-      setUserNotes("");
-      setSelectedUserPaymentId(null);
-    }
-  }, [forexSuccess]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      setShowSuccess(false);
-      dispatch(resetForexState());
-    };
-  }, [dispatch]);
-
-  const handleModalClose = () => {
-    setShowSuccess(false);
-    dispatch(resetForexState());
-  };
+  }, [fromAmount]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!fromAmount || Number(fromAmount) <= 0) {
-      showToast.error("Please enter a valid amount");
+      showToast.error("Please enter a valid FXP amount");
       return;
     }
 
     if (!selectedUserPaymentId) {
-      showToast.error("Please select your payment method");
+      showToast.error("Please select your bank account where you want to receive USD");
       return;
     }
 
+    setIsSubmitting(true);
+
+    try {
     const payload = {
       transaction_type: "withdrawal" as const,
       user_payment_detail_id: selectedUserPaymentId,
-      from_currency: fromCurrency,
-      from_amount: fromAmount,
-      to_currency: toCurrency,
+        from_currency: "FXP",
+        from_amount: Number(fromAmount).toFixed(2),
+        to_currency: "USD",
       to_amount: toAmount,
-      exchange_rate: exchangeRate,
-      additional_info: additionalInfo,
-      user_notes: userNotes,
-    };
+        exchange_rate: (1 / FXP_TO_USD_RATE).toFixed(4), // Inverse rate for consistency
+        additional_info: additionalInfo.trim() || "Bank transfer from my EUR forex account",
+        user_notes: userNotes.trim() || "Please send USD to my bank account",
+      };
 
-    dispatch(createForexTransaction(payload));
+      console.log("🚀 Forex Withdrawal Payload:", payload);
+
+      const result = await dispatch(createForexExchangeThunk(payload)).unwrap();
+      
+      // Store exchange data in localStorage
+      localStorage.setItem('currentForexExchange', JSON.stringify(result));
+      
+      showToast.success("Forex withdrawal created successfully!");
+      
+      // Navigate to forex status page
+      router.push(`/dashboard/express-exchange/forex-status?transactionId=${result.forex_transaction_id}`);
+    } catch (error: any) {
+      console.error("Failed to create forex withdrawal:", error);
+      showToast.error(error || "Failed to create forex withdrawal");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Filter user payment details (non-crypto accounts, approved only)
@@ -113,120 +96,66 @@ export default function ForexWithdrawal() {
       detail.status?.toLowerCase() === 'approved'
   );
 
-  // Filter admin payment details for forex accounts (where user sends forex to us)
-  const adminForexAccounts = (adminPaymentDetails || []).filter(
-    (detail: any) => detail.payment_type?.toLowerCase() === 'forex'
-  );
-
-
   return (
     <div className="w-full flex flex-col dark:bg-[#18181D]">
-      {/* Success Modal */}
-      <ForexSuccessModal
-        isOpen={showSuccess}
-        onClose={handleModalClose}
-        transactionType="withdrawal"
-        fromCurrency={fromCurrency}
-        fromAmount={fromAmount}
-        toCurrency={toCurrency}
-        toAmount={toAmount}
-        exchangeRate={exchangeRate}
-      />
-
       <form onSubmit={handleSubmit}>
-        <h2 className="text-lg font-semibold mb-3 text-[#788099] inline-flex items-center gap-2">
-          <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Forex Exchange Info
+        <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
+          <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> FXP Withdrawal Info
         </h2>
 
-        <div className="w-full max-w-4xl mx-auto mb-4">
-          <div className="border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-4 bg-white dark:bg-[#1D1D23]">
-            {/* Currency Selection */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block text-sm text-[#7e7e8f] dark:text-[#A2A4A9] mb-1.5 font-medium">
-                  From Currency (You Send)
-                </label>
-                <select
-                  value={fromCurrency}
-                  onChange={(e) => setFromCurrency(e.target.value)}
-                  className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#D1D2D4] rounded-xl px-3 py-2.5 text-base focus:outline-none border border-[#D1D2D4FF] dark:border-[#35353E]"
-                >
-                  <option value="EUR" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">EUR</option>
-                  <option value="USD" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">USD</option>
-                  <option value="GBP" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">GBP</option>
-                  <option value="JPY" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">JPY</option>
-                  <option value="AUD" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">AUD</option>
-                  <option value="CAD" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">CAD</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm text-[#7e7e8f] dark:text-[#A2A4A9] mb-1.5 font-medium">
-                  To Currency (You Receive)
-                </label>
-                <select
-                  value={toCurrency}
-                  onChange={(e) => setToCurrency(e.target.value)}
-                  className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#D1D2D4] rounded-xl px-3 py-2.5 text-base focus:outline-none border border-[#D1D2D4FF] dark:border-[#35353E]"
-                >
-                  <option value="USD" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">USD</option>
-                  <option value="EUR" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">EUR</option>
-                  <option value="GBP" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">GBP</option>
-                  <option value="JPY" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">JPY</option>
-                  <option value="AUD" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">AUD</option>
-                  <option value="CAD" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">CAD</option>
-                </select>
+        <div className="w-full mb-4">
+          <div className="border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-5 bg-white dark:bg-[#1D1D23]">
+            {/* Exchange Info Badge */}
+            <div className="mb-4 p-3 bg-[#1D8751] bg-opacity-10 border border-[#1D8751] rounded-lg">
+              <div className="flex items-center gap-2 text-[#1D8751]">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" stroke="#1D8751" strokeWidth="2"/>
+                  <line x1="12" y1="8" x2="12" y2="12" stroke="#1D8751" strokeWidth="2" strokeLinecap="round"/>
+                  <circle cx="12" cy="16" r="1" fill="#1D8751"/>
+                </svg>
+                <span className="text-sm font-medium">
+                  Exchange Rate: 1 FXP = {FXP_TO_USD_RATE} USD
+                </span>
               </div>
             </div>
 
             {/* Amount Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm text-[#7e7e8f] dark:text-[#A2A4A9] mb-1.5 font-medium">
-                  You Send
+                <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+                  You Send (FXP)
                 </label>
                 <input
                   type="text"
+                  inputMode="decimal"
                   value={fromAmount}
-                  onChange={(e) => setFromAmount(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                      setFromAmount(value);
+                    }
+                  }}
                   placeholder="1000.00"
-                  className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#D1D2D4] rounded-xl px-3 py-2.5 text-base focus:outline-none border border-[#D1D2D4FF] dark:border-[#35353E]"
+                  className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#D1D2D4] rounded-2xl px-4 py-2 text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E]"
                 />
               </div>
 
               <div>
-                <label className="block text-sm text-[#7e7e8f] dark:text-[#A2A4A9] mb-1.5 font-medium">
-                  You Receive
+                <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+                  You Receive (USD)
                 </label>
-                <div className="flex items-center bg-white dark:bg-[#1D1D23] border border-[#D1D2D4FF] dark:border-[#35353E] rounded-xl px-3 py-2.5">
+                <div className="flex items-center bg-white dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl px-4 py-2">
                   <span className="text-[#1D8751] text-lg font-bold">
-                    {toAmount || "0.00"} {toCurrency}
+                    {toAmount || "0.00"} USD
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Exchange Rate */}
+            {/* Select Your Bank Account to Receive USD */}
             <div className="mb-4">
-              <label className="block text-sm text-[#7e7e8f] dark:text-[#A2A4A9] mb-1.5 font-medium">
-                Exchange Rate
-              </label>
-              <input
-                type="text"
-                value={exchangeRate}
-                onChange={(e) => setExchangeRate(e.target.value)}
-                placeholder="1.10"
-                className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#D1D2D4] rounded-xl px-3 py-2.5 text-base focus:outline-none border border-[#D1D2D4FF] dark:border-[#35353E]"
-              />
-              <p className="text-xs text-[#788099] mt-1.5">
-                Rate: 1 {fromCurrency} = {exchangeRate} {toCurrency}
-              </p>
-            </div>
-
-            {/* Select Your Payment Method */}
-            <div className="mb-4">
-              <label className="block text-sm text-[#7e7e8f] dark:text-[#A2A4A9] mb-1.5 font-medium">
-                Select Your Payment Method (Your Bank Account)
+              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+                Your Bank Account (Where you'll receive USD)
               </label>
               {adminLoading ? (
                 <div className="text-[#788099] text-sm">Loading payment methods...</div>
@@ -234,144 +163,97 @@ export default function ForexWithdrawal() {
                 <select
                   value={selectedUserPaymentId || ""}
                   onChange={(e) => setSelectedUserPaymentId(e.target.value)}
-                  className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#D1D2D4] rounded-xl px-3 py-2.5 text-base focus:outline-none border border-[#D1D2D4FF] dark:border-[#35353E]"
+                  className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#D1D2D4] rounded-2xl px-4 py-2 text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E]"
                 >
                   <option value="" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">Select your bank account</option>
                   {filteredUserPayments.map((detail: any) => (
                     <option key={detail.id} value={detail.user_payment_detail_id} className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">
-                      {detail.payment_method_name} - {detail.payment_provider_name}
-                      {detail.account_number && ` (${detail.account_number})`}
+                      {detail.payment_provider_name} - {detail.payment_method_name}
+                      {detail.account_number && ` (**** ${detail.account_number.slice(-4)})`}
                     </option>
                   ))}
                 </select>
               ) : (
-                <div className="text-[#788099] text-sm">No payment methods available. Please add one first.</div>
-              )}
-            </div>
-
-            {/* Show Admin Forex Accounts (where user sends forex) */}
-            <div className="mb-4">
-              <label className="block text-sm text-[#7e7e8f] dark:text-[#A2A4A9] mb-1.5 font-medium">
-                Send Forex To (Admin Account)
-              </label>
-              {adminLoading ? (
-                <div className="text-[#788099] text-sm">Loading admin accounts...</div>
-              ) : adminForexAccounts.length > 0 ? (
-                <div className="border border-[#1D8751] dark:border-[#1D8751] rounded-xl p-3">
-                  {adminForexAccounts.map((account: any, index: number) => (
-                    <div key={account.id} className={index > 0 ? "mt-3 pt-3 border-t border-[#D1D2D4FF] dark:border-[#35353E]" : ""}>
-                      <div className="text-[#35353e] dark:text-[#D1D2D4] font-medium mb-2 text-sm">
-                        {account.payment_method_type} - {account.provider_name}
-                      </div>
-                      {account.account_number && (
-                        <div className="text-[#788099] text-xs mb-1">
-                          <span className="font-medium">Account:</span> {account.account_number}
-                        </div>
-                      )}
-                      {account.account_name && (
-                        <div className="text-[#788099] text-xs mb-1">
-                          <span className="font-medium">Name:</span> {account.account_name}
-                        </div>
-                      )}
-                      {account.wallet_address && (
-                        <div className="text-[#788099] text-xs">
-                          <span className="font-medium">Address:</span> {account.wallet_address}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-[#F79330] text-sm">
-                  No admin forex accounts configured. Please contact support.
+                <div className="p-4 bg-[#F79330] bg-opacity-10 border border-[#F79330] rounded-lg">
+                  <p className="text-[#F79330] text-sm">
+                    No bank accounts found. Please add your bank account first in Settings → Payment Methods.
+                  </p>
                 </div>
               )}
             </div>
 
-            {/* Additional Info */}
+            {/* Additional Notes */}
             <div className="mb-4">
-              <label className="block text-sm text-[#7e7e8f] dark:text-[#A2A4A9] mb-1.5 font-medium">
-                Additional Information (Optional)
-              </label>
-              <textarea
-                value={additionalInfo}
-                onChange={(e) => setAdditionalInfo(e.target.value)}
-                placeholder="Bank transfer from my EUR forex account"
-                rows={3}
-                className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#D1D2D4] rounded-xl px-3 py-2.5 text-sm focus:outline-none border border-[#D1D2D4FF] dark:border-[#35353E] resize-none"
-              />
-            </div>
-
-            {/* User Notes */}
-            <div className="mb-4">
-              <label className="block text-sm text-[#7e7e8f] dark:text-[#A2A4A9] mb-1.5 font-medium">
-                User Notes (Optional)
+              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+                Additional Notes (Optional)
               </label>
               <textarea
                 value={userNotes}
                 onChange={(e) => setUserNotes(e.target.value)}
-                placeholder="Please send USD to my bank account"
+                placeholder="Add any special instructions or notes..."
                 rows={3}
-                className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#D1D2D4] rounded-xl px-3 py-2.5 text-sm focus:outline-none border border-[#D1D2D4FF] dark:border-[#35353E] resize-none"
+                className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#D1D2D4] rounded-2xl px-4 py-2 text-base focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] resize-none"
               />
             </div>
           </div>
         </div>
 
         {/* Submit Button */}
-        <div className="w-full max-w-4xl mx-auto mt-4">
+        <div className="w-full mt-4">
           <button
             type="submit"
-            disabled={forexLoading}
-            className={`w-full text-white text-sm font-medium py-2.5 rounded-xl flex items-center justify-center gap-2 transition-colors ${
-              forexLoading ? "bg-gray-500 cursor-not-allowed" : "bg-[#1D8751] hover:bg-[#166b3e]"
+            disabled={isSubmitting || !fromAmount || !selectedUserPaymentId}
+            className={`w-full text-white text-base font-medium py-3 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
+              isSubmitting || !fromAmount || !selectedUserPaymentId
+                ? "bg-gray-500 cursor-not-allowed"
+                : "bg-[#1D8751] hover:bg-[#166b3e]"
             }`}
           >
-            {forexLoading ? (
+            {isSubmitting ? (
               <div className="flex items-center gap-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                <span>Processing...</span>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                <span>Creating Withdrawal...</span>
               </div>
             ) : (
-              <span>Submit Forex Withdrawal</span>
+              <span>Submit FXP Withdrawal</span>
             )}
           </button>
           {forexError && (
-            <div className="text-red-500 text-xs mt-2 text-center">
+            <div className="text-red-500 text-sm mt-2 text-center">
               {typeof forexError === "string" ? forexError : JSON.stringify(forexError)}
             </div>
           )}
         </div>
 
         {/* Terms */}
-        <div className="w-full max-w-4xl mx-auto mt-4">
-          <div className="border border-[#1D8751] dark:border-[#1D8751] rounded-xl p-3">
+        <div className="w-full mt-4">
+          <div className="border border-[#1D8751] dark:border-[#1D8751] rounded-2xl p-4">
             <div className="flex items-center mb-2">
-              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" className="mr-2">
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" className="mr-2">
                 <circle cx="12" cy="12" r="10" stroke="#1D8751" strokeWidth="2" />
                 <line x1="12" y1="8" x2="12" y2="12" stroke="#1D8751" strokeWidth="2" strokeLinecap="round" />
                 <circle cx="12" cy="16" r="1" fill="#1D8751" />
               </svg>
-              <span className="text-sm font-medium text-[#7e7e8f] dark:text-[#788099]">
+              <span className="text-base font-semibold text-[#7e7e8f] dark:text-[#788099]">
                 Important Notes
               </span>
             </div>
-            <ul className="list-none space-y-1.5">
+            <ul className="list-none space-y-2">
               <li className="flex items-start">
-                <span className="w-1.5 h-1.5 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-2"></span>
-                <span className="text-[#788099] dark:text-[#A2A4A9] text-xs">
-                  Send forex from your registered bank account only
+                <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-2"></span>
+                <span className="text-[#35353e] dark:text-[#788099] text-sm">
+                  USD will be sent to your selected bank account
                 </span>
               </li>
               <li className="flex items-start">
-                <span className="w-1.5 h-1.5 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-2"></span>
-                <span className="text-[#788099] dark:text-[#A2A4A9] text-xs">
-                  Exchange rate may vary at the time of processing
+                <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-2"></span>
+                <span className="text-[#35353e] dark:text-[#788099] text-sm">
+                  Fixed exchange rate: 1 FXP = {FXP_TO_USD_RATE} USD
                 </span>
               </li>
               <li className="flex items-start">
-                <span className="w-1.5 h-1.5 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-2"></span>
-                <span className="text-[#788099] dark:text-[#A2A4A9] text-xs">
+                <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] inline-block mr-2"></span>
+                <span className="text-[#35353e] dark:text-[#788099] text-sm">
                   Processing time: 1-3 business days
                 </span>
               </li>

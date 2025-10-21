@@ -135,6 +135,11 @@ export const API_CONFIG = {
   },
   FOREX: {
     CREATE_EXCHANGE: "/trading_engine/forex/create-exchange/",
+    GET_EXCHANGE: (transactionId: string) => `/trading_engine/forex/exchanges/${transactionId}/`,
+    SOCKETS: {
+      FOREX_STATUS: (transactionId: string, token: string) =>
+        `${getWebSocketBaseUrl()}/ws/forex/status/${transactionId}/?token=${token}`,
+    },
   },
   GOOGLE_AUTH: {
     GOOGLE_AUTH: "/api/auth/google/",

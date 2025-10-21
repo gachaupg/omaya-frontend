@@ -204,6 +204,10 @@ export default function WithdrawalForm({
     (state: any) => state.payment
   );
 
+  // Add local state to force immediate display of cached payment methods
+  const [localPaymentMethods, setLocalPaymentMethods] = useState<any[]>([]);
+  const [localUserPaymentMethods, setLocalUserPaymentMethods] = useState<any[]>([]);
+
   const paymentMethodsDisplay = usePaymentMethodsDisplay(
     adminPaymentDetails,
     loading,
@@ -215,6 +219,72 @@ export default function WithdrawalForm({
     userPaymentLoading,
     null
   );
+
+  // Merge local cached payment methods with Redux state for instant display
+  const effectivePaymentMethods = useMemo(() => {
+    // Priority: Redux state > local cached > empty
+    if (paymentMethodsDisplay.displayData && paymentMethodsDisplay.displayData.length > 0) {
+      return paymentMethodsDisplay.displayData;
+    }
+    if (localPaymentMethods && localPaymentMethods.length > 0) {
+      console.log('🚀 Using local cached admin payment methods for instant display');
+      return localPaymentMethods;
+    }
+    return [];
+  }, [paymentMethodsDisplay.displayData, localPaymentMethods]);
+
+  const effectiveUserPaymentMethods = useMemo(() => {
+    // Priority: Redux state > local cached > empty
+    if (userPaymentMethodsDisplay.displayData && userPaymentMethodsDisplay.displayData.length > 0) {
+      return userPaymentMethodsDisplay.displayData;
+    }
+    if (localUserPaymentMethods && localUserPaymentMethods.length > 0) {
+      console.log('🚀 Using local cached user payment methods for instant display');
+      return localUserPaymentMethods;
+    }
+    return [];
+  }, [userPaymentMethodsDisplay.displayData, localUserPaymentMethods]);
+
+  // Check cache immediately on mount for instant display
+  useEffect(() => {
+    if (isHomePage) return;
+    
+    const loadCachedPaymentMethods = async () => {
+      try {
+        const { sliceCache } = await import("@/lib/utils/sliceCache");
+        
+        // Load admin payment methods
+        const cachedAdmin = await sliceCache.get<any[]>('payment', 'fetchAdminPaymentDetails');
+        if (cachedAdmin && cachedAdmin.length > 0) {
+          console.log('⚡ Instantly showing cached admin payment methods:', cachedAdmin.length);
+          setLocalPaymentMethods(cachedAdmin);
+          
+          // Also update Redux state immediately with cached data
+          dispatch({
+            type: 'payment/fetchAdminPaymentDetails/fulfilled',
+            payload: cachedAdmin,
+          });
+        }
+
+        // Load user payment methods
+        const cachedUser = await sliceCache.get<any[]>('payment', 'fetchUserPaymentDetails');
+        if (cachedUser && cachedUser.length > 0) {
+          console.log('⚡ Instantly showing cached user payment methods:', cachedUser.length);
+          setLocalUserPaymentMethods(cachedUser);
+          
+          // Also update Redux state immediately with cached data
+          dispatch({
+            type: 'payment/fetchUserPaymentDetails/fulfilled',
+            payload: cachedUser,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load cached payment methods:', error);
+      }
+    };
+    
+    loadCachedPaymentMethods();
+  }, [isHomePage, dispatch]);
 
   // Create a display wrapper for adminWalletList with fallback data
   const adminWalletListDisplay = useMemo(() => {
@@ -275,6 +345,10 @@ export default function WithdrawalForm({
   const [responseMessage, setResponseMessage] = useState<string>("");
   const [websocketUrl, setWebsocketUrl] = useState<string>("");
   const [transactionId, setTransactionId] = useState<string>("");
+  
+  // Forex-specific state for withdrawal
+  const [userNotesForex, setUserNotesForex] = useState<string>("");
+  const [showForexWithdrawalForm, setShowForexWithdrawalForm] = useState<boolean>(false);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
   // Asset selection state for search functionality
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
@@ -336,15 +410,11 @@ export default function WithdrawalForm({
     null
   );
 
-  // Add retry counters to prevent infinite loops
-  const [adminPaymentRetryCount, setAdminPaymentRetryCount] = useState(0);
+  // Add retry counters for remaining fetches (admin wallet, assets, swap assets)
   const [adminWalletRetryCount, setAdminWalletRetryCount] = useState(0);
-  const [userPaymentRetryCount, setUserPaymentRetryCount] = useState(0);
   const [assetsRetryCount, setAssetsRetryCount] = useState(0);
   const [swapAssetsRetryCount, setSwapAssetsRetryCount] = useState(0);
-  const [hasFetchedAdminPayment, setHasFetchedAdminPayment] = useState(false);
   const [hasFetchedAdminWallet, setHasFetchedAdminWallet] = useState(false);
-  const [hasFetchedUserPayment, setHasFetchedUserPayment] = useState(false);
   const [hasFetchedAssets, setHasFetchedAssets] = useState(false);
   const [hasFetchedSwapAssets, setHasFetchedSwapAssets] = useState(false);
   const MAX_RETRIES = 3;
@@ -429,36 +499,45 @@ export default function WithdrawalForm({
 
   useEffect(() => {
     // Skip API calls on home page - buttons will redirect to login
-    if (isHomePage || hasFetchedAdminPayment) {
+    if (isHomePage) {
       return;
     }
     
-    // Prevent infinite retries - max 3 attempts
-    if (adminPaymentRetryCount >= MAX_RETRIES) {
-      console.warn('⚠️ Max retries reached for admin payment details');
-      setHasFetchedAdminPayment(true);
-      return;
-    }
-    
-    // Try to fetch from cache first, then API if needed
-    dispatch(fetchAdminPaymentDetails(false)) // false = don't force refresh
+    // First try to get from cache, then force refresh if no data
+    dispatch(fetchAdminPaymentDetails(false))
       .unwrap()
       .then((data) => {
-        console.log("✅ Admin payment details fetched successfully");
-        setHasFetchedAdminPayment(true);
-        setAdminPaymentRetryCount(0); // Reset retry count on success
+        console.log('✅ Admin payment methods loaded from cache/API:', data?.length || 0);
+        // Update local state immediately
+        if (data && data.length > 0) {
+          setLocalPaymentMethods(data);
+        }
+        // If no payment methods in cache, force refresh
+        if (!data || (Array.isArray(data) && data.length === 0)) {
+          console.log('🔄 No cached admin payment methods, forcing refresh...');
+          return dispatch(fetchAdminPaymentDetails(true)).unwrap();
+        }
+        return data;
       })
       .catch((error: unknown) => {
-        console.error(`❌ Failed to fetch admin payment details (attempt ${adminPaymentRetryCount + 1}/${MAX_RETRIES}):`, error);
-        setAdminPaymentRetryCount(prev => prev + 1);
-        
-        // Only show toast on final retry
-        if (adminPaymentRetryCount + 1 >= MAX_RETRIES) {
-          showToast.error(`Failed to fetch admin payment details after ${MAX_RETRIES} attempts`);
-          setHasFetchedAdminPayment(true);
-        }
+        console.error('❌ Cache fetch failed, trying force refresh:', error);
+        // If cache fetch fails, try force refresh
+        return dispatch(fetchAdminPaymentDetails(true))
+          .unwrap()
+          .then((data) => {
+            console.log('✅ Admin payment methods loaded from force refresh:', data?.length || 0);
+            // Update local state immediately
+            if (data && data.length > 0) {
+              setLocalPaymentMethods(data);
+            }
+            return data;
+          })
+          .catch((refreshError: unknown) => {
+            console.error('❌ Force refresh also failed:', refreshError);
+            // Don't show toast error - the UI will handle the loading/error state gracefully
+          });
       });
-  }, [dispatch, isHomePage, hasFetchedAdminPayment, adminPaymentRetryCount]);
+  }, [dispatch, isHomePage]);
 
   // Fetch admin wallet list
   useEffect(() => {
@@ -557,36 +636,45 @@ export default function WithdrawalForm({
   // Fetch user payment details
   useEffect(() => {
     // Skip API calls on home page
-    if (isHomePage || hasFetchedUserPayment) {
+    if (isHomePage) {
       return;
     }
     
-    // Prevent infinite retries - max 3 attempts
-    if (userPaymentRetryCount >= MAX_RETRIES) {
-      console.warn('⚠️ Max retries reached for user payment details');
-      setHasFetchedUserPayment(true);
-      return;
-    }
-    
-    // Try to fetch from cache first, then API if needed
-    dispatch(fetchUserPaymentDetails(false)) // false = don't force refresh
+    // First try to get from cache, then force refresh if no data
+    dispatch(fetchUserPaymentDetails(false))
       .unwrap()
-      .then(() => {
-        console.log("✅ User payment details fetched successfully");
-        setHasFetchedUserPayment(true);
-        setUserPaymentRetryCount(0); // Reset retry count on success
+      .then((data) => {
+        console.log('✅ User payment methods loaded from cache/API:', data?.length || 0);
+        // Update local state immediately
+        if (data && data.length > 0) {
+          setLocalUserPaymentMethods(data);
+        }
+        // If no payment methods in cache, force refresh
+        if (!data || (Array.isArray(data) && data.length === 0)) {
+          console.log('🔄 No cached user payment methods, forcing refresh...');
+          return dispatch(fetchUserPaymentDetails(true)).unwrap();
+        }
+        return data;
       })
       .catch((error: unknown) => {
-        console.error(`❌ Failed to fetch user payment details (attempt ${userPaymentRetryCount + 1}/${MAX_RETRIES}):`, error);
-        setUserPaymentRetryCount(prev => prev + 1);
-        
-        // Only show toast on final retry
-        if (userPaymentRetryCount + 1 >= MAX_RETRIES) {
-          showToast.error(`Failed to fetch user payment details after ${MAX_RETRIES} attempts`);
-          setHasFetchedUserPayment(true);
-        }
+        console.error('❌ Cache fetch failed, trying force refresh:', error);
+        // If cache fetch fails, try force refresh
+        return dispatch(fetchUserPaymentDetails(true))
+          .unwrap()
+          .then((data) => {
+            console.log('✅ User payment methods loaded from force refresh:', data?.length || 0);
+            // Update local state immediately
+            if (data && data.length > 0) {
+              setLocalUserPaymentMethods(data);
+            }
+            return data;
+          })
+          .catch((refreshError: unknown) => {
+            console.error('❌ Force refresh also failed:', refreshError);
+            // Don't show toast error - the UI will handle the loading/error state gracefully
+          });
       });
-  }, [dispatch, isHomePage, hasFetchedUserPayment, userPaymentRetryCount]);
+  }, [dispatch, isHomePage]);
 
   // Fetch swap assets
   useEffect(() => {
@@ -693,7 +781,7 @@ export default function WithdrawalForm({
   // Auto-select first asset and calculate received amount when assets are loaded
   useEffect(() => {
     if (assetsDisplay.shouldShowData && assetsDisplay.displayData.length > 0 && !selectedAsset) {
-      // Sort assets to get USDT on BSC first, then USDC on BSC, then others
+      // Sort assets to get USDT on BSC, USDC on BSC, fxprimus, then others
       const sortedAssets = [...assetsDisplay.displayData].sort((a, b) => {
         const tickerA = (a?.ticker || a?.symbol || a?.name || "")
           .toString()
@@ -736,6 +824,20 @@ export default function WithdrawalForm({
           return 1;
         }
         
+        // Priority 3: FXPRIMUS (ticker: fxp)
+        if (
+          tickerA === "fxp" &&
+          !(tickerB === "fxp")
+        ) {
+          return -1;
+        }
+        if (
+          tickerB === "fxp" &&
+          !(tickerA === "fxp")
+        ) {
+          return 1;
+        }
+        
         return 0;
       });
 
@@ -765,6 +867,9 @@ export default function WithdrawalForm({
       // Check asset type first and handle accordingly
       if (isSimpleCalculationAsset(selectedAsset)) {
         // For simple assets, calculate immediately
+        calculateAmounts(payAmount, true);
+      } else if (isForexAsset(selectedAsset)) {
+        // For FXP, calculate immediately without API
         calculateAmounts(payAmount, true);
       } else {
         // For non-simple assets, the estimate useEffect will handle the API call
@@ -813,6 +918,16 @@ export default function WithdrawalForm({
     return (ticker === "usdt" && network === "bsc") || 
            (ticker === "usdc" && network === "bsc");
   };
+
+  // Check if asset is FXP (forex)
+  const isForexAsset = (asset: any) => {
+    if (!asset) return false;
+    const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
+    return ticker === "fxp";
+  };
+
+  // FXP withdrawal rate: 1 FXP = 1.1 USD (user sends FXP, receives USD)
+  const FXP_TO_USD_RATE = 1.1;
 
   // Helper function to check if cache entry is still valid
   const isCacheValid = (timestamp: number) => {
@@ -930,6 +1045,7 @@ export default function WithdrawalForm({
     if (
       selectedAsset &&
       !isSimpleCalculationAsset(selectedAsset) &&
+      !isForexAsset(selectedAsset) && // Skip FXP - uses manual calculation
       payAmount &&
       payAmount > 0 &&
       isCalculatingFromPay // Only fetch estimate when calculating from pay amount
@@ -1227,6 +1343,7 @@ export default function WithdrawalForm({
     if (
       selectedAsset &&
       !isSimpleCalculationAsset(selectedAsset) &&
+      !isForexAsset(selectedAsset) && // Skip FXP - uses manual calculation
       getAmount &&
       getAmount > 0 &&
       !isCalculatingFromPay
@@ -1511,7 +1628,7 @@ export default function WithdrawalForm({
       );
     }) || [];
 
-  // Sort assets: USDT on BSC first, USDC on BSC second, then rest in original order
+  // Sort assets: USDT on BSC, USDC on BSC, fxprimus, then rest in original order
   const sortedSwapAssets = [...filteredSwapAssets].sort((a, b) => {
     // Ensure tickers exist and are strings (using ticker as primary, fallback to symbol/name)
     const tickerA = (a?.ticker || a?.symbol || a?.name || "")
@@ -1551,6 +1668,20 @@ export default function WithdrawalForm({
       tickerB === "usdc" &&
       networkB === "bsc" &&
       !(tickerA === "usdc" && networkA === "bsc")
+    ) {
+      return 1;
+    }
+    
+    // Priority 3: FXPRIMUS (ticker: fxp)
+    if (
+      tickerA === "fxp" &&
+      !(tickerB === "fxp")
+    ) {
+      return -1;
+    }
+    if (
+      tickerB === "fxp" &&
+      !(tickerA === "fxp")
     ) {
       return 1;
     }
@@ -1612,6 +1743,47 @@ export default function WithdrawalForm({
       }
 
       // No loading states for simple calculations - instant result
+      setIsCalculating(false);
+      setIsCalculatingReceive(false);
+      return;
+    }
+
+    // For FXP (forex), use manual calculation with fixed rate
+    if (fromPay && selectedAsset && isForexAsset(selectedAsset)) {
+      // For withdrawal: FXP to USD (multiply by 1.1)
+      const calculatedGetAmount = fromAmount * FXP_TO_USD_RATE;
+      
+      setGetAmount(calculatedGetAmount);
+      setGetAmountInput(calculatedGetAmount.toFixed(2));
+      setPreviousValidAmount(calculatedGetAmount.toFixed(2));
+
+      // Validate the calculated amount
+      const validationError = validateReceiveAmount(
+        calculatedGetAmount,
+        selectedAsset
+      );
+      setReceiveAmountError(validationError);
+
+      // Show info modal if receive amount exceeds $15,000
+      if (calculatedGetAmount > 15000) {
+        setIsInfoModalOpen(true);
+      }
+
+      // No loading states for FXP - instant result
+      setIsCalculating(false);
+      setIsCalculatingReceive(false);
+      return;
+    }
+    
+    // For FXP reverse calculation (user types USD, get FXP amount)
+    if (!fromPay && selectedAsset && isForexAsset(selectedAsset)) {
+      // For reverse: USD to FXP (divide by 1.1)
+      const calculatedPayAmount = fromAmount / FXP_TO_USD_RATE;
+      
+      setPayAmount(calculatedPayAmount);
+      setPayAmountInput(calculatedPayAmount.toFixed(2));
+
+      // No loading states for FXP - instant result
       setIsCalculating(false);
       setIsCalculatingReceive(false);
       return;
@@ -2336,6 +2508,9 @@ export default function WithdrawalForm({
                         if (isSimpleCalculationAsset(selectedAsset)) {
                           // For direct assets (USDT on BSC, USDC on BSC), calculate immediately
                           calculateAmounts(newValue, true);
+                        } else if (isForexAsset(selectedAsset)) {
+                          // For FXP, calculate immediately without API
+                          calculateAmounts(newValue, true);
                         } else if (newValue > 0) {
                           // For non-simple assets, stop normal calculation and go directly to API
 
@@ -2594,15 +2769,15 @@ export default function WithdrawalForm({
                     <div className="max-h-60 overflow-y-auto">
                       {sortedSwapAssets.length > 0 ? (
                         <>
-                          {/* Popular Section - First 2 assets only if no search */}
-                          {!assetSearchTerm && sortedSwapAssets.length > 2 && (
+                          {/* Popular Section - First 3 assets only if no search */}
+                          {!assetSearchTerm && sortedSwapAssets.length > 3 && (
                             <>
                               <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
                                 <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
                                   Popular
                                 </span>
                               </div>
-                              {sortedSwapAssets.slice(0, 2).map((asset: SupportedAsset, index: number) => {
+                              {sortedSwapAssets.slice(0, 3).map((asset: SupportedAsset, index: number) => {
                                 const handleAssetClick = () => {
                                   // First, stop any ongoing calculations and clear previous states
                                   if (calculationTimeout) {
@@ -2631,6 +2806,17 @@ export default function WithdrawalForm({
                                     setIsCalculatingFromPay(true);
                                     if (!isUserModifiedAmount) {
                                       const defaultAmount = getDefaultAmount(asset);
+                                      setPayAmount(defaultAmount);
+                                      setPayAmountInput(defaultAmount.toString());
+                                      calculateAmounts(defaultAmount, true);
+                                    } else {
+                                      calculateAmounts(payAmount, true);
+                                    }
+                                  } else if (isForexAsset(asset)) {
+                                    // For FXP, calculate immediately without API
+                                    setIsCalculatingFromPay(true);
+                                    if (!isUserModifiedAmount) {
+                                      const defaultAmount = 1000; // Default FXP amount
                                       setPayAmount(defaultAmount);
                                       setPayAmountInput(defaultAmount.toString());
                                       calculateAmounts(defaultAmount, true);
@@ -2709,7 +2895,7 @@ export default function WithdrawalForm({
                           )}
                           
                           {/* Rest of the assets or all assets if searching */}
-                          {(assetSearchTerm ? sortedSwapAssets : sortedSwapAssets.slice(2)).map(
+                          {(assetSearchTerm ? sortedSwapAssets : sortedSwapAssets.slice(3)).map(
                           (asset: SupportedAsset, index: number) => (
                             <div
                               key={`${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
@@ -2742,6 +2928,17 @@ export default function WithdrawalForm({
                                   setIsCalculatingFromPay(true);
                                   if (!isUserModifiedAmount) {
                                       const defaultAmount = getDefaultAmount(asset);
+                                    setPayAmount(defaultAmount);
+                                    setPayAmountInput(defaultAmount.toString());
+                                    calculateAmounts(defaultAmount, true);
+                                  } else {
+                                    calculateAmounts(payAmount, true);
+                                  }
+                                } else if (isForexAsset(asset)) {
+                                  // For FXP, calculate immediately without API
+                                  setIsCalculatingFromPay(true);
+                                  if (!isUserModifiedAmount) {
+                                      const defaultAmount = 1000; // Default FXP amount
                                     setPayAmount(defaultAmount);
                                     setPayAmountInput(defaultAmount.toString());
                                     calculateAmounts(defaultAmount, true);
@@ -2921,6 +3118,15 @@ export default function WithdrawalForm({
                           setPayAmountInput(calculatedPayAmount.toString());
 
                           // Simple assets don't need loading states - calculation is instant
+                          setIsCalculating(false);
+                          setIsCalculatingReceive(false);
+                        } else if (isForexAsset(selectedAsset)) {
+                          // For FXP, calculate immediately without API (reverse: USD to FXP)
+                          const calculatedPayAmount = newAmount / FXP_TO_USD_RATE;
+                          setPayAmount(calculatedPayAmount);
+                          setPayAmountInput(calculatedPayAmount.toFixed(2));
+
+                          // FXP doesn't need loading states - calculation is instant
                           setIsCalculating(false);
                           setIsCalculatingReceive(false);
                         } else if (newAmount > 0) {
