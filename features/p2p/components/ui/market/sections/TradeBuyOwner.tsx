@@ -203,6 +203,10 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     if (confirmOrder?.status === "completed") {
       console.log('✅ Trade completed! Showing success modal');
       setShowSuccessModal(true);
+      // Auto-redirect to dashboard after 10 seconds
+      setTimeout(() => {
+        window.location.href = "/dashboard/p2p/";
+      }, 10000);
     }
   }, [confirmOrder?.status, showSuccessModal]);
 
@@ -217,6 +221,10 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     if (confirmOrder?.status === "cancelled") {
       console.log('🚫 Trade cancelled! Showing cancelled modal');
       setShowCancelledModal(true);
+      // Auto-redirect to dashboard after 10 seconds
+      setTimeout(() => {
+        window.location.href = "/dashboard/p2p/";
+      }, 10000);
     }
   }, [confirmOrder?.status, showCancelledModal]);
 
