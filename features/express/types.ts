@@ -28,7 +28,7 @@ export interface ExpressWithdrawalPayload {
   asset: string;
   amount: string;
   network: string;
-  user_payment_detail_id: number;
+  user_payment_detail_id: string;
 }
 
 export interface ChangeNowSwapResponse {

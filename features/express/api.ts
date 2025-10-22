@@ -1,14 +1,9 @@
 import { post, get } from "@/lib/apiClient";
 import { API_CONFIG } from "@/lib/appConfig";
-import { ForexExchangePayload, ForexExchangeResponse } from "./types";
+import { ForexExchangePayload, ForexExchangeResponse, ExpressWithdrawalPayload } from "./types";
 
 // Express withdrawal API
-export const createExpressWithdrawal = async (data: {
-  asset: string;
-  amount: string;
-  network: string;
-  user_payment_detail_id: number;
-}) => {
+export const createExpressWithdrawal = async (data: ExpressWithdrawalPayload) => {
   return post(API_CONFIG.EXPRESS.WITHDRAW, data);
 };
 

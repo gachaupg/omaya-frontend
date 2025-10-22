@@ -75,17 +75,21 @@ export const getEstimateSwap = async (
   toNetwork: string,
   amount: number
 ): Promise<SwapEstimate> => {
+  // Use withRetry with reduced retries and delays for faster response
   return withRetry(async () => {
     try {
       const response = await get<SwapEstimate>(
         API_CONFIG.SWAP.ESTIMATE_SWAP +
-          `?from_currency=${fromCurrency}&from_network=${fromNetwork}&to_currency=${toCurrency}&to_network=${toNetwork}&amount=${amount}`
+          `?from_currency=${fromCurrency}&from_network=${fromNetwork}&to_currency=${toCurrency}&to_network=${toNetwork}&amount=${amount}`,
+        {
+          timeout: 10000 // 10 second timeout for estimate calls
+        }
       );
       return response.data;
     } catch (error: any) {
 
       // Handle network errors gracefully
-      if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
+      if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND" || error.code === "ECONNABORTED") {
         throw new Error(
           "Network connection issue. Please check your internet connection and try again."
         );
@@ -106,6 +110,10 @@ export const getEstimateSwap = async (
         "Unable to calculate swap estimate. Please try again later."
       );
     }
+  }, {
+    maxRetries: 1, // Only 1 retry for estimates (faster response)
+    initialDelay: 500, // Shorter delay (0.5 seconds)
+    maxDelay: 1000, // Max 1 second delay
   });
 };
 

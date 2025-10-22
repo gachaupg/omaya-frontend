@@ -45,20 +45,51 @@ export class TradeStatusWebSocket {
   private lastToken: string = "";
   private hasPermanentFailure: boolean = false;
 
+  private isTokenExpired(token: string): boolean {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) return true;
+      
+      const payload = JSON.parse(atob(parts[1]));
+      const exp = payload.exp;
+      
+      if (!exp) return false; // If no exp claim, assume it's valid
+      
+      const now = Math.floor(Date.now() / 1000);
+      const isExpired = now >= exp;
+      
+      if (isExpired) {
+        const expiredAgo = now - exp;
+        console.warn(`⚠️ Token expired ${expiredAgo} seconds ago`);
+      } else {
+        const expiresIn = exp - now;
+        console.log(`✅ Token valid for ${expiresIn} seconds (${Math.floor(expiresIn / 60)} minutes)`);
+      }
+      
+      return isExpired;
+    } catch (error) {
+      console.error('❌ Error checking token expiration:', error);
+      return true; // Assume expired if we can't parse it
+    }
+  }
+
   connect(tradeId: string, token: string): void {
     // Check for permanent failure
     if (this.hasPermanentFailure) {
+      console.warn('⚠️ Skipping connection - permanent failure state');
       return;
     }
 
     // If already connecting or connected to same trade, skip
     if (this.ws?.readyState === WebSocket.CONNECTING || 
         (this.ws?.readyState === WebSocket.OPEN && this.lastTradeId === tradeId)) {
+      console.log('ℹ️ Already connected or connecting to this trade');
       return;
     }
 
     // If connected to different trade, close existing connection
     if (this.ws?.readyState === WebSocket.OPEN && this.lastTradeId !== tradeId) {
+      console.log('🔄 Switching to different trade, closing existing connection');
       this.disconnect();
     }
 
@@ -66,8 +97,9 @@ export class TradeStatusWebSocket {
     this.lastTradeId = tradeId;
     this.lastToken = token;
     
-    // Validate inputs silently
+    // Validate inputs
     if (!tradeId || !token || token.length < 10) {
+      console.error('❌ Invalid tradeId or token');
       this.hasPermanentFailure = true;
       return;
     }
@@ -75,6 +107,15 @@ export class TradeStatusWebSocket {
     // Check if token looks like a JWT
     const tokenParts = token.split('.');
     if (tokenParts.length !== 3) {
+      console.error('❌ Token is not a valid JWT format');
+      this.hasPermanentFailure = true;
+      return;
+    }
+
+    // Check if token is expired
+    if (this.isTokenExpired(token)) {
+      console.error('❌ Token is expired - cannot establish WebSocket connection');
+      console.log('💡 Tip: Refresh the page or re-login to get a new token');
       this.hasPermanentFailure = true;
       return;
     }
@@ -82,9 +123,12 @@ export class TradeStatusWebSocket {
     try {
       this.url = API_CONFIG.P2P.SOCKETS.TRADE_STATUS(tradeId, token);
       
+      console.log('🔗 Attempting WebSocket connection to:', this.url.split('?')[0]); // Log without full token
+      
       this.ws = new WebSocket(this.url);
 
       this.ws.onopen = () => {
+        console.log('✅ WebSocket OPEN - Connection established successfully');
         this.reconnectAttempts = 0;
         this.hasPermanentFailure = false;
         this.openHandlers.forEach((handler) => handler());
@@ -95,28 +139,64 @@ export class TradeStatusWebSocket {
           const message: WebSocketMessage = JSON.parse(event.data);
           this.messageHandlers.forEach((handler) => handler(message));
         } catch (error) {
-          // Silent error handling
+          console.error('❌ Error parsing WebSocket message:', error);
         }
       };
 
-      this.ws.onerror = (error) => {
+      this.ws.onerror = (error: Event) => {
+        console.error('❌ WebSocket ERROR:', {
+          type: error.type,
+          target: error.target instanceof WebSocket ? {
+            readyState: error.target.readyState,
+            url: error.target.url?.split('?')[0] // Hide token in logs
+          } : 'unknown'
+        });
+        
+        // Check if this might be a token issue
+        if (this.ws?.readyState === WebSocket.CLOSED) {
+          console.warn('⚠️ Connection closed immediately - possible token/auth issue');
+        }
+        
         this.errorHandlers.forEach((handler) => handler(error));
       };
 
-      this.ws.onclose = (event) => {
-        // Handle different close codes silently
+      this.ws.onclose = (event: CloseEvent) => {
+        console.log('🔌 WebSocket CLOSE:', {
+          code: event.code,
+          reason: event.reason || 'No reason provided',
+          wasClean: event.wasClean,
+          reconnectAttempts: this.reconnectAttempts
+        });
+        
+        // Handle different close codes
         switch (event.code) {
           case 1000: // Normal closure
+            console.log('✅ Normal closure');
+            break;
+          case 1001: // Going away
+            console.log('ℹ️ Going away');
+            break;
+          case 1006: // Abnormal closure (no close frame)
+            console.warn('⚠️ Abnormal closure - connection failed or was interrupted');
             break;
           case 1008: // Policy violation
+            console.error('❌ Policy violation - permanent failure');
             this.hasPermanentFailure = true;
             break;
-          case 4001: // Unauthorized
-          case 4003: // Forbidden
+          case 4001: // Custom: Unauthorized
+            console.error('❌ Unauthorized (4001) - check token validity');
             this.hasPermanentFailure = true;
             break;
-          case 1006: // Abnormal closure
+          case 4003: // Custom: Forbidden
+            console.error('❌ Forbidden (4003) - access denied');
+            this.hasPermanentFailure = true;
+            break;
+          case 4004: // Custom: Not found
+            console.error('❌ Trade not found (4004)');
+            this.hasPermanentFailure = true;
+            break;
           default:
+            console.warn(`⚠️ Close code ${event.code}: ${event.reason || 'Unknown reason'}`);
             break;
         }
         
@@ -126,10 +206,16 @@ export class TradeStatusWebSocket {
         if (!this.isIntentionallyClosed && 
             !this.hasPermanentFailure && 
             this.reconnectAttempts < this.maxReconnectAttempts) {
+          console.log(`🔄 Scheduling reconnect attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts}`);
           this.scheduleReconnect(tradeId, token);
+        } else if (this.hasPermanentFailure) {
+          console.error('❌ Permanent failure - not reconnecting');
+        } else if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+          console.error('❌ Max reconnect attempts reached');
         }
       };
     } catch (error) {
+      console.error('❌ Error creating WebSocket:', error);
       if (this.reconnectAttempts < this.maxReconnectAttempts) {
         this.scheduleReconnect(tradeId, token);
       }
@@ -154,8 +240,20 @@ export class TradeStatusWebSocket {
     }
 
     if (this.ws) {
-      if (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING) {
+      const currentState = this.ws.readyState;
+      
+      // Only close if OPEN or CONNECTING (but not yet CLOSING or CLOSED)
+      if (currentState === WebSocket.OPEN) {
         this.ws.close(1000, "Client disconnect");
+      } else if (currentState === WebSocket.CONNECTING) {
+        // For CONNECTING state, we need to wait for it to open before closing
+        // or just set to null and let it close naturally
+        const wsToClose = this.ws;
+        wsToClose.onopen = () => {
+          if (wsToClose.readyState === WebSocket.OPEN) {
+            wsToClose.close(1000, "Client disconnect");
+          }
+        };
       }
       this.ws = null;
     }

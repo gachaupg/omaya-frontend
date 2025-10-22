@@ -411,12 +411,25 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
         </div>
       )}
 
-      {/* Terms and Conditions Summary - always at the very bottom */}
-      <div className="flex items-center mb-2 mt-2 max-w-4xl">
-        <img
-          src="https://res.cloudinary.com/pitz/image/upload/v1752248844/Frame_34947_hxlr7o.png"
-          alt=""
-        />
+      {/* Terms and Conditions Summary */}
+      <div className="w-full max-w-4xl bg-[#FF9500]/50 border-2 border-solid border-[#FF9500]/50 rounded-[18px] flex flex-col gap-2 p-3">
+        <h2 className="text-white text-base font-semibold">
+          Terms and Conditions Summary
+        </h2>
+        <ul className="list-disc list-inside space-y-1">
+          <li className="text-white text-sm">
+            Only send {swapResponse.fromCurrency} ({swapResponse.fromNetwork}) to this address
+          </li>
+          <li className="text-white text-sm">
+            Send exactly the amount specified below
+          </li>
+          <li className="text-white text-sm">
+            Do not send from exchange accounts
+          </li>
+          <li className="text-white text-sm">
+            Minimum confirmations required: 1
+          </li>
+        </ul>
       </div>
       
     </div>

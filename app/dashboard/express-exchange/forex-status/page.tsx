@@ -188,6 +188,18 @@ function ForexStatusContent() {
 
   const currentStatus = currentExchange ? getUIStatus(currentExchange.status) : 'pending';
 
+  // Redirect to success page when transaction is completed
+  useEffect(() => {
+    if (currentExchange && currentStatus === 'completed') {
+      // Small delay to show the completed animation before redirect
+      const redirectTimer = setTimeout(() => {
+        router.push(`/dashboard/express-exchange/forex-success?transactionId=${transactionId}`);
+      }, 2000); // 2 second delay to show completed state
+
+      return () => clearTimeout(redirectTimer);
+    }
+  }, [currentStatus, currentExchange, router, transactionId]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#18181D]">

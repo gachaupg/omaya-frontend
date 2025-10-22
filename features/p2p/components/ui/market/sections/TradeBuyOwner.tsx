@@ -48,14 +48,27 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
   // WebSocket status update callback - use useCallback to prevent reconnections
   const handleStatusUpdate = React.useCallback((status: any) => {
+    console.log('🔔 WebSocket Status Update Received (TradeBuyOwner):', {
+      receivedStatus: status,
+      currentConfirmOrder: confirmOrder,
+      tradeId: confirmOrder?.id
+    });
+    
     const newStatus = status.status;
     const oldStatus = previousStatusRef.current;
+    
+    console.log('📊 Status Comparison:', {
+      newStatus,
+      oldStatus,
+      willUpdate: newStatus && oldStatus !== newStatus
+    });
     
     // Only update if the status has actually changed
     if (newStatus && oldStatus !== newStatus) {
       // Update the ref to the new status
       previousStatusRef.current = newStatus;
       
+      console.log('✅ Dispatching status update to Redux:', newStatus);
       // Update Redux store directly with WebSocket status
       dispatch(updateConfirmOrderStatus({ status: newStatus }));
       
@@ -69,8 +82,10 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       } else {
         showToast.success("Status Updated", `Trade status is now: ${newStatus}`);
       }
+    } else {
+      console.log('⏭️ Skipping status update (same status or invalid)');
     }
-  }, [dispatch]);
+  }, [dispatch, confirmOrder]);
 
   // WebSocket for real-time trade status updates
   const { isConnected: statusWsConnected } = useTradeStatusWebSocket({
@@ -79,12 +94,34 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     onStatusUpdate: handleStatusUpdate,
   });
 
+  // Log WebSocket connection status
+  useEffect(() => {
+    console.log('🔌 WebSocket Connection Status (TradeBuyOwner):', {
+      connected: statusWsConnected,
+      tradeId: confirmOrder?.id,
+      enabled: isAuthenticated && !!confirmOrder?.id,
+      isAuthenticated,
+      hasTradeId: !!confirmOrder?.id
+    });
+  }, [statusWsConnected, confirmOrder?.id, isAuthenticated]);
+
   // Initialize previousStatusRef with current status when confirmOrder first loads
   useEffect(() => {
     if (confirmOrder?.status && previousStatusRef.current === null) {
       previousStatusRef.current = confirmOrder.status;
     }
   }, [confirmOrder?.status]);
+
+  // Log confirmOrder changes for debugging
+  useEffect(() => {
+    console.log('🔄 confirmOrder Updated in TradeBuyOwner:', {
+      status: confirmOrder?.status,
+      id: confirmOrder?.id,
+      amount: confirmOrder?.amount,
+      commission_rate: confirmOrder?.commission_rate,
+      fullOrder: confirmOrder
+    });
+  }, [confirmOrder]);
 
   const completionTime = Number(singleOrder?.completion_time);
   const displaySeconds =
@@ -157,17 +194,57 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
   // Show success modal when trade is completed
   useEffect(() => {
+    console.log('🎉 Checking if should show success modal:', {
+      currentStatus: confirmOrder?.status,
+      isCompleted: confirmOrder?.status === "completed",
+      showSuccessModal
+    });
+    
     if (confirmOrder?.status === "completed") {
+      console.log('✅ Trade completed! Showing success modal');
       setShowSuccessModal(true);
     }
-  }, [confirmOrder?.status]);
+  }, [confirmOrder?.status, showSuccessModal]);
 
   // Show cancelled modal when trade is cancelled
   useEffect(() => {
+    console.log('❌ Checking if should show cancelled modal:', {
+      currentStatus: confirmOrder?.status,
+      isCancelled: confirmOrder?.status === "cancelled",
+      showCancelledModal
+    });
+    
     if (confirmOrder?.status === "cancelled") {
+      console.log('🚫 Trade cancelled! Showing cancelled modal');
       setShowCancelledModal(true);
     }
-  }, [confirmOrder?.status]);
+  }, [confirmOrder?.status, showCancelledModal]);
+
+  // Log button state based on status
+  useEffect(() => {
+    const isButtonDisabled = 
+      confirmTradeLoading ||
+      !confirmOrder?.id ||
+      confirmOrder?.status === "matched" ||
+      confirmOrder?.status === "completed";
+    
+    const buttonText = 
+      confirmTradeLoading 
+        ? "Processing..." 
+        : confirmOrder?.status === "half-matched" 
+        ? "Payment Received, Release USDT"
+        : confirmOrder?.status === "completed"
+        ? "Trade Completed"
+        : "Waiting for Buyer Payment";
+    
+    console.log('🔘 Payment Received Button State:', {
+      status: confirmOrder?.status,
+      isDisabled: isButtonDisabled,
+      buttonText,
+      confirmTradeLoading,
+      hasOrderId: !!confirmOrder?.id
+    });
+  }, [confirmOrder?.status, confirmTradeLoading, confirmOrder?.id]);
 
   // Get payment details from order data
   const paymentDetails = saveOrder?.payment_details?.[0] || null;
@@ -255,15 +332,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               <span className="text-gray-900 dark:text-white font-semibold text-lg">
                 Order Created
               </span>
-              {statusWsConnected && (
-                <span className="flex items-center gap-1.5 text-[10px] text-[#1D8751] font-medium">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1D8751] opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1D8751]"></span>
-                  </span>
-                  Live Status
-                </span>
-              )}
+             
              
             </div>
             <div className="flex items-center gap-1.5">
