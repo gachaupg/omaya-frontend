@@ -581,7 +581,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                               </div>
                               <div>
                                 <span className="text-xs text-gray-500 dark:text-[#788099]">
-                                  •••• {detail.account_number.slice(-4)}
+                                  •••• {detail.account_number?.slice(-4) || 'N/A'}
                                 </span>
                               </div>
                             </div>

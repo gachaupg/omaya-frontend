@@ -19,6 +19,7 @@ type TableProps = {
   onExport?: (format: "csv" | "pdf") => void;
   onSearch?: (query: string) => void;
   onViewTransaction?: (tx: TransactionType) => void;
+  currentUserEmail?: string;
 };
 
 export const Table: React.FC<TableProps> = ({
@@ -33,6 +34,7 @@ export const Table: React.FC<TableProps> = ({
   onExport,
   onSearch,
   onViewTransaction,
+  currentUserEmail = "",
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showExportOptions, setShowExportOptions] = useState(false);
@@ -263,7 +265,7 @@ export const Table: React.FC<TableProps> = ({
           >
             {/* Table Header */}
             <div
-              className={`grid grid-cols-6 md:grid-cols-7 py-3 px-4 border-b bg-gray-50 dark:bg-[#35353E] border-gray-200 dark:border-[${tokens.colors.dark.border}] rounded-t-[24px]`}
+              className={`grid grid-cols-7 md:grid-cols-8 py-3 px-4 border-b bg-gray-50 dark:bg-[#35353E] border-gray-200 dark:border-[${tokens.colors.dark.border}] rounded-t-[24px]`}
             >
               <div
                 className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
@@ -302,6 +304,12 @@ export const Table: React.FC<TableProps> = ({
               <div
                 className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] flex items-center`}
               >
+                Time
+                <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
+              </div>
+              <div
+                className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] flex items-center`}
+              >
                 Status
                 <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
               </div>
@@ -318,7 +326,7 @@ export const Table: React.FC<TableProps> = ({
               {data.map((row, idx) => (
                 <div
                   key={idx}
-                  className={`w-full grid grid-cols-6 md:grid-cols-7 py-4 px-4 border-b last:border-b-0 items-center hover:bg-gray-50 dark:hover:bg-[#2A2A35] transition-colors duration-200 border-gray-200 dark:border-[${tokens.colors.dark.border}] bg-white dark:bg-[${tokens.colors.dark.background}]`}
+                  className={`w-full grid grid-cols-7 md:grid-cols-8 py-4 px-4 border-b last:border-b-0 items-center hover:bg-gray-50 dark:hover:bg-[#2A2A35] transition-colors duration-200 border-gray-200 dark:border-[${tokens.colors.dark.border}] bg-white dark:bg-[${tokens.colors.dark.background}]`}
                 >
                   <div className="flex items-center gap-2">
                     <img
@@ -369,11 +377,21 @@ export const Table: React.FC<TableProps> = ({
                     </div>
                   )}
                   <div>
-                    <div
-                      className={`text-sm ${row.type=== "sell" ? "text-[#1D8751]" : "text-[#FF4D4D]"}`}
-                    >
-                      {row.type=== "buy" ? "Sell" : "Buy"}
-                    </div>
+                    {(() => {
+                      const isOwner = row.rawData?.owner === currentUserEmail;
+                      const displayType = isOwner 
+                        ? (row.type === "buy" ? "Buy" : "Sell")
+                        : (row.type === "buy" ? "Sell" : "Buy");
+                      
+                      // Color logic: Green for Sell, Red for Buy (regardless of owner)
+                      const colorClass = displayType === "Sell" ? "text-[#1D8751]" : "text-[#FF4D4D]";
+                      
+                      return (
+                        <div className={`text-sm ${colorClass}`}>
+                          {displayType}
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div>
                     <div
@@ -388,9 +406,14 @@ export const Table: React.FC<TableProps> = ({
                     {formatDate(row.date)}
                   </div>
                   <div
+                    className={`text-sm text-gray-500 dark:text-[${tokens.colors.dark.textBody}]`}
+                  >
+                    {new Date(row.date).toLocaleTimeString()}
+                  </div>
+                  <div
                     className={`text-sm ${getStatusColor(String(row.status))}`}
                   >
-                    {row.status}
+                    <span className="capitalize">{row.status}</span>
                   </div>
                   <div className="flex items-center">
                     <Button

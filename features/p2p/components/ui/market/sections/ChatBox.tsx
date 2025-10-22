@@ -209,54 +209,20 @@ const ChatBox: React.FC<{
       if (latestMessage.id !== lastMessageIdRef.current) {
         lastMessageIdRef.current = latestMessage.id;
         
-        // If latest message has images, check if they need refreshing
-        if (latestMessage.images && latestMessage.images.length > 0) {
-          const needsRefresh = latestMessage.images.some((img: any) => {
-            if (!img) return true; // Null/undefined image needs refresh
-            
-            const url = isMessageImage(img) ? (img.image_url || img.image) : img;
-            
-          
-            
-            // Need refresh if:
-            // 1. URL is missing or empty
-            // 2. URL is a blob/temp URL
-            // 3. Image object exists but no valid URL
-            return !url || 
-                   url.trim() === '' || 
-                   (typeof url === 'string' && (url.startsWith('blob:') || url.includes('temp-'))) ||
-                   (isMessageImage(img) && !img.image_url && !img.image);
-          });
-          
-          // Also refresh if message ID looks temporary
-          const hasTemporaryId = latestMessage.id && latestMessage.id.toString().startsWith('temp-');
-          
-          if (needsRefresh || hasTemporaryId) {
-            
-            
-            // Clear any existing timeout
-            if (refreshTimeoutRef.current) {
-              clearTimeout(refreshTimeoutRef.current);
-            }
-            
-            // Schedule refresh with multiple retries
-            const attemptRefresh = (attemptNumber: number = 1) => {
-            
-              fetchMessages();
-              
-              // Schedule another refresh if this is not the last attempt
-              if (attemptNumber < 3) {
-                refreshTimeoutRef.current = setTimeout(() => {
-                  attemptRefresh(attemptNumber + 1);
-                }, 2000 * attemptNumber); // Increasing delays: 2s, 4s
-              }
-            };
-            
-            // Start first refresh after 2 seconds
-            refreshTimeoutRef.current = setTimeout(() => {
-              attemptRefresh(1);
-            }, 2000);
+        // Only refresh for temporary messages or if images are completely missing
+        const hasTemporaryId = latestMessage.id && latestMessage.id.toString().startsWith('temp-');
+        const hasNoImages = !latestMessage.images || latestMessage.images.length === 0;
+        
+        if (hasTemporaryId || hasNoImages) {
+          // Clear any existing timeout
+          if (refreshTimeoutRef.current) {
+            clearTimeout(refreshTimeoutRef.current);
           }
+          
+          // Schedule a single refresh after a short delay
+          refreshTimeoutRef.current = setTimeout(() => {
+            fetchMessages();
+          }, 1000);
         }
       }
     }
@@ -267,7 +233,7 @@ const ChatBox: React.FC<{
         clearTimeout(refreshTimeoutRef.current);
       }
     };
-  }, [sortedMessages.length, sortedMessages]); // Trigger when messages change
+  }, [sortedMessages.length]); // Only trigger when message count changes
 
   // Handle manual refresh
   const handleRefresh = () => {
@@ -467,31 +433,35 @@ const ChatBox: React.FC<{
                   
                   {/* Image attachments */}
                   {msg.images && msg.images.length > 0 && (
+                    <div className="text-xs text-gray-500 mb-1">Images: {msg.images.length}</div>
+                  )}
+                  {msg.images && msg.images.length > 0 && (
                     <div className={msg.message && msg.message.trim() ? "mt-0" : "mt-0"}>
                       <div className="flex gap-2 flex-wrap justify-start">
                         {msg.images.map((img: any, idx: number) => {
-                          // Handle both string URLs and image objects
+                          // Handle different image data structures
                           let imageUrl = '';
                           
                           if (typeof img === 'string') {
                             // Direct string URL
                             imageUrl = img;
-                          } else if (isMessageImage(img)) {
-                            // Image object with image_url or image property
-                            imageUrl = img.image_url || img.image || '';
+                          } else if (img && typeof img === 'object') {
+                            // Try multiple possible properties for image URL
+                            imageUrl = img.image_url || img.image || img.url || img.src || img.file || img.attachment || '';
                           }
+                          
+                          // Debug: Show image data
+                          console.log(`Image ${idx}:`, { img, imageUrl, type: typeof img });
                           
                           const imageKey = isMessageImage(img) ? img.id : `img-${idx}`;
                           
-                          
-                          // If no valid URL, show loading placeholder
+                          // If no valid URL, show a simple placeholder
                           if (!imageUrl || imageUrl.trim() === '') {
                             return (
                               <div key={imageKey} className="relative inline-block">
                                 <div className="w-24 h-24 rounded bg-gray-100 dark:bg-gray-800 border-2 border-dashed border-[#1D8751] flex items-center justify-center">
                                   <div className="text-center">
-                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1D8751] mx-auto mb-1"></div>
-                                    <div className="text-xs text-gray-500 dark:text-gray-400">Loading...</div>
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">No Image</div>
                                   </div>
                                 </div>
                               </div>
@@ -516,11 +486,9 @@ const ChatBox: React.FC<{
                                     setImageLoadingStates(prev => ({ ...prev, [imageKey]: true }));
                                   }}
                                   onLoad={(e) => {
-                                    
                                     setImageLoadingStates(prev => ({ ...prev, [imageKey]: false }));
                                   }}
                                   onError={(e) => {
-                                  
                                     setImageLoadingStates(prev => ({ ...prev, [imageKey]: false }));
                                   }}
                                   style={{ display: 'block' }}
@@ -583,6 +551,12 @@ const ChatBox: React.FC<{
             className="flex-1 rounded px-2 py-1 text-[#788099] dark:text-white border-none outline-none"
             value={message}
             onChange={(e) => dispatch(setMessage(e.target.value))}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
             placeholder="Enter your message"
           />
           {/* Paperclip icon for image upload */}

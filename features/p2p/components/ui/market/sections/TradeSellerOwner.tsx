@@ -176,6 +176,10 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   useEffect(() => {
     if (confirmOrder?.status === "completed") {
       setShowSuccessModal(true);
+      // Auto-redirect to dashboard after 10 seconds
+      setTimeout(() => {
+        window.location.href = "/dashboard/p2p/";
+      }, 10000);
     }
   }, [confirmOrder?.status]);
 
@@ -183,6 +187,10 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   useEffect(() => {
     if (confirmOrder?.status === "cancelled") {
       setShowCancelledModal(true);
+      // Auto-redirect to dashboard after 10 seconds
+      setTimeout(() => {
+        window.location.href = "/dashboard/p2p/";
+      }, 10000);
     }
   }, [confirmOrder?.status]);
 

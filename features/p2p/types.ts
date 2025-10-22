@@ -38,6 +38,7 @@ export type TransactionType = {
   commission?: string;
   lastUpdate?: string;
   payment_details?: Array<any>;
+  rawData?: UserTrade;
 };
 
 export interface TransactionType1 {}

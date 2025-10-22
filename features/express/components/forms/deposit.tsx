@@ -20,6 +20,8 @@ import { FaSearch } from "react-icons/fa";
 import InfoModal from "./info";
 import { useTheme } from "@/context/theme";
 import { useAssetsDisplay, usePaymentMethodsDisplay } from "../../hooks/useDataDisplay";
+import CustomSelect from "@/components/ui/CustomSelect";
+import Select from "@/features/p2p/components/Common/Select";
 
 interface DepositFormProps {
   onExchange?: (transactionData: {
@@ -1901,38 +1903,48 @@ export default function DepositForm({
               <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                 Bank/Payment Method
               </label>
+              {/* <div>
+                hello
+                {
+                  adminPaymentDetails.map((payment: any) => (
+                    <div key={payment.admin_payment_detail_id}>
+                      <img src={payment.provider_logo} alt={payment.provider_name} className="w-5 h-5" />
+                      <span>{payment.provider_name}</span>
+                    </div>
+                  ))
+                }
+              </div> */}
+             
               <div className="relative">
-                <img
-                  src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
-                  alt="bank icon"
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 pointer-events-none"
-                />
-                <select
+                <CustomSelect
+                  options={(effectivePaymentMethods || []).map((payment: any, index: number) => ({
+                    value: payment.provider_name,
+                    label: `${payment.provider_name} - ${payment.payment_method || payment.payment_method_type || payment.payment_type}`,
+                    logo: payment.provider_logo || undefined,
+                  }))}
                   value={payBank}
-                  onChange={(e) => {
+                  onChange={(value) => {
                     const selectedPayment = effectivePaymentMethods?.find(
-                      (payment: any) => payment.provider_name === e.target.value
+                      (payment: any) => payment.provider_name === value
                     );
                     
-                    setPayBank(e.target.value);
+                    setPayBank(value);
                     setSelectedPaymentDetail(selectedPayment || null);
                   }}
-                  disabled={paymentMethodsDisplay.isLoading && effectivePaymentMethods.length === 0}
-                  className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-9 py-2 text-lg  focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] appearance-none disabled:opacity-50"
-                >
-                  <option value="" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">
-                    {paymentMethodsDisplay.isLoading && effectivePaymentMethods.length === 0
+                  placeholder={
+                    paymentMethodsDisplay.isLoading && effectivePaymentMethods.length === 0
                       ? "Loading payment methods..."
                       : effectivePaymentMethods && effectivePaymentMethods.length > 0
                         ? "Select Payment Method"
-                        : "No payment methods available"}
-                  </option>
-                  {(effectivePaymentMethods || []).map((payment: any, index: number) => (
-                      <option key={payment.admin_payment_detail_id || index} value={payment.provider_name} className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">
-                        {payment.provider_name} - {payment.payment_method || payment.payment_method_type || payment.payment_type}
-                      </option>
-                  ))}
-                </select>
+                        : "No payment methods available"
+                  }
+                  disabled={paymentMethodsDisplay.isLoading && effectivePaymentMethods.length === 0}
+                  loading={paymentMethodsDisplay.isLoading && effectivePaymentMethods.length === 0}
+                  loadingText="Loading payment methods..."
+                  emptyText="No payment methods available"
+                  searchable={true}
+                  className="w-full"
+                />
               </div>
               {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
             </div>

@@ -208,17 +208,29 @@ const MarketTable: React.FC<MarketTableProps> = ({
                   </div>
                   {/* Trade */}
                   <div className="flex justify-end min-w-[120px]">
-                    <Button
-                      width={116}
-                      height={35}
-                      borderRadius={10}
-                      variant={activeTab === "sell" ? "secondary" : "primary"}
-                      size="sm"
-                      className="min-w-[90px] font-semibold"
-                      onClick={() => handleTradeClick(idx)}
-                    >
-                      {activeTab === "sell" ? "SELL USDT" : "BUY USDT"}
-                    </Button>
+                    {(() => {
+                      const availableAmount = parseFloat(row.available.split(' ')[0]);
+                      const isDisabled = availableAmount <= 0;
+                      
+                      return (
+                        <Button
+                          width={116}
+                          height={35}
+                          borderRadius={10}
+                          variant={activeTab === "sell" ? "secondary" : "primary"}
+                          size="sm"
+                          className={`min-w-[90px] font-semibold ${
+                            isDisabled 
+                              ? "opacity-50 cursor-not-allowed bg-gray-400 dark:bg-gray-600 text-gray-600 dark:text-gray-400" 
+                              : ""
+                          }`}
+                          onClick={isDisabled ? undefined : () => handleTradeClick(idx)}
+                          disabled={isDisabled}
+                        >
+                          {activeTab === "sell" ? "SELL USDT" : "BUY USDT"}
+                        </Button>
+                      );
+                    })()}
                   </div>
                 </div>
                 {selectedRowIndex === idx && (

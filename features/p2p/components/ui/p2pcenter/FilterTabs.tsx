@@ -90,7 +90,7 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
       )
         return false;
       if (filters.date !== "Date") {
-        const tradeDate = new Date(trade.timestamp);
+        const tradeDate = new Date(trade.created_on);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         switch (filters.date) {

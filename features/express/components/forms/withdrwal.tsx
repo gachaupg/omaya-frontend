@@ -29,6 +29,7 @@ import PaymentMethodsModal from "../../../p2p/components/ui/p2pdashboard/section
 import InfoModal from "./info";
 import { debugAssetFetching } from "../../../../lib/utils/debugAssets";
 import { useAssetsDisplay, usePaymentMethodsDisplay } from "../../hooks/useDataDisplay";
+import CustomSelect from "@/components/ui/CustomSelect";
 import ForexWithdrawal from "./ForexWithdrawal";
 
 // Add UserPaymentDetail interface
@@ -55,11 +56,13 @@ const UserPaymentSelector = ({
   onSelect,
   onRemove,
   selectedDetails,
+  adminWalletListDisplay,
 }: {
   userPaymentDetails: UserPaymentDetail[];
   onSelect: (detail: UserPaymentDetail) => void;
   onRemove: (detail: UserPaymentDetail) => void;
   selectedDetails: UserPaymentDetail[];
+  adminWalletListDisplay: any;
 }) => {
   return (
     <div className="bg-[#1D1D23] rounded-2xl border border-[#39394a] p-4">
@@ -80,10 +83,14 @@ const UserPaymentSelector = ({
               >
                 <div className="flex-1">
                   <div className="text-white font-medium">
-                    {detail.payment_provider_name ||
-                      detail.provider_name ||
-                      "Unknown Provider"}{" "}
-                    - {detail.payment_method_name || "Unknown Method"}
+                    {(() => {
+                      // Get the admin provider name for this payment method
+                      const adminDetail = adminWalletListDisplay.displayData?.find(
+                        (wallet: any) => wallet.admin_payment_detail?.payment_method_type === detail.payment_method_name
+                      )?.admin_payment_detail;
+                      
+                      return adminDetail?.provider_name || detail.payment_provider_name || detail.provider_name || "Unknown Provider";
+                    })()} - {detail.account_name || detail.account_number}
                   </div>
                   <div className="text-[#788099] text-sm">
                     {detail.account_name} ({detail.account_number})
@@ -451,11 +458,21 @@ export default function WithdrawalForm({
   const [hasFetchedSwapAssets, setHasFetchedSwapAssets] = useState(false);
   const MAX_RETRIES = 3;
 
-  // Filter user payment details based on selected payment type
-  // Match payment_method_name from user payment details with payment_type from admin wallet list
+  // Filter user payment details based on selected provider
+  // Match payment_provider_name from user payment details with provider_name from admin
   const filteredUserPaymentDetails = payBank
     ? (userPaymentMethodsDisplay.displayData || effectiveUserPaymentMethods || []).filter(
-        (detail: any) => detail.payment_method_name === payBank
+        (detail: any) => {
+          // Debug logging
+          console.log("Filtering user payment details:");
+          console.log("Selected provider (payBank):", payBank);
+          console.log("User detail:", detail);
+          console.log("User payment_provider_name:", detail.payment_provider_name);
+          console.log("Match result:", detail.payment_provider_name === payBank);
+          
+          // Match user payment provider name with selected admin provider name
+          return detail.payment_provider_name === payBank;
+        }
       )
     : [];
 
@@ -467,24 +484,29 @@ export default function WithdrawalForm({
     
     const sourceData = userPaymentMethodsDisplay.displayData || effectiveUserPaymentMethods || [];
     
+    console.log("Enhanced filtering debug:");
+    console.log("Selected provider (payBank):", payBank);
+    console.log("Source data length:", sourceData.length);
+    
     const filtered = sourceData.filter((detail: any) => {
-        // Match payment_method_name with selected payment_type
-        const paymentMethodName =
-          detail.payment_method_name ||
-          detail.payment_method ||
-          detail.method_name;
-
-      const matchesPaymentType = paymentMethodName === payBank;
+        // Match user payment provider name with selected admin provider name
+        const matchesProvider = detail.payment_provider_name === payBank;
+        
+        console.log("User detail:", detail);
+        console.log("User payment_provider_name:", detail.payment_provider_name);
+        console.log("Selected payBank:", payBank);
+        console.log("Match result:", matchesProvider);
       
       // If FXP is selected, only show approved payment methods
       if (selectedAsset && isForexAsset(selectedAsset)) {
         const isApproved = detail.status?.toLowerCase() === 'approved';
-        return matchesPaymentType && isApproved;
+        return matchesProvider && isApproved;
       }
       
-      return matchesPaymentType;
+      return matchesProvider;
     });
     
+    console.log("Filtered results:", filtered);
     return filtered;
   }, [payBank, userPaymentMethodsDisplay.displayData, effectiveUserPaymentMethods, selectedAsset]);
 
@@ -2408,12 +2430,13 @@ export default function WithdrawalForm({
         }
         depositPayload.append("deposit_address", walletAddress);
 
-        if (!selectedPaymentDetail.provider_name) {
+        const providerName = selectedPaymentDetail.payment_provider_name || selectedPaymentDetail.provider_name;
+        if (!providerName) {
           throw new Error("Payment provider is missing");
         }
         depositPayload.append(
           "payment_provider",
-          selectedPaymentDetail.provider_name
+          providerName
         );
 
         if (!selectedPaymentDetail.payment_method_type) {
@@ -3443,19 +3466,32 @@ export default function WithdrawalForm({
                 Payment Method
               </label>
               <div className="relative">
-                <img
-                  src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
-                  alt="bank icon"
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 pointer-events-none z-10"
-                />
-                <select
+                <CustomSelect
+                  options={Array.from(
+                    new Set(
+                      (adminWalletListDisplay.displayData || []).map((wallet: any) => wallet?.admin_payment_detail?.provider_name)
+                    )
+                  )
+                    .filter((type) => type) // Remove null/undefined values
+                    .map((paymentType: any, index: number) => {
+                      // Find the admin detail for this provider to get the logo
+                      const adminDetail = adminWalletListDisplay.displayData?.find(
+                        (wallet: any) => wallet.admin_payment_detail?.provider_name === paymentType
+                      )?.admin_payment_detail;
+                      
+                      return {
+                        value: paymentType,
+                        label: paymentType,
+                        logo: adminDetail?.provider_logo || undefined,
+                      };
+                    })}
                   value={payBank}
-                  onChange={(e) => {
+                  onChange={(value) => {
                     const selectedWallet = adminWalletListDisplay.displayData?.find(
-                      (wallet: any) => wallet.admin_payment_detail?.payment_type === e.target.value
+                      (wallet: any) => wallet.admin_payment_detail?.provider_name === value
                     );
                     
-                    setPayBank(e.target.value);
+                    setPayBank(value);
                     setSelectedPaymentDetail(selectedWallet?.admin_payment_detail || null);
                     
                     // Clear selected payment details when changing payment type
@@ -3463,41 +3499,24 @@ export default function WithdrawalForm({
                     // Clear payment method error when selecting a payment type
                     setPaymentMethodError(null);
                   }}
-                  disabled={adminWalletListDisplay.isLoading}
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-9 py-2 text-lg focus:outline-none border appearance-none cursor-pointer relative disabled:opacity-50 ${
-                    paymentMethodError 
-                      ? "border-red-500 dark:border-red-500" 
-                      : "border-[#A2A4A9FF] dark:border-[#35353E]"
-                  }`}
-                  style={{
-                    backgroundImage:
-                      'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22/%3E%3C/svg%3E")',
-                    backgroundRepeat: "no-repeat",
-                    backgroundPosition: "right 8px center",
-                    backgroundSize: "12px auto",
-                    paddingRight: "40px",
-                  }}
-                >
-                  <option value="" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">
-                    {adminWalletListDisplay.isLoading
+                  placeholder={
+                    adminWalletListDisplay.isLoading
                       ? "Loading payment methods..."
                       : !adminWalletListDisplay.hasData
                         ? "No payment methods available"
-                        : "Select Payment Method"}
-                  </option>
-                  {/* Filter unique payment types */}
-                  {Array.from(
-                    new Set(
-                      (adminWalletListDisplay.displayData || []).map((wallet: any) => wallet?.admin_payment_detail?.payment_type)
-                    )
-                  )
-                    .filter((type) => type) // Remove null/undefined values
-                    .map((paymentType: any, index: number) => (
-                      <option key={index} value={paymentType} className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">
-                        {paymentType}
-                      </option>
-                    ))}
-                </select>
+                        : "Select Payment Method"
+                  }
+                  disabled={adminWalletListDisplay.isLoading}
+                  loading={adminWalletListDisplay.isLoading}
+                  loadingText="Loading payment methods..."
+                  emptyText="No payment methods available"
+                  searchable={true}
+                  className={`w-full ${
+                    paymentMethodError 
+                      ? "border-red-500 dark:border-red-500" 
+                      : ""
+                  }`}
+                />
               </div>
               {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
               {paymentMethodError && <p className="text-red-500 text-sm mt-1">{paymentMethodError}</p>}
@@ -3510,19 +3529,47 @@ export default function WithdrawalForm({
                   </label>
                   {enhancedFilteredUserPaymentDetails.length > 0 ? (
                     <div className="relative">
-                      <img
-                        src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
-                        alt="account icon"
-                        className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 pointer-events-none z-10"
-                      />
-                      <select
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          {enhancedFilteredUserPaymentDetails.length} account(s) found
+                        </span>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              await dispatch(fetchUserPaymentDetails(true)).unwrap();
+                              showToast.success("Payment details refreshed!");
+                            } catch (error) {
+                              showToast.error("Failed to refresh payment details");
+                            }
+                          }}
+                          className="text-xs text-[#1D8751] hover:text-[#166b3e] underline"
+                        >
+                          Refresh
+                        </button>
+                      </div>
+                      <CustomSelect
+                        options={(enhancedFilteredUserPaymentDetails || []).map(
+                          (detail: UserPaymentDetail) => {
+                           
+                            const adminDetail = adminWalletListDisplay.displayData?.find(
+                              (wallet: any) => wallet.admin_payment_detail?.provider_name === detail.payment_provider_name
+                            )?.admin_payment_detail;
+                            
+                            return {
+                              value: detail.id.toString(),
+                              label: `${adminDetail?.provider_name || detail.payment_provider_name || "Unknown Provider"} - ${detail.account_name || detail.account_number} (${detail.account_number || detail.wallet_address || 'No Account'})`,
+                              logo: detail.provider_logo || undefined, // Only use user's logo, not admin logo
+                            };
+                          }
+                        )}
                         value={
                           selectedPaymentDetails.length > 0
-                            ? selectedPaymentDetails[0].id
+                            ? selectedPaymentDetails[0].id.toString()
                             : ""
                         }
-                        onChange={(e) => {
-                          const selectedId = Number(e.target.value);
+                        onChange={(value) => {
+                          const selectedId = Number(value);
                           const selectedDetail =
                             enhancedFilteredUserPaymentDetails.find(
                               (detail: UserPaymentDetail) =>
@@ -3534,35 +3581,22 @@ export default function WithdrawalForm({
                             setPaymentMethodError(null);
                           }
                         }}
+                        placeholder={
+                          userPaymentMethodsDisplay.isLoading
+                            ? "Loading accounts..."
+                            : "Select Registered Account"
+                        }
                         disabled={userPaymentMethodsDisplay.isLoading}
-                        className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#788099] rounded-2xl px-9 py-2 text-lg focus:outline-none border appearance-none cursor-pointer relative disabled:opacity-50 ${
+                        loading={userPaymentMethodsDisplay.isLoading}
+                        loadingText="Loading accounts..."
+                        emptyText="No registered accounts available"
+                        searchable={true}
+                        className={`w-full ${
                           paymentMethodError 
                             ? "border-red-500 dark:border-red-500" 
-                            : "border-[#A2A4A9FF] dark:border-[#35353E]"
+                            : ""
                         }`}
-                        style={{
-                          backgroundImage:
-                            'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22/%3E%3C/svg%3E")',
-                          backgroundRepeat: "no-repeat",
-                          backgroundPosition: "right 8px center",
-                          backgroundSize: "12px auto",
-                          paddingRight: "40px",
-                        }}
-                      >
-                        <option value="" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">
-                          {userPaymentMethodsDisplay.isLoading
-                            ? "Loading accounts..."
-                            : "Select Registered Account"}
-                        </option>
-                        {(enhancedFilteredUserPaymentDetails || []).map(
-                          (detail: UserPaymentDetail) => (
-                            <option key={detail.id} value={detail.id} className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">
-                              {detail.payment_provider_name}{" "}
-                              {detail.account_number}
-                            </option>
-                          )
-                        )}
-                      </select>
+                      />
                     </div>
                   ) : (
                     <p className="text-[#F79330] text-sm">
@@ -4046,10 +4080,18 @@ export default function WithdrawalForm({
       <PaymentMethodsModal
         open={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
-        onAdd={() => {
-          // Refresh user payment details after adding (force refresh)
-          dispatch(fetchUserPaymentDetails(true));
-          showToast.success("Payment method added successfully!");
+        onAdd={async () => {
+          try {
+            // Refresh both user and admin payment details after adding (force refresh)
+            await Promise.all([
+              dispatch(fetchUserPaymentDetails(true)).unwrap(),
+              dispatch(fetchAdminWalletList(true)).unwrap(),
+            ]);
+            showToast.success("Payment method added successfully!");
+          } catch (error) {
+            console.error("Failed to refresh payment details:", error);
+            showToast.error("Payment method added, but failed to refresh. Please reload the page.");
+          }
         }}
       />
 

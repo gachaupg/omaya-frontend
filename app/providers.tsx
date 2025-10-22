@@ -10,6 +10,7 @@ import { logout } from "@/features/auth/slices/authSlice";
 import { useEffect } from "react";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { HomePage401Suppressor } from "@/components/HomePage401Suppressor";
+import GlobalErrorBoundary from "@/components/GlobalErrorBoundary";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -55,21 +56,23 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <Provider store={store}>
-      <ThemeProvider>
-        <LanguageProvider>
-          <GoogleOAuthProvider
-            clientId={
-              process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
-              "866830600136-atu6lg341gn9snr1pkbmjhssebh9luqb.apps.googleusercontent.com"
-            }
-          >
-            <HomePage401Suppressor>
-              {children}
-            </HomePage401Suppressor>
-          </GoogleOAuthProvider>
-        </LanguageProvider>
-      </ThemeProvider>
-    </Provider>
+    <GlobalErrorBoundary>
+      <Provider store={store}>
+        <ThemeProvider>
+          <LanguageProvider>
+            <GoogleOAuthProvider
+              clientId={
+                process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+                "866830600136-atu6lg341gn9snr1pkbmjhssebh9luqb.apps.googleusercontent.com"
+              }
+            >
+              <HomePage401Suppressor>
+                {children}
+              </HomePage401Suppressor>
+            </GoogleOAuthProvider>
+          </LanguageProvider>
+        </ThemeProvider>
+      </Provider>
+    </GlobalErrorBoundary>
   );
 }
