@@ -11,6 +11,7 @@ import { RootState } from "@/store/rootReducer";
 import Loader from "../../../Common/Loader";
 import { showToast } from "@/lib/utils/toast";
 import { toNumber } from "@/lib/finanacial";
+import { fetchAdminPaymentDetails } from "@/features/exchange/slices/paymentSlice";
 
 interface TradePreviewProps {
   advertiserData: MarketRow;
@@ -18,11 +19,7 @@ interface TradePreviewProps {
   tradeType?: "buy" | "sell";
 }
 
-const paymentOptions = [
-  { value: "bank", label: "Bank" },
-  { value: "mobile", label: "Mobile" },
-  { value: "merchant", label: "Merchant" },
-];
+
 
 const TradePreview: React.FC<TradePreviewProps> = ({
   advertiserData,
@@ -34,6 +31,9 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const { data: wallets, loading: walletLoading } = useSelector(
     (state: RootState) => state.wallets || { data: null, loading: false }
+  );
+  const { adminPaymentDetails } = useSelector(
+    (state: RootState) => state.payment || { adminPaymentDetails: [] }
   );
   const [transactionSummary, setTransactionSummary] =
     useState<TransactionSummary | null>(null);
@@ -58,6 +58,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         try {
           setLoading(true);
           dispatch(fetchWallets());
+          dispatch(fetchAdminPaymentDetails(false));
           const summary = await getTransactionSummary();
           setTransactionSummary(summary);
         } catch (error) {
@@ -69,6 +70,27 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       fetchData();
     }
   }, [dispatch, isAuthenticated]);
+
+  // Create payment options from admin payment details
+  const paymentOptions = React.useMemo(() => {
+    if (!adminPaymentDetails || !Array.isArray(adminPaymentDetails)) return [];
+    
+    // Filter active details and deduplicate by provider_name
+    const uniqueProviders = new Map();
+    adminPaymentDetails
+      .filter((detail: any) => detail.is_active)
+      .forEach((detail: any) => {
+        if (!uniqueProviders.has(detail.provider_name)) {
+          uniqueProviders.set(detail.provider_name, {
+            id: detail.admin_payment_detail_id,
+            value: detail.provider_name,
+            label: detail.provider_name,
+          });
+        }
+      });
+    
+    return Array.from(uniqueProviders.values());
+  }, [adminPaymentDetails]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -407,7 +429,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                   <div className="p-2">
               {paymentOptions.map((opt) => (
                       <label
-                        key={opt.value}
+                        key={opt.id}
                         className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-[#35353E] rounded-lg cursor-pointer"
                       >
                         <input

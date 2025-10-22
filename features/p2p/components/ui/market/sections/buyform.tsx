@@ -47,6 +47,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
   );
   const [showCancelMsg, setShowCancelMsg] = useState(false);
   const router = useRouter();
+  const [wsConnectionError, setWsConnectionError] = useState<string | null>(null);
   
   // Ref to track previous status to prevent duplicate status updates
   const previousStatusRef = useRef<string | null>(null);
@@ -83,6 +84,21 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
     enabled: isAuthenticated && !!confirmOrder?.id,
     onStatusUpdate: handleStatusUpdate,
   });
+
+  // Monitor WebSocket connection status and show error if connection fails
+  useEffect(() => {
+    if (isAuthenticated && confirmOrder?.id && !statusWsConnected) {
+      const timer = setTimeout(() => {
+        if (!statusWsConnected) {
+          setWsConnectionError("Real-time updates unavailable. Click refresh to update status manually.");
+        }
+      }, 5000); // Wait 5 seconds before showing error
+      
+      return () => clearTimeout(timer);
+    } else if (statusWsConnected) {
+      setWsConnectionError(null);
+    }
+  }, [statusWsConnected, isAuthenticated, confirmOrder?.id]);
 
   // Initialize previousStatusRef with current status when confirmOrder first loads
   useEffect(() => {
@@ -220,7 +236,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
   const paymentDetails = singleOrder?.payment_details?.[0];
   // --- Calculation logic ---
   const sendAmount = Number(confirmOrder?.amount ) || 0;
-  const commissionRate = Number(confirmOrder?.commission_rate) || Number(commissionFromUrl) || 0;
+  const commissionRate = Number(confirmOrder?.commission_rate);
   const orderType = singleOrder?.order_type || "buy";
   let receiveAmount = sendAmount;
 
@@ -303,6 +319,12 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
             {singleOrderError}
           </div>
         )}
+        {wsConnectionError && (
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200 px-4 py-2 rounded-lg text-[13px] mb-2 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4" />
+            {wsConnectionError}
+          </div>
+        )}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
             <p
@@ -311,31 +333,8 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
             >
               Advertiser Info
             </p>
-            {statusWsConnected && (
-              <span className="flex items-center gap-1.5 text-[10px] text-[#1D8751] font-medium">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1D8751] opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1D8751]"></span>
-                </span>
-                Live Status
-              </span>
-            )}
-            {/* Current Status Display */}
-            {confirmOrder?.status && (
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                confirmOrder.status === "completed" 
-                  ? "bg-[#1D8751] text-white"
-                  : confirmOrder.status === "half-matched"
-                  ? "bg-[#F79330] text-white"
-                  : confirmOrder.status === "matched"
-                  ? "bg-[#1D8751]/20 text-[#1D8751]"
-                  : confirmOrder.status === "cancelled"
-                  ? "bg-[#E23D3A] text-white"
-                  : "bg-gray-200 dark:bg-[#35353E] text-gray-700 dark:text-gray-300"
-              }`}>
-                {confirmOrder.status.replace("-", " ").toUpperCase()}
-              </span>
-            )}
+           
+            
           </div>
           <button
             onClick={handleRefresh}

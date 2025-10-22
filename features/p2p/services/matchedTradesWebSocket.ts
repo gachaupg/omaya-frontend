@@ -190,7 +190,20 @@ export class MatchedTradesWebSocket {
     }
 
     if (this.ws) {
-      this.ws.close();
+      const currentState = this.ws.readyState;
+      
+      // Only close if OPEN (avoid closing while CONNECTING)
+      if (currentState === WebSocket.OPEN) {
+        this.ws.close(1000, "Client disconnect");
+      } else if (currentState === WebSocket.CONNECTING) {
+        // For CONNECTING state, wait for open then close
+        const wsToClose = this.ws;
+        wsToClose.onopen = () => {
+          if (wsToClose.readyState === WebSocket.OPEN) {
+            wsToClose.close(1000, "Client disconnect");
+          }
+        };
+      }
       this.ws = null;
     }
 

@@ -346,6 +346,28 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
     null
   );
 
+  // Debug logging for data display
+  console.log("ExchangeForm Debug:", {
+    isHomePage,
+    isAuthenticated,
+    assetsLoading,
+    swapAssetsLoading,
+    paymentLoading,
+    assetsCount: assets?.assets?.length || 0,
+    swapAssetsCount: swapAssets?.length || 0,
+    paymentMethodsCount: adminPaymentDetails?.length || 0,
+    assetsDisplay: {
+      shouldShowData: assetsDisplay.shouldShowData,
+      displayDataLength: assetsDisplay.displayData?.length || 0,
+      isLoading: assetsDisplay.isLoading
+    },
+    paymentMethodsDisplay: {
+      shouldShowData: paymentMethodsDisplay.shouldShowData,
+      displayDataLength: paymentMethodsDisplay.displayData?.length || 0,
+      isLoading: paymentMethodsDisplay.isLoading
+    }
+  });
+
   const presets: Record<Tab, Preset> = {
     express: {
       pay: { label: "Salam Bank", icon: "/images/salam.svg" },
@@ -362,46 +384,59 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
 
   /* ------------------- Data Fetching ------------------- */
   useEffect(() => {
-    // Skip API calls on home page - no data needed, buttons redirect to login
-    if (isHomePage) {
+    // Skip API calls on home page if user is not authenticated
+    if (isHomePage && !isAuthenticated) {
+      console.log("Skipping asset fetch: isHomePage =", isHomePage, "isAuthenticated =", isAuthenticated);
       return;
     }
     
+    console.log("Fetching exchange assets: isHomePage =", isHomePage, "isAuthenticated =", isAuthenticated);
     // Fetch assets
     dispatch(fetchAssets(false))
       .unwrap()
+      .then((result) => {
+        console.log("Exchange assets fetched successfully:", result);
+      })
       .catch((error: unknown) => {
         console.error("Failed to fetch exchange assets:", error);
       });
-  }, [dispatch, isHomePage]);
+  }, [dispatch, isHomePage, isAuthenticated]);
 
   useEffect(() => {
-    // Skip API calls on home page
-    if (isHomePage) {
+    // Skip API calls on home page if user is not authenticated
+    if (isHomePage && !isAuthenticated) {
       return;
     }
     
+    console.log("Fetching swap assets: isHomePage =", isHomePage, "isAuthenticated =", isAuthenticated);
     // Fetch swap assets
     dispatch(fetchSupportedAssets(false))
       .unwrap()
+      .then((result) => {
+        console.log("Swap assets fetched successfully:", result);
+      })
       .catch((error: unknown) => {
         console.error("Failed to fetch swap assets:", error);
       });
-  }, [dispatch, isHomePage]);
+  }, [dispatch, isHomePage, isAuthenticated]);
 
   useEffect(() => {
-    // Skip API calls on home page
-    if (isHomePage) {
+    // Skip API calls on home page if user is not authenticated
+    if (isHomePage && !isAuthenticated) {
       return;
     }
     
+    console.log("Fetching payment methods: isHomePage =", isHomePage, "isAuthenticated =", isAuthenticated);
     // Fetch payment methods
     dispatch(fetchAdminPaymentDetails(false))
       .unwrap()
+      .then((result) => {
+        console.log("Payment methods fetched successfully:", result);
+      })
       .catch((error: unknown) => {
         console.error("Failed to fetch payment details:", error);
       });
-  }, [dispatch, isHomePage]);
+  }, [dispatch, isHomePage, isAuthenticated]);
 
   /* ------------------- Asset Selection ------------------- */
   // Auto-select first asset when assets are loaded

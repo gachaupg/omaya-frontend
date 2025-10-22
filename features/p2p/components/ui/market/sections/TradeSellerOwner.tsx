@@ -233,7 +233,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   };
 
   return (
-    <div className="final-buy-container grid grid-cols-1 md:grid-cols-3 gap-6 p-2 md:p-6 min-h-screen bg-white dark:bg-[#18181D]">
+    <div className="final-buy-container grid grid-cols-1 md:grid-cols-3 gap-6 p-2 md:p-6 min-h-screen bg-white dark:bg-transparent">
       {/* Cancelled Trade Alert */}
       {confirmOrder?.status === "cancelled" && (
         <div className="col-span-full bg-[#E23D3A]/10 border-2 border-[#E23D3A] rounded-xl p-4 flex items-center gap-3">
@@ -257,31 +257,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             >
               Advertiser Information
             </p>
-            {statusWsConnected && (
-              <span className="flex items-center gap-1.5 text-[10px] text-[#1D8751] font-medium">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1D8751] opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1D8751]"></span>
-                </span>
-                Live Status
-              </span>
-            )}
-            {/* Current Status Badge */}
-            {confirmOrder?.status && (
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                confirmOrder.status === "completed" 
-                  ? "bg-[#1D8751] text-white"
-                  : confirmOrder.status === "half-matched"
-                  ? "bg-[#F79330] text-white"
-                  : confirmOrder.status === "matched"
-                  ? "bg-[#1D8751]/20 text-[#1D8751]"
-                  : confirmOrder.status === "cancelled"
-                  ? "bg-[#E23D3A] text-white"
-                  : "bg-gray-200 dark:bg-[#35353E] text-gray-700 dark:text-gray-300"
-              }`}>
-                {confirmOrder.status.replace("-", " ").toUpperCase()}
-              </span>
-            )}
+           
           </div>
           <button
             onClick={handleRefresh}

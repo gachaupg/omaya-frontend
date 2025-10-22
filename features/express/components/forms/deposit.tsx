@@ -109,8 +109,8 @@ export default function DepositForm({
     null  // swap error
   );
 
-  // Add local state to force immediate display of cached payment methods
-  const [localPaymentMethods, setLocalPaymentMethods] = useState<any[]>([]);
+  // Use state to hold payment methods - will trigger re-render when updated
+  const [stablePaymentMethods, setStablePaymentMethods] = useState<any[]>([]);
 
   const paymentMethodsDisplay = usePaymentMethodsDisplay(
     adminPaymentDetails,
@@ -118,32 +118,22 @@ export default function DepositForm({
     error
   );
 
-  // Merge local cached payment methods with Redux state for instant display
-  const effectivePaymentMethods = useMemo(() => {
-    // Priority: Redux state > local cached > empty
-    if (paymentMethodsDisplay.displayData && paymentMethodsDisplay.displayData.length > 0) {
-      return paymentMethodsDisplay.displayData;
-    }
-    if (localPaymentMethods && localPaymentMethods.length > 0) {
-      console.log('🚀 Using local cached payment methods for instant display');
-      return localPaymentMethods;
-    }
-    return [];
-  }, [paymentMethodsDisplay.displayData, localPaymentMethods]);
-
-  // Debug payment methods display
+  // Update payment methods state ONLY when payment data changes (not when asset changes)
   useEffect(() => {
-    console.log('💳 Payment Methods State:', {
-      reduxAdminPaymentDetails: adminPaymentDetails?.length || 0,
-      reduxLoading: loading,
-      reduxError: error,
-      displayData: paymentMethodsDisplay.displayData?.length || 0,
-      shouldShowData: paymentMethodsDisplay.shouldShowData,
-      localPaymentMethods: localPaymentMethods.length,
-      effectivePaymentMethods: effectivePaymentMethods.length,
-      isDropdownDisabled: paymentMethodsDisplay.isLoading && effectivePaymentMethods.length === 0,
-    });
-  }, [adminPaymentDetails, loading, error, paymentMethodsDisplay, localPaymentMethods, effectivePaymentMethods]);
+    if (adminPaymentDetails && adminPaymentDetails.length > 0) {
+      const activeMethods = adminPaymentDetails.filter((payment: any) => {
+        if (payment.is_active === undefined || payment.is_active === null) return true;
+        return payment.is_active === true || payment.is_active === 'true' || payment.is_active === 1 || payment.is_active === '1';
+      });
+      
+      if (activeMethods.length > 0) {
+        setStablePaymentMethods(activeMethods);
+      }
+    }
+  }, [adminPaymentDetails]); // ONLY when payment data changes, NOT when asset changes
+  
+  // Use stable state - React will properly render this
+  const effectivePaymentMethods = stablePaymentMethods;
 
   const [payAmount, setPayAmount] = useState(100); // Set default amount to $100
   const [payAmountInput, setPayAmountInput] = useState("100"); // String value for input display
@@ -197,36 +187,43 @@ export default function DepositForm({
   // Add validation state for minimum receive amount
   const [receiveAmountError, setReceiveAmountError] = useState<string | null>(null);
 
+  // Add state for API validation errors
+  const [apiValidationError, setApiValidationError] = useState<string | null>(null);
+
   // Forex-specific state
   const [forexAccountNumber, setForexAccountNumber] = useState<string>("");
   const [userNotes, setUserNotes] = useState<string>("");
   const [showForexForm, setShowForexForm] = useState<boolean>(false);
 
-  // Check cache immediately on mount for instant display
+  // Initialize payment methods from cache on mount
   useEffect(() => {
     if (isHomePage) return;
     
-    const loadCachedPaymentMethods = async () => {
+    const initializePaymentMethods = async () => {
       try {
         const { sliceCache } = await import("@/lib/utils/sliceCache");
         const cached = await sliceCache.get<any[]>('payment', 'fetchAdminPaymentDetails');
         if (cached && cached.length > 0) {
-          console.log('⚡ Instantly showing cached payment methods:', cached.length);
-          setLocalPaymentMethods(cached);
+          const filtered = cached.filter((p: any) => 
+            p.is_active === undefined || p.is_active === null || p.is_active === true || p.is_active === 'true'
+          );
           
-          // Also update Redux state immediately with cached data
+          // Set state FIRST for immediate display
+          setStablePaymentMethods(filtered);
+          
+          // Then update Redux
           dispatch({
             type: 'payment/fetchAdminPaymentDetails/fulfilled',
             payload: cached,
           });
         }
       } catch (error) {
-        console.error('Failed to load cached payment methods:', error);
+        // Silent fail
       }
     };
     
-    loadCachedPaymentMethods();
-  }, [isHomePage, dispatch]);
+    initializePaymentMethods();
+  }, []); // Empty deps - runs only once on mount
 
   useEffect(() => {
     // Skip API calls on home page - buttons will redirect to login
@@ -238,33 +235,23 @@ export default function DepositForm({
     dispatch(fetchAdminPaymentDetails(false))
       .unwrap()
       .then((data) => {
-        console.log('✅ Payment methods loaded from cache/API:', data?.length || 0);
-        // Update local state immediately
-        if (data && data.length > 0) {
-          setLocalPaymentMethods(data);
-        }
+        // Data will be updated via useEffect above - no need to do anything here
+        return data;
         // If no payment methods in cache, force refresh
         if (!data || (Array.isArray(data) && data.length === 0)) {
-          console.log('🔄 No cached payment methods, forcing refresh...');
           return dispatch(fetchAdminPaymentDetails(true)).unwrap();
         }
         return data;
       })
       .catch((error: unknown) => {
-        console.error('❌ Cache fetch failed, trying force refresh:', error);
         // If cache fetch fails, try force refresh
         return dispatch(fetchAdminPaymentDetails(true))
           .unwrap()
           .then((data) => {
-            console.log('✅ Payment methods loaded from force refresh:', data?.length || 0);
-            // Update local state immediately
-            if (data && data.length > 0) {
-              setLocalPaymentMethods(data);
-            }
+            // Data will be updated via useEffect above - no need to do anything here
             return data;
           })
           .catch((refreshError: unknown) => {
-            console.error('❌ Force refresh also failed:', refreshError);
             // Don't show toast error - the UI will handle the loading/error state gracefully
           });
       });
@@ -434,7 +421,7 @@ export default function DepositForm({
   // FXP uses manual calculation with fixed 1.06 rate
   const FXP_EXCHANGE_RATE = 1.06;
 
-  // Fetch estimate for non-direct assets - triggers immediately on asset or amount change
+  // Fetch estimate for non-direct assets - debounced to avoid rapid API calls
   useEffect(() => {
     
     if (
@@ -448,13 +435,11 @@ export default function DepositForm({
       setEstimateLoading(true);
       setEstimateError(null);
 
-      // Use the actual fetchSwapEstimate API call for deposit
-      // For deposits: fromCurrency is USDT, toCurrency is the selected asset
-      
-
+      // Debounce API call by 800ms to avoid rapid requests while user is typing
+      const debounceTimer = setTimeout(() => {
       // Add timeout to prevent hanging API calls
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Request timeout")), 30000); // 30 second timeout
+          setTimeout(() => reject(new Error("Request timeout")), 12000); // 12 second timeout (10s API + 2s buffer)
       });
 
       Promise.race([
@@ -479,6 +464,7 @@ export default function DepositForm({
               setGetAmount(estimatedAmount);
               setGetAmountInput(estimatedAmount.toString());
               setReceiveAmountError(null);
+              setApiValidationError(null); // Clear API validation errors on success
             }
           }
           
@@ -488,28 +474,88 @@ export default function DepositForm({
         })
         .catch((error) => {
           console.error("Failed to fetch swap estimate:", error);
+          console.log("API Error caught:", error);
           
-          // Handle different types of errors gracefully
-          if (error.message?.includes("Request timeout")) {
-            setEstimateError("Request timeout: Using fallback calculation");
-            showToast.warning("Request timeout: Using estimated rate");
-          } else if (error.message?.includes("Network Error") || error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
-            setEstimateError("Network error: Using fallback calculation");
-            showToast.warning("Using estimated rate due to network issues");
-          } else if (error.message?.includes("Server Error")) {
-            setEstimateError("Server error: Using fallback calculation");
-            showToast.warning("Using estimated rate due to server issues");
-          } else if (error.message?.includes("Invalid swap parameters")) {
-            setEstimateError("Invalid parameters: Using fallback calculation");
-           
-            showToast.warning("Invalid parameters: Using estimated rate");
-          } else {
-            setEstimateError("API error: Using fallback calculation");
+          // IMMEDIATELY clear all loading states to prevent stuck loading
+          setIsCalculating(false);
+          setIsCalculatingReceive(false);
+          setEstimateLoading(false);
           
-            showToast.warning("Using estimated rate due to API unavailability");
+          // Check for specific API validation errors - handle different error structures
+          let errorMessage = "";
+          let errorDetails = "";
+          
+          // Handle the exact structure you provided
+          if (error?.response_data?.error) {
+            errorMessage = error.response_data.error;
+            errorDetails = error.response_data.message || "";
+          } else if (error?.error) {
+            errorMessage = error.error;
+            errorDetails = error.message || "";
+          } else if (error?.message) {
+            errorMessage = error.message;
           }
           
-          // Common fallback calculation for all error types
+          // Also check for the specific "Exchange service error" format
+          if (errorMessage.includes("Exchange service error:")) {
+            const serviceError = errorMessage.replace("Exchange service error: ", "");
+            errorMessage = serviceError;
+          }
+          
+          console.log("Error parsing:", { errorMessage, errorDetails, hasResponseData: !!error?.response_data });
+          
+          // Handle deposit_too_small error
+          if (errorMessage.includes("deposit_too_small") || errorDetails.includes("Out of min amount")) {
+            // Try to get minimum amount from error payload
+            const minAmount = error?.response_data?.payload?.range?.minAmount;
+            const errorText = minAmount 
+              ? `Amount entered is too small. Minimum amount is ${minAmount.toFixed(8)}.`
+              : "Amount entered is too small. Please enter a larger amount.";
+            
+            setApiValidationError(errorText);
+            setEstimateError(null);
+            setGetAmount(0);
+            setGetAmountInput("0");
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
+            setEstimateLoading(false);
+            return;
+          }
+          
+          
+          // Handle other specific validation errors
+          if (errorMessage.includes("deposit_too_large") || errorDetails.includes("Out of max amount")) {
+            // Try to get maximum amount from error payload
+            const maxAmount = error?.response_data?.payload?.range?.maxAmount;
+            const errorText = maxAmount 
+              ? `Amount entered is too large. Maximum amount is ${maxAmount.toFixed(8)}.`
+              : "Amount entered is too large. Please enter a smaller amount.";
+            
+            setApiValidationError(errorText);
+            setEstimateError(null);
+            setGetAmount(0);
+            setGetAmountInput("0");
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
+            setEstimateLoading(false);
+            return;
+          }
+          
+          // Clear API validation errors for network/timeout issues
+          setApiValidationError(null);
+          
+          // Handle timeout - just clear error and allow retry
+          if (error.message?.includes("Request timeout")) {
+            setEstimateError(null);
+          } else if (error.message?.includes("Network Error") || error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
+            setEstimateError(null);
+          } else if (error.message?.includes("Server Error")) {
+            setEstimateError(null);
+          } else {
+            setEstimateError(null);
+          }
+          
+          // Common fallback calculation for network/timeout errors only
           const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
             ? parseFloat(selectedAsset.range_commissions[0].commission)
             : 2;
@@ -525,6 +571,10 @@ export default function DepositForm({
         .finally(() => {
           setEstimateLoading(false);
         });
+      }, 800); // 800ms debounce
+      
+      // Cleanup function to clear debounce timer on unmount or dependency change
+      return () => clearTimeout(debounceTimer);
     } else {
       // Clear estimate for USDT or when conditions not met
       setEstimate(null);
@@ -532,7 +582,7 @@ export default function DepositForm({
     }
   }, [selectedAsset, payAmount, isCalculatingFromPay]);
 
-  // Fetch reverse estimate for non-direct assets when calculating from receive amount
+  // Fetch reverse estimate for non-direct assets when calculating from receive amount - debounced
   useEffect(() => {
     if (
       selectedAsset &&
@@ -545,13 +595,11 @@ export default function DepositForm({
       setEstimateLoading(true);
       setEstimateError(null);
 
-      // For reverse calculation, we need to estimate the pay amount from the receive amount
-      // We'll call the API with the correct direction to get the required USDT amount
-      
-
+      // Debounce API call by 800ms to avoid rapid requests while user is typing
+      const debounceTimer = setTimeout(() => {
       // Add timeout to prevent hanging API calls
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error("Request timeout")), 30000); // 30 second timeout
+          setTimeout(() => reject(new Error("Request timeout")), 12000); // 12 second timeout (10s API + 2s buffer)
       });
 
       Promise.race([
@@ -575,6 +623,7 @@ export default function DepositForm({
               setPayAmount(requiredUsdtAmount);
               setPayAmountInput(requiredUsdtAmount.toString());
               setEstimate(result.payload);
+              setApiValidationError(null); // Clear API validation errors on success
             }
           }
           
@@ -584,25 +633,66 @@ export default function DepositForm({
         })
         .catch((error) => {
           
-          // Handle different types of errors gracefully
-          if (error.message?.includes("Request timeout")) {
-            setEstimateError("Request timeout: Using fallback calculation");
-            showToast.warning("Request timeout: Using estimated rate");
-          } else if (error.message?.includes("Network Error") || error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
-            setEstimateError("Network error: Using fallback calculation");
-            showToast.warning("Using estimated rate due to network issues");
-          } else if (error.message?.includes("Server Error")) {
-            setEstimateError("Server error: Using fallback calculation");
-            showToast.warning("Using estimated rate due to server issues");
-          } else if (error.message?.includes("Invalid swap parameters")) {
-            setEstimateError("Invalid parameters: Using fallback calculation");
-            showToast.warning("Invalid parameters: Using estimated rate");
-          } else {
-            setEstimateError("API error: Using fallback calculation");
-            showToast.warning("Using estimated rate due to API unavailability");
+          // Check for specific API validation errors - handle different error structures
+          let errorMessage = "";
+          let errorDetails = "";
+          
+          // Handle different error response structures
+          if (error?.response_data?.error) {
+            errorMessage = error.response_data.error;
+            errorDetails = error.response_data.message || "";
+          } else if (error?.error) {
+            errorMessage = error.error;
+            errorDetails = error.message || "";
+          } else if (error?.message) {
+            errorMessage = error.message;
           }
           
-          // Common fallback calculation for all error types
+          // Handle the specific structure you provided
+          if (error?.response_data && !errorMessage) {
+            errorMessage = error.response_data.error || "";
+            errorDetails = error.response_data.message || "";
+          }
+          
+          console.log("API Error Debug (reverse):", { error, errorMessage, errorDetails });
+          
+          // Handle deposit_too_small error
+          if (errorMessage.includes("deposit_too_small") || errorDetails.includes("Out of min amount")) {
+            setApiValidationError("Amount entered is too small. Please enter a larger amount.");
+            setEstimateError(null);
+            setPayAmount(0);
+            setPayAmountInput("0");
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
+            return;
+          }
+          
+          // Handle other specific validation errors
+          if (errorMessage.includes("deposit_too_large") || errorDetails.includes("Out of max amount")) {
+            setApiValidationError("Amount entered is too large. Please enter a smaller amount.");
+            setEstimateError(null);
+            setPayAmount(0);
+            setPayAmountInput("0");
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
+            return;
+          }
+          
+          // Clear API validation errors for network/timeout issues
+          setApiValidationError(null);
+          
+          // Handle timeout - just clear error and allow retry
+          if (error.message?.includes("Request timeout")) {
+            setEstimateError(null);
+          } else if (error.message?.includes("Network Error") || error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
+            setEstimateError(null);
+          } else if (error.message?.includes("Server Error")) {
+            setEstimateError(null);
+          } else {
+            setEstimateError(null);
+          }
+          
+          // Common fallback calculation for network/timeout errors only
           let commissionRate = 2; // Default fallback
           if (selectedAsset?.range_commissions && selectedAsset.range_commissions.length > 0) {
             const firstCommission = selectedAsset.range_commissions[0];
@@ -626,20 +716,26 @@ export default function DepositForm({
         .finally(() => {
           setEstimateLoading(false);
         });
+      }, 800); // 800ms debounce
+      
+      // Cleanup function to clear debounce timer on unmount or dependency change
+      return () => clearTimeout(debounceTimer);
     }
   }, [selectedAsset, getAmount, isCalculatingFromPay]);
 
   // Safety timeout to clear loading states if they get stuck
   useEffect(() => {
     const safetyTimeout = setTimeout(() => {
-      if (isCalculating || isCalculatingReceive) {
+      if (isCalculating || isCalculatingReceive || estimateLoading) {
         setIsCalculating(false);
         setIsCalculatingReceive(false);
+        setEstimateLoading(false);
+        console.log("Safety timeout: Cleared all loading states");
       }
-    }, 15000); // 15 second safety timeout
+    }, 10000); // 10 second safety timeout (reduced from 15s)
     
     return () => clearTimeout(safetyTimeout);
-  }, [isCalculating, isCalculatingReceive]);
+  }, [isCalculating, isCalculatingReceive, estimateLoading]);
 
   // Filter assets based on search term - search by ticker and name
   const filteredSwapAssets =
@@ -925,7 +1021,6 @@ export default function DepositForm({
 
   // Recalculate when asset changes
   useEffect(() => {
-    console.log("Selected asset changed:", selectedAsset);
     if (selectedAsset && payAmount > 0 && isCalculatingFromPay) {
       // Clear any existing estimate when asset changes
       setEstimate(null);
@@ -1682,31 +1777,14 @@ export default function DepositForm({
         <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Transaction Info
       </h2>
       
-      {/* Network Status Indicator */}
-      {estimateError && !estimateLoading && (
-        <div className="mb-4 p-3 bg-[#F79330] bg-opacity-10 border border-[#F79330] rounded-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-[#F79330]">
-              <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                <path d="M12 8v4m0 4h.01" stroke="#F79330" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="12" cy="12" r="10" stroke="#F79330" strokeWidth="2"/>
-              </svg>
-              <span className="text-sm font-medium">
-                {estimateError.includes("Network error") ? "Network Issues Detected" :
-                 estimateError.includes("Server error") ? "Server Issues Detected" :
-                 estimateError.includes("Request timeout") ? "Request Timeout" :
-                 "API Issues Detected"}
-              </span>
-            </div>
-            <span className="text-xs text-[#F79330] opacity-75">
-              Using fallback calculations
-            </span>
-          </div>
-          <p className="text-xs text-[#F79330] mt-1 opacity-75">
-            Live rates are temporarily unavailable. Calculations are based on estimated rates.
-          </p>
+      {/* API Validation Error - Show as simple red text */}
+      {apiValidationError && (
+        <div className="mb-4 text-red-500 text-sm font-medium">
+          {apiValidationError}
         </div>
       )}
+      
+      
       <div className="w-full text-white">
         {/* Top Section - Amount and Bank/Payment Method in one card */}
         <div className="relative mb-4">
@@ -1736,6 +1814,15 @@ export default function DepositForm({
                     
                     // Only allow numbers and decimals (including 0.006 format)
                     if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                      // Check for decimal places validation
+                      if (value.includes(".")) {
+                        const decimalPart = value.split(".")[1];
+                        if (decimalPart && decimalPart.length > 8) {
+                          setApiValidationError("Number cannot have more than 8 decimal places.");
+                          return;
+                        }
+                      }
+                      
                       const newAmount = parseFloat(value) || 0;
                       
                       // Only update and calculate if the numeric value actually changed
@@ -1743,6 +1830,9 @@ export default function DepositForm({
                         setPayAmountInput(value); // Store the string value for display
                       setPayAmount(newAmount);
                       setIsCalculatingFromPay(true);
+                      
+                      // Clear API validation error when user changes amount
+                      setApiValidationError(null);
                       
                       // Mark that user has manually modified the amount
                       setIsUserModifiedAmount(true);
@@ -1803,28 +1893,6 @@ export default function DepositForm({
                     {estimateLoading ? "⏳ Fetching live rate..." : estimate ? "✅ Using live rate" : "⏳ Calculating..."}
                   </div>
                 )}
-                {estimateError && !estimateLoading && isCalculatingFromPay && (
-                  <div className="flex items-center justify-between gap-2 text-[#F79330] text-sm mt-2">
-                    <div className="flex items-center gap-2">
-                      <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                        <path d="M12 8v4m0 4h.01" stroke="#F79330" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <circle cx="12" cy="12" r="10" stroke="#F79330" strokeWidth="2"/>
-                      </svg>
-                      <span>{estimateError}</span>
-                    </div>
-                    <button
-                      onClick={() => {
-                        // Retry API call
-                        if (payAmount > 0) {
-                          calculateAmounts(payAmount, true);
-                        }
-                      }}
-                      className="text-[#1D8751] hover:text-[#166b3e] text-xs underline"
-                    >
-                      Retry
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -1859,13 +1927,11 @@ export default function DepositForm({
                         ? "Select Payment Method"
                         : "No payment methods available"}
                   </option>
-                  {effectivePaymentMethods && effectivePaymentMethods.length > 0 ? (
-                    effectivePaymentMethods.map((payment: any, index: number) => (
+                  {(effectivePaymentMethods || []).map((payment: any, index: number) => (
                       <option key={payment.admin_payment_detail_id || index} value={payment.provider_name} className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">
                         {payment.provider_name} - {payment.payment_method || payment.payment_method_type || payment.payment_type}
                       </option>
-                    ))
-                  ) : null}
+                  ))}
                 </select>
               </div>
               {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
@@ -1933,6 +1999,15 @@ export default function DepositForm({
                     
                     // Only allow numbers and decimals (including 0.006 format)
                     if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                      // Check for decimal places validation
+                      if (value.includes(".")) {
+                        const decimalPart = value.split(".")[1];
+                        if (decimalPart && decimalPart.length > 8) {
+                          setApiValidationError("Number cannot have more than 8 decimal places.");
+                          return;
+                        }
+                      }
+                      
                       const newAmount = parseFloat(value) || 0;
                       
                       // Only update and calculate if the numeric value actually changed
@@ -1940,6 +2015,9 @@ export default function DepositForm({
                         setGetAmountInput(value); // Store the string value for display
                       setGetAmount(newAmount);
                       setIsCalculatingFromPay(false);
+                      
+                      // Clear API validation error when user changes amount
+                      setApiValidationError(null);
                       
                       // For direct assets, calculate immediately
                       if (selectedAsset && newAmount > 0 && isSimpleCalculationAsset(selectedAsset)) {
@@ -2002,12 +2080,6 @@ export default function DepositForm({
                 {/* Show API estimate status for non-direct assets */}
                 {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && !isForexAsset(selectedAsset) && (
                   <div className="mt-2">
-                    {/* {estimateLoading && isCalculatingFromPay && (
-                      <div className="flex items-center gap-2 text-[#1D8751] text-sm">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#1D8751]"></div>
-                        <span>Fetching live rate from API...</span>
-                      </div>
-                    )} */}
                     {estimate && !estimateLoading && isCalculatingFromPay && (
                       <div className="flex items-center gap-2 text-[#1D8751] text-sm">
                         <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
@@ -2030,30 +2102,6 @@ export default function DepositForm({
                           <circle cx="12" cy="12" r="10" stroke="#1D8751" strokeWidth="2"/>
                         </svg>
                         <span>Using live rate for reverse calculation</span>
-                      </div>
-                    )}
-                    {estimateError && !estimateLoading && (
-                      <div className="flex items-center justify-between gap-2 text-[#F79330] text-sm">
-                        <div className="flex items-center gap-2">
-                          <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                            <path d="M12 8v4m0 4h.01" stroke="#F79330" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            <circle cx="12" cy="12" r="10" stroke="#F79330" strokeWidth="2"/>
-                          </svg>
-                          <span>{estimateError}</span>
-                        </div>
-                        <button
-                          onClick={() => {
-                            // Retry API call
-                            if (isCalculatingFromPay && payAmount > 0) {
-                              calculateAmounts(payAmount, true);
-                            } else if (!isCalculatingFromPay && getAmount > 0) {
-                              calculateAmounts(getAmount, false);
-                            }
-                          }}
-                          className="text-[#1D8751] hover:text-[#166b3e] text-xs underline"
-                        >
-                          Retry
-                        </button>
                       </div>
                     )}
                   </div>
@@ -2426,8 +2474,91 @@ export default function DepositForm({
         {/* Forex Form - Shows when FXP is selected */}
         {showForexForm && selectedAsset && isForexAsset(selectedAsset) && (
           <div className="mt-4 space-y-4">
+            {/* Payment Method Details */}
+            {selectedPaymentDetail && (
+              <>
             <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
-              <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span> Forex Account Details
+                  <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span> Payment Details
+                </h2>
+                <div className="flex-1 dark:bg-[#1D1D23] rounded-2xl border border-[#39394a] dark:border-[#35353E] flex flex-col justify-between p-5 relative min-h-[120px]">
+                  {/* Bank and logo */}
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-semibold">
+                      Bank:
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={
+                          selectedPaymentDetail.logo ||
+                          "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                        }
+                        alt="Bank Logo"
+                        className="w-8 h-8 rounded-full object-contain"
+                      />
+                      <span className="text-[#35353e] dark:text-[#788099] text-base font-semibold">
+                        {selectedPaymentDetail.provider_name}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="border-t border-dashed border-[#39394a] mb-2"></div>
+                  {/* Account Name */}
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-medium">
+                      Account Name :
+                    </span>
+                    <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
+                      {selectedPaymentDetail.account_name}
+                    </span>
+                  </div>
+                  <div className="border-t border-dashed border-[#39394a] mb-2"></div>
+                  {/* Account Number */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-medium">
+                      Account Number :
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
+                        {selectedPaymentDetail.account_number}
+                      </span>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(
+                            selectedPaymentDetail.account_number
+                          );
+                          showToast.success("Account number copied!");
+                        }}
+                        className="text-[#F79330] hover:text-white transition-colors p-1 rounded"
+                        title="Copy Account Number"
+                      >
+                        <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                          <rect
+                            x="9"
+                            y="9"
+                            width="13"
+                            height="13"
+                            rx="2"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          />
+                          <rect
+                            x="3"
+                            y="3"
+                            width="13"
+                            height="13"
+                            rx="2"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+            
+            <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
+              <span className="text-[#7e7e8f] dark:text-[#788099]">3-</span> Forex Account Details
             </h2>
             
             {/* Forex Account Number */}

@@ -278,31 +278,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             <p className="text-gray-900 dark:text-white text-[13px]">
               Advertiser Information
             </p>
-            {statusWsConnected && (
-              <span className="flex items-center gap-1.5 text-[10px] text-[#1D8751] font-medium">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#1D8751] opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1D8751]"></span>
-                </span>
-                Live Status
-              </span>
-            )}
-            {/* Current Status Badge */}
-            {confirmOrder?.status && (
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                confirmOrder.status === "completed" 
-                  ? "bg-[#1D8751] text-white"
-                  : confirmOrder.status === "half-matched"
-                  ? "bg-[#F79330] text-white"
-                  : confirmOrder.status === "matched"
-                  ? "bg-[#1D8751]/20 text-[#1D8751]"
-                  : confirmOrder.status === "cancelled"
-                  ? "bg-[#E23D3A] text-white"
-                  : "bg-gray-200 dark:bg-[#35353E] text-gray-700 dark:text-gray-300"
-              }`}>
-                {confirmOrder.status.replace("-", " ").toUpperCase()}
-              </span>
-            )}
+           
           </div>
           <button
             onClick={handleRefresh}

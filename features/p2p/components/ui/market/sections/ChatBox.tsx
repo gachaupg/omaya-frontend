@@ -412,40 +412,23 @@ const ChatBox: React.FC<{
             </p>
           )}
           {sortedMessages.map((msg) => {
-            // Detailed logging for debugging
-            const imageDetails = msg.images?.map((img: any, idx: number) => {
-              const url = isMessageImage(img) ? (img.image_url || img.image) : img;
-              return {
-                index: idx,
-                hasUrl: !!url,
-                url: url?.substring(0, 50) + '...',
-                isObject: isMessageImage(img),
-                isEmpty: !url || url.trim() === ''
-              };
-            });
-            
-           
-            
             // Use sender_name (email) to determine if this is the current user's message
             const isSender = msg.sender_name?.trim() === currentUserEmail?.trim();
             
             // Determine photo and display name for this specific message
             let messagePhoto = otherPersonData.photo;
-            // ALWAYS prioritize sender_username from WebSocket message
-            let displayName = msg.sender_username || "Unknown User";
+            
+            // For consistency, always extract username from email (part before @)
+            let displayName = msg.sender_name 
+              ? msg.sender_name.split('@')[0] 
+              : "Unknown User";
             
             if (!isSender && msg.sender_name) {
               // This is the other person's message - determine which photo to show
               if (msg.sender_name === seller) {
-                // Message is from seller
                 messagePhoto = seller_photo;
-                // Prioritize sender_username, fallback to sellerName, then sender_name (email)
-                displayName = msg.sender_username || sellerName || msg.sender_name;
               } else if (msg.sender_name === buyer) {
-                // Message is from buyer
                 messagePhoto = buyer_photo;
-                // Prioritize sender_username, fallback to buyerName, then sender_name (email)
-                displayName = msg.sender_username || buyerName || msg.sender_name;
               }
             }
             
@@ -668,3 +651,4 @@ const ChatBox: React.FC<{
 };
 
 export default ChatBox;
+

@@ -20,6 +20,9 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
   const dispatch = useDispatch<AppDispatch>();
   const wsRef = useRef(getTradeStatusWebSocket(tradeId));
   const mountedRef = useRef(true);
+  
+  // Store callback in ref to prevent reconnections when it changes
+  const onStatusUpdateRef = useRef(onStatusUpdate);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -28,8 +31,16 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
     };
   }, []);
 
+  // Update the callback ref when it changes (without triggering reconnection)
   useEffect(() => {
+    onStatusUpdateRef.current = onStatusUpdate;
+  }, [onStatusUpdate]);
+
+  useEffect(() => {
+    console.log('🎯 useTradeStatusWebSocket Hook Initialized:', { enabled, tradeId });
+    
     if (!enabled || !tradeId) {
+      console.log('⚠️ WebSocket NOT enabled or no tradeId:', { enabled, tradeId });
       return;
     }
 
@@ -37,6 +48,7 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
       // First try to get from cookies (primary storage)
       const cookieToken = cookieUtils.getCookie("access_token");
       if (cookieToken) {
+        console.log('✅ Access token found in cookies');
         return cookieToken;
       }
       
@@ -44,38 +56,47 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
       if (typeof window !== "undefined") {
         const localToken = localStorage.getItem("access_token");
         if (localToken) {
+          console.log('✅ Access token found in localStorage');
           return localToken;
         }
       }
       
+      console.log('❌ No access token found!');
       return null;
     };
 
     const token = getAccessToken();
 
     if (!token) {
+      console.log('❌ Cannot connect to WebSocket: No token available');
       return;
     }
 
     // Validate token format (basic check)
     if (!token.includes('.')) {
+      console.log('❌ Invalid token format (not a JWT)');
       return;
     }
 
+    console.log('🚀 Connecting to WebSocket...', { tradeId, tokenLength: token.length });
     const ws = wsRef.current;
 
     // Handle WebSocket messages
     const unsubscribeMessage = ws.onMessage((message: WebSocketMessage) => {
       if (!mountedRef.current) return;
 
+      console.log('📨 WebSocket Message Received:', { type: message.type, message });
+
       try {
         switch (message.type) {
           case "connection_established":
+            console.log('✅ WebSocket Connection Established!');
             break;
 
           case "status_update":
           case "trade_update":
             const data = message.data || message;
+            console.log('📊 Status/Trade Update Data:', data);
             
             if (data && data.status) {
               const tradeStatus: TradeStatus = {
@@ -87,38 +108,43 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
                 ...data,
               };
               
-              if (onStatusUpdate) {
-                onStatusUpdate(tradeStatus);
+              console.log('🔔 Calling onStatusUpdate with:', tradeStatus);
+              if (onStatusUpdateRef.current) {
+                onStatusUpdateRef.current(tradeStatus);
               }
+            } else {
+              console.log('⚠️ No status in data:', data);
             }
             break;
 
           case "error":
+            console.log('❌ WebSocket Error Message:', message);
             break;
 
           default:
+            console.log('ℹ️ Unknown message type:', message.type);
             break;
         }
       } catch (error) {
-        // Silent error handling
+        console.error('❌ Error handling WebSocket message:', error);
       }
     });
 
     // Handle WebSocket errors
     const unsubscribeError = ws.onError((error) => {
-      // Silent error handling
+      console.error('❌ WebSocket Error:', error);
     });
 
     // Handle WebSocket close
     const unsubscribeClose = ws.onClose(() => {
       if (!mountedRef.current) return;
-      // Silent close handling
+      console.log('🔌 WebSocket Connection Closed');
     });
 
     // Handle WebSocket open
     const unsubscribeOpen = ws.onOpen(() => {
       if (!mountedRef.current) return;
-      // Silent open handling
+      console.log('✅ WebSocket Connection Opened!');
     });
 
     // Connect to WebSocket
@@ -132,7 +158,7 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
       unsubscribeOpen();
       cleanupTradeStatusWebSocket(tradeId);
     };
-  }, [enabled, tradeId, onStatusUpdate]);
+  }, [enabled, tradeId]); // Removed onStatusUpdate from deps - using ref instead
 
   return {
     isConnected: wsRef.current.isConnected(),
