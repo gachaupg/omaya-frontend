@@ -295,7 +295,7 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
           completion_time: formatLimitDuration(order.completion_time || "00:00:00"),
           online: true,
           commission: `${order.commission_rate || 0}`,
-          available: `${parseFloat(order.amount || 0).toFixed(2)} ${order.currency}`,
+          available: `${parseFloat(order.available_amount || 0).toFixed(2)} ${order.currency}`,
           limit: `${parseFloat(order.min_order_amount || 0).toFixed(
             2
           )} - ${parseFloat(order.max_order_amount || 0).toFixed(2)} ${
@@ -317,6 +317,8 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
       })
       .filter((row: MarketRow) => {
         if (currency && row.currency !== currency) return false;
+        
+        // Don't hide orders with 0 available amount - show them but gray out the button
 
         // Filter by payment method - check if any payment detail has the selected payment method
         if (paymentType && paymentType !== "") {
@@ -370,12 +372,41 @@ const MarketTransactions = ({ activeTab }: { activeTab: string }) => {
 
         if (amount) {
           const amountValue = parseFloat(amount);
-          if (amountValue < row.minAmount || amountValue > row.maxAmount)
+          
+          // Check if amount is within the order's min/max range
+          if (amountValue < row.minAmount || amountValue > row.maxAmount) {
             return false;
+          }
+          
+          // Also check if the available amount is sufficient for the search amount
+          const availableAmount = parseFloat(row.available.split(' ')[0]);
+          if (availableAmount < amountValue) {
+            return false;
+          }
         }
-        if (searchQuery) {
-          const query = searchQuery.toLowerCase();
-          if (!row.advertiser.toLowerCase().includes(query)) return false;
+        if (searchQuery && searchQuery.trim() !== '') {
+          const query = searchQuery.trim();
+          
+          // Search in available amount (main field)
+          const availableAmount = parseFloat(row.available.split(' ')[0]);
+          const availableAmountStr = availableAmount.toString();
+          
+          // Search in min/max amounts
+          const minAmountStr = row.minAmount.toString();
+          const maxAmountStr = row.maxAmount.toString();
+          
+          // Search in order limits
+          const limitStr = row.limit;
+          
+          // Check if query appears in any amount field
+          const hasMatch = availableAmountStr.includes(query) ||
+                          minAmountStr.includes(query) ||
+                          maxAmountStr.includes(query) ||
+                          limitStr.includes(query);
+          
+          if (!hasMatch) {
+            return false;
+          }
         }
         return true;
       });

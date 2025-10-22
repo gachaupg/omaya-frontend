@@ -173,9 +173,48 @@ const TradePreview: React.FC<TradePreviewProps> = ({
 
   const handleReceiveAmountChange = (value: string) => {
     setReceiveAmount(value);
+
+    if (!value) {
+      setIsAmountValid(true);
+      setErrorMessage("");
+      setSendAmount("");
+      return;
+    }
+
     const numericAmount = parseFloat(value);
     setNumericAmount(numericAmount);
-    const calculatedSend =
+
+    // Get available amount from the order
+    const availableAmount = parseFloat(advertiserData.available);
+    
+    // Validate against available amount
+    if (numericAmount > availableAmount) {
+      setIsAmountValid(false);
+      setErrorMessage(`Amount cannot exceed available balance (${availableAmount.toFixed(2)} USDT)`);
+      setSendAmount("");
+      return;
+    }
+
+    // Check minimum amount
+    if (numericAmount < minAmount) {
+      setIsAmountValid(false);
+      setErrorMessage(`Minimum amount is ${minAmount} USDT`);
+      setSendAmount("");
+      return;
+    }
+
+    // Check maximum amount
+    if (numericAmount > maxAmount) {
+      setIsAmountValid(false);
+      setErrorMessage(`Maximum amount is ${maxAmount} USDT`);
+      setSendAmount("");
+      return;
+    }
+
+    // If validation passes, calculate send amount and clear errors
+    setIsAmountValid(true);
+    setErrorMessage("");
+    const calculatedSend = 
       tradeType === "sell"
         ? (numericAmount / commissionRate).toFixed(2)
         : (numericAmount * commissionRate).toFixed(2);
@@ -371,7 +410,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                     value="USDT"
                     disabled
                   >
-                    <option>USD</option>
+                    <option> {tradeType === "buy" ? "USD" : "USDT"}</option>
                   </select>
                 </div>
                 {!isAmountValid && sendAmount && (
@@ -386,15 +425,29 @@ const TradePreview: React.FC<TradePreviewProps> = ({
               <div className="text-sm text-gray-500 dark:text-[#788099]">
                 I Want to Receive
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl text-[#1D8751]">$</span>
-                <input
-                  type="number"
-                  value={receiveAmount}
-                  onChange={(e) => handleReceiveAmountChange(e.target.value)}
-                  placeholder="220 USDT"
-                  className="flex-1 bg-transparent text-xl font-semibold focus:outline-none rounded-xl px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099]"
-                />
+              <div className="flex flex-col gap-1">
+                <div className="text-xs text-gray-500 dark:text-[#788099] pl-2">
+                  Available: {advertiserData.available} USDT
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl text-[#1D8751]">$</span>
+                  <input
+                    type="number"
+                    value={receiveAmount}
+                    onChange={(e) => handleReceiveAmountChange(e.target.value)}
+                    placeholder={`220 ${tradeType === "buy" ? "USD" : "USDT"}`}
+                    className={`flex-1 bg-transparent text-xl font-semibold focus:outline-none rounded-xl px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${
+                      !isAmountValid && receiveAmount
+                        ? "border border-red-500"
+                        : ""
+                    }`}
+                  />
+                </div>
+                {!isAmountValid && receiveAmount && (
+                  <div className="text-xs text-red-500 pl-2">
+                    {errorMessage}
+                  </div>
+                )}
               </div>
             </div>
             {/* Payment Method Multi-Select Dropdown */}

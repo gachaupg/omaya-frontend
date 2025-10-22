@@ -14,7 +14,7 @@ const Orders = () => {
   const { trades, loading, error, currentPage } = useSelector(
     (state: RootState) => state.userTrades
   );
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
 
   // Filter states with proper initial values
   const [filters, setFilters] = useState({
@@ -160,14 +160,15 @@ const Orders = () => {
         orderStatusTabs={orderStatusTabs}
       />
       <div className="flex flex-col w-full">
-        <OrdersTransactions
-          transformedData={transformedData}
-          loading={loading}
-          error={error}
-          currentPage={currentPage}
-          handlePageChange={handlePageChange}
-          trades={trades}
-        />
+      <OrdersTransactions
+        transformedData={transformedData}
+        loading={loading}
+        error={error}
+        currentPage={currentPage}
+        handlePageChange={handlePageChange}
+        trades={trades}
+        currentUserEmail={user?.email || ""}
+      />
       </div>
     </div>
   );

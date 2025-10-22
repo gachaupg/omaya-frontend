@@ -114,7 +114,12 @@ export const proactiveTokenRefresh = async (): Promise<void> => {
   }
 
   if (isTokenExpired(profile.tokens.access)) {
-    await refreshAccessToken();
+    try {
+      await refreshAccessToken();
+    } catch (error) {
+      console.error('Proactive token refresh failed:', error);
+      // Don't throw here - let the interceptor handle it
+    }
   }
 };
 

@@ -11,6 +11,7 @@ import { storage } from "../features/auth/utils/storage";
 import { API_BASE_URL } from "@/config/api";
 import { logger } from "./utils/logger";
 import ApiHealthChecker from "./utils/apiHealthChecker";
+import { cookieUtils } from "./utils/cookieUtils";
 
 if (!API_BASE_URL) {
   throw new Error(
@@ -104,6 +105,25 @@ const addAuthInterceptor = (instance: AxiosInstance): AxiosInstance => {
   return instance;
 };
 
+// Global flag to prevent multiple simultaneous refresh attempts
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value?: any) => void;
+  reject: (error?: any) => void;
+}> = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (error) {
+      reject(error);
+    } else {
+      resolve(token);
+    }
+  });
+  
+  failedQueue = [];
+};
+
 const addRefreshTokenInterceptor = (instance: AxiosInstance): AxiosInstance => {
   instance.interceptors.response.use(
     (response) => response,
@@ -117,7 +137,21 @@ const addRefreshTokenInterceptor = (instance: AxiosInstance): AxiosInstance => {
         originalRequest &&
         !(originalRequest as any)._retry
       ) {
+        if (isRefreshing) {
+          // If already refreshing, queue this request
+          return new Promise((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+          }).then(token => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return instance(originalRequest);
+          }).catch(err => {
+            return Promise.reject(err);
+          });
+        }
+
         (originalRequest as any)._retry = true;
+        isRefreshing = true;
+
         try {
           const response = await axios.post(
             `${API_BASE_URL}/api/token/refresh/`,
@@ -127,23 +161,66 @@ const addRefreshTokenInterceptor = (instance: AxiosInstance): AxiosInstance => {
           );
 
           const newAccessToken = response.data.access;
-          storage.setProfile({
+          const newRefreshToken = response.data.refresh || profile.tokens.refresh;
+          
+          // Update storage with new tokens
+          const updatedProfile = {
             ...profile,
             tokens: {
-              ...profile.tokens,
               access: newAccessToken,
+              refresh: newRefreshToken,
             },
+          };
+          storage.setProfile(updatedProfile);
+
+          // Update localStorage access token
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('access_token', newAccessToken);
+          }
+
+          // Update cookie
+          cookieUtils.setCookie("access_token", newAccessToken, {
+            maxAge: 86400,
+            secure: true,
+            sameSite: 'strict'
           });
+
+          // Process queued requests
+          processQueue(null, newAccessToken);
 
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
           return instance(originalRequest);
         } catch (refreshError) {
+          // Clear all auth data
           storage.removeProfile();
-          // Don't redirect on home page - let the component handle it
-          if (typeof window !== 'undefined' && window.location.pathname !== '/') {
-            window.location.href = "/auth/login";
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('user');
+            sessionStorage.clear();
           }
+          cookieUtils.removeCookie("access_token");
+          
+          // Process queued requests with error
+          processQueue(refreshError, null);
+          
+          // Redirect to login if not on public pages
+          if (typeof window !== 'undefined') {
+            const currentPath = window.location.pathname;
+            const isPublicPage = currentPath === '/' || 
+                                  currentPath.startsWith('/auth/') ||
+                                  currentPath.includes('/about') ||
+                                  currentPath.includes('/contact');
+            
+            if (!isPublicPage) {
+              console.log('🔒 Token refresh failed, redirecting to login...');
+              window.location.href = "/auth/login";
+            }
+          }
+          
           return Promise.reject(refreshError);
+        } finally {
+          isRefreshing = false;
         }
       }
       

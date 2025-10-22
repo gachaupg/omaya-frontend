@@ -40,17 +40,25 @@ export const useTokenRefresh = () => {
     }
 
     // Check immediately on mount
-    proactiveTokenRefresh().catch(console.error);
+    proactiveTokenRefresh().catch((error) => {
+      console.error('Initial token check failed:', error);
+      // If initial check fails, dispatch logout
+      dispatch(logout());
+    });
 
     // Set up periodic checks (every 2 minutes)
     const interval = setInterval(() => {
       if (isAuthenticated && tokens?.access) {
-        proactiveTokenRefresh().catch(console.error);
+        proactiveTokenRefresh().catch((error) => {
+          console.error('Periodic token check failed:', error);
+          // If periodic check fails, dispatch logout
+          dispatch(logout());
+        });
       }
     }, 2 * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, [isAuthenticated, tokens?.access]);
+  }, [isAuthenticated, tokens?.access, dispatch]);
 
   return { ensureTokenFresh };
 };

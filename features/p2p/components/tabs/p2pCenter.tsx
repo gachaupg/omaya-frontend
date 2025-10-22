@@ -62,19 +62,23 @@ const P2PCenter: React.FC = () => {
 
   // Transform the "My Orders" data
   const transformedMyOrders = useMemo(() => {
-    // My orders come in a different structure: { count, next, previous, results: { total_orders_count, results: [] } }
-    const ordersArray = (myOrders as any)?.results?.results || [];
+    console.log("P2PCenter - myOrders:", myOrders);
+    
+    // Handle the API response structure: { buy_orders: [...], sell_orders: [...] }
+    const buyOrders = (myOrders as any)?.buy_orders || [];
+    const sellOrders = (myOrders as any)?.sell_orders || [];
+    const allOrders = [...buyOrders, ...sellOrders];
+    
+    console.log("P2PCenter - buyOrders:", buyOrders);
+    console.log("P2PCenter - sellOrders:", sellOrders);
+    console.log("P2PCenter - allOrders:", allOrders);
 
-    return ordersArray.map((trade: any) => ({
+    return allOrders.map((trade: any) => ({
       ...trade,
       assetSymbol: trade.currency,
       assetImage: trade.asset_image || "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png",
       commission_rate: trade.commission_rate || 0,
-      payment:
-        trade.payment_details?.map((detail: any) => ({
-          bank: detail.provider,
-          logo: detail.provider_logo || "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png",
-        })) || [],
+      payment_details: trade.payment_details || [],
       provider_logo: trade.payment_details?.[0]?.provider_logo,
       lastUpdate: new Date(trade.created_on).toLocaleString(),
     }));
