@@ -82,3 +82,9 @@ playwright/.cache
 
 # Build artifacts
 buildspec-*.yaml
+
+# Exclude documentation and markdown files from Docker context
+docs/
+*.md
+**/*.md
+!README.md
