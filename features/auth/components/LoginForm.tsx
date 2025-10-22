@@ -10,6 +10,8 @@ import { useRouter } from "next/navigation";
 import GoogleAuthButton from "./GoogleAuthButton";
 import { useI18n } from "@/lib/useI18n";
 
+import { logger } from '@/lib/utils/logger';
+
 export default function LoginPage() {
   const { t } = useI18n("auth");
   const [email, setEmail] = useState("");
@@ -39,11 +41,11 @@ export default function LoginPage() {
   }, [isAuthenticated, router]);
 
   const handleGoogleSuccess = (userData: any) => {
-    console.log("Google authentication successful:", userData);
+    logger.debug('auth', "Google authentication successful:", userData);
     // Handle successful Google authentication
     if (userData.user) {
       // You can dispatch to Redux store here if needed
-      console.log("User authenticated:", userData.user);
+      logger.debug('auth', "User authenticated:", userData.user);
     }
   };
 

@@ -19,6 +19,8 @@ import {
 } from "../types";
 import { showToast } from "@/lib/utils/toast";
 
+import { logger } from '@/lib/utils/logger';
+
 const initialState: SettingsState = {
   profile: null,
   theme: {
@@ -554,12 +556,12 @@ const settingsSlice = createSlice({
       })
       .addCase(fetchDeviceSessions.fulfilled, (state, action) => {
         state.deviceSessionsLoading = false;
-        console.log(
+        logger.debug('dashboard', 
           "Redux: fetchDeviceSessions.fulfilled payload:",
           action.payload
         );
-        console.log("Redux: payload type:", typeof action.payload);
-        console.log("Redux: is array:", Array.isArray(action.payload));
+        logger.debug('dashboard', "Redux: payload type:", typeof action.payload);
+        logger.debug('dashboard', "Redux: is array:", Array.isArray(action.payload));
         state.deviceSessions = action.payload;
       })
       .addCase(fetchDeviceSessions.rejected, (state, action) => {

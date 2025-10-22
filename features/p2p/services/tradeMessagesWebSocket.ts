@@ -1,5 +1,7 @@
 import { API_CONFIG } from "@/lib/appConfig";
 
+import { logger } from '@/lib/utils/logger';
+
 export interface TradeMessage {
   id: string;
   trade: number;
@@ -41,7 +43,7 @@ export class TradeMessagesWebSocket {
   connect(tradeId: string, token: string): void {
     // Check for permanent failure
     if (this.hasPermanentFailure) {
-      console.warn("⚠️ WebSocket has permanent failure, skipping connection attempt");
+      logger.warn('p2p', "⚠️ WebSocket has permanent failure, skipping connection attempt");
       return;
     }
 
@@ -53,7 +55,7 @@ export class TradeMessagesWebSocket {
 
     // If connected to different trade, close existing connection
     if (this.ws?.readyState === WebSocket.OPEN && this.lastTradeId !== tradeId) {
-      console.log("🔄 Switching to different trade, closing current connection");
+      logger.debug('p2p', "🔄 Switching to different trade, closing current connection");
       this.disconnect();
     }
 
@@ -79,14 +81,14 @@ export class TradeMessagesWebSocket {
       
       // Only log on first connection attempt
       if (this.reconnectAttempts === 0) {
-        console.log("🔌 Connecting to Trade Messages WebSocket...");
+        logger.debug('p2p', "🔌 Connecting to Trade Messages WebSocket...");
       }
 
       this.ws = new WebSocket(this.url);
 
       this.ws.onopen = () => {
         if (this.reconnectAttempts === 0) {
-          console.log("✅ Trade Messages WebSocket connected");
+          logger.debug('p2p', "✅ Trade Messages WebSocket connected");
         }
         this.reconnectAttempts = 0;
         this.hasPermanentFailure = false;

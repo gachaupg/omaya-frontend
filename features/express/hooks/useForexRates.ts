@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 
+import { logger } from '@/lib/utils/logger';
+
 export interface ForexRate {
   from: string;
   to: string;
@@ -72,7 +74,7 @@ export const useForexRates = () => {
       setError(null);
     } catch (err) {
       setError('Failed to fetch forex rates');
-      console.error('Error fetching forex rates:', err);
+      logger.error('general', 'Error fetching forex rates:', err);
     } finally {
       setLoading(false);
     }

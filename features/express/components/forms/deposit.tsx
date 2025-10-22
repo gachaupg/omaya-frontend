@@ -22,6 +22,8 @@ import { useTheme } from "@/context/theme";
 import { useAssetsDisplay, usePaymentMethodsDisplay } from "../../hooks/useDataDisplay";
 import ForexDeposit from "./ForexDeposit";
 
+import { logger } from '@/lib/utils/logger';
+
 interface DepositFormProps {
   onExchange?: (transactionData: {
     type: "deposit";
@@ -135,18 +137,18 @@ export default function DepositForm({
   // Debug function to test asset fetching
   const handleDebugAssets = async () => {
     try {
-      console.log("=== Starting debug asset fetch for express deposit ===");
-      console.log("Current exchange assets:", assets);
-      console.log("Current swap assets:", swapAssets);
+      logger.debug('general', "=== Starting debug asset fetch for express deposit ===");
+      logger.debug('general', "Current exchange assets:", assets);
+      logger.debug('general', "Current swap assets:", swapAssets);
       
       // Force refresh both asset types
-      console.log("🔄 Force refreshing exchange assets...");
+      logger.debug('general', "🔄 Force refreshing exchange assets...");
       await dispatch(fetchAssets(true)).unwrap();
       
-      console.log("🔄 Force refreshing swap assets...");
+      logger.debug('general', "🔄 Force refreshing swap assets...");
       await dispatch(fetchSupportedAssets(true)).unwrap();
       
-      console.log("✅ Assets force refreshed");
+      logger.debug('general', "✅ Assets force refreshed");
     } catch (error) {
       console.error("Debug failed:", error);
     }
@@ -202,7 +204,7 @@ export default function DepositForm({
     dispatch(fetchAssets(false))
       .unwrap()
       .then((data) => {
-        console.log("DEBUG: Exchange assets loaded in express deposit:", {
+        logger.debug('general', "DEBUG: Exchange assets loaded in express deposit:", {
           hasAssets: !!data?.assets,
           assetsLength: data?.assets?.length || 0,
           totalBalance: data?.total_wallet_balance
@@ -210,7 +212,7 @@ export default function DepositForm({
         
         // If no assets in cache, force refresh
         if (!data?.assets || data.assets.length === 0) {
-          console.log("🔄 No exchange assets in cache, forcing refresh...");
+          logger.debug('general', "🔄 No exchange assets in cache, forcing refresh...");
           return dispatch(fetchAssets(true)).unwrap();
         }
         return data;
@@ -232,14 +234,14 @@ export default function DepositForm({
     dispatch(fetchSupportedAssets(false))
       .unwrap()
       .then((data) => {
-        console.log("DEBUG: Swap assets loaded in express deposit:", {
+        logger.debug('general', "DEBUG: Swap assets loaded in express deposit:", {
           hasAssets: !!data,
           assetsLength: data?.length || 0
         });
         
         // If no assets in cache, force refresh
         if (!data || data.length === 0) {
-          console.log("🔄 No swap assets in cache, forcing refresh...");
+          logger.debug('general', "🔄 No swap assets in cache, forcing refresh...");
           return dispatch(fetchSupportedAssets(true)).unwrap();
         }
         return data;
@@ -357,7 +359,7 @@ export default function DepositForm({
 
   // Fetch estimate for non-direct assets - triggers immediately on asset or amount change
   useEffect(() => {
-    console.log("Estimate useEffect triggered:", {
+    logger.debug('general', "Estimate useEffect triggered:", {
       selectedAsset: selectedAsset?.ticker,
       isSimple: selectedAsset ? isSimpleCalculationAsset(selectedAsset) : null,
       payAmount,
@@ -410,15 +412,15 @@ export default function DepositForm({
           // Handle different types of errors gracefully
           if (error.message?.includes("Request timeout")) {
             setEstimateError("Request timeout: Using fallback calculation");
-            console.log("Using fallback calculation due to request timeout");
+            logger.debug('general', "Using fallback calculation due to request timeout");
             showToast.warning("Request timeout: Using estimated rate");
           } else if (error.message?.includes("Network Error") || error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
             setEstimateError("Network error: Using fallback calculation");
-            console.log("Using fallback calculation due to network error");
+            logger.debug('general', "Using fallback calculation due to network error");
             showToast.warning("Using estimated rate due to network issues");
           } else if (error.message?.includes("Server Error")) {
             setEstimateError("Server error: Using fallback calculation");
-            console.log("Using fallback calculation due to server error");
+            logger.debug('general', "Using fallback calculation due to server error");
             showToast.warning("Using estimated rate due to server issues");
           } else if (error.message?.includes("Invalid swap parameters")) {
             setEstimateError("Invalid parameters: Using fallback calculation");
@@ -455,7 +457,7 @@ export default function DepositForm({
 
   // Fetch reverse estimate for non-direct assets when calculating from receive amount
   useEffect(() => {
-    console.log("Reverse estimate useEffect triggered:", {
+    logger.debug('general', "Reverse estimate useEffect triggered:", {
       selectedAsset: selectedAsset?.ticker,
       isSimple: selectedAsset ? isSimpleCalculationAsset(selectedAsset) : null,
       getAmount,
@@ -475,7 +477,7 @@ export default function DepositForm({
       // For reverse calculation, we need to estimate the pay amount from the receive amount
       // We'll call the API with the correct direction to get the required USDT amount
       
-      console.log("Fetching reverse estimate for deposit:", {
+      logger.debug('general', "Fetching reverse estimate for deposit:", {
         fromCurrency: selectedAsset.ticker, // We're converting FROM the selected asset
         fromNetwork: getAssetNetwork(selectedAsset), 
         toCurrency: "USDT", // TO USDT (since we want to know how much USDT we need)
@@ -501,7 +503,7 @@ export default function DepositForm({
         timeoutPromise
       ])
         .then((result: any) => {
-          console.log("Reverse estimate result:", result);
+          logger.debug('general', "Reverse estimate result:", result);
           if (result.payload && (result.payload as any)?.estimated_amount) {
             // The API now returns how much USDT we need to get the desired amount
             const requiredUsdtAmount = (result.payload as any)?.estimated_amount;
@@ -511,7 +513,7 @@ export default function DepositForm({
               setPayAmount(requiredUsdtAmount);
               setPayAmountInput(requiredUsdtAmount.toString());
               setEstimate(result.payload);
-              console.log("Reverse calculation successful:", { 
+              logger.debug('general', "Reverse calculation successful:", { 
                 desiredReceive: getAmount, 
                 requiredPay: requiredUsdtAmount 
               });
@@ -528,23 +530,23 @@ export default function DepositForm({
           // Handle different types of errors gracefully
           if (error.message?.includes("Request timeout")) {
             setEstimateError("Request timeout: Using fallback calculation");
-            console.log("Using fallback calculation due to request timeout");
+            logger.debug('general', "Using fallback calculation due to request timeout");
             showToast.warning("Request timeout: Using estimated rate");
           } else if (error.message?.includes("Network Error") || error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
             setEstimateError("Network error: Using fallback calculation");
-            console.log("Using fallback calculation due to network error");
+            logger.debug('general', "Using fallback calculation due to network error");
             showToast.warning("Using estimated rate due to network issues");
           } else if (error.message?.includes("Server Error")) {
             setEstimateError("Server error: Using fallback calculation");
-            console.log("Using fallback calculation due to server error");
+            logger.debug('general', "Using fallback calculation due to server error");
             showToast.warning("Using estimated rate due to server issues");
           } else if (error.message?.includes("Invalid swap parameters")) {
             setEstimateError("Invalid parameters: Using fallback calculation");
-            console.log("Using fallback calculation due to invalid API parameters");
+            logger.debug('general', "Using fallback calculation due to invalid API parameters");
             showToast.warning("Invalid parameters: Using estimated rate");
           } else {
             setEstimateError("API error: Using fallback calculation");
-            console.log("Using fallback calculation due to API error");
+            logger.debug('general', "Using fallback calculation due to API error");
             showToast.warning("Using estimated rate due to API unavailability");
           }
           
@@ -579,7 +581,7 @@ export default function DepositForm({
   useEffect(() => {
     const safetyTimeout = setTimeout(() => {
       if (isCalculating || isCalculatingReceive) {
-        console.log("Safety timeout: Clearing stuck loading states");
+        logger.debug('general', "Safety timeout: Clearing stuck loading states");
         setIsCalculating(false);
         setIsCalculatingReceive(false);
       }
@@ -660,7 +662,7 @@ export default function DepositForm({
 
   // Stable calculation function with debouncing
   const calculateAmounts = (fromAmount: number, fromPay: boolean = true) => {
-    console.log("calculateAmounts called:", { 
+    logger.debug('general', "calculateAmounts called:", { 
       fromAmount, 
       fromPay, 
       selectedAsset: selectedAsset?.ticker,
@@ -690,7 +692,7 @@ export default function DepositForm({
 
     // Ensure we're not in an infinite loop
     if (isCalculating || isCalculatingReceive) {
-      console.log("Already calculating, skipping...");
+      logger.debug('general', "Already calculating, skipping...");
       return;
     }
 
@@ -723,7 +725,7 @@ export default function DepositForm({
         const networkFee = 0;
         const totalFees = networkFee + commissionAmount;
         const calculatedGetAmount = fromAmount - totalFees;
-            console.log("Forward calculation result:", { fromAmount, calculatedGetAmount, totalFees });
+            logger.debug('general', "Forward calculation result:", { fromAmount, calculatedGetAmount, totalFees });
             setGetAmount(calculatedGetAmount);
             setGetAmountInput(calculatedGetAmount.toString());
         } else {
@@ -732,7 +734,7 @@ export default function DepositForm({
           const networkFee = 0;
           const totalFees = networkFee + commissionAmount;
           const calculatedPayAmount = fromAmount + totalFees;
-          console.log("Reverse calculation result:", { fromAmount, calculatedPayAmount, totalFees, commissionRate });
+          logger.debug('general', "Reverse calculation result:", { fromAmount, calculatedPayAmount, totalFees, commissionRate });
           setPayAmount(calculatedPayAmount);
           setPayAmountInput(calculatedPayAmount.toString());
           }
@@ -775,7 +777,7 @@ export default function DepositForm({
             } else {
               calculatedGetAmount = Math.max(0, fromAmount - 2); // Simply subtract 2 for direct assets
             }
-            console.log("Direct asset forward calculation result:", { fromAmount, calculatedGetAmount });
+            logger.debug('general', "Direct asset forward calculation result:", { fromAmount, calculatedGetAmount });
             setGetAmount(calculatedGetAmount);
             setGetAmountInput(calculatedGetAmount.toString());
             setReceiveAmountError(null);
@@ -808,7 +810,7 @@ export default function DepositForm({
             } else {
               calculatedPayAmount = fromAmount + 2; // Simply add 2 for direct assets
             }
-            console.log("Direct asset reverse calculation result:", { fromAmount, calculatedPayAmount });
+            logger.debug('general', "Direct asset reverse calculation result:", { fromAmount, calculatedPayAmount });
             setPayAmount(calculatedPayAmount);
             setPayAmountInput(calculatedPayAmount.toString());
             setReceiveAmountError(null);
@@ -852,7 +854,7 @@ export default function DepositForm({
 
   // Recalculate when asset changes
   useEffect(() => {
-    console.log("Selected asset changed:", selectedAsset);
+    logger.debug('general', "Selected asset changed:", selectedAsset);
     if (selectedAsset && payAmount > 0 && isCalculatingFromPay) {
       // Clear any existing estimate when asset changes
       setEstimate(null);
@@ -867,7 +869,7 @@ export default function DepositForm({
 
   // Update amounts when estimate is received or for direct assets
   useEffect(() => {
-    console.log("Estimate effect triggered:", { 
+    logger.debug('general', "Estimate effect triggered:", { 
       hasEstimate: !!estimate, 
     estimateLoading,
     isCalculatingFromPay,
@@ -879,7 +881,7 @@ export default function DepositForm({
     if (estimate && !estimateLoading) {
       if (isCalculatingFromPay && payAmount > 0) {
         // Forward calculation: update receive amount
-        console.log("Estimate received, updating receive amount:", (estimate as any)?.estimated_amount);
+        logger.debug('general', "Estimate received, updating receive amount:", (estimate as any)?.estimated_amount);
         
         if ((estimate as any)?.estimated_amount && (estimate as any)?.estimated_amount > 0) {
           setGetAmount((estimate as any).estimated_amount);
@@ -888,7 +890,7 @@ export default function DepositForm({
         setIsCalculating(false);
         setIsCalculatingReceive(false);
       } else {
-          console.log("DEBUG: Invalid estimate received, clearing loading state");
+          logger.debug('general', "DEBUG: Invalid estimate received, clearing loading state");
         setGetAmount(0);
         setGetAmountInput("");
           setReceiveAmountError("Invalid estimate received");
@@ -969,7 +971,7 @@ export default function DepositForm({
 
       try {
         // Debug logging
-        console.log("DEBUG: Form data being submitted:", {
+        logger.debug('general', "DEBUG: Form data being submitted:", {
           payAmount,
           selectedPaymentDetail,
           selectedAsset,
@@ -1001,7 +1003,7 @@ export default function DepositForm({
         let currencyValue = "";
         
         // Debug: Log the selected asset to see its structure
-        console.log("DEBUG: Selected asset in handleFirstCardSubmit:", selectedAsset);
+        logger.debug('general', "DEBUG: Selected asset in handleFirstCardSubmit:", selectedAsset);
         
         // Ensure selectedAsset exists
         if (!selectedAsset) {
@@ -1021,7 +1023,7 @@ export default function DepositForm({
         // Clean up the currency value (remove any extra spaces, etc.)
         currencyValue = currencyValue?.trim();
         
-        console.log("DEBUG: Extracted currency value:", currencyValue);
+        logger.debug('general', "DEBUG: Extracted currency value:", currencyValue);
         
         // Fallback: if still no currency value, try to extract from any available property
         if (!currencyValue) {
@@ -1031,7 +1033,7 @@ export default function DepositForm({
             const value = selectedAsset[key];
             if (typeof value === 'string' && value.trim()) {
               currencyValue = value.trim();
-              console.log(`DEBUG: Using fallback currency from ${key}:`, currencyValue);
+              logger.debug('general', `DEBUG: Using fallback currency from ${key}:`, currencyValue);
               break;
             }
           }
@@ -1088,9 +1090,9 @@ export default function DepositForm({
         depositPayload.append("additional_info", "Direct crypto deposit");
 
         // Log the complete FormData for debugging
-        console.log("DEBUG: Complete FormData entries:");
+        logger.debug('general', "DEBUG: Complete FormData entries:");
         for (let [key, value] of depositPayload.entries()) {
-          console.log(`${key}:`, value);
+          logger.debug('general', `${key}:`, value);
         }
 
         // Submit to API - let axios set the correct Content-Type for FormData
@@ -1103,7 +1105,7 @@ export default function DepositForm({
           })
         ).unwrap()) as unknown as DepositResponse;
 
-        console.log("DEBUG: Deposit response:", depositResponse);
+        logger.debug('general', "DEBUG: Deposit response:", depositResponse);
        
      
         // Store the API response and update transaction code
@@ -1111,10 +1113,10 @@ export default function DepositForm({
         setTransactionCode(depositResponse.deposit_code || "");
         
         // Debug log the stored websocket_url and deposit_code
-        console.log("DEBUG: Storing API response with websocket_url:", depositResponse.websocket_url);
-        console.log("DEBUG: API response type check - websocket_url exists:", 'websocket_url' in depositResponse);
-        console.log("DEBUG: Deposit code received:", depositResponse.deposit_code);
-        console.log("DEBUG: Full API response:", depositResponse);
+        logger.debug('general', "DEBUG: Storing API response with websocket_url:", depositResponse.websocket_url);
+        logger.debug('general', "DEBUG: API response type check - websocket_url exists:", 'websocket_url' in depositResponse);
+        logger.debug('general', "DEBUG: Deposit code received:", depositResponse.deposit_code);
+        logger.debug('general', "DEBUG: Full API response:", depositResponse);
 
         // Show success message
         showToast.success("Deposit request submitted successfully!");
@@ -1278,8 +1280,8 @@ export default function DepositForm({
           }
       } else {
         // For other assets, implement two-step process
-        console.log("DEBUG: Implementing two-step process for complex asset:", selectedAsset?.ticker);
-        console.log("DEBUG: Expected flow: First response -> update address -> Second response with additional details");
+        logger.debug('general', "DEBUG: Implementing two-step process for complex asset:", selectedAsset?.ticker);
+        logger.debug('general', "DEBUG: Expected flow: First response -> update address -> Second response with additional details");
         
         // According to user description, the expected flow for complex assets is:
         // 1. First API response: { transaction_id, deposit_code, status: "pending_address", requires_deposit_address: true, websocket_url }
@@ -1353,7 +1355,7 @@ export default function DepositForm({
         ...(finalResponse.deposit_address && { finalDepositAddress: finalResponse.deposit_address }),
       };
 
-      console.log("DEBUG: Final transaction data:", transactionData);
+      logger.debug('general', "DEBUG: Final transaction data:", transactionData);
 
       // Navigate to the exchanging status page automatically
       if (onExchange) {
@@ -1429,7 +1431,7 @@ export default function DepositForm({
 
     try {
       // Debug logging
-      console.log("DEBUG: Form data being submitted:", {
+      logger.debug('general', "DEBUG: Form data being submitted:", {
         payAmount,
         walletAddress,
         selectedPaymentDetail,
@@ -1581,9 +1583,9 @@ export default function DepositForm({
       );
 
       // Log the complete FormData for debugging
-      console.log("DEBUG: Complete FormData entries:");
+      logger.debug('general', "DEBUG: Complete FormData entries:");
       for (let [key, value] of depositPayload.entries()) {
-        console.log(`${key}:`, value);
+        logger.debug('general', `${key}:`, value);
       }
 
       // Submit to API - let axios set the correct Content-Type for FormData
@@ -1596,7 +1598,7 @@ export default function DepositForm({
         })
       ).unwrap()) as unknown as DepositResponse;
 
-      console.log("DEBUG: Deposit response:", depositResponse);
+      logger.debug('general', "DEBUG: Deposit response:", depositResponse);
     
 
       // Store the API response and update transaction code
@@ -1626,7 +1628,7 @@ export default function DepositForm({
           currency: depositResponse.currency,
           websocketUrl: depositResponse.websocket_url,
         };
-        console.log("DEBUG: Calling onExchange with:", transactionData);
+        logger.debug('general', "DEBUG: Calling onExchange with:", transactionData);
         onExchange(transactionData);
       }
     } catch (error: any) {
@@ -1781,7 +1783,7 @@ export default function DepositForm({
                   value={payAmountInput}
                   onChange={(e) => {
                     const value = e.target.value;
-                    console.log("You Send input changed:", { value, selectedAsset: selectedAsset?.ticker });
+                    logger.debug('general', "You Send input changed:", { value, selectedAsset: selectedAsset?.ticker });
                     
                     // Only allow numbers and decimals (including 0.006 format)
                     if (value === "" || /^\d*\.?\d*$/.test(value)) {
@@ -1800,7 +1802,7 @@ export default function DepositForm({
                       
                       // For direct assets, calculate immediately
                       if (selectedAsset && newAmount > 0 && isSimpleCalculationAsset(selectedAsset)) {
-                        console.log("Triggering immediate forward calculation for direct asset:", newAmount);
+                        logger.debug('general', "Triggering immediate forward calculation for direct asset:", newAmount);
                         const calculatedGetAmount = newAmount < 2 ? newAmount : Math.max(0, newAmount - 2);
                         setGetAmount(calculatedGetAmount);
                         setGetAmountInput(calculatedGetAmount.toString());
@@ -1808,7 +1810,7 @@ export default function DepositForm({
                         // Simple assets don't need loading states - calculation is instant
                       } else if (selectedAsset && newAmount > 0) {
                         // For complex assets, trigger API calculation
-                        console.log("Triggering API forward calculation for complex asset:", newAmount);
+                        logger.debug('general', "Triggering API forward calculation for complex asset:", newAmount);
                         
                         // Set loading states to show spinner in "You Receive" field
                         setIsCalculating(true);
@@ -1962,7 +1964,7 @@ export default function DepositForm({
                   value={getAmountInput}
                   onChange={(e) => {
                     const value = e.target.value;
-                    console.log("You Receive input changed:", { value, selectedAsset: selectedAsset?.ticker });
+                    logger.debug('general', "You Receive input changed:", { value, selectedAsset: selectedAsset?.ticker });
                     
                     // Only allow numbers and decimals (including 0.006 format)
                     if (value === "" || /^\d*\.?\d*$/.test(value)) {
@@ -1973,7 +1975,7 @@ export default function DepositForm({
                       
                       // For direct assets, calculate immediately
                       if (selectedAsset && newAmount > 0 && isSimpleCalculationAsset(selectedAsset)) {
-                        console.log("Triggering immediate reverse calculation for direct asset:", newAmount);
+                        logger.debug('general', "Triggering immediate reverse calculation for direct asset:", newAmount);
                         const calculatedPayAmount = newAmount < 2 ? newAmount : newAmount + 2;
                         setPayAmount(calculatedPayAmount);
                         setPayAmountInput(calculatedPayAmount.toString());
@@ -1981,7 +1983,7 @@ export default function DepositForm({
                         // Simple assets don't need loading states - calculation is instant
                       } else if (selectedAsset && newAmount > 0) {
                         // For complex assets, trigger API calculation
-                        console.log("Triggering API reverse calculation for complex asset:", newAmount);
+                        logger.debug('general', "Triggering API reverse calculation for complex asset:", newAmount);
                         
                         // Set loading states to show spinner in "You Send" field
                         setIsCalculating(true);
@@ -2111,7 +2113,7 @@ export default function DepositForm({
                           alt={selectedAsset?.name || selectedAsset?.ticker || selectedAsset?.symbol || "Asset"}
                           className="w-6 h-6 rounded-full object-cover"
                           onError={(e) => {
-                            console.log("Image failed to load for selected asset:", selectedAsset);
+                            logger.debug('general', "Image failed to load for selected asset:", selectedAsset);
                             e.currentTarget.src =
                               "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                           }}
@@ -2183,7 +2185,7 @@ export default function DepositForm({
                             key={`${asset.asset_id || 'asset'}-${asset.symbol || asset.ticker || asset.name}-${asset.network || 'unknown'}-${index}`}
                             className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
                             onClick={() => {
-                              console.log("Asset selected:", {
+                              logger.debug('general', "Asset selected:", {
                                 ticker: asset.ticker,
                                 network: asset.network || 'unknown',
                                 isSimple: isSimpleCalculationAsset(asset),
@@ -2210,7 +2212,7 @@ export default function DepositForm({
                               alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
                               className="w-6 h-6 rounded-full object-cover"
                               onError={(e) => {
-                                console.log("Image failed to load for asset:", asset);
+                                logger.debug('general', "Image failed to load for asset:", asset);
                                 e.currentTarget.src =
                                   "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                               }}

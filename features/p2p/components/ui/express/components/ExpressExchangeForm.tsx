@@ -3,6 +3,8 @@ import React, { useState, useEffect } from "react";
 import DepositForm from "./forms/deposit";
 import WithdrawalForm from "./forms/withdrwal";
 
+import { logger } from '@/lib/utils/logger';
+
 interface ExpressExchangeFormProps {
   onExchange: (transactionData: {
     type: "deposit" | "withdrawal";
@@ -45,7 +47,7 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
   skipAmountValidation = false,
 }) => {
   // Debug logging for balance
-  console.log("ExpressExchangeForm - Received balance:", balance);
+  logger.debug('p2p', "ExpressExchangeForm - Received balance:", balance);
   
   const [mode, setMode] = useState<"deposit" | "withdrawal">(initialMode);
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
@@ -14,6 +14,7 @@ import {
 } from "@/features/auth/slices/authSlice";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useLanguageOptional } from "@/context/language";
+import { useTheme } from "@/context/theme";
 
 const DefaultProfileIcon = () => (
   <div
@@ -218,12 +219,13 @@ export default function Navbar() {
   }, [dispatch]);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    // ✅ Only fetch profile if we don't have it (prevents refetch on every navigation)
+    if (isAuthenticated && !userProfile) {
       dispatch(getUserProfile());
     }
-  }, [isAuthenticated, dispatch]);
+  }, [isAuthenticated, dispatch, userProfile]);
 
-  console.log("profile", userProfile);
+  // Profile data available for rendering
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
@@ -269,15 +271,20 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
+    let ticking = false;
+
     const handleScroll = () => {
-      if (window.scrollY > 0) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const isScrolled = window.scrollY > 0;
+          setScrolled((prev) => (prev !== isScrolled ? isScrolled : prev));
+          ticking = false;
+        });
+        ticking = true;
       }
     };
 
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
 
     // Clean up the event listener on component unmount
     return () => {
@@ -310,71 +317,54 @@ export default function Navbar() {
 
   // Check if navbar should show white text (transparent on home page)
   const isTransparentNavbar = pathname === "/" && !scrolled;
-  const [theme, setTheme] = useState<{ mode: string } | null>({ mode: "dark" }); // Default to dark theme
+
+  // Use theme context instead of manual localStorage parsing
+  const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    
-    const getTheme = () => {
-      try {
-        const themeString = localStorage.getItem("theme");
-        if (!themeString) return null;
-
-        // Try to parse as JSON first (Redux format)
-        try {
-          const parsed = JSON.parse(themeString);
-          if (parsed && typeof parsed === "object" && parsed.mode) {
-            return parsed;
-          }
-        } catch (e) {
-          // If JSON parse fails, treat as simple string (Context format)
-          if (themeString === "light" || themeString === "dark") {
-            return { mode: themeString };
-          }
-        }
-
-        return null;
-      } catch (error) {
-        console.error("Error parsing theme from localStorage:", error);
-        return null;
-      }
-    };
-
-    // Set initial theme only after mounting
-    setTheme(getTheme());
-
-    // Listen for theme changes
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "theme") {
-        setTheme(getTheme());
-      }
-    };
-
-    // Listen for custom theme change events
-    const handleThemeChange = () => {
-      setTheme(getTheme());
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-    window.addEventListener("themeChange", handleThemeChange);
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("themeChange", handleThemeChange);
-    };
   }, []);
 
-  console.log("theme", theme?.mode);
-  
+  // Memoize logo selection to prevent unnecessary re-renders
+  const logoConfig = useMemo(() => {
+    if (!mounted) return null;
+
+    const isHomePage = pathname === "/";
+    const isNotScrolled = !scrolled;
+    const isDarkTheme = theme === "dark";
+
+    if (isHomePage && isNotScrolled) {
+      // Home page, not scrolled: white logo for transparent background
+      return {
+        src: "https://res.cloudinary.com/dam1sxczj/image/upload/v1746538269/Frame_q3pwt7.png",
+        alt: "OMAYA Exchange",
+      };
+    } else if (isDarkTheme) {
+      // Dark theme: green logo
+      return {
+        src: "https://res.cloudinary.com/dam1sxczj/image/upload/v1747133499/Omaya_green-logo_yva2ah.png",
+        alt: "OMAYA Exchange",
+      };
+    } else {
+      // Light theme: default logo
+      return {
+        src: "https://res.cloudinary.com/pitz/image/upload/v1750838143/1446599b0a50473eb54aaee7c59988ecc0856b10_mmmmcl.png",
+        alt: "OMAYA Exchange",
+      };
+    }
+  }, [mounted, pathname, scrolled, theme]);
+
   // Don't render theme-dependent content until mounted
   if (!mounted) {
     return (
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isTransparentNavbar
-          ? "bg-transparent"
-          : "bg-white dark:bg-gray-900 shadow-lg"
-      }`}>
+      <nav
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          isTransparentNavbar
+            ? "bg-transparent"
+            : "bg-white dark:bg-gray-900 shadow-lg"
+        }`}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Placeholder content during SSR */}
@@ -390,7 +380,7 @@ export default function Navbar() {
       </nav>
     );
   }
-  
+
   return (
     <>
       <nav
@@ -398,31 +388,11 @@ export default function Navbar() {
       >
         <div className="flex items-center">
           <Link href="/" className="mr-4 md:mr-10">
-            {/* Smart logo selection based on page, scroll state, and theme */}
-            {pathname === "/" && !scrolled ? (
-              // Home page, not scrolled: white logo for transparent background
+            {/* Optimized logo selection using memoized config */}
+            {logoConfig && (
               <Image
-                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746538269/Frame_q3pwt7.png"
-                alt="OMAYA Exchange"
-                width={150}
-                height={40}
-                className="h-auto w-32 md:w-40 2xl:w-48"
-                priority
-              />
-            ) : // All other cases: green logo
-            theme?.mode === "dark" ? (
-              <Image
-                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747133499/Omaya_green-logo_yva2ah.png"
-                alt="OMAYA Exchange"
-                width={150}
-                height={40}
-                className="h-auto w-32 md:w-40 2xl:w-48"
-                priority
-              />
-            ) : (
-              <Image
-                src="https://res.cloudinary.com/pitz/image/upload/v1750838143/1446599b0a50473eb54aaee7c59988ecc0856b10_mmmmcl.png"
-                alt="OMAYA Exchange"
+                src={logoConfig.src}
+                alt={logoConfig.alt}
                 width={150}
                 height={40}
                 className="h-auto w-32 md:w-40 2xl:w-48"
@@ -725,8 +695,6 @@ export default function Navbar() {
                           </svg>
                         </div>
                       </Link>
-
-                     
                     </div>
                   </div>
                 )}

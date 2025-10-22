@@ -5,6 +5,8 @@ import { Upload } from "lucide-react";
 import ContactForm from "./ContactForm";
 import { useContactI18n } from "@/lib/useContactI18n";
 
+import { logger } from '@/lib/utils/logger';
+
 interface ContactPageProps {
   showFileUpload?: boolean;
 }
@@ -45,7 +47,7 @@ const ContactPage: React.FC<ContactPageProps> = ({ showFileUpload = true }) => {
   };
 
   const handleConnectLiveChat = () => {
-    console.log("Connect with Live Chat clicked");
+    logger.debug('general', "Connect with Live Chat clicked");
     // Handle live chat connection logic here
   };
 

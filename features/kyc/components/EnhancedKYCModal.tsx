@@ -13,6 +13,8 @@ import SumsubWebSdk from "@sumsub/websdk-react";
 import { showToast } from "@/lib/utils/toast";
 import FaceDetectionKYC from "./FaceDetectionKYC";
 
+import { logger } from '@/lib/utils/logger';
+
 type VerificationMethod = 'none' | 'sumsub' | 'facedetection';
 
 const EnhancedKYCModal: React.FC = () => {
@@ -77,14 +79,14 @@ const EnhancedKYCModal: React.FC = () => {
     } catch (error) {
       setError("An error occurred during verification setup");
       showToast.error("Verification Error", "An error occurred during verification setup");
-      console.error("Error during KYC verification:", error);
+      logger.error('general', "Error during KYC verification:", error);
     } finally {
       setVerifying(false);
     }
   };
 
   const handleFaceDetectionComplete = (data: any) => {
-    console.log("Face Detection Data:", data);
+    logger.debug('general', "Face Detection Data:", data);
     setFaceDetectionData(data);
     setVerificationStatus(true);
     showToast.success("Face Verified", "Your face has been successfully captured");
@@ -106,7 +108,7 @@ const EnhancedKYCModal: React.FC = () => {
   };
 
   const handleSumSubMessage = (type: string, payload: any) => {
-    console.log("SumSub Message:", type, payload);
+    logger.debug('general', "SumSub Message:", type, payload);
 
     if (payload?.reviewStatus && typeof window !== 'undefined') {
       localStorage.setItem("sumsubData", JSON.stringify(payload));

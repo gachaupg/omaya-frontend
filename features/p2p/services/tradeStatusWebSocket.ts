@@ -1,5 +1,7 @@
 import { API_CONFIG } from "@/lib/appConfig";
 
+import { logger } from '@/lib/utils/logger';
+
 export interface TradeStatus {
   id: string;
   status: "matched" | "half-matched" | "completed" | "cancelled";
@@ -48,7 +50,7 @@ export class TradeStatusWebSocket {
   connect(tradeId: string, token: string): void {
     // Check for permanent failure
     if (this.hasPermanentFailure) {
-      console.warn("⚠️ Trade Status WebSocket has permanent failure, skipping connection attempt");
+      logger.warn('p2p', "⚠️ Trade Status WebSocket has permanent failure, skipping connection attempt");
       return;
     }
 
@@ -60,7 +62,7 @@ export class TradeStatusWebSocket {
 
     // If connected to different trade, close existing connection
     if (this.ws?.readyState === WebSocket.OPEN && this.lastTradeId !== tradeId) {
-      console.log("🔄 Switching to different trade, closing current connection");
+      logger.debug('p2p', "🔄 Switching to different trade, closing current connection");
       this.disconnect();
     }
 
@@ -86,17 +88,17 @@ export class TradeStatusWebSocket {
       
       // Only log on first connection attempt
       if (this.reconnectAttempts === 0) {
-        console.log("🔌 Connecting to Trade Status WebSocket...");
-        console.log("📍 WebSocket URL:", this.url);
-        console.log("🔑 Token length:", token?.length || 0);
-        console.log("🆔 Trade ID:", tradeId);
+        logger.debug('p2p', "🔌 Connecting to Trade Status WebSocket...");
+        logger.debug('p2p', "📍 WebSocket URL:", this.url);
+        logger.debug('p2p', "🔑 Token length:", token?.length || 0);
+        logger.debug('p2p', "🆔 Trade ID:", tradeId);
       }
 
       this.ws = new WebSocket(this.url);
 
       this.ws.onopen = () => {
         if (this.reconnectAttempts === 0) {
-          console.log("✅ Trade Status WebSocket connected");
+          logger.debug('p2p', "✅ Trade Status WebSocket connected");
         }
         this.reconnectAttempts = 0;
         this.hasPermanentFailure = false;
@@ -105,11 +107,11 @@ export class TradeStatusWebSocket {
 
       this.ws.onmessage = (event) => {
         try {
-          console.log("📨 Raw WebSocket message received:", event.data);
+          logger.debug('p2p', "📨 Raw WebSocket message received:", event.data);
           const message: WebSocketMessage = JSON.parse(event.data);
-          console.log("📨 Parsed Trade Status Update:", message);
-          console.log("📊 Message type:", message.type);
-          console.log("📊 Message status:", message.status || message.data?.status);
+          logger.debug('p2p', "📨 Parsed Trade Status Update:", message);
+          logger.debug('p2p', "📊 Message type:", message.type);
+          logger.debug('p2p', "📊 Message status:", message.status || message.data?.status);
           this.messageHandlers.forEach((handler) => handler(message));
         } catch (error) {
           console.warn("⚠️ Failed to parse WebSocket message:", error);

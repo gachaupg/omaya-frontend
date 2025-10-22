@@ -5,6 +5,8 @@ import { del, get, patch, post, put } from "@/lib/apiClient";
 import { cachedGet } from "@/lib/cachedApiClient";
 import { withRetry } from "@/lib/utils/retry";
 import { API_CONFIG } from "@/lib/appConfig";
+import { logger } from '@/lib/utils/logger';
+
 import {
   SupportedAsset,
   SwapEstimate,
@@ -28,13 +30,13 @@ export const getSupportedAssets = async (): Promise<SupportedAsset[]> => {
       
       // Extract the results array from the ChangeNow response
       if (data && data.results) {
-        console.log(`Successfully retrieved ${data.total_changenow_tokens} ChangeNow tokens`);
+        logger.debug('swap', `Successfully retrieved ${data.total_changenow_tokens} ChangeNow tokens`);
         return data.results;
       }
       
       // Fallback: if response is directly an array (backward compatibility)
       if (Array.isArray(data)) {
-        console.log(`Retrieved ${data.length} supported assets`);
+        logger.debug('swap', `Retrieved ${data.length} supported assets`);
         return data;
       }
       
@@ -112,15 +114,15 @@ export const createSwap = async (
   swapData: CreateSwapRequest
 ): Promise<CreateSwapResponse> => {
   return withRetry(async () => {
-    console.log("Creating swap with data:", swapData);
-    console.log("API endpoint:", API_CONFIG.SWAP.CREATE_SWAP);
+    logger.debug('swap', "Creating swap with data:", swapData);
+    logger.debug('swap', "API endpoint:", API_CONFIG.SWAP.CREATE_SWAP);
 
     try {
       const response = await post<CreateSwapResponse>(
         API_CONFIG.SWAP.CREATE_SWAP,
         swapData
       );
-      console.log("Swap response:", response.data);
+      logger.debug('swap', "Swap response:", response.data);
       return response.data;
     } catch (error: any) {
       console.error("Swap creation error:", error);

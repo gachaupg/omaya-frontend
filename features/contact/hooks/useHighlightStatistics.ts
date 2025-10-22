@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { marketingApi, type HighlightStatistics } from '../api';
 
+import { logger } from '@/lib/utils/logger';
+
 export const useHighlightStatistics = () => {
   const [statistics, setStatistics] = useState<HighlightStatistics | null>(null);
   const [loading, setLoading] = useState(true);
@@ -14,7 +16,7 @@ export const useHighlightStatistics = () => {
         const data = await marketingApi.getHighlightStatistics();
         setStatistics(data);
       } catch (err) {
-        console.error('Failed to fetch highlight statistics:', err);
+        logger.error('general', 'Failed to fetch highlight statistics:', err);
         setError('Failed to load statistics');
         // Set fallback data on error
         setStatistics({

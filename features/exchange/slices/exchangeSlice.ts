@@ -15,6 +15,8 @@ import { EXCHANGE_ENDPOINTS } from "../api";
 import NetworkFallback from "../../../lib/utils/networkFallback";
 import CircuitBreaker from "../../../lib/utils/circuitBreaker";
 import { sliceCache } from "../../../lib/utils/sliceCache";
+import { logger } from '@/lib/utils/logger';
+
 import {
   Transaction,
   TransactionsResponse,
@@ -54,7 +56,7 @@ const initialState: ExchangeState = {
 const handleApiError = (error: unknown): string => {
   let errorMessage = "An unexpected error occurred";
   if (error instanceof AxiosError) {
-    console.error("DEBUG: API Error details:", {
+    logger.error('exchange', "DEBUG: API Error details:", {
       status: error.response?.status,
       data: error.response?.data,
       message: error.message,
@@ -117,7 +119,7 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>
 
     // Check circuit breaker before making the call
     if (!CircuitBreaker.isCallAllowed(endpoint)) {
-      console.warn(
+      logger.warn('exchange', 
         `Circuit breaker OPEN for ${endpoint} - returning empty assets`
       );
       return { total_wallet_balance: "0.00", assets: [] };
@@ -127,7 +129,7 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>
       let data;
       
       if (forceRefresh) {
-        console.log("🔄 Force refresh - bypassing cache for exchange assets...");
+        logger.debug('exchange', "🔄 Force refresh - bypassing cache for exchange assets...");
         // Clear cache first
         await sliceCache.delete('exchange', 'fetchAssets');
         // Fetch fresh data
@@ -136,7 +138,7 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>
           ttl: 2 * 60 * 60 * 1000, // 2 hours cache for assets
           cache: true
         });
-        console.log("✅ Force refresh API response received:", response?.data?.assets?.length || 0, "assets");
+        logger.debug('exchange', "✅ Force refresh API response received:", response?.data?.assets?.length || 0, "assets");
         // Cache the fresh data
         await sliceCache.set('exchange', 'fetchAssets', response.data, undefined, 2 * 60 * 60 * 1000);
         data = response.data;
@@ -146,13 +148,13 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>
           'exchange',
           'fetchAssets',
           async () => {
-            console.log("🔄 Cache miss - fetching exchange assets from API...");
+            logger.debug('exchange', "🔄 Cache miss - fetching exchange assets from API...");
             const response = await cachedGet<AssetsResponse>(endpoint, {
               timeout: 30000,
               ttl: 2 * 60 * 60 * 1000, // 2 hours cache for assets
               cache: true
             });
-            console.log("✅ API response received:", response?.data?.assets?.length || 0, "assets");
+            logger.debug('exchange', "✅ API response received:", response?.data?.assets?.length || 0, "assets");
             return response.data;
           },
           undefined, // no params
@@ -161,7 +163,7 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>
       }
 
       CircuitBreaker.onSuccess(endpoint);
-      console.log("✅ Fetched Assets:", data?.assets?.length || 0, "assets");
+      logger.debug('exchange', "✅ Fetched Assets:", data?.assets?.length || 0, "assets");
       return data;
     } catch (error: any) {
       CircuitBreaker.onFailure(endpoint, error);
@@ -256,9 +258,9 @@ export const updateDepositAddress = createAsyncThunk<
     try {
       // Debug logging
       const endpoint = EXCHANGE_ENDPOINTS.UPDATE_DEPOSIT_ADDRESS;
-      console.log("DEBUG: Update deposit address endpoint:", endpoint);
-      console.log("DEBUG: Transaction ID:", transactionId);
-      console.log("DEBUG: Deposit address:", depositAddress);
+      logger.debug('exchange', "DEBUG: Update deposit address endpoint:", endpoint);
+      logger.debug('exchange', "DEBUG: Transaction ID:", transactionId);
+      logger.debug('exchange', "DEBUG: Deposit address:", depositAddress);
       
       // Use the exact payload format you specified
       const payload = {
@@ -266,7 +268,7 @@ export const updateDepositAddress = createAsyncThunk<
         deposit_address: depositAddress
       };
       
-      console.log("DEBUG: Payload being sent:", payload);
+      logger.debug('exchange', "DEBUG: Payload being sent:", payload);
       
       const response = await post<{ message: string; exchange_transaction_id: string; status: string }>(
         endpoint,

@@ -20,6 +20,8 @@ import { formatNumber } from "@/utils/formatters";
 import { formatCurrency, formatAmount } from "@/lib/globalFormatter";
 import { useRouter } from "next/navigation";
 
+import { logger } from '@/lib/utils/logger';
+
 interface StatsProps {
   onSupportClick: () => void;
 }
@@ -42,7 +44,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
     loading: referralWalletLoading,
     error: referralWalletError,
   } = useSelector((state: RootState) => state.referralWallet);
-  console.log("summary", summary);
+  logger.debug('dashboard', "summary", summary);
   const [profileImage, setProfileImage] = useState("");
   const [depositsTimeFilter, setDepositsTimeFilter] = useState("Month");
   const [withdrawalsTimeFilter, setWithdrawalsTimeFilter] = useState("Month");

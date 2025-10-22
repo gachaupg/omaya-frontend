@@ -13,6 +13,8 @@ import { AppDispatch, RootState } from "@/store/rootReducer";
 import { showToast } from "@/lib/utils/toast";
 import { Trash } from "lucide-react";
 
+import { logger } from '@/lib/utils/logger';
+
 // Types
 interface PaymentMethod {
   id: number;
@@ -107,7 +109,7 @@ const PaymentMethods = () => {
     value: string
   ) => {
     // TODO: Implement input change functionality
-    console.log("Input change:", methodId, field, value);
+    logger.debug('p2p', "Input change:", methodId, field, value);
   };
 
   // Handle Add

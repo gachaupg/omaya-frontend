@@ -4,6 +4,8 @@ import { TransactionType } from "@/features/p2p/types";
 import TransactionModal from "@/components/ui/TransactionModal";
 import { NoDataFound } from "@/components/dashboard/ui/Transactions";
 
+import { logger } from '@/lib/utils/logger';
+
 const OrdersTransactions = ({
   transformedData,
   loading,
@@ -31,7 +33,7 @@ const OrdersTransactions = ({
   };
 
   // Debug log for selectedTransaction
-  console.log("selectedTransaction:", selectedTransaction);
+  logger.debug('p2p', "selectedTransaction:", selectedTransaction);
 
   if (loading) {
     return (

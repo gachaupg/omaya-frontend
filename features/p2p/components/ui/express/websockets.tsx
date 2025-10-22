@@ -1,6 +1,8 @@
 import React from "react";
 import { API_CONFIG } from "@/lib/appConfig";
 
+import { logger } from '@/lib/utils/logger';
+
 export interface TransactionStatusMessage {
   type: "status_update" | "error" | "connection_established" | "final_status";
   data: {
@@ -102,7 +104,7 @@ export class BaseTransactionStatusWebSocket {
         // Validate WebSocket URL
         if (!this.wsUrl || typeof this.wsUrl !== 'string') {
           const error = new Error(`Invalid WebSocket URL: ${this.wsUrl}`);
-          console.error("WebSocket connection failed:", error.message);
+          logger.error('p2p', "WebSocket connection failed:", error.message);
           reject(error);
           return;
         }
@@ -110,18 +112,18 @@ export class BaseTransactionStatusWebSocket {
         // Validate URL format
         if (!this.wsUrl.startsWith('ws://') && !this.wsUrl.startsWith('wss://')) {
           const error = new Error(`WebSocket URL must start with ws:// or wss://, got: ${this.wsUrl}`);
-          console.error("WebSocket connection failed:", error.message);
+          logger.error('p2p', "WebSocket connection failed:", error.message);
           reject(error);
           return;
         }
 
-                 console.log(
+                 logger.debug('p2p', 
            "DEBUG: WebSocket connecting with transactionId:",
            this.transactionId
          );
-         console.log("DEBUG: WebSocket URL:", this.wsUrl);
-         console.log("DEBUG: WebSocket URL type:", this.wsUrl.includes("changenow.io") ? "ChangeNow" : "Backend");
-         console.log("DEBUG: WebSocket protocol:", this.wsUrl.startsWith('ws://') ? 'ws://' : this.wsUrl.startsWith('wss://') ? 'wss://' : 'unknown');
+         logger.debug('p2p', "DEBUG: WebSocket URL:", this.wsUrl);
+         logger.debug('p2p', "DEBUG: WebSocket URL type:", this.wsUrl.includes("changenow.io") ? "ChangeNow" : "Backend");
+         logger.debug('p2p', "DEBUG: WebSocket protocol:", this.wsUrl.startsWith('ws://') ? 'ws://' : this.wsUrl.startsWith('wss://') ? 'wss://' : 'unknown');
         
          this.ws = new WebSocket(this.wsUrl);
 
@@ -135,7 +137,7 @@ export class BaseTransactionStatusWebSocket {
 
         this.ws.onopen = () => {
           clearTimeout(connectionTimeout);
-          console.log(
+          logger.debug('p2p', 
             `WebSocket connected for transaction: ${this.transactionId}`
           );
           this.reconnectAttempts = 0;
@@ -195,7 +197,7 @@ export class BaseTransactionStatusWebSocket {
 
         this.ws.onclose = (event) => {
           clearTimeout(connectionTimeout);
-          console.log("WebSocket closed:", {
+          logger.debug('p2p', "WebSocket closed:", {
             code: event.code,
             reason: event.reason,
             wasClean: event.wasClean,
@@ -210,7 +212,7 @@ export class BaseTransactionStatusWebSocket {
             this.reconnectAttempts < this.maxReconnectAttempts
           ) {
             this.reconnectAttempts++;
-            console.log(
+            logger.debug('p2p', 
               `Attempting to reconnect (${this.reconnectAttempts}/${
                 this.maxReconnectAttempts
               }) in ${this.reconnectDelay * this.reconnectAttempts}ms...`
@@ -276,7 +278,7 @@ export class BaseTransactionStatusWebSocket {
   // Method to perform connection health check
   performHealthCheck(): boolean {
     const diagnostics = this.getConnectionDiagnostics();
-    console.log("WebSocket Health Check:", diagnostics);
+    logger.debug('p2p', "WebSocket Health Check:", diagnostics);
     
     // Check if URL is valid
     if (!this.wsUrl || typeof this.wsUrl !== 'string') {
@@ -302,7 +304,7 @@ export class BaseTransactionStatusWebSocket {
       return false;
     }
 
-    console.log("Health Check Passed: WebSocket connection is healthy");
+    logger.debug('p2p', "Health Check Passed: WebSocket connection is healthy");
     return true;
   }
 }
@@ -325,10 +327,10 @@ export class WithdrawalStatusWebSocket extends BaseTransactionStatusWebSocket {
       ? wsUrl 
       : API_CONFIG.EXCHANGE.SOCKETS.TRANSACTION_STATUS(transactionId);
     
-    console.log("DEBUG: WithdrawalStatusWebSocket constructor - wsUrl:", wsUrl);
-    console.log("DEBUG: WithdrawalStatusWebSocket constructor - finalWsUrl:", finalWsUrl);
-    console.log("DEBUG: Using provided URL:", !!wsUrl);
-    console.log("DEBUG: URL is empty/undefined:", !wsUrl || wsUrl.trim() === "");
+    logger.debug('p2p', "DEBUG: WithdrawalStatusWebSocket constructor - wsUrl:", wsUrl);
+    logger.debug('p2p', "DEBUG: WithdrawalStatusWebSocket constructor - finalWsUrl:", finalWsUrl);
+    logger.debug('p2p', "DEBUG: Using provided URL:", !!wsUrl);
+    logger.debug('p2p', "DEBUG: URL is empty/undefined:", !wsUrl || wsUrl.trim() === "");
     super(transactionId, finalWsUrl, options);
   }
 }
@@ -351,10 +353,10 @@ export class DepositStatusWebSocket extends BaseTransactionStatusWebSocket {
       ? wsUrl 
       : API_CONFIG.EXCHANGE.SOCKETS.DEPOSIT_STATUS(transactionId);
     
-    console.log("DEBUG: DepositStatusWebSocket constructor - wsUrl:", wsUrl);
-    console.log("DEBUG: DepositStatusWebSocket constructor - finalWsUrl:", finalWsUrl);
-    console.log("DEBUG: Using provided URL:", !!wsUrl);
-    console.log("DEBUG: URL is empty/undefined:", !wsUrl || wsUrl.trim() === "");
+    logger.debug('p2p', "DEBUG: DepositStatusWebSocket constructor - wsUrl:", wsUrl);
+    logger.debug('p2p', "DEBUG: DepositStatusWebSocket constructor - finalWsUrl:", finalWsUrl);
+    logger.debug('p2p', "DEBUG: Using provided URL:", !!wsUrl);
+    logger.debug('p2p', "DEBUG: URL is empty/undefined:", !wsUrl || wsUrl.trim() === "");
     super(transactionId, finalWsUrl, options);
   }
 }

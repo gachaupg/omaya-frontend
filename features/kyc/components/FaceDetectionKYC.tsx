@@ -2,6 +2,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import * as faceapi from 'face-api.js';
 
+import { logger } from '@/lib/utils/logger';
+
 interface FaceDetectionKYCProps {
   onVerificationComplete?: (data: {
     faceDetected: boolean;
@@ -80,7 +82,7 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
       setIsModelLoaded(true);
       setIsLoading(false);
     } catch (error) {
-      console.error('Error loading models:', error);
+      logger.error('general', 'Error loading models:', error);
       setIsLoading(false);
     }
   };
@@ -98,7 +100,7 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
         videoRef.current.srcObject = stream;
       }
     })
-    .catch(err => console.error('Error accessing camera:', err));
+    .catch(err => logger.error('general', 'Error accessing camera:', err));
   };
 
   const stopVideo = () => {
@@ -109,7 +111,7 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
       // Stop all tracks (video and audio if any)
       tracks.forEach(track => {
         track.stop();
-        console.log('Camera track stopped:', track.kind);
+        logger.debug('general', 'Camera track stopped:', track.kind);
       });
       
       // Clear the video source
@@ -118,7 +120,7 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
       // Pause the video element
       videoRef.current.pause();
       
-      console.log('Camera fully stopped');
+      logger.debug('general', 'Camera fully stopped');
     }
   };
 
@@ -274,8 +276,8 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
         // Convert to base64 image
         const imageData = captureCanvas.toDataURL('image/jpeg', 0.95);
         
-        console.log('Image captured:', imageData.substring(0, 50) + '...');
-        console.log('Image data length:', imageData.length);
+        logger.debug('general', 'Image captured:', imageData.substring(0, 50) + '...');
+        logger.debug('general', 'Image data length:', imageData.length);
         
         // Set captured image FIRST
         setCapturedImage(imageData);
@@ -283,7 +285,7 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
         // THEN set verified (this will stop the detection loop)
         setIsVerified(true);
         
-        console.log('Verification complete, image set');
+        logger.debug('general', 'Verification complete, image set');
         
         // Stop the video stream immediately
         stopVideo();
@@ -291,7 +293,7 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
         // Automatically trigger onVerificationComplete after a short delay to show the captured image
         setTimeout(() => {
           if (onVerificationComplete) {
-            console.log('Auto-submitting verification data');
+            logger.debug('general', 'Auto-submitting verification data');
             onVerificationComplete({
               faceDetected: true,
               age: Math.round(age),
@@ -332,7 +334,7 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
   // Debug effect for captured image
   useEffect(() => {
     if (capturedImage) {
-      console.log('Captured image state updated, length:', capturedImage.length);
+      logger.debug('general', 'Captured image state updated, length:', capturedImage.length);
     }
   }, [capturedImage]);
 
@@ -399,7 +401,7 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
                   src={capturedImage} 
                   alt="Captured Face" 
                   className="w-full h-full object-cover"
-                  onLoad={() => console.log('Image loaded successfully')}
+                  onLoad={() => logger.debug('general', 'Image loaded successfully')}
                   onError={(e) => console.error('Image failed to load:', e)}
                 />
               ) : (

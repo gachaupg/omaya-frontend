@@ -62,7 +62,7 @@ export class ApiHealthChecker {
 
     this.endpoints.set(endpoint, health);
 
-    logger.warn(`API endpoint failure recorded`, {
+    logger.warn("api", `API endpoint failure recorded`, {
       endpoint,
       failureCount: health.failureCount,
       status: health.status,
@@ -80,7 +80,7 @@ export class ApiHealthChecker {
 
       this.endpoints.set(endpoint, health);
 
-      logger.info(`API endpoint recovered`, {
+      logger.info("api", `API endpoint recovered`, {
         endpoint,
         status: "healthy",
       });
@@ -132,7 +132,7 @@ export class ApiHealthChecker {
       clearTimeout(timeoutId);
       return response.ok;
     } catch (error) {
-      logger.debug(`Health check failed for ${endpoint}:`, error);
+      logger.debug("api", `Health check failed for ${endpoint}:`, error);
       return false;
     }
   }
@@ -147,9 +147,9 @@ export class ApiHealthChecker {
 
         if (isHealthy) {
           this.recordSuccess(endpoint);
-          logger.info(`Endpoint ${endpoint} is back online`);
+          logger.info("api", `Endpoint ${endpoint} is back online`);
         } else {
-          logger.debug(`Endpoint ${endpoint} still failing`);
+          logger.debug("api", `Endpoint ${endpoint} still failing`);
         }
       }
     }, this.HEALTH_CHECK_INTERVAL);

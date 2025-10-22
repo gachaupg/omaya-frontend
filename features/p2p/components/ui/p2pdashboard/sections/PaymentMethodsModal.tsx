@@ -9,6 +9,8 @@ import {
 } from "../../../../slices/paymentMethodsSlice";
 import { showToast } from "../../../../../../lib/utils/toast";
 
+import { logger } from '@/lib/utils/logger';
+
 type PaymentDetailPayload = {
   account_name: string;
   account_number: string;
@@ -35,15 +37,15 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   const { isAuthenticated, user } = useSelector(
     (state: RootState) => state.auth
   );
-  console.log("adminMethods", adminMethods);
-  console.log("Redux state", {
+  logger.debug('p2p', "adminMethods", adminMethods);
+  logger.debug('p2p', "Redux state", {
     loading,
     error,
     postLoading,
     postError,
     postSuccess,
   });
-  console.log("Auth state", { isAuthenticated, user });
+  logger.debug('p2p', "Auth state", { isAuthenticated, user });
   const [method, setMethod] = useState("");
   const [provider, setProvider] = useState("");
   const [name, setName] = useState("");
@@ -75,7 +77,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
        try {
          dispatch(fetchAdminPaymentMethods() as any);
        } catch (error) {
-         console.log("Error fetching admin methods:", error);
+         logger.debug('p2p', "Error fetching admin methods:", error);
        }
        setMethod("");
        setProvider("");
@@ -107,21 +109,21 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
      ? hardcodedProviders[method as keyof typeof hardcodedProviders].map(name => ({ provider_name: name }))
      : (adminMethods || []).filter((m: any) => m.payment_method_type === method);
 
-   console.log("DEBUG: adminMethods:", adminMethods);
-   console.log("DEBUG: methodTypes:", methodTypes);
-   console.log("DEBUG: selected method:", method);
-   console.log("DEBUG: providers for method:", providers);
+   logger.debug('p2p', "DEBUG: adminMethods:", adminMethods);
+   logger.debug('p2p', "DEBUG: methodTypes:", methodTypes);
+   logger.debug('p2p', "DEBUG: selected method:", method);
+   logger.debug('p2p', "DEBUG: providers for method:", providers);
 
      // Handle Add
    const handleAdd = () => {
-     console.log("handleAdd called", { method, provider, name, account });
+     logger.debug('p2p', "handleAdd called", { method, provider, name, account });
      if (!isAuthenticated) {
-       console.log("User not authenticated");
+       logger.debug('p2p', "User not authenticated");
        showToast.error("Please log in to add payment methods");
        return;
      }
      if (!method || !provider || !name || !account) {
-       console.log("Validation failed", { method, provider, name, account });
+       logger.debug('p2p', "Validation failed", { method, provider, name, account });
        showToast.error("Please fill all required fields");
        return;
      }
@@ -129,7 +131,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
      const selectedProvider = providers.find(
        (p: any) => p.provider_name === provider
      );
-     console.log("Selected provider", selectedProvider);
+     logger.debug('p2p', "Selected provider", selectedProvider);
      const payload = {
        account_name: name,
        account_number: account,
@@ -138,15 +140,15 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
        provider_name: provider,
        wallet_address: selectedProvider?.wallet_address || null,
      };
-     console.log("Dispatching payload", payload);
+     logger.debug('p2p', "Dispatching payload", payload);
      dispatch(postUserPaymentDetail(payload));
    };
 
   // Close modal on success
   useEffect(() => {
-    console.log("postSuccess effect triggered", postSuccess);
+    logger.debug('p2p', "postSuccess effect triggered", postSuccess);
     if (postSuccess) {
-      console.log("Payment method added successfully!");
+      logger.debug('p2p', "Payment method added successfully!");
       showToast.success("Payment method added!");
       if (onAdd) onAdd();
       onClose();
@@ -158,7 +160,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   // Handle errors
   useEffect(() => {
     if (postError) {
-      console.log("Post error occurred:", postError);
+      logger.debug('p2p', "Post error occurred:", postError);
       showToast.error(postError);
     }
   }, [postError]);

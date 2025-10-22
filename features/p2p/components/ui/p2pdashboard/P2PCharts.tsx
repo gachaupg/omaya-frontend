@@ -14,6 +14,8 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { NoDataFound } from "@/components/dashboard/ui/Transactions";
 
+import { logger } from '@/lib/utils/logger';
+
 type TimeFilter =
   | "Today"
   | "Last Week"
@@ -161,7 +163,7 @@ const P2PCharts = () => {
 
   // Use filtered data for display, but ensure we're showing the correct data for current page
   const displayData = searchQuery.trim() ? filteredData : transformedData;
- console.log("displayData", displayData);
+ logger.debug('p2p', "displayData", displayData);
   // Calculate total pages based on actual count from API
   const totalOrders = orders?.count || 0;
   const pageSize = 10; // Default page size, should match backend
@@ -243,7 +245,7 @@ const P2PCharts = () => {
   };
 
   const handlePageChange = (page: number) => {
-    console.log("Page change requested:", page, "Current page:", currentPage);
+    logger.debug('p2p', "Page change requested:", page, "Current page:", currentPage);
 
     // Clear search when changing pages to avoid confusion
     if (searchQuery.trim()) {

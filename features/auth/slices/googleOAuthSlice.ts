@@ -1,5 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import axios from "axios";
+import { logger } from '@/lib/utils/logger';
+
 import { 
   GOOGLE_API_ENDPOINTS, 
   logGoogleOAuthResponse, 
@@ -36,13 +38,13 @@ export const authenticateWithGoogle = createAsyncThunk(
   "googleOAuth/authenticate",
   async (authCode: string, { rejectWithValue }) => {
          try {
-       console.log("🔐 Starting Google OAuth authentication...");
-       console.log("📝 Auth Code:", authCode);
+       logger.debug('auth', "🔐 Starting Google OAuth authentication...");
+       logger.debug('auth', "📝 Auth Code:", authCode);
        
        // Debug URL construction
        debugGoogleOAuthUrls();
        
-       console.log("🌐 Backend URL:", GOOGLE_API_ENDPOINTS.backendAuth);
+       logger.debug('auth', "🌐 Backend URL:", GOOGLE_API_ENDPOINTS.backendAuth);
 
       // Log the Google OAuth response
       logGoogleOAuthResponse({ code: authCode }, "Google OAuth Code Received");
@@ -60,7 +62,7 @@ export const authenticateWithGoogle = createAsyncThunk(
         }
       );
 
-      console.log("✅ Backend response received:", response.data);
+      logger.debug('auth', "✅ Backend response received:", response.data);
       
       // Log the backend response
       logGoogleOAuthResponse(response.data, "Backend Authentication Response");
@@ -94,7 +96,7 @@ export const getGoogleUserInfo = createAsyncThunk(
   "googleOAuth/getUserInfo",
   async (accessToken: string, { rejectWithValue }) => {
     try {
-      console.log("👤 Fetching Google user info...");
+      logger.debug('auth', "👤 Fetching Google user info...");
       
       const response = await axios.get(GOOGLE_API_ENDPOINTS.userInfo, {
         headers: {
@@ -102,7 +104,7 @@ export const getGoogleUserInfo = createAsyncThunk(
         },
       });
 
-      console.log("✅ Google user info received:", response.data);
+      logger.debug('auth', "✅ Google user info received:", response.data);
       
       // Log the user info
       logGoogleOAuthResponse(response.data, "Google User Info");
@@ -128,13 +130,13 @@ const googleOAuthSlice = createSlice({
     setAuthCode: (state, action: PayloadAction<string>) => {
       state.authCode = action.payload;
       state.error = null;
-      console.log("🔑 Auth code set:", action.payload);
+      logger.debug('auth', "🔑 Auth code set:", action.payload);
     },
 
     // Clear auth code
     clearAuthCode: (state) => {
       state.authCode = null;
-      console.log("🧹 Auth code cleared");
+      logger.debug('auth', "🧹 Auth code cleared");
     },
 
     // Set error
@@ -147,7 +149,7 @@ const googleOAuthSlice = createSlice({
     // Clear error
     clearError: (state) => {
       state.error = null;
-      console.log("🧹 Google OAuth error cleared");
+      logger.debug('auth', "🧹 Google OAuth error cleared");
     },
 
     // Reset state
@@ -158,7 +160,7 @@ const googleOAuthSlice = createSlice({
       state.error = null;
       state.authCode = null;
       state.backendResponse = null;
-      console.log("🔄 Google OAuth state reset");
+      logger.debug('auth', "🔄 Google OAuth state reset");
     },
 
     // Log Google OAuth response
@@ -171,7 +173,7 @@ const googleOAuthSlice = createSlice({
     builder.addCase(authenticateWithGoogle.pending, (state) => {
       state.isLoading = true;
       state.error = null;
-      console.log("⏳ Google OAuth authentication started...");
+      logger.debug('auth', "⏳ Google OAuth authentication started...");
     });
 
     builder.addCase(authenticateWithGoogle.fulfilled, (state, action) => {
@@ -185,7 +187,7 @@ const googleOAuthSlice = createSlice({
         state.user = action.payload.user;
       }
       
-      console.log("✅ Google OAuth authentication successful:", action.payload);
+      logger.debug('auth', "✅ Google OAuth authentication successful:", action.payload);
     });
 
     builder.addCase(authenticateWithGoogle.rejected, (state, action) => {
@@ -198,13 +200,13 @@ const googleOAuthSlice = createSlice({
     // getGoogleUserInfo
     builder.addCase(getGoogleUserInfo.pending, (state) => {
       state.isLoading = true;
-      console.log("⏳ Fetching Google user info...");
+      logger.debug('auth', "⏳ Fetching Google user info...");
     });
 
     builder.addCase(getGoogleUserInfo.fulfilled, (state, action) => {
       state.isLoading = false;
       state.user = action.payload;
-      console.log("✅ Google user info fetched:", action.payload);
+      logger.debug('auth', "✅ Google user info fetched:", action.payload);
     });
 
     builder.addCase(getGoogleUserInfo.rejected, (state, action) => {

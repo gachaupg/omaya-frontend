@@ -6,6 +6,8 @@ import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { BlogState, BlogPost } from "../types";
 import { blogApi } from "../api";
 
+import { logger } from '@/lib/utils/logger';
+
 const initialState: BlogState = {
   blogs: [],
   news: [],
@@ -26,13 +28,13 @@ export const fetchBlogs = createAsyncThunk(
     
     // Prevent multiple simultaneous requests
     if (state.blog.blogsLoading || state.blog.blogsFetched) {
-      console.log("Blogs already loading or fetched, skipping");
+      logger.debug('general', "Blogs already loading or fetched, skipping");
       return state.blog.blogs;
     }
 
     try {
       const blogs = await blogApi.fetchBlogs();
-      console.log("blogs slice", blogs);
+      logger.debug('general', "blogs slice", blogs);
       // Filter for blog category
       return blogs.filter((blog: BlogPost) => blog.category === 'blog');
     } catch (error) {
@@ -66,7 +68,7 @@ export const fetchNews = createAsyncThunk(
     
     // Prevent multiple simultaneous requests
     if (state.blog.newsLoading || state.blog.newsFetched) {
-      console.log("News already loading or fetched, skipping");
+      logger.debug('general', "News already loading or fetched, skipping");
       return state.blog.news;
     }
 

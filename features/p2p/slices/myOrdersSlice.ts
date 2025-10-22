@@ -7,6 +7,8 @@ import { getMyP2POrders } from "../api";
 import { P2PMyOrders } from "../types";
 import { handleP2PError } from "@/lib/utils/errorHandler";
 
+import { logger } from '@/lib/utils/logger';
+
 interface MyOrdersState {
   orders: P2PMyOrders;
   loading: boolean;
@@ -34,10 +36,10 @@ export const fetchMyOrders = createAsyncThunk<
   number,
   { rejectValue: string }
 >("myOrders/fetchMyOrders", async (page: number = 1, { rejectWithValue }) => {
-  console.log("Redux thunk fetchMyOrders called with page:", page);
+  logger.debug('p2p', "Redux thunk fetchMyOrders called with page:", page);
   try {
     const response = await getMyP2POrders(page);
-    console.log(
+    logger.debug('p2p', 
       "Redux thunk fetchMyOrders success for page:",
       page,
       "with data:",
@@ -48,7 +50,7 @@ export const fetchMyOrders = createAsyncThunk<
     );
     return response;
   } catch (err) {
-    console.log("Redux thunk fetchMyOrders error for page:", page, err);
+    logger.debug('p2p', "Redux thunk fetchMyOrders error for page:", page, err);
     try {
       handleP2PError(err);
     } catch (error) {
@@ -65,7 +67,7 @@ const myOrdersSlice = createSlice({
   initialState,
   reducers: {
     setCurrentPage: (state, action) => {
-      console.log(
+      logger.debug('p2p', 
         "myOrders setCurrentPage action dispatched:",
         action.payload,
         "Previous page:",
@@ -80,12 +82,12 @@ const myOrdersSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchMyOrders.pending, (state) => {
-        console.log("fetchMyOrders.pending for page:", state.currentPage);
+        logger.debug('p2p', "fetchMyOrders.pending for page:", state.currentPage);
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchMyOrders.fulfilled, (state, action) => {
-        console.log("fetchMyOrders.fulfilled with data:", {
+        logger.debug('p2p', "fetchMyOrders.fulfilled with data:", {
           count: action.payload.count,
           resultsCount: action.payload.results?.results?.length,
           currentPage: state.currentPage,
@@ -95,7 +97,7 @@ const myOrdersSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchMyOrders.rejected, (state, action) => {
-        console.log("fetchMyOrders.rejected:", action.payload);
+        logger.debug('p2p', "fetchMyOrders.rejected:", action.payload);
         state.loading = false;
         state.error = (action.payload as string) || "An unexpected error occurred";
       });

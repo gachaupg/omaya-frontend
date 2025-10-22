@@ -8,6 +8,8 @@ import { AppDispatch, RootState } from "@/store";
 import { setThemeMode, updateTheme } from "../slices/settingsSlice";
 import { ThemeSettings } from "../types";
 
+import { logger } from '@/lib/utils/logger';
+
 export const useThemeToggle = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { theme, updating } = useSelector((state: RootState) => state.settings);
@@ -27,7 +29,7 @@ export const useThemeToggle = () => {
         }
       }
     } catch (error) {
-      console.log("Failed to load theme from localStorage:", error);
+      logger.debug('dashboard', "Failed to load theme from localStorage:", error);
       // Fallback to default theme
       dispatch(setThemeMode("dark"));
     }

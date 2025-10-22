@@ -9,6 +9,8 @@ import { BlogPost } from "../types";
 import { useBlogsI18n } from "@/lib/useBlogsI18n";
 import { imageBuilder } from "@/sanity/lib/client";
 
+import { logger } from '@/lib/utils/logger';
+
 const BlogPage = () => {
   const [activeTab, setActiveTab] = useState("News");
   const [searchTerm, setSearchTerm] = useState("");
@@ -55,7 +57,7 @@ const BlogPage = () => {
     try {
       return imageBuilder(post.image);
     } catch (error) {
-      console.error('Error getting image URL for post:', post.title, error);
+      logger.error('general', 'Error getting image URL for post:', post.title, error);
       return '/images/alert-circle.svg';
     }
   };

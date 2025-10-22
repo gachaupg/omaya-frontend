@@ -2,7 +2,7 @@
  * SwapWidget.tsx – Refactored to use smaller components
  */
 "use client";
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect, useCallback, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   setFromAsset,
@@ -28,9 +28,13 @@ import { SupportedAsset, SwapEstimate } from "../types";
 import { showToast } from "@/lib/utils/toast";
 import { handleApiError } from "@/lib/utils/errorHandler";
 import SuccessPage from "@/features/express/components/success";
+import { SwapWidgetSkeleton } from "@/components/ui/Skeletons";
+
+import { logger } from "@/lib/utils/logger";
 
 const SwapWidget = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const [skeletonTimeout, setSkeletonTimeout] = useState(false);
   const {
     fromAsset,
     toAsset,
@@ -56,8 +60,11 @@ const SwapWidget = () => {
   const [walletValidationError, setWalletValidationError] = React.useState("");
   const [copyMessage, setCopyMessage] = React.useState("");
   const [localSwapError, setLocalSwapError] = React.useState("");
-  const [activeInputField, setActiveInputField] = React.useState<'from' | 'to'>('from');
-  const [lastSuccessfulEstimate, setLastSuccessfulEstimate] = React.useState<SwapEstimate | null>(null);
+  const [activeInputField, setActiveInputField] = React.useState<"from" | "to">(
+    "from"
+  );
+  const [lastSuccessfulEstimate, setLastSuccessfulEstimate] =
+    React.useState<SwapEstimate | null>(null);
 
   // New state for the flow
   const [currentStep, setCurrentStep] =
@@ -67,8 +74,7 @@ const SwapWidget = () => {
   // Simple debounce implementation
   const [debouncedFromAmount, setDebouncedFromAmount] =
     React.useState(fromAmount);
-  const [debouncedToAmount, setDebouncedToAmount] =
-    React.useState(toAmount);
+  const [debouncedToAmount, setDebouncedToAmount] = React.useState(toAmount);
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -88,10 +94,12 @@ const SwapWidget = () => {
 
   useEffect(() => {
     dispatch(resetErrorToastFlag());
-    dispatch(fetchSupportedAssets(false)).catch((error) => {
-      console.error("Failed to fetch supported assets:", error);
-      handleApiError(error);
-    });
+    // ✅ Data fetching moved to SwapDataProvider (parent component)
+    // This eliminates duplicate API calls and improves performance
+    // dispatch(fetchSupportedAssets(false)).catch((error) => {
+    //   logger.error('swap', "Failed to fetch supported assets:", error);
+    //   handleApiError(error);
+    // });
   }, [dispatch]);
 
   // Fetch swap estimate when assets or amount changes
@@ -99,74 +107,95 @@ const SwapWidget = () => {
     if (
       fromAsset &&
       toAsset &&
-      ((activeInputField === 'from' && debouncedFromAmount && parseFloat(debouncedFromAmount) > 0) ||
-       (activeInputField === 'to' && debouncedToAmount && parseFloat(debouncedToAmount) > 0))
+      ((activeInputField === "from" &&
+        debouncedFromAmount &&
+        parseFloat(debouncedFromAmount) > 0) ||
+        (activeInputField === "to" &&
+          debouncedToAmount &&
+          parseFloat(debouncedToAmount) > 0))
     ) {
       dispatch(resetErrorToastFlag());
-      const amount = activeInputField === 'from' 
-        ? parseFloat(debouncedFromAmount)
-        : parseFloat(debouncedToAmount);
-      
+      const amount =
+        activeInputField === "from"
+          ? parseFloat(debouncedFromAmount)
+          : parseFloat(debouncedToAmount);
+
       // For reverse calculation (when user types in "to" field), swap the currencies
-      const estimateParams = activeInputField === 'to' 
-        ? {
-            fromCurrency: toAsset.ticker,
-            fromNetwork: toAsset.network,
-            toCurrency: fromAsset.ticker,
-            toNetwork: fromAsset.network,
-            amount: amount,
-          }
-        : {
-            fromCurrency: fromAsset.ticker,
-            fromNetwork: fromAsset.network,
-            toCurrency: toAsset.ticker,
-            toNetwork: toAsset.network,
-            amount: amount,
-          };
-        
-      dispatch(
-        fetchSwapEstimate(estimateParams)
-      ).catch((error) => {
-        console.error("Failed to fetch swap estimate:", error);
-        console.log("Estimate params:", estimateParams);
-        console.log("Active input field:", activeInputField);
+      const estimateParams =
+        activeInputField === "to"
+          ? {
+              fromCurrency: toAsset.ticker,
+              fromNetwork: toAsset.network,
+              toCurrency: fromAsset.ticker,
+              toNetwork: fromAsset.network,
+              amount: amount,
+            }
+          : {
+              fromCurrency: fromAsset.ticker,
+              fromNetwork: fromAsset.network,
+              toCurrency: toAsset.ticker,
+              toNetwork: toAsset.network,
+              amount: amount,
+            };
+
+      dispatch(fetchSwapEstimate(estimateParams)).catch((error) => {
+        logger.error("swap", "Failed to fetch swap estimate:", error);
+        logger.debug("swap", "Estimate params:", estimateParams);
+        logger.debug("swap", "Active input field:", activeInputField);
         // Don't show error toast for reverse calculation failures
         // as they might be expected (unsupported pairs, etc.)
-        if (activeInputField === 'from') {
+        if (activeInputField === "from") {
           handleApiError(error);
         } else {
-          console.warn("Reverse calculation failed, this might be expected:", error);
+          console.warn(
+            "Reverse calculation failed, this might be expected:",
+            error
+          );
         }
       });
     } else {
       // Clear estimate if conditions are not met
       dispatch(clearEstimate());
     }
-  }, [dispatch, fromAsset, toAsset, debouncedFromAmount, debouncedToAmount, activeInputField]);
+  }, [
+    dispatch,
+    fromAsset,
+    toAsset,
+    debouncedFromAmount,
+    debouncedToAmount,
+    activeInputField,
+  ]);
 
   // Update amounts when estimate is received
   useEffect(() => {
     if (
       estimate &&
       !estimateLoading &&
-      (estimate.toAmount !== undefined || estimate.estimated_amount !== undefined) &&
+      (estimate.toAmount !== undefined ||
+        estimate.estimated_amount !== undefined) &&
       (estimate.fromAmount !== undefined || estimate.user_amount !== undefined)
     ) {
       // Store successful estimate for potential fallback calculations
       setLastSuccessfulEstimate(estimate);
-      
-      if (activeInputField === 'from') {
+
+      if (activeInputField === "from") {
         // User typed in "from" field, update "to" amount (normal flow)
         // Use toAmount from raw_response if available, otherwise fall back to estimated_amount
-        const toAmount = estimate.raw_response?.toAmount || estimate.toAmount || estimate.estimated_amount;
+        const toAmount =
+          estimate.raw_response?.toAmount ||
+          estimate.toAmount ||
+          estimate.estimated_amount;
         if (toAmount !== undefined) {
           dispatch(setToAmount(toAmount.toString()));
         }
-      } else if (activeInputField === 'to') {
+      } else if (activeInputField === "to") {
         // User typed in "to" field, update "from" amount (reverse flow)
-        // Since we swapped the currencies in the API call, the estimate.toAmount 
+        // Since we swapped the currencies in the API call, the estimate.toAmount
         // now represents what the user should send (because we swapped from/to in the API call)
-        const fromAmount = estimate.raw_response?.toAmount || estimate.toAmount || estimate.estimated_amount;
+        const fromAmount =
+          estimate.raw_response?.toAmount ||
+          estimate.toAmount ||
+          estimate.estimated_amount;
         if (fromAmount !== undefined) {
           dispatch(setFromAmount(fromAmount.toString()));
         }
@@ -178,29 +207,55 @@ const SwapWidget = () => {
   useEffect(() => {
     if (estimateError) {
       console.error("Swap estimate error:", estimateError);
-      console.log("Active input field during error:", activeInputField);
-      
+      logger.debug(
+        "swap",
+        "Active input field during error:",
+        activeInputField
+      );
+
       // Only show error toast for forward calculation errors
       // Reverse calculation errors might be expected (unsupported pairs)
-      if (activeInputField === 'from') {
+      if (activeInputField === "from") {
         showToast.error("Estimate Error", estimateError);
       } else {
-        console.warn("Reverse calculation error (might be expected):", estimateError);
-        
+        console.warn(
+          "Reverse calculation error (might be expected):",
+          estimateError
+        );
+
         // Try fallback calculation using last successful estimate
         if (lastSuccessfulEstimate && debouncedToAmount) {
           try {
-            const toAmount = lastSuccessfulEstimate.raw_response?.toAmount || lastSuccessfulEstimate.toAmount || lastSuccessfulEstimate.estimated_amount;
-            const fromAmount = lastSuccessfulEstimate.raw_response?.fromAmount || lastSuccessfulEstimate.fromAmount || lastSuccessfulEstimate.user_amount;
-            
+            const toAmount =
+              lastSuccessfulEstimate.raw_response?.toAmount ||
+              lastSuccessfulEstimate.toAmount ||
+              lastSuccessfulEstimate.estimated_amount;
+            const fromAmount =
+              lastSuccessfulEstimate.raw_response?.fromAmount ||
+              lastSuccessfulEstimate.fromAmount ||
+              lastSuccessfulEstimate.user_amount;
+
             // Check if both amounts are valid numbers before calculating rate
-            if (toAmount !== undefined && fromAmount !== undefined && toAmount > 0 && fromAmount > 0) {
+            if (
+              toAmount !== undefined &&
+              fromAmount !== undefined &&
+              toAmount > 0 &&
+              fromAmount > 0
+            ) {
               const rate = toAmount / fromAmount;
               const calculatedFromAmount = parseFloat(debouncedToAmount) / rate;
               dispatch(setFromAmount(calculatedFromAmount.toString()));
-              console.log("Fallback calculation successful:", { rate, calculatedFromAmount, toAmount, fromAmount });
+              logger.debug("swap", "Fallback calculation successful:", {
+                rate,
+                calculatedFromAmount,
+                toAmount,
+                fromAmount,
+              });
             } else {
-              console.warn("Fallback calculation skipped: invalid amounts", { toAmount, fromAmount });
+              console.warn("Fallback calculation skipped: invalid amounts", {
+                toAmount,
+                fromAmount,
+              });
             }
           } catch (fallbackError) {
             console.error("Fallback calculation failed:", fallbackError);
@@ -208,7 +263,13 @@ const SwapWidget = () => {
         }
       }
     }
-  }, [estimateError, activeInputField, lastSuccessfulEstimate, debouncedToAmount, dispatch]);
+  }, [
+    estimateError,
+    activeInputField,
+    lastSuccessfulEstimate,
+    debouncedToAmount,
+    dispatch,
+  ]);
 
   // Handle swap errors
   useEffect(() => {
@@ -274,7 +335,7 @@ const SwapWidget = () => {
     const value = e.target.value;
     // Only allow numbers and decimals
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
-      setActiveInputField('from');
+      setActiveInputField("from");
       dispatch(setFromAmount(value));
     }
   };
@@ -283,7 +344,7 @@ const SwapWidget = () => {
     const value = e.target.value;
     // Only allow numbers and decimals
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
-      setActiveInputField('to');
+      setActiveInputField("to");
       dispatch(setToAmount(value));
     }
   };
@@ -296,7 +357,7 @@ const SwapWidget = () => {
   };
 
   const handleSubmit = async () => {
-    console.log("handleSubmit called");
+    logger.debug("swap", "handleSubmit called");
     if (!fromAsset || !toAsset || !walletAddress || !estimate) {
       console.error("Missing required fields");
       showToast.error(
@@ -306,7 +367,7 @@ const SwapWidget = () => {
       return;
     }
 
-    console.log("All fields present, creating swap...");
+    logger.debug("swap", "All fields present, creating swap...");
 
     try {
       dispatch(resetErrorToastFlag()); // Reset error toast flag before creating swap
@@ -320,7 +381,7 @@ const SwapWidget = () => {
           address: walletAddress,
         })
       ).unwrap();
-      console.log("Swap created successfully");
+      logger.debug("swap", "Swap created successfully");
       setCurrentStep("copy-address");
     } catch (error: any) {
       console.error("Failed to create swap:", error);
@@ -394,6 +455,54 @@ const SwapWidget = () => {
     dispatch(clearEstimate());
   };
 
+  // Add timeout to prevent skeleton from getting stuck
+  useEffect(() => {
+    if (loading && supportedAssets.length === 0) {
+      const timeout = setTimeout(() => {
+        setSkeletonTimeout(true);
+      }, 2000); // Reduced to 2 seconds for faster UX
+
+      return () => clearTimeout(timeout);
+    } else {
+      setSkeletonTimeout(false);
+    }
+  }, [loading, supportedAssets.length]);
+
+  // Force timeout after 5 seconds regardless of loading state
+  useEffect(() => {
+    const forceTimeout = setTimeout(() => {
+      setSkeletonTimeout(true);
+    }, 5000);
+
+    return () => clearTimeout(forceTimeout);
+  }, []);
+
+  // Show skeleton while loading initial data (supported assets)
+  // But not if timeout has been reached OR if we have some assets
+  if (loading && supportedAssets.length === 0 && !skeletonTimeout) {
+    return <SwapWidgetSkeleton />;
+  }
+
+  // If timeout reached but still loading, show a fallback instead of skeleton
+  if (loading && supportedAssets.length === 0 && skeletonTimeout) {
+    return (
+      <div className="w-full max-w-lg mx-auto p-6 bg-white dark:bg-[#1D1D23] rounded-lg border dark:border-[#35353E] border-gray-200">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1D8751] mx-auto mb-4"></div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Loading swap data...
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-3 px-4 py-2 bg-[#1D8751] hover:bg-[#1a6b3f] text-white rounded-md text-sm"
+          >
+            Refresh
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (error) {
     return (
       <div className="mx-auto dark:text-white text-gray-900">
@@ -412,15 +521,16 @@ const SwapWidget = () => {
       </div>
     );
   }
-  
- return (
+
+  return (
     <div className="mx-auto dark:text-white text-gray-900">
-      <h2 className="text-lg font-semibold mb-6 text-gray-900 dark:text-white">Swap Crypto</h2>
+      <h2 className="text-lg font-semibold mb-6 text-gray-900 dark:text-white">
+        Swap Crypto
+      </h2>
 
       {/* Step Indicator */}
       {/* <StepIndicator currentStep={currentStep} /> */}
 
-    
       {/* Only render CopyAddressStep as a new page when currentStep is 'copy-address' */}
       {currentStep === "copy-address" ? (
         <CopyAddressStep

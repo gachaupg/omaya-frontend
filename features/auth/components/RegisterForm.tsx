@@ -27,6 +27,8 @@ import { toast } from "react-toastify";
 const GoogleAuthButton = React.lazy(() => import("./GoogleAuthButton"));
 import { useI18n } from "@/lib/useI18n";
 
+import { logger } from '@/lib/utils/logger';
+
 // Email Verification Modal Component
 interface EmailVerificationModalProps {
   isOpen: boolean;
@@ -435,7 +437,7 @@ export default function RegistrationPage() {
         }
       }
     } catch (error) {
-      console.error("Registration error:", error);
+      logger.error('auth', "Registration error:", error);
       setErrors((prev) => ({
         ...prev,
         email: "An error occurred during registration",
@@ -491,7 +493,7 @@ export default function RegistrationPage() {
         );
       }
     } catch (error: any) {
-      console.error("Failed to resend code:", error);
+      logger.error('auth', "Failed to resend code:", error);
       throw error;
     }
   };
@@ -501,11 +503,11 @@ export default function RegistrationPage() {
   };
 
   const handleGoogleSuccess = (userData: any) => {
-    console.log("Google authentication successful:", userData);
+    logger.debug('auth', "Google authentication successful:", userData);
     // Handle successful Google authentication
     if (userData.user) {
       // You can dispatch to Redux store here if needed
-      console.log("User authenticated:", userData.user);
+      logger.debug('auth', "User authenticated:", userData.user);
     }
   };
 
@@ -527,7 +529,7 @@ export default function RegistrationPage() {
           },
         }
       );
-      console.log("Facebook auth result:", result.data);
+      logger.debug('auth', "Facebook auth result:", result.data);
       toast.success("Facebook login successful!");
     } catch (err: any) {
       console.error("Facebook auth error:", err);

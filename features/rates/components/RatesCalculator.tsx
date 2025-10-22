@@ -31,6 +31,8 @@ import { FaSearch } from "react-icons/fa";
 import { showToast } from "@/lib/utils/toast";
 import Exchanging from "../../express/components/exchnaging";
 
+import { logger } from '@/lib/utils/logger';
+
 interface UserPaymentDetail {
   id: number;
   payment_method_name: string;
@@ -164,7 +166,7 @@ const RatesCalculator = () => {
     dispatch(fetchAssets(false))
       .unwrap()
       .then((data) => {
-        console.log("DEBUG: Exchange assets loaded in rates calculator:", {
+        logger.debug('general', "DEBUG: Exchange assets loaded in rates calculator:", {
           hasAssets: !!data?.assets,
           assetsLength: data?.assets?.length || 0,
           totalBalance: data?.total_wallet_balance,
@@ -172,7 +174,7 @@ const RatesCalculator = () => {
 
         // If no assets in cache, force refresh
         if (!data?.assets || data.assets.length === 0) {
-          console.log("🔄 No exchange assets in cache, forcing refresh...");
+          logger.debug('general', "🔄 No exchange assets in cache, forcing refresh...");
           return dispatch(fetchAssets(true)).unwrap();
         }
         return data;
@@ -290,7 +292,7 @@ const RatesCalculator = () => {
 
   // Fetch estimate for non-direct assets - triggers immediately on asset or amount change
   useEffect(() => {
-    console.log("Estimate useEffect triggered:", {
+    logger.debug('general', "Estimate useEffect triggered:", {
       selectedAsset: selectedAsset?.ticker,
       isSimple: selectedAsset ? isSimpleCalculationAsset(selectedAsset) : null,
       amount: parseFloat(amount),
@@ -342,17 +344,17 @@ const RatesCalculator = () => {
           // Handle different types of errors gracefully
           if (error.message?.includes("Request timeout")) {
             setEstimateError("Request timeout: Using fallback calculation");
-            console.log("Using fallback calculation due to request timeout");
+            logger.debug('general', "Using fallback calculation due to request timeout");
           } else if (
             error.message?.includes("Network Error") ||
             error.code === "ECONNREFUSED" ||
             error.code === "ENOTFOUND"
           ) {
             setEstimateError("Network error: Using fallback calculation");
-            console.log("Using fallback calculation due to network error");
+            logger.debug('general', "Using fallback calculation due to network error");
           } else if (error.message?.includes("Server Error")) {
             setEstimateError("Server error: Using fallback calculation");
-            console.log("Using fallback calculation due to server error");
+            logger.debug('general', "Using fallback calculation due to server error");
           } else if (error.message?.includes("Invalid swap parameters")) {
             setEstimateError("Invalid parameters: Using fallback calculation");
           } else {
@@ -384,7 +386,7 @@ const RatesCalculator = () => {
 
   // Fetch reverse estimate for non-direct assets when calculating from receive amount
   useEffect(() => {
-    console.log("Reverse estimate useEffect triggered:", {
+    logger.debug('general', "Reverse estimate useEffect triggered:", {
       selectedAsset: selectedAsset?.ticker,
       isSimple: selectedAsset ? isSimpleCalculationAsset(selectedAsset) : null,
       receiveAmount: parseFloat(receiveAmount),
@@ -404,7 +406,7 @@ const RatesCalculator = () => {
       setEstimateLoading(true);
       setEstimateError(null);
 
-      console.log("Fetching reverse estimate for rates:", {
+      logger.debug('general', "Fetching reverse estimate for rates:", {
         fromCurrency: selectedAsset.ticker, // We're converting FROM the selected asset
         fromNetwork: getAssetNetwork(selectedAsset),
         toCurrency: "USDT", // TO USDT (since we want to know how much USDT we need)
@@ -430,7 +432,7 @@ const RatesCalculator = () => {
         timeoutPromise,
       ])
         .then((result: any) => {
-          console.log("Reverse estimate result:", result);
+          logger.debug('general', "Reverse estimate result:", result);
           if (result.payload && (result.payload as any)?.estimated_amount) {
             // The API now returns how much USDT we need to get the desired amount
             const requiredUsdtAmount = (result.payload as any)
@@ -440,7 +442,7 @@ const RatesCalculator = () => {
               // Set the amount to the required USDT amount
               setAmount(requiredUsdtAmount.toString());
               setEstimate(result.payload);
-              console.log("Reverse calculation successful:", {
+              logger.debug('general', "Reverse calculation successful:", {
                 desiredReceive: parseFloat(receiveAmount),
                 requiredAmount: requiredUsdtAmount,
               });
@@ -457,25 +459,25 @@ const RatesCalculator = () => {
           // Handle different types of errors gracefully
           if (error.message?.includes("Request timeout")) {
             setEstimateError("Request timeout: Using fallback calculation");
-            console.log("Using fallback calculation due to request timeout");
+            logger.debug('general', "Using fallback calculation due to request timeout");
           } else if (
             error.message?.includes("Network Error") ||
             error.code === "ECONNREFUSED" ||
             error.code === "ENOTFOUND"
           ) {
             setEstimateError("Network error: Using fallback calculation");
-            console.log("Using fallback calculation due to network error");
+            logger.debug('general', "Using fallback calculation due to network error");
           } else if (error.message?.includes("Server Error")) {
             setEstimateError("Server error: Using fallback calculation");
-            console.log("Using fallback calculation due to server error");
+            logger.debug('general', "Using fallback calculation due to server error");
           } else if (error.message?.includes("Invalid swap parameters")) {
             setEstimateError("Invalid parameters: Using fallback calculation");
-            console.log(
+            logger.debug('general', 
               "Using fallback calculation due to invalid API parameters"
             );
           } else {
             setEstimateError("API error: Using fallback calculation");
-            console.log("Using fallback calculation due to API error");
+            logger.debug('general', "Using fallback calculation due to API error");
           }
 
           // Common fallback calculation for all error types
@@ -510,7 +512,7 @@ const RatesCalculator = () => {
 
   // Update amounts when estimate is received or for direct assets
   useEffect(() => {
-    console.log("Estimate effect triggered:", {
+    logger.debug('general', "Estimate effect triggered:", {
       hasEstimate: !!estimate,
       estimateLoading,
       isCalculatingFromPay,
@@ -522,7 +524,7 @@ const RatesCalculator = () => {
     if (estimate && !estimateLoading) {
       if (isCalculatingFromPay && parseFloat(amount) > 0) {
         // Forward calculation: update receive amount
-        console.log(
+        logger.debug('general', 
           "Estimate received, updating receive amount:",
           (estimate as any)?.estimated_amount
         );
@@ -536,7 +538,7 @@ const RatesCalculator = () => {
           setIsCalculating(false);
           setIsCalculatingReceive(false);
         } else {
-          console.log(
+          logger.debug('general', 
             "DEBUG: Invalid estimate received, clearing loading state"
           );
           setReceiveAmount("0");
@@ -625,7 +627,7 @@ const RatesCalculator = () => {
               })
             ).unwrap();
 
-            console.log("Address update response:", updateResponse);
+            logger.debug('general', "Address update response:", updateResponse);
             showToast.success("Wallet address updated successfully!");
 
             // Use the updated response data if available
@@ -712,7 +714,7 @@ const RatesCalculator = () => {
         status: responseData?.status || "pending",
       };
 
-      console.log(
+      logger.debug('general', 
         "Proceeding to exchanging with transaction data:",
         transactionData
       );
@@ -762,7 +764,7 @@ const RatesCalculator = () => {
       enhancedFilteredUserPaymentDetails.length > 0 &&
       !selectedPaymentDetail
     ) {
-      console.log("DEBUG: Auto-selecting first account for payment method:", selectedPaymentMethod);
+      logger.debug('general', "DEBUG: Auto-selecting first account for payment method:", selectedPaymentMethod);
       const firstAccount = enhancedFilteredUserPaymentDetails[0];
       setSelectedPaymentDetail(firstAccount);
     }
@@ -858,7 +860,7 @@ const RatesCalculator = () => {
           key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
           className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
           onClick={() => {
-            console.log("Asset selected:", {
+            logger.debug('general', "Asset selected:", {
               ticker: asset.ticker,
               network: asset.network || "unknown",
               image: asset.image_url || asset.asset_image,
@@ -878,7 +880,7 @@ const RatesCalculator = () => {
             alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
             className="w-6 h-6 rounded-full object-cover"
             onError={(e) => {
-              console.log("Image failed to load for asset:", asset);
+              logger.debug('general', "Image failed to load for asset:", asset);
               e.currentTarget.src =
                 "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
             }}
@@ -1000,9 +1002,9 @@ const RatesCalculator = () => {
         formData.append("sent_from", selectedPaymentDetail.account_name);
 
         // Log the complete FormData for debugging
-        console.log("DEBUG: Complete FormData entries:");
+        logger.debug('general', "DEBUG: Complete FormData entries:");
         for (let [key, value] of formData.entries()) {
-          console.log(`${key}:`, value);
+          logger.debug('general', `${key}:`, value);
         }
 
         // Use Redux action for deposit
@@ -1015,7 +1017,7 @@ const RatesCalculator = () => {
           })
         ).unwrap()) as unknown as DepositResponse;
 
-        console.log("DEBUG: Deposit response:", depositResponse);
+        logger.debug('general', "DEBUG: Deposit response:", depositResponse);
 
         // Set transaction data
         setTransactionId(depositResponse.transaction_id || "");
@@ -1035,13 +1037,13 @@ const RatesCalculator = () => {
           user_payment_detail_id: selectedPaymentDetail.id,
         };
 
-        console.log("Submitting withdrawal request:", withdrawalPayload);
+        logger.debug('general', "Submitting withdrawal request:", withdrawalPayload);
 
         // Use Redux action for withdrawal
         const withdrawalResponse =
           await createExpressWithdrawal(withdrawalPayload);
 
-        console.log("Withdrawal response received:", withdrawalResponse);
+        logger.debug('general', "Withdrawal response received:", withdrawalResponse);
 
         // Extract response data - handle both direct response and nested data
         const responseData =
@@ -1173,7 +1175,7 @@ const RatesCalculator = () => {
                             }
                             className="w-6 h-6 rounded-full object-cover"
                             onError={(e) => {
-                              console.log(
+                              logger.debug('general', 
                                 "Image failed to load for selected asset:",
                                 selectedAsset
                               );
@@ -1252,7 +1254,7 @@ const RatesCalculator = () => {
                       value={amount}
                       onChange={(e) => {
                         const value = e.target.value;
-                        console.log("You Send input changed:", {
+                        logger.debug('general', "You Send input changed:", {
                           value,
                           selectedAsset: selectedAsset?.ticker,
                         });
@@ -1269,7 +1271,7 @@ const RatesCalculator = () => {
                             newAmount > 0 &&
                             isSimpleCalculationAsset(selectedAsset)
                           ) {
-                            console.log(
+                            logger.debug('general', 
                               "Triggering immediate forward calculation for direct asset:",
                               newAmount
                             );
@@ -1284,7 +1286,7 @@ const RatesCalculator = () => {
                             // Simple assets don't need loading states - calculation is instant
                           } else if (selectedAsset && newAmount > 0) {
                             // For complex assets, trigger API calculation
-                            console.log(
+                            logger.debug('general', 
                               "Triggering API forward calculation for complex asset:",
                               newAmount
                             );
@@ -1514,7 +1516,7 @@ const RatesCalculator = () => {
                   value={amount}
                       onChange={(e) => {
                         const value = e.target.value;
-                        console.log("You Send input changed:", {
+                        logger.debug('general', "You Send input changed:", {
                           value,
                           selectedAsset: selectedAsset?.ticker,
                         });
@@ -1531,7 +1533,7 @@ const RatesCalculator = () => {
                             newAmount > 0 &&
                             isSimpleCalculationAsset(selectedAsset)
                           ) {
-                            console.log(
+                            logger.debug('general', 
                               "Triggering immediate forward calculation for direct asset:",
                               newAmount
                             );
@@ -1546,7 +1548,7 @@ const RatesCalculator = () => {
                             // Simple assets don't need loading states - calculation is instant
                           } else if (selectedAsset && newAmount > 0) {
                             // For complex assets, trigger API calculation
-                            console.log(
+                            logger.debug('general', 
                               "Triggering API forward calculation for complex asset:",
                               newAmount
                             );
@@ -1749,7 +1751,7 @@ const RatesCalculator = () => {
                       value={receiveAmount}
                       onChange={(e) => {
                         const value = e.target.value;
-                        console.log("I want to Receive input changed:", {
+                        logger.debug('general', "I want to Receive input changed:", {
                           value,
                           selectedAsset: selectedAsset?.ticker,
                         });
@@ -1766,7 +1768,7 @@ const RatesCalculator = () => {
                             newAmount > 0 &&
                             isSimpleCalculationAsset(selectedAsset)
                           ) {
-                            console.log(
+                            logger.debug('general', 
                               "Triggering immediate reverse calculation for direct asset:",
                               newAmount
                             );
@@ -1777,7 +1779,7 @@ const RatesCalculator = () => {
                             // Simple assets don't need loading states - calculation is instant
                           } else if (selectedAsset && newAmount > 0) {
                             // For complex assets, trigger API calculation
-                            console.log(
+                            logger.debug('general', 
                               "Triggering API reverse calculation for complex asset:",
                               newAmount
                             );
@@ -1934,7 +1936,7 @@ const RatesCalculator = () => {
                             }
                             className="w-6 h-6 rounded-full object-cover"
                             onError={(e) => {
-                              console.log(
+                              logger.debug('general', 
                                 "Image failed to load for selected asset:",
                                 selectedAsset
                               );
@@ -2014,7 +2016,7 @@ const RatesCalculator = () => {
                       value={receiveAmount}
                       onChange={(e) => {
                         const value = e.target.value;
-                        console.log("I want to Receive input changed:", {
+                        logger.debug('general', "I want to Receive input changed:", {
                           value,
                           selectedAsset: selectedAsset?.ticker,
                         });
@@ -2031,7 +2033,7 @@ const RatesCalculator = () => {
                             newAmount > 0 &&
                             isSimpleCalculationAsset(selectedAsset)
                           ) {
-                            console.log(
+                            logger.debug('general', 
                               "Triggering immediate reverse calculation for direct asset:",
                               newAmount
                             );
@@ -2042,7 +2044,7 @@ const RatesCalculator = () => {
                             // Simple assets don't need loading states - calculation is instant
                           } else if (selectedAsset && newAmount > 0) {
                             // For complex assets, trigger API calculation
-                            console.log(
+                            logger.debug('general', 
                               "Triggering API reverse calculation for complex asset:",
                               newAmount
                             );

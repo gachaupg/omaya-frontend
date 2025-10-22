@@ -29,6 +29,8 @@ import { showToast } from "@/lib/utils/toast";
 import { createExpressDeposit } from "../../api";
 import { ExpressDepositResponse } from "../../types";
 
+import { logger } from '@/lib/utils/logger';
+
 // Add UserPaymentDetail interface
 interface UserPaymentDetail {
   id: number;
@@ -168,25 +170,25 @@ export default function DepositForm({
       });
       setQrCodeDataUrl(qrDataUrl);
     } catch (error) {
-      console.error("Failed to generate QR code:", error);
+      logger.error('p2p', "Failed to generate QR code:", error);
     }
   };
 
   // Debug function to test asset fetching
   const handleDebugAssets = async () => {
     try {
-      console.log("=== Starting debug asset fetch ===");
-      console.log("Current exchange assets:", assets);
-      console.log("Current swap assets:", swapAssets);
+      logger.debug('p2p', "=== Starting debug asset fetch ===");
+      logger.debug('p2p', "Current exchange assets:", assets);
+      logger.debug('p2p', "Current swap assets:", swapAssets);
       
       // Force refresh both asset types
-      console.log("🔄 Force refreshing exchange assets...");
+      logger.debug('p2p', "🔄 Force refreshing exchange assets...");
       await dispatch(fetchAssets(true)).unwrap();
       
-      console.log("🔄 Force refreshing swap assets...");
+      logger.debug('p2p', "🔄 Force refreshing swap assets...");
       await dispatch(fetchSupportedAssets(true)).unwrap();
       
-      console.log("✅ Assets force refreshed");
+      logger.debug('p2p', "✅ Assets force refreshed");
     } catch (error) {
       console.error("Debug failed:", error);
     }
@@ -253,7 +255,7 @@ export default function DepositForm({
       let cleanedUrl = websocketUrl;
       if (websocketUrl.includes('//http:') || websocketUrl.includes('//https:')) {
         cleanedUrl = websocketUrl.replace('//http:', '').replace('//https:', '');
-        console.log("Cleaned malformed WebSocket URL:", {
+        logger.debug('p2p', "Cleaned malformed WebSocket URL:", {
           original: websocketUrl,
           cleaned: cleanedUrl
         });
@@ -262,7 +264,7 @@ export default function DepositForm({
       // Ensure proper WebSocket protocol - always use wss for production/secure contexts
       let finalUrl = cleanedUrl;
       
-      console.log("WebSocket URL protocol conversion:", {
+      logger.debug('p2p', "WebSocket URL protocol conversion:", {
         originalUrl: websocketUrl,
         currentProtocol: window.location.protocol,
         isSecure: window.location.protocol === 'https:',
@@ -284,8 +286,8 @@ export default function DepositForm({
         // 3. Dev backend (dev.backend.omaya.io) - as it likely only supports wss://
         if (isSecure || isProduction || isDevBackend) {
           finalUrl = websocketUrl.replace('ws://', 'wss://');
-          console.log("Converted WebSocket URL from ws:// to wss://");
-          console.log("URL conversion:", {
+          logger.debug('p2p', "Converted WebSocket URL from ws:// to wss://");
+          logger.debug('p2p', "URL conversion:", {
             before: websocketUrl,
             after: finalUrl,
             reason: isSecure ? 'HTTPS context' : isProduction ? 'Production environment' : 'Dev backend requires wss://'
@@ -299,7 +301,7 @@ export default function DepositForm({
         const useWss = isSecure || isProduction || isDevBackend;
         
         finalUrl = `${useWss ? 'wss://' : 'ws://'}${websocketUrl}`;
-        console.log("Added WebSocket protocol:", {
+        logger.debug('p2p', "Added WebSocket protocol:", {
           before: websocketUrl,
           after: finalUrl,
           protocol: useWss ? 'wss' : 'ws',
@@ -320,10 +322,10 @@ export default function DepositForm({
         return null;
       }
 
-      console.log(`Attempting WebSocket connection to: ${finalUrl}${isRetry ? ' (retry attempt)' : ''}`);
+      logger.debug('p2p', `Attempting WebSocket connection to: ${finalUrl}${isRetry ? ' (retry attempt)' : ''}`);
       
       // Pre-connection validation and logging
-      console.log("WebSocket connection attempt details:", {
+      logger.debug('p2p', "WebSocket connection attempt details:", {
         originalUrl: websocketUrl,
         finalUrl: finalUrl,
         protocolChanged: websocketUrl !== finalUrl,
@@ -350,7 +352,7 @@ export default function DepositForm({
       
       ws.onopen = () => {
         clearTimeout(connectionTimeout);
-        console.log("WebSocket connected for deposit monitoring");
+        logger.debug('p2p', "WebSocket connected for deposit monitoring");
         setWebsocket(ws);
         setWebsocketError(null);
         setWebsocketRetryCount(0);
@@ -359,7 +361,7 @@ export default function DepositForm({
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log("WebSocket message received:", data);
+          logger.debug('p2p', "WebSocket message received:", data);
           
           if (data.status) {
             setTransactionStatus(data.status);
@@ -381,7 +383,7 @@ export default function DepositForm({
 
       ws.onclose = (event) => {
         clearTimeout(connectionTimeout);
-        console.log("WebSocket connection closed:", {
+        logger.debug('p2p', "WebSocket connection closed:", {
           code: event.code,
           reason: event.reason,
           wasClean: event.wasClean,
@@ -392,7 +394,7 @@ export default function DepositForm({
         
         // Attempt retry if connection was not clean and we haven't exceeded retry limit
         if (!event.wasClean && websocketRetryCount < 3) {
-          console.log(`Attempting WebSocket retry ${websocketRetryCount + 1}/3`);
+          logger.debug('p2p', `Attempting WebSocket retry ${websocketRetryCount + 1}/3`);
           setWebsocketRetryCount(prev => prev + 1);
           setTimeout(() => {
             const retryWs = connectWebSocket(websocketUrl, true);
@@ -496,7 +498,7 @@ export default function DepositForm({
         
         // Try alternative protocol if this is the first attempt
         if (websocketRetryCount === 0 && finalUrl.startsWith('ws://')) {
-          console.log("Attempting fallback to wss:// protocol");
+          logger.debug('p2p', "Attempting fallback to wss:// protocol");
           const fallbackUrl = finalUrl.replace('ws://', 'wss://');
           setTimeout(() => {
             connectWebSocket(fallbackUrl, true);
@@ -550,7 +552,7 @@ export default function DepositForm({
       const asset = selectedAsset.ticker || selectedAsset.symbol;
       const network = selectedNetwork.network || selectedNetwork.name;
       
-      console.log("Submitting deposit request with:", { 
+      logger.debug('p2p', "Submitting deposit request with:", { 
         asset, 
         network, 
         amount: skipAmountValidation ? "NOT INCLUDED" : payAmount, 
@@ -571,7 +573,7 @@ export default function DepositForm({
 
       const depositResponse = await createExpressDeposit(depositPayload);
       
-      console.log("Express deposit response:", depositResponse);
+      logger.debug('p2p', "Express deposit response:", depositResponse);
       
       // Create transaction data for the exchanging page
       const transactionData = {
@@ -598,7 +600,7 @@ export default function DepositForm({
         details: depositResponse.details || {},
       };
 
-      console.log("Transaction data:", transactionData);
+      logger.debug('p2p', "Transaction data:", transactionData);
 
       // Store transaction data in localStorage for the exchanging page
       localStorage.setItem('express_transaction_data', JSON.stringify(transactionData));
@@ -633,7 +635,7 @@ export default function DepositForm({
     dispatch(fetchAssets(false))
       .unwrap()
       .then((data) => {
-        console.log("DEBUG: Exchange assets loaded:", {
+        logger.debug('p2p', "DEBUG: Exchange assets loaded:", {
           hasAssets: !!data?.assets,
           assetsLength: data?.assets?.length || 0,
           totalBalance: data?.total_wallet_balance
@@ -641,7 +643,7 @@ export default function DepositForm({
         
         // If no assets in cache, force refresh
         if (!data?.assets || data.assets.length === 0) {
-          console.log("🔄 No assets in cache, forcing refresh...");
+          logger.debug('p2p', "🔄 No assets in cache, forcing refresh...");
           return dispatch(fetchAssets(true)).unwrap();
         }
         return data;
@@ -695,14 +697,14 @@ export default function DepositForm({
     dispatch(fetchSupportedAssets(false))
       .unwrap()
       .then((data) => {
-        console.log("DEBUG: Swap assets loaded:", {
+        logger.debug('p2p', "DEBUG: Swap assets loaded:", {
           hasAssets: !!data,
           assetsLength: data?.length || 0
         });
         
         // If no assets in cache, force refresh
         if (!data || data.length === 0) {
-          console.log("🔄 No swap assets in cache, forcing refresh...");
+          logger.debug('p2p', "🔄 No swap assets in cache, forcing refresh...");
           return dispatch(fetchSupportedAssets(true)).unwrap();
         }
         return data;
@@ -755,7 +757,7 @@ export default function DepositForm({
 
   // Auto-select USDT Tether asset - always ensure USDT is available and selected
   useEffect(() => {
-    console.log("DEBUG: Asset selection effect triggered:", { 
+    logger.debug('p2p', "DEBUG: Asset selection effect triggered:", { 
       hasSwapAssets: !!swapAssets, 
       swapAssetsLength: swapAssets?.length || 0, 
       hasSelectedAsset: !!selectedAsset,
@@ -772,7 +774,7 @@ export default function DepositForm({
           const name = (asset.name || "").toString().toLowerCase();
           return ticker === "usdt" && (name.includes("tether") || name.includes("usdt"));
         });
-        console.log("DEBUG: Found USDT Tether from API:", usdtAsset);
+        logger.debug('p2p', "DEBUG: Found USDT Tether from API:", usdtAsset);
       }
 
       // Always create/use a USDT Tether asset - fallback if not found in API
@@ -792,7 +794,7 @@ export default function DepositForm({
         asset_id: "usdt-tether-bsc"
       };
 
-      console.log("DEBUG: Setting selected asset:", selectedUsdtAsset);
+      logger.debug('p2p', "DEBUG: Setting selected asset:", selectedUsdtAsset);
       setSelectedAsset(selectedUsdtAsset);
       setSelectedNetwork({
         network_id: "BSC",
@@ -837,7 +839,7 @@ export default function DepositForm({
 
   // Fetch estimate for non-USDT assets - triggers immediately on asset or amount change
   useEffect(() => {
-    console.log("Estimate useEffect triggered:", {
+    logger.debug('p2p', "Estimate useEffect triggered:", {
       selectedAsset: selectedAsset?.ticker,
       isSimple: selectedAsset ? isSimpleCalculationAsset(selectedAsset) : null,
       payAmount,
@@ -890,15 +892,15 @@ export default function DepositForm({
           // Handle different types of errors gracefully
           if (error.message?.includes("Request timeout")) {
             setEstimateError("Request timeout: Using fallback calculation");
-            console.log("Using fallback calculation due to request timeout");
+            logger.debug('p2p', "Using fallback calculation due to request timeout");
             showToast.warning("Request timeout: Using estimated rate");
           } else if (error.message?.includes("Network Error") || error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
             setEstimateError("Network error: Using fallback calculation");
-            console.log("Using fallback calculation due to network error");
+            logger.debug('p2p', "Using fallback calculation due to network error");
             showToast.warning("Using estimated rate due to network issues");
           } else if (error.message?.includes("Server Error")) {
             setEstimateError("Server error: Using fallback calculation");
-            console.log("Using fallback calculation due to server error");
+            logger.debug('p2p', "Using fallback calculation due to server error");
             showToast.warning("Using estimated rate due to server issues");
           } else if (error.message?.includes("Invalid swap parameters")) {
             setEstimateError("Invalid parameters: Using fallback calculation");
@@ -935,7 +937,7 @@ export default function DepositForm({
 
   // Fetch reverse estimate for non-USDT assets when calculating from receive amount
   useEffect(() => {
-    console.log("Reverse estimate useEffect triggered:", {
+    logger.debug('p2p', "Reverse estimate useEffect triggered:", {
       selectedAsset: selectedAsset?.ticker,
       isSimple: selectedAsset ? isSimpleCalculationAsset(selectedAsset) : null,
       getAmount,
@@ -955,7 +957,7 @@ export default function DepositForm({
       // For reverse calculation, we need to estimate the pay amount from the receive amount
       // We'll call the API with the correct direction to get the required USDT amount
       
-      console.log("Fetching reverse estimate for deposit:", {
+      logger.debug('p2p', "Fetching reverse estimate for deposit:", {
         fromCurrency: selectedAsset.ticker, // We're converting FROM the selected asset
         fromNetwork: selectedAsset.network, 
         toCurrency: "USDT", // TO USDT (since we want to know how much USDT we need)
@@ -981,7 +983,7 @@ export default function DepositForm({
         timeoutPromise
       ])
         .then((result: any) => {
-          console.log("Reverse estimate result:", result);
+          logger.debug('p2p', "Reverse estimate result:", result);
           if (result.payload && (result.payload as any)?.estimated_amount) {
             // The API now returns how much USDT we need to get the desired amount
             const requiredUsdtAmount = (result.payload as any)?.estimated_amount;
@@ -991,7 +993,7 @@ export default function DepositForm({
               setPayAmount(requiredUsdtAmount);
               setPayAmountInput(requiredUsdtAmount.toString());
               setEstimate(result.payload);
-              console.log("Reverse calculation successful:", { 
+              logger.debug('p2p', "Reverse calculation successful:", { 
                 desiredReceive: getAmount, 
                 requiredPay: requiredUsdtAmount 
               });
@@ -1008,23 +1010,23 @@ export default function DepositForm({
           // Handle different types of errors gracefully
           if (error.message?.includes("Request timeout")) {
             setEstimateError("Request timeout: Using fallback calculation");
-            console.log("Using fallback calculation due to request timeout");
+            logger.debug('p2p', "Using fallback calculation due to request timeout");
             showToast.warning("Request timeout: Using estimated rate");
           } else if (error.message?.includes("Network Error") || error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
             setEstimateError("Network error: Using fallback calculation");
-            console.log("Using fallback calculation due to network error");
+            logger.debug('p2p', "Using fallback calculation due to network error");
             showToast.warning("Using estimated rate due to network issues");
           } else if (error.message?.includes("Server Error")) {
             setEstimateError("Server error: Using fallback calculation");
-            console.log("Using fallback calculation due to server error");
+            logger.debug('p2p', "Using fallback calculation due to server error");
             showToast.warning("Using estimated rate due to server issues");
           } else if (error.message?.includes("Invalid swap parameters")) {
             setEstimateError("Invalid parameters: Using fallback calculation");
-            console.log("Using fallback calculation due to invalid API parameters");
+            logger.debug('p2p', "Using fallback calculation due to invalid API parameters");
             showToast.warning("Invalid parameters: Using estimated rate");
           } else {
             setEstimateError("API error: Using fallback calculation");
-            console.log("Using fallback calculation due to API error");
+            logger.debug('p2p', "Using fallback calculation due to API error");
             showToast.warning("Using estimated rate due to API unavailability");
           }
           
@@ -1059,7 +1061,7 @@ export default function DepositForm({
   useEffect(() => {
     const safetyTimeout = setTimeout(() => {
       if (isCalculating || isCalculatingReceive) {
-        console.log("Safety timeout: Clearing stuck loading states");
+        logger.debug('p2p', "Safety timeout: Clearing stuck loading states");
         setIsCalculating(false);
         setIsCalculatingReceive(false);
       }
@@ -1125,7 +1127,7 @@ export default function DepositForm({
 
   // Stable calculation function with debouncing
   const calculateAmounts = (fromAmount: number, fromPay: boolean = true) => {
-    console.log("calculateAmounts called:", { 
+    logger.debug('p2p', "calculateAmounts called:", { 
       fromAmount, 
       fromPay, 
       selectedAsset: selectedAsset?.ticker,
@@ -1155,7 +1157,7 @@ export default function DepositForm({
 
     // Ensure we're not in an infinite loop
     if (isCalculating || isCalculatingReceive) {
-      console.log("Already calculating, skipping...");
+      logger.debug('p2p', "Already calculating, skipping...");
       return;
     }
 
@@ -1188,7 +1190,7 @@ export default function DepositForm({
         const networkFee = 0;
         const totalFees = networkFee + commissionAmount;
         const calculatedGetAmount = fromAmount - totalFees;
-            console.log("Forward calculation result:", { fromAmount, calculatedGetAmount, totalFees });
+            logger.debug('p2p', "Forward calculation result:", { fromAmount, calculatedGetAmount, totalFees });
             setGetAmount(calculatedGetAmount);
             setGetAmountInput(calculatedGetAmount.toString());
         } else {
@@ -1197,7 +1199,7 @@ export default function DepositForm({
           const networkFee = 0;
           const totalFees = networkFee + commissionAmount;
           const calculatedPayAmount = fromAmount + totalFees;
-          console.log("Reverse calculation result:", { fromAmount, calculatedPayAmount, totalFees, commissionRate });
+          logger.debug('p2p', "Reverse calculation result:", { fromAmount, calculatedPayAmount, totalFees, commissionRate });
           setPayAmount(calculatedPayAmount);
           setPayAmountInput(calculatedPayAmount.toString());
           }
@@ -1259,7 +1261,7 @@ export default function DepositForm({
             const networkFee = 0;
             const totalFees = networkFee + commissionAmount;
             const calculatedGetAmount = fromAmount - totalFees;
-            console.log("Complex forward calculation result:", { fromAmount, calculatedGetAmount, totalFees, commissionRate });
+            logger.debug('p2p', "Complex forward calculation result:", { fromAmount, calculatedGetAmount, totalFees, commissionRate });
             setGetAmount(calculatedGetAmount);
             setGetAmountInput(calculatedGetAmount.toString());
             setReceiveAmountError(null);
@@ -1311,7 +1313,7 @@ export default function DepositForm({
             const networkFee = 0;
             const totalFees = networkFee + commissionAmount;
             const calculatedPayAmount = fromAmount + totalFees;
-            console.log("Complex reverse calculation result:", { fromAmount, calculatedPayAmount, totalFees, commissionRate });
+            logger.debug('p2p', "Complex reverse calculation result:", { fromAmount, calculatedPayAmount, totalFees, commissionRate });
             setPayAmount(calculatedPayAmount);
             setPayAmountInput(calculatedPayAmount.toString());
             setReceiveAmountError(null);
@@ -1355,7 +1357,7 @@ export default function DepositForm({
 
   // Recalculate when asset changes
   useEffect(() => {
-    console.log("Selected asset changed:", selectedAsset);
+    logger.debug('p2p', "Selected asset changed:", selectedAsset);
     if (selectedAsset && payAmount > 0 && isCalculatingFromPay) {
       // Clear any existing estimate when asset changes
       setEstimate(null);
@@ -1370,7 +1372,7 @@ export default function DepositForm({
 
   // Update amounts when estimate is received or for simple calculation assets
   useEffect(() => {
-    console.log("Estimate effect triggered:", { 
+    logger.debug('p2p', "Estimate effect triggered:", { 
       hasEstimate: !!estimate, 
     estimateLoading,
     isCalculatingFromPay,
@@ -1382,7 +1384,7 @@ export default function DepositForm({
     if (estimate && !estimateLoading) {
       if (isCalculatingFromPay && payAmount > 0) {
         // Forward calculation: update receive amount
-        console.log("Estimate received, updating receive amount:", (estimate as any)?.estimated_amount);
+        logger.debug('p2p', "Estimate received, updating receive amount:", (estimate as any)?.estimated_amount);
         
         if ((estimate as any)?.estimated_amount && (estimate as any)?.estimated_amount > 0) {
           setGetAmount((estimate as any).estimated_amount);
@@ -1391,7 +1393,7 @@ export default function DepositForm({
         setIsCalculating(false);
         setIsCalculatingReceive(false);
       } else {
-          console.log("DEBUG: Invalid estimate received, clearing loading state");
+          logger.debug('p2p', "DEBUG: Invalid estimate received, clearing loading state");
         setGetAmount(0);
         setGetAmountInput("");
           setReceiveAmountError("Invalid estimate received");
@@ -1555,8 +1557,8 @@ export default function DepositForm({
           }
       } else {
         // For other assets, implement two-step process
-        console.log("DEBUG: Implementing two-step process for complex asset:", selectedAsset?.ticker);
-        console.log("DEBUG: Expected flow: First response -> update address -> Second response with additional details");
+        logger.debug('p2p', "DEBUG: Implementing two-step process for complex asset:", selectedAsset?.ticker);
+        logger.debug('p2p', "DEBUG: Expected flow: First response -> update address -> Second response with additional details");
         
         // According to user description, the expected flow for complex assets is:
         // 1. First API response: { transaction_id, deposit_code, status: "pending_address", requires_deposit_address: true, websocket_url }
@@ -1630,7 +1632,7 @@ export default function DepositForm({
         ...(finalResponse.deposit_address && { finalDepositAddress: finalResponse.deposit_address }),
       };
 
-      console.log("DEBUG: Final transaction data:", transactionData);
+      logger.debug('p2p', "DEBUG: Final transaction data:", transactionData);
 
       // Navigate to the exchanging status page automatically
       if (onExchange) {
@@ -1703,7 +1705,7 @@ export default function DepositForm({
 
     try {
       // Debug logging
-      console.log("DEBUG: Form data being submitted:", {
+      logger.debug('p2p', "DEBUG: Form data being submitted:", {
         payAmount,
         walletAddress,
         selectedPaymentDetail,
@@ -1855,9 +1857,9 @@ export default function DepositForm({
       );
 
       // Log the complete FormData for debugging
-      console.log("DEBUG: Complete FormData entries:");
+      logger.debug('p2p', "DEBUG: Complete FormData entries:");
       for (let [key, value] of depositPayload.entries()) {
-        console.log(`${key}:`, value);
+        logger.debug('p2p', `${key}:`, value);
       }
 
       // Submit to API - let axios set the correct Content-Type for FormData
@@ -1870,7 +1872,7 @@ export default function DepositForm({
         })
       ).unwrap()) as unknown as DepositResponse;
 
-      console.log("DEBUG: Deposit response:", depositResponse);
+      logger.debug('p2p', "DEBUG: Deposit response:", depositResponse);
     
 
       // Store the API response and update transaction code
@@ -1900,7 +1902,7 @@ export default function DepositForm({
           currency: depositResponse.currency,
           websocketUrl: depositResponse.websocket_url,
         };
-        console.log("DEBUG: Calling onExchange with:", transactionData);
+        logger.debug('p2p', "DEBUG: Calling onExchange with:", transactionData);
         onExchange(transactionData);
       }
     } catch (error: any) {
@@ -2656,19 +2658,19 @@ export default function DepositForm({
                       </div>
                     <button
                       onClick={() => {
-                          console.log("Manual WebSocket retry initiated");
+                          logger.debug('p2p', "Manual WebSocket retry initiated");
                         setWebsocketError(null);
                         setWebsocketRetryCount(0);
                         if (depositResponse?.websocket_url) {
-                            console.log("Retrying with provided WebSocket URL:", depositResponse.websocket_url);
+                            logger.debug('p2p', "Retrying with provided WebSocket URL:", depositResponse.websocket_url);
                             const ws = connectWebSocket(depositResponse.websocket_url);
                             if (!ws) {
-                              console.log("Primary retry failed, trying fallback");
+                              logger.debug('p2p', "Primary retry failed, trying fallback");
                               const fallbackUrl = API_CONFIG.EXCHANGE.SOCKETS.DEPOSIT_STATUS(depositResponse.transaction_id);
                               connectWebSocket(fallbackUrl);
                             }
                         } else if (depositResponse?.transaction_id) {
-                            console.log("Retrying with fallback WebSocket URL");
+                            logger.debug('p2p', "Retrying with fallback WebSocket URL");
                           const fallbackUrl = API_CONFIG.EXCHANGE.SOCKETS.DEPOSIT_STATUS(depositResponse.transaction_id);
                           connectWebSocket(fallbackUrl);
                         }

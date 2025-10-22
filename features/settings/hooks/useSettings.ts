@@ -32,15 +32,17 @@ export const useSettings = () => {
   const settings = useSelector((state: RootState) => state.settings);
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
 
-  // Load initial data when authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      dispatch(fetchProfile());
-      dispatch(fetchTheme());
-      dispatch(fetchSecuritySettings());
-      dispatch(fetchPrivacySettings());
-    }
-  }, [dispatch, isAuthenticated]);
+  // ✅ Data fetching moved to SettingsDataProvider (parent component)
+  // This eliminates duplicate API calls and improves performance
+  // The data is now fetched once at the Account/Settings page level
+  // useEffect(() => {
+  //   if (isAuthenticated) {
+  //     dispatch(fetchProfile());
+  //     dispatch(fetchTheme());
+  //     dispatch(fetchSecuritySettings());
+  //     dispatch(fetchPrivacySettings());
+  //   }
+  // }, [dispatch, isAuthenticated]);
 
   const profileActions = {
     fetch: () => dispatch(fetchProfile()),

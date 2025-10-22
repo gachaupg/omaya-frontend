@@ -1,16 +1,20 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, memo } from "react";
 import { tokens } from "@/styles/tokens";
 import Card from "../../Common/Card";
 import { useDispatch, useSelector } from "react-redux";
-import { selectTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
+import { selectTransactionSummaryWithLoading } from "@/features/p2p/selectors";
 import { fetchTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
 import { RootState } from "@/store/rootReducer";
 import { getAllP2POrders } from "@/features/p2p/api";
 import { P2POrder } from "@/features/p2p/types";
 
-const Overview = () => {
+import { logger } from "@/lib/utils/logger";
+
+const Overview = memo(() => {
   const dispatch = useDispatch();
-  const summary = useSelector(selectTransactionSummary);
+  const { summary, loading: summaryLoading } = useSelector(
+    selectTransactionSummaryWithLoading
+  );
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
 
   // Add state for date filters and order data
@@ -35,12 +39,12 @@ const Overview = () => {
     setError(null);
     try {
       const response = await getAllP2POrders(1);
-      setOrderData({ 
-        buyOrders: response.buy_orders?.results || [], 
-        sellOrders: response.sell_orders?.results || [] 
+      setOrderData({
+        buyOrders: response.buy_orders?.results || [],
+        sellOrders: response.sell_orders?.results || [],
       });
     } catch (error) {
-      console.error("Error fetching order data:", error);
+      logger.error("p2p", "Error fetching order data:", error);
       setError("Failed to load order data");
     } finally {
       setLoading(false);
@@ -303,7 +307,6 @@ const Overview = () => {
             </svg>
           )}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-           
             <span className="text-[15px] font-bold dark:text-white text-[#0D0D0D]">
               {transactionTotal.toLocaleString()} USD
             </span>
@@ -507,6 +510,8 @@ const Overview = () => {
       </div>
     </div>
   );
-};
+});
+
+Overview.displayName = "Overview";
 
 export default Overview;

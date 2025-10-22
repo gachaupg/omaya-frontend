@@ -1,5 +1,7 @@
 import { DeviceSession } from "../types";
 
+import { logger } from '@/lib/utils/logger';
+
 /**
  * Debug utility for session management
  */
@@ -9,9 +11,9 @@ export const sessionDebug = {
    */
   logSessionState: (sessions: DeviceSession[]) => {
     console.group("🔍 Session Debug Info");
-    console.log("Total sessions:", sessions.length);
-    console.log("Active sessions:", sessions.filter(s => s.is_active).length);
-    console.log("Current sessions:", sessions.filter(s => s.is_current).length);
+    logger.debug('dashboard', "Total sessions:", sessions.length);
+    logger.debug('dashboard', "Active sessions:", sessions.filter(s => s.is_active).length);
+    logger.debug('dashboard', "Current sessions:", sessions.filter(s => s.is_current).length);
     
     if (sessions.length > 0) {
       console.table(sessions.map(s => ({
@@ -45,7 +47,7 @@ export const sessionDebug = {
     if (duplicates.length > 0) {
       console.warn("⚠️ Found duplicate IP addresses:", duplicates);
     } else {
-      console.log("✅ No duplicate IP addresses found");
+      logger.debug('dashboard', "✅ No duplicate IP addresses found");
     }
 
     return duplicates;

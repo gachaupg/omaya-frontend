@@ -12,6 +12,8 @@ import Loader from "../../../Common/Loader";
 import { showToast } from "@/lib/utils/toast";
 import { toNumber } from "@/lib/finanacial";
 
+import { logger } from '@/lib/utils/logger';
+
 interface TradePreviewProps {
   advertiserData: MarketRow;
   onClose?: () => void;
@@ -39,7 +41,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     useState<TransactionSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
- console.log('advertiserData', advertiserData);
+ logger.debug('p2p', 'advertiserData', advertiserData);
   const [sendAmount, setSendAmount] = useState("");
   const [receiveAmount, setReceiveAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
@@ -166,9 +168,9 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         commission: advertiserData.commission,
       };
 
-      console.log("Sending order data:", orderData);
+      logger.debug('p2p', "Sending order data:", orderData);
 
-      console.log("Attempting to match order:", {
+      logger.debug('p2p', "Attempting to match order:", {
         orderId: advertiserData.id,
         orderData: orderData,
         tradeType
@@ -176,14 +178,14 @@ const TradePreview: React.FC<TradePreviewProps> = ({
 
       const response = await matchP2POrder(advertiserData.id, orderData);
       
-      console.log("Match response:", response);
+      logger.debug('p2p', "Match response:", response);
       
       // Store trade_id in local storage
       let tradeIdFromResponse = null;
       if (response && 'trade_id' in response) {
         tradeIdFromResponse = (response as any).trade_id;
         localStorage.setItem('p2p_trade_id', tradeIdFromResponse);
-        console.log('Trade ID stored in localStorage:', tradeIdFromResponse);
+        logger.debug('p2p', 'Trade ID stored in localStorage:', tradeIdFromResponse);
       } else {
         console.warn('No trade_id in response:', response);
       }

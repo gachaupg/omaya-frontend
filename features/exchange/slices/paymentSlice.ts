@@ -2,6 +2,8 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { get, post, del } from '../../../lib/apiClient';
 import { EXCHANGE_ENDPOINTS } from '../api';
 import { sliceCache } from '../../../lib/utils/sliceCache';
+import { logger } from '@/lib/utils/logger';
+
 import {
   PaymentMethod,
   PaymentProvider,
@@ -119,7 +121,7 @@ export const fetchUserPaymentDetails = createAsyncThunk<UserPaymentDetail[], boo
         'payment',
         'fetchUserPaymentDetails',
         async () => {
-          console.log('Fetching user payment details from API');
+          logger.debug('exchange', 'Fetching user payment details from API');
           const response = await get<UserPaymentDetail[]>(EXCHANGE_ENDPOINTS.USER_PAYMENT_DETAILS);
           return response.data;
         },
@@ -148,7 +150,7 @@ export const fetchAdminPaymentDetails = createAsyncThunk<AdminPaymentDetail[], b
         'payment',
         'fetchAdminPaymentDetails',
         async () => {
-          console.log('Fetching admin payment details from API');
+          logger.debug('exchange', 'Fetching admin payment details from API');
           const response = await get<AdminPaymentDetail[]>(EXCHANGE_ENDPOINTS.ADMIN_PAYMENT_DETAILS);
           return response.data;
         },
@@ -177,7 +179,7 @@ export const fetchAdminWalletList = createAsyncThunk<AdminWalletListResponse, bo
         'payment',
         'fetchAdminWalletList',
         async () => {
-          console.log('Fetching admin wallet list from API');
+          logger.debug('exchange', 'Fetching admin wallet list from API');
           const response = await get<AdminWalletListResponse>(EXCHANGE_ENDPOINTS.ADMIN_WALLET_LIST);
           return response.data;
         },

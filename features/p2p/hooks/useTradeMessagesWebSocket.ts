@@ -14,6 +14,8 @@ import {
 import type { WebSocketMessage } from "../services/tradeMessagesWebSocket";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 
+import { logger } from '@/lib/utils/logger';
+
 interface UseTradeMessagesWebSocketOptions {
   tradeId: string;
   enabled?: boolean;
@@ -139,7 +141,7 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
             // Initial list of messages - handle both formats
             const messagesList = message.data.messages || message.data;
             if (messagesList && Array.isArray(messagesList)) {
-              console.log("📨 Received message list via WebSocket:", messagesList.length, "messages");
+              logger.debug('p2p', "📨 Received message list via WebSocket:", messagesList.length, "messages");
               dispatch(
                 setMessages({
                   tradeId,
@@ -155,7 +157,7 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
             // New message received - the data IS the message itself
             if (message.data && message.data.id) {
               // Log detailed info about incoming message
-              console.log("📨 New message received via WebSocket:", {
+              logger.debug('p2p', "📨 New message received via WebSocket:", {
                 id: message.data.id,
                 hasText: !!message.data.message,
                 text: message.data.message?.substring(0, 30) || '(no text)',
@@ -205,7 +207,7 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
 
           default:
             // Log unknown message types for debugging
-            console.log("❓ Unknown WebSocket message type:", message.type, message.data);
+            logger.debug('p2p', "❓ Unknown WebSocket message type:", message.type, message.data);
             break;
         }
       } catch (error) {

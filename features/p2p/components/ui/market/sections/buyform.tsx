@@ -21,6 +21,8 @@ import { AlertCircle, Copy, RefreshCw } from "lucide-react";
 import { Dialog } from "@headlessui/react";
 import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebSocket";
 
+import { logger } from '@/lib/utils/logger';
+
 interface FinalBuyProps {
   orderData?: P2POrder;
 }
@@ -48,22 +50,22 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
 
   // WebSocket status update callback - use useCallback to prevent reconnections
   const handleStatusUpdate = React.useCallback((status: any) => {
-    console.log("🔔 Trade status update received in buyform:", status);
-    console.log("📊 Current confirmOrder:", confirmOrder);
-    console.log("📊 Current confirmOrder.id:", confirmOrder?.id);
-    console.log("📊 Current confirmOrder.status:", confirmOrder?.status);
-    console.log("📊 New status:", status.status);
+    logger.debug('p2p', "🔔 Trade status update received in buyform:", status);
+    logger.debug('p2p', "📊 Current confirmOrder:", confirmOrder);
+    logger.debug('p2p', "📊 Current confirmOrder.id:", confirmOrder?.id);
+    logger.debug('p2p', "📊 Current confirmOrder.status:", confirmOrder?.status);
+    logger.debug('p2p', "📊 New status:", status.status);
     
     const oldStatus = confirmOrder?.status;
     const newStatus = status.status;
     
     // Always refresh if we have a valid status update
     if (confirmOrder?.id && newStatus) {
-      console.log("✅ Conditions met - will update UI");
+      logger.debug('p2p', "✅ Conditions met - will update UI");
       
       // Show toast notification for status changes
       if (oldStatus !== newStatus) {
-        console.log(`📢 Status changed: ${oldStatus} → ${newStatus}`);
+        logger.debug('p2p', `📢 Status changed: ${oldStatus} → ${newStatus}`);
         if (oldStatus === "matched" && newStatus === "half-matched") {
           showToast.success("Status Updated", "Payment notification sent to seller");
         } else if (oldStatus === "half-matched" && newStatus === "completed") {
@@ -74,15 +76,15 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
           showToast.success("Status Updated", `Trade status is now: ${newStatus}`);
         }
       } else {
-        console.log("ℹ️ Status unchanged, still refreshing data");
+        logger.debug('p2p', "ℹ️ Status unchanged, still refreshing data");
       }
       
-      console.log("🔄 Refreshing trade data for ID:", confirmOrder.id);
+      logger.debug('p2p', "🔄 Refreshing trade data for ID:", confirmOrder.id);
       dispatch(fetchConfirmOrder(confirmOrder.id))
         .unwrap()
         .then((updatedOrder) => {
-          console.log("✅ fetchConfirmOrder SUCCESS:", updatedOrder);
-          console.log("✅ Updated status:", updatedOrder?.status);
+          logger.debug('p2p', "✅ fetchConfirmOrder SUCCESS:", updatedOrder);
+          logger.debug('p2p', "✅ Updated status:", updatedOrder?.status);
         })
         .catch((error) => {
           console.error("❌ fetchConfirmOrder FAILED:", error);
@@ -136,7 +138,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
       setCountdown((prev) => {
         if (prev <= 1) {
           // When countdown reaches 0, auto-cancel the transaction
-          console.log("Countdown reached 0, auto-cancelling transaction");
+          logger.debug('p2p', "Countdown reached 0, auto-cancelling transaction");
           handleCancelTransaction();
           return 0;
         }
@@ -151,7 +153,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
     const tradeIdFromStorage = localStorage.getItem('p2p_trade_id');
     const orderId = tradeIdFromStorage || params?.id as string;
     
-    console.log("🔍 DEBUG - useEffect:", { 
+    logger.debug('p2p', "🔍 DEBUG - useEffect:", { 
       orderId, 
       tradeIdFromStorage, 
       paramsId: params?.id,
@@ -165,13 +167,13 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
       dispatch(fetchConfirmOrder(orderId))
         .unwrap()
         .then((result) => {
-          console.log("✅ Fetch confirm order success:", result);
+          logger.debug('p2p', "✅ Fetch confirm order success:", result);
         })
         .catch((error) => {
           console.error("❌ Fetch confirm order error:", error);
         });
     } else {
-      console.log("⚠️ Not fetching - missing auth or orderId:", { isAuthenticated, orderId });
+      logger.debug('p2p', "⚠️ Not fetching - missing auth or orderId:", { isAuthenticated, orderId });
     }
   }, [params?.id, dispatch, isAuthenticated]);
 
@@ -179,7 +181,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
   useEffect(() => {
     const orderToFetch = confirmOrder?.buy_order || confirmOrder?.sell_order;
 
-    console.log("SingleOrder useEffect:", {
+    logger.debug('p2p', "SingleOrder useEffect:", {
       orderToFetch,
       confirmOrder,
       singleOrder,
@@ -187,14 +189,14 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
     });
 
     if (isAuthenticated && orderToFetch && !singleOrder?.id) {
-      console.log("Fetching single order:", orderToFetch);
+      logger.debug('p2p', "Fetching single order:", orderToFetch);
       dispatch(fetchSingleOrder(orderToFetch.toString()));
     }
   }, [confirmOrder, isAuthenticated, singleOrder?.id, dispatch]);
 
 
-  console.log("singleOrder", singleOrder);
-  console.log("confirmOrder", confirmOrder);
+  logger.debug('p2p', "singleOrder", singleOrder);
+  logger.debug('p2p', "confirmOrder", confirmOrder);
 
   useEffect(() => {
     setIsClient(true);
@@ -216,7 +218,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
 
   // Get payment details from order data
   const paymentDetails = singleOrder?.payment_details?.[0];
-  console.log("singleOrder", singleOrder);
+  logger.debug('p2p', "singleOrder", singleOrder);
   // --- Calculation logic ---
   const sendAmount = Number(confirmOrder?.amount) || 0;
   const commissionRate = Number(singleOrder?.commission_rate) || Number(commissionFromUrl) || 0;
@@ -236,7 +238,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
     amt.toLocaleString(undefined, { maximumFractionDigits: 6 });
 
   // Debug logging
-  console.log("💰 Calculation Debug:", {
+  logger.debug('p2p', "💰 Calculation Debug:", {
     sendAmount,
     commissionRate,
     commissionFromUrl,

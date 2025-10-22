@@ -8,6 +8,8 @@ import { fetchTransactions } from "../slices/exchangeSlice";
 import { Transaction } from "../types";
 import { storage } from '../../auth/utils/storage';
 
+import { logger } from '@/lib/utils/logger';
+
 type TabType = 'All' | 'Deposits' | 'Withdrawals';
 type TimeFilterType = 'week' | 'month' | 'year';
 
@@ -23,27 +25,27 @@ const TransactionOverviewChart: React.FC = () => {
   useEffect(() => {
     const profile = storage.getProfile();
     const email = profile?.user?.email || "";
-    console.log('=== USER PROFILE CHART ===', { profile, email });
+    logger.debug('exchange', '=== USER PROFILE CHART ===', { profile, email });
     setUserEmail(email);
   }, []);
 
   // Fetch transactions when userEmail is set
   useEffect(() => {
     if (userEmail) {
-      console.log('=== FETCHING TRANSACTIONS CHART ===', { userEmail });
+      logger.debug('exchange', '=== FETCHING TRANSACTIONS CHART ===', { userEmail });
       dispatch(fetchTransactions());
     }
   }, [dispatch, userEmail]);
 
   const aggregateData = (txs: Transaction[]) => {
     if (!txs || !userEmail) {
-      console.log('No transactions or user email available for chart:', { transactions: txs, userEmail });
+      logger.debug('exchange', 'No transactions or user email available for chart:', { transactions: txs, userEmail });
       return [];
     }
 
     // Filter transactions for the current user
     const userTransactions = txs.filter(tx => tx.user_email === userEmail);
-    console.log('Filtered transactions for chart:', {
+    logger.debug('exchange', 'Filtered transactions for chart:', {
       totalTransactions: txs.length,
       userTransactions: userTransactions.length,
       userEmail

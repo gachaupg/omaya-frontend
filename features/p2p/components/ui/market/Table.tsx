@@ -7,6 +7,8 @@ import { MarketTableProps } from "./types";
 import TradePreview from "./sections/tradePreview";
 import Loader from "../../Common/Loader";
 
+import { logger } from '@/lib/utils/logger';
+
 // Bank icons mapping
 const BANK_ICONS: Record<string, string> = {
   "Salam Bank":
@@ -77,8 +79,8 @@ const MarketTable: React.FC<MarketTableProps> = ({
     }
   }, [imageModal.isOpen]);
 
-  console.log("data in table", data);
-  console.log("currentPage", currentPage);
+  logger.debug('p2p', "data in table", data);
+  logger.debug('p2p', "currentPage", currentPage);
   const handleSort = (key: string) => {
     setSortConfig((prev) => ({
       key,

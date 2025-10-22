@@ -9,6 +9,8 @@ import { useTheme } from "@/context/theme";
 import CopyButton from "@/components/ui/CopyButton";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store/rootReducer";
+import { logger } from '@/lib/utils/logger';
+
 import {
   cancelP2PDepositTransaction,
 } from "@/features/express/slices/transactionSlice";
@@ -94,7 +96,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
       try {
       } catch (error) {
-        // console.error("Fallback polling error:", error);
+        // logger.error('p2p', "Fallback polling error:", error);
       }
     };
 
@@ -167,7 +169,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       // Redirect to home page
       router.push("/");
     } catch (error) {
-      console.error("Failed to cancel transaction:", error);
+      logger.error('p2p', "Failed to cancel transaction:", error);
       // Still redirect even if cancel fails
       router.push("/");
     }
@@ -344,7 +346,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             setPreviousAmount(liveAmount);
 
             setLiveAmount(amountToUpdate);
-            console.log(
+            logger.debug('p2p', 
               "Updated live amount from WebSocket:",
               amountToUpdate,
               "currency:",
@@ -376,7 +378,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
           if (currencyToUpdate) {
             setLiveCurrency(currencyToUpdate);
-            console.log(
+            logger.debug('p2p', 
               "Updated live currency from WebSocket:",
               currencyToUpdate
             );
@@ -391,7 +393,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             // Final status format - transaction completed
             status = data.data.status;
             message = data.data.message;
-            console.log("Final status received:", status, message);
+            logger.debug('p2p', "Final status received:", status, message);
           } else if (data.type === "status_update" && data.data?.status) {
             // ChangeNow status update format
             status = data.data.status;
@@ -523,7 +525,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             
             // Check if this is a P2P deposit transaction (has receiver_wallet field)
             if (depositData.receiver_wallet || depositData.transaction_type === "deposit") {
-              console.log("📥 P2P DEPOSIT STATUS UPDATE DETECTED:", depositData);
+              logger.debug('p2p', "📥 P2P DEPOSIT STATUS UPDATE DETECTED:", depositData);
               
               // Store websocket data for success page
               setFinalWebsocketData(data);
@@ -534,13 +536,13 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 if (!isNaN(amount)) {
                   setLiveAmount(amount);
                   setLiveCurrency(depositData.currency);
-                  console.log("Updated live amount from P2P deposit:", amount, depositData.currency);
+                  logger.debug('p2p', "Updated live amount from P2P deposit:", amount, depositData.currency);
                 }
               }
               
               // Log specific status updates for debugging
               if (depositData.status === "pending_blockchain") {
-                console.log("⏳ P2P DEPOSIT PENDING BLOCKCHAIN - Transaction hash:", depositData.transaction_hash);
+                logger.debug('p2p', "⏳ P2P DEPOSIT PENDING BLOCKCHAIN - Transaction hash:", depositData.transaction_hash);
               }
               
               // Check if P2P deposit is completed
@@ -582,7 +584,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
             // Start fallback polling after 5 failed attempts
             if (connectionAttempts >= 5 && !fallbackPolling) {
-              console.log(
+              logger.debug('p2p', 
                 "Starting fallback polling mechanism due to WebSocket failures"
               );
               setFallbackPolling(true);
@@ -600,7 +602,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   // Stop polling when WebSocket reconnects successfully
   useEffect(() => {
     if (isConnected && fallbackPolling) {
-      console.log("WebSocket reconnected, stopping fallback polling");
+      logger.debug('p2p', "WebSocket reconnected, stopping fallback polling");
       stopFallbackPolling();
     }
   }, [isConnected, fallbackPolling]);
@@ -608,16 +610,16 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   // Debug logging
   useEffect(() => {
     if (shouldUseWebSocket) {
-      console.log(
+      logger.debug('p2p', 
         "WebSocket enabled for transaction:",
         effectiveTransactionData?.transactionId
       );
-      console.log(
+      logger.debug('p2p', 
         "Transaction ID source:",
         effectiveTransactionData?.transactionId ? "provided" : "missing"
       );
-      console.log("Current status:", currentStatus);
-      console.log("WebSocket connected:", isConnected);
+      logger.debug('p2p', "Current status:", currentStatus);
+      logger.debug('p2p', "WebSocket connected:", isConnected);
     }
   }, [
     shouldUseWebSocket,

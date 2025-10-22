@@ -1,10 +1,12 @@
 import SwapWidget from "@/features/swap/components/SwapWidget";
+import { SwapDataProvider } from "@/features/swap/components/SwapDataProvider";
 
 export default function SwapPage() {
-    return (
+  return (
+    <SwapDataProvider>
       <div>
-       <SwapWidget />
+        <SwapWidget />
       </div>
-    );
-  }
-  
+    </SwapDataProvider>
+  );
+}

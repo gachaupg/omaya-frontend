@@ -9,6 +9,8 @@ import { AppDispatch } from "@/store";
 import { verifyWithdrawal, resendWithdrawalOTP } from "@/features/p2p/slices/withdrawSlice";
 import { useRouter } from "next/navigation";
 
+import { logger } from '@/lib/utils/logger';
+
 interface OTPModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -120,7 +122,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
       }
 
       if (verifyWithdrawal.fulfilled.match(resultAction)) {
-        console.log("OTP Verification Response:", resultAction.payload);
+        logger.debug('p2p', "OTP Verification Response:", resultAction.payload);
         showToast.success("Withdrawal verified successfully!");
         if (isRouterReady) {
           router.push("/dashboard/p2p/");

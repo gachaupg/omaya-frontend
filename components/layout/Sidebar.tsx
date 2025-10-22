@@ -26,8 +26,11 @@ export default function Sidebar() {
 
     if (isInSection) {
       e.preventDefault();
-      router.push(item.href);
-      router.refresh();
+      // ✅ Removed router.refresh() - it was forcing full page reload
+      // Already on the page, no action needed
+      // If you want to scroll to top instead:
+      // window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
     }
   };
   const { isDark } = useTheme();
@@ -85,7 +88,7 @@ export default function Sidebar() {
                             </span>
                           ) : (
                             <span className="flex items-center justify-center">
-                                                          <span className="text-white">E</span>
+                              <span className="text-white">E</span>
 
                               <img
                                 className="mt-2"
@@ -96,7 +99,9 @@ export default function Sidebar() {
                           )
                         ) : (
                           <span className="flex items-center justify-center">
-                                                          <span className="text-[#727272] text-base uppercase font-bold">E</span>
+                            <span className="text-[#727272] text-base uppercase font-bold">
+                              E
+                            </span>
 
                             <img
                               className="mt-2"

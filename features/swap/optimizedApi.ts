@@ -5,6 +5,8 @@
 
 import { optimizedGet, optimizedPost } from '@/lib/optimizedApiClient';
 import { API_CONFIG } from '@/lib/appConfig';
+import { logger } from '@/lib/utils/logger';
+
 import {
   SupportedAsset,
   SwapEstimate,
@@ -37,13 +39,13 @@ export const getSupportedAssetsOptimized = async (): Promise<SupportedAsset[]> =
     
     // Extract the results array from the ChangeNow response
     if (data && data.results) {
-      console.log(`Successfully retrieved ${data.total_changenow_tokens} ChangeNow tokens (optimized)`);
+      logger.debug('swap', `Successfully retrieved ${data.total_changenow_tokens} ChangeNow tokens (optimized)`);
       return data.results;
     }
     
     // Fallback: if response is directly an array (backward compatibility)
     if (Array.isArray(data)) {
-      console.log(`Retrieved ${data.length} supported assets (optimized)`);
+      logger.debug('swap', `Retrieved ${data.length} supported assets (optimized)`);
       return data;
     }
     
@@ -132,8 +134,8 @@ export const getEstimateSwapOptimized = async (
 export const createSwapOptimized = async (
   swapData: CreateSwapRequest
 ): Promise<CreateSwapResponse> => {
-  console.log("Creating swap with data (optimized):", swapData);
-  console.log("API endpoint:", API_CONFIG.SWAP.CREATE_SWAP);
+  logger.debug('swap', "Creating swap with data (optimized):", swapData);
+  logger.debug('swap', "API endpoint:", API_CONFIG.SWAP.CREATE_SWAP);
 
   try {
     const response = await optimizedPost<CreateSwapResponse>(
@@ -145,7 +147,7 @@ export const createSwapOptimized = async (
       }
     );
     
-    console.log("Swap response (optimized):", response.data);
+    logger.debug('swap', "Swap response (optimized):", response.data);
     return response.data;
   } catch (error: any) {
     console.error("Swap creation error (optimized):", error);

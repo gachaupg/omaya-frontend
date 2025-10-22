@@ -1,7 +1,12 @@
 import { API_CONFIG } from "@/lib/appConfig";
 import { P2POrder } from "../types";
+import {
+  SingletonWebSocket,
+  WebSocketMessage as BaseWebSocketMessage,
+} from "@/lib/utils/baseWebSocket";
 
-export interface WebSocketMessage {
+// P2P-specific WebSocket message interface
+export interface WebSocketMessage extends BaseWebSocketMessage {
   type: "connection_established" | "orders_update" | "initial_data" | "error";
   data: {
     buy_orders?: P2POrder[];
@@ -28,185 +33,113 @@ type ErrorHandler = (error: Event) => void;
 type CloseHandler = () => void;
 type OpenHandler = () => void;
 
-export class P2POrdersWebSocket {
-  private ws: WebSocket | null = null;
-  private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
-  private reconnectDelay = 3000;
-  private messageHandlers: Set<MessageHandler> = new Set();
-  private errorHandlers: Set<ErrorHandler> = new Set();
-  private closeHandlers: Set<CloseHandler> = new Set();
-  private openHandlers: Set<OpenHandler> = new Set();
-  private reconnectTimeout: NodeJS.Timeout | null = null;
-  private isIntentionallyClosed = false;
-  private url: string = "";
+/**
+ * P2POrdersWebSocket - Production-ready WebSocket for P2P order updates
+ *
+ * Now extends BaseWebSocket with:
+ * - ✅ Ping/pong heartbeat (30s)
+ * - ✅ Silent error handling
+ * - ✅ Permanent failure detection
+ * - ✅ Singleton pattern
+ * - ✅ Connection pooling
+ *
+ * 100% Backward Compatible - All existing code continues to work
+ */
+export class P2POrdersWebSocket extends SingletonWebSocket<{ token: string }> {
+  private lastToken: string = "";
+  // Type-safe handler sets for P2P-specific messages
+  private p2pMessageHandlers: Set<MessageHandler> = new Set();
+  private p2pErrorHandlers: Set<ErrorHandler> = new Set();
+  private p2pCloseHandlers: Set<CloseHandler> = new Set();
+  private p2pOpenHandlers: Set<OpenHandler> = new Set();
 
-  connect(token: string): void {
-    if (this.ws?.readyState === WebSocket.OPEN) {
-      return;
-    }
+  constructor() {
+    super({
+      maxReconnectAttempts: 5,
+      reconnectDelay: 3000,
+      pingInterval: 30000,
+      loggerModule: "p2p",
+      validateToken: true,
+    });
 
-    this.isIntentionallyClosed = false;
-    
-    // Validate token before attempting connection
-    if (!token || token.length < 10) {
-      console.warn("⚠️ Invalid token provided to P2P Orders WebSocket");
-      return;
-    }
+    // Bridge base handlers to P2P-specific handlers
+    super.onMessage((baseMessage) => {
+      const p2pMessage = baseMessage as unknown as WebSocketMessage;
+      this.p2pMessageHandlers.forEach((handler) => handler(p2pMessage));
+    });
 
-    // Check if token looks like a JWT
-    const tokenParts = token.split('.');
-    if (tokenParts.length !== 3) {
-      console.warn("⚠️ Token does not appear to be a valid JWT");
-      return;
-    }
+    super.onError((error) => {
+      this.p2pErrorHandlers.forEach((handler) => handler(error));
+    });
 
-    this.url = API_CONFIG.P2P.SOCKETS.P2P_ORDERS(token);
+    super.onClose(() => {
+      this.p2pCloseHandlers.forEach((handler) => handler());
+    });
 
-    console.log("🔌 [WS Service] Connecting to P2P Orders WebSocket...");
-    console.log("🌐 [WS Service] Full WebSocket URL:", this.url);
-    console.log("🔑 [WS Service] Token preview:", token.substring(0, 30) + "..." + token.substring(token.length - 10));
-    console.log("📏 [WS Service] Token length:", token.length);
-
-    try {
-      this.ws = new WebSocket(this.url);
-
-      this.ws.onopen = () => {
-        if (process.env.NODE_ENV === 'development') {
-          console.log("✅ P2P Orders WebSocket connected");
-        }
-        this.reconnectAttempts = 0;
-        this.openHandlers.forEach((handler) => handler());
-      };
-
-      this.ws.onmessage = (event) => {
-        try {
-          console.log("📨 [WS Service] Raw WebSocket message received:", event.data);
-          const message: WebSocketMessage = JSON.parse(event.data);
-          
-          console.log("📨 [WS Service] Parsed P2P Orders WebSocket message:", {
-            type: message.type,
-            hasBuyOrders: !!message.data?.buy_orders,
-            hasSellOrders: !!message.data?.sell_orders,
-            buyOrdersCount: message.data?.buy_orders?.length || 0,
-            sellOrdersCount: message.data?.sell_orders?.length || 0,
-            fullMessage: message
-          });
-          
-          console.log("🔔 [WS Service] Notifying", this.messageHandlers.size, "message handlers");
-          this.messageHandlers.forEach((handler) => handler(message));
-        } catch (error) {
-          console.error("❌ [WS Service] Error parsing P2P Orders WebSocket message:", error);
-          console.error("📄 [WS Service] Raw data that failed to parse:", event.data);
-        }
-      };
-
-      this.ws.onerror = (error) => {
-        if (this.ws?.readyState !== WebSocket.CONNECTING) {
-          console.error("❌ P2P Orders WebSocket error:", error);
-          
-          if (this.ws?.readyState === WebSocket.CLOSED) {
-            console.error("WebSocket is closed");
-          }
-        }
-        
-        this.errorHandlers.forEach((handler) => handler(error));
-      };
-
-      this.ws.onclose = (event) => {
-        if (event.code !== 1000 && event.code !== 1001) {
-          console.warn(`⚠️ P2P Orders WebSocket closed with code ${event.code}`);
-          
-          if (event.reason) {
-            console.warn("Close reason:", event.reason);
-          }
-          
-          const closeCodeDescriptions: Record<number, string> = {
-            1002: "Protocol error",
-            1003: "Unsupported data",
-            1006: "Abnormal closure (no close frame received)",
-            1007: "Invalid frame payload data",
-            1008: "Policy violation",
-            1009: "Message too big",
-            1010: "Missing extension",
-            1011: "Internal server error",
-            1015: "TLS handshake failure"
-          };
-          
-          if (closeCodeDescriptions[event.code]) {
-            console.warn(`Description: ${closeCodeDescriptions[event.code]}`);
-          }
-        }
-        
-        this.closeHandlers.forEach((handler) => handler());
-
-        if (!this.isIntentionallyClosed && this.reconnectAttempts < this.maxReconnectAttempts) {
-          this.scheduleReconnect(token);
-        }
-      };
-    } catch (error) {
-      console.error("❌ Error creating P2P Orders WebSocket:", error);
-      this.scheduleReconnect(token);
-    }
+    super.onOpen(() => {
+      this.p2pOpenHandlers.forEach((handler) => handler());
+    });
   }
 
-  private scheduleReconnect(token: string): void {
-    this.reconnectAttempts++;
-    const delay = this.reconnectDelay * Math.min(this.reconnectAttempts, 5);
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🔄 Reconnecting P2P Orders WebSocket in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
-    }
-
-    this.reconnectTimeout = setTimeout(() => {
-      this.connect(token);
-    }, delay);
+  /**
+   * Build WebSocket URL from token
+   */
+  protected buildUrl(params: { token: string }): string {
+    return API_CONFIG.P2P.SOCKETS.P2P_ORDERS(params.token);
   }
 
-  disconnect(): void {
-    this.isIntentionallyClosed = true;
-    
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
-      this.reconnectTimeout = null;
-    }
-
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
-    }
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log("🔌 P2P Orders WebSocket disconnected");
-    }
+  /**
+   * Get instance key for singleton pattern
+   */
+  protected getInstanceKey(params: { token: string }): string {
+    // Single instance for all P2P orders (not per token)
+    return "p2p-orders";
   }
 
+  /**
+   * Check if connection params match
+   */
+  protected isSameConnection(params: { token: string }): boolean {
+    return this.lastToken === params.token;
+  }
+
+  /**
+   * Connect method - accepts params object (base class signature)
+   */
+  connect(params: { token: string }): void;
+  /**
+   * Backward compatible connect method - accepts token string directly
+   */
+  connect(token: string): void;
+  /**
+   * Implementation
+   */
+  connect(tokenOrParams: string | { token: string }): void {
+    const token =
+      typeof tokenOrParams === "string" ? tokenOrParams : tokenOrParams.token;
+    this.lastToken = token;
+    super.connect({ token });
+  }
+
+  // Override handler methods to use P2P-specific types
   onMessage(handler: MessageHandler): () => void {
-    this.messageHandlers.add(handler);
-    return () => this.messageHandlers.delete(handler);
+    this.p2pMessageHandlers.add(handler);
+    return () => this.p2pMessageHandlers.delete(handler);
   }
 
   onError(handler: ErrorHandler): () => void {
-    this.errorHandlers.add(handler);
-    return () => this.errorHandlers.delete(handler);
+    this.p2pErrorHandlers.add(handler);
+    return () => this.p2pErrorHandlers.delete(handler);
   }
 
   onClose(handler: CloseHandler): () => void {
-    this.closeHandlers.add(handler);
-    return () => this.closeHandlers.delete(handler);
+    this.p2pCloseHandlers.add(handler);
+    return () => this.p2pCloseHandlers.delete(handler);
   }
 
   onOpen(handler: OpenHandler): () => void {
-    this.openHandlers.add(handler);
-    return () => this.openHandlers.delete(handler);
-  }
-
-  isConnected(): boolean {
-    return this.ws?.readyState === WebSocket.OPEN;
-  }
-
-  getReadyState(): number | null {
-    return this.ws?.readyState ?? null;
+    this.p2pOpenHandlers.add(handler);
+    return () => this.p2pOpenHandlers.delete(handler);
   }
 }
 
@@ -226,6 +159,3 @@ export const cleanupP2POrdersWebSocket = (): void => {
     p2pOrdersWSInstance = null;
   }
 };
-
-
-

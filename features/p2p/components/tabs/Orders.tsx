@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, memo } from "react";
 import Filters from "../ui/orders/Filters";
 import OrdersTransactions from "../ui/orders/OrdersTransactions";
 import { fetchUserTrades } from "../../slices/userTradesSlice";
@@ -8,8 +8,12 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
 import { orderStatusTabs as staticOrderStatusTabs } from "../../data";
 import { RootState } from "@/store/rootReducer";
+import { selectUserTradesByStatus } from "../../selectors";
+import { OrdersListSkeleton } from "@/components/ui/Skeletons";
 
-const Orders = () => {
+import { logger } from "@/lib/utils/logger";
+
+const Orders = memo(() => {
   const dispatch = useDispatch<AppDispatch>();
   const { trades, loading, error, currentPage } = useSelector(
     (state: RootState) => state.userTrades
@@ -36,7 +40,7 @@ const Orders = () => {
   }, [fetchTrades]);
 
   const handlePageChange = (page: number) => {
-    console.log("handlePageChange called with page:", page);
+    logger.debug("p2p", "handlePageChange called with page:", page);
     dispatch(setCurrentPage(page));
     // Fetch data for the new page
     dispatch(fetchUserTrades({ page, ...filters }));
@@ -47,31 +51,27 @@ const Orders = () => {
     dispatch(setCurrentPage(1)); // Reset to first page when filters change
   };
 
-  // Count orders by status - map "pending" from API to "processing" in UI
-  const processingCount = trades.results.filter(
-    trade => trade.status.toLowerCase() === "pending" || trade.status.toLowerCase() === "matched"
-  ).length;
-  
-  const completedCount = trades.results.filter(
-    trade => trade.status.toLowerCase() === "completed"
-  ).length;
-  
-  const canceledCount = trades.results.filter(
-    trade => trade.status.toLowerCase() === "canceled"
-  ).length;
+  // Use memoized selector for status counts
+  const { processingCount, completedCount, cancelledCount } = useSelector(
+    selectUserTradesByStatus
+  );
 
-  const orderStatusTabs = staticOrderStatusTabs.map(tab => {
-    if (tab.id === "processing") {
-      return { ...tab, count: processingCount };
-    } else if (tab.id === "completed") {
-      return { ...tab, count: completedCount };
-    } else if (tab.id === "canceled") {
-      return { ...tab, count: canceledCount };
-    } else if (tab.id === "all") {
-      return { ...tab, count: trades.count };
-    }
-    return tab;
-  });
+  const orderStatusTabs = useMemo(
+    () =>
+      staticOrderStatusTabs.map((tab) => {
+        if (tab.id === "processing") {
+          return { ...tab, count: processingCount };
+        } else if (tab.id === "completed") {
+          return { ...tab, count: completedCount };
+        } else if (tab.id === "canceled") {
+          return { ...tab, count: cancelledCount };
+        } else if (tab.id === "all") {
+          return { ...tab, count: trades.count };
+        }
+        return tab;
+      }),
+    [processingCount, completedCount, cancelledCount, trades.count]
+  );
 
   // Apply client-side filtering to the data
   const filteredData = useMemo(() => {
@@ -151,6 +151,11 @@ const Orders = () => {
     rawData: trade,
   }));
 
+  // Show skeleton while loading initial data
+  if (loading && trades.results.length === 0) {
+    return <OrdersListSkeleton count={6} />;
+  }
+
   return (
     <div className="flex flex-col gap-4 w-full h-full">
       <Filters
@@ -171,6 +176,8 @@ const Orders = () => {
       </div>
     </div>
   );
-};
+});
+
+Orders.displayName = "Orders";
 
 export default Orders;

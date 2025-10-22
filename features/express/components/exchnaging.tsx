@@ -10,6 +10,8 @@ import { useTheme } from "@/context/theme";
 import CopyButton from "@/components/ui/CopyButton";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store/rootReducer";
+import { logger } from '@/lib/utils/logger';
+
 import {
   cancelDepositTransaction,
   cancelWithdrawalTransaction,
@@ -98,7 +100,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
       try {
       } catch (error) {
-        // console.error("Fallback polling error:", error);
+        // logger.error('general', "Fallback polling error:", error);
       }
     };
 
@@ -175,7 +177,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       // Redirect to home page
       router.push("/");
     } catch (error) {
-      console.error("Failed to cancel transaction:", error);
+      logger.error('general', "Failed to cancel transaction:", error);
       // Still redirect even if cancel fails
       router.push("/");
     }
@@ -263,17 +265,17 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       effectiveTransactionData?.type === "deposit");
 
   // WebSocket hook for both deposit and withdrawal transactions
-  console.log("DEBUG: transactionData received:", effectiveTransactionData);
-  console.log(
+  logger.debug('general', "DEBUG: transactionData received:", effectiveTransactionData);
+  logger.debug('general', 
     "DEBUG: transactionId being passed to WebSocket:",
     effectiveTransactionData?.transactionId
   );
-  console.log("DEBUG: transaction type:", effectiveTransactionData?.type);
-  console.log(
+  logger.debug('general', "DEBUG: transaction type:", effectiveTransactionData?.type);
+  logger.debug('general', 
     "DEBUG: WebSocket URL (camelCase):",
     effectiveTransactionData?.websocketUrl
   );
-  console.log(
+  logger.debug('general', 
     "DEBUG: WebSocket URL (snake_case):",
     effectiveTransactionData?.websocket_url
   );
@@ -290,52 +292,52 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     const apiIsSecure = apiBaseUrl.startsWith("https://");
     const wsIsSecure = websocketUrl.startsWith("wss://");
 
-    console.log("DEBUG: API base URL:", apiBaseUrl);
-    console.log("DEBUG: API is secure:", apiIsSecure);
-    console.log("DEBUG: WebSocket is secure:", wsIsSecure);
+    logger.debug('general', "DEBUG: API base URL:", apiBaseUrl);
+    logger.debug('general', "DEBUG: API is secure:", apiIsSecure);
+    logger.debug('general', "DEBUG: WebSocket is secure:", wsIsSecure);
 
     if (apiIsSecure && !wsIsSecure) {
       // API is HTTPS but WebSocket is WS - convert to WSS
       websocketUrl = websocketUrl.replace("ws://", "wss://");
-      console.log(
+      logger.debug('general', 
         "DEBUG: Converted WebSocket URL from ws:// to wss://:",
         websocketUrl
       );
     } else if (!apiIsSecure && wsIsSecure) {
       // API is HTTP but WebSocket is WSS - convert to WS (for local development)
       websocketUrl = websocketUrl.replace("wss://", "ws://");
-      console.log(
+      logger.debug('general', 
         "DEBUG: Converted WebSocket URL from wss:// to ws://:",
         websocketUrl
       );
     }
   }
 
-  console.log("DEBUG: Extracted websocketUrl:", websocketUrl);
-  console.log(
+  logger.debug('general', "DEBUG: Extracted websocketUrl:", websocketUrl);
+  logger.debug('general', 
     "DEBUG: effectiveTransactionData?.websocketUrl:",
     effectiveTransactionData?.websocketUrl
   );
-  console.log(
+  logger.debug('general', 
     "DEBUG: effectiveTransactionData type:",
     typeof effectiveTransactionData?.websocketUrl
   );
-  console.log("DEBUG: websocketUrl type:", typeof websocketUrl);
-  console.log(
+  logger.debug('general', "DEBUG: websocketUrl type:", typeof websocketUrl);
+  logger.debug('general', 
     "DEBUG: Full effectiveTransactionData:",
     effectiveTransactionData
   );
 
   // Check if websocketUrl is valid
   if (websocketUrl) {
-    console.log("DEBUG: websocketUrl is valid:", websocketUrl);
-    console.log("DEBUG: websocketUrl length:", websocketUrl.length);
-    console.log(
+    logger.debug('general', "DEBUG: websocketUrl is valid:", websocketUrl);
+    logger.debug('general', "DEBUG: websocketUrl length:", websocketUrl.length);
+    logger.debug('general', 
       "DEBUG: websocketUrl starts with ws:// or wss://:",
       websocketUrl.startsWith("ws://") || websocketUrl.startsWith("wss://")
     );
   } else {
-    console.log("DEBUG: websocketUrl is invalid or undefined");
+    logger.debug('general', "DEBUG: websocketUrl is invalid or undefined");
   }
 
   // Check if this is a USDT transaction (should use backend WebSocket)
@@ -351,16 +353,16 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       finalWebsocketUrl,
       {
         onMessage: (data: TransactionStatusMessage) => {
-          console.log("Transaction status update:", data);
-          console.log(
+          logger.debug('general', "Transaction status update:", data);
+          logger.debug('general', 
             "Raw WebSocket message received:",
             JSON.stringify(data, null, 2)
           );
 
           // Log ChangeNow specific data if present
           if (data.type === "status_update") {
-            console.log("ChangeNow status update detected");
-            console.log("ChangeNow data:", JSON.stringify(data.data, null, 2));
+            logger.debug('general', "ChangeNow status update detected");
+            logger.debug('general', "ChangeNow data:", JSON.stringify(data.data, null, 2));
           }
 
           // Clear any WebSocket errors when we receive a message
@@ -454,7 +456,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             setPreviousAmount(liveAmount);
 
             setLiveAmount(amountToUpdate);
-            console.log(
+            logger.debug('general', 
               "Updated live amount from WebSocket:",
               amountToUpdate,
               "currency:",
@@ -491,7 +493,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
           if (currencyToUpdate) {
             setLiveCurrency(currencyToUpdate);
-            console.log(
+            logger.debug('general', 
               "Updated live currency from WebSocket:",
               currencyToUpdate
             );
@@ -506,7 +508,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             // Final status format - transaction completed
             status = data.data.status;
             message = data.data.message;
-            console.log("Final status received:", status, message);
+            logger.debug('general', "Final status received:", status, message);
           } else if (data.type === "status_update" && data.data?.status) {
             // ChangeNow status update format
             status = data.data.status;
@@ -525,8 +527,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             message = (data as any).message;
           }
 
-          console.log("Extracted status:", status, "message:", message);
-          console.log("DEBUG: is_final check:", {
+          logger.debug('general', "Extracted status:", status, "message:", message);
+          logger.debug('general', "DEBUG: is_final check:", {
             "data.is_final": data.is_final,
             "(data as any).is_final": (data as any).is_final,
             "data.data?.is_final": data.data?.is_final,
@@ -564,7 +566,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               effectiveTransactionData?.fromCurrency ||
               effectiveTransactionData?.toCurrency;
             
-            console.log("DEBUG: Flow detection:", {
+            logger.debug('general', "DEBUG: Flow detection:", {
               isChangeNowFlow,
               "changenow_id": effectiveTransactionData?.details?.changenow_id,
               "fromCurrency": effectiveTransactionData?.fromCurrency,
@@ -588,7 +590,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               } else if (status === "finished") {
                 uiStatus = "sending"; // finished -> sending (waiting for completed status)
               } else if (status === "completed") {
-                console.log("🔥 COMPLETED STATUS IN CHANGENOW FLOW DETECTED!");
+                logger.debug('general', "🔥 COMPLETED STATUS IN CHANGENOW FLOW DETECTED!");
                 uiStatus = "completed"; // completed -> should trigger success page
               }
             } else {
@@ -620,7 +622,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             // Auto-navigate to success page when transaction is completed
             // Navigate on ANY completed status - whether from ChangeNow or direct transfer
             const shouldAutoNavigate = uiStatus === "completed" || status === "completed";
-            console.log("DEBUG: Auto-navigation check:", {
+            logger.debug('general', "DEBUG: Auto-navigation check:", {
               status,
               uiStatus,
               "uiStatus === completed": uiStatus === "completed",
@@ -629,8 +631,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             });
             
             if (shouldAutoNavigate) {
-              console.log("🚀 AUTO-NAVIGATION TRIGGERED! Transaction completed - redirecting to success page in 2 seconds...");
-              console.log("📊 Transaction details:", {
+              logger.debug('general', "🚀 AUTO-NAVIGATION TRIGGERED! Transaction completed - redirecting to success page in 2 seconds...");
+              logger.debug('general', "📊 Transaction details:", {
                 transactionId: effectiveTransactionData?.transactionId,
                 status: status,
                 uiStatus: uiStatus,
@@ -642,7 +644,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               setSnapshotWebsocketData(data);
               // Give users time to see the completion status before redirecting
               setTimeout(() => {
-                console.log("🎉 NAVIGATING TO SUCCESS PAGE NOW!");
+                logger.debug('general', "🎉 NAVIGATING TO SUCCESS PAGE NOW!");
                 setShowSuccess(true);
               }, 2000); // 2 seconds delay to show completion status
             }
@@ -660,7 +662,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               }, 1000);
             }
           } else {
-            console.log(
+            logger.debug('general', 
               "Bypassing status:",
               status,
               "- not in valid statuses list"
@@ -674,7 +676,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             
             // Check if this is a P2P deposit transaction (has receiver_wallet field)
             if (depositData.receiver_wallet || depositData.transaction_type === "deposit") {
-              console.log("📥 P2P DEPOSIT STATUS UPDATE DETECTED:", depositData);
+              logger.debug('general', "📥 P2P DEPOSIT STATUS UPDATE DETECTED:", depositData);
               
               // Store websocket data for success page
               setFinalWebsocketData(data);
@@ -685,25 +687,25 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 if (!isNaN(amount)) {
                   setLiveAmount(amount);
                   setLiveCurrency(depositData.currency);
-                  console.log("Updated live amount from P2P deposit:", amount, depositData.currency);
+                  logger.debug('general', "Updated live amount from P2P deposit:", amount, depositData.currency);
                 }
               }
               
               // Log specific status updates for debugging
               if (depositData.status === "pending_blockchain") {
-                console.log("⏳ P2P DEPOSIT PENDING BLOCKCHAIN - Transaction hash:", depositData.transaction_hash);
+                logger.debug('general', "⏳ P2P DEPOSIT PENDING BLOCKCHAIN - Transaction hash:", depositData.transaction_hash);
               }
               
               // Check if P2P deposit is completed
               if (depositData.status === "completed") {
-                console.log("🎉 P2P DEPOSIT COMPLETED! Redirecting to success page in 2 seconds...");
+                logger.debug('general', "🎉 P2P DEPOSIT COMPLETED! Redirecting to success page in 2 seconds...");
                 
                 // Create snapshot of websocket data to prevent changes in success page
                 setSnapshotWebsocketData(data);
                 
                 // Give users time to see the completion status before redirecting
                 setTimeout(() => {
-                  console.log("🚀 NAVIGATING TO SUCCESS PAGE FOR COMPLETED P2P DEPOSIT!");
+                  logger.debug('general', "🚀 NAVIGATING TO SUCCESS PAGE FOR COMPLETED P2P DEPOSIT!");
                   setShowSuccess(true);
                 }, 2000); // 2 seconds delay
               }
@@ -739,7 +741,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
             // Start fallback polling after 5 failed attempts
             if (connectionAttempts >= 5 && !fallbackPolling) {
-              console.log(
+              logger.debug('general', 
                 "Starting fallback polling mechanism due to WebSocket failures"
               );
               setFallbackPolling(true);
@@ -757,7 +759,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   // Stop polling when WebSocket reconnects successfully
   useEffect(() => {
     if (isConnected && fallbackPolling) {
-      console.log("WebSocket reconnected, stopping fallback polling");
+      logger.debug('general', "WebSocket reconnected, stopping fallback polling");
       stopFallbackPolling();
     }
   }, [isConnected, fallbackPolling]);
@@ -765,16 +767,16 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   // Debug logging
   useEffect(() => {
     if (shouldUseWebSocket) {
-      console.log(
+      logger.debug('general', 
         "WebSocket enabled for transaction:",
         effectiveTransactionData?.transactionId
       );
-      console.log(
+      logger.debug('general', 
         "Transaction ID source:",
         effectiveTransactionData?.transactionId ? "provided" : "missing"
       );
-      console.log("Current status:", currentStatus);
-      console.log("WebSocket connected:", isConnected);
+      logger.debug('general', "Current status:", currentStatus);
+      logger.debug('general', "WebSocket connected:", isConnected);
     }
   }, [
     shouldUseWebSocket,

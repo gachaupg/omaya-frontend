@@ -14,6 +14,8 @@ import { showToast } from "@/lib/utils/toast";
 import { handleApiError } from "@/lib/utils/errorHandler";
 import { sliceCache } from "../../../lib/utils/sliceCache";
 
+import { logger } from '@/lib/utils/logger';
+
 interface SwapState {
   fromAsset: SupportedAsset | null;
   toAsset: SupportedAsset | null;
@@ -53,17 +55,17 @@ export const fetchSupportedAssets = createAsyncThunk<SupportedAsset[], boolean |
   "swap/fetchSupportedAssets",
   async (forceRefresh: boolean = false, { rejectWithValue }) => {
     try {
-      console.log("🔄 Starting fetchSupportedAssets...");
+      logger.debug('swap', "🔄 Starting fetchSupportedAssets...");
       
       let data;
       
       if (forceRefresh) {
-        console.log("🔄 Force refresh - bypassing cache...");
+        logger.debug('swap', "🔄 Force refresh - bypassing cache...");
         // Clear cache first
         await sliceCache.delete('swap', 'fetchSupportedAssets');
         // Fetch fresh data
         const response = await getSupportedAssets();
-        console.log("✅ Force refresh API response received:", response?.length || 0, "assets");
+        logger.debug('swap', "✅ Force refresh API response received:", response?.length || 0, "assets");
         // Cache the fresh data
         await sliceCache.set('swap', 'fetchSupportedAssets', response, undefined, 2 * 60 * 60 * 1000);
         data = response;
@@ -72,9 +74,9 @@ export const fetchSupportedAssets = createAsyncThunk<SupportedAsset[], boolean |
           'swap',
           'fetchSupportedAssets',
           async () => {
-            console.log("🔄 Cache miss - fetching from API...");
+            logger.debug('swap', "🔄 Cache miss - fetching from API...");
             const response = await getSupportedAssets();
-            console.log("✅ API response received:", response?.length || 0, "assets");
+            logger.debug('swap', "✅ API response received:", response?.length || 0, "assets");
             return response;
           },
           undefined, // no params
@@ -82,7 +84,7 @@ export const fetchSupportedAssets = createAsyncThunk<SupportedAsset[], boolean |
         );
       }
       
-      console.log("✅ fetchSupportedAssets completed:", data?.length || 0, "assets");
+      logger.debug('swap', "✅ fetchSupportedAssets completed:", data?.length || 0, "assets");
       return data;
     } catch (error) {
       console.error("❌ Failed to fetch supported assets:", error);
@@ -133,7 +135,7 @@ export const fetchSupportedAssets = createAsyncThunk<SupportedAsset[], boolean |
         }
       ];
       
-      console.log("🔄 Using fallback assets:", fallbackAssets.length);
+      logger.debug('swap', "🔄 Using fallback assets:", fallbackAssets.length);
       
       // Only show toast if it's a network error or server error
       if (error instanceof Error) {
@@ -331,13 +333,13 @@ const swapSlice = createSlice({
         state.hasShownErrorToast = false;
       })
       .addCase(fetchSupportedAssets.fulfilled, (state, action) => {
-        console.log("🎯 Redux: fetchSupportedAssets.fulfilled", {
+        logger.debug('swap', "🎯 Redux: fetchSupportedAssets.fulfilled", {
           payloadLength: action.payload?.length || 0,
           payload: action.payload
         });
         state.loading = false;
         state.supportedAssets = action.payload;
-        console.log("🎯 Redux: supportedAssets set to:", state.supportedAssets?.length || 0, "assets");
+        logger.debug('swap', "🎯 Redux: supportedAssets set to:", state.supportedAssets?.length || 0, "assets");
         
         // Set default assets if not set - BTC for fromAsset, ETH for toAsset
         if (!state.fromAsset && action.payload.length > 0) {
@@ -347,7 +349,7 @@ const swapSlice = createSlice({
             asset?.symbol?.toLowerCase() === 'btc'
           );
           state.fromAsset = btcAsset || action.payload[0];
-          console.log("🎯 Redux: fromAsset set to:", state.fromAsset);
+          logger.debug('swap', "🎯 Redux: fromAsset set to:", state.fromAsset);
         }
         if (!state.toAsset && action.payload.length > 1) {
           // Find ETH asset, fallback to second asset if ETH not found
@@ -356,7 +358,7 @@ const swapSlice = createSlice({
             asset?.symbol?.toLowerCase() === 'eth'
           );
           state.toAsset = ethAsset || action.payload[1];
-          console.log("🎯 Redux: toAsset set to:", state.toAsset);
+          logger.debug('swap', "🎯 Redux: toAsset set to:", state.toAsset);
         }
       })
       .addCase(fetchSupportedAssets.rejected, (state, action) => {

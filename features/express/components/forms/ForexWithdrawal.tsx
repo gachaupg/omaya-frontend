@@ -8,6 +8,8 @@ import { showToast } from "../../../../lib/utils/toast";
 import { useForexRates } from "../../hooks/useForexRates";
 import ForexSuccessModal from "../ForexSuccessModal";
 
+import { logger } from '@/lib/utils/logger';
+
 // Forex Withdrawal: User sends forex to us, we send them USD
 // We need: user payment detail (their bank), admin forex account (where they send forex)
 export default function ForexWithdrawal() {
@@ -120,10 +122,10 @@ export default function ForexWithdrawal() {
 
   // Debug logs
   useEffect(() => {
-    console.log('ForexWithdrawal - User Payment Details:', userPaymentDetails);
-    console.log('ForexWithdrawal - Filtered User Payments:', filteredUserPayments);
-    console.log('ForexWithdrawal - Admin Payment Details:', adminPaymentDetails);
-    console.log('ForexWithdrawal - Admin Forex Accounts:', adminForexAccounts);
+    logger.debug('general', 'ForexWithdrawal - User Payment Details:', userPaymentDetails);
+    logger.debug('general', 'ForexWithdrawal - Filtered User Payments:', filteredUserPayments);
+    logger.debug('general', 'ForexWithdrawal - Admin Payment Details:', adminPaymentDetails);
+    logger.debug('general', 'ForexWithdrawal - Admin Forex Accounts:', adminForexAccounts);
   }, [userPaymentDetails, filteredUserPayments, adminPaymentDetails, adminForexAccounts]);
 
   return (

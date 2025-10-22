@@ -6,6 +6,8 @@ import type { AppDispatch } from "@/store";
 import type { P2PResponse } from "@/features/p2p/types";
 import type { PayloadAction } from "@reduxjs/toolkit";
 
+import { logger } from '@/lib/utils/logger';
+
 interface EditAdModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -64,7 +66,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
 
     
 
-      console.log("Submitting data:", submitData);
+      logger.debug('p2p', "Submitting data:", submitData);
 
       const result = (await dispatch(
         editP2POrderThunk({

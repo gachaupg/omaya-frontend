@@ -5,6 +5,8 @@ import { API_CONFIG } from "@/lib/appConfig";
 import SuccessPage from "./success";
 import { Copy } from "lucide-react";
 
+import { logger } from '@/lib/utils/logger';
+
 interface CopyAddressStepProps {
   swapResponse: CreateSwapResponse | null;
   copyMessage: string;
@@ -121,18 +123,18 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
     let reconnectTimeout: NodeJS.Timeout | null = null;
     let closedByUser = false;
     const wsUrl = API_CONFIG.SWAP.SWAP_STATUS_WS(swapResponse.id);
-    console.log("WebSocket URL (actual):", wsUrl);
+    logger.debug('swap', "WebSocket URL (actual):", wsUrl);
 
     function connect() {
       if (!swapResponse?.id) return; // Ensure swapResponse is not null
       ws = connectSwapStatusWebSocket(swapResponse.id, {
         onOpen: (event: Event) => {
-          console.log("WebSocket connection opened", event);
+          logger.debug('swap', "WebSocket connection opened", event);
           setWsConnected(true);
           setReconnectAttempts(0); // Reset on successful connect
         },
         onClose: (event: CloseEvent) => {
-          console.log(
+          logger.debug('swap', 
             "WebSocket closed",
             event,
             "code:",
@@ -149,7 +151,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
             // Abnormal closure, try to reconnect
             const nextAttempt = reconnectAttempts + 1;
             setReconnectAttempts(nextAttempt);
-            console.log(
+            logger.debug('swap', 
               `Attempting to reconnect WebSocket (#${nextAttempt}) in ${
                 reconnectDelay / 1000
               }s...`
@@ -158,17 +160,17 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
           }
         },
         onError: (event: Event) => {
-          console.log("WebSocket error", event);
+          logger.debug('swap', "WebSocket error", event);
           setWsConnected(false);
         },
         onMessage: (event: MessageEvent) => {
-          console.log(status);
+          logger.debug('swap', status);
 
-          console.log("WebSocket message received:", event.data);
+          logger.debug('swap', "WebSocket message received:", event.data);
           try {
             const msg = JSON.parse(event.data);
             const sts = msg.data?.status;
-            console.log("new data check", sts, msg);
+            logger.debug('swap', "new data check", sts, msg);
 
             if (msg.type === "status_update" && msg.data) {
               const backendStatus = msg.data.status;
@@ -179,8 +181,8 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
               
               // Auto-navigate to success page when status is completed
               if (backendStatus === "completed") {
-                console.log("✅ Swap completed, automatically showing success page");
-                console.log("Status changed to completed, triggering success page");
+                logger.debug('swap', "✅ Swap completed, automatically showing success page");
+                logger.debug('swap', "Status changed to completed, triggering success page");
                 // Keep the status as "completed" to trigger success page
                 setStatus("completed");
               }
@@ -206,7 +208,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
   // Always map the status before using it in the stepper
   const mappedStatus = mapBackendStatusToStepperStatus(status);
   const currentStepIndex = statusSteps.findIndex((s) => s.key === mappedStatus);
-  console.log(
+  logger.debug('swap', 
     "status:",
     status,
     "mappedStatus:",
@@ -217,7 +219,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
 
   // If status is completed, show the SuccessPage with real data
   if (mappedStatus === "completed" || mappedStatus === "finished") {
-    console.log("🎉 Rendering success page for status:", mappedStatus);
+    logger.debug('swap', "🎉 Rendering success page for status:", mappedStatus);
     return (
       <SuccessPage
         transactionId={statusObj?.swap_id || statusObj?.id || swapResponse?.id || ""}

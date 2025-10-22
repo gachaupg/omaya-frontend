@@ -1,6 +1,8 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { handleApiError } from "@/lib/utils/errorHandler";
 
+import { logger } from '@/lib/utils/logger';
+
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
@@ -22,7 +24,7 @@ export class P2PErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("P2P Error:", error, errorInfo);
+    logger.error('p2p', "P2P Error:", error, errorInfo);
     handleApiError(error);
   }
 

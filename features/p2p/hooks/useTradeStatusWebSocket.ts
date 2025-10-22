@@ -9,6 +9,8 @@ import {
 import type { WebSocketMessage } from "../services/tradeStatusWebSocket";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 
+import { logger } from '@/lib/utils/logger';
+
 interface UseTradeStatusWebSocketOptions {
   tradeId: string;
   enabled?: boolean;
@@ -29,14 +31,14 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
   }, []);
 
   useEffect(() => {
-    console.log("🔌 useTradeStatusWebSocket effect triggered:", { 
+    logger.debug('p2p', "🔌 useTradeStatusWebSocket effect triggered:", { 
       enabled, 
       tradeId,
       hasCallback: !!onStatusUpdate 
     });
     
     if (!enabled || !tradeId) {
-      console.log("⚠️ WebSocket not enabled or no tradeId:", { enabled, tradeId });
+      logger.debug('p2p', "⚠️ WebSocket not enabled or no tradeId:", { enabled, tradeId });
       return;
     }
 
@@ -78,15 +80,15 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
       try {
         switch (message.type) {
           case "connection_established":
-            console.log("✅ Trade status connection established");
+            logger.debug('p2p', "✅ Trade status connection established");
             break;
 
           case "status_update":
           case "trade_update":
             // Trade status update - handle both nested and flat data structures
-            console.log("🔍 Processing status_update/trade_update...");
+            logger.debug('p2p', "🔍 Processing status_update/trade_update...");
             const data = message.data || message; // Support both formats
-            console.log("📦 Data to process:", data);
+            logger.debug('p2p', "📦 Data to process:", data);
             
             if (data && data.status) {
               const tradeStatus: TradeStatus = {
@@ -98,8 +100,8 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
                 ...data,
               };
               
-              console.log("✅ Extracted Trade Status:", tradeStatus);
-              console.log("🎯 Calling onStatusUpdate with status:", tradeStatus.status);
+              logger.debug('p2p', "✅ Extracted Trade Status:", tradeStatus);
+              logger.debug('p2p', "🎯 Calling onStatusUpdate with status:", tradeStatus.status);
               
               if (onStatusUpdate) {
                 onStatusUpdate(tradeStatus);
@@ -118,7 +120,7 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
             break;
 
           default:
-            console.log("📨 Unknown message type:", message);
+            logger.debug('p2p', "📨 Unknown message type:", message);
             break;
         }
       } catch (error) {
@@ -134,13 +136,13 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
     // Handle WebSocket close
     const unsubscribeClose = ws.onClose(() => {
       if (!mountedRef.current) return;
-      console.log("🔌 Trade status WebSocket closed");
+      logger.debug('p2p', "🔌 Trade status WebSocket closed");
     });
 
     // Handle WebSocket open
     const unsubscribeOpen = ws.onOpen(() => {
       if (!mountedRef.current) return;
-      console.log("🔓 Trade status WebSocket opened");
+      logger.debug('p2p', "🔓 Trade status WebSocket opened");
     });
 
     // Connect to WebSocket

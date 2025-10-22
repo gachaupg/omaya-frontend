@@ -25,6 +25,18 @@ export const showToast = {
       duration: 3000,
     });
   },
+  loading: (
+    message: string,
+    options?: { duration?: number; position?: string }
+  ) => {
+    return toast.loading(message, {
+      duration: options?.duration || 0, // 0 means don't auto-dismiss
+      position: (options?.position as any) || "top-right",
+    });
+  },
+  dismiss: (toastId: string) => {
+    toast.dismiss(toastId);
+  },
   promise: <T>(
     promise: Promise<T>,
     {

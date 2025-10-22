@@ -22,6 +22,9 @@ import {
 } from "@/features/exchange/types";
 import { div } from "framer-motion/client";
 import { storage } from "@/features/auth/utils/storage";
+import { TransactionHistorySkeleton } from "@/components/ui/Skeletons";
+
+import { logger } from "@/lib/utils/logger";
 
 type TransactionDisplay = {
   id: string;
@@ -79,7 +82,7 @@ const ReceiptModal = ({
               <X className="w-4 h-4" />
             </button>
           </div>
-     
+
           <div className="p-2 border border-[#35353E] rounded-lg">
             {/* Transaction Header */}
             <div className="flex items-center justify-between mb-2 border-b border-[#35353E] p-2">
@@ -225,8 +228,8 @@ const ReceiptModal = ({
                     transaction.status === "completed"
                       ? "text-[#10B981]"
                       : transaction.status === "pending"
-                      ? "text-[#F59E0B]"
-                      : "text-[#EF4444]"
+                        ? "text-[#F59E0B]"
+                        : "text-[#EF4444]"
                   }`}
                 >
                   {transaction.status.charAt(0).toUpperCase() +
@@ -306,12 +309,12 @@ const TransactionHistoryTable: React.FC<TransactionHistoryTableProps> = () => {
   // Fetch transactions when userEmail is set
   useEffect(() => {
     if (userEmail) {
-      console.log("=== FETCHING TRANSACTIONS ===", { userEmail });
+      logger.debug("exchange", "=== FETCHING TRANSACTIONS ===", { userEmail });
       dispatch(fetchTransactions());
     }
   }, [dispatch, userEmail]);
 
-  console.log(userEmail);
+  logger.debug("exchange", "User email:", userEmail);
 
   // Handle search with debounce
   useEffect(() => {
@@ -343,14 +346,14 @@ const TransactionHistoryTable: React.FC<TransactionHistoryTableProps> = () => {
 
   const getFilteredTransactions = (): Transaction[] => {
     if (!transactions || !userEmail) {
-      console.log("No transactions or user email available:", {
+      logger.debug("exchange", "No transactions or user email available:", {
         transactions,
         userEmail,
       });
       return [];
     }
 
-    console.log("Filtering transactions:", {
+    logger.debug("exchange", "Filtering transactions:", {
       totalTransactions: transactions.length,
       userEmail,
       firstTransaction: transactions[0],
@@ -361,7 +364,7 @@ const TransactionHistoryTable: React.FC<TransactionHistoryTableProps> = () => {
       return matches;
     });
 
-    console.log("Filtered transactions:", {
+    logger.debug("exchange", "Filtered transactions:", {
       totalFiltered: filtered.length,
       firstFiltered: filtered[0],
     });
@@ -374,6 +377,11 @@ const TransactionHistoryTable: React.FC<TransactionHistoryTableProps> = () => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+
+  // Show skeleton while loading initial data
+  if (loading && (!transactions || transactions.length === 0)) {
+    return <TransactionHistorySkeleton rows={6} />;
+  }
 
   return (
     <div className="rounded-lg p-4 sm:p-6">
@@ -479,7 +487,7 @@ const TransactionHistoryTable: React.FC<TransactionHistoryTableProps> = () => {
                             year: "numeric",
                             month: "numeric",
                             day: "numeric",
-                            timeZone: "UTC"
+                            timeZone: "UTC",
                           })}
                         </span>
                       </div>

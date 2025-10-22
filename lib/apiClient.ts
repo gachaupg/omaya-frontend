@@ -54,6 +54,18 @@ const generateRequestId = (): string => {
   return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };
 
+// Request deduplication tracking
+const pendingRequests = new Map<string, Promise<any>>();
+
+/**
+ * Generate a unique key for request deduplication
+ */
+const generateRequestKey = (config: AxiosRequestConfig): string => {
+  const { method, url, params } = config;
+  // Don't include data in key to avoid issues with large payloads
+  return `${method}-${url}-${JSON.stringify(params || {})}`;
+};
+
 const createAxiosInstance = (
   config: ApiClientConfig = DEFAULT_CONFIG
 ): AxiosInstance => {
@@ -75,7 +87,7 @@ const createAxiosInstance = (
       requestConfig.timeout = endpointConfig.timeout || config.timeout;
     }
 
-    logger.debug("API Request", {
+    logger.debug("api", "API Request", {
       method: requestConfig.method,
       url: requestConfig.url,
       timeout: requestConfig.timeout,
@@ -116,27 +128,20 @@ const addRefreshTokenInterceptor = (instance: AxiosInstance): AxiosInstance => {
       ) {
         (originalRequest as any)._retry = true;
         try {
-          const response = await axios.post(
-            `${API_BASE_URL}/api/token/refresh/`,
-            {
-              refresh: profile.tokens.refresh,
-            }
-          );
+          // Use mutex-protected refresh from tokenRefresh utility
+          // This ensures only one refresh happens even with concurrent 401s
+          const { refreshAccessToken } = await import("./utils/tokenRefresh");
+          const newAccessToken = await refreshAccessToken();
 
-          const newAccessToken = response.data.access;
-          storage.setProfile({
-            ...profile,
-            tokens: {
-              ...profile.tokens,
-              access: newAccessToken,
-            },
-          });
+          if (!newAccessToken) {
+            throw new Error("Token refresh returned null");
+          }
 
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
           return instance(originalRequest);
         } catch (refreshError) {
-          storage.removeProfile();
-          window.location.href = "/auth/login";
+          // Mutex already handled cleanup (storage.removeProfile, redirect)
+          // Just reject to stop the request
           return Promise.reject(refreshError);
         }
       }
@@ -174,7 +179,7 @@ const addRetryInterceptor = (
       if (config.retryCondition(error)) {
         originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
 
-        logger.warn("Retrying API request", {
+        logger.warn("api", "Retrying API request", {
           url: originalRequest.url,
           attempt: originalRequest._retryCount,
           error: error.message,
@@ -195,12 +200,63 @@ const addRetryInterceptor = (
   return instance;
 };
 
+/**
+ * Add request deduplication to prevent identical concurrent requests
+ * Only deduplicates GET requests for safety
+ */
+const addDeduplicationInterceptor = (
+  instance: AxiosInstance
+): AxiosInstance => {
+  // Wrap the request method to track pending requests
+  const originalRequest = instance.request.bind(instance);
+
+  instance.request = function <T = any>(
+    config: AxiosRequestConfig
+  ): Promise<AxiosResponse<T>> {
+    const method = config.method?.toLowerCase() || "get";
+
+    // Only deduplicate GET requests (safe, idempotent)
+    if (method === "get") {
+      const key = generateRequestKey(config);
+
+      // Check if an identical request is already pending
+      if (pendingRequests.has(key)) {
+        logger.debug("api", "Deduplicating GET request", {
+          url: config.url,
+          key,
+        });
+        return pendingRequests.get(key)!;
+      }
+
+      // Store the promise for this request
+      const requestPromise = originalRequest(config)
+        .then((response: AxiosResponse<T>) => {
+          pendingRequests.delete(key);
+          return response;
+        })
+        .catch((error: any) => {
+          pendingRequests.delete(key);
+          throw error;
+        });
+
+      pendingRequests.set(key, requestPromise);
+      return requestPromise;
+    }
+
+    // For non-GET requests, proceed normally
+    return originalRequest(config);
+  } as any;
+
+  return instance;
+};
+
 const createApiClient = (): AxiosInstance => {
   const instance = createAxiosInstance();
   const withAuth = addAuthInterceptor(instance);
   const withRefresh = addRefreshTokenInterceptor(withAuth);
   const withRetry = addRetryInterceptor(withRefresh, DEFAULT_CONFIG);
-  return withRetry;
+  const withDedup = addDeduplicationInterceptor(withRetry);
+  return withDedup;
 };
 
 const apiClient = createApiClient();

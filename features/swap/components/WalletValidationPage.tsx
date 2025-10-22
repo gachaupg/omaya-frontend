@@ -5,6 +5,8 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { validateWalletAddress } from "@/lib/addressValidaion";
 
+import { logger } from '@/lib/utils/logger';
+
 interface SupportedAsset {
   asset_id?: string;
   symbol?: string;
@@ -58,8 +60,8 @@ const WalletValidationPage: React.FC<WalletValidationPageProps> = ({
       }
 
       // Debug: Log the network type being validated
-      console.log("Validating address for network:", asset.network);
-      console.log("Asset details:", asset);
+      logger.debug('swap', "Validating address for network:", asset.network);
+      logger.debug('swap', "Asset details:", asset);
 
       // Normalize network type to handle variations
       let normalizedNetwork = asset.network.toUpperCase();
@@ -84,7 +86,7 @@ const WalletValidationPage: React.FC<WalletValidationPageProps> = ({
         normalizedNetwork = "ERC20";
       }
 
-      console.log("Normalized network type:", normalizedNetwork);
+      logger.debug('swap', "Normalized network type:", normalizedNetwork);
 
       return validateWalletAddress(address, normalizedNetwork);
     },

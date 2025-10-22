@@ -13,6 +13,8 @@ import {
 } from "../services/matchedTradesWebSocket";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 
+import { logger } from '@/lib/utils/logger';
+
 interface UseMatchedTradesWebSocketOptions {
   enabled?: boolean;
   fallbackToPolling?: boolean;
@@ -51,7 +53,7 @@ export const useMatchedTradesWebSocket = (
       // First try to get from cookies (primary storage)
       const cookieToken = cookieUtils.getCookie("access_token");
       if (cookieToken) {
-        console.log("✅ Access token found in cookies");
+        logger.debug('p2p', "✅ Access token found in cookies");
         return cookieToken;
       }
       
@@ -59,7 +61,7 @@ export const useMatchedTradesWebSocket = (
       if (typeof window !== "undefined") {
         const localToken = localStorage.getItem("access_token");
         if (localToken) {
-          console.log("✅ Access token found in localStorage");
+          logger.debug('p2p', "✅ Access token found in localStorage");
           return localToken;
         }
       }
@@ -76,7 +78,7 @@ export const useMatchedTradesWebSocket = (
       
       // Fall back to polling if enabled
       if (fallbackToPolling) {
-        console.log("🔄 Falling back to HTTP polling");
+        logger.debug('p2p', "🔄 Falling back to HTTP polling");
         startPolling();
       }
       return;
@@ -88,7 +90,7 @@ export const useMatchedTradesWebSocket = (
       setConnectionError("Invalid token format");
       
       if (fallbackToPolling) {
-        console.log("🔄 Falling back to HTTP polling");
+        logger.debug('p2p', "🔄 Falling back to HTTP polling");
         startPolling();
       }
       return;
@@ -146,7 +148,7 @@ export const useMatchedTradesWebSocket = (
 
           default:
             if (process.env.NODE_ENV === 'development') {
-              console.log("Unknown message type:", message.type);
+              logger.debug('p2p', "Unknown message type:", message.type);
             }
         }
       } catch (error) {

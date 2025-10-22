@@ -30,6 +30,8 @@ import { debugAssetFetching } from "../../../../lib/utils/debugAssets";
 import { useAssetsDisplay, usePaymentMethodsDisplay } from "../../hooks/useDataDisplay";
 import ForexWithdrawal from "./ForexWithdrawal";
 
+import { logger } from '@/lib/utils/logger';
+
 // Add UserPaymentDetail interface
 interface UserPaymentDetail {
   id: number;
@@ -215,7 +217,7 @@ export default function WithdrawalForm({
   );
 
   // Debug logging for assets
-  console.log("DEBUG: Swap assets state:", {
+  logger.debug('general', "DEBUG: Swap assets state:", {
     swapAssets,
     swapAssetsLoading,
     swapAssetsError,
@@ -238,9 +240,9 @@ export default function WithdrawalForm({
   // Force refresh assets
   const handleForceRefreshAssets = async () => {
     try {
-      console.log("=== Force refreshing assets ===");
+      logger.debug('general', "=== Force refreshing assets ===");
       await dispatch(fetchSupportedAssets(true)).unwrap();
-      console.log("✅ Assets force refreshed");
+      logger.debug('general', "✅ Assets force refreshed");
     } catch (error) {
       console.error("❌ Force refresh failed:", error);
     }
@@ -361,7 +363,7 @@ export default function WithdrawalForm({
       enhancedFilteredUserPaymentDetails.length > 0 &&
       selectedPaymentDetails.length === 0
     ) {
-      console.log("DEBUG: Auto-selecting first account for payment type:", payBank);
+      logger.debug('general', "DEBUG: Auto-selecting first account for payment type:", payBank);
       const firstAccount = enhancedFilteredUserPaymentDetails[0];
       setSelectedPaymentDetails([firstAccount]);
     }
@@ -399,7 +401,7 @@ export default function WithdrawalForm({
     dispatch(fetchAdminPaymentDetails(false)) // false = don't force refresh
       .unwrap()
       .then((data) => {
-        // console.log("DEBUG: Admin payment details fetched:", data);
+        // logger.debug('general', "DEBUG: Admin payment details fetched:", data);
       })
       .catch((error: unknown) => {
         showToast.error(`Failed to fetch admin payment details: ${error}`);
@@ -408,11 +410,11 @@ export default function WithdrawalForm({
 
   // Fetch admin wallet list
   useEffect(() => {
-    console.log("DEBUG: Starting to fetch admin wallet list...");
+    logger.debug('general', "DEBUG: Starting to fetch admin wallet list...");
     dispatch(fetchAdminWalletList(false))
       .unwrap()
       .then((data) => {
-        console.log("DEBUG: Admin wallet list loaded in express withdrawal:", {
+        logger.debug('general', "DEBUG: Admin wallet list loaded in express withdrawal:", {
           hasData: !!data,
           count: data?.count || 0,
           resultsLength: data?.results?.length || 0
@@ -420,7 +422,7 @@ export default function WithdrawalForm({
         
         // If no data in cache, force refresh
         if (!data || !data.results || data.results.length === 0) {
-          console.log("🔄 No admin wallet list in cache, forcing refresh...");
+          logger.debug('general', "🔄 No admin wallet list in cache, forcing refresh...");
           return dispatch(fetchAdminWalletList(true)).unwrap();
         }
         return data;
@@ -442,7 +444,7 @@ export default function WithdrawalForm({
     dispatch(fetchAssets(false))
       .unwrap()
       .then((data) => {
-        console.log("DEBUG: Exchange assets loaded in express withdrawal:", {
+        logger.debug('general', "DEBUG: Exchange assets loaded in express withdrawal:", {
           hasAssets: !!data?.assets,
           assetsLength: data?.assets?.length || 0,
           totalBalance: data?.total_wallet_balance
@@ -450,7 +452,7 @@ export default function WithdrawalForm({
         
         // If no assets in cache, force refresh
         if (!data?.assets || data.assets.length === 0) {
-          console.log("🔄 No exchange assets in cache, forcing refresh...");
+          logger.debug('general', "🔄 No exchange assets in cache, forcing refresh...");
           return dispatch(fetchAssets(true)).unwrap();
         }
         return data;
@@ -479,18 +481,18 @@ export default function WithdrawalForm({
 
   // Fetch swap assets
   useEffect(() => {
-    console.log("DEBUG: Starting to fetch swap assets...");
+    logger.debug('general', "DEBUG: Starting to fetch swap assets...");
     dispatch(fetchSupportedAssets(false))
       .unwrap()
       .then((data) => {
-        console.log("DEBUG: Swap assets loaded in express withdrawal:", {
+        logger.debug('general', "DEBUG: Swap assets loaded in express withdrawal:", {
           hasAssets: !!data,
           assetsLength: data?.length || 0
         });
         
         // If no assets in cache, force refresh
         if (!data || data.length === 0) {
-          console.log("🔄 No swap assets in cache, forcing refresh...");
+          logger.debug('general', "🔄 No swap assets in cache, forcing refresh...");
           return dispatch(fetchSupportedAssets(true)).unwrap();
         }
         return data;
@@ -598,7 +600,7 @@ export default function WithdrawalForm({
       });
 
       const firstAsset = sortedAssets[0];
-      console.log("Auto-selecting first asset:", firstAsset);
+      logger.debug('general', "Auto-selecting first asset:", firstAsset);
       setSelectedAsset(firstAsset);
 
       // Only set default amount if user hasn't manually modified the amount
@@ -612,7 +614,7 @@ export default function WithdrawalForm({
 
   // Recalculate when asset changes
   useEffect(() => {
-    console.log("Selected asset changed:", selectedAsset);
+    logger.debug('general', "Selected asset changed:", selectedAsset);
     if (selectedAsset && payAmount > 0 && isCalculatingFromPay) {
       // Clear any existing estimate when asset changes
       setEstimate(null);
@@ -624,11 +626,11 @@ export default function WithdrawalForm({
 
       // Check asset type first and handle accordingly
       if (isSimpleCalculationAsset(selectedAsset)) {
-        console.log("Asset changed to simple asset, calculating immediately");
+        logger.debug('general', "Asset changed to simple asset, calculating immediately");
         // For simple assets, calculate immediately
         calculateAmounts(payAmount, true);
       } else {
-        console.log("Asset changed to non-simple asset, going to API");
+        logger.debug('general', "Asset changed to non-simple asset, going to API");
         // For non-simple assets, the estimate useEffect will handle the API call
         // Just set loading states for visual feedback
         setIsCalculating(true);
@@ -640,7 +642,7 @@ export default function WithdrawalForm({
 
   // Handle estimate updates and trigger recalculation - ONLY for forward calculations
   useEffect(() => {
-    console.log("Estimate effect triggered:", {
+    logger.debug('general', "Estimate effect triggered:", {
       hasEstimate: !!estimate,
       estimateLoading,
       isCalculatingFromPay,
@@ -652,7 +654,7 @@ export default function WithdrawalForm({
     // Only handle forward calculations (when calculating from pay amount)
     if (estimate && !estimateLoading && isCalculatingFromPay && payAmount > 0) {
       const estimateAmount = estimate.toAmount || estimate.estimated_amount;
-      console.log(
+      logger.debug('general', 
         "Estimate received, updating receive amount:",
         estimateAmount
       );
@@ -683,7 +685,7 @@ export default function WithdrawalForm({
         setIsCalculatingReceive(false);
       } else {
         // Estimate is invalid, keep loading state until we get a valid estimate
-        console.log("DEBUG: Invalid estimate received, keeping loading state");
+        logger.debug('general', "DEBUG: Invalid estimate received, keeping loading state");
         setGetAmount(0);
         setGetAmountInput("");
         if (!apiValidationError) {
@@ -711,7 +713,7 @@ export default function WithdrawalForm({
         }
       }
       // Set loading states for visual feedback
-      console.log("Setting loading states in estimate useEffect");
+      logger.debug('general', "Setting loading states in estimate useEffect");
       setIsCalculating(true);
       setIsCalculatingReceive(true);
     } else if (
@@ -724,7 +726,7 @@ export default function WithdrawalForm({
       !apiValidationError
     ) {
       // No estimate available but we're calculating from pay - keep loading
-      console.log("DEBUG: No estimate available, keeping loading state");
+      logger.debug('general', "DEBUG: No estimate available, keeping loading state");
       setGetAmount(0);
       setGetAmountInput("");
       if (!apiValidationError) {
@@ -894,7 +896,7 @@ export default function WithdrawalForm({
       const cachedEntry = estimateCache.get(cacheKey);
 
       if (cachedEntry && isCacheValid(cachedEntry.timestamp)) {
-        console.log("Using cached estimate:", cachedEntry.data);
+        logger.debug('general', "Using cached estimate:", cachedEntry.data);
         setEstimate(cachedEntry.data);
         setCalculationError(null); // Clear any previous errors
         setApiValidationError(null);
@@ -922,7 +924,7 @@ export default function WithdrawalForm({
       const debounceTimeout = setTimeout(() => {
         // Set a timeout to prevent infinite loading
         const timeoutId = setTimeout(() => {
-          console.log(
+          logger.debug('general', 
             "DEBUG: Estimate request timed out, keeping loading state"
           );
           setEstimateLoading(false);
@@ -941,7 +943,7 @@ export default function WithdrawalForm({
 
         // Use the actual fetchSwapEstimate API call for deposit
         // Note: fromCurrency is the selected asset, toCurrency is always "USDT" for deposits
-        console.log("Fetching estimate for deposit:", {
+        logger.debug('general', "Fetching estimate for deposit:", {
           toCurrency: "USDT",
           toNetwork: "BSC",
           fromCurrency: selectedAsset.ticker?.toUpperCase(),
@@ -960,9 +962,9 @@ export default function WithdrawalForm({
         )
           .then((result) => {
             clearTimeout(timeoutId); // Clear timeout on success
-            console.log("Estimate result:", result);
+            logger.debug('general', "Estimate result:", result);
             if (result.payload) {
-              console.log("Setting new estimate:", result.payload);
+              logger.debug('general', "Setting new estimate:", result.payload);
               setEstimate(result.payload);
               setCalculationError(null); // Clear any previous errors
               setApiValidationError(null);
@@ -991,7 +993,7 @@ export default function WithdrawalForm({
                 error.response.data.response_data?.error;
               const responseData = error.response.data.response_data;
 
-              console.log("API ERROR DETECTED:", { errorData, responseData });
+              logger.debug('general', "API ERROR DETECTED:", { errorData, responseData });
 
               // Handle amount validation errors (decimal places, too small, etc.)
               // Check if errorData is an object with amount property (format 1)
@@ -1007,7 +1009,7 @@ export default function WithdrawalForm({
                     err.includes("decimal places")
                   )
                 ) {
-                  console.log(
+                  logger.debug('general', 
                     "API ERROR: Decimal places validation error detected"
                   );
                   setApiValidationError(
@@ -1020,7 +1022,7 @@ export default function WithdrawalForm({
                   setEstimateLoading(false);
                   setIsCalculating(false);
                   setIsCalculatingReceive(false);
-                  console.log(
+                  logger.debug('general', 
                     "API ERROR: Loading states cleared for decimal places error"
                   );
                   // Don't clear the input - let user see their value and fix it
@@ -1031,7 +1033,7 @@ export default function WithdrawalForm({
                     err.includes("12 digits before the decimal point")
                   )
                 ) {
-                  console.log(
+                  logger.debug('general', 
                     "API ERROR: 12 digits before decimal point validation error detected"
                   );
                   setApiValidationError(
@@ -1044,7 +1046,7 @@ export default function WithdrawalForm({
                   setEstimateLoading(false);
                   setIsCalculating(false);
                   setIsCalculatingReceive(false);
-                  console.log(
+                  logger.debug('general', 
                     "API ERROR: Loading states cleared for 12 digits error"
                   );
                   // Don't clear the input - let user see their value and fix it
@@ -1053,7 +1055,7 @@ export default function WithdrawalForm({
                 if (
                   amountErrors.some((err: string) => err.includes("too small"))
                 ) {
-                  console.log(
+                  logger.debug('general', 
                     "API ERROR: Amount too small validation error detected"
                   );
                   setApiValidationError(
@@ -1066,7 +1068,7 @@ export default function WithdrawalForm({
                   setEstimateLoading(false);
                   setIsCalculating(false);
                   setIsCalculatingReceive(false);
-                  console.log(
+                  logger.debug('general', 
                     "API ERROR: Loading states cleared for too small error"
                   );
                   // Don't clear the input - let user see their value and fix it
@@ -1105,7 +1107,7 @@ export default function WithdrawalForm({
                 errorData?.error === "deposit_too_small" ||
                 responseData?.error === "deposit_too_small"
               ) {
-                console.log("API ERROR: Deposit too small error detected");
+                logger.debug('general', "API ERROR: Deposit too small error detected");
                 const errorMessage =
                   responseData?.message ||
                   "Amount is too small. Please enter a larger amount to proceed.";
@@ -1116,7 +1118,7 @@ export default function WithdrawalForm({
                 setEstimateLoading(false);
                 setIsCalculating(false);
                 setIsCalculatingReceive(false);
-                console.log(
+                logger.debug('general', 
                   "API ERROR: Loading states cleared for deposit too small error"
                 );
                 return;
@@ -1142,16 +1144,16 @@ export default function WithdrawalForm({
                 setEstimateLoading(false);
                 setIsCalculating(false);
                 setIsCalculatingReceive(false);
-                console.log("API ERROR: Generic error handled:", errorMessage);
+                logger.debug('general', "API ERROR: Generic error handled:", errorMessage);
                 return;
               }
             }
 
             // Fallback: Handle any other error formats that weren't caught above
-            console.log(
+            logger.debug('general', 
               "FALLBACK ERROR HANDLING - No specific error format matched"
             );
-            console.log("Raw error data:", error.response?.data);
+            logger.debug('general', "Raw error data:", error.response?.data);
 
             // Try to extract any meaningful error message
             let fallbackErrorMessage =
@@ -1170,7 +1172,7 @@ export default function WithdrawalForm({
               }
             }
 
-            console.log(
+            logger.debug('general', 
               "FALLBACK: Setting error message:",
               fallbackErrorMessage
             );
@@ -1216,7 +1218,7 @@ export default function WithdrawalForm({
 
   // Reverse calculation effect for non-simple assets when user types in "You Receive"
   useEffect(() => {
-    console.log("Reverse calculation useEffect triggered:", {
+    logger.debug('general', "Reverse calculation useEffect triggered:", {
       selectedAsset: !!selectedAsset,
       isSimpleAsset: selectedAsset
         ? isSimpleCalculationAsset(selectedAsset)
@@ -1235,7 +1237,7 @@ export default function WithdrawalForm({
       getAmount > 0 &&
       !isCalculatingFromPay
     ) {
-      console.log("Starting reverse calculation - setting loading states");
+      logger.debug('general', "Starting reverse calculation - setting loading states");
       if (!apiValidationError) {
         setEstimateLoading(true);
         setEstimateError(null);
@@ -1243,7 +1245,7 @@ export default function WithdrawalForm({
 
       // For reverse calculation, we need to estimate the pay amount from the receive amount
       // We'll call the API with the correct direction to get the required USDT amount
-      console.log("Starting reverse calculation for amount:", getAmount);
+      logger.debug('general', "Starting reverse calculation for amount:", getAmount);
 
       // Add timeout to prevent hanging API calls
       const timeoutPromise = new Promise((_, reject) => {
@@ -1263,7 +1265,7 @@ export default function WithdrawalForm({
         timeoutPromise,
       ])
         .then((result: any) => {
-          console.log("Reverse calculation result:", result);
+          logger.debug('general', "Reverse calculation result:", result);
           if (result.payload && (result.payload as any)?.estimated_amount) {
             // The API now returns how much USDT we need to get the desired amount
             const requiredUsdtAmount = (result.payload as any)
@@ -1278,16 +1280,16 @@ export default function WithdrawalForm({
             }
 
             // Clear loading states after successful calculation
-            console.log("Clearing loading states after successful calculation");
+            logger.debug('general', "Clearing loading states after successful calculation");
             setIsCalculating(false);
             setIsCalculatingReceive(false);
             setEstimateLoading(false);
-            console.log(
+            logger.debug('general', 
               "Reverse calculation completed successfully - loading states cleared"
             );
           } else {
             // No valid result, clear loading states
-            console.log("No valid result from reverse calculation");
+            logger.debug('general', "No valid result from reverse calculation");
             setIsCalculating(false);
             setIsCalculatingReceive(false);
             setEstimateLoading(false);
@@ -1311,7 +1313,7 @@ export default function WithdrawalForm({
               error.response.data.response_data?.error;
             const responseData = error.response.data.response_data;
 
-            console.log("REVERSE API ERROR DETECTED:", {
+            logger.debug('general', "REVERSE API ERROR DETECTED:", {
               errorData,
               responseData,
             });
@@ -1347,7 +1349,7 @@ export default function WithdrawalForm({
                   err.includes("12 digits before the decimal point")
                 )
               ) {
-                console.log(
+                logger.debug('general', 
                   "REVERSE API ERROR: 12 digits before decimal point validation error detected"
                 );
                 setApiValidationError(
@@ -1360,7 +1362,7 @@ export default function WithdrawalForm({
                 setEstimateLoading(false);
                 setIsCalculating(false);
                 setIsCalculatingReceive(false);
-                console.log(
+                logger.debug('general', 
                   "REVERSE API ERROR: Loading states cleared for 12 digits error"
                 );
                 return;
@@ -1412,7 +1414,7 @@ export default function WithdrawalForm({
               errorData?.error === "deposit_too_small" ||
               responseData?.error === "deposit_too_small"
             ) {
-              console.log(
+              logger.debug('general', 
                 "REVERSE API ERROR: Deposit too small error detected"
               );
               const errorMessage =
@@ -1425,7 +1427,7 @@ export default function WithdrawalForm({
               setEstimateLoading(false);
               setIsCalculating(false);
               setIsCalculatingReceive(false);
-              console.log(
+              logger.debug('general', 
                 "REVERSE API ERROR: Loading states cleared for deposit too small error"
               );
               return;
@@ -1451,15 +1453,15 @@ export default function WithdrawalForm({
               setEstimateLoading(false);
               setIsCalculating(false);
               setIsCalculatingReceive(false);
-              console.log("API ERROR: Generic error handled:", errorMessage);
+              logger.debug('general', "API ERROR: Generic error handled:", errorMessage);
               return;
             }
 
             // Fallback: Handle any other error formats that weren't caught above
-            console.log(
+            logger.debug('general', 
               "REVERSE FALLBACK ERROR HANDLING - No specific error format matched"
             );
-            console.log("Reverse raw error data:", error.response?.data);
+            logger.debug('general', "Reverse raw error data:", error.response?.data);
 
             // Try to extract any meaningful error message
             let fallbackErrorMessage =
@@ -1478,7 +1480,7 @@ export default function WithdrawalForm({
               }
             }
 
-            console.log(
+            logger.debug('general', 
               "REVERSE FALLBACK: Setting error message:",
               fallbackErrorMessage
             );
@@ -1539,11 +1541,11 @@ export default function WithdrawalForm({
         })
         .finally(() => {
           // Always clear estimate loading and calculation states
-          console.log("Finally block - clearing all loading states");
+          logger.debug('general', "Finally block - clearing all loading states");
           setEstimateLoading(false);
           setIsCalculating(false);
           setIsCalculatingReceive(false);
-          console.log("Reverse calculation finished - loading states cleared");
+          logger.debug('general', "Reverse calculation finished - loading states cleared");
         });
     } else if (!isCalculatingFromPay && getAmount === 0) {
       // Clear loading states when receive amount is 0
@@ -1919,13 +1921,13 @@ export default function WithdrawalForm({
           user_payment_detail_id: selectedPaymentDetails[0].id,
         };
 
-        console.log("Submitting withdrawal request:", withdrawalPayload);
+        logger.debug('general', "Submitting withdrawal request:", withdrawalPayload);
 
         // Submit to express withdrawal API
         const withdrawalResponse =
           await createExpressWithdrawal(withdrawalPayload);
 
-        console.log("Withdrawal response received:", withdrawalResponse);
+        logger.debug('general', "Withdrawal response received:", withdrawalResponse);
 
         // Ensure we have a valid response
         if (!withdrawalResponse) {
@@ -1998,7 +2000,7 @@ export default function WithdrawalForm({
         setIsTransactionSubmitted(true);
         setForceUpdate((prev) => prev + 1);
 
-        console.log("Withdrawal addresses generated successfully:", {
+        logger.debug('general', "Withdrawal addresses generated successfully:", {
           withdrawalAddress,
           payoutAddress,
           transactionId,
@@ -2259,7 +2261,7 @@ export default function WithdrawalForm({
           })
         ).unwrap()) as unknown as DepositResponse;
 
-        console.log(
+        logger.debug('general', 
           "DEBUG: Deposit code from response:",
           depositResponse.deposit_code
         );
@@ -2297,7 +2299,7 @@ export default function WithdrawalForm({
         }
       }
     } catch (error: any) {
-      console.log(error);
+      logger.debug('general', error);
 
       let errorMessage = `Failed to submit ${mode} request`;
 
@@ -2443,13 +2445,13 @@ export default function WithdrawalForm({
                         // Check asset type first and handle accordingly
                         if (isSimpleCalculationAsset(selectedAsset)) {
                           // For direct assets (USDT on BSC, USDC on BSC), calculate immediately
-                          console.log(
+                          logger.debug('general', 
                             "You Send: Direct asset detected, calculating immediately"
                           );
                           calculateAmounts(newValue, true);
                         } else if (newValue > 0) {
                           // For non-simple assets, stop normal calculation and go directly to API
-                          console.log(
+                          logger.debug('general', 
                             "You Send: Non-simple asset detected, going directly to API"
                           );
 
@@ -2494,7 +2496,7 @@ export default function WithdrawalForm({
                           setEstimateLoading(true);
 
                           // Go directly to API calculation - the estimate useEffect will handle it
-                          console.log(
+                          logger.debug('general', 
                             "You Send: Going directly to API calculation for amount:",
                             newValue
                           );
@@ -2631,7 +2633,7 @@ export default function WithdrawalForm({
                           }
                           className="w-6 h-6 rounded-full object-cover"
                           onError={(e) => {
-                            console.log(
+                            logger.debug('general', 
                               "Image failed to load for asset:",
                               selectedAsset
                             );
@@ -2709,7 +2711,7 @@ export default function WithdrawalForm({
                               key={`${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
                               className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
                               onClick={() => {
-                                console.log("Asset selected:", asset);
+                                logger.debug('general', "Asset selected:", asset);
 
                                 // First, stop any ongoing calculations and clear previous states
                                 if (calculationTimeout) {
@@ -2736,7 +2738,7 @@ export default function WithdrawalForm({
                                 // Check asset type first and handle accordingly
                                 if (isSimpleCalculationAsset(asset)) {
                                   // For direct assets (USDT on BSC, USDC on BSC), calculate immediately
-                                  console.log(
+                                  logger.debug('general', 
                                     "Selected direct asset, calculating immediately"
                                   );
                                   setIsCalculatingFromPay(true);
@@ -2754,7 +2756,7 @@ export default function WithdrawalForm({
                                   }
                                 } else {
                                   // For non-simple assets, go directly to API
-                                  console.log(
+                                  logger.debug('general', 
                                     "Selected non-simple asset, going directly to API"
                                   );
                                   setIsCalculatingFromPay(true);
@@ -2785,7 +2787,7 @@ export default function WithdrawalForm({
                                 alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
                                 className="w-6 h-6 rounded-full object-cover"
                                 onError={(e) => {
-                                  console.log("Image failed to load for asset:", asset);
+                                  logger.debug('general', "Image failed to load for asset:", asset);
                                   e.currentTarget.src =
                                     "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                                 }}
@@ -2913,7 +2915,7 @@ export default function WithdrawalForm({
                         // Check asset type first and handle accordingly
                         if (isSimpleCalculationAsset(selectedAsset)) {
                           // For direct assets (USDT on BSC, USDC on BSC), calculate immediately
-                          console.log(
+                          logger.debug('general', 
                             "You Receive: Direct asset detected, calculating immediately"
                           );
                           const commissionRate = selectedAsset
@@ -2934,7 +2936,7 @@ export default function WithdrawalForm({
                           setIsCalculatingReceive(false);
                         } else if (newAmount > 0) {
                           // For non-simple assets, stop normal calculation and go directly to API
-                          console.log(
+                          logger.debug('general', 
                             "You Receive: Non-simple asset detected, going directly to API"
                           );
 
@@ -2979,7 +2981,7 @@ export default function WithdrawalForm({
                           setEstimateLoading(true);
 
                           // Go directly to API calculation - the reverse calculation useEffect will handle it
-                          console.log(
+                          logger.debug('general', 
                             "You Receive: Going directly to API calculation for amount:",
                             newAmount
                           );

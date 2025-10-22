@@ -23,6 +23,8 @@ import { Dialog } from "@headlessui/react";
 import { RefreshCw } from "lucide-react";
 import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebSocket";
 
+import { logger } from '@/lib/utils/logger';
+
 interface FinalSellProps {
   orderData?: P2POrder;
 }
@@ -48,22 +50,22 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
   // WebSocket status update callback - use useCallback to prevent reconnections
   const handleStatusUpdate = React.useCallback((status: any) => {
-    console.log("🔔 Trade status update received in TradeSellerOwner:", status);
-    console.log("📊 Current confirmOrder:", confirmOrder);
-    console.log("📊 Current confirmOrder.id:", confirmOrder?.id);
-    console.log("📊 Current confirmOrder.status:", confirmOrder?.status);
-    console.log("📊 New status:", status.status);
+    logger.debug('p2p', "🔔 Trade status update received in TradeSellerOwner:", status);
+    logger.debug('p2p', "📊 Current confirmOrder:", confirmOrder);
+    logger.debug('p2p', "📊 Current confirmOrder.id:", confirmOrder?.id);
+    logger.debug('p2p', "📊 Current confirmOrder.status:", confirmOrder?.status);
+    logger.debug('p2p', "📊 New status:", status.status);
     
     const oldStatus = confirmOrder?.status;
     const newStatus = status.status;
     
     // Always refresh if we have a valid status update
     if (confirmOrder?.id && newStatus) {
-      console.log("✅ Conditions met - will update UI");
+      logger.debug('p2p', "✅ Conditions met - will update UI");
       
       // Show toast notification for status changes
       if (oldStatus !== newStatus) {
-        console.log(`📢 Status changed: ${oldStatus} → ${newStatus}`);
+        logger.debug('p2p', `📢 Status changed: ${oldStatus} → ${newStatus}`);
         if (oldStatus === "matched" && newStatus === "half-matched") {
           showToast.success("Status Updated", "Buyer has sent payment notification");
         } else if (oldStatus === "half-matched" && newStatus === "completed") {
@@ -75,15 +77,15 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           showToast.success("Status Updated", `Trade status is now: ${newStatus}`);
         }
       } else {
-        console.log("ℹ️ Status unchanged, still refreshing data");
+        logger.debug('p2p', "ℹ️ Status unchanged, still refreshing data");
       }
       
-      console.log("🔄 Refreshing trade data for ID:", confirmOrder.id);
+      logger.debug('p2p', "🔄 Refreshing trade data for ID:", confirmOrder.id);
       dispatch(fetchConfirmOrder(confirmOrder.id))
         .unwrap()
         .then((updatedOrder) => {
-          console.log("✅ fetchConfirmOrder SUCCESS:", updatedOrder);
-          console.log("✅ Updated status:", updatedOrder?.status);
+          logger.debug('p2p', "✅ fetchConfirmOrder SUCCESS:", updatedOrder);
+          logger.debug('p2p', "✅ Updated status:", updatedOrder?.status);
         })
         .catch((error) => {
           console.error("❌ fetchConfirmOrder FAILED:", error);
@@ -137,7 +139,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     if (isAuthenticated) {
       if (confirmOrder?.status === "matched" && countdown === 0) {
         // AUTO-CANCEL DISABLED - Countdown reached 0 but no auto-cancel
-        console.log("Countdown reached 0, auto-cancel is disabled");
+        logger.debug('p2p', "Countdown reached 0, auto-cancel is disabled");
         return;
       }
     }
@@ -146,7 +148,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   // Fetch confirm order when authenticated and orderId is available
   useEffect(() => {
     const orderId = params?.id as string;
-    console.log(orderId)
+    logger.debug('p2p', orderId)
     if (isAuthenticated && orderId) {
       dispatch(fetchConfirmOrder(orderId));
     }

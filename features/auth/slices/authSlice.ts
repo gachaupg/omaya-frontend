@@ -30,6 +30,8 @@ import { post, get, AxiosError } from "../../../lib/apiClient";
 import { storage } from "../utils/storage";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 
+import { logger } from '@/lib/utils/logger';
+
 const initialState: AuthState = {
   user: null,
   tokens: null,
@@ -93,15 +95,17 @@ export const loginUser = createAsyncThunk<AuthResponse, LoginPayload>(
   async (payload, { rejectWithValue, dispatch }) => {
     try {
       const response = await post<AuthResponse>(API_ENDPOINTS.LOGIN, payload);
-      
+
       // Check if 2FA is required
       if (response.data.require_2fa) {
         // Dispatch action to open 2FA modal with credentials
-        dispatch(open2FAModal({ email: payload.email, password: payload.password }));
+        dispatch(
+          open2FAModal({ email: payload.email, password: payload.password })
+        );
         // Return a special response to indicate 2FA is needed
         return { ...response.data, require_2fa: true };
       }
-      
+
       return response.data;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
@@ -113,7 +117,10 @@ export const loginWith2FA = createAsyncThunk<AuthResponse, Login2FAPayload>(
   "auth/loginWith2FA",
   async (payload, { rejectWithValue }) => {
     try {
-      const response = await post<AuthResponse>(API_ENDPOINTS.LOGIN_2FA, payload);
+      const response = await post<AuthResponse>(
+        API_ENDPOINTS.LOGIN_2FA,
+        payload
+      );
       return response.data;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
@@ -170,63 +177,66 @@ export const verifyKYCStatus = createAsyncThunk<string, KYCVerifyPayload>(
       // If kyc_images are provided, send as FormData
       if (payload.kyc_images && payload.kyc_images.length > 0) {
         const formData = new FormData();
-        formData.append('user_id', payload.user_id);
-        formData.append('status', payload.status.toString());
-        
+        formData.append("user_id", payload.user_id);
+        formData.append("status", payload.status.toString());
+
         // Add is_verified field
         if (payload.is_verified !== undefined) {
-          formData.append('is_verified', payload.is_verified.toString());
+          formData.append("is_verified", payload.is_verified.toString());
         }
-        
+
         if (payload.verification_method) {
-          formData.append('verification_method', payload.verification_method);
+          formData.append("verification_method", payload.verification_method);
         }
         if (payload.country) {
-          formData.append('country', payload.country);
+          formData.append("country", payload.country);
         }
         if (payload.document_type) {
-          formData.append('document_type', payload.document_type);
+          formData.append("document_type", payload.document_type);
         }
         if (payload.document_number) {
-          formData.append('document_number', payload.document_number);
+          formData.append("document_number", payload.document_number);
         }
         if (payload.face_data) {
-          formData.append('face_data', JSON.stringify(payload.face_data));
+          formData.append("face_data", JSON.stringify(payload.face_data));
         }
         if (payload.facial_id) {
-          formData.append('facial_id', payload.facial_id);
+          formData.append("facial_id", payload.facial_id);
         }
-        
+
         // Append all images
         payload.kyc_images.forEach((image) => {
           if (image) {
-            formData.append('kyc_images', image);
+            formData.append("kyc_images", image);
           }
         });
-        
+
         // Debug log FormData contents
-        console.log("=== FormData being sent to KYC API ===");
+        logger.debug('auth', "=== FormData being sent to KYC API ===");
         for (let [key, value] of formData.entries()) {
           if (value instanceof File) {
-            console.log(`${key}:`, `[File] ${value.name} (${value.size} bytes)`);
+            logger.debug('auth', 
+              `${key}:`,
+              `[File] ${value.name} (${value.size} bytes)`
+            );
           } else {
-            console.log(`${key}:`, value);
+            logger.debug('auth', `${key}:`, value);
           }
         }
-        console.log("=== End FormData ===");
-        
+        logger.debug('auth', "=== End FormData ===");
+
         // Send FormData
         const response = await post<{ message: string }>(
           API_ENDPOINTS.KYC_VERIFY,
           formData,
           {
             headers: {
-              'Content-Type': 'multipart/form-data',
+              "Content-Type": "multipart/form-data",
             },
           }
         );
-        
-        console.log("KYC API Response:", response.data);
+
+        logger.debug('auth', "KYC API Response:", response.data);
         return response.data.message;
       } else {
         // Send as JSON if no images
@@ -338,6 +348,11 @@ const authSlice = createSlice({
       storage.removeProfile();
       // Clear access token cookie
       cookieUtils.removeCookie("access_token");
+
+      // Broadcast logout to other tabs
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("logoutTriggered"));
+      }
     },
     clearError(state) {
       state.error = null;
@@ -357,7 +372,10 @@ const authSlice = createSlice({
     closeKYCModal(state) {
       state.kycModalOpen = false;
     },
-    open2FAModal(state, action: PayloadAction<{ email: string; password: string }>) {
+    open2FAModal(
+      state,
+      action: PayloadAction<{ email: string; password: string }>
+    ) {
       state.twoFAModalOpen = true;
       state.twoFAEmail = action.payload.email;
       state.twoFAPassword = action.payload.password;
@@ -396,12 +414,12 @@ const authSlice = createSlice({
       loginUser.fulfilled,
       (state, action: PayloadAction<AuthResponse>) => {
         state.loading = false;
-        
+
         // If 2FA is required, don't authenticate yet
         if (action.payload.require_2fa) {
           return;
         }
-        
+
         state.user = action.payload.user;
         state.tokens = {
           access: action.payload.access,
@@ -424,7 +442,7 @@ const authSlice = createSlice({
         cookieUtils.setCookie("access_token", action.payload.access, {
           maxAge: 86400,
           secure: true,
-          sameSite: 'strict'
+          sameSite: "strict",
         });
       }
     );
@@ -595,7 +613,7 @@ const authSlice = createSlice({
         cookieUtils.setCookie("access_token", action.payload.access, {
           maxAge: 86400,
           secure: true,
-          sameSite: 'strict'
+          sameSite: "strict",
         });
       }
     );

@@ -14,12 +14,12 @@ import { useKYC } from "@/features/kyc";
 import { openKYCModal } from "@/features/auth/slices/authSlice";
 import { AppDispatch } from "@/store";
 import { emptyTransactionSummary } from "@/components/types";
-
+import { logger } from "@/lib/utils/logger";
 
 export default function DashboardPage() {
   const dispatch = useDispatch<AppDispatch>();
   const transactionSummary = useSelector(selectTransactionSummary);
-  
+
   // KYC hook usage example
   const { isVerified, loading, checkStatus, error } = useKYC();
 
@@ -31,14 +31,14 @@ export default function DashboardPage() {
 
   // Log KYC status when it changes and show modal if not verified
   useEffect(() => {
-    console.log('KYC Status:', { isVerified, loading, error });
-    
+    logger.debug("dashboard", "KYC Status", { isVerified, loading, error });
+
     // Only show KYC modal if we have a definitive false response and not loading
     if (isVerified === false && !loading && !error) {
-      console.log('Opening KYC modal - user is not verified');
+      logger.info("dashboard", "Opening KYC modal - user is not verified");
       dispatch(openKYCModal());
     } else if (isVerified === true) {
-      console.log('User is verified - no modal needed');
+      logger.debug("dashboard", "User is verified - no modal needed");
     }
   }, [isVerified, loading, error, dispatch]);
 
@@ -46,7 +46,7 @@ export default function DashboardPage() {
     <div className="pt-0 mb-4 flex flex-col gap-4 rounded-lg w-full">
       <UserCard />
       <PriceCards />
-      
+
       <VolumeChart
         transactionSummary={transactionSummary || emptyTransactionSummary}
       />
