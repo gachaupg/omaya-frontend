@@ -17,6 +17,7 @@ interface TradePreviewProps {
   advertiserData: MarketRow;
   onClose?: () => void;
   tradeType?: "buy" | "sell";
+  providerName?: string;
 }
 
 
@@ -25,6 +26,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   advertiserData,
   onClose,
   tradeType,
+  providerName,
 }) => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -79,6 +81,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     const uniqueProviders = new Map();
     adminPaymentDetails
       .filter((detail: any) => detail.is_active)
+      .filter((detail: any) => detail.provider_name === providerName)
       .forEach((detail: any) => {
         if (!uniqueProviders.has(detail.provider_name)) {
           uniqueProviders.set(detail.provider_name, {
@@ -304,7 +307,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
           {/* Advertiser Info */}
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl font-bold bg-[#1D8751] text-white">
-              {advertiserData.advertiserInitials}
+              {advertiserData.advertiserInitials} 
             </div>
             <div>
               <div className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">
@@ -427,7 +430,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
               </div>
               <div className="flex flex-col gap-1">
                 <div className="text-xs text-gray-500 dark:text-[#788099] pl-2">
-                  Available: {advertiserData.available} USDT
+                  Available: {advertiserData.available}
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-2xl text-[#1D8751]">$</span>
@@ -435,7 +438,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                     type="number"
                     value={receiveAmount}
                     onChange={(e) => handleReceiveAmountChange(e.target.value)}
-                    placeholder={`220 ${tradeType === "buy" ? "USD" : "USDT"}`}
+                    placeholder={`220 ${tradeType === "buy" ? "USDT" : "USD"}`}
                     className={`flex-1 bg-transparent text-xl font-semibold focus:outline-none rounded-xl px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${
                       !isAmountValid && receiveAmount
                         ? "border border-red-500"
