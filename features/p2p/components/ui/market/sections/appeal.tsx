@@ -2,6 +2,8 @@ import React, { useRef, useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
 import { RootState } from "@/store/rootReducer";
+import { logger } from '@/lib/utils/logger';
+
 import {
   createAppealThunk,
   resetAppealState,
@@ -32,6 +34,16 @@ const AppealModal: React.FC<AppealModalProps> = ({
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Debug logging for state changes
+  useEffect(() => {
+    logger.debug('p2p', "AppealModal state:", {
+      open,
+      tradeId,
+      reason,
+      loading,
+      success,
+    });
+  }, [open, tradeId, reason, loading, success]);
 
   useEffect(() => {
     if (success) {
@@ -58,19 +70,27 @@ const AppealModal: React.FC<AppealModalProps> = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      logger.debug('p2p', "File selected:", file.name);
       setScreenshot(file);
     }
   };
 
   const handleReasonChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedReason = e.target.value;
+    logger.debug('p2p', "Reason changed to:", selectedReason);
     setReason(selectedReason);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    logger.debug('p2p', "Submit attempted with:", {
+      reason,
+      tradeId,
+      hasScreenshot: !!screenshot,
+    });
 
     if (!reason || !tradeId) {
+      logger.debug('p2p', "Form validation failed:", { reason, tradeId });
       return;
     }
 
@@ -81,12 +101,18 @@ const AppealModal: React.FC<AppealModalProps> = ({
       formData.append("screenshot", screenshot);
     }
 
+    logger.debug('p2p', "Submitting appeal with:", {
+      tradeId,
+      reason,
+      hasScreenshot: !!screenshot,
+    });
     dispatch(createAppealThunk(formData) as any);
   };
 
   // Simplified validation - only require reason to be selected
   const isFormValid = reason.trim() !== "";
 
+  logger.debug('p2p', "Form validation:", { isFormValid, reason, tradeId });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -192,6 +218,9 @@ const AppealModal: React.FC<AppealModalProps> = ({
                   : "bg-[#35353E] text-[#888] cursor-not-allowed"
               }`}
               disabled={loading || !isFormValid}
+              onClick={() =>
+                logger.debug('p2p', "Button clicked! Form valid:", isFormValid)
+              }
             >
               {loading ? "Submitting..." : "Appeal"}
             </button>

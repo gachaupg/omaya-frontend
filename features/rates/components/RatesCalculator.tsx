@@ -1,9 +1,8 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { FaBitcoin, FaUniversity } from "react-icons/fa";
-import { FiChevronDown, FiInfo, FiPlus, FiMinus } from "react-icons/fi";
+import { FiChevronDown, FiInfo } from "react-icons/fi";
 import { useDispatch, useSelector } from "react-redux";
-import { useRouter } from "next/navigation";
 import { AppDispatch } from "../../../store";
 import { RootState } from "../../../store/rootReducer";
 import {
@@ -31,6 +30,8 @@ import { useRatesI18n } from "@/lib/useRatesI18n";
 import { FaSearch } from "react-icons/fa";
 import { showToast } from "@/lib/utils/toast";
 import Exchanging from "../../express/components/exchnaging";
+
+import { logger } from '@/lib/utils/logger';
 
 interface UserPaymentDetail {
   id: number;
@@ -70,7 +71,6 @@ const isSimpleCalculationAsset = (asset: any) => {
 
 const RatesCalculator = () => {
   const { t } = useRatesI18n();
-  const router = useRouter();
   const [activeTab, setActiveTab] = useState("deposit");
   const [isDepositMode, setIsDepositMode] = useState(true);
 
@@ -134,9 +134,6 @@ const RatesCalculator = () => {
 
   const dispatch = useDispatch<AppDispatch>();
 
-  // Auth state
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-
   // Exchange assets state
   const {
     assets: exchangeAssets,
@@ -171,17 +168,29 @@ const RatesCalculator = () => {
     dispatch(fetchAssets(false))
       .unwrap()
       .then((data) => {
+        logger.debug('general', "DEBUG: Exchange assets loaded in rates calculator:", {
+          hasAssets: !!data?.assets,
+          assetsLength: data?.assets?.length || 0,
+          totalBalance: data?.total_wallet_balance,
+        });
+
         // If no assets in cache, force refresh
         if (!data?.assets || data.assets.length === 0) {
+          logger.debug('general', "🔄 No exchange assets in cache, forcing refresh...");
           return dispatch(fetchAssets(true)).unwrap();
         }
         return data;
       })
       .catch((error: unknown) => {
+        console.error(
+          "Failed to fetch exchange assets from cache, trying force refresh:",
+          error
+        );
         // If cache fetch fails, try force refresh
         return dispatch(fetchAssets(true))
           .unwrap()
           .catch((refreshError: unknown) => {
+            console.error(`Failed to fetch assets: ${refreshError}`);
             throw refreshError;
           });
       });
@@ -190,10 +199,12 @@ const RatesCalculator = () => {
     dispatch(fetchSupportedAssets(false))
       .unwrap()
       .catch((error: unknown) => {
+        console.error("Failed to fetch swap assets:", error);
         // If cache fetch fails, try force refresh
         return dispatch(fetchSupportedAssets(true))
           .unwrap()
           .catch((refreshError: unknown) => {
+            console.error(`Failed to fetch swap assets: ${refreshError}`);
             throw refreshError;
           });
       });
@@ -283,6 +294,17 @@ const RatesCalculator = () => {
 
   // Fetch estimate for non-direct assets - triggers immediately on asset or amount change
   useEffect(() => {
+    logger.debug('general', "Estimate useEffect triggered:", {
+      selectedAsset: selectedAsset?.ticker,
+      isSimple: selectedAsset ? isSimpleCalculationAsset(selectedAsset) : null,
+      amount: parseFloat(amount),
+      shouldFetch:
+        selectedAsset &&
+        !isSimpleCalculationAsset(selectedAsset) &&
+        parseFloat(amount) > 0 &&
+        isCalculatingFromPay,
+    });
+
     if (
       selectedAsset &&
       !isSimpleCalculationAsset(selectedAsset) &&
@@ -319,19 +341,22 @@ const RatesCalculator = () => {
           setIsCalculatingReceive(false);
         })
         .catch((error) => {
-         
+          console.error("Failed to fetch swap estimate:", error);
 
           // Handle different types of errors gracefully
           if (error.message?.includes("Request timeout")) {
             setEstimateError("Request timeout: Using fallback calculation");
+            logger.debug('general', "Using fallback calculation due to request timeout");
           } else if (
             error.message?.includes("Network Error") ||
             error.code === "ECONNREFUSED" ||
             error.code === "ENOTFOUND"
           ) {
-            setEstimateError("Network error: Using fallback calculation");  
+            setEstimateError("Network error: Using fallback calculation");
+            logger.debug('general', "Using fallback calculation due to network error");
           } else if (error.message?.includes("Server Error")) {
             setEstimateError("Server error: Using fallback calculation");
+            logger.debug('general', "Using fallback calculation due to server error");
           } else if (error.message?.includes("Invalid swap parameters")) {
             setEstimateError("Invalid parameters: Using fallback calculation");
           } else {
@@ -363,7 +388,16 @@ const RatesCalculator = () => {
 
   // Fetch reverse estimate for non-direct assets when calculating from receive amount
   useEffect(() => {
-
+    logger.debug('general', "Reverse estimate useEffect triggered:", {
+      selectedAsset: selectedAsset?.ticker,
+      isSimple: selectedAsset ? isSimpleCalculationAsset(selectedAsset) : null,
+      receiveAmount: parseFloat(receiveAmount),
+      shouldFetch:
+        selectedAsset &&
+        !isSimpleCalculationAsset(selectedAsset) &&
+        parseFloat(receiveAmount) > 0 &&
+        !isCalculatingFromPay,
+    });
 
     if (
       selectedAsset &&
@@ -374,7 +408,13 @@ const RatesCalculator = () => {
       setEstimateLoading(true);
       setEstimateError(null);
 
-
+      logger.debug('general', "Fetching reverse estimate for rates:", {
+        fromCurrency: selectedAsset.ticker, // We're converting FROM the selected asset
+        fromNetwork: getAssetNetwork(selectedAsset),
+        toCurrency: "USDT", // TO USDT (since we want to know how much USDT we need)
+        toNetwork: "BSC",
+        amount: parseFloat(receiveAmount), // Use the receive amount directly
+      });
 
       // Add timeout to prevent hanging API calls
       const timeoutPromise = new Promise((_, reject) => {
@@ -394,6 +434,7 @@ const RatesCalculator = () => {
         timeoutPromise,
       ])
         .then((result: any) => {
+          logger.debug('general', "Reverse estimate result:", result);
           if (result.payload && (result.payload as any)?.estimated_amount) {
             // The API now returns how much USDT we need to get the desired amount
             const requiredUsdtAmount = (result.payload as any)
@@ -403,6 +444,10 @@ const RatesCalculator = () => {
               // Set the amount to the required USDT amount
               setAmount(requiredUsdtAmount.toString());
               setEstimate(result.payload);
+              logger.debug('general', "Reverse calculation successful:", {
+                desiredReceive: parseFloat(receiveAmount),
+                requiredAmount: requiredUsdtAmount,
+              });
             }
 
             // Clear loading states after successful calculation
@@ -411,23 +456,30 @@ const RatesCalculator = () => {
           }
         })
         .catch((error) => {
-         
+          console.error("Failed to fetch reverse estimate:", error);
 
           // Handle different types of errors gracefully
           if (error.message?.includes("Request timeout")) {
             setEstimateError("Request timeout: Using fallback calculation");
+            logger.debug('general', "Using fallback calculation due to request timeout");
           } else if (
             error.message?.includes("Network Error") ||
             error.code === "ECONNREFUSED" ||
             error.code === "ENOTFOUND"
           ) {
             setEstimateError("Network error: Using fallback calculation");
+            logger.debug('general', "Using fallback calculation due to network error");
           } else if (error.message?.includes("Server Error")) {
             setEstimateError("Server error: Using fallback calculation");
+            logger.debug('general', "Using fallback calculation due to server error");
           } else if (error.message?.includes("Invalid swap parameters")) {
             setEstimateError("Invalid parameters: Using fallback calculation");
+            logger.debug('general', 
+              "Using fallback calculation due to invalid API parameters"
+            );
           } else {
             setEstimateError("API error: Using fallback calculation");
+            logger.debug('general', "Using fallback calculation due to API error");
           }
 
           // Common fallback calculation for all error types
@@ -462,11 +514,22 @@ const RatesCalculator = () => {
 
   // Update amounts when estimate is received or for direct assets
   useEffect(() => {
-
+    logger.debug('general', "Estimate effect triggered:", {
+      hasEstimate: !!estimate,
+      estimateLoading,
+      isCalculatingFromPay,
+      amount,
+      receiveAmount,
+      estimateAmount: (estimate as any)?.estimated_amount,
+    });
 
     if (estimate && !estimateLoading) {
       if (isCalculatingFromPay && parseFloat(amount) > 0) {
         // Forward calculation: update receive amount
+        logger.debug('general', 
+          "Estimate received, updating receive amount:",
+          (estimate as any)?.estimated_amount
+        );
 
         if (
           (estimate as any)?.estimated_amount &&
@@ -477,6 +540,9 @@ const RatesCalculator = () => {
           setIsCalculating(false);
           setIsCalculatingReceive(false);
         } else {
+          logger.debug('general', 
+            "DEBUG: Invalid estimate received, clearing loading state"
+          );
           setReceiveAmount("0");
           setReceiveAmountError("Invalid estimate received");
           setIsCalculating(false);
@@ -563,6 +629,7 @@ const RatesCalculator = () => {
               })
             ).unwrap();
 
+            logger.debug('general', "Address update response:", updateResponse);
             showToast.success("Wallet address updated successfully!");
 
             // Use the updated response data if available
@@ -583,6 +650,7 @@ const RatesCalculator = () => {
               }
             }
           } catch (error: any) {
+            console.error("Failed to update deposit address:", error);
             let errorMessage = "Failed to update wallet address";
             if (error.response?.data?.message) {
               errorMessage = error.response.data.message;
@@ -648,10 +716,16 @@ const RatesCalculator = () => {
         status: responseData?.status || "pending",
       };
 
+      logger.debug('general', 
+        "Proceeding to exchanging with transaction data:",
+        transactionData
+      );
+
       // Set the exchanging data and show the exchanging component
       setExchangingData(transactionData);
       setShowExchanging(true);
     } catch (error: any) {
+      console.error("Failed to proceed to exchanging:", error);
       showToast.error("Failed to proceed. Please try again.");
     } finally {
       setIsSubmitting(false);
@@ -692,6 +766,7 @@ const RatesCalculator = () => {
       enhancedFilteredUserPaymentDetails.length > 0 &&
       !selectedPaymentDetail
     ) {
+      logger.debug('general', "DEBUG: Auto-selecting first account for payment method:", selectedPaymentMethod);
       const firstAccount = enhancedFilteredUserPaymentDetails[0];
       setSelectedPaymentDetail(firstAccount);
     }
@@ -787,6 +862,11 @@ const RatesCalculator = () => {
           key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
           className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
           onClick={() => {
+            logger.debug('general', "Asset selected:", {
+              ticker: asset.ticker,
+              network: asset.network || "unknown",
+              image: asset.image_url || asset.asset_image,
+            });
             handleAssetSelect(asset);
             setIsAssetDropdownOpen(false);
             setAssetSearchTerm("");
@@ -801,7 +881,8 @@ const RatesCalculator = () => {
             }
             alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
             className="w-6 h-6 rounded-full object-cover"
-            onError={(e) => {   
+            onError={(e) => {
+              logger.debug('general', "Image failed to load for asset:", asset);
               e.currentTarget.src =
                 "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
             }}
@@ -840,12 +921,6 @@ const RatesCalculator = () => {
   };
 
   const handleSubmit = async () => {
-    // Check if user is authenticated first, before any validation
-    if (!isAuthenticated) {
-      router.push("/auth/login");
-      return;
-    }
-
     if (!selectedAsset || !selectedPaymentMethod || !selectedPaymentDetail) {
       showToast.error("Please select all required fields");
       return;
@@ -928,6 +1003,12 @@ const RatesCalculator = () => {
         );
         formData.append("sent_from", selectedPaymentDetail.account_name);
 
+        // Log the complete FormData for debugging
+        logger.debug('general', "DEBUG: Complete FormData entries:");
+        for (let [key, value] of formData.entries()) {
+          logger.debug('general', `${key}:`, value);
+        }
+
         // Use Redux action for deposit
         const depositResponse = (await dispatch(
           createDeposit({
@@ -937,6 +1018,8 @@ const RatesCalculator = () => {
             },
           })
         ).unwrap()) as unknown as DepositResponse;
+
+        logger.debug('general', "DEBUG: Deposit response:", depositResponse);
 
         // Set transaction data
         setTransactionId(depositResponse.transaction_id || "");
@@ -956,9 +1039,13 @@ const RatesCalculator = () => {
           user_payment_detail_id: selectedPaymentDetail.id,
         };
 
+        logger.debug('general', "Submitting withdrawal request:", withdrawalPayload);
+
         // Use Redux action for withdrawal
         const withdrawalResponse =
           await createExpressWithdrawal(withdrawalPayload);
+
+        logger.debug('general', "Withdrawal response received:", withdrawalResponse);
 
         // Extract response data - handle both direct response and nested data
         const responseData =
@@ -984,6 +1071,7 @@ const RatesCalculator = () => {
         showToast.success("Withdrawal transaction submitted successfully!");
       }
     } catch (error: any) {
+      console.error("Error submitting transaction:", error);
       let errorMessage = "Failed to submit transaction. Please try again.";
 
       if (error.response?.data?.message) {
@@ -1089,6 +1177,10 @@ const RatesCalculator = () => {
                             }
                             className="w-6 h-6 rounded-full object-cover"
                             onError={(e) => {
+                              logger.debug('general', 
+                                "Image failed to load for selected asset:",
+                                selectedAsset
+                              );
                               e.currentTarget.src =
                                 "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                             }}
@@ -1164,6 +1256,11 @@ const RatesCalculator = () => {
                       value={amount}
                       onChange={(e) => {
                         const value = e.target.value;
+                        logger.debug('general', "You Send input changed:", {
+                          value,
+                          selectedAsset: selectedAsset?.ticker,
+                        });
+
                         // Only allow numbers and decimals (including 0.006 format)
                         if (value === "" || /^\d*\.?\d*$/.test(value)) {
                           setAmount(value);
@@ -1176,6 +1273,10 @@ const RatesCalculator = () => {
                             newAmount > 0 &&
                             isSimpleCalculationAsset(selectedAsset)
                           ) {
+                            logger.debug('general', 
+                              "Triggering immediate forward calculation for direct asset:",
+                              newAmount
+                            );
                             const calculatedReceiveAmount =
                               newAmount < 2
                                 ? newAmount
@@ -1187,6 +1288,10 @@ const RatesCalculator = () => {
                             // Simple assets don't need loading states - calculation is instant
                           } else if (selectedAsset && newAmount > 0) {
                             // For complex assets, trigger API calculation
+                            logger.debug('general', 
+                              "Triggering API forward calculation for complex asset:",
+                              newAmount
+                            );
 
                             // Set loading states to show spinner in "I want to Receive" field
                             setIsCalculating(true);
@@ -1204,70 +1309,7 @@ const RatesCalculator = () => {
                       className="bg-transparent p-3 w-full focus:outline-none text-gray-900 dark:text-white"
                       placeholder="Enter amount"
                     />
-                    <div className="flex items-center gap-2 pr-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const currentAmount = parseFloat(amount) || 0;
-                          const newAmount = Math.max(0, currentAmount - 1);
-                          setAmount(newAmount.toString());
-                          setIsCalculatingFromPay(true);
-
-                          if (
-                            selectedAsset &&
-                            newAmount > 0 &&
-                            isSimpleCalculationAsset(selectedAsset)
-                          ) {
-                            const calculatedReceiveAmount =
-                              newAmount < 2
-                                ? newAmount
-                                : Math.max(0, newAmount - 2);
-                            setReceiveAmount(
-                              calculatedReceiveAmount.toFixed(2)
-                            );
-                          } else if (selectedAsset && newAmount > 0) {
-                            setIsCalculating(true);
-                            setIsCalculatingReceive(true);
-                          } else {
-                            setIsCalculatingReceive(false);
-                            setIsCalculating(false);
-                          }
-                        }}
-                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors text-gray-600 dark:text-gray-400"
-                      >
-                        <FiMinus className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const currentAmount = parseFloat(amount) || 0;
-                          const newAmount = currentAmount + 1;
-                          setAmount(newAmount.toString());
-                          setIsCalculatingFromPay(true);
-
-                          if (
-                            selectedAsset &&
-                            newAmount > 0 &&
-                            isSimpleCalculationAsset(selectedAsset)
-                          ) {
-                            const calculatedReceiveAmount =
-                              newAmount < 2
-                                ? newAmount
-                                : Math.max(0, newAmount - 2);
-                            setReceiveAmount(
-                              calculatedReceiveAmount.toFixed(2)
-                            );
-                          } else if (selectedAsset && newAmount > 0) {
-                            setIsCalculating(true);
-                            setIsCalculatingReceive(true);
-                          }
-                        }}
-                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors text-gray-600 dark:text-gray-400"
-                      >
-                        <FiPlus className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <div className="p-3 flex items-center text-gray-900 dark:text-white border-l border-[#E8EFF5] dark:border-[#35353E]">
+                    <div className="p-3 flex items-center text-gray-900 dark:text-white">
                       <span>USD</span>
                       <FiChevronDown className="ml-1" />
                     </div>
@@ -1380,7 +1422,7 @@ const RatesCalculator = () => {
                         <div className="p-3 text-center text-red-500">
                           {t(
                             "rates.errorMethods",
-                            "No payment methods available, Login to Proceed"
+                            "Error loading payment methods"
                           )}
                         </div>
                       ) : allPaymentMethods.length > 0 ? (
@@ -1476,6 +1518,10 @@ const RatesCalculator = () => {
                   value={amount}
                       onChange={(e) => {
                         const value = e.target.value;
+                        logger.debug('general', "You Send input changed:", {
+                          value,
+                          selectedAsset: selectedAsset?.ticker,
+                        });
 
                         // Only allow numbers and decimals (including 0.006 format)
                         if (value === "" || /^\d*\.?\d*$/.test(value)) {
@@ -1488,7 +1534,11 @@ const RatesCalculator = () => {
                             selectedAsset &&
                             newAmount > 0 &&
                             isSimpleCalculationAsset(selectedAsset)
-                          ) { 
+                          ) {
+                            logger.debug('general', 
+                              "Triggering immediate forward calculation for direct asset:",
+                              newAmount
+                            );
                             const calculatedReceiveAmount =
                               newAmount < 2
                                 ? newAmount
@@ -1500,6 +1550,10 @@ const RatesCalculator = () => {
                             // Simple assets don't need loading states - calculation is instant
                           } else if (selectedAsset && newAmount > 0) {
                             // For complex assets, trigger API calculation
+                            logger.debug('general', 
+                              "Triggering API forward calculation for complex asset:",
+                              newAmount
+                            );
 
                             // Set loading states to show spinner in "I want to Receive" field
                             setIsCalculating(true);
@@ -1517,70 +1571,7 @@ const RatesCalculator = () => {
                   className="bg-transparent p-3 w-full focus:outline-none text-gray-900 dark:text-white"
                       placeholder="Enter amount"
                 />
-                <div className="flex items-center gap-2 pr-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const currentAmount = parseFloat(amount) || 0;
-                      const newAmount = Math.max(0, currentAmount - 1);
-                      setAmount(newAmount.toString());
-                      setIsCalculatingFromPay(true);
-
-                      if (
-                        selectedAsset &&
-                        newAmount > 0 &&
-                        isSimpleCalculationAsset(selectedAsset)
-                      ) {
-                        const calculatedReceiveAmount =
-                          newAmount < 2
-                            ? newAmount
-                            : Math.max(0, newAmount - 2);
-                        setReceiveAmount(
-                          calculatedReceiveAmount.toFixed(2)
-                        );
-                      } else if (selectedAsset && newAmount > 0) {
-                        setIsCalculating(true);
-                        setIsCalculatingReceive(true);
-                      } else {
-                        setIsCalculatingReceive(false);
-                        setIsCalculating(false);
-                      }
-                    }}
-                    className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors text-gray-600 dark:text-gray-400"
-                  >
-                    <FiMinus className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const currentAmount = parseFloat(amount) || 0;
-                      const newAmount = currentAmount + 1;
-                      setAmount(newAmount.toString());
-                      setIsCalculatingFromPay(true);
-
-                      if (
-                        selectedAsset &&
-                        newAmount > 0 &&
-                        isSimpleCalculationAsset(selectedAsset)
-                      ) {
-                        const calculatedReceiveAmount =
-                          newAmount < 2
-                            ? newAmount
-                            : Math.max(0, newAmount - 2);
-                        setReceiveAmount(
-                          calculatedReceiveAmount.toFixed(2)
-                        );
-                      } else if (selectedAsset && newAmount > 0) {
-                        setIsCalculating(true);
-                        setIsCalculatingReceive(true);
-                      }
-                    }}
-                    className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors text-gray-600 dark:text-gray-400"
-                  >
-                    <FiPlus className="w-4 h-4" />
-                  </button>
-                </div>
-                <div className="p-3 flex items-center text-gray-900 dark:text-white border-l border-[#E8EFF5] dark:border-[#35353E]">
+                <div className="p-3 flex items-center text-gray-900 dark:text-white">
                   <span>USD</span>
                   <FiChevronDown className="ml-1" />
                 </div>
@@ -1723,11 +1714,11 @@ const RatesCalculator = () => {
                           )}
                     </div>
                   ) : userDetailsError ? (
-                    <div className="p-3 text-center text-[#F79330]">
-                        
-                          
-                            No payment methods available, Login to Proceed
-                        
+                    <div className="p-3 text-center text-red-500">
+                          {t(
+                            "rates.errorMethods",
+                            "Error loading payment methods"
+                          )}
                     </div>
                   ) : allPaymentMethods.length > 0 ? (
                     allPaymentMethods.map((method: string) => (
@@ -1762,6 +1753,10 @@ const RatesCalculator = () => {
                       value={receiveAmount}
                       onChange={(e) => {
                         const value = e.target.value;
+                        logger.debug('general', "I want to Receive input changed:", {
+                          value,
+                          selectedAsset: selectedAsset?.ticker,
+                        });
 
                         // Only allow numbers and decimals (including 0.006 format)
                         if (value === "" || /^\d*\.?\d*$/.test(value)) {
@@ -1775,6 +1770,10 @@ const RatesCalculator = () => {
                             newAmount > 0 &&
                             isSimpleCalculationAsset(selectedAsset)
                           ) {
+                            logger.debug('general', 
+                              "Triggering immediate reverse calculation for direct asset:",
+                              newAmount
+                            );
                             const calculatedSendAmount =
                               newAmount < 2 ? newAmount : newAmount + 2;
                             setAmount(calculatedSendAmount.toFixed(2));
@@ -1782,6 +1781,10 @@ const RatesCalculator = () => {
                             // Simple assets don't need loading states - calculation is instant
                           } else if (selectedAsset && newAmount > 0) {
                             // For complex assets, trigger API calculation
+                            logger.debug('general', 
+                              "Triggering API reverse calculation for complex asset:",
+                              newAmount
+                            );
 
                             // Set loading states to show spinner in "You Send" field
                             setIsCalculating(true);
@@ -1799,62 +1802,7 @@ const RatesCalculator = () => {
                       className="bg-transparent p-3 w-full focus:outline-none text-gray-900 dark:text-white"
                       placeholder="Enter amount"
                     />
-                    <div className="flex items-center gap-2 pr-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const currentAmount = parseFloat(receiveAmount) || 0;
-                          const newAmount = Math.max(0, currentAmount - 1);
-                          setReceiveAmount(newAmount.toString());
-                          setIsCalculatingFromPay(false);
-
-                          if (
-                            selectedAsset &&
-                            newAmount > 0 &&
-                            isSimpleCalculationAsset(selectedAsset)
-                          ) {
-                            const calculatedSendAmount =
-                              newAmount < 2 ? newAmount : newAmount + 2;
-                            setAmount(calculatedSendAmount.toFixed(2));
-                          } else if (selectedAsset && newAmount > 0) {
-                            setIsCalculating(true);
-                            setIsCalculatingReceive(true);
-                          } else {
-                            setIsCalculatingReceive(false);
-                            setIsCalculating(false);
-                          }
-                        }}
-                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors text-gray-600 dark:text-gray-400"
-                      >
-                        <FiMinus className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const currentAmount = parseFloat(receiveAmount) || 0;
-                          const newAmount = currentAmount + 1;
-                          setReceiveAmount(newAmount.toString());
-                          setIsCalculatingFromPay(false);
-
-                          if (
-                            selectedAsset &&
-                            newAmount > 0 &&
-                            isSimpleCalculationAsset(selectedAsset)
-                          ) {
-                            const calculatedSendAmount =
-                              newAmount < 2 ? newAmount : newAmount + 2;
-                            setAmount(calculatedSendAmount.toFixed(2));
-                          } else if (selectedAsset && newAmount > 0) {
-                            setIsCalculating(true);
-                            setIsCalculatingReceive(true);
-                          }
-                        }}
-                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors text-gray-600 dark:text-gray-400"
-                      >
-                        <FiPlus className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <div className="p-3 flex items-center text-gray-900 dark:text-white border-l border-[#E8EFF5] dark:border-[#35353E]">
+                    <div className="p-3 flex items-center text-gray-900 dark:text-white">
                       <span>USD</span>
                       <FiChevronDown className="ml-1" />
                     </div>
@@ -1990,7 +1938,10 @@ const RatesCalculator = () => {
                             }
                             className="w-6 h-6 rounded-full object-cover"
                             onError={(e) => {
-                             
+                              logger.debug('general', 
+                                "Image failed to load for selected asset:",
+                                selectedAsset
+                              );
                               e.currentTarget.src =
                                 "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                             }}
@@ -2067,7 +2018,10 @@ const RatesCalculator = () => {
                       value={receiveAmount}
                       onChange={(e) => {
                         const value = e.target.value;
-                        
+                        logger.debug('general', "I want to Receive input changed:", {
+                          value,
+                          selectedAsset: selectedAsset?.ticker,
+                        });
 
                         // Only allow numbers and decimals (including 0.006 format)
                         if (value === "" || /^\d*\.?\d*$/.test(value)) {
@@ -2081,7 +2035,10 @@ const RatesCalculator = () => {
                             newAmount > 0 &&
                             isSimpleCalculationAsset(selectedAsset)
                           ) {
-                           
+                            logger.debug('general', 
+                              "Triggering immediate reverse calculation for direct asset:",
+                              newAmount
+                            );
                             const calculatedSendAmount =
                               newAmount < 2 ? newAmount : newAmount + 2;
                             setAmount(calculatedSendAmount.toFixed(2));
@@ -2089,7 +2046,10 @@ const RatesCalculator = () => {
                             // Simple assets don't need loading states - calculation is instant
                           } else if (selectedAsset && newAmount > 0) {
                             // For complex assets, trigger API calculation
-                           
+                            logger.debug('general', 
+                              "Triggering API reverse calculation for complex asset:",
+                              newAmount
+                            );
 
                             // Set loading states to show spinner in "You Send" field
                             setIsCalculating(true);
@@ -2107,62 +2067,7 @@ const RatesCalculator = () => {
                       className="bg-transparent p-3 w-full focus:outline-none text-gray-900 dark:text-white"
                       placeholder="Enter amount"
                     />
-                    <div className="flex items-center gap-2 pr-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const currentAmount = parseFloat(receiveAmount) || 0;
-                          const newAmount = Math.max(0, currentAmount - 1);
-                          setReceiveAmount(newAmount.toString());
-                          setIsCalculatingFromPay(false);
-
-                          if (
-                            selectedAsset &&
-                            newAmount > 0 &&
-                            isSimpleCalculationAsset(selectedAsset)
-                          ) {
-                            const calculatedSendAmount =
-                              newAmount < 2 ? newAmount : newAmount + 2;
-                            setAmount(calculatedSendAmount.toFixed(2));
-                          } else if (selectedAsset && newAmount > 0) {
-                            setIsCalculating(true);
-                            setIsCalculatingReceive(true);
-                          } else {
-                            setIsCalculatingReceive(false);
-                            setIsCalculating(false);
-                          }
-                        }}
-                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors text-gray-600 dark:text-gray-400"
-                      >
-                        <FiMinus className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const currentAmount = parseFloat(receiveAmount) || 0;
-                          const newAmount = currentAmount + 1;
-                          setReceiveAmount(newAmount.toString());
-                          setIsCalculatingFromPay(false);
-
-                          if (
-                            selectedAsset &&
-                            newAmount > 0 &&
-                            isSimpleCalculationAsset(selectedAsset)
-                          ) {
-                            const calculatedSendAmount =
-                              newAmount < 2 ? newAmount : newAmount + 2;
-                            setAmount(calculatedSendAmount.toFixed(2));
-                          } else if (selectedAsset && newAmount > 0) {
-                            setIsCalculating(true);
-                            setIsCalculatingReceive(true);
-                          }
-                        }}
-                        className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors text-gray-600 dark:text-gray-400"
-                      >
-                        <FiPlus className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <div className="p-3 flex items-center text-gray-900 dark:text-white border-l border-[#E8EFF5] dark:border-[#35353E]">
+                    <div className="p-3 flex items-center text-gray-900 dark:text-white">
                       <span>USD</span>
                       <FiChevronDown className="ml-1" />
                     </div>

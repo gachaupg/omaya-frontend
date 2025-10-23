@@ -7,6 +7,8 @@ import { formatDate, formatNumber } from "@/utils/formatters";
 import { TiArrowUnsorted } from "react-icons/ti";
 import html2canvas from "html2canvas";
 
+import { logger } from '@/lib/utils/logger';
+
 type TableProps = {
   title?: string;
   type?: string;
@@ -19,7 +21,6 @@ type TableProps = {
   onExport?: (format: "csv" | "pdf") => void;
   onSearch?: (query: string) => void;
   onViewTransaction?: (tx: TransactionType) => void;
-  currentUserEmail?: string;
 };
 
 export const Table: React.FC<TableProps> = ({
@@ -34,7 +35,6 @@ export const Table: React.FC<TableProps> = ({
   onExport,
   onSearch,
   onViewTransaction,
-  currentUserEmail = "",
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showExportOptions, setShowExportOptions] = useState(false);
@@ -62,8 +62,8 @@ export const Table: React.FC<TableProps> = ({
   const getAmountColor = (type: string | undefined | null) => {
     if (!type)
       return `text-gray-500 dark:text-[${tokens.colors.dark.textBody}]`;
-    if (type.toLowerCase() === "buy") return "text-[#FF4D4D]";
-    if (type.toLowerCase() === "sell") return "text-[#1D8751]";
+    if (type.toLowerCase() === "buy") return "text-[#1D8751]";
+    if (type.toLowerCase() === "sell") return "text-[#FF4D4D]";
     return `text-gray-500 dark:text-[${tokens.colors.dark.textBody}]`;
   };
 
@@ -72,6 +72,7 @@ export const Table: React.FC<TableProps> = ({
   };
 
   const handleViewTransaction = (row: TransactionType) => {
+    logger.debug('p2p', "Setting selected transaction:", row);
     setSelectedTransaction(row);
     onViewTransaction && onViewTransaction(row);
   };
@@ -91,9 +92,14 @@ export const Table: React.FC<TableProps> = ({
       link.click();
       document.body.removeChild(link);
     } catch (error) {
-      // Silent error handling
+      console.error('Failed to download card:', error);
     }
   };
+
+  // Add effect to monitor selectedTransaction changes
+  React.useEffect(() => {
+    logger.debug('p2p', "Selected transaction updated:", selectedTransaction);
+  }, [selectedTransaction]);
 
   if (loading) {
     return (
@@ -265,7 +271,7 @@ export const Table: React.FC<TableProps> = ({
           >
             {/* Table Header */}
             <div
-              className={`grid grid-cols-7 md:grid-cols-8 py-3 px-4 border-b bg-gray-50 dark:bg-[#35353E] border-gray-200 dark:border-[${tokens.colors.dark.border}] rounded-t-[24px]`}
+              className={`grid grid-cols-6 md:grid-cols-7 py-3 px-4 border-b bg-gray-50 dark:bg-[#35353E] border-gray-200 dark:border-[${tokens.colors.dark.border}] rounded-t-[24px]`}
             >
               <div
                 className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
@@ -304,12 +310,6 @@ export const Table: React.FC<TableProps> = ({
               <div
                 className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] flex items-center`}
               >
-                Time
-                <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
-              </div>
-              <div
-                className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] flex items-center`}
-              >
                 Status
                 <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
               </div>
@@ -326,7 +326,7 @@ export const Table: React.FC<TableProps> = ({
               {data.map((row, idx) => (
                 <div
                   key={idx}
-                  className={`w-full grid grid-cols-7 md:grid-cols-8 py-4 px-4 border-b last:border-b-0 items-center hover:bg-gray-50 dark:hover:bg-[#2A2A35] transition-colors duration-200 border-gray-200 dark:border-[${tokens.colors.dark.border}] bg-white dark:bg-[${tokens.colors.dark.background}]`}
+                  className={`w-full grid grid-cols-6 md:grid-cols-7 py-4 px-4 border-b last:border-b-0 items-center hover:bg-gray-50 dark:hover:bg-[#2A2A35] transition-colors duration-200 border-gray-200 dark:border-[${tokens.colors.dark.border}] bg-white dark:bg-[${tokens.colors.dark.background}]`}
                 >
                   <div className="flex items-center gap-2">
                     <img
@@ -377,21 +377,11 @@ export const Table: React.FC<TableProps> = ({
                     </div>
                   )}
                   <div>
-                    {(() => {
-                      const isOwner = row.rawData?.owner === currentUserEmail;
-                      const displayType = isOwner 
-                        ? (row.type === "buy" ? "Buy" : "Sell")
-                        : (row.type === "buy" ? "Sell" : "Buy");
-                      
-                      // Color logic: Green for Sell, Red for Buy (regardless of owner)
-                      const colorClass = displayType === "Sell" ? "text-[#1D8751]" : "text-[#FF4D4D]";
-                      
-                      return (
-                        <div className={`text-sm ${colorClass}`}>
-                          {displayType}
-                        </div>
-                      );
-                    })()}
+                    <div
+                      className={`text-sm ${getAmountColor(String(row.type))}`}
+                    >
+                      {row.type}
+                    </div>
                   </div>
                   <div>
                     <div
@@ -406,14 +396,9 @@ export const Table: React.FC<TableProps> = ({
                     {formatDate(row.date)}
                   </div>
                   <div
-                    className={`text-sm text-gray-500 dark:text-[${tokens.colors.dark.textBody}]`}
-                  >
-                    {new Date(row.date).toLocaleTimeString()}
-                  </div>
-                  <div
                     className={`text-sm ${getStatusColor(String(row.status))}`}
                   >
-                    <span className="capitalize">{row.status}</span>
+                    {row.status}
                   </div>
                   <div className="flex items-center">
                     <Button
@@ -433,8 +418,15 @@ export const Table: React.FC<TableProps> = ({
               <div className="flex justify-center items-center gap-2 py-4 bg-transparent rounded-b-[24px]">
                 <button
                   onClick={() => {
+                    logger.debug('p2p', "Previous page clicked, current:", currentPage);
                     if (onPageChange) {
+                      logger.debug('p2p', 
+                        "Calling onPageChange with:",
+                        currentPage - 1
+                      );
                       onPageChange(currentPage - 1);
+                    } else {
+                      logger.debug('p2p', "onPageChange is not provided");
                     }
                   }}
                   disabled={currentPage === 1}
@@ -458,6 +450,7 @@ export const Table: React.FC<TableProps> = ({
                         <button
                           key={i}
                           onClick={() => {
+                            logger.debug('p2p', "Page clicked:", i);
                             onPageChange?.(i);
                           }}
                           className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
@@ -517,6 +510,7 @@ export const Table: React.FC<TableProps> = ({
                         <button
                           key={i}
                           onClick={() => {
+                            logger.debug('p2p', "Page clicked:", i);
                             onPageChange?.(i);
                           }}
                           className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
@@ -545,6 +539,7 @@ export const Table: React.FC<TableProps> = ({
                         <button
                           key={totalPages}
                           onClick={() => {
+                            logger.debug('p2p', "Last page clicked:", totalPages);
                             onPageChange?.(totalPages);
                           }}
                           className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
@@ -563,8 +558,15 @@ export const Table: React.FC<TableProps> = ({
                 })()}
                 <button
                   onClick={() => {
+                    logger.debug('p2p', "Next page clicked, current:", currentPage);
                     if (onPageChange) {
+                      logger.debug('p2p', 
+                        "Calling onPageChange with:",
+                        currentPage + 1
+                      );
                       onPageChange(currentPage + 1);
+                    } else {
+                      logger.debug('p2p', "onPageChange is not provided");
                     }
                   }}
                   disabled={currentPage === totalPages}
@@ -642,7 +644,7 @@ export const Table: React.FC<TableProps> = ({
                     };
                     
                     if (navigator.share) {
-                      navigator.share(shareData).catch(err => {});
+                      navigator.share(shareData).catch(err => logger.debug('p2p', 'Share failed:', err));
                     } else {
                       // Fallback - copy to clipboard
                       navigator.clipboard.writeText(`Transaction ID: ${selectedTransaction.id}\nAmount: ${selectedTransaction.amount} ${selectedTransaction.assetSymbol}\nStatus: ${selectedTransaction.status}`);

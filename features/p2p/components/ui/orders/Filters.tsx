@@ -11,6 +11,8 @@ import {
 import Image from "next/image";
 import { GrStatusGood } from "react-icons/gr";
 
+import { logger } from '@/lib/utils/logger';
+
 interface FiltersProps {
   filters: {
     type: string;
@@ -58,6 +60,7 @@ const Filters: React.FC<FiltersProps> = ({
     onFilterChange({ ...filters, currency: value });
   };
 
+  logger.debug('p2p', "Order Status Tabs:", orderStatusTabs);
   return (
     <div className="w-full flex flex-col">
       {/* ───────────────────────── Tabs */}

@@ -3,8 +3,8 @@
  * Reduces timeouts, improves caching, and optimizes external API calls
  */
 
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { logger } from './utils/logger';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
+import { logger } from "./utils/logger";
 
 interface OptimizedApiConfig {
   timeout: number;
@@ -45,9 +45,15 @@ const EXTERNAL_API_CONFIGS = {
 };
 
 class OptimizedApiClient {
-  private cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+  private cache = new Map<
+    string,
+    { data: any; timestamp: number; ttl: number }
+  >();
   private pendingRequests = new Map<string, Promise<any>>();
-  private rateLimiters = new Map<string, { lastRequest: number; requestCount: number }>();
+  private rateLimiters = new Map<
+    string,
+    { lastRequest: number; requestCount: number }
+  >();
 
   private getRateLimiter(apiName: string) {
     if (!this.rateLimiters.has(apiName)) {
@@ -69,7 +75,7 @@ class OptimizedApiClient {
     // Apply rate limiting
     if (timeSinceLastRequest < config.rateLimitDelay) {
       const delay = config.rateLimitDelay - timeSinceLastRequest;
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
 
     limiter.lastRequest = Date.now();
@@ -77,26 +83,31 @@ class OptimizedApiClient {
   }
 
   private generateCacheKey(url: string, config?: AxiosRequestConfig): string {
-    const method = config?.method || 'GET';
-    const params = config?.params ? JSON.stringify(config.params) : '';
-    const data = config?.data ? JSON.stringify(config.data) : '';
-    return `${method}_${btoa(url + params + data).replace(/[^a-zA-Z0-9]/g, '_')}`;
+    const method = config?.method || "GET";
+    const params = config?.params ? JSON.stringify(config.params) : "";
+    const data = config?.data ? JSON.stringify(config.data) : "";
+    return `${method}_${btoa(url + params + data).replace(/[^a-zA-Z0-9]/g, "_")}`;
   }
 
-  private isCacheValid(entry: { data: any; timestamp: number; ttl: number }): boolean {
+  private isCacheValid(entry: {
+    data: any;
+    timestamp: number;
+    ttl: number;
+  }): boolean {
     return Date.now() - entry.timestamp < entry.ttl;
   }
 
   private async getFromCache<T>(key: string): Promise<T | null> {
     const entry = this.cache.get(key);
     if (entry && this.isCacheValid(entry)) {
+      logger.debug("api", "Cache hit", { key });
       return entry.data;
     }
-    
+
     if (entry) {
       this.cache.delete(key); // Remove expired entry
     }
-    
+
     return null;
   }
 
@@ -117,33 +128,52 @@ class OptimizedApiClient {
 
     for (let attempt = 0; attempt <= config.retries; attempt++) {
       try {
-        if (apiName === 'coingecko') {
+        if (apiName === "coingecko") {
           await this.checkRateLimit(apiName, config);
         }
 
         return await requestFn();
       } catch (error) {
         lastError = error as Error;
-        
+
         if (attempt < config.retries) {
           const delay = config.retryDelay * (attempt + 1);
-          await new Promise(resolve => setTimeout(resolve, delay));
+          logger.warn("api", `Request failed, retrying in ${delay}ms`, {
+            attempt: attempt + 1,
+            error: lastError.message,
+            apiName,
+          });
+          await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
     }
 
-    throw lastError || new Error('Request failed after all retries');
+    throw lastError || new Error("Request failed after all retries");
   }
 
   async get<T>(
     url: string,
-    config?: AxiosRequestConfig & { apiName?: string; useCache?: boolean; cacheTTL?: number }
+    config?: AxiosRequestConfig & {
+      apiName?: string;
+      useCache?: boolean;
+      cacheTTL?: number;
+    }
   ): Promise<AxiosResponse<T>> {
-    const { apiName = 'default', useCache = true, cacheTTL = OPTIMIZED_CONFIG.cacheTTL, ...axiosConfig } = config || {};
+    const {
+      apiName = "default",
+      useCache = true,
+      cacheTTL = OPTIMIZED_CONFIG.cacheTTL,
+      ...axiosConfig
+    } = config || {};
     const cacheKey = this.generateCacheKey(url, axiosConfig);
 
     // Check cache first
-    if (useCache && axiosConfig.method !== 'POST' && axiosConfig.method !== 'PUT' && axiosConfig.method !== 'PATCH') {
+    if (
+      useCache &&
+      axiosConfig.method !== "POST" &&
+      axiosConfig.method !== "PUT" &&
+      axiosConfig.method !== "PATCH"
+    ) {
       const cached = await this.getFromCache<AxiosResponse<T>>(cacheKey);
       if (cached) {
         return cached;
@@ -151,33 +181,43 @@ class OptimizedApiClient {
     }
 
     // Check for pending request deduplication
-    if (OPTIMIZED_CONFIG.enableRequestDeduplication && this.pendingRequests.has(cacheKey)) {
+    if (
+      OPTIMIZED_CONFIG.enableRequestDeduplication &&
+      this.pendingRequests.has(cacheKey)
+    ) {
+      logger.debug("api", "Deduplicating request", { url, cacheKey });
       return this.pendingRequests.get(cacheKey)!;
     }
 
     // Get API-specific config
-    const apiConfig = EXTERNAL_API_CONFIGS[apiName as keyof typeof EXTERNAL_API_CONFIGS] || {
+    const apiConfig = EXTERNAL_API_CONFIGS[
+      apiName as keyof typeof EXTERNAL_API_CONFIGS
+    ] || {
       timeout: OPTIMIZED_CONFIG.timeout,
       retries: OPTIMIZED_CONFIG.retries,
       retryDelay: OPTIMIZED_CONFIG.retryDelay,
     };
 
     // Create request promise
-    const requestPromise = this.executeWithRetry(async () => {
-      const axiosInstance = axios.create({
-        timeout: apiConfig.timeout,
-        ...axiosConfig,
-      });
+    const requestPromise = this.executeWithRetry(
+      async () => {
+        const axiosInstance = axios.create({
+          timeout: apiConfig.timeout,
+          ...axiosConfig,
+        });
 
-      const response = await axiosInstance.get<T>(url, axiosConfig);
-      
-      // Cache successful response
-      if (useCache) {
-        this.setCache(cacheKey, response, cacheTTL);
-      }
+        const response = await axiosInstance.get<T>(url, axiosConfig);
 
-      return response;
-    }, apiConfig, apiName);
+        // Cache successful response
+        if (useCache) {
+          this.setCache(cacheKey, response, cacheTTL);
+        }
+
+        return response;
+      },
+      apiConfig,
+      apiName
+    );
 
     // Store pending request for deduplication
     if (OPTIMIZED_CONFIG.enableRequestDeduplication) {
@@ -200,21 +240,27 @@ class OptimizedApiClient {
     data?: any,
     config?: AxiosRequestConfig & { apiName?: string }
   ): Promise<AxiosResponse<T>> {
-    const { apiName = 'default', ...axiosConfig } = config || {};
-    const apiConfig = EXTERNAL_API_CONFIGS[apiName as keyof typeof EXTERNAL_API_CONFIGS] || {
+    const { apiName = "default", ...axiosConfig } = config || {};
+    const apiConfig = EXTERNAL_API_CONFIGS[
+      apiName as keyof typeof EXTERNAL_API_CONFIGS
+    ] || {
       timeout: OPTIMIZED_CONFIG.timeout,
       retries: OPTIMIZED_CONFIG.retries,
       retryDelay: OPTIMIZED_CONFIG.retryDelay,
     };
 
-    return this.executeWithRetry(async () => {
-      const axiosInstance = axios.create({
-        timeout: apiConfig.timeout,
-        ...axiosConfig,
-      });
+    return this.executeWithRetry(
+      async () => {
+        const axiosInstance = axios.create({
+          timeout: apiConfig.timeout,
+          ...axiosConfig,
+        });
 
-      return await axiosInstance.post<T>(url, data, axiosConfig);
-    }, apiConfig, apiName);
+        return await axiosInstance.post<T>(url, data, axiosConfig);
+      },
+      apiConfig,
+      apiName
+    );
   }
 
   // Clear cache for specific pattern or all
@@ -247,7 +293,3 @@ export const optimizedGet = optimizedApiClient.get.bind(optimizedApiClient);
 export const optimizedPost = optimizedApiClient.post.bind(optimizedApiClient);
 
 export default optimizedApiClient;
-
-
-
-

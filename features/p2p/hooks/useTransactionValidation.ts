@@ -7,6 +7,8 @@ import {
 } from "../utils/transactionValidation";
 import { useCallback } from "react";
 
+import { logger } from '@/lib/utils/logger';
+
 export const useTransactionValidation = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { data: wallets } = useSelector((state: RootState) => state.wallets);
@@ -44,7 +46,7 @@ export const useTransactionValidation = () => {
         transactionType,
       };
 
-      console.log("Final Validation Context:", context);
+      logger.debug('p2p', "Final Validation Context:", context);
 
       return TransactionValidator.validateTransaction(context);
     },

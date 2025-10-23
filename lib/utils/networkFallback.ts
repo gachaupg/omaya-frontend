@@ -20,10 +20,12 @@ export class NetworkFallback {
       window.addEventListener("online", () => {
         this.isOnline = true;
         this.failedEndpoints.clear();
+        logger.info("api", "Network back online, clearing failed endpoints");
       });
 
       window.addEventListener("offline", () => {
         this.isOnline = false;
+        logger.warn("api", "Network went offline");
       });
     }
   }
@@ -34,6 +36,7 @@ export class NetworkFallback {
 
   static markEndpointFailed(endpoint: string) {
     this.failedEndpoints.add(endpoint);
+    logger.warn("api", `Endpoint marked as failed: ${endpoint}`);
   }
 
   static isEndpointFailed(endpoint: string): boolean {
@@ -42,6 +45,7 @@ export class NetworkFallback {
 
   static clearFailedEndpoint(endpoint: string) {
     this.failedEndpoints.delete(endpoint);
+    logger.info("api", `Endpoint cleared from failed list: ${endpoint}`);
   }
 
   static async withFallback<T>(
@@ -55,6 +59,7 @@ export class NetworkFallback {
 
     // If network is offline, return fallback data immediately
     if (!this.isOnline && config.fallbackData) {
+      logger.warn("api", "Network offline, returning fallback data");
       return config.fallbackData;
     }
 
@@ -65,6 +70,13 @@ export class NetworkFallback {
         return result;
       } catch (error: any) {
         lastError = error;
+
+        // Log the error
+        logger.error("api", `API call failed, attempt ${attempt + 1}`, {
+          error: error.message,
+          status: error.response?.status,
+          stack: error.stack,
+        });
 
         // Don't retry on client errors (4xx)
         if (
@@ -91,10 +103,12 @@ export class NetworkFallback {
 
     // Return fallback data if available
     if (config.fallbackData) {
+      logger.warn("api", "All retry attempts failed, returning fallback data");
       return config.fallbackData;
     }
 
     // If no fallback data, return null instead of throwing
+    logger.error("api", "API call failed and no fallback data available");
     return null;
   }
 

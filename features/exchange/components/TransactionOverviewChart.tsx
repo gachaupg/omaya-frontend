@@ -8,6 +8,8 @@ import { fetchTransactions } from "../slices/exchangeSlice";
 import { Transaction } from "../types";
 import { storage } from '../../auth/utils/storage';
 
+import { logger } from '@/lib/utils/logger';
+
 type TabType = 'All' | 'Deposits' | 'Withdrawals';
 type TimeFilterType = 'week' | 'month' | 'year';
 
@@ -23,23 +25,31 @@ const TransactionOverviewChart: React.FC = () => {
   useEffect(() => {
     const profile = storage.getProfile();
     const email = profile?.user?.email || "";
+    logger.debug('exchange', '=== USER PROFILE CHART ===', { profile, email });
     setUserEmail(email);
   }, []);
 
   // Fetch transactions when userEmail is set
   useEffect(() => {
     if (userEmail) {
+      logger.debug('exchange', '=== FETCHING TRANSACTIONS CHART ===', { userEmail });
       dispatch(fetchTransactions());
     }
   }, [dispatch, userEmail]);
 
   const aggregateData = (txs: Transaction[]) => {
     if (!txs || !userEmail) {
+      logger.debug('exchange', 'No transactions or user email available for chart:', { transactions: txs, userEmail });
       return [];
     }
 
     // Filter transactions for the current user
     const userTransactions = txs.filter(tx => tx.user_email === userEmail);
+    logger.debug('exchange', 'Filtered transactions for chart:', {
+      totalTransactions: txs.length,
+      userTransactions: userTransactions.length,
+      userEmail
+    });
 
     const now = new Date();
     const currentYear = now.getFullYear();

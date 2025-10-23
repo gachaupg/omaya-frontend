@@ -1,5 +1,7 @@
 import { DeviceSession } from "../types";
 
+import { logger } from '@/lib/utils/logger';
+
 /**
  * Checks if a session with the same IP address already exists
  * @param ipAddress - The IP address to check
@@ -47,7 +49,7 @@ export const getCurrentIPAddress = async (): Promise<string> => {
       return data.ip;
     }
   } catch (error) {
-    console.warn("Failed to get IP address:", error);
+    logger.warn('dashboard', "Failed to get IP address:", error);
   }
   return "Unknown";
 };
@@ -69,7 +71,7 @@ export const getLocationFromIP = async (ipAddress: string): Promise<string> => {
       return `${data.city || "Unknown"}, ${data.country_name || "Unknown"}`;
     }
   } catch (error) {
-    console.warn("Failed to get location from IP:", error);
+    logger.warn('dashboard', "Failed to get location from IP:", error);
   }
   return "Unknown";
 };

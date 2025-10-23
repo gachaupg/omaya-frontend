@@ -8,6 +8,8 @@ import { useRouter } from "next/navigation";
 import { fetchMerchantApplicationStatusThunk } from "@/features/p2p/slices/merchantSlice";
 import { fetchFeedback } from "@/features/p2p/slices/feedbackSlice";
 
+import { logger } from '@/lib/utils/logger';
+
 const P2pProfile = ({
   wallets,
   summary,
@@ -44,7 +46,9 @@ const P2pProfile = ({
     return { total, positive, positivePercentage };
   }, [feedbackData]);
   
-
+  logger.debug('p2p', "P2pProfile user:", user);
+  logger.debug('p2p', "P2pProfile wallets:", wallets);
+  logger.debug('p2p', "P2pProfile summary:", summary);
 
   // Get balance from wallet response - try multiple sources (same logic as P2pWallet.tsx)
   const totalBalance = wallets?.total_balance ? toNumber(wallets.total_balance) : 0;

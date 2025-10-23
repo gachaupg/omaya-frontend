@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+import { logger } from '@/lib/utils/logger';
+
 export interface FAQItem {
   _id: string;
   title: string;
@@ -44,7 +46,7 @@ export const useFAQ = (category?: string) => {
 
         setFaqs(transformedFaqs);
       } catch (err) {
-        console.error("Error fetching FAQs:", err);
+        logger.error('general', "Error fetching FAQs:", err);
 
         // Provide fallback data instead of showing error to user
         const fallbackFaqs: FAQItem[] = [

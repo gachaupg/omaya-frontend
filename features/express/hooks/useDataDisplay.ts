@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
 
+import { logger } from '@/lib/utils/logger';
+
 interface UseDataDisplayProps<T> {
   data: T[] | null | undefined;
   loading: boolean;
@@ -41,6 +43,18 @@ export function useDataDisplay<T>({
     
     // Show data if we have any data available (cached or fresh)
     const shouldShowData = hasData;
+    
+    logger.debug('general', `📊 ${dataName} Display State:`, {
+      hasData,
+      hasError,
+      isEmpty,
+      shouldShowLoading,
+      shouldShowData,
+      dataLength: data?.length || 0,
+      fallbackLength: fallbackData?.length || 0,
+      displayLength: displayData?.length || 0,
+      loading,
+    });
 
     return {
       displayData: displayData || [],

@@ -14,6 +14,8 @@ import {
 import type { WebSocketMessage } from "../services/tradeMessagesWebSocket";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 
+import { logger } from '@/lib/utils/logger';
+
 interface UseTradeMessagesWebSocketOptions {
   tradeId: string;
   enabled?: boolean;
@@ -139,6 +141,7 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
             // Initial list of messages - handle both formats
             const messagesList = message.data.messages || message.data;
             if (messagesList && Array.isArray(messagesList)) {
+              logger.debug('p2p', "📨 Received message list via WebSocket:", messagesList.length, "messages");
               dispatch(
                 setMessages({
                   tradeId,
@@ -153,13 +156,23 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
           case "message_received":
             // New message received - the data IS the message itself
             if (message.data && message.data.id) {
+              // Log detailed info about incoming message
+              logger.debug('p2p', "📨 New message received via WebSocket:", {
+                id: message.data.id,
+                hasText: !!message.data.message,
+                text: message.data.message?.substring(0, 30) || '(no text)',
+                hasImages: Array.isArray(message.data.images) && message.data.images.length > 0,
+                imageCount: message.data.images?.length || 0,
+                images: message.data.images,
+              });
+              
               const newMessage: TradeMessage = {
                 id: message.data.id,
                 trade: message.data.trade || parseInt(tradeId),
                 sender: message.data.sender,
                 sender_name: message.data.sender_name,
-                sender_username: message.data.sender_username, // Map username from WebSocket
                 message: message.data.message,
+                // IMPORTANT: Set images array even if empty - this signals that refresh is needed
                 images: message.data.images || [],
                 timestamp: message.data.timestamp,
                 seller_photo: message.data.seller_photo || "",
@@ -171,14 +184,30 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
                   message: newMessage,
                 })
               );
+              
+              // If message has images but no valid URLs, log warning
+              if (newMessage.images && newMessage.images.length > 0) {
+                const hasValidUrls = newMessage.images.some((img: any) => {
+                  const url = (img?.image_url || img?.image || img);
+                  return url && typeof url === 'string' && url.trim() !== '' && !url.startsWith('blob:');
+                });
+                
+                if (!hasValidUrls) {
+                  console.warn("⚠️ WebSocket message has images but no valid S3 URLs yet - auto-refresh should trigger");
+                }
+              }
             }
             setIsConnected(true);
             break;
 
           case "error":
+            // Silent error handling
+            console.warn("⚠️ WebSocket error message:", message.data);
             break;
 
           default:
+            // Log unknown message types for debugging
+            logger.debug('p2p', "❓ Unknown WebSocket message type:", message.type, message.data);
             break;
         }
       } catch (error) {

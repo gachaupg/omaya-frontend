@@ -4,6 +4,8 @@ import { useDispatch, useSelector } from 'react-redux'
 import { RootState } from '@/store'
 import { submitMerchantApplicationThunk, clearMerchantError, clearMerchantSuccess, fetchMerchantApplicationStatusThunk } from '@/features/p2p/slices/merchantSlice'
 
+import { logger } from '@/lib/utils/logger';
+
 const Merchant = () => {
   const dispatch = useDispatch()
   const { loading, error, success, status, statusLoading } = useSelector((state: RootState) => state.merchant)
@@ -99,12 +101,18 @@ const Merchant = () => {
     // Add files to FormData
     Object.entries(files).forEach(([key, file]) => {
       if (file) {
+        logger.debug('p2p', 'Adding file to FormData:', key, file.name)
         formData.append(key, file)
       } else {
+        logger.debug('p2p', 'No file for:', key)
       }
     })
 
     // Debug: Log all FormData entries
+    logger.debug('p2p', 'FormData entries:')
+    for (let [key, value] of formData.entries()) {
+      logger.debug('p2p', key, value)
+    }
 
     // Check if required files are missing
     const requiredFiles = ['bank_account_ownership_proof', 'proof_of_address']
@@ -119,7 +127,8 @@ const Merchant = () => {
       await dispatch(submitMerchantApplicationThunk(formData) as any)
       // Refresh status after successful submission
       dispatch(fetchMerchantApplicationStatusThunk() as any)
-    } catch (err) { 
+    } catch (err) {
+      console.error('Error submitting merchant application:', err)
     }
   }
 

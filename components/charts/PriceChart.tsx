@@ -143,25 +143,23 @@ const CryptoCard = ({
   chartBgTrans,
   rate,
 }: CryptoData) => (
-<div className="
+  <div
+    className="
   flex-1 min-w-[160px] max-w-[260px] sm:min-w-[180px] sm:max-w-[320px] h-[160px]
   text-[13px] rounded-2xl shadow-lg p-3 flex flex-col justify-between border border-gray-300 relative
-">
+"
+  >
     <div className="flex items-center justify-between mb-1">
       <div className="flex items-center gap-1.5">
-        {image ? (
-          <img src={image} alt={name} className="w-8 h-8" />
-        ) : (
-          icon
-        )}
+        {image ? <img src={image} alt={name} className="w-8 h-8" /> : icon}
         <div className="flex flex-col">
-        <span className="dark:text-white font-semibold text-sm sm:text-base">
+          <span className="dark:text-white font-semibold text-sm sm:text-base">
             {symbol}
           </span>
           {volume !== undefined && (
             <span className="text-xs text-gray-500">
               Vol: {volume.toFixed(3)}
-        </span>
+            </span>
           )}
         </div>
       </div>
@@ -177,7 +175,7 @@ const CryptoCard = ({
             <p className="text-lg">{transactionCount}</p>
           </>
         ) : (
-      <p>{price}</p>
+          <p>{price}</p>
         )}
       </div>
       <div className="h-5 px-2 rounded-md flex flex-row gap-1 items-center justify-center bg-[#48CC544D]">
@@ -190,14 +188,25 @@ const CryptoCard = ({
   </div>
 );
 
-const PriceCards = () => {
+const PriceCards = React.memo(() => {
   const [isMounted, setIsMounted] = useState(false);
-  const [cryptoData, setCryptoData] = useState<CryptoData[]>([]);
+  const [cryptoData, setCryptoData] =
+    useState<CryptoData[]>([]);
   const [loading, setLoading] = useState(true);
+  const fetchedRef = React.useRef(false);
+  const lastFetchRef = React.useRef<number>(0);
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
   useEffect(() => {
     setIsMounted(true);
-    loadTopAssets();
+
+    // Check if we need to fetch (not fetched yet OR cache expired)
+    const now = Date.now();
+    const cacheExpired = now - lastFetchRef.current > CACHE_DURATION;
+
+    if (!fetchedRef.current || cacheExpired) {
+      loadTopAssets();
+    }
   }, []);
 
   const loadTopAssets = async () => {
@@ -206,27 +215,30 @@ const PriceCards = () => {
       const response = await fetchTopAssets();
 
       if (response.success && response.data.length > 0) {
-        const mappedData: CryptoData[] = response.data.map((asset: TopAsset) => {
-          const colorScheme = getColorScheme(asset.symbol);
-          return {
-            name: asset.name || asset.symbol,
-            symbol: asset.symbol,
-            icon: getCryptoIcon(asset.symbol),
-            image: asset.image,
-            price: `Vol: ${asset.volume.toFixed(3)}`,
-            volume: asset.volume,
-            transactionCount: asset.transaction_count,
-            rate: `${asset.transaction_count} tx`,
-            ...colorScheme,
-          };
-        });
+        const mappedData: CryptoData[] = response.data.map(
+          (asset: TopAsset) => {
+            const colorScheme = getColorScheme(asset.symbol);
+            return {
+              name: asset.name || asset.symbol,
+              symbol: asset.symbol,
+              icon: getCryptoIcon(asset.symbol),
+              image: asset.image,
+              price: `Vol: ${asset.volume.toFixed(3)}`,
+              volume: asset.volume,
+              transactionCount: asset.transaction_count,
+              rate: `${asset.transaction_count} tx`,
+              ...colorScheme,
+            };
+          }
+        );
         setCryptoData(mappedData);
+        fetchedRef.current = true;
+        lastFetchRef.current = Date.now();
       } else {
         // Set empty array if no data available
         setCryptoData([]);
       }
     } catch (error) {
-      console.error("Failed to fetch top assets:", error);
       // Set empty array on error - no fallback data
       setCryptoData([]);
     } finally {
@@ -241,7 +253,8 @@ const PriceCards = () => {
   return (
     <div className="w-full">
       <h2 className="dark:text-white text-[16px] mb-4">
-        Market Overview {loading && <span className="text-sm text-gray-500">(Loading...)</span>}
+        Market Overview{" "}
+        {loading && <span className="text-sm text-gray-500">(Loading...)</span>}
       </h2>
       {cryptoData.length > 0 ? (
         <div className="flex flex-row gap-4 overflow-x-auto pb-4">
@@ -255,6 +268,8 @@ const PriceCards = () => {
       ) : null}
     </div>
   );
-};
+});
+
+PriceCards.displayName = "PriceCards";
 
 export default PriceCards;

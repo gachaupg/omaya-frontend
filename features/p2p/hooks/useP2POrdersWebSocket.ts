@@ -13,6 +13,8 @@ import { cookieUtils } from "@/lib/utils/cookieUtils";
 import { API_BASE_URL } from "@/config/api";
 import axios from "axios";
 
+import { logger } from '@/lib/utils/logger';
+
 interface UseP2POrdersWebSocketOptions {
   enabled?: boolean;
   fallbackToPolling?: boolean;
@@ -53,6 +55,7 @@ export const useP2POrdersWebSocket = (
         // Get refresh token from localStorage
         const profileStr = localStorage.getItem("profile");
         if (!profileStr) {
+          logger.error('p2p', "❌ [Auth] No profile found in localStorage");
           return null;
         }
 
@@ -60,15 +63,18 @@ export const useP2POrdersWebSocket = (
         const refreshToken = profile?.tokens?.refresh;
 
         if (!refreshToken) {
+          logger.error('p2p', "❌ [Auth] No refresh token found");
           return null;
         }
 
+        logger.debug('p2p', "🔄 [Auth] Refreshing access token...");
         const response = await axios.post(
           `${API_BASE_URL}/api/token/refresh/`,
           { refresh: refreshToken }
         );
 
         const newAccessToken = response.data.access;
+        logger.debug('p2p', "✅ [Auth] Token refreshed successfully");
 
         // Update profile in localStorage
         profile.tokens.access = newAccessToken;
@@ -78,7 +84,7 @@ export const useP2POrdersWebSocket = (
         cookieUtils.setCookie("access_token", newAccessToken, {
           maxAge: 86400,
           secure: true,
-          sameSite: "strict",
+          sameSite: 'strict'
         });
 
         // Also update standalone token in localStorage for backward compatibility
@@ -86,6 +92,7 @@ export const useP2POrdersWebSocket = (
 
         return newAccessToken;
       } catch (error) {
+        console.error("❌ [Auth] Token refresh failed:", error);
         // Redirect to login if refresh fails
         if (typeof window !== "undefined") {
           localStorage.removeItem("profile");
@@ -100,19 +107,25 @@ export const useP2POrdersWebSocket = (
     const getAccessToken = async (): Promise<string | null> => {
       // First try to get from cookies (primary storage)
       let token = cookieUtils.getCookie("access_token");
-
+      
       if (!token && typeof window !== "undefined") {
         // Fallback to localStorage
         token = localStorage.getItem("access_token");
       }
 
       if (!token) {
+        logger.debug('p2p', "❌ [Auth] No access token found");
         return null;
       }
 
+      logger.debug('p2p', "✅ [Auth] Access token found");
+      logger.debug('p2p', "🔑 [Auth] Token preview:", token.substring(0, 20) + "...");
+      logger.debug('p2p', "📏 [Auth] Token length:", token.length);
+
       // Validate JWT structure
-      const tokenParts = token.split(".");
+      const tokenParts = token.split('.');
       if (tokenParts.length !== 3) {
+        console.error("⚠️ [Auth] Invalid JWT structure");
         return null;
       }
 
@@ -122,14 +135,26 @@ export const useP2POrdersWebSocket = (
         const expiresAt = payload.exp ? new Date(payload.exp * 1000) : null;
         const isExpired = payload.exp ? payload.exp * 1000 < Date.now() : false;
 
+        logger.debug('p2p', "📊 [Auth] Token payload:", {
+          exp: payload.exp,
+          expiresAt: expiresAt?.toISOString() || 'N/A',
+          isExpired,
+          user_id: payload.user_id,
+        });
+
         if (isExpired) {
+          console.warn("⚠️ [Auth] Token has expired, attempting to refresh...");
           const newToken = await refreshAccessToken();
           if (newToken) {
+            logger.debug('p2p', "✅ [Auth] Using refreshed token");
             return newToken;
           }
+          console.error("❌ [Auth] Token refresh failed");
           return null;
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn("⚠️ [Auth] Could not decode token payload:", e);
+      }
 
       return token;
     };
@@ -139,10 +164,12 @@ export const useP2POrdersWebSocket = (
       const token = await getAccessToken();
 
       if (!token) {
+        console.warn("⚠️ [Auth] No access token available, cannot connect to P2P Orders WebSocket");
         setConnectionError("No access token");
-
+        
         // Fall back to polling if enabled
         if (fallbackToPolling) {
+          logger.debug('p2p', "🔄 Falling back to HTTP polling for P2P orders");
           startPolling();
         }
         return;
@@ -150,64 +177,99 @@ export const useP2POrdersWebSocket = (
 
       const ws = wsRef.current;
 
-      // Handle WebSocket messages
-      const unsubscribeMessage = ws.onMessage((message: WebSocketMessage) => {
-        if (!mountedRef.current) {
-          return;
+    // Handle WebSocket messages
+    const unsubscribeMessage = ws.onMessage((message: WebSocketMessage) => {
+      if (!mountedRef.current) {
+        logger.debug('p2p', "⚠️ [WS Hook] Component unmounted, ignoring message");
+        return;
+      }
+
+      logger.debug('p2p', "📨 [WS Hook] Received WebSocket message:", message);
+
+      try {
+        switch (message.type) {
+          case "connection_established":
+            logger.debug('p2p', "✅ [WS Hook] Connection established");
+            setIsConnected(true);
+            setConnectionError(null);
+            // Stop polling when WebSocket is connected
+            stopPolling();
+            break;
+
+          case "initial_data":
+            logger.debug('p2p', "📊 [WS Hook] Processing initial_data");
+            // Initial data from WebSocket - full refresh
+            if (message.data.buy_orders || message.data.sell_orders) {
+              logger.debug('p2p', "📊 [WS Hook] Initial P2P orders from WebSocket", {
+                buyOrdersCount: message.data.buy_orders?.length || 0,
+                sellOrdersCount: message.data.sell_orders?.length || 0,
+                timestamp: message.data.timestamp,
+                hasBuyOrders: !!message.data.buy_orders,
+                hasSellOrders: !!message.data.sell_orders,
+              });
+              
+              logger.debug('p2p', "🚀 [WS Hook] Dispatching updateOrdersFromWS with initial data");
+              dispatch(
+                updateOrdersFromWS({
+                  buy_orders: message.data.buy_orders || [],
+                  sell_orders: message.data.sell_orders || [],
+                  pagination: message.data.pagination,
+                  full_refresh: true, // Full refresh for initial data
+                })
+              );
+              logger.debug('p2p', "✅ [WS Hook] Dispatched initial data to Redux");
+            } else {
+              console.warn("⚠️ [WS Hook] initial_data message has no buy_orders or sell_orders");
+            }
+            break;
+
+          case "orders_update":
+            logger.debug('p2p', "🔄 [WS Hook] Processing orders_update");
+            // Incremental update from WebSocket - merge with existing
+            if (message.data.buy_orders || message.data.sell_orders) {
+              logger.debug('p2p', "🔄 [WS Hook] Incremental P2P orders update from WebSocket", {
+                buyOrdersCount: message.data.buy_orders?.length || 0,
+                sellOrdersCount: message.data.sell_orders?.length || 0,
+                timestamp: message.data.timestamp,
+                fullRefresh: message.data.full_refresh,
+                hasBuyOrders: !!message.data.buy_orders,
+                hasSellOrders: !!message.data.sell_orders,
+              });
+              
+              logger.debug('p2p', "🚀 [WS Hook] Dispatching updateOrdersFromWS with update");
+              dispatch(
+                updateOrdersFromWS({
+                  buy_orders: message.data.buy_orders || [],
+                  sell_orders: message.data.sell_orders || [],
+                  pagination: message.data.pagination,
+                  full_refresh: message.data.full_refresh || false, // Use backend's full_refresh flag
+                })
+              );
+              logger.debug('p2p', "✅ [WS Hook] Dispatched update to Redux");
+            } else {
+              console.warn("⚠️ [WS Hook] orders_update message has no buy_orders or sell_orders");
+            }
+            break;
+
+          case "error":
+            console.error("❌ [WS Hook] P2P Orders WebSocket error:", message.data.message);
+            setConnectionError(message.data.message || "WebSocket error");
+            break;
+
+          default:
+            console.warn("⚠️ [WS Hook] Unknown P2P Orders message type:", message.type);
+            console.warn("📄 [WS Hook] Full message:", message);
         }
-
-        try {
-          switch (message.type) {
-            case "connection_established":
-              setIsConnected(true);
-              setConnectionError(null);
-              // Stop polling when WebSocket is connected
-              stopPolling();
-              break;
-
-            case "initial_data":
-              // Initial data from WebSocket - full refresh
-              if (message.data.buy_orders || message.data.sell_orders) {
-                dispatch(
-                  updateOrdersFromWS({
-                    buy_orders: message.data.buy_orders || [],
-                    sell_orders: message.data.sell_orders || [],
-                    pagination: message.data.pagination,
-                    full_refresh: true, // Full refresh for initial data
-                  })
-                );
-              } else {
-              }
-              break;
-
-            case "orders_update":
-              // Incremental update from WebSocket - merge with existing
-              if (message.data.buy_orders || message.data.sell_orders) {
-                dispatch(
-                  updateOrdersFromWS({
-                    buy_orders: message.data.buy_orders || [],
-                    sell_orders: message.data.sell_orders || [],
-                    pagination: message.data.pagination,
-                    full_refresh: message.data.full_refresh || false, // Use backend's full_refresh flag
-                  })
-                );
-              } else {
-              }
-              break;
-
-            case "error":
-              setConnectionError(message.data.message || "WebSocket error");
-              break;
-
-            default:
-          }
-        } catch (error) {}
-      });
+      } catch (error) {
+        console.error("❌ [WS Hook] Error handling P2P Orders WebSocket message:", error);
+        console.error("📄 [WS Hook] Message that caused error:", message);
+      }
+    });
 
       // Handle WebSocket errors
       const unsubscribeError = ws.onError((error) => {
         setConnectionError("WebSocket connection error");
-
+        
         // Fall back to polling on error if enabled
         if (fallbackToPolling) {
           startPolling();
@@ -218,19 +280,25 @@ export const useP2POrdersWebSocket = (
       const unsubscribeClose = ws.onClose((event?: CloseEvent) => {
         if (!mountedRef.current) return;
         setIsConnected(false);
-
+        
         // Check if it's a 4003 (Forbidden) error
         if (event && event.code === 4003) {
-         
+          console.error("🚫 [WS Hook] WebSocket closed with 4003 (Forbidden) - Authentication failed");
+          console.error("💡 [WS Hook] This usually means:");
+          console.error("   1. Token is invalid or expired");
+          console.error("   2. Backend WebSocket authentication is failing");
+          console.error("   3. Token format doesn't match backend expectations");
           setConnectionError("Authentication failed (4003)");
-
+          
           // ALWAYS fall back to polling on auth errors
+          logger.debug('p2p', "🔄 [WS Hook] Falling back to HTTP polling due to auth failure");
           startPolling();
           return;
         }
-
+        
         // Fall back to polling when connection closes if enabled
         if (fallbackToPolling) {
+          logger.debug('p2p', "🔄 [WS Hook] Falling back to HTTP polling");
           startPolling();
         }
       });
@@ -267,10 +335,11 @@ export const useP2POrdersWebSocket = (
     if (pollingIntervalRef.current) {
       return;
     }
-
-    if (process.env.NODE_ENV === "development") {
+    
+    if (process.env.NODE_ENV === 'development') {
+      logger.debug('p2p', "🔄 Starting HTTP polling for P2P orders");
     }
-
+    
     // Fetch immediately
     dispatch(fetchAllP2PBuyandSell(1));
 
@@ -284,7 +353,8 @@ export const useP2POrdersWebSocket = (
 
   const stopPolling = () => {
     if (pollingIntervalRef.current) {
-      if (process.env.NODE_ENV === "development") {
+      if (process.env.NODE_ENV === 'development') {
+        logger.debug('p2p', "⏹️ Stopping HTTP polling for P2P orders");
       }
       clearInterval(pollingIntervalRef.current);
       pollingIntervalRef.current = null;
@@ -296,3 +366,4 @@ export const useP2POrdersWebSocket = (
     connectionError,
   };
 };
+

@@ -11,7 +11,6 @@ import { storage } from "../features/auth/utils/storage";
 import { API_BASE_URL } from "@/config/api";
 import { logger } from "./utils/logger";
 import ApiHealthChecker from "./utils/apiHealthChecker";
-import { cookieUtils } from "./utils/cookieUtils";
 
 if (!API_BASE_URL) {
   throw new Error(
@@ -28,11 +27,10 @@ interface ApiClientConfig {
 
 const DEFAULT_CONFIG: ApiClientConfig = {
   timeout: 30000, // 30 seconds for financial operations
-  retries: 2, // Reduced from 3 to 2 to prevent excessive retries
+  retries: 3,
   retryDelay: 1000,
   retryCondition: (error: AxiosError) => {
-    // Only retry on network errors and 5xx server errors
-    // Don't retry on 4xx client errors
+    // Retry on network errors and 5xx server errors
     return (
       !error.response ||
       (error.response.status >= 500 && error.response.status < 600)
@@ -50,12 +48,22 @@ const ENDPOINT_SPECIFIC_CONFIG: Record<string, Partial<ApiClientConfig>> = {
   "/api/auth/register/": { timeout: 10000, retries: 1 }, // Faster registration
   "/api/kyc/status/": { timeout: 15000, retries: 2 }, // KYC status check
   "/api/kyc/verify/": { timeout: 30000, retries: 1 }, // KYC verification
-  "/payments/admin/payment-details/": { timeout: 10000, retries: 1 }, // Reduce retries for payment details
-  "/payments/admin/wallet-list/": { timeout: 10000, retries: 1 }, // Reduce retries for wallet list
 };
 
 const generateRequestId = (): string => {
   return `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
+// Request deduplication tracking
+const pendingRequests = new Map<string, Promise<any>>();
+
+/**
+ * Generate a unique key for request deduplication
+ */
+const generateRequestKey = (config: AxiosRequestConfig): string => {
+  const { method, url, params } = config;
+  // Don't include data in key to avoid issues with large payloads
+  return `${method}-${url}-${JSON.stringify(params || {})}`;
 };
 
 const createAxiosInstance = (
@@ -79,7 +87,7 @@ const createAxiosInstance = (
       requestConfig.timeout = endpointConfig.timeout || config.timeout;
     }
 
-    logger.debug("API Request", {
+    logger.debug("api", "API Request", {
       method: requestConfig.method,
       url: requestConfig.url,
       timeout: requestConfig.timeout,
@@ -105,25 +113,6 @@ const addAuthInterceptor = (instance: AxiosInstance): AxiosInstance => {
   return instance;
 };
 
-// Global flag to prevent multiple simultaneous refresh attempts
-let isRefreshing = false;
-let failedQueue: Array<{
-  resolve: (value?: any) => void;
-  reject: (error?: any) => void;
-}> = [];
-
-const processQueue = (error: any, token: string | null = null) => {
-  failedQueue.forEach(({ resolve, reject }) => {
-    if (error) {
-      reject(error);
-    } else {
-      resolve(token);
-    }
-  });
-  
-  failedQueue = [];
-};
-
 const addRefreshTokenInterceptor = (instance: AxiosInstance): AxiosInstance => {
   instance.interceptors.response.use(
     (response) => response,
@@ -137,111 +126,32 @@ const addRefreshTokenInterceptor = (instance: AxiosInstance): AxiosInstance => {
         originalRequest &&
         !(originalRequest as any)._retry
       ) {
-        if (isRefreshing) {
-          // If already refreshing, queue this request
-          return new Promise((resolve, reject) => {
-            failedQueue.push({ resolve, reject });
-          }).then(token => {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
-            return instance(originalRequest);
-          }).catch(err => {
-            return Promise.reject(err);
-          });
-        }
-
         (originalRequest as any)._retry = true;
-        isRefreshing = true;
-
         try {
-          const response = await axios.post(
-            `${API_BASE_URL}/api/token/refresh/`,
-            {
-              refresh: profile.tokens.refresh,
-            }
-          );
+          // Use mutex-protected refresh from tokenRefresh utility
+          // This ensures only one refresh happens even with concurrent 401s
+          const { refreshAccessToken } = await import("./utils/tokenRefresh");
+          const newAccessToken = await refreshAccessToken();
 
-          const newAccessToken = response.data.access;
-          const newRefreshToken = response.data.refresh || profile.tokens.refresh;
-          
-          // Update storage with new tokens
-          const updatedProfile = {
-            ...profile,
-            tokens: {
-              access: newAccessToken,
-              refresh: newRefreshToken,
-            },
-          };
-          storage.setProfile(updatedProfile);
-
-          // Update localStorage access token
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('access_token', newAccessToken);
+          if (!newAccessToken) {
+            throw new Error("Token refresh returned null");
           }
-
-          // Update cookie
-          cookieUtils.setCookie("access_token", newAccessToken, {
-            maxAge: 86400,
-            secure: true,
-            sameSite: 'strict'
-          });
-
-          // Process queued requests
-          processQueue(null, newAccessToken);
 
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
           return instance(originalRequest);
         } catch (refreshError) {
-          // Clear all auth data
-          storage.removeProfile();
-          if (typeof window !== 'undefined') {
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('refresh_token');
-            localStorage.removeItem('user');
-            sessionStorage.clear();
-          }
-          cookieUtils.removeCookie("access_token");
-          
-          // Process queued requests with error
-          processQueue(refreshError, null);
-          
-          // Redirect to login if not on public pages
-          if (typeof window !== 'undefined') {
-            const currentPath = window.location.pathname;
-            const isPublicPage = currentPath === '/' || 
-                                  currentPath.startsWith('/auth/') ||
-                                  currentPath.includes('/about') ||
-                                  currentPath.includes('/contact');
-            
-            if (!isPublicPage) {
-              console.log('🔒 Token refresh failed, redirecting to login...');
-              window.location.href = "/auth/login";
-            }
-          }
-          
+          // Mutex already handled cleanup (storage.removeProfile, redirect)
+          // Just reject to stop the request
           return Promise.reject(refreshError);
-        } finally {
-          isRefreshing = false;
         }
       }
-      
-      // For 401 errors without refresh token (unauthenticated users on home page)
-      // Silently reject without showing error
-      if (error.response?.status === 401 && !profile?.tokens?.refresh) {
-        // Completely silent - no logs, no messages
-        return Promise.reject({ 
-          ...error, 
-          message: '',
-          suppressed: true 
-        });
-      }
-      
       return Promise.reject(error);
     }
   );
   return instance;
 };
 
-// Enhanced retry logic with strict limits
+// Enhanced retry logic
 const addRetryInterceptor = (
   instance: AxiosInstance,
   config: ApiClientConfig
@@ -262,51 +172,25 @@ const addRetryInterceptor = (
         ApiHealthChecker.recordFailure(originalRequest.url, error);
       }
 
-      // Initialize retry count if not set
-      if (!originalRequest._retryCount) {
-        originalRequest._retryCount = 0;
-      }
-
-      // Get endpoint-specific retry limit (hard cap at 3 retries max)
-      const endpoint = originalRequest?.url || "";
-      const endpointConfig = ENDPOINT_SPECIFIC_CONFIG[endpoint];
-      const maxRetries = Math.min(endpointConfig?.retries ?? config.retries, 3); // HARD CAP: Never exceed 3 retries
-
-      // STRICT LIMIT: Stop at max retries for this endpoint
-      if (!originalRequest || originalRequest._retryCount >= maxRetries) {
-        console.warn(`🚫 Max retries (${maxRetries}) reached for ${endpoint} - STOPPING`);
+      if (!originalRequest || originalRequest._retryCount >= config.retries) {
         return Promise.reject(error);
       }
 
-      // Emergency brake: If somehow retry count exceeds 3, force stop
-      if (originalRequest._retryCount >= 3) {
-        console.error(`🛑 EMERGENCY STOP: Retry count exceeded safety limit for ${endpoint}`);
-        return Promise.reject(error);
-      }
-
-      // Don't retry on client errors (4xx) - only network/server errors
-      if (error.response?.status && error.response.status >= 400 && error.response.status < 500) {
-        console.log(`⚠️ Client error (${error.response.status}) - not retrying ${endpoint}`);
-        return Promise.reject(error);
-      }
-
-      // Only retry on network errors or 5xx errors
       if (config.retryCondition(error)) {
-        originalRequest._retryCount = originalRequest._retryCount + 1;
+        originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
 
-        console.log(`🔄 Retry ${originalRequest._retryCount}/${maxRetries} for ${endpoint}`);
+        logger.warn("api", "Retrying API request", {
+          url: originalRequest.url,
+          attempt: originalRequest._retryCount,
+          error: error.message,
+        });
 
-        // Exponential backoff: 1s, 2s, 4s
-        const backoffDelay = config.retryDelay * Math.pow(2, originalRequest._retryCount - 1);
-        await new Promise((resolve) => setTimeout(resolve, backoffDelay));
+        // Wait before retrying
+        await new Promise((resolve) =>
+          setTimeout(resolve, config.retryDelay * originalRequest._retryCount)
+        );
 
-        // Make the retry request
-        try {
-          return await instance(originalRequest);
-        } catch (retryError) {
-          // If this retry also fails, let it propagate
-          return Promise.reject(retryError);
-        }
+        return instance(originalRequest);
       }
 
       return Promise.reject(error);
@@ -316,12 +200,63 @@ const addRetryInterceptor = (
   return instance;
 };
 
+/**
+ * Add request deduplication to prevent identical concurrent requests
+ * Only deduplicates GET requests for safety
+ */
+const addDeduplicationInterceptor = (
+  instance: AxiosInstance
+): AxiosInstance => {
+  // Wrap the request method to track pending requests
+  const originalRequest = instance.request.bind(instance);
+
+  instance.request = function <T = any>(
+    config: AxiosRequestConfig
+  ): Promise<AxiosResponse<T>> {
+    const method = config.method?.toLowerCase() || "get";
+
+    // Only deduplicate GET requests (safe, idempotent)
+    if (method === "get") {
+      const key = generateRequestKey(config);
+
+      // Check if an identical request is already pending
+      if (pendingRequests.has(key)) {
+        logger.debug("api", "Deduplicating GET request", {
+          url: config.url,
+          key,
+        });
+        return pendingRequests.get(key)!;
+      }
+
+      // Store the promise for this request
+      const requestPromise = originalRequest(config)
+        .then((response: AxiosResponse<T>) => {
+          pendingRequests.delete(key);
+          return response;
+        })
+        .catch((error: any) => {
+          pendingRequests.delete(key);
+          throw error;
+        });
+
+      pendingRequests.set(key, requestPromise);
+      return requestPromise;
+    }
+
+    // For non-GET requests, proceed normally
+    return originalRequest(config);
+  } as any;
+
+  return instance;
+};
+
 const createApiClient = (): AxiosInstance => {
   const instance = createAxiosInstance();
   const withAuth = addAuthInterceptor(instance);
   const withRefresh = addRefreshTokenInterceptor(withAuth);
   const withRetry = addRetryInterceptor(withRefresh, DEFAULT_CONFIG);
-  return withRetry;
+  const withDedup = addDeduplicationInterceptor(withRetry);
+  return withDedup;
 };
 
 const apiClient = createApiClient();

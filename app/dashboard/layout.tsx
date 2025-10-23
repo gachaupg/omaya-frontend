@@ -4,6 +4,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import { motion, AnimatePresence } from "framer-motion";
 import KYCVerificationModal from "./kyc/kycmodal";
 import { useKYCVerification } from "@/features/auth/hooks/useKYCVerification";
+import { usePathname } from "next/navigation";
 
 export default function DashboardLayout({
   children,
@@ -12,6 +13,12 @@ export default function DashboardLayout({
 }) {
   // Always call the hook to maintain hook order consistency
   useKYCVerification();
+
+  // Navigation toasts removed in favor of route `loading.tsx`
+
+  // Use pathname as key for proper React reconciliation
+  // This prevents unnecessary component remounts on every render
+  const pathname = usePathname();
 
   return (
     <div className="min-h-screen ml-6 mt-28">
@@ -39,11 +46,11 @@ export default function DashboardLayout({
       <div className="w-full h-full">
         <AnimatePresence mode="wait">
           <motion.div
-            key={Math.random()} // This ensures animation plays on route changes
+            key={pathname} // Use pathname for proper React reconciliation (fixes performance issue)
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.15 }} // Reduced from 0.3s to 0.15s for snappier feel
             className="max-md:mt-40 md:mt-28 md:pl-[222.28px] px-4 md:px-6"
           >
             {children}

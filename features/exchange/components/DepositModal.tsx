@@ -14,6 +14,8 @@ import { validateWalletAddress } from './utils/validation/walletValidation';
 import { calculateCommission } from './utils/calculations/commissionCalculator';
 import { calculateNetworkFee, calculateTotalFees } from './utils/calculations/feeCalculator';
 
+import { logger } from '@/lib/utils/logger';
+
 // Define asset types based on the choices, matching TransactionTypePanel
 const CRYPTO_ASSETS = ['USDT Tether', 'BTC', 'ETH', 'BNB', 'DOGE', 'ADA', 'SOL', 'XRP', 'USD'];
 
@@ -66,7 +68,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ asset, assetType, onClose }
       const text = await navigator.clipboard.readText();
       setWalletAddress(text);
     } catch (err) {
-      console.error('Failed to read clipboard:', err);
+      logger.error('exchange', 'Failed to read clipboard:', err);
     }
   };
 

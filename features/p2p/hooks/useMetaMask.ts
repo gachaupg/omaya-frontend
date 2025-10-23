@@ -6,6 +6,8 @@ import {
 } from "@/lib/utils/web3";
 import { showToast } from "@/lib/utils/toast";
 
+import { logger } from '@/lib/utils/logger';
+
 export const useMetaMask = () => {
   const [isInstalled, setIsInstalled] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
@@ -80,7 +82,7 @@ export const useMetaMask = () => {
       }
       return connectedAccount;
     } catch (error) {
-      console.error("Failed to connect to MetaMask:", error);
+      logger.error('p2p', "Failed to connect to MetaMask:", error);
       return null;
     } finally {
       setIsConnecting(false);

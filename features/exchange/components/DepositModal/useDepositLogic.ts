@@ -16,6 +16,8 @@ import {
 import toast from "react-hot-toast";
 import { Asset, Network, PaymentMethod, PaymentProvider } from "../../types";
 
+import { logger } from '@/lib/utils/logger';
+
 export function useDepositLogic(
   asset: Asset,
   assetType: "Crypto" | "Forex",
@@ -157,7 +159,7 @@ export function useDepositLogic(
       const text = await navigator.clipboard.readText();
       setWalletAddress(text);
     } catch (err) {
-      console.error("Failed to read clipboard:", err);
+      logger.error('exchange', "Failed to read clipboard:", err);
     }
   };
 

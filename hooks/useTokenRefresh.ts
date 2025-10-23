@@ -1,15 +1,20 @@
 /**
  * useTokenRefresh - Hook to ensure token is fresh before making API calls
  */
-import { useEffect, useCallback } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/store/rootReducer';
-import { proactiveTokenRefresh, isTokenExpired } from '@/lib/utils/tokenRefresh';
-import { logout } from '@/features/auth/slices/authSlice';
+import { useEffect, useCallback } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/store/rootReducer";
+import {
+  proactiveTokenRefresh,
+  isTokenExpired,
+} from "@/lib/utils/tokenRefresh";
+import { logout } from "@/features/auth/slices/authSlice";
 
 export const useTokenRefresh = () => {
   const dispatch = useDispatch();
-  const { tokens, isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { tokens, isAuthenticated } = useSelector(
+    (state: RootState) => state.auth
+  );
 
   /**
    * Refresh token if needed before making an API call
@@ -25,7 +30,7 @@ export const useTokenRefresh = () => {
       }
       return true;
     } catch (error) {
-      console.error('Token refresh failed:', error);
+      console.error("Token refresh failed:", error);
       dispatch(logout());
       return false;
     }
@@ -40,27 +45,21 @@ export const useTokenRefresh = () => {
     }
 
     // Check immediately on mount
-    proactiveTokenRefresh().catch((error) => {
-      console.error('Initial token check failed:', error);
-      // If initial check fails, dispatch logout
-      dispatch(logout());
-    });
+    proactiveTokenRefresh().catch(console.error);
 
-    // Set up periodic checks (every 2 minutes)
-    const interval = setInterval(() => {
-      if (isAuthenticated && tokens?.access) {
-        proactiveTokenRefresh().catch((error) => {
-          console.error('Periodic token check failed:', error);
-          // If periodic check fails, dispatch logout
-          dispatch(logout());
-        });
-      }
-    }, 2 * 60 * 1000);
+    // Set up periodic checks (every 5 minutes - increased from 2 to reduce conflicts with interceptor)
+    // The mutex will handle coordination if both mechanisms trigger simultaneously
+    const interval = setInterval(
+      () => {
+        if (isAuthenticated && tokens?.access) {
+          proactiveTokenRefresh().catch(console.error);
+        }
+      },
+      5 * 60 * 1000
+    );
 
     return () => clearInterval(interval);
-  }, [isAuthenticated, tokens?.access, dispatch]);
+  }, [isAuthenticated, tokens?.access]);
 
   return { ensureTokenFresh };
 };
-
-

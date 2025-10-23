@@ -14,6 +14,8 @@ import { fetchAssets, createWithdrawal } from '../slices/exchangeSlice';
 import toast, { Toaster } from 'react-hot-toast';
 import { AxiosRequestConfig } from '../../../lib/apiClient';
 
+import { logger } from '@/lib/utils/logger';
+
 interface WithdrawalModalProps {
   asset?: Asset;
   assetType?: 'Crypto' | 'Forex';
@@ -293,7 +295,7 @@ useEffect(() => {
       toast.success('Withdrawal request submitted successfully!');
       onClose();
     } catch (error: any) {
-      console.error('Withdrawal submission error:', error);
+      logger.error('exchange', 'Withdrawal submission error:', error);
     }
   };
 

@@ -5,18 +5,20 @@
 
 import { getSupportedAssets, getFilteredAssets, getBuyableAssets, getSellableAssets } from './api';
 
+import { logger } from '@/lib/utils/logger';
+
 // Test function to verify the integration
 export const testChangeNowIntegration = async () => {
   try {
-    console.log('Testing ChangeNow API integration...');
+    logger.debug('swap', 'Testing ChangeNow API integration...');
     
     // Test 1: Get all supported assets
     const allAssets = await getSupportedAssets();
-    console.log(`✅ Retrieved ${allAssets.length} total assets`);
+    logger.debug('swap', `✅ Retrieved ${allAssets.length} total assets`);
     
     if (allAssets.length > 0) {
       const firstAsset = allAssets[0];
-      console.log('✅ First asset structure:', {
+      logger.debug('swap', '✅ First asset structure:', {
         asset_id: firstAsset.asset_id,
         name: firstAsset.name,
         ticker: firstAsset.ticker,
@@ -29,21 +31,21 @@ export const testChangeNowIntegration = async () => {
     
     // Test 2: Get buyable assets
     const buyableAssets = await getBuyableAssets();
-    console.log(`✅ Retrieved ${buyableAssets.length} buyable assets`);
+    logger.debug('swap', `✅ Retrieved ${buyableAssets.length} buyable assets`);
     
     // Test 3: Get sellable assets
     const sellableAssets = await getSellableAssets();
-    console.log(`✅ Retrieved ${sellableAssets.length} sellable assets`);
+    logger.debug('swap', `✅ Retrieved ${sellableAssets.length} sellable assets`);
     
     // Test 4: Get assets by network (e.g., ETH)
     const ethAssets = await getFilteredAssets({ network: 'eth' });
-    console.log(`✅ Retrieved ${ethAssets.length} ETH network assets`);
+    logger.debug('swap', `✅ Retrieved ${ethAssets.length} ETH network assets`);
     
     // Test 5: Get featured assets
     const featuredAssets = await getFilteredAssets({ featured: true });
-    console.log(`✅ Retrieved ${featuredAssets.length} featured assets`);
+    logger.debug('swap', `✅ Retrieved ${featuredAssets.length} featured assets`);
     
-    console.log('✅ All tests passed! ChangeNow integration is working correctly.');
+    logger.debug('swap', '✅ All tests passed! ChangeNow integration is working correctly.');
     
     return {
       success: true,
@@ -64,7 +66,7 @@ export const testChangeNowIntegration = async () => {
 };
 
 // Example usage:
-// testChangeNowIntegration().then(result => console.log(result));
+// testChangeNowIntegration().then(result => logger.debug('swap', result));
 
 
 

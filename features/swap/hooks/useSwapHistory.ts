@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { getSwapHistory } from "../api";
 import { SwapHistoryResponse } from "../types";
 
+import { logger } from '@/lib/utils/logger';
+
 interface UseSwapHistoryOptions {
   page?: number;
   limit?: number;
@@ -24,7 +26,7 @@ export const useSwapHistory = (options: UseSwapHistoryOptions = {}) => {
       setData(response);
     } catch (err: any) {
       setError(err.message || "Failed to fetch swap history");
-      console.error("Error fetching swap history:", err);
+      logger.error('swap', "Error fetching swap history:", err);
     } finally {
       setLoading(false);
     }

@@ -4,6 +4,8 @@
 import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import { API_CONFIG } from "@/lib/appConfig";
 import { get, post, AxiosError } from "@/lib/apiClient";
+import { logger } from '@/lib/utils/logger';
+
 import {
   KYCStatusResponse,
   KYCState,
@@ -70,6 +72,17 @@ export const verifyKYCStatus = createAsyncThunk<KYCVerificationResponse, KYCVeri
     try {
       // If kyc_images are provided, send as FormData
       if (payload.kyc_images && payload.kyc_images.length > 0) {
+        logger.debug('general', '📤 KYC Verification Payload (FormData):', {
+          user_id: payload.user_id,
+          status: payload.status,
+          is_verified: payload.is_verified,
+          verification_method: payload.verification_method,
+          country: payload.country,
+          document_type: payload.document_type,
+          document_number: payload.document_number,
+          images_count: payload.kyc_images.length,
+        });
+        
         const formData = new FormData();
         formData.append('user_id', payload.user_id);
         formData.append('status', payload.status.toString());
@@ -105,6 +118,16 @@ export const verifyKYCStatus = createAsyncThunk<KYCVerificationResponse, KYCVeri
           }
         });
         
+        // Log FormData entries
+        logger.debug('general', '📋 FormData entries being sent:');
+        for (let [key, value] of formData.entries()) {
+          if (value instanceof File) {
+            logger.debug('general', `  ${key}: [File: ${value.name}, Size: ${value.size} bytes]`);
+          } else {
+            logger.debug('general', `  ${key}:`, value);
+          }
+        }
+        
         // Send FormData (First request with all document data)
         const response = await post<KYCVerificationResponse>(
           API_CONFIG.AUTH.KYC_VERIFY,
@@ -116,16 +139,22 @@ export const verifyKYCStatus = createAsyncThunk<KYCVerificationResponse, KYCVeri
           }
         );
         
+        logger.debug('general', '✅ KYC Verification Response (FormData - First Request):', response.data);
+        
         // Send second request with just user_id and status
+        logger.debug('general', '📤 Sending second KYC verification request with user_id and status...');
         const secondRequestPayload = {
           user_id: payload.user_id,
           status: true,
         };
+        logger.debug('general', '📤 Second Request Payload:', secondRequestPayload);
         
         const secondResponse = await post<KYCVerificationResponse>(
           API_CONFIG.AUTH.KYC_VERIFY,
           secondRequestPayload
         );
+        
+        logger.debug('general', '✅ KYC Verification Response (Second Request):', secondResponse.data);
         
         // Return the first response data
         return response.data;
@@ -133,21 +162,29 @@ export const verifyKYCStatus = createAsyncThunk<KYCVerificationResponse, KYCVeri
         // Send as JSON if no images - payload already includes user_id and status
         const jsonPayload = payload;
         
+        logger.debug('general', '📤 KYC Verification Payload (JSON - First Request):', jsonPayload);
+        
         const response = await post<KYCVerificationResponse>(
           API_CONFIG.AUTH.KYC_VERIFY,
           jsonPayload
         );
         
+        logger.debug('general', '✅ KYC Verification Response (First Request):', response.data);
+        
         // Send second request with just user_id and status
+        logger.debug('general', '📤 Sending second KYC verification request with user_id and status...');
         const secondRequestPayload = {
           user_id: payload.user_id,
           status: true,
         };
+        logger.debug('general', '📤 Second Request Payload:', secondRequestPayload);
         
         const secondResponse = await post<KYCVerificationResponse>(
           API_CONFIG.AUTH.KYC_VERIFY,
           secondRequestPayload
         );
+        
+        logger.debug('general', '✅ KYC Verification Response (Second Request):', secondResponse.data);
         
         // Return the first response data
         return response.data;

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { BlogPost } from "../types";
 import { imageBuilder } from "@/sanity/lib/client";
 
+import { logger } from '@/lib/utils/logger';
+
 export const useBlog = () => {
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
   const [news, setNews] = useState<BlogPost[]>([]);
@@ -20,6 +22,7 @@ export const useBlog = () => {
         }
 
         const data = await response.json();
+        logger.debug('general', "Raw blog data:", data);
 
         // Transform Sanity data to match UI expectations
         const transformedBlogs = data.map((blog: BlogPost, index: number) => ({
@@ -31,10 +34,14 @@ export const useBlog = () => {
           author_name: blog.author_name || "Anonymous",
         }));
 
+        logger.debug('general', "Transformed blogs:", transformedBlogs);
 
         // Filter blogs and news
         const blogPosts = transformedBlogs.filter((blog: BlogPost) => blog.category === "blog");
         const newsPosts = transformedBlogs.filter((blog: BlogPost) => blog.category === "news");
+
+        logger.debug('general', "Filtered blogs:", blogPosts);
+        logger.debug('general', "Filtered news:", newsPosts);
 
         setBlogs(blogPosts);
         setNews(newsPosts);

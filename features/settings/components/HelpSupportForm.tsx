@@ -6,6 +6,8 @@ import { useDispatch, useSelector } from 'react-redux'
 import { createSupportRequest } from '../slices/settingsSlice'
 import { AppDispatch, RootState } from '@/store'
 
+import { logger } from '@/lib/utils/logger';
+
 interface FormData {
   email_address: string
   question: string
@@ -66,12 +68,12 @@ const HelpSupportForm: React.FC = () => {
         supporting_file: null
       })
     } catch (error) {
-      console.error('Failed to submit support request:', error)
+      logger.error('dashboard', 'Failed to submit support request:', error)
     }
   }
 
   const handleConnectLiveChat = () => {
-    console.log('Connect with Live Chat clicked')
+    logger.debug('dashboard', 'Connect with Live Chat clicked')
     // Handle live chat connection logic here
   }
 

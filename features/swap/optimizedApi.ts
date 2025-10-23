@@ -5,6 +5,8 @@
 
 import { optimizedGet, optimizedPost } from '@/lib/optimizedApiClient';
 import { API_CONFIG } from '@/lib/appConfig';
+import { logger } from '@/lib/utils/logger';
+
 import {
   SupportedAsset,
   SwapEstimate,
@@ -37,31 +39,39 @@ export const getSupportedAssetsOptimized = async (): Promise<SupportedAsset[]> =
     
     // Extract the results array from the ChangeNow response
     if (data && data.results) {
-        return data.results;
+      logger.debug('swap', `Successfully retrieved ${data.total_changenow_tokens} ChangeNow tokens (optimized)`);
+      return data.results;
     }
     
     // Fallback: if response is directly an array (backward compatibility)
     if (Array.isArray(data)) {
+      logger.debug('swap', `Retrieved ${data.length} supported assets (optimized)`);
       return data;
     }
     
+    console.warn("Unexpected response format, returning empty array");
     return [];
   } catch (error: any) {
+    console.error("Failed to fetch supported assets (optimized):", error);
 
     // Handle different error scenarios gracefully
     if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND" || error.message?.includes("Network Error")) {
+      console.warn("Network connection issue, returning empty assets list");
       return [];
     }
 
     if (error.response?.status === 500) {
+      console.warn("Server error, returning empty assets list");
       return [];
     }
 
     if (error.response?.status === 404) {
+      console.warn("Endpoint not found, returning empty assets list");
       return [];
     }
 
     // For other errors, return empty array instead of throwing
+    console.warn("Unknown error, returning empty assets list");
     return [];
   }
 };
@@ -92,6 +102,7 @@ export const getEstimateSwapOptimized = async (
     
     return response.data;
   } catch (error: any) {
+    console.error("Failed to fetch swap estimate (optimized):", error);
 
     // Handle network errors gracefully
     if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
@@ -123,6 +134,8 @@ export const getEstimateSwapOptimized = async (
 export const createSwapOptimized = async (
   swapData: CreateSwapRequest
 ): Promise<CreateSwapResponse> => {
+  logger.debug('swap', "Creating swap with data (optimized):", swapData);
+  logger.debug('swap', "API endpoint:", API_CONFIG.SWAP.CREATE_SWAP);
 
   try {
     const response = await optimizedPost<CreateSwapResponse>(
@@ -134,8 +147,12 @@ export const createSwapOptimized = async (
       }
     );
     
+    logger.debug('swap', "Swap response (optimized):", response.data);
     return response.data;
   } catch (error: any) {
+    console.error("Swap creation error (optimized):", error);
+    console.error("Error response:", error.response?.data);
+    console.error("Error status:", error.response?.status);
 
     // Provide user-friendly error messages for different status codes
     if (error.response?.status === 500) {
@@ -148,8 +165,7 @@ export const createSwapOptimized = async (
         "Invalid swap request. Please check your input.";
       throw new Error(`Bad Request: ${errorMessage}`);
     } else if (error.response?.status === 401) {
-      // Silent error for 401
-      throw new Error("");
+      throw new Error("Authentication required. Please log in to continue.");
     } else if (error.response?.status === 403) {
       throw new Error(
         "Access denied. You don't have permission to perform this action."
@@ -191,6 +207,7 @@ export const getSwapStatusOptimized = async (swapId: string): Promise<SwapStatus
     
     return response.data;
   } catch (error: any) {
+    console.error("Failed to fetch swap status (optimized):", error);
     
     if (error.response?.status === 500) {
       throw new Error(
@@ -264,6 +281,7 @@ export const getMultipleEstimatesOptimized = async (
         estimate.toNetwork,
         estimate.amount
       ).catch(error => {
+        console.error(`Failed to get estimate for ${estimate.fromCurrency}->${estimate.toCurrency}:`, error);
         return null; // Return null for failed estimates
       })
     );
@@ -271,7 +289,8 @@ export const getMultipleEstimatesOptimized = async (
     const results = await Promise.all(promises);
     return results.filter(result => result !== null) as SwapEstimate[];
   } catch (error) {
-      return [];
+    console.error("Failed to get multiple estimates:", error);
+    return [];
   }
 };
 

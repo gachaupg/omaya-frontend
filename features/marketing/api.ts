@@ -1,6 +1,8 @@
 import { API_CONFIG } from "@/lib/appConfig";
 import { HighlightStatistics } from "./types";
 
+import { logger } from '@/lib/utils/logger';
+
 export const marketingApi = {
   /**
    * Fetch highlight statistics from the API
@@ -22,7 +24,7 @@ export const marketingApi = {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error("Error fetching highlight statistics:", error);
+      logger.error('general', "Error fetching highlight statistics:", error);
       throw error;
     }
   },

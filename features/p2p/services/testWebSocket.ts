@@ -5,11 +5,13 @@
 
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 
+import { logger } from '@/lib/utils/logger';
+
 export const testWebSocketConnection = () => {
-  console.log("🧪 Starting WebSocket Diagnostics...\n");
+  logger.debug('p2p', "🧪 Starting WebSocket Diagnostics...\n");
 
   // Step 1: Check for access token
-  console.log("📋 Step 1: Checking for access token...");
+  logger.debug('p2p', "📋 Step 1: Checking for access token...");
   const cookieToken = cookieUtils.getCookie("access_token");
   const localToken = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
 
@@ -22,28 +24,28 @@ export const testWebSocketConnection = () => {
   }
 
   const token = cookieToken || localToken;
-  console.log("✅ Token found in:", cookieToken ? "cookies" : "localStorage");
-  console.log("Token length:", token?.length, "characters");
+  logger.debug('p2p', "✅ Token found in:", cookieToken ? "cookies" : "localStorage");
+  logger.debug('p2p', "Token length:", token?.length, "characters");
 
   // Step 2: Validate token format
-  console.log("\n📋 Step 2: Validating token format...");
+  logger.debug('p2p', "\n📋 Step 2: Validating token format...");
   const tokenParts = token?.split('.') || [];
   if (tokenParts.length !== 3) {
     console.error("❌ FAILED: Invalid JWT format!");
     console.error("Expected 3 parts (header.payload.signature), got:", tokenParts.length);
     return;
   }
-  console.log("✅ Valid JWT format");
+  logger.debug('p2p', "✅ Valid JWT format");
 
   // Step 3: Decode and check expiration
-  console.log("\n📋 Step 3: Checking token expiration...");
+  logger.debug('p2p', "\n📋 Step 3: Checking token expiration...");
   try {
     const payload = JSON.parse(atob(tokenParts[1]));
     const expirationDate = new Date(payload.exp * 1000);
     const isExpired = payload.exp * 1000 < Date.now();
     
-    console.log("Token expires:", expirationDate.toLocaleString());
-    console.log("Is expired:", isExpired ? "❌ YES" : "✅ NO");
+    logger.debug('p2p', "Token expires:", expirationDate.toLocaleString());
+    logger.debug('p2p', "Is expired:", isExpired ? "❌ YES" : "✅ NO");
     
     if (isExpired) {
       console.error("❌ FAILED: Token is expired!");
@@ -55,13 +57,13 @@ export const testWebSocketConnection = () => {
   }
 
   // Step 4: Test WebSocket connection
-  console.log("\n📋 Step 4: Testing WebSocket connection...");
+  logger.debug('p2p', "\n📋 Step 4: Testing WebSocket connection...");
   
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://dev.backend.omaya.io";
   const wsUrl = baseUrl.replace(/^https/, "wss").replace(/^http/, "ws");
   const fullUrl = `${wsUrl}/ws/matched-trades/?token=${token}`;
   
-  console.log("Connecting to:", fullUrl.replace(/token=.+/, 'token=[REDACTED]'));
+  logger.debug('p2p', "Connecting to:", fullUrl.replace(/token=.+/, 'token=[REDACTED]'));
   
   const testWs = new WebSocket(fullUrl);
   
@@ -76,17 +78,17 @@ export const testWebSocketConnection = () => {
 
   testWs.onopen = () => {
     clearTimeout(timeout);
-    console.log("✅ WebSocket connection successful!");
-    console.log("ReadyState:", testWs.readyState, "(1 = OPEN)");
+    logger.debug('p2p', "✅ WebSocket connection successful!");
+    logger.debug('p2p', "ReadyState:", testWs.readyState, "(1 = OPEN)");
   };
 
   testWs.onmessage = (event) => {
-    console.log("📨 Message received:", event.data);
+    logger.debug('p2p', "📨 Message received:", event.data);
     try {
       const data = JSON.parse(event.data);
-      console.log("Message type:", data.type);
+      logger.debug('p2p', "Message type:", data.type);
     } catch (e) {
-      console.log("Raw message:", event.data);
+      logger.debug('p2p', "Raw message:", event.data);
     }
   };
 
@@ -101,10 +103,10 @@ export const testWebSocketConnection = () => {
 
   testWs.onclose = (event) => {
     clearTimeout(timeout);
-    console.log("🔌 WebSocket connection closed");
-    console.log("Close code:", event.code);
-    console.log("Close reason:", event.reason || "(no reason provided)");
-    console.log("Was clean:", event.wasClean);
+    logger.debug('p2p', "🔌 WebSocket connection closed");
+    logger.debug('p2p', "Close code:", event.code);
+    logger.debug('p2p', "Close reason:", event.reason || "(no reason provided)");
+    logger.debug('p2p', "Was clean:", event.wasClean);
     
     const closeCodeInfo: Record<number, { name: string; description: string; solution: string }> = {
       1000: {
@@ -131,15 +133,15 @@ export const testWebSocketConnection = () => {
 
     const info = closeCodeInfo[event.code];
     if (info) {
-      console.log("\n📖 Close Code Info:");
-      console.log("Name:", info.name);
-      console.log("Description:", info.description);
-      console.log("Solution:", info.solution);
+      logger.debug('p2p', "\n📖 Close Code Info:");
+      logger.debug('p2p', "Name:", info.name);
+      logger.debug('p2p', "Description:", info.description);
+      logger.debug('p2p', "Solution:", info.solution);
     }
   };
 
-  console.log("\n⏳ Waiting for connection (max 10 seconds)...");
-  console.log("💡 Check the messages above for results");
+  logger.debug('p2p', "\n⏳ Waiting for connection (max 10 seconds)...");
+  logger.debug('p2p', "💡 Check the messages above for results");
   
   // Return the WebSocket instance so user can interact with it
   return testWs;

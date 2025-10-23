@@ -13,6 +13,8 @@ import {
 } from "../services/matchedTradesWebSocket";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 
+import { logger } from '@/lib/utils/logger';
+
 interface UseMatchedTradesWebSocketOptions {
   enabled?: boolean;
   fallbackToPolling?: boolean;
@@ -51,6 +53,7 @@ export const useMatchedTradesWebSocket = (
       // First try to get from cookies (primary storage)
       const cookieToken = cookieUtils.getCookie("access_token");
       if (cookieToken) {
+        logger.debug('p2p', "✅ Access token found in cookies");
         return cookieToken;
       }
       
@@ -58,6 +61,7 @@ export const useMatchedTradesWebSocket = (
       if (typeof window !== "undefined") {
         const localToken = localStorage.getItem("access_token");
         if (localToken) {
+          logger.debug('p2p', "✅ Access token found in localStorage");
           return localToken;
         }
       }
@@ -68,10 +72,13 @@ export const useMatchedTradesWebSocket = (
     const token = getAccessToken();
 
     if (!token) {
+      console.warn("⚠️ No access token found, cannot connect to WebSocket");
+      console.warn("Checked locations: cookies (access_token), localStorage (access_token)");
       setConnectionError("No access token");
       
       // Fall back to polling if enabled
       if (fallbackToPolling) {
+        logger.debug('p2p', "🔄 Falling back to HTTP polling");
         startPolling();
       }
       return;
@@ -79,9 +86,11 @@ export const useMatchedTradesWebSocket = (
 
     // Validate token format (basic check)
     if (!token.includes('.')) {
+      console.error("⚠️ Invalid token format (not a JWT)");
       setConnectionError("Invalid token format");
       
       if (fallbackToPolling) {
+        logger.debug('p2p', "🔄 Falling back to HTTP polling");
         startPolling();
       }
       return;
@@ -139,9 +148,11 @@ export const useMatchedTradesWebSocket = (
 
           default:
             if (process.env.NODE_ENV === 'development') {
+              logger.debug('p2p', "Unknown message type:", message.type);
             }
         }
       } catch (error) {
+        console.error("Error handling WebSocket message:", error);
       }
     });
 

@@ -13,6 +13,7 @@ import Market from "./tabs/Market";
 import Orders from "./tabs/Orders";
 import NotFound from "./tabs/NotFound";
 import P2PCenter from "./tabs/p2pCenter";
+import { P2PDataProvider } from "./P2PDataProvider";
 
 const P2PLayout = () => {
   const searchParams = useSearchParams();
@@ -44,12 +45,14 @@ const P2PLayout = () => {
   };
 
   return (
-    <div className="dark:bg-[#18181D] bg-[#EEF1F4] w-full min-h-screen">
-      <Tabs tabs={p2pTabs} activeTab={activeTab} onTabChange={setActiveTab} />
-      <div className="pl-4 pt-0 mb-4  flex flex-col gap-4 rounded-lg w-full">
-        {renderTabContent()}
+    <P2PDataProvider>
+      <div className="dark:bg-[#18181D] bg-[#EEF1F4] w-full min-h-screen">
+        <Tabs tabs={p2pTabs} activeTab={activeTab} onTabChange={setActiveTab} />
+        <div className="pl-4 pt-0 mb-4  flex flex-col gap-4 rounded-lg w-full">
+          {renderTabContent()}
+        </div>
       </div>
-    </div>
+    </P2PDataProvider>
   );
 };
 

@@ -7,6 +7,8 @@ import { getAllP2PBuyandSell } from "../api";
 import { P2PMyOrders } from "../types";
 import { handleP2PError } from "@/lib/utils/errorHandler";
 
+import { logger } from '@/lib/utils/logger';
+
 interface P2PBuySellState {
   orders: P2PMyOrders;
   loading: boolean;
@@ -34,12 +36,21 @@ export const p2pBuyandSell = createAsyncThunk<
   number,
   { rejectValue: string }
 >("buysell/p2pBuyandSell", async (page: number = 1, { rejectWithValue }) => {
- 
+  logger.debug('p2p', "Redux thunk p2pBuyandSell called with page:", page);
   try {
     const response = await getAllP2PBuyandSell(page);
-   
+    logger.debug('p2p', 
+      "Redux thunk p2pBuyandSell success for page:",
+      page,
+      "with data:",
+      {
+        count: response.count,
+        resultsCount: response.results?.results?.length,
+      }
+    );
     return response;
   } catch (err) {
+    logger.debug('p2p', "Redux thunk p2pBuyandSell error for page:", page, err);
     try {
       handleP2PError(err);
     } catch (error) {
@@ -56,7 +67,12 @@ const p2pBuySellSlice = createSlice({
   initialState,
   reducers: {
     setCurrentPage: (state, action) => {
-      
+      logger.debug('p2p', 
+        "setCurrentPage action dispatched:",
+        action.payload,
+        "Previous page:",
+        state.currentPage
+      );
       state.currentPage = action.payload;
     },
     clearError: (state) => {
@@ -66,16 +82,23 @@ const p2pBuySellSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(p2pBuyandSell.pending, (state) => {
+        logger.debug('p2p', "p2pBuyandSell.pending for page:", state.currentPage);
         state.loading = true;
         state.error = null;
       })
       .addCase(p2pBuyandSell.fulfilled, (state, action) => {
+        logger.debug('p2p', "p2pBuyandSell.fulfilled with data:", {
+          count: action.payload.count,
+          resultsCount: action.payload.results?.results?.length,
+          currentPage: state.currentPage,
+        });
         state.loading = false;
         state.orders = action.payload;
         state.error = null;
       })
       .addCase(p2pBuyandSell.rejected, (state, action) => {
-          state.loading = false;
+        logger.debug('p2p', "p2pBuyandSell.rejected:", action.payload);
+        state.loading = false;
         state.error = (action.payload as string) || "An unexpected error occurred";
       });
   },

@@ -5,6 +5,8 @@
 import { BlogPost } from "./types";
 import { imageBuilder } from "@/sanity/lib/client";
 
+import { logger } from '@/lib/utils/logger';
+
 export const blogApi = {
   async fetchAllPosts(): Promise<BlogPost[]> {
     try {
@@ -26,7 +28,7 @@ export const blogApi = {
         author_name: blog.author_name || "Anonymous",
       }));
     } catch (error) {
-      console.error("Error fetching posts:", error);
+      logger.error('general', "Error fetching posts:", error);
 
       // Return fallback data instead of throwing error
       return [
@@ -55,7 +57,7 @@ export const blogApi = {
   async fetchBlogs(): Promise<BlogPost[]> {
     try {
       const allPosts = await this.fetchAllPosts();
-      console.log("allPosts", allPosts);
+      logger.debug('general', "allPosts", allPosts);
       // Filter for blog category
       return allPosts.filter((blog: BlogPost) => blog.category === "blog");
     } catch (error) {

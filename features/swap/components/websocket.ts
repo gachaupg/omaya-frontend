@@ -1,26 +1,12 @@
-import { API_CONFIG } from "@/lib/appConfig";
+/**
+ * @deprecated This file is deprecated. Use features/swap/services/swapStatusWebSocket.ts instead.
+ * This file is kept for backward compatibility only.
+ */
 
-export function connectSwapStatusWebSocket(
-  swapId: string,
-  {
-    onMessage,
-    onOpen,
-    onError,
-    onClose,
-  }: {
-    onMessage?: (event: MessageEvent) => void;
-    onOpen?: (event: Event) => void;
-    onError?: (event: Event) => void;
-    onClose?: (event: CloseEvent) => void;
-  } = {}
-): WebSocket {
-  const wsUrl = API_CONFIG.SWAP.SWAP_STATUS_WS(swapId);
-  const ws = new WebSocket(wsUrl);
-
-  if (onMessage) ws.onmessage = onMessage;
-  if (onOpen) ws.onopen = onOpen;
-  if (onError) ws.onerror = onError;
-  if (onClose) ws.onclose = onClose;
-
-  return ws;
-}
+// Re-export from the new location
+export {
+  connectSwapStatusWebSocket,
+  getSwapStatusWebSocket,
+  cleanupSwapStatusWebSocket,
+  type WebSocketMessage,
+} from "../services/swapStatusWebSocket";

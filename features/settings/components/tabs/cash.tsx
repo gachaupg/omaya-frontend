@@ -9,6 +9,8 @@ import UserPaymentSelector, { UserPaymentDetail } from '@/features/p2p/component
 import { showToast } from '@/lib/utils/toast'
 import { useDebounce } from '@/hooks/useDebounce'
 
+import { logger } from '@/lib/utils/logger';
+
 const Cash = () => {
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter()
@@ -99,8 +101,10 @@ const Cash = () => {
 
   // Handle success - show modal
   useEffect(() => {
+    logger.debug('dashboard', "Cash withdrawal success effect:", { success, withdrawalData })
     if (success && withdrawalData) {
-        showToast.success(withdrawalData.message || "Withdrawal submitted successfully!")
+      logger.debug('dashboard', "Showing success modal with data:", withdrawalData)
+      showToast.success(withdrawalData.message || "Withdrawal submitted successfully!")
       setShowSuccessModal(true)
       setAmount("")
       setSelectedPaymentDetails([])
@@ -112,6 +116,7 @@ const Cash = () => {
   // Handle errors - show toast
   useEffect(() => {
     if (error) {
+      console.error("Cash withdrawal error:", error)
       showToast.error(typeof error === "string" ? error : "Failed to submit withdrawal")
       setIsSubmitting(false)
     }

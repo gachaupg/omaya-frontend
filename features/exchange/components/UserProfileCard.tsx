@@ -11,6 +11,8 @@ import { fetchMatchedTrades } from "@/features/p2p/slices/matchedTradesSlice";
 import { showToast } from "@/lib/utils/toast";
 import { useRouter } from "next/navigation";
 
+import { logger } from '@/lib/utils/logger';
+
 type UserProfileCardProps = {
   name: string;
   userId: string;
@@ -53,7 +55,7 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
           }
         })
         .catch((error) => {
-          console.error("Failed to fetch profile:", error);
+          logger.error('exchange', "Failed to fetch profile:", error);
         });
     }
   }, [dispatch, isAuthenticated]);
@@ -88,7 +90,7 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
           }
           showToast.success("Profile image updated successfully");
         } catch (error: any) {
-          console.error("Profile update error:", error);
+          logger.error('exchange', "Profile update error:", error);
           showToast.error(error?.message || "Failed to update profile image");
           // Revert the image if update fails
           setProfileImage(initialProfileImage || defaultAvatar);

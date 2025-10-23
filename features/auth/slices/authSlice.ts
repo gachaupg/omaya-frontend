@@ -93,15 +93,17 @@ export const loginUser = createAsyncThunk<AuthResponse, LoginPayload>(
   async (payload, { rejectWithValue, dispatch }) => {
     try {
       const response = await post<AuthResponse>(API_ENDPOINTS.LOGIN, payload);
-      
+
       // Check if 2FA is required
       if (response.data.require_2fa) {
         // Dispatch action to open 2FA modal with credentials
-        dispatch(open2FAModal({ email: payload.email, password: payload.password }));
+        dispatch(
+          open2FAModal({ email: payload.email, password: payload.password })
+        );
         // Return a special response to indicate 2FA is needed
         return { ...response.data, require_2fa: true };
       }
-      
+
       return response.data;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
@@ -113,7 +115,10 @@ export const loginWith2FA = createAsyncThunk<AuthResponse, Login2FAPayload>(
   "auth/loginWith2FA",
   async (payload, { rejectWithValue }) => {
     try {
-      const response = await post<AuthResponse>(API_ENDPOINTS.LOGIN_2FA, payload);
+      const response = await post<AuthResponse>(
+        API_ENDPOINTS.LOGIN_2FA,
+        payload
+      );
       return response.data;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
@@ -170,37 +175,37 @@ export const verifyKYCStatus = createAsyncThunk<string, KYCVerifyPayload>(
       // If kyc_images are provided, send as FormData
       if (payload.kyc_images && payload.kyc_images.length > 0) {
         const formData = new FormData();
-        formData.append('user_id', payload.user_id);
-        formData.append('status', payload.status.toString());
-        
+        formData.append("user_id", payload.user_id);
+        formData.append("status", payload.status.toString());
+
         // Add is_verified field
         if (payload.is_verified !== undefined) {
-          formData.append('is_verified', payload.is_verified.toString());
+          formData.append("is_verified", payload.is_verified.toString());
         }
-        
+
         if (payload.verification_method) {
-          formData.append('verification_method', payload.verification_method);
+          formData.append("verification_method", payload.verification_method);
         }
         if (payload.country) {
-          formData.append('country', payload.country);
+          formData.append("country", payload.country);
         }
         if (payload.document_type) {
-          formData.append('document_type', payload.document_type);
+          formData.append("document_type", payload.document_type);
         }
         if (payload.document_number) {
-          formData.append('document_number', payload.document_number);
+          formData.append("document_number", payload.document_number);
         }
         if (payload.face_data) {
-          formData.append('face_data', JSON.stringify(payload.face_data));
+          formData.append("face_data", JSON.stringify(payload.face_data));
         }
         if (payload.facial_id) {
-          formData.append('facial_id', payload.facial_id);
+          formData.append("facial_id", payload.facial_id);
         }
-        
+
         // Append all images
         payload.kyc_images.forEach((image) => {
           if (image) {
-            formData.append('kyc_images', image);
+            formData.append("kyc_images", image);
           }
         });
         
@@ -216,11 +221,12 @@ export const verifyKYCStatus = createAsyncThunk<string, KYCVerifyPayload>(
           formData,
           {
             headers: {
-              'Content-Type': 'multipart/form-data',
+              "Content-Type": "multipart/form-data",
             },
           }
         );
         
+
         return response.data.message;
       } else {
         // Send as JSON if no images
@@ -333,10 +339,10 @@ const authSlice = createSlice({
       storage.removeProfile();
       // Clear access token cookie
       cookieUtils.removeCookie("access_token");
-      // Clear ALL localStorage on logout (including access_token)
-      if (typeof window !== 'undefined') {
-        localStorage.clear();
-        sessionStorage.clear();
+
+      // Broadcast logout to other tabs
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("logoutTriggered"));
       }
     },
     clearError(state) {
@@ -399,7 +405,10 @@ const authSlice = createSlice({
     closeKYCModal(state) {
       state.kycModalOpen = false;
     },
-    open2FAModal(state, action: PayloadAction<{ email: string; password: string }>) {
+    open2FAModal(
+      state,
+      action: PayloadAction<{ email: string; password: string }>
+    ) {
       state.twoFAModalOpen = true;
       state.twoFAEmail = action.payload.email;
       state.twoFAPassword = action.payload.password;
@@ -438,12 +447,12 @@ const authSlice = createSlice({
       loginUser.fulfilled,
       (state, action: PayloadAction<AuthResponse>) => {
         state.loading = false;
-        
+
         // If 2FA is required, don't authenticate yet
         if (action.payload.require_2fa) {
           return;
         }
-        
+
         state.user = action.payload.user;
         state.tokens = {
           access: action.payload.access,
@@ -471,7 +480,7 @@ const authSlice = createSlice({
         cookieUtils.setCookie("access_token", action.payload.access, {
           maxAge: 86400,
           secure: true,
-          sameSite: 'strict'
+          sameSite: "strict",
         });
       }
     );
@@ -647,7 +656,7 @@ const authSlice = createSlice({
         cookieUtils.setCookie("access_token", action.payload.access, {
           maxAge: 86400,
           secure: true,
-          sameSite: 'strict'
+          sameSite: "strict",
         });
       }
     );

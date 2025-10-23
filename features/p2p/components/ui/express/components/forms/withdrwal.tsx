@@ -29,7 +29,8 @@ import {
 import InfoModal from "./info";
 import { debugAssetFetching } from "@/lib/utils/debugAssets";
 import OTPModal from "./OTPModal";
-import { useAvailableBalance } from "@/utils/pending";
+
+import { logger } from '@/lib/utils/logger';
 
 // Success Modal Component
 const SuccessModal = ({
@@ -216,9 +217,8 @@ export default function WithdrawalForm({
   balance,
   isHomePage = false,
 }: DepositFormProps) {
-
-  const availableBalance = useAvailableBalance();
-
+  // Debug logging for balance
+  logger.debug('p2p', "WithdrawalForm - Received balance:", balance);
   
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -237,22 +237,32 @@ export default function WithdrawalForm({
     error: swapAssetsError,
   } = useSelector((state: any) => state.swap);
 
-
+  // Debug logging for assets
+  logger.debug('p2p', "DEBUG: Swap assets state:", {
+    swapAssets,
+    swapAssetsLoading,
+    swapAssetsError,
+    assetsLength: swapAssets?.length || 0,
+  });
 
   // Debug function to test asset fetching
   const handleDebugAssets = async () => {
     try {
+      logger.debug('p2p', "=== Starting debug asset fetch ===");
       await debugAssetFetching();
     } catch (error) {
-      // console.error("Debug failed:", error);
+      console.error("Debug failed:", error);
     }
   };
 
   // Force refresh assets
   const handleForceRefreshAssets = async () => {
     try {
+      logger.debug('p2p', "=== Force refreshing assets ===");
       await dispatch(fetchSupportedAssets(true)).unwrap();
+      logger.debug('p2p', "✅ Assets force refreshed");
     } catch (error) {
+      console.error("❌ Force refresh failed:", error);
     }
   };
 
@@ -466,10 +476,10 @@ export default function WithdrawalForm({
     dispatch(fetchAdminPaymentDetails(false)) // false = don't force refresh
       .unwrap()
       .then((data) => {
-        // console.log("DEBUG: Admin payment details fetched:", data);
+        // logger.debug('p2p', "DEBUG: Admin payment details fetched:", data);
       })
       .catch((error: unknown) => {
-        // Silent - no error display
+        showToast.error(`Failed to fetch admin payment details: ${error}`);
       });
   }, [dispatch]);
 
@@ -493,11 +503,15 @@ export default function WithdrawalForm({
 
   // Fetch swap assets
   useEffect(() => {
+    logger.debug('p2p', "DEBUG: Starting to fetch swap assets...");
     dispatch(fetchSupportedAssets(false))
       .unwrap()
       .then((data) => {
+        logger.debug('p2p', "DEBUG: Swap assets fetched successfully:", data);
+        logger.debug('p2p', "DEBUG: Number of assets:", data?.length || 0);
       })
       .catch((error: unknown) => {
+        console.error("DEBUG: Failed to fetch swap assets:", error);
         // Only show error if it's a network issue, not cache issues
         if (
           error instanceof Error &&
@@ -527,6 +541,7 @@ export default function WithdrawalForm({
       });
 
       if (usdtTetherAsset) {
+        logger.debug('p2p', "Auto-selecting USDT Tether on BSC:", usdtTetherAsset);
         setSelectedAsset({
           ...usdtTetherAsset,
           network: "BSC", // Force BSC network for USDT Tether
@@ -551,6 +566,7 @@ export default function WithdrawalForm({
 
   // Recalculate when asset changes
   useEffect(() => {
+    logger.debug('p2p', "Selected asset changed:", selectedAsset);
     if (selectedAsset && payAmount > 0 && isCalculatingFromPay) {
       // Clear any existing estimate when asset changes
       setEstimate(null);
@@ -562,9 +578,11 @@ export default function WithdrawalForm({
 
       // Check asset type first and handle accordingly
       if (isSimpleCalculationAsset(selectedAsset)) {
+        logger.debug('p2p', "Asset changed to simple asset, calculating immediately");
         // For simple assets, calculate immediately
         calculateAmounts(payAmount, true);
       } else {
+        logger.debug('p2p', "Asset changed to non-simple asset, going to API");
         // For non-simple assets, the estimate useEffect will handle the API call
         // Just set loading states for visual feedback
         setIsCalculating(true);
@@ -576,9 +594,22 @@ export default function WithdrawalForm({
 
   // Handle estimate updates and trigger recalculation - ONLY for forward calculations
   useEffect(() => {
+    logger.debug('p2p', "Estimate effect triggered:", {
+      hasEstimate: !!estimate,
+      estimateLoading,
+      isCalculatingFromPay,
+      payAmount,
+      estimateAmount: estimate?.toAmount || estimate?.estimated_amount,
+      apiValidationError,
+    });
+
     // Only handle forward calculations (when calculating from pay amount)
     if (estimate && !estimateLoading && isCalculatingFromPay && payAmount > 0) {
       const estimateAmount = estimate.toAmount || estimate.estimated_amount;
+      logger.debug('p2p', 
+        "Estimate received, updating receive amount:",
+        estimateAmount
+      );
 
       // Check if estimate has a valid amount
       if (
@@ -606,6 +637,7 @@ export default function WithdrawalForm({
         setIsCalculatingReceive(false);
       } else {
         // Estimate is invalid, keep loading state until we get a valid estimate
+        logger.debug('p2p', "DEBUG: Invalid estimate received, keeping loading state");
         setGetAmount(0);
         setGetAmountInput("");
         if (!apiValidationError) {
@@ -633,6 +665,7 @@ export default function WithdrawalForm({
         }
       }
       // Set loading states for visual feedback
+      logger.debug('p2p', "Setting loading states in estimate useEffect");
       setIsCalculating(true);
       setIsCalculatingReceive(true);
     } else if (
@@ -645,6 +678,7 @@ export default function WithdrawalForm({
       !apiValidationError
     ) {
       // No estimate available but we're calculating from pay - keep loading
+      logger.debug('p2p', "DEBUG: No estimate available, keeping loading state");
       setGetAmount(0);
       setGetAmountInput("");
       if (!apiValidationError) {
@@ -793,8 +827,8 @@ export default function WithdrawalForm({
 
   // Validate balance - check if amount exceeds available balance
   const validateBalance = (amount: number) => {
-    if (availableBalance !== undefined && amount > availableBalance) {
-      return `Insufficient balance. Available: ${formatBalance(availableBalance)}`;
+    if (balance !== undefined && amount > balance) {
+      return `Insufficient balance. Available: ${formatBalance(balance)}`;
     }
     return null; // No error
   };
@@ -818,6 +852,7 @@ export default function WithdrawalForm({
       const cachedEntry = estimateCache.get(cacheKey);
 
       if (cachedEntry && isCacheValid(cachedEntry.timestamp)) {
+        logger.debug('p2p', "Using cached estimate:", cachedEntry.data);
         setEstimate(cachedEntry.data);
         setCalculationError(null); // Clear any previous errors
         setApiValidationError(null);
@@ -845,7 +880,9 @@ export default function WithdrawalForm({
       const debounceTimeout = setTimeout(() => {
         // Set a timeout to prevent infinite loading
         const timeoutId = setTimeout(() => {
-         
+          logger.debug('p2p', 
+            "DEBUG: Estimate request timed out, keeping loading state"
+          );
           setEstimateLoading(false);
           setEstimateError("Request timed out");
 
@@ -862,7 +899,13 @@ export default function WithdrawalForm({
 
         // Use the actual fetchSwapEstimate API call for deposit
         // Note: fromCurrency is the selected asset, toCurrency is always "USDT" for deposits
-       
+        logger.debug('p2p', "Fetching estimate for deposit:", {
+          toCurrency: "USDT",
+          toNetwork: "BSC",
+          fromCurrency: selectedAsset.ticker?.toUpperCase(),
+          fromNetwork: selectedAsset.network,
+          amount: payAmount,
+        });
 
         dispatch(
           fetchSwapEstimate({
@@ -875,7 +918,9 @@ export default function WithdrawalForm({
         )
           .then((result) => {
             clearTimeout(timeoutId); // Clear timeout on success
+            logger.debug('p2p', "Estimate result:", result);
             if (result.payload) {
+              logger.debug('p2p', "Setting new estimate:", result.payload);
               setEstimate(result.payload);
               setCalculationError(null); // Clear any previous errors
               setApiValidationError(null);
@@ -889,7 +934,11 @@ export default function WithdrawalForm({
             }
           })
           .catch((error) => {
-            clearTimeout(timeoutId); // Clear timeout on error    
+            clearTimeout(timeoutId); // Clear timeout on error
+            console.error("Failed to fetch swap estimate:", error);
+            console.error("Error response data:", error.response?.data);
+            console.error("Error response status:", error.response?.status);
+
             // Handle API validation errors for receive amount
             if (
               error.response?.data?.error ||
@@ -900,6 +949,7 @@ export default function WithdrawalForm({
                 error.response.data.response_data?.error;
               const responseData = error.response.data.response_data;
 
+              logger.debug('p2p', "API ERROR DETECTED:", { errorData, responseData });
 
               // Handle amount validation errors (decimal places, too small, etc.)
               // Check if errorData is an object with amount property (format 1)
@@ -915,7 +965,9 @@ export default function WithdrawalForm({
                     err.includes("decimal places")
                   )
                 ) {
-                 
+                  logger.debug('p2p', 
+                    "API ERROR: Decimal places validation error detected"
+                  );
                   setApiValidationError(
                     "Ensure that there are no more than 8 decimal places."
                   );
@@ -926,7 +978,9 @@ export default function WithdrawalForm({
                   setEstimateLoading(false);
                   setIsCalculating(false);
                   setIsCalculatingReceive(false);
-                 
+                  logger.debug('p2p', 
+                    "API ERROR: Loading states cleared for decimal places error"
+                  );
                   // Don't clear the input - let user see their value and fix it
                   return;
                 }
@@ -935,7 +989,9 @@ export default function WithdrawalForm({
                     err.includes("12 digits before the decimal point")
                   )
                 ) {
-                 
+                  logger.debug('p2p', 
+                    "API ERROR: 12 digits before decimal point validation error detected"
+                  );
                   setApiValidationError(
                     "Ensure that there are no more than 12 digits before the decimal point."
                   );
@@ -946,14 +1002,18 @@ export default function WithdrawalForm({
                   setEstimateLoading(false);
                   setIsCalculating(false);
                   setIsCalculatingReceive(false);
-                 
+                  logger.debug('p2p', 
+                    "API ERROR: Loading states cleared for 12 digits error"
+                  );
                   // Don't clear the input - let user see their value and fix it
                   return;
                 }
                 if (
                   amountErrors.some((err: string) => err.includes("too small"))
                 ) {
-                 
+                  logger.debug('p2p', 
+                    "API ERROR: Amount too small validation error detected"
+                  );
                   setApiValidationError(
                     "Amount is too small. Please increase the amount."
                   );
@@ -964,7 +1024,9 @@ export default function WithdrawalForm({
                   setEstimateLoading(false);
                   setIsCalculating(false);
                   setIsCalculatingReceive(false);
-                 
+                  logger.debug('p2p', 
+                    "API ERROR: Loading states cleared for too small error"
+                  );
                   // Don't clear the input - let user see their value and fix it
                   return;
                 }
@@ -1001,7 +1063,7 @@ export default function WithdrawalForm({
                 errorData?.error === "deposit_too_small" ||
                 responseData?.error === "deposit_too_small"
               ) {
-               
+                logger.debug('p2p', "API ERROR: Deposit too small error detected");
                 const errorMessage =
                   responseData?.message ||
                   "Amount is too small. Please increase the amount.";
@@ -1011,7 +1073,9 @@ export default function WithdrawalForm({
                 setEstimateLoading(false);
                 setIsCalculating(false);
                 setIsCalculatingReceive(false);
-               
+                logger.debug('p2p', 
+                  "API ERROR: Loading states cleared for deposit too small error"
+                );
                 return;
               }
 
@@ -1035,13 +1099,16 @@ export default function WithdrawalForm({
                 setEstimateLoading(false);
                 setIsCalculating(false);
                 setIsCalculatingReceive(false);
-               
+                logger.debug('p2p', "API ERROR: Generic error handled:", errorMessage);
                 return;
               }
             }
 
             // Fallback: Handle any other error formats that weren't caught above
-           
+            logger.debug('p2p', 
+              "FALLBACK ERROR HANDLING - No specific error format matched"
+            );
+            logger.debug('p2p', "Raw error data:", error.response?.data);
 
             // Try to extract any meaningful error message
             let fallbackErrorMessage =
@@ -1060,6 +1127,10 @@ export default function WithdrawalForm({
               }
             }
 
+            logger.debug('p2p', 
+              "FALLBACK: Setting error message:",
+              fallbackErrorMessage
+            );
             setApiValidationError(fallbackErrorMessage);
             setReceiveAmountError(fallbackErrorMessage);
             // Stop loading states and show error
@@ -1102,7 +1173,18 @@ export default function WithdrawalForm({
 
   // Reverse calculation effect for non-simple assets when user types in "You Receive"
   useEffect(() => {
-   
+    logger.debug('p2p', "Reverse calculation useEffect triggered:", {
+      selectedAsset: !!selectedAsset,
+      isSimpleAsset: selectedAsset
+        ? isSimpleCalculationAsset(selectedAsset)
+        : false,
+      getAmount,
+      isCalculatingFromPay,
+      isCalculating,
+      isCalculatingReceive,
+      estimateLoading,
+    });
+
     if (
       selectedAsset &&
       !isSimpleCalculationAsset(selectedAsset) &&
@@ -1110,6 +1192,7 @@ export default function WithdrawalForm({
       getAmount > 0 &&
       !isCalculatingFromPay
     ) {
+      logger.debug('p2p', "Starting reverse calculation - setting loading states");
       if (!apiValidationError) {
         setEstimateLoading(true);
         setEstimateError(null);
@@ -1117,6 +1200,7 @@ export default function WithdrawalForm({
 
       // For reverse calculation, we need to estimate the pay amount from the receive amount
       // We'll call the API with the correct direction to get the required USDT amount
+      logger.debug('p2p', "Starting reverse calculation for amount:", getAmount);
 
       // Add timeout to prevent hanging API calls
       const timeoutPromise = new Promise((_, reject) => {
@@ -1136,6 +1220,7 @@ export default function WithdrawalForm({
         timeoutPromise,
       ])
         .then((result: any) => {
+          logger.debug('p2p', "Reverse calculation result:", result);
           if (result.payload && (result.payload as any)?.estimated_amount) {
             // The API now returns how much USDT we need to get the desired amount
             const requiredUsdtAmount = (result.payload as any)
@@ -1150,18 +1235,29 @@ export default function WithdrawalForm({
             }
 
             // Clear loading states after successful calculation
+            logger.debug('p2p', "Clearing loading states after successful calculation");
             setIsCalculating(false);
             setIsCalculatingReceive(false);
             setEstimateLoading(false);
+            logger.debug('p2p', 
+              "Reverse calculation completed successfully - loading states cleared"
+            );
           } else {
             // No valid result, clear loading states
+            logger.debug('p2p', "No valid result from reverse calculation");
             setIsCalculating(false);
             setIsCalculatingReceive(false);
             setEstimateLoading(false);
           }
         })
         .catch((error) => {
-         
+          console.error("Failed to fetch reverse estimate:", error);
+          console.error("Reverse error response data:", error.response?.data);
+          console.error(
+            "Reverse error response status:",
+            error.response?.status
+          );
+
           // Handle API validation errors for receive amount first
           if (
             error.response?.data?.error ||
@@ -1171,6 +1267,11 @@ export default function WithdrawalForm({
               error.response.data.error ||
               error.response.data.response_data?.error;
             const responseData = error.response.data.response_data;
+
+            logger.debug('p2p', "REVERSE API ERROR DETECTED:", {
+              errorData,
+              responseData,
+            });
 
             // Handle amount validation errors (decimal places, too small, etc.)
             // Check if errorData is an object with amount property (format 1)
@@ -1203,7 +1304,9 @@ export default function WithdrawalForm({
                   err.includes("12 digits before the decimal point")
                 )
               ) {
-                
+                logger.debug('p2p', 
+                  "REVERSE API ERROR: 12 digits before decimal point validation error detected"
+                );
                 setApiValidationError(
                   "Ensure that there are no more than 12 digits before the decimal point."
                 );
@@ -1214,6 +1317,9 @@ export default function WithdrawalForm({
                 setEstimateLoading(false);
                 setIsCalculating(false);
                 setIsCalculatingReceive(false);
+                logger.debug('p2p', 
+                  "REVERSE API ERROR: Loading states cleared for 12 digits error"
+                );
                 return;
               }
               if (
@@ -1263,6 +1369,9 @@ export default function WithdrawalForm({
               errorData?.error === "deposit_too_small" ||
               responseData?.error === "deposit_too_small"
             ) {
+              logger.debug('p2p', 
+                "REVERSE API ERROR: Deposit too small error detected"
+              );
               const errorMessage =
                 responseData?.message ||
                 "Amount is too small. Please increase the amount.";
@@ -1272,6 +1381,9 @@ export default function WithdrawalForm({
               setEstimateLoading(false);
               setIsCalculating(false);
               setIsCalculatingReceive(false);
+              logger.debug('p2p', 
+                "REVERSE API ERROR: Loading states cleared for deposit too small error"
+              );
               return;
             }
 
@@ -1295,10 +1407,15 @@ export default function WithdrawalForm({
               setEstimateLoading(false);
               setIsCalculating(false);
               setIsCalculatingReceive(false);
+              logger.debug('p2p', "API ERROR: Generic error handled:", errorMessage);
               return;
             }
 
             // Fallback: Handle any other error formats that weren't caught above
+            logger.debug('p2p', 
+              "REVERSE FALLBACK ERROR HANDLING - No specific error format matched"
+            );
+            logger.debug('p2p', "Reverse raw error data:", error.response?.data);
 
             // Try to extract any meaningful error message
             let fallbackErrorMessage =
@@ -1317,6 +1434,10 @@ export default function WithdrawalForm({
               }
             }
 
+            logger.debug('p2p', 
+              "REVERSE FALLBACK: Setting error message:",
+              fallbackErrorMessage
+            );
             setApiValidationError(fallbackErrorMessage);
             setReceiveAmountError(fallbackErrorMessage);
             // Stop loading states and show error
@@ -1374,10 +1495,11 @@ export default function WithdrawalForm({
         })
         .finally(() => {
           // Always clear estimate loading and calculation states
+          logger.debug('p2p', "Finally block - clearing all loading states");
           setEstimateLoading(false);
           setIsCalculating(false);
           setIsCalculatingReceive(false);
-          
+          logger.debug('p2p', "Reverse calculation finished - loading states cleared");
         });
     } else if (!isCalculatingFromPay && getAmount === 0) {
       // Clear loading states when receive amount is 0
@@ -1614,13 +1736,17 @@ export default function WithdrawalForm({
             setIsCalculating(false);
             setIsCalculatingReceive(false);
           } else {
-          
+            // For non-USDT assets, we need to fetch estimate for reverse calculation
+            // This is more complex as we need to find the pay amount that gives us the desired receive amount
+            // The reverse calculation useEffect will handle the API call
+            // Just set loading states here - the useEffect will clear them
             setIsCalculating(true);
             setIsCalculatingReceive(true);
             // Don't update payAmountInput to avoid reloading the input field
           }
         }
       } catch (error) {
+        console.error("Calculation error:", error);
         setReceiveAmountError("Calculation error occurred");
       } finally {
         setIsCalculating(false);
@@ -1737,7 +1863,7 @@ export default function WithdrawalForm({
     }
 
     // Check if amount exceeds available balance
-    if (availableBalance !== undefined && payAmount > availableBalance) {
+    if (balance !== undefined && payAmount > balance) {
       return false;
     }
 
@@ -1784,10 +1910,12 @@ export default function WithdrawalForm({
           receiver_wallet: walletAddress,
         };
 
+        logger.debug('p2p', "Submitting P2P withdrawal request:", withdrawalPayload);
 
         // Submit to P2P withdrawal API
         const withdrawalResponse = await createP2PWithdrawal(withdrawalPayload);
 
+        logger.debug('p2p', "Withdrawal response received:", withdrawalResponse);
 
         // Ensure we have a valid response
         if (!withdrawalResponse) {
@@ -1821,7 +1949,7 @@ export default function WithdrawalForm({
             message =
               responseData.message || "Transaction submitted successfully";
           }
-          } else {
+        } else {
           // ChangeNow swap response for other assets
           if (responseData.type === "changenow_swap") {
             withdrawalAddress = responseData.details?.withdrawal_address || "";
@@ -1868,8 +1996,13 @@ export default function WithdrawalForm({
         });
         setIsOTPModalOpen(true);
 
-        
+        logger.debug('p2p', "Withdrawal addresses generated successfully:", {
+          withdrawalAddress,
+          payoutAddress,
+          transactionId,
+        });
       } catch (error: any) {
+        console.error("Error submitting withdrawal request:", error);
 
         let errorMessage = "Failed to submit withdrawal request";
 
@@ -1969,8 +2102,10 @@ export default function WithdrawalForm({
           receiver_wallet: walletAddress,
         };
 
+        logger.debug('p2p', "Submitting P2P withdrawal request:", p2pWithdrawalPayload);
         const withdrawalResponse =
           await createP2PWithdrawal(p2pWithdrawalPayload);
+        logger.debug('p2p', "P2P withdrawal response received:", withdrawalResponse);
 
         // Handle P2P withdrawal response
         const p2pResponse = withdrawalResponse as any;
@@ -2038,7 +2173,10 @@ export default function WithdrawalForm({
           })
         ).unwrap()) as unknown as DepositResponse;
 
-     
+        logger.debug('p2p', 
+          "DEBUG: Deposit code from response:",
+          depositResponse.deposit_code
+        );
 
         // Show success message
         showToast.success("Deposit request submitted successfully!");
@@ -2071,7 +2209,8 @@ export default function WithdrawalForm({
         }
       }
     } catch (error: any) {
-        
+      logger.debug('p2p', error);
+
       let errorMessage = `Failed to submit ${mode} request`;
 
       if (error.response?.data) {
@@ -2145,7 +2284,10 @@ export default function WithdrawalForm({
                           }
                           className="w-6 h-6 rounded-full"
                           onError={(e) => {
-                           
+                            logger.debug('p2p', 
+                              "Image failed to load for asset:",
+                              selectedAsset
+                            );
                             e.currentTarget.src =
                               "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                           }}
@@ -2219,6 +2361,7 @@ export default function WithdrawalForm({
                             key={`${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
                             className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
                             onClick={() => {
+                              logger.debug('p2p', "Asset selected:", asset);
 
                               // Force BSC network and proper names for USDT Tether
                               const ticker = (

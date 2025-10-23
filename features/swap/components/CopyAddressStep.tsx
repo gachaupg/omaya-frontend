@@ -5,6 +5,8 @@ import { API_CONFIG } from "@/lib/appConfig";
 import SuccessPage from "./success";
 import { Copy } from "lucide-react";
 
+import { logger } from '@/lib/utils/logger';
+
 interface CopyAddressStepProps {
   swapResponse: CreateSwapResponse | null;
   copyMessage: string;
@@ -121,15 +123,25 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
     let reconnectTimeout: NodeJS.Timeout | null = null;
     let closedByUser = false;
     const wsUrl = API_CONFIG.SWAP.SWAP_STATUS_WS(swapResponse.id);
+    logger.debug('swap', "WebSocket URL (actual):", wsUrl);
 
     function connect() {
       if (!swapResponse?.id) return; // Ensure swapResponse is not null
       ws = connectSwapStatusWebSocket(swapResponse.id, {
         onOpen: (event: Event) => {
+          logger.debug('swap', "WebSocket connection opened", event);
           setWsConnected(true);
           setReconnectAttempts(0); // Reset on successful connect
         },
         onClose: (event: CloseEvent) => {
+          logger.debug('swap', 
+            "WebSocket closed",
+            event,
+            "code:",
+            event.code,
+            "reason:",
+            event.reason
+          );
           setWsConnected(false);
           if (
             !closedByUser &&
@@ -139,16 +151,26 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
             // Abnormal closure, try to reconnect
             const nextAttempt = reconnectAttempts + 1;
             setReconnectAttempts(nextAttempt);
+            logger.debug('swap', 
+              `Attempting to reconnect WebSocket (#${nextAttempt}) in ${
+                reconnectDelay / 1000
+              }s...`
+            );
             reconnectTimeout = setTimeout(connect, reconnectDelay);
           }
         },
         onError: (event: Event) => {
+          logger.debug('swap', "WebSocket error", event);
           setWsConnected(false);
         },
         onMessage: (event: MessageEvent) => {
+          logger.debug('swap', status);
+
+          logger.debug('swap', "WebSocket message received:", event.data);
           try {
             const msg = JSON.parse(event.data);
             const sts = msg.data?.status;
+            logger.debug('swap', "new data check", sts, msg);
 
             if (msg.type === "status_update" && msg.data) {
               const backendStatus = msg.data.status;
@@ -159,11 +181,14 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
               
               // Auto-navigate to success page when status is completed
               if (backendStatus === "completed") {
+                logger.debug('swap', "✅ Swap completed, automatically showing success page");
+                logger.debug('swap', "Status changed to completed, triggering success page");
                 // Keep the status as "completed" to trigger success page
                 setStatus("completed");
               }
             }
           } catch (e) {
+            console.error("Failed to parse WebSocket message", e, event.data);
           }
         },
       });
@@ -183,9 +208,18 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
   // Always map the status before using it in the stepper
   const mappedStatus = mapBackendStatusToStepperStatus(status);
   const currentStepIndex = statusSteps.findIndex((s) => s.key === mappedStatus);
+  logger.debug('swap', 
+    "status:",
+    status,
+    "mappedStatus:",
+    mappedStatus,
+    "currentStepIndex:",
+    currentStepIndex
+  );
 
   // If status is completed, show the SuccessPage with real data
   if (mappedStatus === "completed" || mappedStatus === "finished") {
+    logger.debug('swap', "🎉 Rendering success page for status:", mappedStatus);
     return (
       <SuccessPage
         transactionId={statusObj?.swap_id || statusObj?.id || swapResponse?.id || ""}
@@ -411,25 +445,12 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
         </div>
       )}
 
-      {/* Terms and Conditions Summary */}
-      <div className="w-full max-w-4xl bg-[#FF9500]/50 border-2 border-solid border-[#FF9500]/50 rounded-[18px] flex flex-col gap-2 p-3">
-        <h2 className="text-white text-base font-semibold">
-          Terms and Conditions Summary
-        </h2>
-        <ul className="list-disc list-inside space-y-1">
-          <li className="text-white text-sm">
-            Only send {swapResponse.fromCurrency} ({swapResponse.fromNetwork}) to this address
-          </li>
-          <li className="text-white text-sm">
-            Send exactly the amount specified below
-          </li>
-          <li className="text-white text-sm">
-            Do not send from exchange accounts
-          </li>
-          <li className="text-white text-sm">
-            Minimum confirmations required: 1
-          </li>
-        </ul>
+      {/* Terms and Conditions Summary - always at the very bottom */}
+      <div className="flex items-center mb-2 mt-2 max-w-4xl">
+        <img
+          src="https://res.cloudinary.com/pitz/image/upload/v1752248844/Frame_34947_hxlr7o.png"
+          alt=""
+        />
       </div>
       
     </div>

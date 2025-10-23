@@ -7,6 +7,8 @@ import { getMyP2POrders } from "../api";
 import { P2PMyOrders } from "../types";
 import { handleP2PError } from "@/lib/utils/errorHandler";
 
+import { logger } from '@/lib/utils/logger';
+
 interface MyOrdersState {
   orders: P2PMyOrders;
   loading: boolean;
@@ -16,21 +18,12 @@ interface MyOrdersState {
 
 const initialState: MyOrdersState = {
   orders: {
-    buy_orders: [],
-    sell_orders: [],
-    buy_pagination: {
-      count: 0,
-      next: null,
-      previous: null,
-      current_page: 1,
-      total_pages: 0,
-    },
-    sell_pagination: {
-      count: 0,
-      next: null,
-      previous: null,
-      current_page: 1,
-      total_pages: 0,
+    count: 0,
+    next: null,
+    previous: null,
+    results: {
+      total_orders_count: 0,
+      results: [],
     },
   },
   loading: false,
@@ -43,10 +36,21 @@ export const fetchMyOrders = createAsyncThunk<
   number,
   { rejectValue: string }
 >("myOrders/fetchMyOrders", async (page: number = 1, { rejectWithValue }) => {
+  logger.debug('p2p', "Redux thunk fetchMyOrders called with page:", page);
   try {
     const response = await getMyP2POrders(page);
+    logger.debug('p2p', 
+      "Redux thunk fetchMyOrders success for page:",
+      page,
+      "with data:",
+      {
+        count: response.count,
+        resultsCount: response.results?.results?.length,
+      }
+    );
     return response;
   } catch (err) {
+    logger.debug('p2p', "Redux thunk fetchMyOrders error for page:", page, err);
     try {
       handleP2PError(err);
     } catch (error) {
@@ -63,6 +67,12 @@ const myOrdersSlice = createSlice({
   initialState,
   reducers: {
     setCurrentPage: (state, action) => {
+      logger.debug('p2p', 
+        "myOrders setCurrentPage action dispatched:",
+        action.payload,
+        "Previous page:",
+        state.currentPage
+      );
       state.currentPage = action.payload;
     },
     clearError: (state) => {
@@ -72,15 +82,22 @@ const myOrdersSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchMyOrders.pending, (state) => {
+        logger.debug('p2p', "fetchMyOrders.pending for page:", state.currentPage);
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchMyOrders.fulfilled, (state, action) => {
+        logger.debug('p2p', "fetchMyOrders.fulfilled with data:", {
+          count: action.payload.count,
+          resultsCount: action.payload.results?.results?.length,
+          currentPage: state.currentPage,
+        });
         state.loading = false;
         state.orders = action.payload;
         state.error = null;
       })
       .addCase(fetchMyOrders.rejected, (state, action) => {
+        logger.debug('p2p', "fetchMyOrders.rejected:", action.payload);
         state.loading = false;
         state.error = (action.payload as string) || "An unexpected error occurred";
       });

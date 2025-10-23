@@ -2,6 +2,8 @@ import { apiClient } from '@/lib/apiClient';
 import { API_CONFIG } from '@/lib/appConfig';
 import type { ContactFormData, ContactApiResponse } from './types';
 
+import { logger } from '@/lib/utils/logger';
+
 export const contactApi = {
   /**
    * Submit a support request (contact form)
@@ -29,7 +31,7 @@ export const contactApi = {
       );
       return response.data;
     } catch (error) {
-      console.error('Error submitting support request:', error);
+      logger.error('general', 'Error submitting support request:', error);
       throw error;
     }
   },
@@ -44,7 +46,7 @@ export const contactApi = {
       );
       return response.data;
     } catch (error) {
-      console.error('Error fetching contact submissions:', error);
+      logger.error('general', 'Error fetching contact submissions:', error);
       throw error;
     }
   },
@@ -69,7 +71,7 @@ export const marketingApi = {
       );
       return response.data;
     } catch (error) {
-      console.error('Error fetching highlight statistics:', error);
+      logger.error('general', 'Error fetching highlight statistics:', error);
       throw error;
     }
   },

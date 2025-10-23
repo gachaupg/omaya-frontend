@@ -15,6 +15,8 @@ import ReferralUsersList from "./sections/ReferralUsersList";
 import ReferralWithdrawalHistory from "./sections/ReferralWithdrawalHistory";
 import Withdraw from "./Withdraw";
 
+import { logger } from '@/lib/utils/logger';
+
 // Application Submitted Success Modal Component
 const ApplicationSubmittedModal = ({
   isOpen,
@@ -101,7 +103,7 @@ const Referral: React.FC = () => {
     // only load wallet on the referral tab
     if (activeTab === "Referral") {
       dispatch(fetchReferralWallet()).catch((e) =>
-        console.warn("Referral wallet API not available:", e)
+        logger.warn('dashboard', "Referral wallet API not available:", e)
       );
     }
   }, [activeTab, dispatch, isAuthenticated, refCode]);

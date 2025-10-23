@@ -28,7 +28,8 @@ import QRCode from "qrcode";
 import { showToast } from "@/lib/utils/toast";
 import { createExpressDeposit } from "../../api";
 import { ExpressDepositResponse } from "../../types";
-import { connectDepositWebSocket, disconnectDepositWebSocket } from "./depositSockets";
+
+import { logger } from '@/lib/utils/logger';
 
 // Add UserPaymentDetail interface
 interface UserPaymentDetail {
@@ -169,16 +170,27 @@ export default function DepositForm({
       });
       setQrCodeDataUrl(qrDataUrl);
     } catch (error) {
-      // console.error("Failed to generate QR code:", error);
+      logger.error('p2p', "Failed to generate QR code:", error);
     }
   };
 
   // Debug function to test asset fetching
   const handleDebugAssets = async () => {
     try {
+      logger.debug('p2p', "=== Starting debug asset fetch ===");
+      logger.debug('p2p', "Current exchange assets:", assets);
+      logger.debug('p2p', "Current swap assets:", swapAssets);
+      
+      // Force refresh both asset types
+      logger.debug('p2p', "🔄 Force refreshing exchange assets...");
       await dispatch(fetchAssets(true)).unwrap();
-            await dispatch(fetchSupportedAssets(true)).unwrap();
-          } catch (error) {
+      
+      logger.debug('p2p', "🔄 Force refreshing swap assets...");
+      await dispatch(fetchSupportedAssets(true)).unwrap();
+      
+      logger.debug('p2p', "✅ Assets force refreshed");
+    } catch (error) {
+      console.error("Debug failed:", error);
     }
   };
 
@@ -231,25 +243,292 @@ export default function DepositForm({
 
   // WebSocket connection for monitoring deposit status
   const connectWebSocket = (websocketUrl: string, isRetry: boolean = false) => {
-    return connectDepositWebSocket(
-      websocketUrl,
-      {
-        onStatusUpdate: setTransactionStatus,
-        onError: setWebsocketError,
-        onConnection: setWebsocket,
-        onRetryCountUpdate: setWebsocketRetryCount,
-      },
-      {
+    try {
+      // Validate WebSocket URL
+      if (!websocketUrl || websocketUrl.trim() === "") {
+        console.error("WebSocket URL is empty or undefined");
+        setWebsocketError("WebSocket URL is empty or undefined");
+        return null;
+      }
+
+      // Clean up malformed URLs (remove //http: or //https: from WebSocket URLs)
+      let cleanedUrl = websocketUrl;
+      if (websocketUrl.includes('//http:') || websocketUrl.includes('//https:')) {
+        cleanedUrl = websocketUrl.replace('//http:', '').replace('//https:', '');
+        logger.debug('p2p', "Cleaned malformed WebSocket URL:", {
+          original: websocketUrl,
+          cleaned: cleanedUrl
+        });
+      }
+
+      // Ensure proper WebSocket protocol - always use wss for production/secure contexts
+      let finalUrl = cleanedUrl;
+      
+      logger.debug('p2p', "WebSocket URL protocol conversion:", {
+        originalUrl: websocketUrl,
+        currentProtocol: window.location.protocol,
+        isSecure: window.location.protocol === 'https:',
+        isProduction: window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1',
+        isDevBackend: websocketUrl.includes('dev.backend.omaya.io'),
+        needsConversion: websocketUrl.startsWith('ws://') && (window.location.protocol === 'https:' || window.location.hostname !== 'localhost' || websocketUrl.includes('dev.backend.omaya.io'))
+      });
+      
+      // Check if we need to convert ws:// to wss://
+      if (websocketUrl.startsWith('ws://')) {
+        // Convert ws:// to wss:// for secure contexts or production environments
+        const isSecure = window.location.protocol === 'https:';
+        const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        const isDevBackend = websocketUrl.includes('dev.backend.omaya.io');
+        
+        // Always use wss:// for:
+        // 1. HTTPS contexts
+        // 2. Production environments (non-localhost)
+        // 3. Dev backend (dev.backend.omaya.io) - as it likely only supports wss://
+        if (isSecure || isProduction || isDevBackend) {
+          finalUrl = websocketUrl.replace('ws://', 'wss://');
+          logger.debug('p2p', "Converted WebSocket URL from ws:// to wss://");
+          logger.debug('p2p', "URL conversion:", {
+            before: websocketUrl,
+            after: finalUrl,
+            reason: isSecure ? 'HTTPS context' : isProduction ? 'Production environment' : 'Dev backend requires wss://'
+          });
+        }
+      } else if (!websocketUrl.startsWith('wss://')) {
+        // If URL doesn't have protocol, try to determine from current location
+        const isSecure = window.location.protocol === 'https:';
+        const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        const isDevBackend = websocketUrl.includes('dev.backend.omaya.io');
+        const useWss = isSecure || isProduction || isDevBackend;
+        
+        finalUrl = `${useWss ? 'wss://' : 'ws://'}${websocketUrl}`;
+        logger.debug('p2p', "Added WebSocket protocol:", {
+          before: websocketUrl,
+          after: finalUrl,
+          protocol: useWss ? 'wss' : 'ws',
+          reason: isSecure ? 'HTTPS context' : isProduction ? 'Production environment' : isDevBackend ? 'Dev backend requires wss://' : 'HTTP context'
+        });
+      }
+
+      // Validate the constructed URL
+      try {
+        new URL(finalUrl);
+      } catch (urlError) {
+        console.error("Invalid WebSocket URL:", {
+          originalUrl: websocketUrl,
+          constructedUrl: finalUrl,
+          error: urlError
+        });
+        setWebsocketError(`Invalid WebSocket URL: ${finalUrl}`);
+        return null;
+      }
+
+      logger.debug('p2p', `Attempting WebSocket connection to: ${finalUrl}${isRetry ? ' (retry attempt)' : ''}`);
+      
+      // Pre-connection validation and logging
+      logger.debug('p2p', "WebSocket connection attempt details:", {
+        originalUrl: websocketUrl,
+        finalUrl: finalUrl,
+        protocolChanged: websocketUrl !== finalUrl,
+        isRetry: isRetry,
         retryCount: websocketRetryCount,
-      },
-      isRetry
-    );
+        isSecure: window.location.protocol === 'https:',
+        isProduction: window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1',
+        userAgent: navigator.userAgent,
+        online: navigator.onLine,
+        timestamp: new Date().toISOString()
+      });
+      
+      const ws = new WebSocket(finalUrl);
+      
+      // Set up connection timeout
+      const connectionTimeout = setTimeout(() => {
+        if (ws.readyState === WebSocket.CONNECTING) {
+          console.error("WebSocket connection timeout after 10 seconds");
+          ws.close();
+          setWebsocketError("WebSocket connection timeout. Please check your network connection.");
+          setWebsocket(null);
+        }
+      }, 10000); // 10 second timeout
+      
+      ws.onopen = () => {
+        clearTimeout(connectionTimeout);
+        logger.debug('p2p', "WebSocket connected for deposit monitoring");
+        setWebsocket(ws);
+        setWebsocketError(null);
+        setWebsocketRetryCount(0);
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          logger.debug('p2p', "WebSocket message received:", data);
+          
+          if (data.status) {
+            setTransactionStatus(data.status);
+            
+            if (data.status === "completed") {
+              showToast.success("Deposit completed successfully!");
+              // Reload the page instead of going to success page
+              setTimeout(() => {
+                window.location.reload();
+              }, 2000); // Wait 2 seconds to show success message
+            } else if (data.status === "failed") {
+              showToast.error("Deposit failed. Please contact support.");
+            }
+          }
+        } catch (error) {
+          console.error("Error parsing WebSocket message:", error);
+        }
+      };
+
+      ws.onclose = (event) => {
+        clearTimeout(connectionTimeout);
+        logger.debug('p2p', "WebSocket connection closed:", {
+          code: event.code,
+          reason: event.reason,
+          wasClean: event.wasClean,
+          closeCode: event.code,
+          closeReason: event.reason
+        });
+        setWebsocket(null);
+        
+        // Attempt retry if connection was not clean and we haven't exceeded retry limit
+        if (!event.wasClean && websocketRetryCount < 3) {
+          logger.debug('p2p', `Attempting WebSocket retry ${websocketRetryCount + 1}/3`);
+          setWebsocketRetryCount(prev => prev + 1);
+          setTimeout(() => {
+            const retryWs = connectWebSocket(websocketUrl, true);
+            if (!retryWs) {
+              console.error(`WebSocket retry ${websocketRetryCount + 1} failed`);
+              if (websocketRetryCount >= 2) {
+                setWebsocketError("WebSocket connection failed after multiple retry attempts. Please refresh the page to try again.");
+              }
+            }
+          }, 2000 * (websocketRetryCount + 1)); // Exponential backoff
+        } else if (!event.wasClean && websocketRetryCount >= 3) {
+          console.error("WebSocket connection failed after maximum retry attempts");
+          setWebsocketError("WebSocket connection failed after multiple retry attempts. Please refresh the page to try again.");
+        }
+      };
+
+      ws.onerror = (error) => {
+        clearTimeout(connectionTimeout);
+        
+        // Determine the specific error type based on WebSocket readyState
+        let errorType = 'Unknown error';
+        let errorDescription = '';
+        let suggestedAction = '';
+        
+        switch (ws.readyState) {
+          case WebSocket.CONNECTING:
+            errorType = 'Connection failed';
+            errorDescription = 'Failed to establish WebSocket connection';
+            suggestedAction = 'Check if the WebSocket server is running and accessible';
+            break;
+          case WebSocket.OPEN:
+            errorType = 'Communication error';
+            errorDescription = 'Error occurred during WebSocket communication';
+            suggestedAction = 'Check network stability and server response';
+            break;
+          case WebSocket.CLOSING:
+            errorType = 'Connection closing error';
+            errorDescription = 'Error occurred while closing WebSocket connection';
+            suggestedAction = 'This is usually not critical, connection will be retried';
+            break;
+          case WebSocket.CLOSED:
+            errorType = 'Connection closed';
+            errorDescription = 'WebSocket connection was closed unexpectedly';
+            suggestedAction = 'Connection will be retried automatically';
+            break;
+        }
+        
+        const errorMessage = `WebSocket ${errorType}: ${errorDescription}`;
+        
+        // Safely extract error information from Event object
+        const errorInfo = {
+          // Basic error information
+          error: error,
+          eventType: error.type || 'error',
+          target: error.target,
+          url: finalUrl,
+          readyState: ws.readyState,
+          readyStateText: ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'][ws.readyState],
+          timestamp: new Date().toISOString(),
+          errorType: errorType,
+          errorDescription: errorDescription,
+          suggestedAction: suggestedAction,
+          
+          // Event object properties (safely accessed)
+          eventDetails: {
+            isTrusted: error.isTrusted,
+            bubbles: error.bubbles,
+            cancelable: error.cancelable,
+            defaultPrevented: error.defaultPrevented,
+            eventPhase: error.eventPhase,
+            timeStamp: error.timeStamp,
+            currentTarget: error.currentTarget,
+            srcElement: error.srcElement
+          },
+          
+          // Additional debugging information
+          connectionInfo: {
+            protocol: ws.protocol || 'none',
+            extensions: ws.extensions || 'none',
+            binaryType: ws.binaryType || 'blob',
+            bufferedAmount: ws.bufferedAmount || 0
+          },
+          
+          // Network and environment info
+          environment: {
+            userAgent: navigator.userAgent,
+            online: navigator.onLine,
+            protocol: window.location.protocol,
+            host: window.location.host,
+            isSecure: window.location.protocol === 'https:'
+          }
+        };
+        
+        console.error("WebSocket error details:", errorInfo);
+        console.error("WebSocket error summary:", {
+          url: finalUrl,
+          readyState: ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'][ws.readyState],
+          errorType: errorType,
+          suggestedAction: suggestedAction
+        });
+        
+        // Try alternative protocol if this is the first attempt
+        if (websocketRetryCount === 0 && finalUrl.startsWith('ws://')) {
+          logger.debug('p2p', "Attempting fallback to wss:// protocol");
+          const fallbackUrl = finalUrl.replace('ws://', 'wss://');
+          setTimeout(() => {
+            connectWebSocket(fallbackUrl, true);
+          }, 1000);
+          return; // Don't set error yet, let the fallback try first
+        }
+        
+        setWebsocketError(errorMessage);
+        setWebsocket(null);
+      };
+
+      return ws;
+    } catch (error) {
+      const errorMessage = `Failed to create WebSocket connection: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      console.error("Failed to create WebSocket connection:", {
+        error: error,
+        url: websocketUrl,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+      setWebsocketError(errorMessage);
+      return null;
+    }
   };
 
   // Cleanup WebSocket on component unmount
   useEffect(() => {
     return () => {
-      disconnectDepositWebSocket(websocket);
+      if (websocket) {
+        websocket.close();
+      }
     };
   }, [websocket]);
 
@@ -273,7 +552,12 @@ export default function DepositForm({
       const asset = selectedAsset.ticker || selectedAsset.symbol;
       const network = selectedNetwork.network || selectedNetwork.name;
       
-     
+      logger.debug('p2p', "Submitting deposit request with:", { 
+        asset, 
+        network, 
+        amount: skipAmountValidation ? "NOT INCLUDED" : payAmount, 
+        skipAmountValidation 
+      });
 
       // Call the express deposit API
       const depositPayload: any = {
@@ -289,6 +573,7 @@ export default function DepositForm({
 
       const depositResponse = await createExpressDeposit(depositPayload);
       
+      logger.debug('p2p', "Express deposit response:", depositResponse);
       
       // Create transaction data for the exchanging page
       const transactionData = {
@@ -315,6 +600,8 @@ export default function DepositForm({
         details: depositResponse.details || {},
       };
 
+      logger.debug('p2p', "Transaction data:", transactionData);
+
       // Store transaction data in localStorage for the exchanging page
       localStorage.setItem('express_transaction_data', JSON.stringify(transactionData));
       
@@ -327,6 +614,7 @@ export default function DepositForm({
         router.push('/dashboard/express-exchange');
       }
     } catch (error: any) {
+      console.error("Deposit submission error:", error);
       showToast.error(`Failed to create deposit: ${error.message || error}`);
     } finally {
       setIsSubmitting(false);
@@ -338,7 +626,7 @@ export default function DepositForm({
     dispatch(fetchAdminPaymentDetails(false)) // false = don't force refresh
       .unwrap()
       .catch((error: unknown) => {
-        // Silent - no error display
+        showToast.error(`Failed to fetch admin payment details: ${error}`);
       });
   }, [dispatch]);
 
@@ -347,13 +635,21 @@ export default function DepositForm({
     dispatch(fetchAssets(false))
       .unwrap()
       .then((data) => {
+        logger.debug('p2p', "DEBUG: Exchange assets loaded:", {
+          hasAssets: !!data?.assets,
+          assetsLength: data?.assets?.length || 0,
+          totalBalance: data?.total_wallet_balance
+        });
+        
         // If no assets in cache, force refresh
         if (!data?.assets || data.assets.length === 0) {
+          logger.debug('p2p', "🔄 No assets in cache, forcing refresh...");
           return dispatch(fetchAssets(true)).unwrap();
         }
         return data;
       })
       .catch((error: unknown) => {
+        console.error("Failed to fetch assets from cache, trying force refresh:", error);
         // If cache fetch fails, try force refresh
         return dispatch(fetchAssets(true))
           .unwrap()
@@ -401,18 +697,25 @@ export default function DepositForm({
     dispatch(fetchSupportedAssets(false))
       .unwrap()
       .then((data) => {
+        logger.debug('p2p', "DEBUG: Swap assets loaded:", {
+          hasAssets: !!data,
+          assetsLength: data?.length || 0
+        });
+        
         // If no assets in cache, force refresh
         if (!data || data.length === 0) {
+          logger.debug('p2p', "🔄 No swap assets in cache, forcing refresh...");
           return dispatch(fetchSupportedAssets(true)).unwrap();
         }
         return data;
       })
       .catch((error: unknown) => {
+        console.error("Failed to fetch swap assets from cache, trying force refresh:", error);
         // If cache fetch fails, try force refresh
         return dispatch(fetchSupportedAssets(true))
           .unwrap()
           .catch((refreshError: unknown) => {
-            
+            console.error("Failed to fetch swap assets even with force refresh:", refreshError);
             
             // Only show error if it's a network issue, not cache issues
             if (refreshError instanceof Error) {
@@ -454,7 +757,13 @@ export default function DepositForm({
 
   // Auto-select USDT Tether asset - always ensure USDT is available and selected
   useEffect(() => {
-   
+    logger.debug('p2p', "DEBUG: Asset selection effect triggered:", { 
+      hasSwapAssets: !!swapAssets, 
+      swapAssetsLength: swapAssets?.length || 0, 
+      hasSelectedAsset: !!selectedAsset,
+      swapAssets: swapAssets
+    });
+
     // Always ensure USDT is selected, regardless of API assets
     if (!selectedAsset) {
       // Try to find USDT Tether from the API assets first (we'll force BSC network)
@@ -465,6 +774,7 @@ export default function DepositForm({
           const name = (asset.name || "").toString().toLowerCase();
           return ticker === "usdt" && (name.includes("tether") || name.includes("usdt"));
         });
+        logger.debug('p2p', "DEBUG: Found USDT Tether from API:", usdtAsset);
       }
 
       // Always create/use a USDT Tether asset - fallback if not found in API
@@ -484,6 +794,7 @@ export default function DepositForm({
         asset_id: "usdt-tether-bsc"
       };
 
+      logger.debug('p2p', "DEBUG: Setting selected asset:", selectedUsdtAsset);
       setSelectedAsset(selectedUsdtAsset);
       setSelectedNetwork({
         network_id: "BSC",
@@ -528,7 +839,12 @@ export default function DepositForm({
 
   // Fetch estimate for non-USDT assets - triggers immediately on asset or amount change
   useEffect(() => {
-    
+    logger.debug('p2p', "Estimate useEffect triggered:", {
+      selectedAsset: selectedAsset?.ticker,
+      isSimple: selectedAsset ? isSimpleCalculationAsset(selectedAsset) : null,
+      payAmount,
+      shouldFetch: selectedAsset && !isSimpleCalculationAsset(selectedAsset) && payAmount && payAmount > 0
+    });
     
     if (
       selectedAsset &&
@@ -570,20 +886,25 @@ export default function DepositForm({
           setIsCalculating(false);
           setIsCalculatingReceive(false);
         })
-        .catch((error) => {          
+        .catch((error) => {
+          console.error("Failed to fetch swap estimate:", error);
+          
           // Handle different types of errors gracefully
           if (error.message?.includes("Request timeout")) {
             setEstimateError("Request timeout: Using fallback calculation");
+            logger.debug('p2p', "Using fallback calculation due to request timeout");
             showToast.warning("Request timeout: Using estimated rate");
           } else if (error.message?.includes("Network Error") || error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
             setEstimateError("Network error: Using fallback calculation");
+            logger.debug('p2p', "Using fallback calculation due to network error");
             showToast.warning("Using estimated rate due to network issues");
           } else if (error.message?.includes("Server Error")) {
             setEstimateError("Server error: Using fallback calculation");
+            logger.debug('p2p', "Using fallback calculation due to server error");
             showToast.warning("Using estimated rate due to server issues");
           } else if (error.message?.includes("Invalid swap parameters")) {
             setEstimateError("Invalid parameters: Using fallback calculation");
-            
+           
             showToast.warning("Invalid parameters: Using estimated rate");
           } else {
             setEstimateError("API error: Using fallback calculation");
@@ -616,7 +937,12 @@ export default function DepositForm({
 
   // Fetch reverse estimate for non-USDT assets when calculating from receive amount
   useEffect(() => {
-   
+    logger.debug('p2p', "Reverse estimate useEffect triggered:", {
+      selectedAsset: selectedAsset?.ticker,
+      isSimple: selectedAsset ? isSimpleCalculationAsset(selectedAsset) : null,
+      getAmount,
+      shouldFetch: selectedAsset && !isSimpleCalculationAsset(selectedAsset) && getAmount && getAmount > 0 && !isCalculatingFromPay
+    });
     
     if (
       selectedAsset &&
@@ -628,6 +954,16 @@ export default function DepositForm({
       setEstimateLoading(true);
       setEstimateError(null);
 
+      // For reverse calculation, we need to estimate the pay amount from the receive amount
+      // We'll call the API with the correct direction to get the required USDT amount
+      
+      logger.debug('p2p', "Fetching reverse estimate for deposit:", {
+        fromCurrency: selectedAsset.ticker, // We're converting FROM the selected asset
+        fromNetwork: selectedAsset.network, 
+        toCurrency: "USDT", // TO USDT (since we want to know how much USDT we need)
+        toNetwork: "BSC", 
+        amount: getAmount, // Use the receive amount directly
+      });
 
       // Add timeout to prevent hanging API calls
       const timeoutPromise = new Promise((_, reject) => {
@@ -647,6 +983,7 @@ export default function DepositForm({
         timeoutPromise
       ])
         .then((result: any) => {
+          logger.debug('p2p', "Reverse estimate result:", result);
           if (result.payload && (result.payload as any)?.estimated_amount) {
             // The API now returns how much USDT we need to get the desired amount
             const requiredUsdtAmount = (result.payload as any)?.estimated_amount;
@@ -656,7 +993,10 @@ export default function DepositForm({
               setPayAmount(requiredUsdtAmount);
               setPayAmountInput(requiredUsdtAmount.toString());
               setEstimate(result.payload);
-             
+              logger.debug('p2p', "Reverse calculation successful:", { 
+                desiredReceive: getAmount, 
+                requiredPay: requiredUsdtAmount 
+              });
             }
             
             // Clear loading states after successful calculation
@@ -664,22 +1004,29 @@ export default function DepositForm({
             setIsCalculatingReceive(false);
           }
         })
-        .catch((error) => {          
+        .catch((error) => {
+          console.error("Failed to fetch reverse estimate:", error);
+          
           // Handle different types of errors gracefully
           if (error.message?.includes("Request timeout")) {
             setEstimateError("Request timeout: Using fallback calculation");
+            logger.debug('p2p', "Using fallback calculation due to request timeout");
             showToast.warning("Request timeout: Using estimated rate");
           } else if (error.message?.includes("Network Error") || error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
             setEstimateError("Network error: Using fallback calculation");
+            logger.debug('p2p', "Using fallback calculation due to network error");
             showToast.warning("Using estimated rate due to network issues");
           } else if (error.message?.includes("Server Error")) {
             setEstimateError("Server error: Using fallback calculation");
+            logger.debug('p2p', "Using fallback calculation due to server error");
             showToast.warning("Using estimated rate due to server issues");
           } else if (error.message?.includes("Invalid swap parameters")) {
             setEstimateError("Invalid parameters: Using fallback calculation");
+            logger.debug('p2p', "Using fallback calculation due to invalid API parameters");
             showToast.warning("Invalid parameters: Using estimated rate");
           } else {
             setEstimateError("API error: Using fallback calculation");
+            logger.debug('p2p', "Using fallback calculation due to API error");
             showToast.warning("Using estimated rate due to API unavailability");
           }
           
@@ -714,6 +1061,7 @@ export default function DepositForm({
   useEffect(() => {
     const safetyTimeout = setTimeout(() => {
       if (isCalculating || isCalculatingReceive) {
+        logger.debug('p2p', "Safety timeout: Clearing stuck loading states");
         setIsCalculating(false);
         setIsCalculatingReceive(false);
       }
@@ -779,7 +1127,14 @@ export default function DepositForm({
 
   // Stable calculation function with debouncing
   const calculateAmounts = (fromAmount: number, fromPay: boolean = true) => {
-    
+    logger.debug('p2p', "calculateAmounts called:", { 
+      fromAmount, 
+      fromPay, 
+      selectedAsset: selectedAsset?.ticker,
+      isCalculating,
+      isCalculatingReceive,
+      isCalculatingFromPay
+    });
     
     // Clear any existing timeout
     if (calculationTimeout) {
@@ -802,7 +1157,7 @@ export default function DepositForm({
 
     // Ensure we're not in an infinite loop
     if (isCalculating || isCalculatingReceive) {
-      console.log("Already calculating, skipping...");
+      logger.debug('p2p', "Already calculating, skipping...");
       return;
     }
 
@@ -835,6 +1190,7 @@ export default function DepositForm({
         const networkFee = 0;
         const totalFees = networkFee + commissionAmount;
         const calculatedGetAmount = fromAmount - totalFees;
+            logger.debug('p2p', "Forward calculation result:", { fromAmount, calculatedGetAmount, totalFees });
             setGetAmount(calculatedGetAmount);
             setGetAmountInput(calculatedGetAmount.toString());
         } else {
@@ -843,6 +1199,7 @@ export default function DepositForm({
           const networkFee = 0;
           const totalFees = networkFee + commissionAmount;
           const calculatedPayAmount = fromAmount + totalFees;
+          logger.debug('p2p', "Reverse calculation result:", { fromAmount, calculatedPayAmount, totalFees, commissionRate });
           setPayAmount(calculatedPayAmount);
           setPayAmountInput(calculatedPayAmount.toString());
           }
@@ -904,6 +1261,7 @@ export default function DepositForm({
             const networkFee = 0;
             const totalFees = networkFee + commissionAmount;
             const calculatedGetAmount = fromAmount - totalFees;
+            logger.debug('p2p', "Complex forward calculation result:", { fromAmount, calculatedGetAmount, totalFees, commissionRate });
             setGetAmount(calculatedGetAmount);
             setGetAmountInput(calculatedGetAmount.toString());
             setReceiveAmountError(null);
@@ -955,6 +1313,7 @@ export default function DepositForm({
             const networkFee = 0;
             const totalFees = networkFee + commissionAmount;
             const calculatedPayAmount = fromAmount + totalFees;
+            logger.debug('p2p', "Complex reverse calculation result:", { fromAmount, calculatedPayAmount, totalFees, commissionRate });
             setPayAmount(calculatedPayAmount);
             setPayAmountInput(calculatedPayAmount.toString());
             setReceiveAmountError(null);
@@ -977,6 +1336,7 @@ export default function DepositForm({
           }
         }
       } catch (error) {
+        console.error("Calculation error:", error);
         setReceiveAmountError("Calculation error occurred");
       } finally {
         setIsCalculating(false);
@@ -997,6 +1357,7 @@ export default function DepositForm({
 
   // Recalculate when asset changes
   useEffect(() => {
+    logger.debug('p2p', "Selected asset changed:", selectedAsset);
     if (selectedAsset && payAmount > 0 && isCalculatingFromPay) {
       // Clear any existing estimate when asset changes
       setEstimate(null);
@@ -1011,11 +1372,19 @@ export default function DepositForm({
 
   // Update amounts when estimate is received or for simple calculation assets
   useEffect(() => {
-   
+    logger.debug('p2p', "Estimate effect triggered:", { 
+      hasEstimate: !!estimate, 
+    estimateLoading,
+    isCalculatingFromPay,
+      payAmount,
+      getAmount,
+      estimateAmount: (estimate as any)?.estimated_amount 
+    });
     
     if (estimate && !estimateLoading) {
       if (isCalculatingFromPay && payAmount > 0) {
-      
+        // Forward calculation: update receive amount
+        logger.debug('p2p', "Estimate received, updating receive amount:", (estimate as any)?.estimated_amount);
         
         if ((estimate as any)?.estimated_amount && (estimate as any)?.estimated_amount > 0) {
           setGetAmount((estimate as any).estimated_amount);
@@ -1024,7 +1393,7 @@ export default function DepositForm({
         setIsCalculating(false);
         setIsCalculatingReceive(false);
       } else {
-        
+          logger.debug('p2p', "DEBUG: Invalid estimate received, clearing loading state");
         setGetAmount(0);
         setGetAmountInput("");
           setReceiveAmountError("Invalid estimate received");
@@ -1187,7 +1556,21 @@ export default function DepositForm({
             showToast.success("Proceeding without wallet address!");
           }
       } else {
-       
+        // For other assets, implement two-step process
+        logger.debug('p2p', "DEBUG: Implementing two-step process for complex asset:", selectedAsset?.ticker);
+        logger.debug('p2p', "DEBUG: Expected flow: First response -> update address -> Second response with additional details");
+        
+        // According to user description, the expected flow for complex assets is:
+        // 1. First API response: { transaction_id, deposit_code, status: "pending_address", requires_deposit_address: true, websocket_url }
+        // 2. After updating address, second response: { transaction_id, deposit_address, websocket_url (different), changenow_id, expected_amount, net_amount, status: "pending" }
+        // 
+        // The second response should be used for the final transaction data, including:
+        // - New websocket_url (different from first response)
+        // - expected_amount and net_amount for accurate calculations
+        // - changenow_id for tracking
+        // - deposit_address for final confirmation
+        
+        // Step 1: Update deposit address (this triggers the second response)
         if (walletAddress.trim()) {
           updateResponse = await dispatch(
             updateDepositAddress({
@@ -1249,6 +1632,7 @@ export default function DepositForm({
         ...(finalResponse.deposit_address && { finalDepositAddress: finalResponse.deposit_address }),
       };
 
+      logger.debug('p2p', "DEBUG: Final transaction data:", transactionData);
 
       // Navigate to the exchanging status page automatically
       if (onExchange) {
@@ -1258,6 +1642,7 @@ export default function DepositForm({
         router.push(`/dashboard/express-exchange?transactionId=${finalResponse.transaction_id}`);
       }
     } catch (error: any) {
+      console.error("Failed to update deposit address:", error);
       let errorMessage = "Failed to process request";
       
       if (error.response?.data) {
@@ -1305,6 +1690,273 @@ export default function DepositForm({
       setIsSubmitting(false);
     }
   };
+
+  // Handle form submission - REMOVED (duplicate function)
+  /*
+    // Validate form
+    const errors = validateForm();
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      showToast.error("Please fix the following errors: " + errors.join(", "));
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Debug logging
+      logger.debug('p2p', "DEBUG: Form data being submitted:", {
+        payAmount,
+        walletAddress,
+        selectedPaymentDetail,
+        selectedAsset,
+        selectedNetwork,
+      });
+
+      // Create FormData for API submission
+      const depositPayload = new FormData();
+
+      // Validate and append required fields
+      if (!payAmount || payAmount <= 0) {
+        throw new Error("Invalid amount");
+      }
+      depositPayload.append("requested_amount", payAmount.toString());
+
+              // Wallet address is optional for initial submission
+        if (walletAddress.trim()) {
+          depositPayload.append("deposit_address", walletAddress);
+        } else {
+          // Set empty value when wallet address is not provided
+          depositPayload.append("deposit_address", "");
+        }
+
+      if (!selectedPaymentDetail.provider_name) {
+        throw new Error("Payment provider is missing");
+      }
+      depositPayload.append(
+        "payment_provider",
+        selectedPaymentDetail.provider_name
+      );
+
+      if (!selectedPaymentDetail.payment_method_type) {
+        throw new Error("Payment method is missing");
+      }
+      depositPayload.append(
+        "payment_method",
+        selectedPaymentDetail.payment_method_type
+      );
+
+      // Handle currency field - use the asset ticker/symbol/name from the selected asset
+      let currencyValue = "";
+      
+      // Try different properties in order of preference
+      if (selectedAsset.ticker) {
+        currencyValue = selectedAsset.ticker;
+      } else if (selectedAsset.symbol) {
+        // Handle special case for USDT Tether
+        currencyValue = selectedAsset.symbol === "USDT Tether" ? "USDT" : selectedAsset.symbol;
+      } else if (selectedAsset.name) {
+        currencyValue = selectedAsset.name;
+      }
+      
+      // Clean up the currency value (remove any extra spaces, etc.)
+      currencyValue = currencyValue?.trim();
+      
+      // Fallback: if still no currency value, try to extract from any available property
+      if (!currencyValue) {
+        // Try to get any string value from the asset object
+        const assetKeys = Object.keys(selectedAsset);
+        for (const key of assetKeys) {
+          const value = selectedAsset[key];
+          if (typeof value === 'string' && value.trim()) {
+            currencyValue = value.trim();
+            break;
+          }
+        }
+      }
+
+      if (!currencyValue) {
+        throw new Error("Currency information is missing");
+      }
+      depositPayload.append("currency", currencyValue);
+
+      // Handle network field - use the network from selected asset or network
+      let networkValue = "";
+      
+      // Try to get network from selected network first
+      if (selectedNetwork?.network_id) {
+        networkValue = selectedNetwork.network_id;
+      } else if (selectedNetwork?.network_type) {
+        networkValue = selectedNetwork.network_type;
+      } else if (selectedAsset?.network) {
+        // Fallback to asset network
+        networkValue = selectedAsset.network;
+      }
+      
+      // Clean up the network value
+      networkValue = networkValue?.trim();
+      
+      // Fallback: if still no network value, try to extract from any available property
+      if (!networkValue) {
+        // Try to get any string value from the network object
+        if (selectedNetwork) {
+          const networkKeys = Object.keys(selectedNetwork);
+          for (const key of networkKeys) {
+            const value = selectedNetwork[key];
+            if (typeof value === 'string' && value.trim()) {
+              networkValue = value.trim();
+              break;
+            }
+          }
+        }
+      }
+
+      if (!networkValue) {
+        throw new Error("Network information is missing");
+      }
+      depositPayload.append("network", networkValue);
+
+      // Handle asset field - use the asset ticker/symbol/name from the selected asset
+      let assetValue = "";
+      
+      // Try different properties in order of preference
+      if (selectedAsset.ticker) {
+        assetValue = selectedAsset.ticker;
+      } else if (selectedAsset.symbol) {
+        // Handle special case for USDT Tether
+        assetValue = selectedAsset.symbol === "USDT Tether" ? "USDT" : selectedAsset.symbol;
+      } else if (selectedAsset.name) {
+        assetValue = selectedAsset.name;
+      }
+      
+      // Clean up the asset value (remove any extra spaces, etc.)
+      assetValue = assetValue?.trim();
+      
+      // Fallback: if still no asset value, try to extract from any available property
+      if (!assetValue) {
+        // Try to get any string value from the asset object
+        const assetKeys = Object.keys(selectedAsset);
+        for (const key of assetKeys) {
+          const value = selectedAsset[key];
+          if (typeof value === 'string' && value.trim()) {
+            assetValue = value.trim();
+            break;
+          }
+        }
+      }
+
+      if (!assetValue) {
+        throw new Error("Asset information is missing");
+      }
+      depositPayload.append("asset", assetValue);
+
+      // Add additional info
+      depositPayload.append(
+        "additional_info",
+        `Account: ${selectedPaymentDetail.account_name}, Account Number: ${selectedPaymentDetail.account_number}`
+      );
+
+      // Log the complete FormData for debugging
+      logger.debug('p2p', "DEBUG: Complete FormData entries:");
+      for (let [key, value] of depositPayload.entries()) {
+        logger.debug('p2p', `${key}:`, value);
+      }
+
+      // Submit to API - let axios set the correct Content-Type for FormData
+      const depositResponse = (await dispatch(
+        createDeposit({
+          payload: depositPayload,
+          config: {
+            // Don't set Content-Type manually for FormData - let axios handle it
+          },
+        })
+      ).unwrap()) as unknown as DepositResponse;
+
+      logger.debug('p2p', "DEBUG: Deposit response:", depositResponse);
+    
+
+      // Store the API response and update transaction code
+      setApiResponse(depositResponse);
+      setTransactionCode(depositResponse.deposit_code || "");
+
+      // Show success message
+      showToast.success("Deposit request submitted successfully!");
+
+      // Proceed to next page only after successful submission
+      if (onExchange) {
+        const transactionData = {
+          type: "deposit" as const,
+          amount: skipAmountValidation ? 0 : payAmount,
+          asset: {
+            ...selectedAsset,
+            icon: selectedAsset.image_url || selectedAsset.asset_image || selectedAsset.icon_url || selectedAsset.image
+          },
+          paymentDetail: selectedPaymentDetail,
+          walletAddress: walletAddress,
+          network: selectedNetwork,
+          transactionId: depositResponse.transaction_id,
+          depositCode: depositResponse.deposit_code,
+          totalAmountDue: depositResponse.total_amount_due,
+          commission: depositResponse.commission,
+          networkFee: depositResponse.network_fee,
+          currency: depositResponse.currency,
+          websocketUrl: depositResponse.websocket_url,
+        };
+        logger.debug('p2p', "DEBUG: Calling onExchange with:", transactionData);
+        onExchange(transactionData);
+      }
+    } catch (error: any) {
+     
+      let errorMessage = "Failed to submit deposit request";
+
+      if (error.response?.data) {
+        // Try to extract specific error message from response
+        const responseData = error.response.data;
+        if (responseData.message) {
+          // Check for specific error message and show user-friendly message
+          if (responseData.message.includes("Transaction not found or not eligible for address update")) {
+            errorMessage = "Your address doesn't match the requested asset";
+          } else {
+            errorMessage = responseData.message;
+          }
+        } else if (responseData.error) {
+          // Check for specific error in error field
+          if (responseData.error.includes("Transaction not found or not eligible for address update")) {
+            errorMessage = "Your address doesn't match the requested asset";
+          } else {
+            errorMessage = responseData.error;
+          }
+        } else if (responseData.details) {
+          errorMessage = responseData.details;
+        } else if (typeof responseData === "string") {
+          // Check for specific error in string response
+          if (responseData.includes("Transaction not found or not eligible for address update")) {
+            errorMessage = "Your address doesn't match the requested asset";
+          } else {
+            errorMessage = responseData;
+          }
+        }
+      } else if (error.message) {
+        // Check for specific error in error.message
+        if (error.message.includes("Transaction not found or not eligible for address update")) {
+          errorMessage = "Your address doesn't match the requested asset";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      // For address update failures, show more specific message
+      if (errorMessage === "Failed to process request" || errorMessage === "Failed to submit deposit request") {
+        errorMessage = "Your wallet address doesn't match the asset requested";
+      }
+
+      showToast.error(errorMessage);
+      setValidationErrors([errorMessage]);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  */
 
   useEffect(() => {
     if (selectedPaymentDetail && paymentDetailsRef.current) {
@@ -2006,15 +2658,19 @@ export default function DepositForm({
                       </div>
                     <button
                       onClick={() => {
+                          logger.debug('p2p', "Manual WebSocket retry initiated");
                         setWebsocketError(null);
                         setWebsocketRetryCount(0);
                         if (depositResponse?.websocket_url) {
+                            logger.debug('p2p', "Retrying with provided WebSocket URL:", depositResponse.websocket_url);
                             const ws = connectWebSocket(depositResponse.websocket_url);
                             if (!ws) {
+                              logger.debug('p2p', "Primary retry failed, trying fallback");
                               const fallbackUrl = API_CONFIG.EXCHANGE.SOCKETS.DEPOSIT_STATUS(depositResponse.transaction_id);
                               connectWebSocket(fallbackUrl);
                             }
                         } else if (depositResponse?.transaction_id) {
+                            logger.debug('p2p', "Retrying with fallback WebSocket URL");
                           const fallbackUrl = API_CONFIG.EXCHANGE.SOCKETS.DEPOSIT_STATUS(depositResponse.transaction_id);
                           connectWebSocket(fallbackUrl);
                         }
@@ -2025,7 +2681,15 @@ export default function DepositForm({
                     </button>
                     </div>
                   )}
-                 
+                  {/* Debug button for asset fetching */}
+                  {(swapAssets?.length === 0 || assets?.length === 0) && (
+                    <button
+                      onClick={handleDebugAssets}
+                      className="text-xs text-yellow-400 hover:text-yellow-300 underline ml-2"
+                    >
+                      Debug Assets
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

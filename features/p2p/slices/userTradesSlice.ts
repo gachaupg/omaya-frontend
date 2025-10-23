@@ -2,6 +2,8 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { getUserTrades } from "../api";
 import { handleP2PError } from "@/lib/utils/errorHandler";
 
+import { logger } from '@/lib/utils/logger';
+
 interface UserTrade {
   id: string;
   buy_order: number | null;
@@ -108,9 +110,9 @@ export const fetchUserTrades = createAsyncThunk(
         url += `&currency=${currency.toUpperCase()}`;
       }
 
-      console.log("Fetching trades with URL:", url);
+      logger.debug('p2p', "Fetching trades with URL:", url);
       const response = await getUserTrades(url);
-      console.log("API Response:", response);
+      logger.debug('p2p', "API Response:", response);
       return response;
     } catch (err: any) {
       console.error("Error fetching trades:", err);

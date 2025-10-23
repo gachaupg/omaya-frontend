@@ -4,6 +4,8 @@ import { TransactionType } from "@/features/p2p/types";
 import TransactionModal from "@/components/ui/TransactionModal";
 import { NoDataFound } from "@/components/dashboard/ui/Transactions";
 
+import { logger } from '@/lib/utils/logger';
+
 const OrdersTransactions = ({
   transformedData,
   loading,
@@ -11,7 +13,6 @@ const OrdersTransactions = ({
   currentPage,
   handlePageChange,
   trades,
-  currentUserEmail,
 }: {
   transformedData: TransactionType[];
   loading: boolean;
@@ -19,7 +20,6 @@ const OrdersTransactions = ({
   currentPage: number;
   handlePageChange: (page: number) => void;
   trades: { count: number };
-  currentUserEmail: string;
 }) => {
   const [selectedTransaction, setSelectedTransaction] =
     useState<TransactionType | null>(null);
@@ -33,6 +33,7 @@ const OrdersTransactions = ({
   };
 
   // Debug log for selectedTransaction
+  logger.debug('p2p', "selectedTransaction:", selectedTransaction);
 
   if (loading) {
     return (
@@ -72,7 +73,6 @@ const OrdersTransactions = ({
         totalPages={Math.ceil(trades.count / 10)}
         onPageChange={handlePageChange}
         onViewTransaction={handleViewTransaction}
-        currentUserEmail={currentUserEmail}
       />
     </div>
   );

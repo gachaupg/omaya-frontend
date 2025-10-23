@@ -2,6 +2,8 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { get, post, del } from '../../../lib/apiClient';
 import { EXCHANGE_ENDPOINTS } from '../api';
 import { sliceCache } from '../../../lib/utils/sliceCache';
+import { logger } from '@/lib/utils/logger';
+
 import {
   PaymentMethod,
   PaymentProvider,
@@ -119,7 +121,7 @@ export const fetchUserPaymentDetails = createAsyncThunk<UserPaymentDetail[], boo
         'payment',
         'fetchUserPaymentDetails',
         async () => {
-          console.log('Fetching user payment details from API');
+          logger.debug('exchange', 'Fetching user payment details from API');
           const response = await get<UserPaymentDetail[]>(EXCHANGE_ENDPOINTS.USER_PAYMENT_DETAILS);
           return response.data;
         },
@@ -144,38 +146,17 @@ export const fetchAdminPaymentDetails = createAsyncThunk<AdminPaymentDetail[], b
         await sliceCache.delete('payment', 'fetchAdminPaymentDetails');
       }
 
-      // Try cache first with a race condition - if cache takes too long, fetch from API
-      const cachePromise = sliceCache.get<AdminPaymentDetail[]>('payment', 'fetchAdminPaymentDetails');
-      const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000)); // 1 second timeout
-      
-      const cachedData = await Promise.race([cachePromise, timeoutPromise]);
-      
-      // If we have cached data, return it immediately
-      if (cachedData && cachedData.length > 0) {
-        console.log('📦 Using cached admin payment details');
-        
-        // Fetch fresh data in background (don't await)
-        if (!forceRefresh) {
-          get<AdminPaymentDetail[]>(EXCHANGE_ENDPOINTS.ADMIN_PAYMENT_DETAILS)
-            .then((response) => {
-              sliceCache.set('payment', 'fetchAdminPaymentDetails', response.data, undefined, 5 * 60 * 1000);
-            })
-            .catch((error) => {
-              console.warn('Background fetch failed:', error);
-            });
-        }
-        
-        return cachedData;
-      }
-
-      // No cache or cache timeout - fetch from API
-      console.log('🌐 Fetching admin payment details from API');
-      const response = await get<AdminPaymentDetail[]>(EXCHANGE_ENDPOINTS.ADMIN_PAYMENT_DETAILS, {
-        timeout: 10000, // 10 second timeout for API
-      });
-      
-      // Cache the fresh data
-      await sliceCache.set('payment', 'fetchAdminPaymentDetails', response.data, undefined, 5 * 60 * 1000);
+      const data = await sliceCache.getOrSet(
+        'payment',
+        'fetchAdminPaymentDetails',
+        async () => {
+          logger.debug('exchange', 'Fetching admin payment details from API');
+          const response = await get<AdminPaymentDetail[]>(EXCHANGE_ENDPOINTS.ADMIN_PAYMENT_DETAILS);
+          return response.data;
+        },
+        undefined, // no params
+        5 * 60 * 1000 // 5 minutes cache - admin payment details change more frequently
+      );
       
       return response.data;
     } catch (error: any) {
@@ -209,7 +190,7 @@ export const fetchAdminWalletList = createAsyncThunk<AdminWalletListResponse, bo
         'payment',
         'fetchAdminWalletList',
         async () => {
-          console.log('Fetching admin wallet list from API');
+          logger.debug('exchange', 'Fetching admin wallet list from API');
           const response = await get<AdminWalletListResponse>(EXCHANGE_ENDPOINTS.ADMIN_WALLET_LIST);
           return response.data;
         },

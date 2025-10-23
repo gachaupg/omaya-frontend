@@ -7,6 +7,8 @@ import { MarketTableProps } from "./types";
 import TradePreview from "./sections/tradePreview";
 import Loader from "../../Common/Loader";
 
+import { logger } from '@/lib/utils/logger';
+
 // Bank icons mapping
 const BANK_ICONS: Record<string, string> = {
   "Salam Bank":
@@ -77,7 +79,8 @@ const MarketTable: React.FC<MarketTableProps> = ({
     }
   }, [imageModal.isOpen]);
 
-  
+  logger.debug('p2p', "data in table", data);
+  logger.debug('p2p', "currentPage", currentPage);
   const handleSort = (key: string) => {
     setSortConfig((prev) => ({
       key,
@@ -103,9 +106,9 @@ const MarketTable: React.FC<MarketTableProps> = ({
             </div>
             <div
               className="min-w-[120px] flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
-              onClick={() => handleSort("rate")}
+              onClick={() => handleSort("commission")}
             >
-            Rate {getSortIcon("rate")}
+              Commission {getSortIcon("commission")}
             </div>
             <div
               className="min-w-[180px] flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
@@ -208,29 +211,17 @@ const MarketTable: React.FC<MarketTableProps> = ({
                   </div>
                   {/* Trade */}
                   <div className="flex justify-end min-w-[120px]">
-                    {(() => {
-                      const availableAmount = parseFloat(row.available.split(' ')[0]);
-                      const isDisabled = availableAmount <= 0;
-                      
-                      return (
-                        <Button
-                          width={116}
-                          height={35}
-                          borderRadius={10}
-                          variant={activeTab === "sell" ? "secondary" : "primary"}
-                          size="sm"
-                          className={`min-w-[90px] font-semibold ${
-                            isDisabled 
-                              ? "opacity-50 cursor-not-allowed bg-gray-400 dark:bg-gray-600 text-gray-600 dark:text-gray-400" 
-                              : ""
-                          }`}
-                          onClick={isDisabled ? undefined : () => handleTradeClick(idx)}
-                          disabled={isDisabled}
-                        >
-                          {activeTab === "sell" ? "SELL USDT" : "BUY USDT"}
-                        </Button>
-                      );
-                    })()}
+                    <Button
+                      width={116}
+                      height={35}
+                      borderRadius={10}
+                      variant={activeTab === "sell" ? "secondary" : "primary"}
+                      size="sm"
+                      className="min-w-[90px] font-semibold"
+                      onClick={() => handleTradeClick(idx)}
+                    >
+                      {activeTab === "sell" ? "SELL USDT" : "BUY USDT"}
+                    </Button>
                   </div>
                 </div>
                 {selectedRowIndex === idx && (
@@ -239,7 +230,6 @@ const MarketTable: React.FC<MarketTableProps> = ({
                       advertiserData={row}
                       onClose={() => setSelectedRowIndex(null)}
                       tradeType={activeTab as "buy" | "sell"}
-                      providerName={row.payment.map((method: string) => method.trim()).join(', ')}
                     />
                   </div>
                 )}

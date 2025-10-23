@@ -10,6 +10,8 @@ import { useTheme } from "@/context/theme";
 import CopyButton from "@/components/ui/CopyButton";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store/rootReducer";
+import { logger } from '@/lib/utils/logger';
+
 import {
   cancelDepositTransaction,
   cancelWithdrawalTransaction,
@@ -100,7 +102,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
       try {
       } catch (error) {
-        // console.error("Fallback polling error:", error);
+        // logger.error('general', "Fallback polling error:", error);
       }
     };
 
@@ -181,6 +183,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       // Redirect to home page
       router.push("/");
     } catch (error) {
+      logger.error('general', "Failed to cancel transaction:", error);
       // Still redirect even if cancel fails
       router.push("/");
     }

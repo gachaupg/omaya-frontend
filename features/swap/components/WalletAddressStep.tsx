@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 
+import { logger } from '@/lib/utils/logger';
+
 interface WalletAddressStepProps {
   walletAddress: string;
   onWalletAddressChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -30,7 +32,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
       } as React.ChangeEvent<HTMLInputElement>;
       onWalletAddressChange(syntheticEvent);
     } catch (err) {
-      console.error("Failed to read clipboard:", err);
+      logger.error('swap', "Failed to read clipboard:", err);
     }
   };
 

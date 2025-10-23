@@ -8,6 +8,8 @@ import { ReferralWallet } from "@/features/p2p/types";
 import { settingsApi } from "@/features/settings/api";
 import { ReferralFeeCalculation } from "@/features/settings/types";
 
+import { logger } from '@/lib/utils/logger';
+
 interface ReferralWalletState {
   data: ReferralWallet | null;
   loading: boolean;
@@ -45,7 +47,7 @@ export const fetchReferralWallet = createAsyncThunk<ReferralWallet>(
     } catch (error: any) {
       // Handle 404 errors gracefully
       if (error.response?.status === 404) {
-        console.warn("Referral wallet endpoint not available");
+        logger.warn('dashboard', "Referral wallet endpoint not available");
         return rejectWithValue("Referral wallet not available");
       }
       return rejectWithValue(error.response?.data || error.message);

@@ -1,5 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import axios from "axios";
+import { logger } from '@/lib/utils/logger';
+
 import { 
   GOOGLE_API_ENDPOINTS, 
   logGoogleOAuthResponse, 
@@ -36,7 +38,9 @@ export const authenticateWithGoogle = createAsyncThunk(
   "googleOAuth/authenticate",
   async (authCode: string, { rejectWithValue }) => {
          try {
-     
+       logger.debug('auth', "🔐 Starting Google OAuth authentication...");
+       logger.debug('auth', "📝 Auth Code:", authCode);
+       
        // Debug URL construction
        debugGoogleOAuthUrls();
        
@@ -55,6 +59,11 @@ export const authenticateWithGoogle = createAsyncThunk(
           timeout: 15000, // 15 second timeout
         }
       );
+
+      logger.debug('auth', "✅ Backend response received:", response.data);
+      
+      // Log the backend response
+      logGoogleOAuthResponse(response.data, "Backend Authentication Response");
 
       return response.data;
     } catch (error: any) {
@@ -80,11 +89,18 @@ export const getGoogleUserInfo = createAsyncThunk(
   "googleOAuth/getUserInfo",
   async (accessToken: string, { rejectWithValue }) => {
     try {
+      logger.debug('auth', "👤 Fetching Google user info...");
+      
       const response = await axios.get(GOOGLE_API_ENDPOINTS.userInfo, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       });
+
+      logger.debug('auth', "✅ Google user info received:", response.data);
+      
+      // Log the user info
+      logGoogleOAuthResponse(response.data, "Google User Info");
 
       return response.data;
     } catch (error: any) {
@@ -102,11 +118,13 @@ const googleOAuthSlice = createSlice({
     setAuthCode: (state, action: PayloadAction<string>) => {
       state.authCode = action.payload;
       state.error = null;
+      logger.debug('auth', "🔑 Auth code set:", action.payload);
     },
 
     // Clear auth code
     clearAuthCode: (state) => {
       state.authCode = null;
+      logger.debug('auth', "🧹 Auth code cleared");
     },
 
     // Set error
@@ -118,6 +136,7 @@ const googleOAuthSlice = createSlice({
     // Clear error
     clearError: (state) => {
       state.error = null;
+      logger.debug('auth', "🧹 Google OAuth error cleared");
     },
 
     // Reset state
@@ -128,6 +147,7 @@ const googleOAuthSlice = createSlice({
       state.error = null;
       state.authCode = null;
       state.backendResponse = null;
+      logger.debug('auth', "🔄 Google OAuth state reset");
     },
 
     // Log Google OAuth response
@@ -140,6 +160,7 @@ const googleOAuthSlice = createSlice({
     builder.addCase(authenticateWithGoogle.pending, (state) => {
       state.isLoading = true;
       state.error = null;
+      logger.debug('auth', "⏳ Google OAuth authentication started...");
     });
 
     builder.addCase(authenticateWithGoogle.fulfilled, (state, action) => {
@@ -153,6 +174,7 @@ const googleOAuthSlice = createSlice({
         state.user = action.payload.user;
       }
       
+      logger.debug('auth', "✅ Google OAuth authentication successful:", action.payload);
     });
 
     builder.addCase(authenticateWithGoogle.rejected, (state, action) => {
@@ -164,11 +186,13 @@ const googleOAuthSlice = createSlice({
     // getGoogleUserInfo
     builder.addCase(getGoogleUserInfo.pending, (state) => {
       state.isLoading = true;
+      logger.debug('auth', "⏳ Fetching Google user info...");
     });
 
     builder.addCase(getGoogleUserInfo.fulfilled, (state, action) => {
       state.isLoading = false;
       state.user = action.payload;
+      logger.debug('auth', "✅ Google user info fetched:", action.payload);
     });
 
     builder.addCase(getGoogleUserInfo.rejected, (state, action) => {

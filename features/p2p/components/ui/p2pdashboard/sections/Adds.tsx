@@ -20,6 +20,8 @@ import PaymentMethodsModal from "./PaymentMethodsModal";
 import UserPaymentSelector, { UserPaymentDetail } from "./UserPaymentSelector";
 import { usePendingTotal } from "@/utils/pending";
 
+import { logger } from '@/lib/utils/logger';
+
 interface AddsProps {
   filterType: "buy" | "sell";
 }
@@ -111,7 +113,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
 
   useEffect(() => {
     if (selectedPaymentDetails.length > 0) {
-      console.log("Selected Payment Details:", selectedPaymentDetails);
+      logger.debug('p2p', "Selected Payment Details:", selectedPaymentDetails);
     }
   }, [selectedPaymentDetails]);
 

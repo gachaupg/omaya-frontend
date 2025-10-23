@@ -5,6 +5,8 @@ import { del, get, patch, post, put } from "@/lib/apiClient";
 import { cachedGet } from "@/lib/cachedApiClient";
 import { withRetry } from "@/lib/utils/retry";
 import { API_CONFIG } from "@/lib/appConfig";
+import { logger } from '@/lib/utils/logger';
+
 import {
   SupportedAsset,
   SwapEstimate,
@@ -28,41 +30,39 @@ export const getSupportedAssets = async (): Promise<SupportedAsset[]> => {
       
       // Extract the results array from the ChangeNow response
       if (data && data.results) {
+        logger.debug('swap', `Successfully retrieved ${data.total_changenow_tokens} ChangeNow tokens`);
         return data.results;
       }
       
       // Fallback: if response is directly an array (backward compatibility)
       if (Array.isArray(data)) {
+        logger.debug('swap', `Retrieved ${data.length} supported assets`);
         return data;
       }
       
+      console.warn("Unexpected response format, returning empty array");
       return [];
     } catch (error: any) {
-      // Suppress console errors for 401s
-      if (error.response?.status !== 401) {
-      }
+      console.error("Failed to fetch supported assets:", error);
 
       // Handle different error scenarios
       if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND" || error.message?.includes("Network Error")) {
-        if (error.response?.status !== 401) {
-        }
+        console.warn("Network connection issue, returning empty assets list");
         return [];
       }
 
       if (error.response?.status === 500) {
+        console.warn("Server error, returning empty assets list");
         return [];
       }
 
       if (error.response?.status === 404) {
-        return [];
-      }
-
-      // For 401 errors, silently return empty array
-      if (error.response?.status === 401) {
+        console.warn("Endpoint not found, returning empty assets list");
         return [];
       }
 
       // For other errors, return empty array instead of throwing
+      console.warn("Unknown error, returning empty assets list");
       return [];
     }
   });
@@ -75,21 +75,18 @@ export const getEstimateSwap = async (
   toNetwork: string,
   amount: number
 ): Promise<SwapEstimate> => {
-  // Use withRetry with reduced retries and delays for faster response
   return withRetry(async () => {
     try {
       const response = await get<SwapEstimate>(
         API_CONFIG.SWAP.ESTIMATE_SWAP +
-          `?from_currency=${fromCurrency}&from_network=${fromNetwork}&to_currency=${toCurrency}&to_network=${toNetwork}&amount=${amount}`,
-        {
-          timeout: 10000 // 10 second timeout for estimate calls
-        }
+          `?from_currency=${fromCurrency}&from_network=${fromNetwork}&to_currency=${toCurrency}&to_network=${toNetwork}&amount=${amount}`
       );
       return response.data;
     } catch (error: any) {
+      console.error("Failed to fetch swap estimate:", error);
 
       // Handle network errors gracefully
-      if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND" || error.code === "ECONNABORTED") {
+      if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
         throw new Error(
           "Network connection issue. Please check your internet connection and try again."
         );
@@ -110,10 +107,6 @@ export const getEstimateSwap = async (
         "Unable to calculate swap estimate. Please try again later."
       );
     }
-  }, {
-    maxRetries: 1, // Only 1 retry for estimates (faster response)
-    initialDelay: 500, // Shorter delay (0.5 seconds)
-    maxDelay: 1000, // Max 1 second delay
   });
 };
 
@@ -121,14 +114,21 @@ export const createSwap = async (
   swapData: CreateSwapRequest
 ): Promise<CreateSwapResponse> => {
   return withRetry(async () => {
+    logger.debug('swap', "Creating swap with data:", swapData);
+    logger.debug('swap', "API endpoint:", API_CONFIG.SWAP.CREATE_SWAP);
 
     try {
       const response = await post<CreateSwapResponse>(
         API_CONFIG.SWAP.CREATE_SWAP,
         swapData
       );
+      logger.debug('swap', "Swap response:", response.data);
       return response.data;
     } catch (error: any) {
+      console.error("Swap creation error:", error);
+      console.error("Error response:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+
       // Provide user-friendly error messages for different status codes
       if (error.response?.status === 500) {
         throw new Error(
@@ -140,8 +140,7 @@ export const createSwap = async (
           "Invalid swap request. Please check your input.";
         throw new Error(`Bad Request: ${errorMessage}`);
       } else if (error.response?.status === 401) {
-        // Silent error for 401
-        throw new Error("");
+        throw new Error("Authentication required. Please log in to continue.");
       } else if (error.response?.status === 403) {
         throw new Error(
           "Access denied. You don't have permission to perform this action."
@@ -175,7 +174,7 @@ export const getSwapStatus = async (swapId: string): Promise<SwapStatus> => {
       );
       return response.data;
     } catch (error: any) {
-      
+      console.error("Failed to fetch swap status:", error);
       if (error.response?.status === 500) {
         throw new Error(
           "Server Error: Unable to fetch swap status. Please try again later."
@@ -256,8 +255,7 @@ export const getSwapHistory = async (
       } else if (error.response?.status === 404) {
         throw new Error("Swap history not available. Please try again later.");
       } else if (error.response?.status === 401) {
-        // Silent error for 401
-        throw new Error("");
+        throw new Error("Authentication required. Please log in to continue.");
       }
 
       // For other errors, provide a generic message
