@@ -129,6 +129,8 @@ const RatesCalculator = () => {
   const [receiveAmountError, setReceiveAmountError] = useState<string | null>(
     null
   );
+  console.log('estimate',estimate);
+  
 
   const dispatch = useDispatch<AppDispatch>();
 
@@ -1031,17 +1033,17 @@ const RatesCalculator = () => {
   let commissionAmount = 0;
   let commissionRate = 0;
 
-  if (selectedAsset && isSimpleCalculationAsset(selectedAsset)) {
-    // For direct assets, only apply $2 fee if amount is $2 or more
-    commissionAmount = amountNum >= 2 ? 2 : 0; // Flat $2 fee for direct assets (only if amount >= $2)
-    commissionRate = amountNum > 0 ? (commissionAmount / amountNum) * 100 : 0;
-  } else {
-    // Use default commission rate for other assets
-    commissionRate = selectedAsset?.range_commissions?.[0]?.commission
-      ? parseFloat(selectedAsset.range_commissions[0].commission)
-      : 2; // Default 2% commission for other assets
-    commissionAmount = (amountNum * commissionRate) / 100;
-  }
+    if (selectedAsset && isSimpleCalculationAsset(selectedAsset)) {
+      // For direct assets, only apply $2 fee if amount is $2 or more
+      commissionAmount = amountNum >= 2 ? 2 : 0; // Flat $2 fee for direct assets (only if amount >= $2)
+      commissionRate = amountNum > 0 ? (commissionAmount / amountNum) * 100 : 0;
+    } else {
+      // Use default commission rate for other assets
+      commissionRate = selectedAsset?.range_commissions?.[0]?.commission
+        ? parseFloat(selectedAsset.range_commissions[0].commission)
+        : 2; // Default 2% commission for other assets
+      commissionAmount = (amountNum * commissionRate) / 100;
+    }
 
   const totalFees = networkFee + commissionAmount;
 
@@ -2303,7 +2305,9 @@ const RatesCalculator = () => {
                     )}
                   </span>
                   <span className="bg-[#1D8751] text-white text-lg font-semibold rounded-full px-8 py-1 ml-2">
-                    ${amountNum > 0 ? amountNum.toFixed(2) : "0.00"}
+                    ${selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.user_amount 
+                      ? estimate.user_amount.toFixed(2) 
+                      : amountNum > 0 ? amountNum.toFixed(2) : estimate?.user_amount ? estimate.user_amount.toFixed(2) : estimate?.total_fee ? `$${estimate.total_fee}` : "0.00"}
                   </span>
                 </button>
               </div>
@@ -2314,10 +2318,14 @@ const RatesCalculator = () => {
             <div className="flex justify-between text-sm mb-1">
               <span className="text-[#051015] dark:text-[#E8EFF5]">
                 {t("rates.commission", "Commission:")}{" "}
-                {amountNum > 0 ? `${commissionRate.toFixed(1)}%` : "0%"}
+                {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.omaya_fee_percentage 
+                  ? `${estimate.omaya_fee_percentage}%` 
+                  : amountNum > 0 ? `${commissionRate.toFixed(1)}%` : "0%"}
               </span>
               <span className="text-[#1D8751]">
-                {amountNum > 0 ? `$${commissionAmount.toFixed(2)}` : "$0.00"}
+                {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.total_fee 
+                  ? `$${estimate.total_fee}` 
+                  : amountNum > 0 ? `$${commissionAmount.toFixed(2)}` : "$0.00"}
               </span>
             </div>
             <div className="flex justify-between text-sm mb-1">
@@ -2325,7 +2333,9 @@ const RatesCalculator = () => {
                 {t("rates.networkFee", "Network Fee:")}
               </span>
               <span className="text-[#1D8751]">
-                {amountNum > 0 ? `$${networkFee.toFixed(2)}` : "$0.00"}
+                {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.network_fee 
+                  ? `$${estimate.network_fee}` 
+                  : amountNum > 0 ? `$${networkFee.toFixed(2)}` : "$0.00"}
               </span>
             </div>
             <div className="border-t border-[#E8EFF5] dark:border-[#35353E] mt-2 pt-2 flex justify-between text-sm">
@@ -2333,7 +2343,9 @@ const RatesCalculator = () => {
                 {t("rates.totalFees", "Total Fees")}
               </span>
               <span className="text-[#F79330] font-semibold">
-                {amountNum > 0 ? `$${totalFees.toFixed(2)}` : "$0.00"}
+                {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.total_fee 
+                  ? `$${estimate.total_fee}` 
+                  : amountNum > 0 ? `$${totalFees.toFixed(2)}` : "$0.00"}
               </span>
             </div>
           </div>
