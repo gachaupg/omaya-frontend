@@ -21,7 +21,7 @@ class SliceCache {
     this.options = {
       ttl: options.ttl || 60 * 60 * 1000, // 1 hour default
       useIndexedDB: options.useIndexedDB || true,
-      prefix: options.prefix || 'slice',
+      prefix: options.prefix || "slice",
     };
 
     this.cache = this.options.useIndexedDB ? browserCache : persistentCache;
@@ -59,9 +59,7 @@ class SliceCache {
         await persistentCache.set(key, data, ttl);
       }
       
-      console.log(`[SliceCache] Cached ${sliceName}/${actionType} for ${ttl}ms`);
     } catch (error) {
-      console.warn(`[SliceCache] Failed to cache ${sliceName}/${actionType}:`, error);
     }
   }
 
@@ -82,7 +80,6 @@ class SliceCache {
         return await persistentCache.get<T>(key);
       }
     } catch (error) {
-      console.warn(`[SliceCache] Failed to get ${sliceName}/${actionType}:`, error);
       return null;
     }
   }
@@ -104,7 +101,6 @@ class SliceCache {
         return await persistentCache.has(key);
       }
     } catch (error) {
-      console.warn(`[SliceCache] Failed to check ${sliceName}/${actionType}:`, error);
       return false;
     }
   }
@@ -125,12 +121,9 @@ class SliceCache {
       } else {
         // For persistentCache, we need to clear all as it doesn't have delete method
         // This is a limitation we'll work around
-        console.warn(`[SliceCache] Delete not supported for persistentCache`);
       }
       
-      console.log(`[SliceCache] Deleted ${sliceName}/${actionType}`);
     } catch (error) {
-      console.warn(`[SliceCache] Failed to delete ${sliceName}/${actionType}:`, error);
     }
   }
 
@@ -141,9 +134,7 @@ class SliceCache {
     try {
       // This is a simplified implementation
       // In a real scenario, you'd need to track keys by slice
-      console.log(`[SliceCache] Cleared cache for slice: ${sliceName}`);
     } catch (error) {
-      console.warn(`[SliceCache] Failed to clear slice ${sliceName}:`, error);
     }
   }
 
@@ -158,9 +149,7 @@ class SliceCache {
         await persistentCache.clear();
       }
       
-      console.log('[SliceCache] Cleared all cache');
     } catch (error) {
-      console.warn('[SliceCache] Failed to clear cache:', error);
     }
   }
 
@@ -177,12 +166,10 @@ class SliceCache {
     // Check cache first
     const cached = await this.get<T>(sliceName, actionType, params);
     if (cached) {
-      console.log(`[SliceCache] Cache hit for ${sliceName}/${actionType}`);
       return cached;
     }
 
     // Fetch fresh data
-    console.log(`[SliceCache] Cache miss for ${sliceName}/${actionType}, fetching...`);
     const data = await fetchFn();
 
     // Cache the data
@@ -202,7 +189,6 @@ class SliceCache {
         return await persistentCache.getStats();
       }
     } catch (error) {
-      console.warn('[SliceCache] Failed to get stats:', error);
       return { totalEntries: 0, totalSize: 0 };
     }
   }
@@ -212,7 +198,7 @@ class SliceCache {
 export const sliceCache = new SliceCache({
   ttl: 60 * 60 * 1000, // 1 hour
   useIndexedDB: true,
-  prefix: 'slice',
+  prefix: "slice",
 });
 
 // Export the class for custom instances
@@ -241,7 +227,7 @@ export const createCachedAsyncThunk = <T, P = void>(
       return data;
     } catch (error) {
       return rejectWithValue(
-        error instanceof Error ? error.message : 'Unknown error'
+        error instanceof Error ? error.message : "Unknown error"
       );
     }
   };

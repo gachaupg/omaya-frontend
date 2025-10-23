@@ -14,7 +14,7 @@ const Rates = () => {
       <p className="text-gray-700 dark:text-[#788099] mb-8 max-w-4xl">
         {t(
           "rates.subtitle",
-          "Check live rates and estimate your transaction fees."
+          "Check live rates andkkkkkk estimate your transaction fees."
         )}
       </p>
 

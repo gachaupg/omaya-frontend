@@ -52,7 +52,7 @@ export const API_CONFIG = {
     TRANSACTION_SUMMARY: "/trading_engine/transactionsummaryview/",
     ORDER_MATCH: "/trading_engine/p2p/orders/",
     GET_CONFIRM_ORDER: "/trading_engine/p2p/trades/",
-    SINGLE_ORDER: "/trading_engine/p2p/orders/",
+    SINGLE_ORDER: "/trading_engine/p2porders/",
     CANCEL_ORDER: "/trading_engine/p2p/trades/",
     APPEALS: "/trading_engine/appeals/create/",
     MATCHED_TRADES: "/trading_engine/trades/matched/",
@@ -135,6 +135,11 @@ export const API_CONFIG = {
   },
   FOREX: {
     CREATE_EXCHANGE: "/trading_engine/forex/create-exchange/",
+    GET_EXCHANGE: (transactionId: string) => `/trading_engine/forex/exchanges/${transactionId}/`,
+    SOCKETS: {
+      FOREX_STATUS: (transactionId: string, token: string) =>
+        `${getWebSocketBaseUrl()}/ws/forex/status/${transactionId}/?token=${token}`,
+    },
   },
   GOOGLE_AUTH: {
     GOOGLE_AUTH: "/api/auth/google/",

@@ -136,7 +136,7 @@ export const fetchUserPaymentDetails = createAsyncThunk<UserPaymentDetail[], boo
   }
 );
 
-// Fetch admin payment details with caching
+// Fetch admin payment details with caching and fast fallback
 export const fetchAdminPaymentDetails = createAsyncThunk<AdminPaymentDetail[], boolean | undefined>(
   'payment/fetchAdminPaymentDetails',
   async (forceRefresh = false, { rejectWithValue }) => {
@@ -158,8 +158,19 @@ export const fetchAdminPaymentDetails = createAsyncThunk<AdminPaymentDetail[], b
         5 * 60 * 1000 // 5 minutes cache - admin payment details change more frequently
       );
       
-      return data;
+      return response.data;
     } catch (error: any) {
+      // If API fails, try to return stale cache data
+      try {
+        const staleCache = await sliceCache.get<AdminPaymentDetail[]>('payment', 'fetchAdminPaymentDetails');
+        if (staleCache && staleCache.length > 0) {
+          console.warn('⚠️ Using stale cache due to API error');
+          return staleCache;
+        }
+      } catch (cacheError) {
+        // Ignore cache errors
+      }
+      
       return rejectWithValue(error.message || 'Failed to fetch admin payment details');
     }
   }
@@ -233,7 +244,10 @@ const paymentSlice = createSlice({
     builder
       // Payment Methods
       .addCase(fetchPaymentMethods.pending, (state) => {
-        state.loading = true;
+        // Only set loading if we don't have data
+        if (state.paymentMethods.length === 0) {
+          state.loading = true;
+        }
         state.error = null;
       })
       .addCase(fetchPaymentMethods.fulfilled, (state, action: PayloadAction<PaymentMethod[]>) => {
@@ -246,7 +260,10 @@ const paymentSlice = createSlice({
       })
       // Payment Providers
       .addCase(fetchPaymentProviders.pending, (state) => {
-        state.loading = true;
+        // Only set loading if we don't have data
+        if (state.paymentProviders.length === 0) {
+          state.loading = true;
+        }
         state.error = null;
       })
       .addCase(fetchPaymentProviders.fulfilled, (state, action: PayloadAction<PaymentProvider[]>) => {
@@ -259,7 +276,10 @@ const paymentSlice = createSlice({
       })
       // User Payment Details
       .addCase(fetchUserPaymentDetails.pending, (state) => {
-        state.loading = true;
+        // Only set loading if we don't have data
+        if (state.userPaymentDetails.length === 0) {
+          state.loading = true;
+        }
         state.error = null;
       })
       .addCase(fetchUserPaymentDetails.fulfilled, (state, action: PayloadAction<UserPaymentDetail[]>) => {
@@ -272,7 +292,10 @@ const paymentSlice = createSlice({
       })
       // Admin Payment Details
       .addCase(fetchAdminPaymentDetails.pending, (state) => {
-        state.loading = true;
+        // Only set loading if we don't have data
+        if (state.adminPaymentDetails.length === 0) {
+          state.loading = true;
+        }
         state.error = null;
       })
       .addCase(fetchAdminPaymentDetails.fulfilled, (state, action: PayloadAction<AdminPaymentDetail[]>) => {
@@ -285,7 +308,10 @@ const paymentSlice = createSlice({
       })
       // Admin Wallet List
       .addCase(fetchAdminWalletList.pending, (state) => {
-        state.loading = true;
+        // Only set loading if we don't have data
+        if (state.adminWalletList.length === 0) {
+          state.loading = true;
+        }
         state.error = null;
       })
       .addCase(fetchAdminWalletList.fulfilled, (state, action: PayloadAction<AdminWalletListResponse>) => {

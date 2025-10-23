@@ -46,8 +46,6 @@ export const useBlog = () => {
         setBlogs(blogPosts);
         setNews(newsPosts);
       } catch (err) {
-        console.error("Error fetching blogs:", err);
-
         // Provide fallback data instead of showing error to user
         const fallbackBlogs: BlogPost[] = [
           {
@@ -87,7 +85,7 @@ export const useBlog = () => {
 
         setBlogs(fallbackBlogs);
         setNews(fallbackNews);
-        setError("Blog service is temporarily unavailable. Please try again later.");
+        setError("Blog service is temporarily unavailable. Please check back later for the latest updates and articles.");
       } finally {
         setLoading(false);
       }

@@ -130,6 +130,10 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
     }
   };
 
+  // Debug logging
+  console.log("MyAdsTable - trades:", trades);
+  console.log("MyAdsTable - trades length:", trades?.length);
+
   // Add check for empty trades
   if (!trades || trades.length === 0) {
     return (
@@ -167,13 +171,13 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                 <td className="px-4 py-3 flex items-center gap-2">
                   <img
                     src={
-                      trade.assetImage ||
+                      trade.asset_image ||
                       "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
                     }
-                    alt={trade.assetSymbol || "Asset"}
+                    alt={trade.asset || "Asset"}
                     className="w-6 h-6"
                   />
-                  <span>{trade.assetSymbol || trade.asset}</span>
+                  <span>{trade.asset}</span>
                 </td>
                 {/* Type */}
                 <td className="px-4 py-3">
@@ -198,17 +202,16 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                 <td className="px-4 py-3">{trade.commission_rate}%</td>
                 {/* Payment */}
                 <td className="px-4 py-3 min-width-[150px]">
-
-                  {Array.isArray(trade.payment)
-                    ? trade?.payment.map((p: { bank: string }, i: number) => (
+                  {Array.isArray(trade.payment_details)
+                    ? trade.payment_details.map((p: any, i: number) => (
                       <div key={i} className="flex items-center gap-2">
                         <div>
-                           <img src={trade.provider_logo || "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png"} alt=""  className="w-4 h-4 rounded"/>
+                           <img src={p.provider_logo || "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png"} alt=""  className="w-4 h-4 rounded"/>
                         </div>
-                          <div className="text-sm">{p.bank}</div>
+                          <div className="text-sm">{p.provider}</div>
                       </div>
                       ))
-                    : trade.payment?.bank}
+                    : trade.payment_details?.[0]?.provider}
                 </td>
                 {/* Last update */}
                 <td className="px-4 py-3">{formatDate(trade.created_on)}</td>

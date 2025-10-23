@@ -602,12 +602,12 @@ const LineCharts = React.memo(
       [selectedTimePeriod]
     );
 
-    // Get user email from storage
-    useEffect(() => {
-      const profile = storage.getProfile();
-      const email = profile?.user?.email || "";
+  // Get user email from storage
+  useEffect(() => {
+    const profile = storage.getProfile();
+    const email = profile?.user?.email || "";
       setUserEmail(email);
-    }, []);
+  }, []);
 
     const { transactions: p2pTransactions } = useSelector(
       (state: any) => state.p2pTransactions

@@ -3,20 +3,16 @@ import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../../../store";
 import { fetchAdminPaymentDetails } from "../../../exchange/slices/paymentSlice";
-import { createForexTransaction, resetForexState } from "../../slices/forexSlice";
+import { createForexExchangeThunk } from "../../slices/forexSlice";
 import { showToast } from "../../../../lib/utils/toast";
-import { useForexRates } from "../../hooks/useForexRates";
-import { AdminPaymentDetail } from "../../../exchange/types";
-import ForexSuccessModal from "../ForexSuccessModal";
 
 // Forex Deposit: We send forex to user, they send us USD
 // We need: admin bank account (where they send USD), user forex account (where we send forex)
 export default function ForexDeposit() {
   const dispatch = useDispatch<AppDispatch>();
-  const { getRate } = useForexRates();
   
   // Redux state
-  const { loading: forexLoading, error: forexError, success: forexSuccess } = useSelector((state: any) => state.forex);
+  const { loading: forexLoading, error: forexError } = useSelector((state: any) => state.forex);
   const { adminPaymentDetails, loading: adminLoading } = useSelector((state: any) => state.payment);
 
   // Form state
@@ -29,18 +25,17 @@ export default function ForexDeposit() {
   const [userNotes, setUserNotes] = useState("");
   const [userForexAccount, setUserForexAccount] = useState("");
   const [selectedAdminBankId, setSelectedAdminBankId] = useState<string | null>(null);
-  const [showSuccess, setShowSuccess] = useState(false);
 
-  // Load admin payment details
+  // Load admin payment details - try cache first
   useEffect(() => {
-    dispatch(fetchAdminPaymentDetails());
+    dispatch(fetchAdminPaymentDetails(false)); // false = use cache if available
   }, [dispatch]);
 
-  // Update exchange rate when currencies change
+  // Update exchange rate when currencies change (placeholder - adjust as needed)
   useEffect(() => {
-    const rate = getRate(fromCurrency, toCurrency);
-    setExchangeRate(rate.toFixed(4));
-  }, [fromCurrency, toCurrency, getRate]);
+    // You can implement rate fetching here or use a fixed rate
+    setExchangeRate("0.95");
+  }, [fromCurrency, toCurrency]);
 
   // Calculate toAmount
   useEffect(() => {
@@ -52,33 +47,6 @@ export default function ForexDeposit() {
     }
   }, [fromAmount, exchangeRate]);
 
-  // Handle success
-  useEffect(() => {
-    if (forexSuccess) {
-      showToast.success("Forex deposit submitted successfully!");
-      setShowSuccess(true);
-      // Reset form
-      setFromAmount("");
-      setToAmount("");
-      setAdditionalInfo("");
-      setUserNotes("");
-      setUserForexAccount("");
-      setSelectedAdminBankId(null);
-    }
-  }, [forexSuccess]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      setShowSuccess(false);
-      dispatch(resetForexState());
-    };
-  }, [dispatch]);
-
-  const handleModalClose = () => {
-    setShowSuccess(false);
-    dispatch(resetForexState());
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,7 +79,13 @@ export default function ForexDeposit() {
       admin_payment_detail_id: selectedAdminBankId,
     };
 
-    dispatch(createForexTransaction(payload));
+    try {
+      const result = await dispatch(createForexExchangeThunk(payload)).unwrap();
+      showToast.success("Forex deposit created successfully!");
+      // You can navigate or reset form here
+    } catch (error: any) {
+      showToast.error(error || "Failed to create forex deposit");
+    }
   };
 
   // Filter admin payment details for bank/mobile accounts (where user sends USD)
@@ -124,18 +98,6 @@ export default function ForexDeposit() {
 
   return (
     <div className="w-full flex flex-col dark:bg-[#18181D]">
-      {/* Success Modal */}
-      <ForexSuccessModal
-        isOpen={showSuccess}
-        onClose={handleModalClose}
-        transactionType="deposit"
-        fromCurrency={fromCurrency}
-        fromAmount={fromAmount}
-        toCurrency={toCurrency}
-        toAmount={toAmount}
-        exchangeRate={exchangeRate}
-      />
-
       <form onSubmit={handleSubmit}>
         <h2 className="text-lg font-semibold mb-3 text-[#788099] inline-flex items-center gap-2">
           <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Forex Exchange Info
@@ -154,12 +116,12 @@ export default function ForexDeposit() {
                   onChange={(e) => setFromCurrency(e.target.value)}
                   className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#D1D2D4] rounded-xl px-3 py-2.5 text-base focus:outline-none border border-[#D1D2D4FF] dark:border-[#35353E]"
                 >
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
-                  <option value="GBP">GBP</option>
-                  <option value="JPY">JPY</option>
-                  <option value="AUD">AUD</option>
-                  <option value="CAD">CAD</option>
+                  <option value="USD" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">USD</option>
+                  <option value="EUR" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">EUR</option>
+                  <option value="GBP" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">GBP</option>
+                  <option value="JPY" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">JPY</option>
+                  <option value="AUD" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">AUD</option>
+                  <option value="CAD" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">CAD</option>
                 </select>
               </div>
 
@@ -172,12 +134,12 @@ export default function ForexDeposit() {
                   onChange={(e) => setToCurrency(e.target.value)}
                   className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#D1D2D4] rounded-xl px-3 py-2.5 text-base focus:outline-none border border-[#D1D2D4FF] dark:border-[#35353E]"
                 >
-                  <option value="EUR">EUR</option>
-                  <option value="USD">USD</option>
-                  <option value="GBP">GBP</option>
-                  <option value="JPY">JPY</option>
-                  <option value="AUD">AUD</option>
-                  <option value="CAD">CAD</option>
+                  <option value="EUR" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">EUR</option>
+                  <option value="USD" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">USD</option>
+                  <option value="GBP" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">GBP</option>
+                  <option value="JPY" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">JPY</option>
+                  <option value="AUD" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">AUD</option>
+                  <option value="CAD" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">CAD</option>
                 </select>
               </div>
             </div>
@@ -253,9 +215,9 @@ export default function ForexDeposit() {
                   onChange={(e) => setSelectedAdminBankId(e.target.value)}
                   className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#D1D2D4] rounded-xl px-3 py-2.5 text-base focus:outline-none border border-[#D1D2D4FF] dark:border-[#35353E]"
                 >
-                  <option value="">Select admin bank account</option>
+                  <option value="" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">Select admin bank account</option>
                   {adminBankAccounts.map((account: any) => (
-                    <option key={account.id} value={account.admin_payment_detail_id}>
+                    <option key={account.id} value={account.admin_payment_detail_id} className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">
                       {account.payment_method_type} - {account.provider_name}
                       {account.account_number && ` (${account.account_number})`}
                       {account.mobile_number && ` (${account.mobile_number})`}

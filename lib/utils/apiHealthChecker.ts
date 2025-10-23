@@ -118,13 +118,30 @@ export class ApiHealthChecker {
 
   private static async checkEndpointHealth(endpoint: string): Promise<boolean> {
     try {
+      // Only check if user is authenticated
+      if (typeof window === 'undefined') return true;
+      
+      const profile = localStorage.getItem('profile'); // Correct key
+      if (!profile) {
+        // No authentication, skip health checks
+        return true;
+      }
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      const parsedProfile = JSON.parse(profile);
+      const accessToken = parsedProfile?.tokens?.access;
+
+      if (!accessToken) {
+        return true; // Skip if no token
+      }
 
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: "HEAD",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`, // Add auth header
         },
         signal: controller.signal,
       });
@@ -139,6 +156,15 @@ export class ApiHealthChecker {
 
   private static async startHealthChecks() {
     setInterval(async () => {
+      // Only run health checks if user is authenticated
+      if (typeof window === 'undefined') return;
+      
+      const profile = localStorage.getItem('profile'); // Correct key
+      if (!profile) {
+        // No authentication, skip health checks
+        return;
+      }
+
       const failedEndpoints = this.getFailedEndpoints();
 
       // Only check failed endpoints to avoid spam

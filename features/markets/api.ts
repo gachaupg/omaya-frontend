@@ -277,7 +277,6 @@ export const fetchCoinDetails = async (id: string) => {
       );
     } catch (apiKeyError) {
       // If API key fails, try without it (public endpoint)
-      console.warn("API key failed, trying public endpoint:", apiKeyError);
       response = await axios.get(
         `https://api.coingecko.com/api/v3/coins/${id}`,
         {
@@ -332,7 +331,6 @@ export const fetchCoinMarketChart = async (
       );
     } catch (apiKeyError) {
       // If API key fails, try without it (public endpoint)
-      console.warn("API key failed, trying public endpoint:", apiKeyError);
       response = await axios.get(
         `https://api.coingecko.com/api/v3/coins/${id}/market_chart`,
         {
@@ -403,7 +401,6 @@ export const fetchCoinMarketChartFallback = async (
 
     return data;
   } catch (error) {
-    console.error("Fallback API call failed:", error);
     throw error;
   }
 };
@@ -414,15 +411,9 @@ export const fetchCoinMarketChartFallback = async (
  */
 export const debugChartAPI = async (id: string = "bitcoin") => {
   try {
-    console.log(`Testing chart API for ${id}...`);
     const result = await fetchCoinMarketChart(id, 1, "usd");
-    console.log("Chart API result:", result);
-    console.log("Data points:", result.length);
-    console.log("First data point:", result[0]);
-    console.log("Last data point:", result[result.length - 1]);
     return result;
   } catch (error) {
-    console.error("Chart API test failed:", error);
     throw error;
   }
 };
@@ -433,12 +424,9 @@ export const debugChartAPI = async (id: string = "bitcoin") => {
  */
 export const debugDetailsAPI = async (id: string = "bitcoin") => {
   try {
-    console.log(`Testing details API for ${id}...`);
     const result = await fetchCoinDetails(id);
-    console.log("Details API result:", result);
     return result;
   } catch (error) {
-    console.error("Details API test failed:", error);
     throw error;
   }
 };

@@ -163,16 +163,14 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>
       }
 
       CircuitBreaker.onSuccess(endpoint);
-      logger.debug('exchange', "✅ Fetched Assets:", data?.assets?.length || 0, "assets");
       return data;
     } catch (error: any) {
       CircuitBreaker.onFailure(endpoint, error);
 
-      console.warn(`Exchange assets API failed:`, {
-        endpoint,
-        error: error.message,
-        status: error.response?.status,
-      });
+      // Suppress console warnings for 401s
+      if (error.response?.status !== 401) {
+       
+      }
 
       // Return empty assets instead of throwing
       return { total_wallet_balance: "0.00", assets: [] };
@@ -331,9 +329,7 @@ export const fetchExchangeStatistics = createAsyncThunk<
 
   // Check circuit breaker before making the call
   if (!CircuitBreaker.isCallAllowed(endpoint)) {
-    console.warn(
-      `Circuit breaker OPEN for ${endpoint} - returning empty statistics`
-    );
+   
     return {
       total_pending_exchange_deposits: 0,
       total_pending_exchange_withdrawals: 0,
@@ -353,12 +349,7 @@ export const fetchExchangeStatistics = createAsyncThunk<
   } catch (error: any) {
     CircuitBreaker.onFailure(endpoint, error);
 
-    console.warn(`Exchange statistics API failed:`, {
-      endpoint,
-      error: error.message,
-      status: error.response?.status,
-    });
-
+   
     // Return empty statistics instead of throwing
     return {
       total_pending_exchange_deposits: 0,
@@ -377,9 +368,7 @@ export const fetchTransactions = createAsyncThunk<TransactionsResponse, void>(
 
     // Check circuit breaker before making the call
     if (!CircuitBreaker.isCallAllowed(endpoint)) {
-      console.warn(
-        `Circuit breaker OPEN for ${endpoint} - returning empty transactions`
-      );
+     
       return []; // Return empty array for TransactionsResponse
     }
 
@@ -395,13 +384,7 @@ export const fetchTransactions = createAsyncThunk<TransactionsResponse, void>(
       // Record failure with circuit breaker
       CircuitBreaker.onFailure(endpoint, error);
 
-      console.warn(`Exchange transactions API failed:`, {
-        endpoint,
-        error: error.message,
-        status: error.response?.status,
-        code: error.code,
-      });
-
+     
       // Return empty array instead of throwing to prevent infinite retries
       return [];
     }

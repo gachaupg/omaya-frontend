@@ -48,22 +48,20 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
         const result = await dispatch(authenticateWithGoogle(codeResponse.code) as any);
         
         if (authenticateWithGoogle.fulfilled.match(result)) {
-         
           toast.success("Google authentication successful!");
           onSuccess?.(result.payload);
         } else {
           const errorMessage = result.payload || "Authentication failed";
+              const errorMessage = result.payload || "Authentication failed";
           toast.error(errorMessage);
           onError?.({ message: errorMessage });
         }
       } catch (error) {
-        console.error("❌ Google OAuth error:", error);
         logGoogleOAuthError(error, "Google OAuth Error");
         onError?.(error);
       }
     },
     onError: (error: any) => {
-      console.error("❌ Google Login Failed:", error);
       logGoogleOAuthError(error, "Google OAuth Login Error");
       
       // Handle specific COOP errors
@@ -81,7 +79,6 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
     scope: "email profile",
     ux_mode: "popup",
     onNonOAuthError: (error) => {
-      console.error("❌ Non-OAuth error:", error);
       logGoogleOAuthError(error, "Non-OAuth Error");
       toast.error("An error occurred. Please try again.");
       onError?.(error);

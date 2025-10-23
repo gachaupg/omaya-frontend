@@ -190,8 +190,6 @@ export const verifyKYCStatus = createAsyncThunk<KYCVerificationResponse, KYCVeri
         return response.data;
       }
     } catch (error) {
-      console.error('❌ KYC Verification Error:', error);
-      console.error('Error details:', handleApiError(error));
       return rejectWithValue(handleApiError(error));
     }
   }

@@ -38,6 +38,7 @@ export type TransactionType = {
   commission?: string;
   lastUpdate?: string;
   payment_details?: Array<any>;
+  rawData?: UserTrade;
 };
 
 export interface TransactionType1 {}
@@ -318,12 +319,21 @@ export interface P2PState {
 }
 
 export interface P2PMyOrders {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: {
-    total_orders_count: number;
-    results: P2POrder[];
+  buy_orders: P2POrder[];
+  sell_orders: P2POrder[];
+  buy_pagination: {
+    count: number;
+    next: string | null;
+    previous: string | null;
+    current_page: number;
+    total_pages: number;
+  };
+  sell_pagination: {
+    count: number;
+    next: string | null;
+    previous: string | null;
+    current_page: number;
+    total_pages: number;
   };
 }
 
@@ -370,7 +380,7 @@ export interface TransactionSummaryState {
 
 export interface OrderMatchRequest {
   amount: string;
-  commission: string;
+  commission?: string;
 }
 
 export interface P2PBuySellResponse {
@@ -408,8 +418,9 @@ export interface MatchedTrade {
   timestamp: string;
   associated_trade: number;
   order_type: "buy" | "sell";
-  status: "matched" | "half-matched" | "completed";
+  status: "matched" | "half-matched" | "completed" | "cancelled";
   rate: number;
+  commission_rate?: number;
   payment_details: PaymentDetail[];
   buyer_photo: string | null;
   seller_photo: string | null;

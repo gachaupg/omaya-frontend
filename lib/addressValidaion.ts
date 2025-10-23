@@ -7,9 +7,7 @@ export const validateWalletAddress = (
   address: string,
   networkType: string
 ): ValidationResult => {
-  // Debug: Log the network type being validated
-  console.log("validateWalletAddress called with networkType:", networkType);
-  console.log("Address to validate:", address);
+ 
 
   // Normalize network type
   const normalizedNetwork = networkType.toUpperCase();
@@ -59,7 +57,6 @@ export const validateWalletAddress = (
       // }
       break;
     default:
-      console.log("Unsupported network type:", normalizedNetwork);
 
       // Fallback validation for unknown network types
       // Check if it looks like a valid crypto address
@@ -67,7 +64,6 @@ export const validateWalletAddress = (
         // Basic validation: check if it contains only valid characters
         const validChars = /^[A-Za-z0-9]+$/;
         if (validChars.test(address)) {
-          console.log("Using fallback validation for unknown network type");
           return {
             isValid: true,
           };

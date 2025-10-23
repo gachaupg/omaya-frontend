@@ -107,7 +107,6 @@ export const getCurrentSession = async (): Promise<BrowserSession> => {
       browserInfo.location = `${locationData.city}, ${locationData.country_name}`;
     }
   } catch (error) {
-    console.log("Could not fetch IP/location data:", error);
     // Fallback to local data
     browserInfo.ip = "Local Network";
     browserInfo.location = "Local Network";
@@ -170,7 +169,6 @@ export const removeSession = (sessionToRemove: BrowserSession): void => {
         JSON.stringify(filteredSessions)
       );
     } catch (error) {
-      console.log("Error removing session:", error);
     }
   }
 };

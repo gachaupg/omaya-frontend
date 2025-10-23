@@ -1,72 +1,98 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { createForexExchange } from '../api';
-import { ForexExchangePayload, ForexExchangeResponse } from '../types';
-
-export interface ForexState {
-  loading: boolean;
-  error: string | null;
-  success: boolean;
-  transaction: ForexExchangeResponse | null;
-}
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createForexExchange, getForexExchange } from "../api/forex";
+import {
+  ForexDepositPayload,
+  ForexWithdrawalPayload,
+  ForexExchangeResponse,
+  ForexState,
+} from "../types/forex";
 
 const initialState: ForexState = {
+  currentExchange: null,
   loading: false,
   error: null,
-  success: false,
-  transaction: null,
 };
 
-// Create forex exchange transaction
-export const createForexTransaction = createAsyncThunk(
-  'forex/createExchange',
-  async (payload: ForexExchangePayload, { rejectWithValue }) => {
+// Async thunk to create forex exchange
+export const createForexExchangeThunk = createAsyncThunk<
+  ForexExchangeResponse,
+  ForexDepositPayload | ForexWithdrawalPayload
+>(
+  "forex/createExchange",
+  async (payload, { rejectWithValue }) => {
     try {
       const response = await createForexExchange(payload);
       return response;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || 
-        error.message || 
-        'Failed to create forex exchange transaction'
+        error.response?.data?.message || error.message || "Failed to create forex exchange"
+      );
+    }
+  }
+);
+
+// Async thunk to fetch forex exchange by transaction ID
+export const fetchForexExchangeThunk = createAsyncThunk<
+  ForexExchangeResponse,
+  string
+>(
+  "forex/fetchExchange",
+  async (transactionId, { rejectWithValue }) => {
+    try {
+      const response = await getForexExchange(transactionId);
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || error.message || "Failed to load forex exchange details"
       );
     }
   }
 );
 
 const forexSlice = createSlice({
-  name: 'forex',
+  name: "forex",
   initialState,
   reducers: {
-    resetForexState: (state) => {
-      state.loading = false;
+    clearForexExchange: (state) => {
+      state.currentExchange = null;
       state.error = null;
-      state.success = false;
-      state.transaction = null;
     },
-    clearForexError: (state) => {
+    setForexExchangeFromCache: (state, action) => {
+      state.currentExchange = action.payload;
+      state.loading = false;
       state.error = null;
     },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(createForexTransaction.pending, (state) => {
+      .addCase(createForexExchangeThunk.pending, (state) => {
         state.loading = true;
         state.error = null;
-        state.success = false;
       })
-      .addCase(createForexTransaction.fulfilled, (state, action) => {
+      .addCase(createForexExchangeThunk.fulfilled, (state, action) => {
         state.loading = false;
-        state.success = true;
-        state.transaction = action.payload;
+        state.currentExchange = action.payload;
+        state.error = null;
       })
-      .addCase(createForexTransaction.rejected, (state, action) => {
+      .addCase(createForexExchangeThunk.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
-        state.success = false;
+      })
+      .addCase(fetchForexExchangeThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchForexExchangeThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentExchange = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchForexExchangeThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });
 
-export const { resetForexState, clearForexError } = forexSlice.actions;
+export const { clearForexExchange, setForexExchangeFromCache } = forexSlice.actions;
 export default forexSlice.reducer;
-

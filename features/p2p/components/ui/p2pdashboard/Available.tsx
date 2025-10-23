@@ -1,31 +1,21 @@
-import { tokens } from "@/styles/tokens";
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
 import { RootState } from "@/store/rootReducer";
-import {
-  fetchTransactionSummary,
-  selectTransactionSummary,
-  selectTransactionSummaryLoading,
-} from "@/features/p2p/slices/transactionSummarySlice";
+import { fetchTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
 import { formatNumber } from "@/utils/formatters";
 import { fetchWallets } from "@/features/p2p/slices/walletSlice";
-
-interface Wallet {
-  currency: string;
-  balance: string;
-}
+import { usePendingTotal } from "@/utils/pending";
 
 const USDT_ICON =
   "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png";
 
 const Available = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const summary = useSelector(selectTransactionSummary);
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-  const { data: wallets, loading: walletLoading } = useSelector(
-    (state: RootState) => state.wallets
-  );
+  
+  // Get all exportable values: pending total, balance, available balance, and total locked
+  const { total: pendingTotal, balance: walletBalance, availableBalance, totalLocked } = usePendingTotal();
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -33,20 +23,6 @@ const Available = () => {
       dispatch(fetchWallets());
     }
   }, [dispatch, isAuthenticated]);
-
-  // Get USDT wallet balance from the new wallet response structure
-  const walletBalance = wallets?.wallet?.currency === "USDT" 
-    ? parseFloat(wallets.wallet.balance) 
-    : 0;
-
-  // Calculate in escrow / locked amount (pending withdrawals + pending sells)
-  const lockedAmount = summary
-    ? summary.total_pending_p2p_withdrawals +
-      summary.total_sell_orders_by_status.pending
-    : 0;
-
-  // Calculate available balance (wallet balance - locked amount)
-  const availableBalance = walletBalance - lockedAmount;
 
   return (
     <div className="mt-3">
@@ -95,7 +71,7 @@ const Available = () => {
             </div>
             {/* Locked */}
             <div className="text-right self-center text-base dark:text-white text-[#0D0D0D] font-medium">
-              {formatNumber(lockedAmount)}
+              {formatNumber(totalLocked)}
             </div>
           </div>
         </div>

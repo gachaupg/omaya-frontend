@@ -98,7 +98,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ asset, assetType, onClose }
       dispatch(fetchAdminPaymentDetails())
         .unwrap()
         .catch((error) => {
-          toast.error(`Failed to fetch admin payment details: ${error}`);
+          // Silent - no error display
         });
     }
   }, [dispatch, selectedMethod, selectedProvider]);

@@ -149,35 +149,28 @@ export function useAssetsDisplay(
 
 /**
  * Hook specifically for payment methods data
+ * Shows fallback data immediately to prevent UI delays
  */
 export function usePaymentMethodsDisplay(
   paymentMethods: any[] | null | undefined,
   loading: boolean,
   error: string | null
 ) {
-  // Common fallback payment methods
-  const fallbackPaymentMethods = useMemo(() => [
-    {
-      provider_name: "Bank Transfer",
-      payment_method: "Bank Transfer",
-      payment_method_type: "bank_transfer",
-      account_name: "Demo Bank Account",
-      account_number: "****1234",
-    },
-    {
-      provider_name: "Mobile Money",
-      payment_method: "Mobile Money", 
-      payment_method_type: "mobile_money",
-      account_name: "Demo Mobile Account",
-      account_number: "****5678",
-    },
-  ], []);
+  // Common fallback payment methods - empty array to avoid showing fake data
+  const fallbackPaymentMethods = useMemo(() => [], []);
 
-  return useDataDisplay({
+  const result = useDataDisplay({
     data: paymentMethods,
     loading,
     error,
     fallbackData: fallbackPaymentMethods,
     dataName: 'Payment Methods',
   });
+
+  // Override isLoading to be false if we have any data (even cached)
+  // This prevents the select from being disabled when showing cached data
+  return {
+    ...result,
+    isLoading: loading && !paymentMethods?.length,
+  };
 }

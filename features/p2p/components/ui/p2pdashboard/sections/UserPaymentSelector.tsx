@@ -79,12 +79,14 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
   // ──────────────────────────────────────────────────────────────────────────────
   return (
     <div className="w-full">
+      
+      
       {/* dropdowns */}
       <div className="flex flex-col sm:flex-row gap-2 mb-4 w-full">
         {/* payment-method */}
         <div className="flex-1">
           <label className="block mb-1 text-sm text-gray-700 dark:text-[#788099]">
-            Payment Method
+            Payment Method Type
           </label>
           <select
             className="w-full p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none"
@@ -94,7 +96,7 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
               setSelectedProvider("");
             }}
           >
-            <option value="">Select Method</option>
+            <option value="">Select Method Type</option>
             {methodOptions.map((d) => (
               <option key={d.payment_method_name} value={d.payment_method_name}>
                 {d.payment_method_name}
@@ -131,43 +133,49 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
       {/* detail cards */}
       {selectedMethod && selectedProvider && (
         <div className="space-y-2">
-          {filteredDetails.map((detail) => (
-            <div
-              key={detail.id}
-              className="flex items-center justify-between p-3 rounded-[24px] bg-gray-50 dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E]"
-            >
-              <div>
-                <p className="text-xs text-gray-500 dark:text-[#788099]">
-                  Account Name
-                </p>
-                <p className="font-semibold text-gray-900 dark:text-white">
-                  {detail.account_name}
-                </p>
-                <p className="mt-1 text-xs text-gray-500 dark:text-[#788099]">
-                  Account Number
-                </p>
-                <p className="font-semibold text-gray-900 dark:text-white">
-                  {detail.account_number}
-                </p>
-              </div>
+          {filteredDetails.length > 0 ? (
+            filteredDetails.map((detail) => (
+              <div
+                key={detail.id}
+                className="flex items-center justify-between p-3 rounded-[24px] bg-gray-50 dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E]"
+              >
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-[#788099]">
+                    Account Name
+                  </p>
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    {detail.account_name}
+                  </p>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-[#788099]">
+                    Account Number
+                  </p>
+                  <p className="font-semibold text-gray-900 dark:text-white">
+                    {detail.account_number}
+                  </p>
+                </div>
 
-              {isSelected(detail) ? (
-                <button
-                  className="px-4 py-2 ml-4 text-white rounded-[16px] bg-[#E23D3A] hover:opacity-90"
-                  onClick={() => onRemove(detail)}
-                >
-                  Remove
-                </button>
-              ) : (
-                <button
-                  className="px-4 py-2 ml-4 text-white rounded-[16px] bg-[#1D8751] hover:opacity-90"
-                  onClick={() => onSelect(detail)}
-                >
-                  Select
-                </button>
-              )}
+                {isSelected(detail) ? (
+                  <button
+                    className="px-4 py-2 ml-4 text-white rounded-[16px] bg-[#E23D3A] hover:opacity-90"
+                    onClick={() => onRemove(detail)}
+                  >
+                    Remove
+                  </button>
+                ) : (
+                  <button
+                    className="px-4 py-2 ml-4 text-white rounded-[16px] bg-[#1D8751] hover:opacity-90"
+                    onClick={() => onSelect(detail)}
+                  >
+                    Select
+                  </button>
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="p-4 text-center text-gray-500 dark:text-[#788099] bg-gray-50 dark:bg-[#23232B] rounded-[16px] border border-gray-200 dark:border-[#35353E]">
+              No payment details found for this combination. Please add a payment method first.
             </div>
-          ))}
+          )}
         </div>
       )}
     </div>

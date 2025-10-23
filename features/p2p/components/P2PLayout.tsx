@@ -3,7 +3,8 @@
 /**
  * P2PLayout.tsx
  */
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { p2pTabs } from "../data";
 import { tokens } from "@/styles/tokens";
 import Tabs from "./Tabs";
@@ -15,7 +16,16 @@ import P2PCenter from "./tabs/p2pCenter";
 import { P2PDataProvider } from "./P2PDataProvider";
 
 const P2PLayout = () => {
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const searchParams = useSearchParams();
+  const tabFromQuery = searchParams?.get("tab");
+  const [activeTab, setActiveTab] = useState(tabFromQuery || "dashboard");
+
+  // Update active tab when query parameter changes
+  useEffect(() => {
+    if (tabFromQuery) {
+      setActiveTab(tabFromQuery);
+    }
+  }, [tabFromQuery]);
 
   // Function to render content based on active tab
   const renderTabContent = () => {

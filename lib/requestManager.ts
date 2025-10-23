@@ -22,24 +22,20 @@ class RequestManager {
 
     // If request is already in progress, wait for it
     if (request?.isLoading) {
-      console.log(`[RequestManager] Request ${key} already in progress, waiting...`);
       return this.waitForRequest(key, requestFn);
     }
 
     // If request was made recently, return cached data
     if (request && now - request.lastRequest < this.COOLDOWN_PERIOD) {
-      console.log(`[RequestManager] Request ${key} in cooldown (${now - request.lastRequest}ms ago), returning cached data`);
       return request.data;
     }
 
     // If we have valid cached data, return it
     if (request?.data && now - request.lastRequest < ttl) {
-      console.log(`[RequestManager] Request ${key} returning cached data (${Math.round((now - request.lastRequest) / 1000)}s old)`);
       return request.data;
     }
 
     // Execute new request
-    console.log(`[RequestManager] Executing new request for ${key} (container: ${process.env.HOSTNAME || 'unknown'})`);
     this.requests.set(key, {
       isLoading: true,
       lastRequest: now,
@@ -55,10 +51,8 @@ class RequestManager {
         data,
         error: null
       });
-      console.log(`[RequestManager] Request ${key} completed successfully`);
       return data;
     } catch (error) {
-      console.error(`[RequestManager] Request ${key} failed:`, error);
       this.requests.set(key, {
         isLoading: false,
         lastRequest: now,

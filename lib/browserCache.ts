@@ -32,7 +32,7 @@ class BrowserCache {
   }
 
   /**
-   * Initialize IndexedDB connection
+   * Initialize IndexedDB connection with timeout
    */
   private async initDB(): Promise<IDBDatabase> {
     if (this.db) {
@@ -40,14 +40,21 @@ class BrowserCache {
     }
 
     return new Promise((resolve, reject) => {
+      // Set a timeout to prevent indefinite waiting
+      const timeout = setTimeout(() => {
+        reject(new Error('IndexedDB initialization timeout'));
+      }, 3000); // 3 second timeout
+
       const request = indexedDB.open(this.dbName, this.dbVersion);
 
       request.onerror = () => {
+        clearTimeout(timeout);
         console.error('Failed to open IndexedDB:', request.error);
         reject(request.error);
       };
 
       request.onsuccess = () => {
+        clearTimeout(timeout);
         this.db = request.result;
         resolve(this.db);
       };
@@ -121,12 +128,10 @@ class BrowserCache {
       // Try to get from cache first
       const cached = await this.get<T>(cacheKey);
       if (cached) {
-        console.log(`[BrowserCache] Cache hit for ${url}`);
-        return cached;
+            return cached;
       }
 
       // Fetch fresh data
-      console.log(`[BrowserCache] Cache miss for ${url}, fetching...`);
       const response = await fetch(url, options);
       
       if (!response.ok) {
@@ -145,13 +150,12 @@ class BrowserCache {
 
       return data;
     } catch (error) {
-      console.error(`[BrowserCache] Fetch failed for ${url}:`, error);
       throw error;
     }
   }
 
   /**
-   * Get data from cache
+   * Get data from cache with timeout
    */
   async get<T>(key: string): Promise<T | null> {
     try {
@@ -161,7 +165,13 @@ class BrowserCache {
       const request = store.get(key);
 
       return new Promise((resolve) => {
+        // Set a timeout for the read operation
+        const timeout = setTimeout(() => {
+          resolve(null);
+        }, 2000); // 2 second timeout for reads
+
         request.onsuccess = () => {
+          clearTimeout(timeout);
           const entry = request.result as CacheEntry<T> | undefined;
           
           if (!entry) {
@@ -182,12 +192,11 @@ class BrowserCache {
         };
 
         request.onerror = () => {
-          console.error(`[BrowserCache] Failed to get ${key}:`, request.error);
+          clearTimeout(timeout);
           resolve(null);
         };
       });
     } catch (error) {
-      console.error(`[BrowserCache] Error getting ${key}:`, error);
       return null;
     }
   }
@@ -215,17 +224,14 @@ class BrowserCache {
 
       return new Promise((resolve, reject) => {
         request.onsuccess = () => {
-          console.log(`[BrowserCache] Cached ${key} with TTL ${entry.ttl}ms`);
           resolve();
         };
 
         request.onerror = () => {
-          console.error(`[BrowserCache] Failed to set ${key}:`, request.error);
           reject(request.error);
         };
       });
     } catch (error) {
-      console.error(`[BrowserCache] Error setting ${key}:`, error);
       throw error;
     }
   }
@@ -239,7 +245,6 @@ class BrowserCache {
       // Use JSON.parse(JSON.stringify()) to remove functions and circular references
       return JSON.parse(JSON.stringify(data));
     } catch (error) {
-      console.warn('[BrowserCache] Failed to serialize data, storing as-is:', error);
       return data;
     }
   }
@@ -264,17 +269,14 @@ class BrowserCache {
 
       return new Promise((resolve, reject) => {
         request.onsuccess = () => {
-          console.log(`[BrowserCache] Deleted ${key}`);
           resolve();
         };
 
         request.onerror = () => {
-          console.error(`[BrowserCache] Failed to delete ${key}:`, request.error);
           reject(request.error);
         };
       });
     } catch (error) {
-      console.error(`[BrowserCache] Error deleting ${key}:`, error);
       throw error;
     }
   }
@@ -291,17 +293,14 @@ class BrowserCache {
 
       return new Promise((resolve, reject) => {
         request.onsuccess = () => {
-          console.log('[BrowserCache] Cleared all cache entries');
           resolve();
         };
 
         request.onerror = () => {
-          console.error('[BrowserCache] Failed to clear cache:', request.error);
           reject(request.error);
         };
       });
     } catch (error) {
-      console.error('[BrowserCache] Error clearing cache:', error);
       throw error;
     }
   }
@@ -329,8 +328,7 @@ class BrowserCache {
         };
       });
     } catch (error) {
-      console.error('[BrowserCache] Error getting stats:', error);
-      return { totalEntries: 0, totalSize: 0 };
+          return { totalEntries: 0, totalSize: 0 };
     }
   }
 
@@ -369,6 +367,14 @@ export const browserCache = new BrowserCache({
   maxSize: 1000,
   autoCleanup: true,
 });
+
+// Pre-initialize IndexedDB on module load to avoid delays later
+if (typeof window !== 'undefined' && typeof indexedDB !== 'undefined') {
+  // Warm up IndexedDB connection in the background
+  browserCache.getStats().catch(() => {
+    // Ignore errors during pre-initialization
+  });
+}
 
 // Export the class for custom instances
 export { BrowserCache };

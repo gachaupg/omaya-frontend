@@ -44,10 +44,8 @@ export const authenticateWithGoogle = createAsyncThunk(
        // Debug URL construction
        debugGoogleOAuthUrls();
        
-       logger.debug('auth', "🌐 Backend URL:", GOOGLE_API_ENDPOINTS.backendAuth);
 
       // Log the Google OAuth response
-      logGoogleOAuthResponse({ code: authCode }, "Google OAuth Code Received");
 
       const response = await axios.post(
         GOOGLE_API_ENDPOINTS.backendAuth,
@@ -69,11 +67,6 @@ export const authenticateWithGoogle = createAsyncThunk(
 
       return response.data;
     } catch (error: any) {
-      console.error("❌ Google OAuth authentication failed:", error);
-      
-      // Log the error
-      logGoogleOAuthError(error, "Backend Authentication Error");
-
       let errorMessage = GOOGLE_OAUTH_ERROR_MESSAGES[GoogleOAuthErrorType.UNKNOWN_ERROR];
 
       if (error.code === "ERR_NETWORK") {
@@ -111,11 +104,6 @@ export const getGoogleUserInfo = createAsyncThunk(
 
       return response.data;
     } catch (error: any) {
-      console.error("❌ Failed to get Google user info:", error);
-      
-      // Log the error
-      logGoogleOAuthError(error, "Google User Info Error");
-
       return rejectWithValue("Failed to get user information from Google");
     }
   }
@@ -143,7 +131,6 @@ const googleOAuthSlice = createSlice({
     setError: (state, action: PayloadAction<string>) => {
       state.error = action.payload;
       state.isLoading = false;
-      console.error("❌ Google OAuth error set:", action.payload);
     },
 
     // Clear error
@@ -194,7 +181,6 @@ const googleOAuthSlice = createSlice({
       state.isLoading = false;
       state.isAuthenticated = false;
       state.error = action.payload as string;
-      console.error("❌ Google OAuth authentication failed:", action.payload);
     });
 
     // getGoogleUserInfo
@@ -212,7 +198,6 @@ const googleOAuthSlice = createSlice({
     builder.addCase(getGoogleUserInfo.rejected, (state, action) => {
       state.isLoading = false;
       state.error = action.payload as string;
-      console.error("❌ Failed to get Google user info:", action.payload);
     });
   },
 });
@@ -224,7 +209,6 @@ export const {
   setError,
   clearError,
   resetGoogleOAuth,
-  logResponse,
 } = googleOAuthSlice.actions;
 
 // Export selectors

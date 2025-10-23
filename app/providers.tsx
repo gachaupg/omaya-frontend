@@ -23,10 +23,44 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
     // Initialize cross-tab synchronization for auth state
     initializeCrossTabSync();
+
+    // Check for valid profile on app load - force logout if invalid
+    const checkAuth = () => {
+      if (typeof window === 'undefined') return;
+      
+      const profile = localStorage.getItem('profile');
+      const currentPath = window.location.pathname;
+      const isAuthPage = currentPath.startsWith('/auth/') || currentPath === '/';
+      
+      if (!profile && !isAuthPage) {
+        console.log('🔒 No profile found on app load, forcing logout...');
+        localStorage.clear();
+        window.location.href = '/auth/login';
+      } else if (profile) {
+        try {
+          const parsed = JSON.parse(profile);
+          if (!parsed.tokens?.access || !parsed.user) {
+            console.log('🔒 Invalid profile structure, forcing logout...');
+            localStorage.clear();
+            if (!isAuthPage) {
+              window.location.href = '/auth/login';
+            }
+          }
+        } catch (e) {
+          console.log('🔒 Corrupted profile data, forcing logout...');
+          localStorage.clear();
+          if (!isAuthPage) {
+            window.location.href = '/auth/login';
+          }
+        }
+      }
+    };
+
+    checkAuth();
   }, []);
 
   return (
-    <Provider store={store}>
+      <Provider store={store}>
       <PersistGate
         loading={
           <div className="min-h-screen flex items-center justify-center">
@@ -35,19 +69,19 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         }
         persistor={persistor}
       >
-        <ThemeProvider>
-          <LanguageProvider>
-            <GoogleOAuthProvider
-              clientId={
-                process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
-                "866830600136-atu6lg341gn9snr1pkbmjhssebh9luqb.apps.googleusercontent.com"
-              }
-            >
-              {children}
+          <ThemeProvider>
+            <LanguageProvider>
+              <GoogleOAuthProvider
+                clientId={
+                  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+                  "866830600136-atu6lg341gn9snr1pkbmjhssebh9luqb.apps.googleusercontent.com"
+                }
+              >
+                {children}
             </GoogleOAuthProvider>
-          </LanguageProvider>
-        </ThemeProvider>
+            </LanguageProvider>
+          </ThemeProvider>
       </PersistGate>
-    </Provider>
+      </Provider>
   );
 }
