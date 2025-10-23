@@ -15,7 +15,6 @@ import {
 import { logGoogleOAuthResponse, logGoogleOAuthError } from "../../../utils/googleOAuthConfig";
 import { RootState } from "../../../store";
 
-import { logger } from '@/lib/utils/logger';
 
 interface GoogleAuthButtonProps {
   onSuccess?: (userData: any) => void;
@@ -38,7 +37,6 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
   const login = useGoogleLogin({
     onSuccess: async (codeResponse) => {
       try {
-        logger.debug('auth', "🎉 Google OAuth success - Code received");
         
         // Log the Google OAuth response
         logGoogleOAuthResponse(codeResponse, "Google OAuth Success");
@@ -50,11 +48,10 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
         const result = await dispatch(authenticateWithGoogle(codeResponse.code) as any);
         
         if (authenticateWithGoogle.fulfilled.match(result)) {
-          logger.debug('auth', "✅ Backend authentication successful");
+         
           toast.success("Google authentication successful!");
           onSuccess?.(result.payload);
         } else {
-          console.error("❌ Backend authentication failed");
           const errorMessage = result.payload || "Authentication failed";
           toast.error(errorMessage);
           onError?.({ message: errorMessage });

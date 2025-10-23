@@ -27,8 +27,6 @@ import { toast } from "react-toastify";
 const GoogleAuthButton = React.lazy(() => import("./GoogleAuthButton"));
 import { useI18n } from "@/lib/useI18n";
 
-import { logger } from '@/lib/utils/logger';
-
 // Email Verification Modal Component
 interface EmailVerificationModalProps {
   isOpen: boolean;
@@ -295,6 +293,184 @@ function EmailVerificationModal({
   );
 }
 
+// Country data with flags
+const countries = [
+  { code: "SO", name: "Somalia", dialCode: "+252", flag: "🇸🇴" },
+  { code: "AF", name: "Afghanistan", dialCode: "+93", flag: "🇦🇫" },
+  { code: "AL", name: "Albania", dialCode: "+355", flag: "🇦🇱" },
+  { code: "DZ", name: "Algeria", dialCode: "+213", flag: "🇩🇿" },
+  { code: "AD", name: "Andorra", dialCode: "+376", flag: "🇦🇩" },
+  { code: "AO", name: "Angola", dialCode: "+244", flag: "🇦🇴" },
+  { code: "AR", name: "Argentina", dialCode: "+54", flag: "🇦🇷" },
+  { code: "AM", name: "Armenia", dialCode: "+374", flag: "🇦🇲" },
+  { code: "AU", name: "Australia", dialCode: "+61", flag: "🇦🇺" },
+  { code: "AT", name: "Austria", dialCode: "+43", flag: "🇦🇹" },
+  { code: "AZ", name: "Azerbaijan", dialCode: "+994", flag: "🇦🇿" },
+  { code: "BH", name: "Bahrain", dialCode: "+973", flag: "🇧🇭" },
+  { code: "BD", name: "Bangladesh", dialCode: "+880", flag: "🇧🇩" },
+  { code: "BY", name: "Belarus", dialCode: "+375", flag: "🇧🇾" },
+  { code: "BE", name: "Belgium", dialCode: "+32", flag: "🇧🇪" },
+  { code: "BZ", name: "Belize", dialCode: "+501", flag: "🇧🇿" },
+  { code: "BJ", name: "Benin", dialCode: "+229", flag: "🇧🇯" },
+  { code: "BT", name: "Bhutan", dialCode: "+975", flag: "🇧🇹" },
+  { code: "BO", name: "Bolivia", dialCode: "+591", flag: "🇧🇴" },
+  { code: "BA", name: "Bosnia and Herzegovina", dialCode: "+387", flag: "🇧🇦" },
+  { code: "BW", name: "Botswana", dialCode: "+267", flag: "🇧🇼" },
+  { code: "BR", name: "Brazil", dialCode: "+55", flag: "🇧🇷" },
+  { code: "BN", name: "Brunei", dialCode: "+673", flag: "🇧🇳" },
+  { code: "BG", name: "Bulgaria", dialCode: "+359", flag: "🇧🇬" },
+  { code: "BF", name: "Burkina Faso", dialCode: "+226", flag: "🇧🇫" },
+  { code: "BI", name: "Burundi", dialCode: "+257", flag: "🇧🇮" },
+  { code: "KH", name: "Cambodia", dialCode: "+855", flag: "🇰🇭" },
+  { code: "CM", name: "Cameroon", dialCode: "+237", flag: "🇨🇲" },
+  { code: "CA", name: "Canada", dialCode: "+1", flag: "🇨🇦" },
+  { code: "CV", name: "Cape Verde", dialCode: "+238", flag: "🇨🇻" },
+  { code: "CF", name: "Central African Republic", dialCode: "+236", flag: "🇨🇫" },
+  { code: "TD", name: "Chad", dialCode: "+235", flag: "🇹🇩" },
+  { code: "CL", name: "Chile", dialCode: "+56", flag: "🇨🇱" },
+  { code: "CN", name: "China", dialCode: "+86", flag: "🇨🇳" },
+  { code: "CO", name: "Colombia", dialCode: "+57", flag: "🇨🇴" },
+  { code: "KM", name: "Comoros", dialCode: "+269", flag: "🇰🇲" },
+  { code: "CG", name: "Congo", dialCode: "+242", flag: "🇨🇬" },
+  { code: "CR", name: "Costa Rica", dialCode: "+506", flag: "🇨🇷" },
+  { code: "HR", name: "Croatia", dialCode: "+385", flag: "🇭🇷" },
+  { code: "CU", name: "Cuba", dialCode: "+53", flag: "🇨🇺" },
+  { code: "CY", name: "Cyprus", dialCode: "+357", flag: "🇨🇾" },
+  { code: "CZ", name: "Czech Republic", dialCode: "+420", flag: "🇨🇿" },
+  { code: "DK", name: "Denmark", dialCode: "+45", flag: "🇩🇰" },
+  { code: "DJ", name: "Djibouti", dialCode: "+253", flag: "🇩🇯" },
+  { code: "DO", name: "Dominican Republic", dialCode: "+1-809", flag: "🇩🇴" },
+  { code: "EC", name: "Ecuador", dialCode: "+593", flag: "🇪🇨" },
+  { code: "EG", name: "Egypt", dialCode: "+20", flag: "🇪🇬" },
+  { code: "SV", name: "El Salvador", dialCode: "+503", flag: "🇸🇻" },
+  { code: "GQ", name: "Equatorial Guinea", dialCode: "+240", flag: "🇬🇶" },
+  { code: "ER", name: "Eritrea", dialCode: "+291", flag: "🇪🇷" },
+  { code: "EE", name: "Estonia", dialCode: "+372", flag: "🇪🇪" },
+  { code: "ET", name: "Ethiopia", dialCode: "+251", flag: "🇪🇹" },
+  { code: "FJ", name: "Fiji", dialCode: "+679", flag: "🇫🇯" },
+  { code: "FI", name: "Finland", dialCode: "+358", flag: "🇫🇮" },
+  { code: "FR", name: "France", dialCode: "+33", flag: "🇫🇷" },
+  { code: "GA", name: "Gabon", dialCode: "+241", flag: "🇬🇦" },
+  { code: "GM", name: "Gambia", dialCode: "+220", flag: "🇬🇲" },
+  { code: "GE", name: "Georgia", dialCode: "+995", flag: "🇬🇪" },
+  { code: "DE", name: "Germany", dialCode: "+49", flag: "🇩🇪" },
+  { code: "GH", name: "Ghana", dialCode: "+233", flag: "🇬🇭" },
+  { code: "GR", name: "Greece", dialCode: "+30", flag: "🇬🇷" },
+  { code: "GT", name: "Guatemala", dialCode: "+502", flag: "🇬🇹" },
+  { code: "GN", name: "Guinea", dialCode: "+224", flag: "🇬🇳" },
+  { code: "GW", name: "Guinea-Bissau", dialCode: "+245", flag: "🇬🇼" },
+  { code: "GY", name: "Guyana", dialCode: "+592", flag: "🇬🇾" },
+  { code: "HT", name: "Haiti", dialCode: "+509", flag: "🇭🇹" },
+  { code: "HN", name: "Honduras", dialCode: "+504", flag: "🇭🇳" },
+  { code: "HU", name: "Hungary", dialCode: "+36", flag: "🇭🇺" },
+  { code: "IS", name: "Iceland", dialCode: "+354", flag: "🇮🇸" },
+  { code: "IN", name: "India", dialCode: "+91", flag: "🇮🇳" },
+  { code: "ID", name: "Indonesia", dialCode: "+62", flag: "🇮🇩" },
+  { code: "IR", name: "Iran", dialCode: "+98", flag: "🇮🇷" },
+  { code: "IQ", name: "Iraq", dialCode: "+964", flag: "🇮🇶" },
+  { code: "IE", name: "Ireland", dialCode: "+353", flag: "🇮🇪" },
+  { code: "IL", name: "Israel", dialCode: "+972", flag: "🇮🇱" },
+  { code: "IT", name: "Italy", dialCode: "+39", flag: "🇮🇹" },
+  { code: "CI", name: "Ivory Coast", dialCode: "+225", flag: "🇨🇮" },
+  { code: "JM", name: "Jamaica", dialCode: "+1-876", flag: "🇯🇲" },
+  { code: "JP", name: "Japan", dialCode: "+81", flag: "🇯🇵" },
+  { code: "JO", name: "Jordan", dialCode: "+962", flag: "🇯🇴" },
+  { code: "KZ", name: "Kazakhstan", dialCode: "+7", flag: "🇰🇿" },
+  { code: "KE", name: "Kenya", dialCode: "+254", flag: "🇰🇪" },
+  { code: "KW", name: "Kuwait", dialCode: "+965", flag: "🇰🇼" },
+  { code: "KG", name: "Kyrgyzstan", dialCode: "+996", flag: "🇰🇬" },
+  { code: "LA", name: "Laos", dialCode: "+856", flag: "🇱🇦" },
+  { code: "LV", name: "Latvia", dialCode: "+371", flag: "🇱🇻" },
+  { code: "LB", name: "Lebanon", dialCode: "+961", flag: "🇱🇧" },
+  { code: "LS", name: "Lesotho", dialCode: "+266", flag: "🇱🇸" },
+  { code: "LR", name: "Liberia", dialCode: "+231", flag: "🇱🇷" },
+  { code: "LY", name: "Libya", dialCode: "+218", flag: "🇱🇾" },
+  { code: "LT", name: "Lithuania", dialCode: "+370", flag: "🇱🇹" },
+  { code: "LU", name: "Luxembourg", dialCode: "+352", flag: "🇱🇺" },
+  { code: "MG", name: "Madagascar", dialCode: "+261", flag: "🇲🇬" },
+  { code: "MW", name: "Malawi", dialCode: "+265", flag: "🇲🇼" },
+  { code: "MY", name: "Malaysia", dialCode: "+60", flag: "🇲🇾" },
+  { code: "MV", name: "Maldives", dialCode: "+960", flag: "🇲🇻" },
+  { code: "ML", name: "Mali", dialCode: "+223", flag: "🇲🇱" },
+  { code: "MT", name: "Malta", dialCode: "+356", flag: "🇲🇹" },
+  { code: "MR", name: "Mauritania", dialCode: "+222", flag: "🇲🇷" },
+  { code: "MU", name: "Mauritius", dialCode: "+230", flag: "🇲🇺" },
+  { code: "MX", name: "Mexico", dialCode: "+52", flag: "🇲🇽" },
+  { code: "MD", name: "Moldova", dialCode: "+373", flag: "🇲🇩" },
+  { code: "MC", name: "Monaco", dialCode: "+377", flag: "🇲🇨" },
+  { code: "MN", name: "Mongolia", dialCode: "+976", flag: "🇲🇳" },
+  { code: "ME", name: "Montenegro", dialCode: "+382", flag: "🇲🇪" },
+  { code: "MA", name: "Morocco", dialCode: "+212", flag: "🇲🇦" },
+  { code: "MZ", name: "Mozambique", dialCode: "+258", flag: "🇲🇿" },
+  { code: "MM", name: "Myanmar", dialCode: "+95", flag: "🇲🇲" },
+  { code: "NA", name: "Namibia", dialCode: "+264", flag: "🇳🇦" },
+  { code: "NP", name: "Nepal", dialCode: "+977", flag: "🇳🇵" },
+  { code: "NL", name: "Netherlands", dialCode: "+31", flag: "🇳🇱" },
+  { code: "NZ", name: "New Zealand", dialCode: "+64", flag: "🇳🇿" },
+  { code: "NI", name: "Nicaragua", dialCode: "+505", flag: "🇳🇮" },
+  { code: "NE", name: "Niger", dialCode: "+227", flag: "🇳🇪" },
+  { code: "NG", name: "Nigeria", dialCode: "+234", flag: "🇳🇬" },
+  { code: "KP", name: "North Korea", dialCode: "+850", flag: "🇰🇵" },
+  { code: "MK", name: "North Macedonia", dialCode: "+389", flag: "🇲🇰" },
+  { code: "NO", name: "Norway", dialCode: "+47", flag: "🇳🇴" },
+  { code: "OM", name: "Oman", dialCode: "+968", flag: "🇴🇲" },
+  { code: "PK", name: "Pakistan", dialCode: "+92", flag: "🇵🇰" },
+  { code: "PS", name: "Palestine", dialCode: "+970", flag: "🇵🇸" },
+  { code: "PA", name: "Panama", dialCode: "+507", flag: "🇵🇦" },
+  { code: "PG", name: "Papua New Guinea", dialCode: "+675", flag: "🇵🇬" },
+  { code: "PY", name: "Paraguay", dialCode: "+595", flag: "🇵🇾" },
+  { code: "PE", name: "Peru", dialCode: "+51", flag: "🇵🇪" },
+  { code: "PH", name: "Philippines", dialCode: "+63", flag: "🇵🇭" },
+  { code: "PL", name: "Poland", dialCode: "+48", flag: "🇵🇱" },
+  { code: "PT", name: "Portugal", dialCode: "+351", flag: "🇵🇹" },
+  { code: "QA", name: "Qatar", dialCode: "+974", flag: "🇶🇦" },
+  { code: "RO", name: "Romania", dialCode: "+40", flag: "🇷🇴" },
+  { code: "RU", name: "Russia", dialCode: "+7", flag: "🇷🇺" },
+  { code: "RW", name: "Rwanda", dialCode: "+250", flag: "🇷🇼" },
+  { code: "SA", name: "Saudi Arabia", dialCode: "+966", flag: "🇸🇦" },
+  { code: "SN", name: "Senegal", dialCode: "+221", flag: "🇸🇳" },
+  { code: "RS", name: "Serbia", dialCode: "+381", flag: "🇷🇸" },
+  { code: "SC", name: "Seychelles", dialCode: "+248", flag: "🇸🇨" },
+  { code: "SL", name: "Sierra Leone", dialCode: "+232", flag: "🇸🇱" },
+  { code: "SG", name: "Singapore", dialCode: "+65", flag: "🇸🇬" },
+  { code: "SK", name: "Slovakia", dialCode: "+421", flag: "🇸🇰" },
+  { code: "SI", name: "Slovenia", dialCode: "+386", flag: "🇸🇮" },
+  { code: "SB", name: "Solomon Islands", dialCode: "+677", flag: "🇸🇧" },
+  { code: "ZA", name: "South Africa", dialCode: "+27", flag: "🇿🇦" },
+  { code: "KR", name: "South Korea", dialCode: "+82", flag: "🇰🇷" },
+  { code: "SS", name: "South Sudan", dialCode: "+211", flag: "🇸🇸" },
+  { code: "ES", name: "Spain", dialCode: "+34", flag: "🇪🇸" },
+  { code: "LK", name: "Sri Lanka", dialCode: "+94", flag: "🇱🇰" },
+  { code: "SD", name: "Sudan", dialCode: "+249", flag: "🇸🇩" },
+  { code: "SR", name: "Suriname", dialCode: "+597", flag: "🇸🇷" },
+  { code: "SE", name: "Sweden", dialCode: "+46", flag: "🇸🇪" },
+  { code: "CH", name: "Switzerland", dialCode: "+41", flag: "🇨🇭" },
+  { code: "SY", name: "Syria", dialCode: "+963", flag: "🇸🇾" },
+  { code: "TW", name: "Taiwan", dialCode: "+886", flag: "🇹🇼" },
+  { code: "TJ", name: "Tajikistan", dialCode: "+992", flag: "🇹🇯" },
+  { code: "TZ", name: "Tanzania", dialCode: "+255", flag: "🇹🇿" },
+  { code: "TH", name: "Thailand", dialCode: "+66", flag: "🇹🇭" },
+  { code: "TG", name: "Togo", dialCode: "+228", flag: "🇹🇬" },
+  { code: "TO", name: "Tonga", dialCode: "+676", flag: "🇹🇴" },
+  { code: "TT", name: "Trinidad and Tobago", dialCode: "+1-868", flag: "🇹🇹" },
+  { code: "TN", name: "Tunisia", dialCode: "+216", flag: "🇹🇳" },
+  { code: "TR", name: "Turkey", dialCode: "+90", flag: "🇹🇷" },
+  { code: "TM", name: "Turkmenistan", dialCode: "+993", flag: "🇹🇲" },
+  { code: "UG", name: "Uganda", dialCode: "+256", flag: "🇺🇬" },
+  { code: "UA", name: "Ukraine", dialCode: "+380", flag: "🇺🇦" },
+  { code: "AE", name: "United Arab Emirates", dialCode: "+971", flag: "🇦🇪" },
+  { code: "GB", name: "United Kingdom", dialCode: "+44", flag: "🇬🇧" },
+  { code: "US", name: "United States", dialCode: "+1", flag: "🇺🇸" },
+  { code: "UY", name: "Uruguay", dialCode: "+598", flag: "🇺🇾" },
+  { code: "UZ", name: "Uzbekistan", dialCode: "+998", flag: "🇺🇿" },
+  { code: "VU", name: "Vanuatu", dialCode: "+678", flag: "🇻🇺" },
+  { code: "VE", name: "Venezuela", dialCode: "+58", flag: "🇻🇪" },
+  { code: "VN", name: "Vietnam", dialCode: "+84", flag: "🇻🇳" },
+  { code: "YE", name: "Yemen", dialCode: "+967", flag: "🇾🇪" },
+  { code: "ZM", name: "Zambia", dialCode: "+260", flag: "🇿🇲" },
+  { code: "ZW", name: "Zimbabwe", dialCode: "+263", flag: "🇿🇼" },
+];
+
 export default function RegistrationPage() {
   const { t } = useI18n("auth");
   const dispatch = useDispatch<AppDispatch>();
@@ -313,9 +489,29 @@ export default function RegistrationPage() {
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState("SO"); // Default to Somalia
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
 
   // Facebook login state
   const [profile, setProfile] = useState<any>(null);
+
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (showCountryDropdown && !target.closest('.country-dropdown-container')) {
+        setShowCountryDropdown(false);
+      }
+    };
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showCountryDropdown]);
 
   // Validation errors
   const [errors, setErrors] = useState({
@@ -403,6 +599,7 @@ export default function RegistrationPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitAttempted(true);
 
     if (!validateForm()) {
       return;
@@ -411,7 +608,8 @@ export default function RegistrationPage() {
     setIsSubmitting(true);
 
     try {
-      const phoneNumber = `${phone}`;
+      const selectedCountryData = countries.find((c) => c.code === selectedCountry);
+      const phoneNumber = `${selectedCountryData?.dialCode}${phone}`;
 
       const result = await dispatch(
         registerUser({
@@ -437,7 +635,6 @@ export default function RegistrationPage() {
         }
       }
     } catch (error) {
-      logger.error('auth', "Registration error:", error);
       setErrors((prev) => ({
         ...prev,
         email: "An error occurred during registration",
@@ -474,6 +671,9 @@ export default function RegistrationPage() {
   const handleResendCode = async () => {
     try {
       // Re-register to get a new OTP
+      const selectedCountryData = countries.find((c) => c.code === selectedCountry);
+      const phoneNumber = `${selectedCountryData?.dialCode}${phone}`;
+      
       const result = await dispatch(
         registerUser({
           email,
@@ -482,7 +682,7 @@ export default function RegistrationPage() {
           first_name: firstName,
           last_name: lastName,
           user_type: "individual",
-          phone_number: phone,
+          phone_number: phoneNumber,
           referred_by: referralCode || undefined,
         })
       );
@@ -493,7 +693,7 @@ export default function RegistrationPage() {
         );
       }
     } catch (error: any) {
-      logger.error('auth', "Failed to resend code:", error);
+      console.error("Failed to resend code:", error);
       throw error;
     }
   };
@@ -503,16 +703,13 @@ export default function RegistrationPage() {
   };
 
   const handleGoogleSuccess = (userData: any) => {
-    logger.debug('auth', "Google authentication successful:", userData);
     // Handle successful Google authentication
     if (userData.user) {
-      // You can dispatch to Redux store here if needed
-      logger.debug('auth', "User authenticated:", userData.user);
     }
   };
 
   const handleGoogleError = (error: any) => {
-    console.error("Google authentication error:", error);
+    // console.error("Google authentication error:", error);
   };
 
   const handleFaceBookAuth = async (accessToken: string) => {
@@ -529,10 +726,8 @@ export default function RegistrationPage() {
           },
         }
       );
-      logger.debug('auth', "Facebook auth result:", result.data);
       toast.success("Facebook login successful!");
     } catch (err: any) {
-      console.error("Facebook auth error:", err);
       toast.error("An error occurred. Please try again.");
     }
   };
@@ -774,14 +969,26 @@ export default function RegistrationPage() {
                   >
                     Country Code*
                   </label>
-                  <div className="relative">
-                    <select
-                      id="country-code"
-                      className="w-full py-2 px-4 pl-9 pr-8 rounded-full dark:bg-[#1D1D23] bg-white border dark:border-gray-700 border-gray-300 dark:text-white text-gray-900 focus:outline-none focus:border-[#13B562] appearance-none"
+                  <div className="relative country-dropdown-container">
+                    <button
+                      type="button"
+                      onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+                      className="w-full py-2 px-4 pl-3 pr-20 rounded-full dark:bg-[#1D1D23] bg-white border dark:border-gray-700 border-gray-300 dark:text-white text-gray-900 focus:outline-none focus:border-[#13B562] text-left flex items-center"
                     >
-                      <option value="50">So</option>
-                    </select>
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <img
+                        src={`https://flagcdn.com/16x12/${selectedCountry.toLowerCase()}.png`}
+                        alt={`${selectedCountry} flag`}
+                        className="w-4 h-3 object-cover rounded-sm mr-2"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                      <span>{selectedCountry}</span>
+                    </button>
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <span className="mr-2 text-[#788099] text-sm">
+                        {countries.find((c) => c.code === selectedCountry)?.dialCode}
+                      </span>
                       <svg
                         width="12"
                         height="12"
@@ -798,33 +1005,34 @@ export default function RegistrationPage() {
                         />
                       </svg>
                     </div>
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                      <span className="mr-1 text-[#788099] text-sm">+252</span>
-                      <svg
-                        viewBox="0 0 100 100"
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                      >
-                        <circle cx="50" cy="50" r="45" fill="none" />
-                        <circle
-                          cx="50"
-                          cy="50"
-                          r="40"
-                          fill="none"
-                          stroke="#98A2B3"
-                          strokeWidth="5"
-                        />
-                        <path
-                          d="M40 35 A10 10 0 0 1 50 25 A10 10 0 0 1 60 35 Q60 40 57.5 45 Q55 50 52.5 52.5 Q50 55 50 60"
-                          fill="none"
-                          stroke="#98A2B3"
-                          strokeWidth="6"
-                          strokeLinecap="round"
-                        />
-                        <circle cx="50" cy="70" r="5" fill="#98A2B3" />
-                      </svg>
-                    </div>
+                    
+                    {/* Custom Dropdown */}
+                    {showCountryDropdown && (
+                      <div className="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto dark:bg-[#1D1D23] bg-white border dark:border-gray-700 border-gray-300 rounded-lg shadow-lg">
+                        {countries.map((country) => (
+                          <button
+                            key={country.code}
+                            type="button"
+                            onClick={() => {
+                              setSelectedCountry(country.code);
+                              setShowCountryDropdown(false);
+                            }}
+                            className="w-full px-4 py-2 text-left hover:bg-[#13B562] hover:bg-opacity-10 flex items-center dark:text-white text-gray-900"
+                          >
+                            <img
+                              src={`https://flagcdn.com/16x12/${country.code.toLowerCase()}.png`}
+                              alt={`${country.code} flag`}
+                              className="w-4 h-3 object-cover rounded-sm mr-2"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                            <span className="mr-2">{country.code}</span>
+                            <span className="text-[#788099] text-sm">({country.name})</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -885,7 +1093,10 @@ export default function RegistrationPage() {
                       type={showPassword ? "text" : "password"}
                       id="password"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        if (submitAttempted) setSubmitAttempted(false);
+                      }}
                       className={`w-full py-2 px-4 pl-9 rounded-full dark:bg-[#1D1D23] bg-white border ${
                         errors.password ? "border-[#FDA29B]" : "border-gray-700"
                       } dark:text-[#788099] text-gray-900 focus:outline-none focus:border-[#13B562]`}
@@ -1153,9 +1364,21 @@ export default function RegistrationPage() {
               <div className="flex flex-col space-y-1 ml-1">
                 <div className="flex items-center space-x-2">
                   <div
-                    className={`h-2 w-2 rounded-full ${hasMinChars ? "bg-[#1D8751]" : "bg-[#1D8751]"}`}
+                    className={`h-2 w-2 rounded-full ${
+                      hasMinChars 
+                        ? "bg-[#1D8751]" 
+                        : submitAttempted 
+                        ? "bg-red-500" 
+                        : "bg-gray-400 dark:bg-gray-600"
+                    }`}
                   ></div>
-                  <span className="text-sm dark:text-white text-gray-900">
+                  <span className={`text-sm ${
+                    hasMinChars
+                      ? "text-[#1D8751]"
+                      : submitAttempted
+                      ? "text-red-500"
+                      : "text-gray-500 dark:text-gray-400"
+                  }`}>
                     {t(
                       "auth.register.requirements.8chars",
                       "At least 8 characters"
@@ -1164,9 +1387,21 @@ export default function RegistrationPage() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <div
-                    className={`h-2 w-2 rounded-full ${hasNumber || hasSymbol ? "bg-[#1D8751]" : "bg-[#1D8751]"}`}
+                    className={`h-2 w-2 rounded-full ${
+                      hasNumber || hasSymbol
+                        ? "bg-[#1D8751]" 
+                        : submitAttempted 
+                        ? "bg-red-500" 
+                        : "bg-gray-400 dark:bg-gray-600"
+                    }`}
                   ></div>
-                  <span className="text-sm dark:text-white text-gray-900">
+                  <span className={`text-sm ${
+                    hasNumber || hasSymbol
+                      ? "text-[#1D8751]"
+                      : submitAttempted
+                      ? "text-red-500"
+                      : "text-gray-500 dark:text-gray-400"
+                  }`}>
                     {t(
                       "auth.register.requirements.numberSymbol",
                       "At least one number or symbol"
@@ -1175,9 +1410,21 @@ export default function RegistrationPage() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <div
-                    className={`h-2 w-2 rounded-full ${hasMixedCase ? "bg-[#1D8751]" : "bg-[#1D8751]"}`}
+                    className={`h-2 w-2 rounded-full ${
+                      hasMixedCase
+                        ? "bg-[#1D8751]" 
+                        : submitAttempted 
+                        ? "bg-red-500" 
+                        : "bg-gray-400 dark:bg-gray-600"
+                    }`}
                   ></div>
-                  <span className="text-sm dark:text-white text-gray-900">
+                  <span className={`text-sm ${
+                    hasMixedCase
+                      ? "text-[#1D8751]"
+                      : submitAttempted
+                      ? "text-red-500"
+                      : "text-gray-500 dark:text-gray-400"
+                  }`}>
                     {t(
                       "auth.register.requirements.mixedCase",
                       "Both uppercase and lowercase letters"
@@ -1257,7 +1504,7 @@ export default function RegistrationPage() {
                       className="opacity-0 absolute h-4 w-4 cursor-pointer"
                     />
                     <div
-                      className={`border border-[#1D8751] rounded h-4 w-4 flex flex-shrink-0 justify-center items-center mr-2 ${agreeToTerms ? "bg-[#1D8751]" : "bg-transparent"}`}
+                      className={`border border-[#871D1DFF] rounded h-4 w-4 flex flex-shrink-0 justify-center items-center mr-2 ${agreeToTerms ? "bg-[#1D8751]" : "bg-transparent"}`}
                     >
                       {agreeToTerms && (
                         <svg
@@ -1360,7 +1607,7 @@ export default function RegistrationPage() {
                           handleFaceBookAuth(response.data.accessToken);
                         }}
                         onReject={(error: any) => {
-                          console.error("Facebook login failed:", error);
+                          // console.error("Facebook login failed:", error);
                         }}
                       >
                         <div className="flex items-center justify-center">

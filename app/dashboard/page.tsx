@@ -31,14 +31,10 @@ export default function DashboardPage() {
 
   // Log KYC status when it changes and show modal if not verified
   useEffect(() => {
-    logger.debug("dashboard", "KYC Status", { isVerified, loading, error });
-
     // Only show KYC modal if we have a definitive false response and not loading
     if (isVerified === false && !loading && !error) {
-      logger.info("dashboard", "Opening KYC modal - user is not verified");
       dispatch(openKYCModal());
     } else if (isVerified === true) {
-      logger.debug("dashboard", "User is verified - no modal needed");
     }
   }, [isVerified, loading, error, dispatch]);
 

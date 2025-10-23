@@ -18,7 +18,6 @@ import { fetchUserTrades } from "@/features/p2p/slices/userTradesSlice";
 import { RootState } from "@/store";
 import { fetchReferralWallet } from "@/features/settings/slices/referralWalletSlice";
 import { storage } from "@/features/auth/utils/storage";
-import { logger } from "@/lib/utils/logger";
 
 const months = [
   "JAN",
@@ -710,10 +709,7 @@ const LineCharts = React.memo(
       (state: RootState) => state.auth
     );
 
-    // Only log walletData if it exists and is not null
-    if (walletData) {
-      logger.debug("dashboard", "Wallet data loaded", { walletData });
-    }
+  
 
     useEffect(() => {
       const fetchData = async () => {
@@ -721,19 +717,13 @@ const LineCharts = React.memo(
           try {
             await Promise.all([
               dispatch(fetchReferralWallet()).catch((error) => {
-                logger.warn(
-                  "dashboard",
-                  "Referral wallet API not available in LineCharts",
-                  { error }
-                );
+                
                 return null;
               }),
             ]);
             await Promise.all([dispatch(fetchReferralWallet())]);
           } catch (error) {
-            logger.error("dashboard", "Error fetching referral data", {
-              error,
-            });
+           
           }
         }
       };

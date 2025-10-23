@@ -30,8 +30,6 @@ import { post, get, AxiosError } from "../../../lib/apiClient";
 import { storage } from "../utils/storage";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 
-import { logger } from '@/lib/utils/logger';
-
 const initialState: AuthState = {
   user: null,
   tokens: null,
@@ -211,19 +209,7 @@ export const verifyKYCStatus = createAsyncThunk<string, KYCVerifyPayload>(
           }
         });
 
-        // Debug log FormData contents
-        logger.debug('auth', "=== FormData being sent to KYC API ===");
-        for (let [key, value] of formData.entries()) {
-          if (value instanceof File) {
-            logger.debug('auth', 
-              `${key}:`,
-              `[File] ${value.name} (${value.size} bytes)`
-            );
-          } else {
-            logger.debug('auth', `${key}:`, value);
-          }
-        }
-        logger.debug('auth', "=== End FormData ===");
+      
 
         // Send FormData
         const response = await post<{ message: string }>(
@@ -236,7 +222,6 @@ export const verifyKYCStatus = createAsyncThunk<string, KYCVerifyPayload>(
           }
         );
 
-        logger.debug('auth', "KYC API Response:", response.data);
         return response.data.message;
       } else {
         // Send as JSON if no images

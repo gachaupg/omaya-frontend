@@ -26,11 +26,8 @@ export default function Sidebar() {
 
     if (isInSection) {
       e.preventDefault();
-      // ✅ Removed router.refresh() - it was forcing full page reload
-      // Already on the page, no action needed
-      // If you want to scroll to top instead:
-      // window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
+      router.push(item.href);
+      router.refresh();
     }
   };
   const { isDark } = useTheme();
@@ -88,9 +85,7 @@ export default function Sidebar() {
                             </span>
                           ) : (
                             <span className="flex items-center justify-center">
-                              <span className="text-white">E</span>
-
-                              <img
+                            <span className="dark:text-white text-[#727272]">E</span><img
                                 className="mt-2"
                                 src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
                                 alt=""
@@ -99,10 +94,7 @@ export default function Sidebar() {
                           )
                         ) : (
                           <span className="flex items-center justify-center">
-                            <span className="text-[#727272] text-base uppercase font-bold">
-                              E
-                            </span>
-
+                                                          <span className="text-[#727272] text-base uppercase font-bold">E</span>
                             <img
                               className="mt-2"
                               src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"

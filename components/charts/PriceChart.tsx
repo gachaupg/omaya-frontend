@@ -4,7 +4,6 @@ import { FaBitcoin, FaEthereum } from "react-icons/fa";
 import { SiTether, SiSolana, SiXrp } from "react-icons/si";
 import { fetchTopAssets } from "@/features/markets/api";
 import { TopAsset } from "@/features/markets/types";
-import { logger } from "@/lib/utils/logger";
 
 interface CryptoData {
   name: string;
@@ -265,7 +264,6 @@ const PriceCards = React.memo(() => {
         setCryptoData(fallbackCryptoData);
       }
     } catch (error) {
-      logger.error("dashboard", "Failed to fetch top assets", { error });
       // Use fallback data on error
       setCryptoData(fallbackCryptoData);
     } finally {
