@@ -319,12 +319,21 @@ export interface P2PState {
 }
 
 export interface P2PMyOrders {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: {
-    total_orders_count: number;
-    results: P2POrder[];
+  buy_orders: P2POrder[];
+  sell_orders: P2POrder[];
+  buy_pagination: {
+    count: number;
+    next: string | null;
+    previous: string | null;
+    current_page: number;
+    total_pages: number;
+  };
+  sell_pagination: {
+    count: number;
+    next: string | null;
+    previous: string | null;
+    current_page: number;
+    total_pages: number;
   };
 }
 

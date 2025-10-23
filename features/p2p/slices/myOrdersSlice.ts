@@ -16,12 +16,21 @@ interface MyOrdersState {
 
 const initialState: MyOrdersState = {
   orders: {
-    count: 0,
-    next: null,
-    previous: null,
-    results: {
-      total_orders_count: 0,
-      results: [],
+    buy_orders: [],
+    sell_orders: [],
+    buy_pagination: {
+      count: 0,
+      next: null,
+      previous: null,
+      current_page: 1,
+      total_pages: 0,
+    },
+    sell_pagination: {
+      count: 0,
+      next: null,
+      previous: null,
+      current_page: 1,
+      total_pages: 0,
     },
   },
   loading: false,

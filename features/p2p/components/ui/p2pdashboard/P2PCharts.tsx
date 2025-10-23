@@ -98,10 +98,13 @@ const P2PCharts = () => {
     });
   };
 
-  // Transform orders data (already filtered to user's orders by API)
-  const transformedData: TransactionType[] = [
-    ...(orders?.results?.results || []),
-  ].map((order: P2POrder) => ({
+  // Transform orders data - handle both buy_orders and sell_orders from API response
+  const allOrders = [
+    ...(orders?.buy_orders || []),
+    ...(orders?.sell_orders || []),
+  ];
+  
+  const transformedData: TransactionType[] = allOrders.map((order: P2POrder) => ({
     id: order.id,
     type: order.order_type,
     advertiser_email: order.advertiser_email,
@@ -162,7 +165,7 @@ const P2PCharts = () => {
   // Use filtered data for display, but ensure we're showing the correct data for current page
   const displayData = searchQuery.trim() ? filteredData : transformedData;
   // Calculate total pages based on actual count from API
-  const totalOrders = orders?.count || 0;
+  const totalOrders = (orders?.buy_pagination?.count || 0) + (orders?.sell_pagination?.count || 0);
   const pageSize = 10; // Default page size, should match backend
   const totalPages = Math.ceil(totalOrders / pageSize);
 
@@ -171,21 +174,19 @@ const P2PCharts = () => {
 
   // Force re-render when orders data changes
   useEffect(() => {
-    if (orders?.results?.results) {
-     
+    if (orders?.buy_orders || orders?.sell_orders) {
       setDataKey((prev) => prev + 1);
     }
-  }, [orders?.results?.results]);
+  }, [orders?.buy_orders, orders?.sell_orders]);
 
   // Check if data is actually different
   useEffect(() => {
-    if (orders?.results?.results) {
-      const currentDataIds = orders.results.results
+    if (orders?.buy_orders || orders?.sell_orders) {
+      const currentDataIds = allOrders
         .map((item) => item.id)
         .join(",");
-     
     }
-  }, [orders?.results?.results, dataKey]);
+  }, [orders?.buy_orders, orders?.sell_orders, dataKey]);
 
   // Handlers for table functionality
   const handleExport = (format: "csv" | "pdf") => {
@@ -291,7 +292,7 @@ const P2PCharts = () => {
               message={
                 searchQuery.trim()
                   ? `No orders match your search "${searchQuery}" for the selected time period.`
-                  : `There are currently no orders to display for the selected time period (${timeFilter}).`
+                  : `There are currently no orders to display for the selected time period.`
               }
             />
             {/* Action buttons */}
