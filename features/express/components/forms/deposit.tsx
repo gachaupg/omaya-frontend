@@ -186,11 +186,34 @@ export default function DepositForm({
   // Add InfoModal state
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
+
   // Add validation state for minimum receive amount
   const [receiveAmountError, setReceiveAmountError] = useState<string | null>(null);
 
   // Add state for API validation errors
   const [apiValidationError, setApiValidationError] = useState<string | null>(null);
+
+
+  // Handle asset selection with inline calculation
+  const handleAssetSelection = (asset: any) => {
+    // Set asset immediately
+    setSelectedAsset(asset);
+    const networkValue = getAssetNetwork(asset);
+    setSelectedNetwork({
+      network_id: networkValue,
+      network_type: networkValue,
+    });
+    
+    // For complex assets, trigger inline calculation
+    if (!isSimpleCalculationAsset(asset) && !isForexAsset(asset) && payAmount > 0) {
+      // Set loading states for inline calculation
+      setIsCalculating(true);
+      setIsCalculatingReceive(true);
+      
+      // Trigger the existing calculation logic
+      calculateAmounts(payAmount, true);
+    }
+  };
 
   // Forex-specific state
   const [forexAccountNumber, setForexAccountNumber] = useState<string>("");
@@ -2234,12 +2257,7 @@ export default function DepositForm({
                                   key={`popular-${asset.asset_id || 'asset'}-${asset.symbol || asset.ticker || asset.name}-${asset.network || 'unknown'}-${index}`}
                                   className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E]"
                                   onClick={() => {
-                                    setSelectedAsset(asset);
-                                    const networkValue = getAssetNetwork(asset);
-                                    setSelectedNetwork({
-                                      network_id: networkValue,
-                                      network_type: networkValue,
-                                    });
+                                    handleAssetSelection(asset);
                                     setIsAssetDropdownOpen(false);
                                     setAssetSearchTerm("");
                                   }}
@@ -2299,12 +2317,7 @@ export default function DepositForm({
                             key={`${asset.asset_id || 'asset'}-${asset.symbol || asset.ticker || asset.name}-${asset.network || 'unknown'}-${index}`}
                             className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
                             onClick={() => {
-                              setSelectedAsset(asset);
-                              const networkValue = getAssetNetwork(asset);
-                              setSelectedNetwork({
-                                network_id: networkValue,
-                                network_type: networkValue,
-                              });
+                              handleAssetSelection(asset);
                               setIsAssetDropdownOpen(false);
                               setAssetSearchTerm("");
                             }}
@@ -3103,6 +3116,7 @@ export default function DepositForm({
           setIsInfoModalOpen(false);
         }}
       />
+
     </div>
   );
 }

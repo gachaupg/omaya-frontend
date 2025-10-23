@@ -239,6 +239,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                       advertiserData={row}
                       onClose={() => setSelectedRowIndex(null)}
                       tradeType={activeTab as "buy" | "sell"}
+                      providerName={row.payment.map((method: string) => method.trim()).join(', ')}
                     />
                   </div>
                 )}
