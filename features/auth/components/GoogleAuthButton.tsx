@@ -15,7 +15,6 @@ import {
 import { logGoogleOAuthResponse, logGoogleOAuthError } from "../../../utils/googleOAuthConfig";
 import { RootState } from "../../../store";
 
-
 interface GoogleAuthButtonProps {
   onSuccess?: (userData: any) => void;
   onError?: (error: any) => void;
@@ -51,7 +50,6 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
           toast.success("Google authentication successful!");
           onSuccess?.(result.payload);
         } else {
-          const errorMessage = result.payload || "Authentication failed";
               const errorMessage = result.payload || "Authentication failed";
           toast.error(errorMessage);
           onError?.({ message: errorMessage });
