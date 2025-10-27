@@ -1,260 +1,343 @@
-"use client";
-import React, { useEffect, useState, ReactElement } from "react";
-import { FaBitcoin, FaEthereum } from "react-icons/fa";
-import { SiTether, SiSolana, SiXrp } from "react-icons/si";
-import { fetchTopAssets } from "@/features/markets/api";
-import { TopAsset } from "@/features/markets/types";
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import Charts from "../../Common/charts";
+import { Table } from "../../Common/Table";
+import { AppDispatch } from "@/store";
+import { RootState } from "@/store/rootReducer";
+import {
+  fetchMyOrders,
+  setCurrentPage as setMyOrdersCurrentPage,
+} from "@/features/p2p/slices/myOrdersSlice";
+import { P2POrder, TransactionType } from "@/features/p2p/types";
+import * as XLSX from "xlsx";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
+import { NoDataFound } from "@/components/dashboard/ui/Transactions";
 
-interface CryptoData {
-  name: string;
-  symbol: string;
-  icon: ReactElement;
-  image?: string;
-  price: string;
-  volume?: number;
-  transactionCount?: number;
-  color: string;
-  chart: string;
-  chartBg: string;
-  chartBgTrans: string;
-  rate: string;
-}
+type TimeFilter =
+  | "Today"
+  | "Last Week"
+  | "Last Month"
+  | "Last 6 Months"
+  | "All Time";
 
-// Helper function to get icon based on symbol
-const getCryptoIcon = (symbol: string): ReactElement => {
-  const upperSymbol = symbol.toUpperCase();
-  switch (upperSymbol) {
-    case "BTC":
-    case "BITCOIN":
-      return <FaBitcoin className="text-3xl text-orange-400" />;
-    case "ETH":
-    case "ETHEREUM":
-      return <FaEthereum className="text-3xl text-gray-400" />;
-    case "USDT":
-    case "USDTERC20":
-      return <SiTether className="text-3xl text-[#1D8751]" />;
-    case "SOL":
-    case "SOLANA":
-      return <SiSolana className="text-3xl text-purple-700" />;
-    case "XRP":
-      return <SiXrp className="text-3xl text-gray-400" />;
-    default:
-      return <FaBitcoin className="text-3xl text-orange-400" />;
-  }
-};
-
-// Helper function to get color scheme based on symbol
-const getColorScheme = (symbol: string) => {
-  const upperSymbol = symbol.toUpperCase();
-  switch (upperSymbol) {
-    case "BTC":
-    case "BITCOIN":
-      return {
-        color: "red",
-        chart: "#ff3b3b",
-        chartBg: "#F01717",
-        chartBgTrans: "#F0171710",
-      };
-    case "USDT":
-    case "USDTERC20":
-      return {
-        color: "green",
-        chart: "#22c55e",
-        chartBg: "#22c55e",
-        chartBgTrans: "#22c55e10",
-      };
-    case "ETH":
-    case "ETHEREUM":
-      return {
-        color: "#1D8751",
-        chart: "#1D8751",
-        chartBg: "#1D8751",
-        chartBgTrans: "#1D875110",
-      };
-    case "SOL":
-    case "SOLANA":
-      return {
-        color: "purple",
-        chart: "#9333ea",
-        chartBg: "#9333ea",
-        chartBgTrans: "#9333ea10",
-      };
-    case "XRP":
-      return {
-        color: "yellow",
-        chart: "#facc15",
-        chartBg: "#facc15",
-        chartBgTrans: "#facc1510",
-      };
-    default:
-      return {
-        color: "blue",
-        chart: "#3b82f6",
-        chartBg: "#3b82f6",
-        chartBgTrans: "#3b82f610",
-      };
-  }
-};
-
-
-const MiniChart = ({
-  color,
-  bg,
-  bgTrans,
-}: {
-  color: string;
-  bg: string;
-  bgTrans: string;
-}) => (
-  <svg
-    width="100%"
-    height="40"
-    viewBox="0 0 120 40"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <rect x="0" y="0" width="120" height="40" rx="8" fill={bgTrans} />
-    <path
-      d="M0,35 Q20,10 40,25 T80,20 T120,35"
-      stroke={color}
-      strokeWidth="3"
-      fill="none"
-    />
-    <polyline
-      points="0,35 40,25 80,20 120,35"
-      fill="none"
-      stroke={color}
-      strokeWidth="2"
-      opacity="0.2"
-    />
-  </svg>
-);
-
-const CryptoCard = ({
-  icon,
-  name,
-  symbol,
-  image,
-  price,
-  volume,
-  transactionCount,
-  chart,
-  chartBg,
-  chartBgTrans,
-  rate,
-}: CryptoData) => (
-<div className="
-  flex-1 min-w-[160px] max-w-[260px] sm:min-w-[180px] sm:max-w-[320px] h-[160px]
-  text-[13px] rounded-2xl shadow-lg p-3 flex flex-col justify-between border border-gray-300 relative
-">
-    <div className="flex items-center justify-between mb-1">
-      <div className="flex items-center gap-1.5">
-        {image ? (
-          <img src={image} alt={name} className="w-8 h-8" />
-        ) : (
-          icon
-        )}
-        <div className="flex flex-col">
-        <span className="dark:text-white font-semibold text-sm sm:text-base">
-            {symbol}
-          </span>
-          {volume !== undefined && (
-            <span className="text-xs text-gray-500">
-              Vol: {volume.toFixed(3)}
-        </span>
-          )}
-        </div>
-      </div>
-      <span className="bg-[#23262F] text-xs text-white px-1.5 py-0.5 rounded-lg">
-        24h
-      </span>
-    </div>
-    <div className="dark:text-white text-black flex flex-row justify-between items-end gap-1.5 text-[13px] font-bold text-base sm:text-lg mb-1">
-      <div className="flex flex-col gap-0.5">
-        {transactionCount !== undefined ? (
-          <>
-            <p className="text-xs text-gray-500"> Omaya Transactions</p>
-            <p className="text-lg">{transactionCount}</p>
-          </>
-        ) : (
-      <p>{price}</p>
-        )}
-      </div>
-      <div className="h-5 px-2 rounded-md flex flex-row gap-1 items-center justify-center bg-[#48CC544D]">
-        <p className="text-xs text-[#48CC54] font-semibold">{rate}</p>
-      </div>
-    </div>
-    <div className="w-full h-8">
-      <MiniChart color={chart} bg={chartBg} bgTrans={chartBgTrans} />
-    </div>
-  </div>
-);
-
-const PriceCards = () => {
-  const [isMounted, setIsMounted] = useState(false);
-  const [cryptoData, setCryptoData] = useState<CryptoData[]>([]);
-  const [loading, setLoading] = useState(true);
+const P2PCharts = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { orders, loading, error, currentPage } = useSelector(
+    (state: RootState) => state.myOrders
+  );
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>("Last Month");
+  const [dataKey, setDataKey] = useState(0);
 
   useEffect(() => {
-    setIsMounted(true);
-    loadTopAssets();
-  }, []);
+    if (isAuthenticated) {
+      dispatch(fetchMyOrders(currentPage));
+    }
+  }, [dispatch, currentPage, isAuthenticated]);
 
-  const loadTopAssets = async () => {
-    try {
-      setLoading(true);
-      const response = await fetchTopAssets();
+  // Reset to first page when component mounts or authentication changes
+  useEffect(() => {
+    if (isAuthenticated && currentPage !== 1) {
+      dispatch(setMyOrdersCurrentPage(1));
+    }
+  }, [isAuthenticated, dispatch]);
 
-      if (response.success && response.data.length > 0) {
-        const mappedData: CryptoData[] = response.data.map((asset: TopAsset) => {
-          const colorScheme = getColorScheme(asset.symbol);
-          return {
-            name: asset.name || asset.symbol,
-            symbol: asset.symbol,
-            icon: getCryptoIcon(asset.symbol),
-            image: asset.image,
-            price: `Vol: ${asset.volume.toFixed(3)}`,
-            volume: asset.volume,
-            transactionCount: asset.transaction_count,
-            rate: `${asset.transaction_count} tx`,
-            ...colorScheme,
-          };
-        });
-        setCryptoData(mappedData);
-      } else {
-        // Set empty array if no data available
-        setCryptoData([]);
+  // Filter data based on time filter
+  const filterDataByTime = (
+    data: TransactionType[],
+    filter: TimeFilter
+  ): TransactionType[] => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    return data.filter((item) => {
+      if (!item.lastUpdate) return false;
+
+      // Parse the date string - handle different formats
+      let itemDate: Date;
+      try {
+        // Try parsing as ISO string first
+        itemDate = new Date(item.lastUpdate);
+
+        // Check if the date is valid
+        if (isNaN(itemDate.getTime())) {
+          return false;
+        }
+      } catch (error) {
+        return false;
       }
-    } catch (error) {
-      console.error("Failed to fetch top assets:", error);
-      // Set empty array on error - no fallback data
-      setCryptoData([]);
-    } finally {
-      setLoading(false);
+
+      switch (filter) {
+        case "Today":
+          return itemDate >= today;
+
+        case "Last Week":
+          const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+          return itemDate >= lastWeek;
+
+        case "Last Month":
+          const lastMonth = new Date(
+            today.getTime() - 30 * 24 * 60 * 60 * 1000
+          );
+          return itemDate >= lastMonth;
+
+        case "Last 6 Months":
+          const last6Months = new Date(
+            today.getTime() - 180 * 24 * 60 * 60 * 1000
+          );
+          return itemDate >= last6Months;
+
+        case "All Time":
+          return true;
+
+        default:
+          return true;
+      }
+    });
+  };
+
+  // Transform orders data - handle both buy_orders and sell_orders from API response
+  const allOrders = [
+    ...(orders?.buy_orders || []),
+    ...(orders?.sell_orders || []),
+  ];
+  
+  const transformedData: TransactionType[] = allOrders.map((order: P2POrder) => ({
+    id: order.id,
+    type: order.order_type,
+    advertiser_email: order.advertiser_email,
+    date: order.created_on,
+    amount: order.amount,
+    status: order.status,
+    asset: order.asset,
+    assetSymbol: order.currency,
+    rate: order.exchange_rate,
+    payment: order.payment_details.map((payment) => ({
+      bank: payment.provider,
+      logo: "",
+    })),
+    username: `${order.advertiser_first_name} ${order.advertiser_last_name}`,
+    limit: `${order.min_order_amount} - ${order.max_order_amount}`,
+    price: order.exchange_rate,
+    commission: order.commission_rate,
+    lastUpdate: order.created_on,
+  }));
+
+  // Apply time filter to transformed data
+  const timeFilteredData = transformedData.filter((item) => {
+    const itemDate = new Date(item.date);
+    const now = new Date();
+    const diffInHours = (now.getTime() - itemDate.getTime()) / (1000 * 60 * 60);
+
+    switch (timeFilter) {
+      case "Today":
+        return diffInHours <= 24;
+      case "Last Week":
+        return diffInHours <= 24 * 7;
+      case "Last Month":
+        return diffInHours <= 24 * 30;
+      case "Last 6 Months":
+        return diffInHours <= 24 * 180;
+      case "All Time":
+        return true;
+      default:
+        return true;
+    }
+  });
+
+  // Apply search filter to time filtered data
+  const filteredData = searchQuery.trim()
+    ? timeFilteredData.filter(
+        (item) =>
+          item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (item.username || "")
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          item.asset.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          String(item.status || "")
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase())
+      )
+    : timeFilteredData;
+
+  // Use filtered data for display, but ensure we're showing the correct data for current page
+  const displayData = searchQuery.trim() ? filteredData : transformedData;
+  // Calculate total pages based on actual count from API
+  const totalOrders = (orders?.buy_pagination?.count || 0) + (orders?.sell_pagination?.count || 0);
+  const pageSize = 10; // Default page size, should match backend
+  const totalPages = Math.ceil(totalOrders / pageSize);
+
+ 
+ 
+
+  // Force re-render when orders data changes
+  useEffect(() => {
+    if (orders?.buy_orders || orders?.sell_orders) {
+      setDataKey((prev) => prev + 1);
+    }
+  }, [orders?.buy_orders, orders?.sell_orders]);
+
+  // Check if data is actually different
+  useEffect(() => {
+    if (orders?.buy_orders || orders?.sell_orders) {
+      const currentDataIds = allOrders
+        .map((item) => item.id)
+        .join(",");
+    }
+  }, [orders?.buy_orders, orders?.sell_orders, dataKey]);
+
+  // Handlers for table functionality
+  const handleExport = (format: "csv" | "pdf") => {
+    if (format === "csv") {
+      // Export as CSV
+      const worksheet = XLSX.utils.json_to_sheet(
+        filteredData.map((item) => ({
+          ID: item.id,
+          Type: item.type,
+          Amount: item.amount,
+          Status: item.status,
+          Asset: item.asset,
+          Date: item.date,
+          Username: item.username,
+          Rate: item.rate,
+          Commission: item.commission,
+        }))
+      );
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
+      XLSX.writeFile(workbook, "p2p_transactions.csv");
+    } else {
+      // Export as PDF
+      const doc = new jsPDF();
+      doc.text("P2P Transactions", 14, 15);
+
+      const tableData = filteredData.map((item) => [
+        String(item.id || ""),
+        String(item.type || ""),
+        String(item.amount || ""),
+        String(item.status || ""),
+        String(item.asset || ""),
+        new Date(item.date || "").toLocaleDateString(),
+        String(item.username || ""),
+      ]);
+
+      autoTable(doc, {
+        head: [["ID", "Type", "Amount", "Status", "Asset", "Date", "Username"]],
+        body: tableData,
+        startY: 25,
+        theme: "grid",
+        styles: {
+          fontSize: 8,
+          cellPadding: 2,
+        },
+        headStyles: {
+          fillColor: [29, 135, 81],
+          textColor: 255,
+        },
+      });
+
+      doc.save("p2p_transactions.pdf");
     }
   };
 
-  if (!isMounted) {
-    return null;
-  }
+  const handlePageChange = (page: number) => {
+    // Clear search when changing pages to avoid confusion
+    if (searchQuery.trim()) {
+      setSearchQuery("");
+    }
+
+    // Only update if the page is actually different
+    if (page !== currentPage) {
+      // Update the current page in Redux store
+      dispatch(setMyOrdersCurrentPage(page));
+      // Fetch data for the new page
+      dispatch(fetchMyOrders(page));
+    }
+  };
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    // Reset to first page when searching
+    if (query.trim() !== searchQuery.trim()) {
+      if (currentPage !== 1) {
+        dispatch(setMyOrdersCurrentPage(1));
+        dispatch(fetchMyOrders(1));
+      }
+    }
+  };
+
+  const handleTimeFilterChange = (filter: TimeFilter) => {
+    setTimeFilter(filter);
+  };
 
   return (
-    <div className="w-full">
-      <h2 className="dark:text-white text-[16px] mb-4">
-        Market Overview {loading && <span className="text-sm text-gray-500">(Loading...)</span>}
-      </h2>
-      {cryptoData.length > 0 ? (
-        <div className="flex flex-row gap-4 overflow-x-auto pb-4">
-          {cryptoData.map((crypto, index) => (
-            <CryptoCard key={`${crypto.symbol}-${index}`} {...crypto} />
-          ))}
-        </div>
-      ) : !loading ? (
-        <div className="">
-        </div>
-      ) : null}
+    <div className="w-full pt-4">
+      <Charts
+        title="P2P Overview (USD)"
+        timeFrame="Month"
+        data={timeFilteredData}
+        onTimeFilterChange={handleTimeFilterChange}
+        selectedTimeFilter={timeFilter}
+        showTimeFilter={true}
+      />
+
+      {/* Orders Table */}
+      <div className="mt-8">
+        {!displayData || displayData.length === 0 ? (
+          <div className="text-center py-12 px-4">
+            <NoDataFound
+              title="No Orders Found"
+              message={
+                searchQuery.trim()
+                  ? `No orders match your search "${searchQuery}" for the selected time period.`
+                  : `There are currently no orders to display for the selected time period.`
+              }
+            />
+            {/* Action buttons */}
+            {searchQuery.trim() && (
+              <div className="flex justify-center mt-4">
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="inline-flex items-center px-4 py-2 border dark:border-[#35353E] border-gray-300 rounded-md shadow-sm text-sm font-medium dark:text-white text-gray-900 dark:bg-[#18181D] bg-gray-100 dark:hover:bg-[#35353E] hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1D8751] transition-colors"
+                >
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                  Clear Search
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <Table
+            key={`p2p-table-${currentPage}-${dataKey}`}
+            type="p2p"
+            title="P2P Orders"
+            data={displayData}
+            loading={loading}
+            error={error}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            onExport={handleExport}
+            onSearch={handleSearch}
+          />
+        )}
+      </div>
     </div>
   );
 };
 
-export default PriceCards;
+export default P2PCharts;

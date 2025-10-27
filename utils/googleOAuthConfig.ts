@@ -32,9 +32,9 @@ export interface GoogleUserInfo {
 export const GOOGLE_OAUTH_CONFIG: GoogleOAuthConfig = {
   clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "866830600136-atu6lg341gn9snr1pkbmjhssebh9luqb.apps.googleusercontent.com",
   clientSecret: process.env.GOOGLE_CLIENT_SECRET || "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",
-  redirectUri: typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
+  redirectUri: typeof window !== 'undefined' ? `${window.location.origin}/auth/google/callback` : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000') + '/auth/google/callback',
   scope: "email profile",
-  uxMode: "popup",
+  uxMode: "redirect", // Changed to redirect for Django Allauth
   flow: "auth-code",
 };
 
@@ -43,15 +43,22 @@ export const GOOGLE_API_ENDPOINTS = {
   auth: "https://accounts.google.com/o/oauth2/v2/auth",
   token: "https://oauth2.googleapis.com/token",
   userInfo: "https://www.googleapis.com/oauth2/v2/userinfo",
-  backendAuth: `${API_CONFIG.BASE_URL}${API_CONFIG.GOOGLE_AUTH.GOOGLE_AUTH}`,
+  // Django Allauth endpoints
+  djangoLogin: `${API_CONFIG.BASE_URL}${API_CONFIG.GOOGLE_AUTH.LOGIN}`,
+  djangoCallback: `${API_CONFIG.BASE_URL}${API_CONFIG.GOOGLE_AUTH.LOGIN_CALLBACK}`,
+  djangoLogout: `${API_CONFIG.BASE_URL}${API_CONFIG.GOOGLE_AUTH.LOGOUT}`,
+  // Profile endpoint to check authentication status
+  profile: `${API_CONFIG.BASE_URL}${API_CONFIG.AUTH.PROFILE}`,
 };
 
 // Debug function to log URL construction
 export const debugGoogleOAuthUrls = () => {
   console.group("Google OAuth URL Debug");  
   console.log("API_CONFIG.BASE_URL:", API_CONFIG.BASE_URL);
-  console.log("API_CONFIG.GOOGLE_AUTH.GOOGLE_AUTH:", API_CONFIG.GOOGLE_AUTH.GOOGLE_AUTH);
-  console.log("Constructed backendAuth URL:", GOOGLE_API_ENDPOINTS.backendAuth);
+  console.log("Django Allauth Login URL:", GOOGLE_API_ENDPOINTS.djangoLogin);
+  console.log("Django Allauth Callback URL:", GOOGLE_API_ENDPOINTS.djangoCallback);
+  console.log("Django Allauth Logout URL:", GOOGLE_API_ENDPOINTS.djangoLogout);
+  console.log("Profile Check URL:", GOOGLE_API_ENDPOINTS.profile);
   console.log("Environment NEXT_PUBLIC_BASE_URL:", process.env.NEXT_PUBLIC_BASE_URL);
   console.groupEnd();
 };

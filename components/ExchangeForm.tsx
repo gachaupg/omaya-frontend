@@ -1,5 +1,5 @@
 import Image from "next/image";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useTheme } from "@/context/theme";
 import { useMarketingI18n } from "@/lib/useMarketingI18n";
 import { useDispatch, useSelector } from "react-redux";
@@ -8,6 +8,7 @@ import { AppDispatch } from "@/store";
 import { fetchAssets } from "@/features/exchange/slices/exchangeSlice";
 import { fetchSupportedAssets, fetchSwapEstimate } from "@/features/swap/slices/swapSlice";
 import { fetchAdminPaymentDetails } from "@/features/exchange/slices/paymentSlice";
+import { fetchPublicPaymentMethods } from "@/features/p2p/slices/paymentMethodsSlice";
 import { useAssetsDisplay, usePaymentMethodsDisplay } from "@/features/express/hooks/useDataDisplay";
 import { FaSearch } from "react-icons/fa";
 import SwapWidget from "@/features/swap/components/SwapWidget";
@@ -302,6 +303,9 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
   const { adminPaymentDetails, loading: paymentLoading } = useSelector(
     (state: any) => state.payment
   );
+  const { publicPaymentMethods, publicMethodsLoading, publicMethodsError } = useSelector(
+    (state: any) => state.paymentMethods
+  );
   const { isAuthenticated } = useSelector((state: any) => state.auth);
 
   /* ------------------- State ------------------- */
@@ -340,32 +344,80 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
     null  // swap error
   );
 
-  const paymentMethodsDisplay = usePaymentMethodsDisplay(
-    adminPaymentDetails,
-    paymentLoading,
-    null
+  // Process payment methods data based on API structure - same logic as RatesCalculator
+  const processedPaymentMethods = useMemo(() => {
+    if (isHomePage) {
+      // Handle new API structure for public payment methods
+      if (publicPaymentMethods?.data?.payment_methods) {
+        return publicPaymentMethods.data.payment_methods;
+      }
+      if (publicPaymentMethods) {
+        return publicPaymentMethods;
+      }
+      return []; // Return empty array if no data yet
+    }
+    return adminPaymentDetails || [];
+  }, [isHomePage, publicPaymentMethods, adminPaymentDetails]);
+
+  // Extract payment method names based on the API structure - same as RatesCalculator
+  const getPaymentMethodName = (item: any) => {
+    // For user payment details (old structure)
+    if (item?.payment_method_name) {
+      return item.payment_method_name;
+    }
+    // For public payment methods (new structure)
+    if (item?.method_name) {
+      return item.method_name;
+    }
+    return null;
+  };
+
+  // Get unique payment methods from processed data
+  const uniquePaymentMethods = Array.from(
+    new Set((processedPaymentMethods || []).map(getPaymentMethodName).filter(Boolean))
+  ).filter(method => method && typeof method === 'string' && method.trim().length > 0) as string[];
+
+  // Add "Bank" as a default option if not already present
+  const validPaymentMethods = uniquePaymentMethods.filter(method => 
+    method && typeof method === 'string' && method.trim().length > 0
   );
+  
+  // Fallback payment methods if data is corrupted or not loaded yet
+  const fallbackPaymentMethods = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
+  
+  // Use API data if available and valid, otherwise use fallback
+  const finalPaymentMethods = useMemo(() => {
+    // If we have valid payment methods from API, use them (with Bank added if not present)
+    if (validPaymentMethods.length > 0) {
+      const methodsWithBank = validPaymentMethods.includes("Bank")
+        ? validPaymentMethods
+        : ["Bank", ...validPaymentMethods];
+      return methodsWithBank;
+    }
+    
+    // Otherwise, use fallback methods
+    console.log("🔍 Using fallback payment methods:", fallbackPaymentMethods);
+    return fallbackPaymentMethods;
+  }, [validPaymentMethods]);
+
+  // Don't use usePaymentMethodsDisplay for string arrays - handle loading state directly
+  const paymentMethodsLoading = isHomePage ? publicMethodsLoading : paymentLoading;
+  const paymentMethodsError = isHomePage ? publicMethodsError : null;
 
   // Debug logging for data display
-  console.log("ExchangeForm Debug:", {
+  console.log("🔍 ExchangeForm Debug:", {
     isHomePage,
     isAuthenticated,
-    assetsLoading,
-    swapAssetsLoading,
-    paymentLoading,
-    assetsCount: assets?.assets?.length || 0,
-    swapAssetsCount: swapAssets?.length || 0,
-    paymentMethodsCount: adminPaymentDetails?.length || 0,
-    assetsDisplay: {
-      shouldShowData: assetsDisplay.shouldShowData,
-      displayDataLength: assetsDisplay.displayData?.length || 0,
-      isLoading: assetsDisplay.isLoading
-    },
-    paymentMethodsDisplay: {
-      shouldShowData: paymentMethodsDisplay.shouldShowData,
-      displayDataLength: paymentMethodsDisplay.displayData?.length || 0,
-      isLoading: paymentMethodsDisplay.isLoading
-    }
+    publicPaymentMethods: publicPaymentMethods,
+    processedPaymentMethods: processedPaymentMethods,
+    uniquePaymentMethods: uniquePaymentMethods,
+    validPaymentMethods: validPaymentMethods,
+    finalPaymentMethods: finalPaymentMethods,
+    publicMethodsLoading: publicMethodsLoading,
+    publicMethodsError: publicMethodsError,
+    paymentMethodsLoading: paymentMethodsLoading,
+    paymentMethodsError: paymentMethodsError,
+    finalPaymentMethodsLength: finalPaymentMethods.length
   });
 
   const presets: Record<Tab, Preset> = {
@@ -421,21 +473,33 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
   }, [dispatch, isHomePage, isAuthenticated]);
 
   useEffect(() => {
-    // Skip API calls on home page if user is not authenticated
-    if (isHomePage && !isAuthenticated) {
-      return;
-    }
-    
     console.log("Fetching payment methods: isHomePage =", isHomePage, "isAuthenticated =", isAuthenticated);
-    // Fetch payment methods
-    dispatch(fetchAdminPaymentDetails(false))
-      .unwrap()
-      .then((result) => {
-        console.log("Payment methods fetched successfully:", result);
-      })
-      .catch((error: unknown) => {
-        console.error("Failed to fetch payment details:", error);
-      });
+    
+    if (isHomePage) {
+      // For home page, use public payment methods (no authentication required)
+      dispatch(fetchPublicPaymentMethods())
+        .unwrap()
+        .then((result) => {
+          console.log("Public payment methods fetched successfully:", result);
+        })
+        .catch((error: unknown) => {
+          console.error("Failed to fetch public payment methods:", error);
+        });
+    } else {
+      // For authenticated pages, use admin payment methods
+      if (!isAuthenticated) {
+        return;
+      }
+      
+      dispatch(fetchAdminPaymentDetails(false))
+        .unwrap()
+        .then((result) => {
+          console.log("Payment methods fetched successfully:", result);
+        })
+        .catch((error: unknown) => {
+          console.error("Failed to fetch payment details:", error);
+        });
+    }
   }, [dispatch, isHomePage, isAuthenticated]);
 
   /* ------------------- Asset Selection ------------------- */
@@ -533,7 +597,7 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
   }, [activeTab]);
 
   /* ------------------- Payment Method Selection ------------------- */
-  const handlePaymentMethodSelect = (paymentMethod: any) => {
+  const handlePaymentMethodSelect = (paymentMethod: string) => {
     setSelectedPaymentMethod(paymentMethod);
     setIsPaymentDropdownOpen(false);
     setPaymentSearchTerm("");
@@ -542,15 +606,15 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
     if (mode === "deposit") {
       // For deposit: payment method -> asset
       setPayCurrency({
-        label: paymentMethod?.provider_name || paymentMethod?.payment_method_name || "Bank",
-        sub: paymentMethod?.payment_method_type || "Payment Method",
+        label: paymentMethod,
+        sub: "Payment Method",
         icon: "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
       });
     } else {
       // For withdrawal: asset -> payment method
       setGetCurrency({
-        label: paymentMethod?.provider_name || paymentMethod?.payment_method_name || "Bank",
-        sub: paymentMethod?.payment_method_type || "Payment Method",
+        label: paymentMethod,
+        sub: "Payment Method",
         icon: "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
       });
     }
@@ -566,8 +630,8 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
       // For deposit: payment method -> asset
       if (selectedPaymentMethod) {
         setPayCurrency({
-          label: selectedPaymentMethod?.provider_name || selectedPaymentMethod?.payment_method_name || "Bank",
-          sub: selectedPaymentMethod?.payment_method_type || "Payment Method",
+          label: selectedPaymentMethod,
+          sub: "Payment Method",
           icon: "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
         });
       } else {
@@ -593,8 +657,8 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
       
       if (selectedPaymentMethod) {
         setGetCurrency({
-          label: selectedPaymentMethod?.provider_name || selectedPaymentMethod?.payment_method_name || "Bank",
-          sub: selectedPaymentMethod?.payment_method_type || "Payment Method",
+          label: selectedPaymentMethod,
+          sub: "Payment Method",
           icon: "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
         });
       } else {
@@ -714,17 +778,22 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
   });
 
   /* ------------------- Payment Method Filtering ------------------- */
-  // Filter payment methods based on search term
-  const filteredPaymentMethods = paymentMethodsDisplay.displayData?.filter((payment: any) => {
-    const providerName = payment?.provider_name?.toUpperCase() || "";
-    const paymentType = payment?.payment_method_type?.toUpperCase() || "";
+  // Filter payment methods based on search term - use finalPaymentMethods
+  const filteredPaymentMethods = finalPaymentMethods.filter((method: string) => {
     const searchTerm = paymentSearchTerm.toUpperCase();
+    return method.toUpperCase().includes(searchTerm);
+  });
 
-    return (
-      providerName.includes(searchTerm) ||
-      paymentType.includes(searchTerm)
-    );
-  }) || [];
+  // Debug filtered payment methods
+  console.log("🔍 Filtered Payment Methods:", {
+    finalPaymentMethods,
+    filteredPaymentMethods,
+    paymentSearchTerm,
+    searchTerm: paymentSearchTerm.toUpperCase(),
+    validPaymentMethods,
+    uniquePaymentMethods,
+    processedPaymentMethods
+  });
 
   /* ------------------- Asset Selection ------------------- */
   const handleAssetSelect = (asset: Asset) => {
@@ -781,19 +850,44 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
 
         {/* Payment Methods List */}
         <div className="max-h-60 overflow-y-auto">
-          {filteredPaymentMethods.length === 0 ? (
-            <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-              {paymentMethodsDisplay.isLoading ? "Loading payment methods..." : "No payment methods found"}
-            </div>
-          ) : (
-            filteredPaymentMethods.map((payment: any, index: number) => (
+          {(() => {
+            console.log("🔍 Dropdown Render Debug:", {
+              isLoading: paymentMethodsLoading,
+              filteredLength: filteredPaymentMethods.length,
+              filteredMethods: filteredPaymentMethods,
+              finalPaymentMethods: finalPaymentMethods,
+              finalPaymentMethodsLength: finalPaymentMethods.length,
+              paymentSearchTerm: paymentSearchTerm
+            });
+            
+            if (paymentMethodsLoading && finalPaymentMethods.length === 0) {
+              return (
+                <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                  Loading payment methods...
+                </div>
+              );
+            }
+            
+            if (filteredPaymentMethods.length === 0) {
+              console.log("🔍 No filtered payment methods - showing empty state");
+              return (
+                <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                  {finalPaymentMethods.length === 0 ? "No payment methods available" : "No payment methods found"}
+                </div>
+              );
+            }
+            
+            console.log("🔍 Rendering payment methods:", filteredPaymentMethods);
+            
+            return (
+            filteredPaymentMethods.map((method: string, index: number) => (
               <div
                 key={index}
                 className={`p-3 hover:bg-gray-50 dark:hover:bg-[#2A2A2A] cursor-pointer border-b border-gray-100 dark:border-[#35353E] last:border-b-0 ${
-                  selectedPayment?.provider_name === payment?.provider_name ? "bg-[#1D8751]/10" : ""
+                  selectedPayment === method ? "bg-[#1D8751]/10" : ""
                 }`}
                 onClick={() => {
-                  onSelect(payment);
+                  onSelect(method);
                 }}
               >
                 <div className="flex items-center gap-3">
@@ -805,20 +899,21 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
                   <div className="flex-1 min-w-0">
                     <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2 flex-wrap">
                       <span className="truncate">
-                        {payment?.provider_name || "Unknown Provider"}
+                        {method}
                       </span>
-                      {selectedPayment?.provider_name === payment?.provider_name && (
+                      {selectedPayment === method && (
                         <span className="text-[#1D8751] text-sm">✓</span>
                       )}
                     </div>
                     <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                      {payment?.payment_method_type || "Payment Method"}
+                      Payment Method
                     </div>
                   </div>
                 </div>
               </div>
             ))
-          )}
+            );
+          })()}
         </div>
       </div>
     );
@@ -932,10 +1027,52 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
                     </span>
                   </div>
                   <div className="text-[#35353e] dark:text-[#788099] text-sm truncate">
-                    {asset.name ||
-                      (asset.ticker || "").toUpperCase() ||
-                      (asset.symbol || "").toUpperCase() ||
-                      "Unknown Asset"}
+                    {(() => {
+                      // Clean up asset name to remove redundant network information
+                      let displayName = asset.name || asset.ticker || asset.symbol || "Unknown Asset";
+                      const originalName = displayName;
+                      
+                      // Remove common redundant patterns - more aggressive approach
+                      displayName = displayName
+                        // Specific patterns first
+                        .replace(/\s*\(Binance Smart Chain\)/gi, '')
+                        .replace(/\s*\(BSC\)/gi, '')
+                        .replace(/\s*\(Ethereum\)/gi, '')
+                        .replace(/\s*\(ETH\)/gi, '')
+                        .replace(/\s*\(Polygon\)/gi, '')
+                        .replace(/\s*\(MATIC\)/gi, '')
+                        .replace(/\s*\(Avalanche\)/gi, '')
+                        .replace(/\s*\(AVAX\)/gi, '')
+                        .replace(/\s*\(TRON\)/gi, '')
+                        .replace(/\s*\(TRX\)/gi, '')
+                        .replace(/\s*\(Solana\)/gi, '')
+                        .replace(/\s*\(SOL\)/gi, '')
+                        .replace(/\s*\(Base\)/gi, '')
+                        .replace(/\s*\(Arbitrum\)/gi, '')
+                        .replace(/\s*\(Optimism\)/gi, '')
+                        // More general patterns
+                        .replace(/\s*\(.*Smart Chain.*\)/gi, '')
+                        .replace(/\s*\(.*Chain.*\)/gi, '')
+                        .replace(/\s*\(.*Network.*\)/gi, '')
+                        .replace(/\s*\(.*Protocol.*\)/gi, '')
+                        // Handle cases like "Tether (Binance Smart Chain) (BSC)"
+                        .replace(/\s*\([^)]*\)\s*\([^)]*\)/gi, '')
+                        .replace(/\s*\([^)]*\)/gi, '')
+                        .trim();
+                      
+                      // Debug logging for all assets to see the pattern
+                      console.log("🔍 Asset name processing:", {
+                        original: originalName,
+                        cleaned: displayName,
+                        assetName: asset.name,
+                        assetTicker: asset.ticker,
+                        assetSymbol: asset.symbol,
+                        assetNetwork: asset.network,
+                        changed: originalName !== displayName
+                      });
+                      
+                      return displayName;
+                    })()}
                   </div>
                 </div>
                 {selectedAsset?.asset_id === asset.asset_id && (
@@ -973,7 +1110,7 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
           </h3>
         </TabButton>
       </div>
-        <SwapWidget isHomePage={isHomePage} />
+        <SwapWidget />
       </div>
     );
   }

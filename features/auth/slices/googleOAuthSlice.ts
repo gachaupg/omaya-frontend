@@ -19,8 +19,7 @@ export interface GoogleOAuthState {
   isAuthenticated: boolean;
   user: GoogleUserInfo | null;
   error: string | null;
-  authCode: string | null;
-  backendResponse: any | null;
+  isRedirecting: boolean;
 }
 
 // Initial state
@@ -29,82 +28,84 @@ const initialState: GoogleOAuthState = {
   isAuthenticated: false,
   user: null,
   error: null,
-  authCode: null,
-  backendResponse: null,
+  isRedirecting: false,
 };
 
-// Async thunk for Google OAuth authentication
-export const authenticateWithGoogle = createAsyncThunk(
-  "googleOAuth/authenticate",
-  async (authCode: string, { rejectWithValue }) => {
-         try {
-       logger.debug('auth', "🔐 Starting Google OAuth authentication...");
-       logger.debug('auth', "📝 Auth Code:", authCode);
-       
-       // Debug URL construction
-       debugGoogleOAuthUrls();
-       
-
-      // Log the Google OAuth response
-
-      const response = await axios.post(
-        GOOGLE_API_ENDPOINTS.backendAuth,
-        {
-          code: authCode,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          timeout: 15000, // 15 second timeout
-        }
-      );
-
-      logger.debug('auth', "✅ Backend response received:", response.data);
+// Async thunk to initiate Google OAuth with Django Allauth
+export const initiateGoogleOAuth = createAsyncThunk(
+  "googleOAuth/initiate",
+  async (_, { rejectWithValue }) => {
+    try {
+      logger.debug('auth', "🔐 Initiating Google OAuth with Django Allauth...");
       
-      // Log the backend response
-      logGoogleOAuthResponse(response.data, "Backend Authentication Response");
-
-      return response.data;
+      // Debug URL construction
+      debugGoogleOAuthUrls();
+      
+      // Redirect to Django Allauth Google login
+      window.location.href = GOOGLE_API_ENDPOINTS.djangoLogin;
+      
+      return { success: true };
     } catch (error: any) {
-      let errorMessage = GOOGLE_OAUTH_ERROR_MESSAGES[GoogleOAuthErrorType.UNKNOWN_ERROR];
-
-      if (error.code === "ERR_NETWORK") {
-        errorMessage = GOOGLE_OAUTH_ERROR_MESSAGES[GoogleOAuthErrorType.NETWORK_ERROR];
-      } else if (error.response?.status === 404) {
-        errorMessage = "Google OAuth endpoint not found. Please check the API configuration.";
-      } else if (error.response?.status === 500) {
-        errorMessage = GOOGLE_OAUTH_ERROR_MESSAGES[GoogleOAuthErrorType.SERVER_ERROR];
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      }
-
-      return rejectWithValue(errorMessage);
+      logger.error('auth', "❌ Failed to initiate Google OAuth:", error);
+      return rejectWithValue("Failed to initiate Google OAuth");
     }
   }
 );
 
-// Async thunk for getting Google user info
-export const getGoogleUserInfo = createAsyncThunk(
-  "googleOAuth/getUserInfo",
-  async (accessToken: string, { rejectWithValue }) => {
+// Async thunk to check authentication status after OAuth callback
+export const checkAuthStatus = createAsyncThunk(
+  "googleOAuth/checkStatus",
+  async (_, { rejectWithValue }) => {
     try {
-      logger.debug('auth', "👤 Fetching Google user info...");
+      logger.debug('auth', "🔍 Checking authentication status...");
       
-      const response = await axios.get(GOOGLE_API_ENDPOINTS.userInfo, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
+      const response = await axios.get(
+        GOOGLE_API_ENDPOINTS.profile,
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          timeout: 10000,
+        }
+      );
 
-      logger.debug('auth', "✅ Google user info received:", response.data);
+      logger.debug('auth', "✅ Profile response received:", response.data);
       
-      // Log the user info
-      logGoogleOAuthResponse(response.data, "Google User Info");
-
-      return response.data;
+      if (response.data && response.data.id) {
+        return {
+          isAuthenticated: true,
+          user: response.data,
+        };
+      } else {
+        return {
+          isAuthenticated: false,
+          user: null,
+        };
+      }
     } catch (error: any) {
-      return rejectWithValue("Failed to get user information from Google");
+      logger.debug('auth', "🔍 User not authenticated or profile check failed");
+      return {
+        isAuthenticated: false,
+        user: null,
+      };
+    }
+  }
+);
+
+// Async thunk to logout
+export const logoutGoogle = createAsyncThunk(
+  "googleOAuth/logout",
+  async (_, { rejectWithValue }) => {
+    try {
+      logger.debug('auth', "🚪 Logging out...");
+      
+      // Redirect to Django Allauth logout
+      window.location.href = GOOGLE_API_ENDPOINTS.djangoLogout;
+      
+      return { success: true };
+    } catch (error: any) {
+      logger.error('auth', "❌ Failed to logout:", error);
+      return rejectWithValue("Failed to logout");
     }
   }
 );
@@ -114,19 +115,6 @@ const googleOAuthSlice = createSlice({
   name: "googleOAuth",
   initialState,
   reducers: {
-    // Set auth code
-    setAuthCode: (state, action: PayloadAction<string>) => {
-      state.authCode = action.payload;
-      state.error = null;
-      logger.debug('auth', "🔑 Auth code set:", action.payload);
-    },
-
-    // Clear auth code
-    clearAuthCode: (state) => {
-      state.authCode = null;
-      logger.debug('auth', "🧹 Auth code cleared");
-    },
-
     // Set error
     setError: (state, action: PayloadAction<string>) => {
       state.error = action.payload;
@@ -145,9 +133,20 @@ const googleOAuthSlice = createSlice({
       state.isAuthenticated = false;
       state.user = null;
       state.error = null;
-      state.authCode = null;
-      state.backendResponse = null;
+      state.isRedirecting = false;
       logger.debug('auth', "🔄 Google OAuth state reset");
+    },
+
+    // Set redirecting state
+    setRedirecting: (state, action: PayloadAction<boolean>) => {
+      state.isRedirecting = action.payload;
+    },
+
+    // Set user data (for when we get it from Django Allauth)
+    setUser: (state, action: PayloadAction<GoogleUserInfo>) => {
+      state.user = action.payload;
+      state.isAuthenticated = true;
+      state.error = null;
     },
 
     // Log Google OAuth response
@@ -156,47 +155,66 @@ const googleOAuthSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // authenticateWithGoogle
-    builder.addCase(authenticateWithGoogle.pending, (state) => {
+    // initiateGoogleOAuth
+    builder.addCase(initiateGoogleOAuth.pending, (state) => {
       state.isLoading = true;
+      state.isRedirecting = true;
       state.error = null;
-      logger.debug('auth', "⏳ Google OAuth authentication started...");
+      logger.debug('auth', "⏳ Initiating Google OAuth...");
     });
 
-    builder.addCase(authenticateWithGoogle.fulfilled, (state, action) => {
+    builder.addCase(initiateGoogleOAuth.fulfilled, (state) => {
       state.isLoading = false;
-      state.isAuthenticated = true;
-      state.backendResponse = action.payload;
-      state.error = null;
-      
-      // If the backend response includes user data, set it
-      if (action.payload.user) {
-        state.user = action.payload.user;
-      }
-      
-      logger.debug('auth', "✅ Google OAuth authentication successful:", action.payload);
+      state.isRedirecting = true; // Keep redirecting true since we're redirecting
+      logger.debug('auth', "✅ Google OAuth initiated, redirecting...");
     });
 
-    builder.addCase(authenticateWithGoogle.rejected, (state, action) => {
+    builder.addCase(initiateGoogleOAuth.rejected, (state, action) => {
       state.isLoading = false;
-      state.isAuthenticated = false;
+      state.isRedirecting = false;
       state.error = action.payload as string;
     });
 
-    // getGoogleUserInfo
-    builder.addCase(getGoogleUserInfo.pending, (state) => {
+    // checkAuthStatus
+    builder.addCase(checkAuthStatus.pending, (state) => {
       state.isLoading = true;
-      logger.debug('auth', "⏳ Fetching Google user info...");
+      state.error = null;
+      logger.debug('auth', "⏳ Checking authentication status...");
     });
 
-    builder.addCase(getGoogleUserInfo.fulfilled, (state, action) => {
+    builder.addCase(checkAuthStatus.fulfilled, (state, action) => {
       state.isLoading = false;
-      state.user = action.payload;
-      logger.debug('auth', "✅ Google user info fetched:", action.payload);
+      state.isAuthenticated = action.payload.isAuthenticated;
+      state.user = action.payload.user;
+      state.isRedirecting = false;
+      logger.debug('auth', "✅ Authentication status checked:", action.payload);
     });
 
-    builder.addCase(getGoogleUserInfo.rejected, (state, action) => {
+    builder.addCase(checkAuthStatus.rejected, (state, action) => {
       state.isLoading = false;
+      state.isAuthenticated = false;
+      state.user = null;
+      state.isRedirecting = false;
+      state.error = action.payload as string;
+    });
+
+    // logoutGoogle
+    builder.addCase(logoutGoogle.pending, (state) => {
+      state.isLoading = true;
+      state.isRedirecting = true;
+      state.error = null;
+      logger.debug('auth', "⏳ Logging out...");
+    });
+
+    builder.addCase(logoutGoogle.fulfilled, (state) => {
+      state.isLoading = false;
+      state.isRedirecting = true; // Keep redirecting true since we're redirecting
+      logger.debug('auth', "✅ Logout initiated, redirecting...");
+    });
+
+    builder.addCase(logoutGoogle.rejected, (state, action) => {
+      state.isLoading = false;
+      state.isRedirecting = false;
       state.error = action.payload as string;
     });
   },
@@ -204,11 +222,11 @@ const googleOAuthSlice = createSlice({
 
 // Export actions
 export const {
-  setAuthCode,
-  clearAuthCode,
   setError,
   clearError,
   resetGoogleOAuth,
+  setRedirecting,
+  setUser,
 } = googleOAuthSlice.actions;
 
 // Export selectors
@@ -217,5 +235,6 @@ export const selectGoogleOAuthLoading = (state: any) => state.googleOAuth.isLoad
 export const selectGoogleOAuthUser = (state: any) => state.googleOAuth.user;
 export const selectGoogleOAuthError = (state: any) => state.googleOAuth.error;
 export const selectGoogleOAuthAuthenticated = (state: any) => state.googleOAuth.isAuthenticated;
+export const selectGoogleOAuthRedirecting = (state: any) => state.googleOAuth.isRedirecting;
 
 export default googleOAuthSlice.reducer;

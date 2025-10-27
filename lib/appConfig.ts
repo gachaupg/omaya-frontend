@@ -34,6 +34,7 @@ export const API_CONFIG = {
     NEWS: "/administration/blogs/news/",
   },
   P2P: {
+    BASE: "/trading_engine/p2p/",
     WALLETS: "api/wallet/wallets/",
     DEPOSITS: "/trading_engine/p2p/deposits/",
     DEPOSIT_ADDRESSES: "/trading_engine/p2p/deposit/addresses/",
@@ -45,6 +46,7 @@ export const API_CONFIG = {
     ASSETS: "/administration/admin/fronted-all-asset-network-range/",
     ADMIN_PAYMENT_DETAILS: "/payments/admin/payment-details/",
     USER_PAYMENT_DETAILS: "/payments/user-payment-details/",
+    PUBLIC_PAYMENT_METHODS: "/payments/public/payment-methods/",
     ORDERS: "/trading_engine/p2p/orders/",
     ALL_ORDERS: "/trading_engine/p2p/all-orders/",
     MY_ORDERS: "/trading_engine/p2p/all-orders/",
@@ -62,7 +64,7 @@ export const API_CONFIG = {
     ALL_TRANSACTIONS: "/trading_engine/all-transactions/",
     USER_TRANSACTIONS: "/trading_engine/transactions/",
     DELETE_ORDER: "/trading_engine/p2p/orders/",
-    TOGGLE_ORDER_STATUS: "/trading_engine/orders/",
+    TOGGLE_ORDER_STATUS: "/trading_engine/p2p/orders/",
     DUPLICATE_ORDER: "/trading_engine/p2p/orders/",
     EDIT_AD: "/trading_engine/p2p/orders/",
     UPDATE_PROFILE: "/api/update/profile/",
@@ -142,7 +144,9 @@ export const API_CONFIG = {
     },
   },
   GOOGLE_AUTH: {
-    GOOGLE_AUTH: "/api/auth/google/",
+    LOGIN: "/accounts/google/login/",
+    LOGIN_CALLBACK: "/accounts/google/login/callback/",
+    LOGOUT: "/accounts/logout/",
   },
   CONTACT: {
     SUBMIT_CONTACT: "/trading_engine/support-requests/create/",

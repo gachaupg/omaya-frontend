@@ -158,7 +158,7 @@ export const fetchAdminPaymentDetails = createAsyncThunk<AdminPaymentDetail[], b
         5 * 60 * 1000 // 5 minutes cache - admin payment details change more frequently
       );
       
-      return response.data;
+      return data;
     } catch (error: any) {
       // If API fails, try to return stale cache data
       try {

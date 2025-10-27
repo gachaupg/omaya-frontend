@@ -30,6 +30,7 @@ import {
   DepositAddressResponse,
   MerchantApplicationStatus,
 } from "./types";
+import { UnreadMessagesResponse } from "./slices/unreadMessagesSlice";
 import { API_CONFIG } from "@/lib/appConfig";
 
 import { logger } from '@/lib/utils/logger';
@@ -201,6 +202,17 @@ export const getAdminPaymentDetails = async (): Promise<P2PResponse> => {
   });
 };
 
+export const getPublicPaymentMethods = async (): Promise<P2PResponse> => {
+  console.log("🌐 API: Calling getPublicPaymentMethods...");
+  return withRetry(async () => {
+    const response = await get<P2PResponse>(
+      API_CONFIG.P2P.PUBLIC_PAYMENT_METHODS
+    );
+    console.log("🌐 API: Public payment methods response:", response.data);
+    return response.data;
+  });
+};
+
 export const addUserPaymentDetail = async (data: {
   account_name: string;
   account_number: string;
@@ -259,10 +271,13 @@ export const getAllP2PBuyandSell = async (
     logger.debug('p2p', "Making API request to:", url);
     const response = await get<P2PMyOrders>(url);
     logger.debug('p2p', "API response for page", page, ":", {
-      count: response.data.count,
-      totalOrders: response.data.results?.total_orders_count,
-      resultsCount: response.data.results?.results?.length,
-      firstOrderId: response.data.results?.results?.[0]?.id,
+      buyOrdersCount: response.data.buy_orders?.length || 0,
+      sellOrdersCount: response.data.sell_orders?.length || 0,
+      totalOrders: (response.data.buy_orders?.length || 0) + (response.data.sell_orders?.length || 0),
+      buyPagination: response.data.buy_pagination,
+      sellPagination: response.data.sell_pagination,
+      firstBuyOrderId: response.data.buy_orders?.[0]?.id,
+      firstSellOrderId: response.data.sell_orders?.[0]?.id,
     });
     return response.data;
   });
@@ -277,10 +292,13 @@ export const getMyP2POrders = async (
     logger.debug('p2p', "Making API request to:", url);
     const response = await get<P2PMyOrders>(url);
     logger.debug('p2p', "API response for My Orders page", page, ":", {
-      count: response.data.count,
-      totalOrders: response.data.results?.total_orders_count,
-      resultsCount: response.data.results?.results?.length,
-      firstOrderId: response.data.results?.results?.[0]?.id,
+      buyOrdersCount: response.data.buy_orders?.length || 0,
+      sellOrdersCount: response.data.sell_orders?.length || 0,
+      totalOrders: (response.data.buy_orders?.length || 0) + (response.data.sell_orders?.length || 0),
+      buyPagination: response.data.buy_pagination,
+      sellPagination: response.data.sell_pagination,
+      firstBuyOrderId: response.data.buy_orders?.[0]?.id,
+      firstSellOrderId: response.data.sell_orders?.[0]?.id,
     });
     return response.data;
   });
@@ -637,6 +655,71 @@ export const getMerchantApplicationStatus = async (): Promise<MerchantApplicatio
     const response = await get<MerchantApplicationStatus>(
       API_CONFIG.P2P.MERCHANT_APPLICATION
     );
+    return response.data;
+  });
+};
+
+// Unread Messages API calls
+export const getUnreadMessages = async (
+  page: number = 1,
+  limit: number = 20
+): Promise<UnreadMessagesResponse> => {
+  return withRetry(async () => {
+    logger.debug("p2p", "Fetching unread messages:", { page, limit });
+    const response = await get<UnreadMessagesResponse>(
+      `${API_CONFIG.P2P.BASE}/messages/unread/?page=${page}&limit=${limit}`
+    );
+    logger.debug("p2p", "Unread messages API response:", {
+      status: response.status,
+      count: response.data.count,
+      resultsCount: response.data.results.length,
+    });
+    return response.data;
+  });
+};
+
+export const markMessageAsRead = async (
+  messageId: string,
+  tradeId: string
+): Promise<P2PResponse> => {
+  return withRetry(async () => {
+    logger.debug("p2p", "Marking message as read:", { messageId, tradeId });
+    const response = await patch<P2PResponse>(
+      `${API_CONFIG.P2P.BASE}/messages/${messageId}/read/`,
+      { trade_id: tradeId }
+    );
+    logger.debug("p2p", "Message marked as read response:", {
+      status: response.status,
+      data: response.data,
+    });
+    return response.data;
+  });
+};
+
+export const markAllMessagesAsRead = async (): Promise<P2PResponse> => {
+  return withRetry(async () => {
+    logger.debug("p2p", "Marking all messages as read");
+    const response = await patch<P2PResponse>(
+      `${API_CONFIG.P2P.BASE}/messages/mark-all-read/`
+    );
+    logger.debug("p2p", "All messages marked as read response:", {
+      status: response.status,
+      data: response.data,
+    });
+    return response.data;
+  });
+};
+
+export const getUnreadMessageCount = async (): Promise<{ count: number }> => {
+  return withRetry(async () => {
+    logger.debug("p2p", "Fetching unread message count");
+    const response = await get<{ count: number }>(
+      `${API_CONFIG.P2P.BASE}/messages/unread-count/`
+    );
+    logger.debug("p2p", "Unread message count response:", {
+      status: response.status,
+      count: response.data.count,
+    });
     return response.data;
   });
 };

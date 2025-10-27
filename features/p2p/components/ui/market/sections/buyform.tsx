@@ -358,7 +358,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
                 {singleOrder?.completion_rate || "99.20"}% Completion
               </div>
               <div className="text-sm text-[#1D8751]">
-                Rating: 99% | Commission: {commissionFromUrl ||singleOrder?.commission_rate}%
+                Rating: 99% | Rate: {commissionFromUrl ||singleOrder?.commission_rate}
               </div>
             </div>
 
@@ -452,12 +452,12 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
             {/* Commission */}
             <div className="flex-1 flex flex-col">
               <div className="mb-1 text-gray-600 dark:text-[#788099] text-[0.95rem] font-medium">
-                Commission
+                Rate
               </div>
               <div className="flex items-center h-[46px] rounded-2xl border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[#35353E] px-2">
                 <span className="text-[#1D8751] text-2xl mr-2">$</span>
                 <span className="text-[#1D8751] text-xl font-semibold">
-                  {commissionFromUrl || singleOrder?.commission_rate}%
+                  {commissionFromUrl || singleOrder?.commission_rate}
                 </span>
                 <span className="ml-auto text-gray-900 dark:text-white text-base font-medium">
                   USD
@@ -733,10 +733,10 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
                   </div>
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-gray-600 dark:text-[#A3A3C2]">
-                      Commission:
+                      Rate:
                     </span>
                     <span className="text-[#1D8751] font-semibold">
-                      {commissionRate}%
+                      {commissionRate}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">

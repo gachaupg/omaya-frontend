@@ -28,6 +28,8 @@ interface FiltersProps {
   }) => void;
   loading?: boolean;
   orderStatusTabs: Array<{ id: string; label: string; count?: number }>;
+  onUnreadMessagesClick?: () => void;
+  showUnreadMessages?: boolean;
 }
 
 /**
@@ -39,7 +41,11 @@ const Filters: React.FC<FiltersProps> = ({
   filters,
   onFilterChange,
   loading = false,
+  onUnreadMessagesClick,
+  showUnreadMessages = false,
 }) => {
+  // Mock unread count for demonstration
+  const totalUnreadCount = 3;
   const handleTypeChange = (value: string) => {
     if (loading) return;
     onFilterChange({ ...filters, type: value });
@@ -92,10 +98,13 @@ const Filters: React.FC<FiltersProps> = ({
 
         {/* unread button */}
         <button
-          className={`w-full sm:w-auto rounded-[24px] flex items-center justify-center gap-2 border border-[#1D8751] text-[#1D8751] px-4 py-2 font-medium text-sm hover:bg-[#1D8751]/10 transition-all bg-transparent ${
+          className={`w-full sm:w-auto rounded-[24px] flex items-center justify-center gap-2 border border-[#1D8751] text-[#1D8751] px-4 py-2 font-medium text-sm hover:bg-[#1D8751]/10 transition-all relative ${
+            showUnreadMessages ? "bg-[#1D8751] text-white" : "bg-transparent"
+          } ${
             loading ? "opacity-50 cursor-not-allowed" : ""
           }`}
           disabled={loading}
+          onClick={onUnreadMessagesClick}
         >
           <svg width="28" height="19" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className="mr-1">
             <rect width="100" height="100" fill="#1A1A1D"/>
@@ -104,7 +113,14 @@ const Filters: React.FC<FiltersProps> = ({
             <rect x="35" y="45" width="40" height="10" fill="#1A1A1D"/>
           </svg>
 
-          <span className="text-[#1D8751]">Unread Message(s)</span>
+          <span className={showUnreadMessages ? "text-white" : "text-[#1D8751]"}>Unread Message(s)</span>
+          
+          {/* Unread count badge */}
+          {totalUnreadCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center min-w-[20px]">
+              {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+            </span>
+          )}
         </button>
       </div>
 

@@ -133,6 +133,8 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
   // Debug logging
   console.log("MyAdsTable - trades:", trades);
   console.log("MyAdsTable - trades length:", trades?.length);
+  console.log("MyAdsTable - paginatedTrades:", paginatedTrades);
+  console.log("MyAdsTable - totalPages:", totalPages);
 
   // Add check for empty trades
   if (!trades || trades.length === 0) {

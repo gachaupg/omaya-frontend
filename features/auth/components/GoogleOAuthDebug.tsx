@@ -21,10 +21,10 @@ const GoogleOAuthDebug: React.FC = () => {
          <div>Authenticated: {googleOAuth.isAuthenticated ? "✅" : "❌"}</div>
          <div>Has User: {googleOAuth.user ? "✅" : "❌"}</div>
          <div>Has Error: {googleOAuth.error ? "❌" : "✅"}</div>
-         <div>Has Auth Code: {googleOAuth.authCode ? "✅" : "❌"}</div>
-         <div className="mt-2 text-blue-400">
-           Backend URL: {GOOGLE_API_ENDPOINTS.backendAuth}
-         </div>
+         <div>Is Redirecting: {googleOAuth.isRedirecting ? "✅" : "❌"}</div>
+          <div className="mt-2 text-blue-400">
+            Backend URL: {GOOGLE_API_ENDPOINTS.djangoLogin}
+          </div>
         {googleOAuth.error && (
           <div className="text-red-400 mt-2">
             Error: {googleOAuth.error}
@@ -34,11 +34,6 @@ const GoogleOAuthDebug: React.FC = () => {
           <div className="mt-2">
             <div>User: {googleOAuth.user.name}</div>
             <div>Email: {googleOAuth.user.email}</div>
-          </div>
-        )}
-        {googleOAuth.authCode && (
-          <div className="mt-2">
-            <div>Auth Code: {googleOAuth.authCode.substring(0, 20)}...</div>
           </div>
         )}
       </div>

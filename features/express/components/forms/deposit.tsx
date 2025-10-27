@@ -6,6 +6,7 @@ import { FaExchangeAlt, FaExclamationCircle } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../../../store";
 import { fetchAdminPaymentDetails } from "../../../exchange/slices/paymentSlice";
+import { fetchPublicPaymentMethods } from "../../../p2p/slices/paymentMethodsSlice";
 import { fetchAssets } from "../../../exchange/slices/exchangeSlice";
 import { createDeposit, updateDepositAddress } from "../../../exchange/slices/exchangeSlice";
 import {
@@ -92,6 +93,9 @@ export default function DepositForm({
   const { adminPaymentDetails, loading, error } = useSelector(
     (state: any) => state.payment
   );
+  const { publicPaymentMethods, publicMethodsLoading, publicMethodsError } = useSelector(
+    (state: any) => state.paymentMethods
+  );
   const { assets, loading: assetsLoading } = useSelector(
     (state: any) => state.exchange
   );
@@ -114,28 +118,106 @@ export default function DepositForm({
   // Use state to hold payment methods - will trigger re-render when updated
   const [stablePaymentMethods, setStablePaymentMethods] = useState<any[]>([]);
 
+  // Use appropriate payment methods data based on isHomePage
+  const paymentMethodsData = isHomePage ? publicPaymentMethods : adminPaymentDetails;
+  const paymentMethodsLoading = isHomePage ? publicMethodsLoading : loading;
+  const paymentMethodsError = isHomePage ? publicMethodsError : error;
+
   const paymentMethodsDisplay = usePaymentMethodsDisplay(
-    adminPaymentDetails,
-    loading,
-    error
+    paymentMethodsData,
+    paymentMethodsLoading,
+    paymentMethodsError
   );
 
   // Update payment methods state ONLY when payment data changes (not when asset changes)
   useEffect(() => {
-    if (adminPaymentDetails && adminPaymentDetails.length > 0) {
-      const activeMethods = adminPaymentDetails.filter((payment: any) => {
-        if (payment.is_active === undefined || payment.is_active === null) return true;
-        return payment.is_active === true || payment.is_active === 'true' || payment.is_active === 1 || payment.is_active === '1';
+    console.log("🔍 DepositForm Payment Methods Debug:", {
+      isHomePage,
+      paymentMethodsData,
+      publicPaymentMethods,
+      adminPaymentDetails,
+      paymentMethodsDataLength: paymentMethodsData?.length || 0
+    });
+
+    if (paymentMethodsData && paymentMethodsData.length > 0) {
+      let activeMethods;
+      
+      if (isHomePage) {
+        // For public payment methods, flatten the structure to match admin format
+        const methods = publicPaymentMethods?.data?.payment_methods || publicPaymentMethods || [];
+        console.log("🔍 Public payment methods structure:", {
+          publicPaymentMethods,
+          methods,
+          methodsLength: methods.length
+        });
+        
+        // Flatten the nested structure: payment_methods -> providers
+        const flattenedMethods: any[] = [];
+        methods.forEach((method: any) => {
+          if (method.providers && method.providers.length > 0) {
+            method.providers.forEach((provider: any) => {
+              flattenedMethods.push({
+                provider_name: provider.provider_name,
+                payment_method: method.method_name,
+                payment_method_type: method.method_name,
+                provider_logo: provider.logo,
+                is_active: true, // All public methods are considered active
+                payment_details: provider.payment_details || []
+              });
+            });
+          }
+        });
+        
+        console.log("🔍 Flattened payment methods:", {
+          flattenedMethods,
+          flattenedLength: flattenedMethods.length
+        });
+        
+        activeMethods = flattenedMethods;
+      } else {
+        // For admin payment methods, use the existing logic
+        activeMethods = paymentMethodsData.filter((payment: any) => {
+          if (payment.is_active === undefined || payment.is_active === null) return true;
+          return payment.is_active === true || payment.is_active === 'true' || payment.is_active === 1 || payment.is_active === '1';
+        });
+      }
+      
+      console.log("🔍 Active methods after filtering:", {
+        activeMethods,
+        activeMethodsLength: activeMethods.length
       });
       
       if (activeMethods.length > 0) {
         setStablePaymentMethods(activeMethods);
       }
+    } else {
+      console.log("🔍 No payment methods data available");
     }
-  }, [adminPaymentDetails]); // ONLY when payment data changes, NOT when asset changes
+  }, [paymentMethodsData, isHomePage, publicPaymentMethods]); // Update when payment data changes
   
   // Use stable state - React will properly render this
   const effectivePaymentMethods = stablePaymentMethods;
+  
+  // Fallback payment methods if no data is available
+  const fallbackPaymentMethods = [
+    { provider_name: "Bank", payment_method: "Bank Transfer", is_active: true },
+    { provider_name: "Crypto", payment_method: "Cryptocurrency", is_active: true },
+    { provider_name: "Forex", payment_method: "Forex", is_active: true },
+    { provider_name: "Mobile", payment_method: "Mobile Money", is_active: true },
+    { provider_name: "Marchant", payment_method: "Marchant", is_active: true }
+  ];
+  
+  // Use fallback if no effective payment methods
+  const finalPaymentMethods = effectivePaymentMethods.length > 0 ? effectivePaymentMethods : fallbackPaymentMethods;
+  
+  console.log("🔍 Effective Payment Methods:", {
+    effectivePaymentMethods,
+    effectivePaymentMethodsLength: effectivePaymentMethods.length,
+    stablePaymentMethods,
+    stablePaymentMethodsLength: stablePaymentMethods.length,
+    finalPaymentMethods,
+    finalPaymentMethodsLength: finalPaymentMethods.length
+  });
 
   const [payAmount, setPayAmount] = useState(100); // Set default amount to $100
   const [payAmountInput, setPayAmountInput] = useState("100"); // String value for input display
@@ -279,6 +361,23 @@ export default function DepositForm({
           .catch((refreshError: unknown) => {
             // Don't show toast error - the UI will handle the loading/error state gracefully
           });
+      });
+  }, [dispatch, isHomePage]);
+
+  // Fetch public payment methods for home page
+  useEffect(() => {
+    if (!isHomePage) {
+      return;
+    }
+    
+    console.log("Fetching public payment methods for home page");
+    dispatch(fetchPublicPaymentMethods())
+      .unwrap()
+      .then((result) => {
+        console.log("Public payment methods fetched successfully:", result);
+      })
+      .catch((error: unknown) => {
+        console.error("Failed to fetch public payment methods:", error);
       });
   }, [dispatch, isHomePage]);
 
@@ -1940,14 +2039,14 @@ export default function DepositForm({
              
               <div className="relative">
                 <CustomSelect
-                  options={(effectivePaymentMethods || []).map((payment: any, index: number) => ({
+                  options={(finalPaymentMethods || []).map((payment: any, index: number) => ({
                     value: payment.provider_name,
                     label: `${payment.provider_name} - ${payment.payment_method || payment.payment_method_type || payment.payment_type}`,
                     logo: payment.provider_logo || undefined,
                   }))}
                   value={payBank}
                   onChange={(value) => {
-                    const selectedPayment = effectivePaymentMethods?.find(
+                    const selectedPayment = finalPaymentMethods?.find(
                       (payment: any) => payment.provider_name === value
                     );
                     
@@ -1955,14 +2054,14 @@ export default function DepositForm({
                     setSelectedPaymentDetail(selectedPayment || null);
                   }}
                   placeholder={
-                    paymentMethodsDisplay.isLoading && effectivePaymentMethods.length === 0
+                    paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0
                       ? "Loading payment methods..."
-                      : effectivePaymentMethods && effectivePaymentMethods.length > 0
+                      : finalPaymentMethods && finalPaymentMethods.length > 0
                         ? "Select Payment Method"
                         : "No payment methods available"
                   }
-                  disabled={paymentMethodsDisplay.isLoading && effectivePaymentMethods.length === 0}
-                  loading={paymentMethodsDisplay.isLoading && effectivePaymentMethods.length === 0}
+                  disabled={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
+                  loading={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
                   loadingText="Loading payment methods..."
                   emptyText="No payment methods available"
                   searchable={true}
@@ -2287,10 +2386,31 @@ export default function DepositForm({
                                       </span>
                                     </div>
                                     <div className="text-[#35353e] dark:text-[#788099] text-sm">
-                                      {asset.name ||
-                                        (asset.ticker || "").toUpperCase() ||
-                                        (asset.symbol || "").toUpperCase() ||
-                                        "Unknown Asset"}
+                                      {(() => {
+                                        // Clean up asset name to remove redundant network information
+                                        let displayName = asset.name || asset.ticker || asset.symbol || "Unknown Asset";
+                                        
+                                        // Remove common redundant patterns
+                                        displayName = displayName
+                                          .replace(/\s*\(Binance Smart Chain\)/gi, '')
+                                          .replace(/\s*\(BSC\)/gi, '')
+                                          .replace(/\s*\(Ethereum\)/gi, '')
+                                          .replace(/\s*\(ETH\)/gi, '')
+                                          .replace(/\s*\(Polygon\)/gi, '')
+                                          .replace(/\s*\(MATIC\)/gi, '')
+                                          .replace(/\s*\(Avalanche\)/gi, '')
+                                          .replace(/\s*\(AVAX\)/gi, '')
+                                          .replace(/\s*\(TRON\)/gi, '')
+                                          .replace(/\s*\(TRX\)/gi, '')
+                                          .replace(/\s*\(Solana\)/gi, '')
+                                          .replace(/\s*\(SOL\)/gi, '')
+                                          .replace(/\s*\(Base\)/gi, '')
+                                          .replace(/\s*\(Arbitrum\)/gi, '')
+                                          .replace(/\s*\(Optimism\)/gi, '')
+                                          .trim();
+                                        
+                                        return displayName;
+                                      })()}
                                     </div>
                                   </div>
                                   {selectedAsset?.asset_id === asset.asset_id && (
@@ -2347,10 +2467,31 @@ export default function DepositForm({
                                 </span>
                               </div>
                               <div className="text-[#35353e] dark:text-[#788099] text-sm">
-                                {asset.name ||
-                                  (asset.ticker || "").toUpperCase() ||
-                                  (asset.symbol || "").toUpperCase() ||
-                                  "Unknown Asset"}
+                                {(() => {
+                                  // Clean up asset name to remove redundant network information
+                                  let displayName = asset.name || asset.ticker || asset.symbol || "Unknown Asset";
+                                  
+                                  // Remove common redundant patterns
+                                  displayName = displayName
+                                    .replace(/\s*\(Binance Smart Chain\)/gi, '')
+                                    .replace(/\s*\(BSC\)/gi, '')
+                                    .replace(/\s*\(Ethereum\)/gi, '')
+                                    .replace(/\s*\(ETH\)/gi, '')
+                                    .replace(/\s*\(Polygon\)/gi, '')
+                                    .replace(/\s*\(MATIC\)/gi, '')
+                                    .replace(/\s*\(Avalanche\)/gi, '')
+                                    .replace(/\s*\(AVAX\)/gi, '')
+                                    .replace(/\s*\(TRON\)/gi, '')
+                                    .replace(/\s*\(TRX\)/gi, '')
+                                    .replace(/\s*\(Solana\)/gi, '')
+                                    .replace(/\s*\(SOL\)/gi, '')
+                                    .replace(/\s*\(Base\)/gi, '')
+                                    .replace(/\s*\(Arbitrum\)/gi, '')
+                                    .replace(/\s*\(Optimism\)/gi, '')
+                                    .trim();
+                                  
+                                  return displayName;
+                                })()}
                               </div>
                             </div>
                             {selectedAsset?.asset_id === asset.asset_id && (

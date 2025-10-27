@@ -18,12 +18,21 @@ interface P2PBuySellState {
 
 const initialState: P2PBuySellState = {
   orders: {
-    count: 0,
-    next: null,
-    previous: null,
-    results: {
-      total_orders_count: 0,
-      results: [],
+    buy_orders: [],
+    sell_orders: [],
+    buy_pagination: {
+      count: 0,
+      next: null,
+      previous: null,
+      current_page: 1,
+      total_pages: 1,
+    },
+    sell_pagination: {
+      count: 0,
+      next: null,
+      previous: null,
+      current_page: 1,
+      total_pages: 1,
     },
   },
   loading: false,
@@ -44,8 +53,11 @@ export const p2pBuyandSell = createAsyncThunk<
       page,
       "with data:",
       {
-        count: response.count,
-        resultsCount: response.results?.results?.length,
+        buyOrdersCount: response.buy_orders?.length || 0,
+        sellOrdersCount: response.sell_orders?.length || 0,
+        totalOrders: (response.buy_orders?.length || 0) + (response.sell_orders?.length || 0),
+        buyPagination: response.buy_pagination,
+        sellPagination: response.sell_pagination,
       }
     );
     return response;
@@ -88,8 +100,9 @@ const p2pBuySellSlice = createSlice({
       })
       .addCase(p2pBuyandSell.fulfilled, (state, action) => {
         logger.debug('p2p', "p2pBuyandSell.fulfilled with data:", {
-          count: action.payload.count,
-          resultsCount: action.payload.results?.results?.length,
+          buyOrdersCount: action.payload.buy_orders?.length || 0,
+          sellOrdersCount: action.payload.sell_orders?.length || 0,
+          totalOrders: (action.payload.buy_orders?.length || 0) + (action.payload.sell_orders?.length || 0),
           currentPage: state.currentPage,
         });
         state.loading = false;
