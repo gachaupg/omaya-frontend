@@ -20,78 +20,43 @@ import { toNumber } from "lodash";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "../../../../store";
 
-import { logger } from '@/lib/utils/logger';
-
 const P2PDashboard = () => {
   const [isOpenForm, setIsOpenForm] = useState("");
   const dispatch = useDispatch<AppDispatch>();
   const { data: wallets } = useSelector((state: RootState) => state.wallets);
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-
-  // ✅ Data fetching moved to P2PDataProvider (parent component)
-  // This eliminates duplicate API calls and improves performance
-  // The data is now fetched once at the P2PLayout level
-  // useEffect(() => {
-  //   if (isAuthenticated) {
-  //     dispatch(fetchWallets());
-  //     dispatch(fetchMatchedTrades(1));
-  //     dispatch(fetchTransactionSummary())
-  //   }
-  // }, [dispatch, isAuthenticated]);
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(fetchWallets());
+      dispatch(fetchMatchedTrades(1));
+      dispatch(fetchTransactionSummary())
+    }
+  }, [dispatch, isAuthenticated]);
 
   // Get balance from wallet response - try multiple sources
-  const totalBalance = wallets?.total_balance
-    ? toNumber(wallets.total_balance)
-    : 0;
-  const walletBalance = wallets?.wallet?.balance
-    ? parseFloat(wallets.wallet.balance)
-    : 0;
-
+  const totalBalance = wallets?.total_balance ? toNumber(wallets.total_balance) : 0;
+  const walletBalance = wallets?.wallet?.balance ? parseFloat(wallets.wallet.balance) : 0;
+  
   // For USDT wallets, prioritize the individual wallet balance
   // This handles cases where total_balance might not be accurate
   const isUSDTWallet = wallets?.wallet?.currency === "USDT";
-  const balance =
-    isUSDTWallet && walletBalance > 0
-      ? walletBalance
-      : totalBalance && !isNaN(totalBalance) && totalBalance > 0
-        ? totalBalance
-        : walletBalance;
-
-  // Debug logging for balance
-  logger.debug('p2p', "P2PDashboard - wallets:", wallets);
-  logger.debug('p2p', "P2PDashboard - total_balance:", wallets?.total_balance);
-  logger.debug('p2p', "P2PDashboard - wallet.balance:", wallets?.wallet?.balance);
-  logger.debug('p2p', "P2PDashboard - wallet.currency:", wallets?.wallet?.currency);
-  logger.debug('p2p', "P2PDashboard - totalBalance (toNumber):", totalBalance);
-  logger.debug('p2p', "P2PDashboard - walletBalance (parseFloat):", walletBalance);
-  logger.debug('p2p', "P2PDashboard - isUSDTWallet:", isUSDTWallet);
-  logger.debug('p2p', "P2PDashboard - final calculated balance:", balance);
-
+  const balance = isUSDTWallet && walletBalance > 0 ? walletBalance : 
+                  (totalBalance && !isNaN(totalBalance) && totalBalance > 0) ? totalBalance : walletBalance;
+  
   return (
     <div className="flex flex-col gap-4">
       <UserCard />
       <div className="flex flex-col lg:flex-row  gap-4">
-        {isOpenForm === "deposit" || isOpenForm === "withdraw" ? (
+        {(isOpenForm === "deposit" || isOpenForm === "withdraw") ? (
           <div className="w-full">
             <P2pWallet isOpenForm={isOpenForm} setIsOpenForm={setIsOpenForm} />
-            {isOpenForm === "deposit" && (
-              <Express
-                mode="deposit"
-                balance={balance}
-                skipAmountValidation={true}
-              />
-            )}
-            {isOpenForm === "withdraw" && (
-              <Express balance={balance} mode="withdrawal" />
-            )}
+            {isOpenForm === "deposit" && <Express mode="deposit" balance={balance} skipAmountValidation={true} />}
+            {isOpenForm === "withdraw" && <Express balance={balance} mode="withdrawal" />}
           </div>
         ) : (
           <>
             <div className="w-full lg:w-[70%] lg:flex-1">
-              <P2pWallet
-                isOpenForm={isOpenForm}
-                setIsOpenForm={setIsOpenForm}
-              />
+              <P2pWallet isOpenForm={isOpenForm} setIsOpenForm={setIsOpenForm} />
               {isOpenForm === "" && (
                 <>
                   {" "}

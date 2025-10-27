@@ -40,6 +40,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const dropdownId = `custom-select-${Math.random().toString(36).substr(2, 9)}`;
 
   // Filter options based on search term
   const filteredOptions = options.filter((option) =>
@@ -117,6 +118,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         `}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
+        aria-controls={dropdownId}
         role="combobox"
       >
         <div className="flex items-center justify-between">
@@ -156,7 +158,11 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
 
       {/* Dropdown Options */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg max-h-60 overflow-hidden">
+        <div 
+          id={dropdownId}
+          className="absolute z-50 w-full mt-1 bg-white dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg max-h-60 overflow-hidden"
+          role="listbox"
+        >
           {/* Search Input */}
           {searchable && (
             <div className="p-2 border-b border-gray-200 dark:border-gray-600">

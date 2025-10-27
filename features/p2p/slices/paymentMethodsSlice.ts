@@ -4,6 +4,7 @@ import {
   addUserPaymentDetail,
   getUserPaymentDetails,
   deletePaymentMethod,
+  getPublicPaymentMethods,
 } from "../api";
 
 export const fetchAdminPaymentMethods = createAsyncThunk(
@@ -13,6 +14,17 @@ export const fetchAdminPaymentMethods = createAsyncThunk(
       return await getAdminPaymentDetails();
     } catch (err: any) {
       return rejectWithValue(err.message || "Failed to fetch payment methods");
+    }
+  }
+);
+
+export const fetchPublicPaymentMethods = createAsyncThunk(
+  "paymentMethods/fetchPublicPaymentMethods",
+  async (_, { rejectWithValue }) => {
+    try {
+      return await getPublicPaymentMethods();
+    } catch (err: any) {
+      return rejectWithValue(err.message || "Failed to fetch public payment methods");
     }
   }
 );
@@ -67,6 +79,7 @@ const paymentMethodsSlice = createSlice({
   name: "paymentMethods",
   initialState: {
     adminMethods: [],
+    publicPaymentMethods: [],
     userPaymentDetails: [],
     loading: false,
     error: null,
@@ -77,6 +90,8 @@ const paymentMethodsSlice = createSlice({
     userDetailsError: null,
     deleteLoading: false,
     deleteError: null,
+    publicMethodsLoading: false,
+    publicMethodsError: null,
   } as any,
   reducers: {
     clearPostStatus(state) {
@@ -135,6 +150,19 @@ const paymentMethodsSlice = createSlice({
       .addCase(deleteUserPaymentDetail.rejected, (state, action) => {
         state.deleteLoading = false;
         state.deleteError = action.payload;
+      })
+      .addCase(fetchPublicPaymentMethods.pending, (state) => {
+        state.publicMethodsLoading = true;
+        state.publicMethodsError = null;
+      })
+      .addCase(fetchPublicPaymentMethods.fulfilled, (state, action) => {
+        state.publicMethodsLoading = false;
+        state.publicPaymentMethods = action.payload;
+        console.log("🎯 Redux: Public payment methods stored:", action.payload);
+      })
+      .addCase(fetchPublicPaymentMethods.rejected, (state, action) => {
+        state.publicMethodsLoading = false;
+        state.publicMethodsError = action.payload;
       });
   },
 });

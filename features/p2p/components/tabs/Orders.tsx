@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo, memo } from "react";
 import Filters from "../ui/orders/Filters";
 import OrdersTransactions from "../ui/orders/OrdersTransactions";
+import UnreadMessages from "../ui/orders/UnreadMessages";
 import { fetchUserTrades } from "../../slices/userTradesSlice";
 import { TransactionType } from "../../types";
 import { setCurrentPage } from "../../slices/userTradesSlice";
@@ -28,6 +29,9 @@ const Orders = memo(() => {
     currency: "usdt",
   });
 
+  // State for unread messages view
+  const [showUnreadMessages, setShowUnreadMessages] = useState(false);
+
   // Memoize the fetch function to prevent unnecessary re-renders
   const fetchTrades = useCallback(() => {
     if (isAuthenticated) {
@@ -49,6 +53,14 @@ const Orders = memo(() => {
   const handleFilterChange = (newFilters: typeof filters) => {
     setFilters(newFilters);
     dispatch(setCurrentPage(1)); // Reset to first page when filters change
+  };
+
+  const handleUnreadMessagesClick = () => {
+    setShowUnreadMessages(!showUnreadMessages);
+  };
+
+  const handleBackToOrders = () => {
+    setShowUnreadMessages(false);
   };
 
   // Use memoized selector for status counts
@@ -163,17 +175,25 @@ const Orders = memo(() => {
         onFilterChange={handleFilterChange}
         loading={loading}
         orderStatusTabs={orderStatusTabs}
+        onUnreadMessagesClick={handleUnreadMessagesClick}
+        showUnreadMessages={showUnreadMessages}
       />
       <div className="flex flex-col w-full">
-      <OrdersTransactions
-        transformedData={transformedData}
-        loading={loading}
-        error={error}
-        currentPage={currentPage}
-        handlePageChange={handlePageChange}
-        trades={trades}
-        currentUserEmail={user?.email || ""}
-      />
+        {showUnreadMessages ? (
+          <UnreadMessages
+            loading={loading}
+            onBackToOrders={handleBackToOrders}
+          />
+        ) : (
+          <OrdersTransactions
+            transformedData={transformedData}
+            loading={loading}
+            error={error}
+            currentPage={currentPage}
+            handlePageChange={handlePageChange}
+            trades={trades}
+          />
+        )}
       </div>
     </div>
   );

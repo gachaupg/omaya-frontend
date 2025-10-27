@@ -492,9 +492,17 @@ export default function RegistrationPage() {
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState("SO"); // Default to Somalia
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  const [countrySearchTerm, setCountrySearchTerm] = useState("");
 
   // Facebook login state
   const [profile, setProfile] = useState<any>(null);
+
+  // Filter countries based on search term
+  const filteredCountries = countries.filter(country =>
+    country.name.toLowerCase().includes(countrySearchTerm.toLowerCase()) ||
+    country.code.toLowerCase().includes(countrySearchTerm.toLowerCase()) ||
+    country.dialCode.includes(countrySearchTerm)
+  );
 
   // Close dropdown when clicking outside
   React.useEffect(() => {
@@ -502,6 +510,7 @@ export default function RegistrationPage() {
       const target = event.target as HTMLElement;
       if (showCountryDropdown && !target.closest('.country-dropdown-container')) {
         setShowCountryDropdown(false);
+        setCountrySearchTerm(""); // Clear search when closing
       }
     };
 
@@ -1008,29 +1017,82 @@ export default function RegistrationPage() {
                     
                     {/* Custom Dropdown */}
                     {showCountryDropdown && (
-                      <div className="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto dark:bg-[#1D1D23] bg-white border dark:border-gray-700 border-gray-300 rounded-lg shadow-lg">
-                        {countries.map((country) => (
-                          <button
-                            key={country.code}
-                            type="button"
-                            onClick={() => {
-                              setSelectedCountry(country.code);
-                              setShowCountryDropdown(false);
-                            }}
-                            className="w-full px-4 py-2 text-left hover:bg-[#13B562] hover:bg-opacity-10 flex items-center dark:text-white text-gray-900"
-                          >
-                            <img
-                              src={`https://flagcdn.com/16x12/${country.code.toLowerCase()}.png`}
-                              alt={`${country.code} flag`}
-                              className="w-4 h-3 object-cover rounded-sm mr-2"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                              }}
+                      <div className="absolute z-50 w-80 mt-1 max-h-80 overflow-hidden dark:bg-[#1D1D23] bg-white border dark:border-gray-700 border-gray-300 rounded-lg shadow-lg">
+                        {/* Search Input */}
+                        <div className="p-3 border-b dark:border-gray-700 border-gray-300">
+                          <div className="relative">
+                            <input
+                              type="text"
+                              placeholder="Search countries..."
+                              value={countrySearchTerm}
+                              onChange={(e) => setCountrySearchTerm(e.target.value)}
+                              className="w-full py-2 px-3 pl-9 rounded-md dark:bg-[#2A2A30] bg-gray-50 border dark:border-gray-600 border-gray-300 dark:text-white text-gray-900 focus:outline-none focus:border-[#13B562] text-sm"
+                              autoFocus
                             />
-                            <span className="mr-2">{country.code}</span>
-                            <span className="text-[#788099] text-sm">({country.name})</span>
-                          </button>
-                        ))}
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 20 20"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  d="M9 17C13.4183 17 17 13.4183 17 9C17 4.58172 13.4183 1 9 1C4.58172 1 1 4.58172 1 9C1 13.4183 4.58172 17 9 17Z"
+                                  stroke="#788099"
+                                  strokeWidth="1.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                                <path
+                                  d="M19 19L14.65 14.65"
+                                  stroke="#788099"
+                                  strokeWidth="1.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Countries List */}
+                        <div className="max-h-60 overflow-y-auto">
+                          {filteredCountries.length > 0 ? (
+                            filteredCountries.map((country) => (
+                              <button
+                                key={country.code}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedCountry(country.code);
+                                  setShowCountryDropdown(false);
+                                  setCountrySearchTerm("");
+                                }}
+                                className="w-full px-4 py-3 text-left hover:bg-[#13B562] hover:bg-opacity-10 flex items-center dark:text-white text-gray-900 border-b dark:border-gray-700 border-gray-200 last:border-b-0"
+                              >
+                                <img
+                                  src={`https://flagcdn.com/16x12/${country.code.toLowerCase()}.png`}
+                                  alt={`${country.code} flag`}
+                                  className="w-4 h-3 object-cover rounded-sm mr-3"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                                <div className="flex-1">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-medium">{country.name}</span>
+                                    <span className="text-[#788099] text-sm">{country.dialCode}</span>
+                                  </div>
+                                  <div className="text-[#788099] text-xs">{country.code}</div>
+                                </div>
+                              </button>
+                            ))
+                          ) : (
+                            <div className="px-4 py-3 text-center text-[#788099] text-sm">
+                              No countries found
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>

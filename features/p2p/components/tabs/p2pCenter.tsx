@@ -66,10 +66,16 @@ const P2PCenter: React.FC = () => {
 
   // Transform the "My Orders" data
   const transformedMyOrders = useMemo(() => {
-    // My orders come in a different structure: { count, next, previous, results: { total_orders_count, results: [] } }
-    const ordersArray = (myOrders as any)?.results?.results || [];
+    // My orders come in the structure: { buy_orders: [], sell_orders: [], buy_pagination: {}, sell_pagination: {} }
+    console.log("P2PCenter - myOrders raw data:", myOrders);
+    const buyOrders = (myOrders as any)?.buy_orders || [];
+    const sellOrders = (myOrders as any)?.sell_orders || [];
+    const allOrders = [...buyOrders, ...sellOrders];
+    console.log("P2PCenter - buyOrders:", buyOrders);
+    console.log("P2PCenter - sellOrders:", sellOrders);
+    console.log("P2PCenter - allOrders:", allOrders);
 
-    return ordersArray.map((trade: any) => ({
+    const transformed = allOrders.map((trade: any) => ({
       ...trade,
       assetSymbol: trade.currency,
       assetImage:
@@ -86,6 +92,9 @@ const P2PCenter: React.FC = () => {
       provider_logo: trade.payment_details?.[0]?.provider_logo,
       lastUpdate: new Date(trade.created_on).toLocaleString(),
     }));
+    
+    console.log("P2PCenter - transformedMyOrders:", transformed);
+    return transformed;
   }, [myOrders]);
 
   return (

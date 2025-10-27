@@ -26,6 +26,7 @@ export interface MarketRow {
     payment_method: string;
     account_name: string;
     account_number: string;
+    provider_logo: string;
   }>;
 }
 

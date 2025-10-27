@@ -202,6 +202,7 @@ interface MarketRow {
     payment_method: string;
     account_name: string;
     account_number: string;
+    provider_logo: string;
   }>;
 }
 
@@ -379,7 +380,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
             order.completion_time || "00:00:00"
           ),
           online: true,
-          commission: `${order.commission_rate || 0}%`,
+          commission: `${order.commission_rate || 0}`,
           available: `${parseFloat(order.amount || 0).toFixed(2)} ${order.currency}`,
           limit: `${parseFloat(order.min_order_amount || 0).toFixed(
             2

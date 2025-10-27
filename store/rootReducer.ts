@@ -41,6 +41,7 @@ import merchantReducer from "@/features/p2p/slices/merchantSlice";
 import expressTransactionReducer from "@/features/express/slices/transactionSlice";
 import forexReducer from "@/features/express/slices/forexSlice";
 import statisticsReducer from "@/features/marketing/slices/statisticsSlice";
+import unreadMessagesReducer from "@/features/p2p/slices/unreadMessagesSlice";
 
 const rootReducer = combineReducers({
   deposits: depositReducer,
@@ -78,6 +79,7 @@ const rootReducer = combineReducers({
   expressTransaction: expressTransactionReducer,
   forex: forexReducer,
   statistics: statisticsReducer,
+  unreadMessages: unreadMessagesReducer,
   // Add other reducers here
 });
 

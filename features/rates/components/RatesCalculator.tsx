@@ -14,7 +14,7 @@ import {
   fetchSupportedAssets,
   fetchSwapEstimate,
 } from "../../swap/slices/swapSlice";
-import { fetchUserPaymentDetails } from "../../p2p/slices/paymentMethodsSlice";
+import { fetchUserPaymentDetails, fetchPublicPaymentMethods } from "../../p2p/slices/paymentMethodsSlice";
 import { createExpressWithdrawal } from "../../express/api";
 import { Asset, DepositResponse } from "../../exchange/types";
 import { SupportedAsset } from "../../swap/types";
@@ -158,8 +158,14 @@ const RatesCalculator = () => {
     swapAssetsError
   );
 
-  const { userPaymentDetails, userDetailsLoading, userDetailsError } =
-    useSelector((state: RootState) => state.paymentMethods);
+  const { 
+    userPaymentDetails, 
+    userDetailsLoading, 
+    userDetailsError,
+    publicPaymentMethods,
+    publicMethodsLoading,
+    publicMethodsError
+  } = useSelector((state: RootState) => state.paymentMethods);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const methodDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -211,6 +217,9 @@ const RatesCalculator = () => {
 
     // Fetch user payment details
     dispatch(fetchUserPaymentDetails());
+    
+    // Fetch public payment methods (for non-authenticated users)
+    dispatch(fetchPublicPaymentMethods());
   }, [dispatch]);
 
   useEffect(() => {
@@ -732,27 +741,69 @@ const RatesCalculator = () => {
     }
   };
 
-  // Get unique payment methods from userPaymentDetails
+  // Get unique payment methods from userPaymentDetails or public payment methods
+  // Ensure we always have an array to work with
+  // Handle potential API response wrappers
+  const userPaymentArray = Array.isArray(userPaymentDetails) 
+    ? userPaymentDetails 
+    : Array.isArray(userPaymentDetails?.data) 
+      ? userPaymentDetails.data 
+      : [];
+      
+  // Handle the new API response structure for public payment methods
+  const publicPaymentArray = Array.isArray(publicPaymentMethods) 
+    ? publicPaymentMethods 
+    : Array.isArray(publicPaymentMethods?.data?.payment_methods) 
+      ? publicPaymentMethods.data.payment_methods 
+      : Array.isArray(publicPaymentMethods?.data) 
+        ? publicPaymentMethods.data 
+        : [];
+  
+  // Extract payment method names based on the API structure
+  const getPaymentMethodName = (item: any) => {
+    // For user payment details (old structure)
+    if (item?.payment_method_name) {
+      return item.payment_method_name;
+    }
+    // For public payment methods (new structure)
+    if (item?.method_name) {
+      return item.method_name;
+    }
+    return null;
+  };
+
+  const availablePaymentMethods = userPaymentArray.length > 0 
+    ? userPaymentArray 
+    : publicPaymentArray;
+  
+  // Debug logging
+  console.log("RatesCalculator Debug:", {
+    userPaymentDetails: userPaymentDetails,
+    publicPaymentMethods: publicPaymentMethods,
+    userPaymentArray: userPaymentArray.length,
+    publicPaymentArray: publicPaymentArray.length,
+    availablePaymentMethods: availablePaymentMethods.length,
+    isArray: Array.isArray(availablePaymentMethods),
+    firstItem: availablePaymentMethods[0],
+    paymentMethodNames: availablePaymentMethods.map(getPaymentMethodName)
+  });
+
   const uniquePaymentMethods = Array.from(
-    new Set(userPaymentDetails.map((detail: any) => detail.payment_method_name))
-  ) as string[];
+    new Set(availablePaymentMethods.map(getPaymentMethodName).filter(Boolean))
+  ).filter(method => method && typeof method === 'string' && method.trim().length > 0) as string[];
 
   // Filter user payment details based on selected payment method (for withdrawal mode)
   const filteredUserPaymentDetails = selectedPaymentMethod
-    ? (userPaymentDetails || []).filter(
-        (detail: any) => detail.payment_method_name === selectedPaymentMethod
+    ? availablePaymentMethods.filter(
+        (detail: any) => getPaymentMethodName(detail) === selectedPaymentMethod
       )
     : [];
 
   // Enhanced filtering with fallback options
   const enhancedFilteredUserPaymentDetails = selectedPaymentMethod
-    ? (userPaymentDetails || []).filter((detail: any) => {
+    ? availablePaymentMethods.filter((detail: any) => {
         // Try multiple possible field names for payment method
-        const paymentMethodName =
-          detail.payment_method_name ||
-          detail.payment_provider_name ||
-          detail.provider_name ||
-          detail.payment_provider;
+        const paymentMethodName = getPaymentMethodName(detail);
 
         return paymentMethodName === selectedPaymentMethod;
       })
@@ -773,9 +824,27 @@ const RatesCalculator = () => {
   }, [isDepositMode, selectedPaymentMethod, enhancedFilteredUserPaymentDetails, selectedPaymentDetail]);
 
   // Add "Bank" as a default option if not already present
-  const allPaymentMethods = uniquePaymentMethods.includes("Bank")
-    ? uniquePaymentMethods
-    : ["Bank", ...uniquePaymentMethods];
+  // Ensure all payment methods are valid strings
+  const validPaymentMethods = uniquePaymentMethods.filter(method => 
+    method && typeof method === 'string' && method.trim().length > 0
+  );
+  
+  const allPaymentMethods = validPaymentMethods.includes("Bank")
+    ? validPaymentMethods
+    : ["Bank", ...validPaymentMethods];
+    
+  // Debug final payment methods
+  console.log("Final Payment Methods:", {
+    uniquePaymentMethods,
+    validPaymentMethods,
+    allPaymentMethods
+  });
+  
+  // Fallback payment methods if data is corrupted
+  const fallbackPaymentMethods = ["Bank Transfer", "Mobile Money", "Credit Card"];
+  const finalPaymentMethods = allPaymentMethods.length > 0 && allPaymentMethods.every(method => 
+    typeof method === 'string' && method.trim().length > 0
+  ) ? allPaymentMethods : fallbackPaymentMethods;
 
   // selectedPaymentDetail is now a state variable
 
@@ -1411,22 +1480,22 @@ const RatesCalculator = () => {
                   {/* Payment Method Dropdown */}
                   {isMethodDropdownOpen && (
                     <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1D1D23] rounded-[18px] border border-gray-200 dark:border-gray-700 z-10 max-h-60 overflow-y-auto shadow-lg">
-                      {userDetailsLoading ? (
+                      {(userDetailsLoading || publicMethodsLoading) ? (
                         <div className="p-3 text-center text-gray-600 dark:text-[#788099]">
                           {t(
                             "rates.loadingMethods",
                             "Loading payment methods..."
                           )}
                         </div>
-                      ) : userDetailsError ? (
+                      ) : (userDetailsError || publicMethodsError) ? (
                         <div className="p-3 text-center text-red-500">
                           {t(
                             "rates.errorMethods",
                             "Error loading payment methods"
                           )}
                         </div>
-                      ) : allPaymentMethods.length > 0 ? (
-                        allPaymentMethods.map((method: string) => (
+                      ) : finalPaymentMethods.length > 0 ? (
+                        finalPaymentMethods.map((method: string) => (
                           <div
                             key={method}
                             className="p-3 flex items-center hover:bg-gray-100 dark:hover:bg-[#35353E] cursor-pointer transition-colors first:rounded-t-[18px] last:rounded-b-[18px]"
@@ -1481,7 +1550,7 @@ const RatesCalculator = () => {
                           }}
                         >
                           <option value="">
-                            {userDetailsLoading
+                            {(userDetailsLoading || publicMethodsLoading)
                               ? "Loading accounts..."
                               : "Select Registered Account"}
                           </option>
@@ -1706,22 +1775,15 @@ const RatesCalculator = () => {
               {/* Payment Method Dropdown */}
               {isMethodDropdownOpen && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1D1D23] rounded-[18px] border border-gray-200 dark:border-gray-700 z-10 max-h-60 overflow-y-auto shadow-lg">
-                  {userDetailsLoading ? (
+                  {(userDetailsLoading || publicMethodsLoading) ? (
                     <div className="p-3 text-center text-gray-600 dark:text-[#788099]">
                           {t(
                             "rates.loadingMethods",
                             "Loading payment methods..."
                           )}
                     </div>
-                  ) : userDetailsError ? (
-                    <div className="p-3 text-center text-red-500">
-                          {t(
-                            "rates.errorMethods",
-                            "Error loading payment methods"
-                          )}
-                    </div>
-                  ) : allPaymentMethods.length > 0 ? (
-                    allPaymentMethods.map((method: string) => (
+                  ) :  finalPaymentMethods.length > 0 ? (
+                    finalPaymentMethods.map((method: string) => (
                       <div
                         key={method}
                         className="p-3 flex items-center hover:bg-gray-100 dark:hover:bg-[#35353E] cursor-pointer transition-colors first:rounded-t-[18px] last:rounded-b-[18px]"

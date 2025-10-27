@@ -6,6 +6,7 @@ import { TiArrowUnsorted } from "react-icons/ti";
 import { MarketTableProps } from "./types";
 import TradePreview from "./sections/tradePreview";
 import Loader from "../../Common/Loader";
+import Image from "next/image";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -48,6 +49,17 @@ const MarketTable: React.FC<MarketTableProps> = ({
   });
 
   const handleTradeClick = (i: number) => setSelectedRowIndex(i);
+  
+  const handleMessagesClick = (row: any) => {
+    // Open messages in new tab using the order ID
+    const orderId = row.id;
+    if (orderId) {
+      console.log('Opening messages for order:', orderId);
+      window.open(`/p2p/messages/${orderId}`, '_blank');
+    } else {
+      console.error('No order ID found for trade:', row);
+    }
+  };
   
   const handleImageClick = (imageUrl: string, advertiserName: string) => {
     setImageModal({
@@ -108,7 +120,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
               className="min-w-[120px] flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
               onClick={() => handleSort("commission")}
             >
-              Commission {getSortIcon("commission")}
+              Rate {getSortIcon("commission")}
             </div>
             <div
               className="min-w-[180px] flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
@@ -195,22 +207,39 @@ const MarketTable: React.FC<MarketTableProps> = ({
                   </div>
                   {/* Payment */}
                   <div className="flex flex-wrap gap-2 min-w-[200px]">
-                    {row.payment.map((method, i) => (
-                      <span
-                        key={i}
-                        className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-white w-1/2"
-                      >
-                        <img
-                          src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
-                          alt={method}
-                          className="w-4 h-4 rounded"
-                        />
-                        {method}
-                      </span>
-                    ))}
+                    {row.payment_details?.map((method, i) => {
+                      console.log("Rendering payment method:", method);
+                      return (
+                        <span
+                          key={i}
+                          className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-white w-1/2"
+                        >
+                          <img
+                            src={method.provider_logo || "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"}
+                            alt={method.provider}
+                            className="w-4 h-4 rounded object-cover border border-red-500"
+                            style={{ 
+                              width: '16px', 
+                              height: '16px', 
+                              display: 'block',
+                              backgroundColor: 'red'
+                            }}
+                            onError={(e) => {
+                              console.log("Image failed to load:", method.provider_logo);
+                              e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                            }}
+                            onLoad={() => {
+                              console.log("Image loaded successfully:", method.provider);
+                            }}
+                          />
+                          {method.provider}
+                        </span>
+                      );
+                    })}
                   </div>
+
                   {/* Trade */}
-                  <div className="flex justify-end min-w-[120px]">
+                  <div className="flex justify-end gap-2 min-w-[200px]">
                     <Button
                       width={116}
                       height={35}
@@ -222,6 +251,21 @@ const MarketTable: React.FC<MarketTableProps> = ({
                     >
                       {activeTab === "sell" ? "SELL USDT" : "BUY USDT"}
                     </Button>
+                    <Button
+                      width={80}
+                      height={35}
+                      borderRadius={10}
+                      variant="ghost"
+                      size="sm"
+                      className="min-w-[70px] font-semibold text-[#F79330] border border-[#F79330] hover:bg-[#F79330] hover:text-white"
+                      onClick={() => handleMessagesClick(row)}
+                      title="View Messages"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mr-1">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                      </svg>
+                      Messages
+                    </Button>
                   </div>
                 </div>
                 {selectedRowIndex === idx && (
@@ -230,6 +274,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                       advertiserData={row}
                       onClose={() => setSelectedRowIndex(null)}
                       tradeType={activeTab as "buy" | "sell"}
+                      paymentDetails={row.payment_details}
                     />
                   </div>
                 )}
