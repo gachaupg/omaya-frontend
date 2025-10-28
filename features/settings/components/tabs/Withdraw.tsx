@@ -154,7 +154,7 @@ const Withdraw = () => {
               onClick={() => {
                 setShowSuccess(false);
                 dispatch(clearSuccess());
-                router.push("/dashboard/account?tab=referral&view=history");
+                router.push("/dashboard/account");
               }}
               className="w-full bg-[#1D8751] text-white py-3 rounded-xl text-lg font-medium hover:bg-[#166b3e] transition-colors"
             >

@@ -69,7 +69,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
       <h2 className="text-xl font-bold mb-2 text-[#788099]">
         <span className="text-[#7e7e8f]">1-</span> Transaction Info
       </h2>
-      <div className="w-full max-w-4xl mx-auto text-gray-900 dark:text-white">
+      <div className="w-full  mx-auto text-gray-900 dark:text-white">
         {/* Top Section - You Send and You Get in one card */}
         <div className="relative mb-4">
           {/* Top Card Container */}

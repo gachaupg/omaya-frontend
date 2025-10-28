@@ -22,6 +22,7 @@ import messageReducer from "../features/p2p/slices/messageSlice";
 import matchedTradesReducer from "../features/p2p/slices/matchedTradesSlice";
 import userTradesReducer from "../features/p2p/slices/userTradesSlice";
 import feedbackReducer from "../features/p2p/slices/feedbackSlice";
+import feedbackSubmissionReducer from "../features/p2p/slices/feedbackSubmissionSlice";
 import p2pTransactionsReducer from "../features/p2p/slices/p2pTransactionsSlice";
 import exchangeReducer from "../features/exchange/slices/exchangeSlice";
 import referralReducer from "@/features/settings/slices/referralSlice";
@@ -61,6 +62,7 @@ const rootReducer = combineReducers({
   matchedTrades: matchedTradesReducer,
   userTrades: userTradesReducer,
   feedback: feedbackReducer,
+  feedbackSubmission: feedbackSubmissionReducer,
   p2pTransactions: p2pTransactionsReducer,
   exchange: exchangeReducer,
   referral: referralReducer,

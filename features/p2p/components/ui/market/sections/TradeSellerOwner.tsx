@@ -187,12 +187,20 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     }
   }, [confirmOrder?.status, displaySeconds]);
 
-  // Show success modal when status becomes "completed"
+  // Show success modal when status becomes "completed" (only if not already shown)
   useEffect(() => {
     if (confirmOrder?.status === "completed") {
-      setShowSuccessModal(true);
+      // Check if we've already shown the success modal for this trade
+      const modalShownKey = `success_modal_shown_${confirmOrder?.id}`;
+      const hasShownModal = localStorage.getItem(modalShownKey);
+      
+      if (!hasShownModal) {
+        setShowSuccessModal(true);
+        // Mark that we've shown the modal for this trade
+        localStorage.setItem(modalShownKey, 'true');
+      }
     }
-  }, [confirmOrder?.status]);
+  }, [confirmOrder?.status, confirmOrder?.id]);
 
   // Get payment details from order data
   const paymentDetails = singleOrder?.payment_details?.[0] || null;
@@ -705,6 +713,10 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 <button
                   onClick={() => {
                     setShowSuccessModal(false);
+                    // Clean up the localStorage key so modal can be shown again for new trades
+                    if (confirmOrder?.id) {
+                      localStorage.removeItem(`success_modal_shown_${confirmOrder.id}`);
+                    }
                     window.location.href = "/dashboard/p2p/";
                   }}
                   className="w-full bg-[#1D8751] text-white rounded-lg px-6 py-3 font-semibold hover:bg-[#167a45] transition-colors"

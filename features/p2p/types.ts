@@ -502,6 +502,12 @@ export interface Feedback {
   order_type: "buy" | "sell";
 }
 
+export interface FeedbackSubmission {
+  trade_id: string;
+  is_positive: boolean;
+  comment: string;
+}
+
 export interface P2PTransaction {
   transaction_id: string;
   amount: number;

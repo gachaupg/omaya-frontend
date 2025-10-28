@@ -251,21 +251,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                     >
                       {activeTab === "sell" ? "SELL USDT" : "BUY USDT"}
                     </Button>
-                    <Button
-                      width={80}
-                      height={35}
-                      borderRadius={10}
-                      variant="ghost"
-                      size="sm"
-                      className="min-w-[70px] font-semibold text-[#F79330] border border-[#F79330] hover:bg-[#F79330] hover:text-white"
-                      onClick={() => handleMessagesClick(row)}
-                      title="View Messages"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mr-1">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                      </svg>
-                      Messages
-                    </Button>
+                   
                   </div>
                 </div>
                 {selectedRowIndex === idx && (

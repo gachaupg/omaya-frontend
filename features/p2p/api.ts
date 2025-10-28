@@ -22,6 +22,7 @@ import {
   MatchedTrade,
   MatchedTradesResponse,
   Feedback,
+  FeedbackSubmission,
   P2PTransactionResponse,
   Profile,
   ReferredUser,
@@ -495,6 +496,16 @@ export const getUserTrades = async (
 export const getFeedbackReviews = async (): Promise<Feedback[]> => {
   return withRetry(async () => {
     const response = await get<Feedback[]>(API_CONFIG.P2P.FEEDBACK_REVIEW);
+    return response.data;
+  });
+};
+
+export const submitFeedback = async (feedbackData: FeedbackSubmission): Promise<P2PResponse> => {
+  return withRetry(async () => {
+    const response = await post<P2PResponse>(
+      API_CONFIG.P2P.FEEDBACK_SUBMIT(feedbackData.trade_id),
+      feedbackData
+    );
     return response.data;
   });
 };
