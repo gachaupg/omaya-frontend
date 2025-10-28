@@ -11,19 +11,22 @@ import GoogleAuthButton from "./GoogleAuthButton";
 import { useI18n } from "@/lib/useI18n";
 
 import { logger } from '@/lib/utils/logger';
+import DragFitCaptcha from "./capture";
+import { useTheme } from "@/context/theme";
 
 export default function LoginPage() {
   const { t } = useI18n("auth");
+  const { isDark } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [notRobot, setNotRobot] = useState(false);
+  const [captchaVerified, setCaptchaVerified] = useState(false);
   const [errors, setErrors] = useState({
     email: "",
     password: "",
     rememberMe: "",
-    notRobot: "",
+    captcha: "",
     submitAttempted: false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,13 +56,23 @@ export default function LoginPage() {
     console.error("Google authentication error:", error);
   };
 
+  const handleCaptchaSuccess = () => {
+    setCaptchaVerified(true);
+    setErrors(prev => ({ ...prev, captcha: "" }));
+  };
+
+  const handleCaptchaFail = () => {
+    setCaptchaVerified(false);
+    setErrors(prev => ({ ...prev, captcha: "Captcha verification failed. Please try again." }));
+  };
+
   const validateForm = () => {
     let isValid = true;
     const newErrors = {
       email: "",
       password: "",
       rememberMe: "",
-      notRobot: "",
+      captcha: "",
       submitAttempted: true,
     };
 
@@ -76,8 +89,8 @@ export default function LoginPage() {
       isValid = false;
     }
 
-    if (!notRobot) {
-      newErrors.notRobot = "Please verify that you are not a robot to continue";
+    if (!captchaVerified) {
+      newErrors.captcha = "Please complete the captcha verification";
       isValid = false;
     }
 
@@ -394,98 +407,50 @@ export default function LoginPage() {
 
             {/* Checkboxes Row */}
             <div className="flex items-center justify-between">
-              <div className="flex space-x-6">
-                <div className="flex items-center">
-                  <div className="relative flex items-center">
-                    <input
-                      type="checkbox"
-                      id="remember-me"
-                      checked={rememberMe}
-                      onChange={() => {
-                        setRememberMe(!rememberMe);
-                        if (errors.submitAttempted) {
-                          setErrors((prev) => ({ ...prev, rememberMe: "" }));
-                        }
-                      }}
-                      className={`opacity-0 absolute h-4 w-4 cursor-pointer ${
-                        errors.rememberMe ? "ring-2 ring-[#F04438] rounded" : ""
-                      }`}
-                    />
-                    <div
-                      className={`border ${
-                        errors.rememberMe
-                          ? "border-[#F04438]"
-                          : "border-[#1D8751]"
-                      } rounded h-4 w-4 flex flex-shrink-0 justify-center items-center mr-2 ${
-                        rememberMe ? "bg-[#1D8751]" : "bg-transparent"
-                      }`}
-                    >
-                      {rememberMe && (
-                        <svg
-                          className="fill-current w-2 h-2 text-white pointer-events-none"
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M0 11l2-2 5 5L18 3l2 2L7 18z" />
-                        </svg>
-                      )}
-                    </div>
-                    <label
-                      htmlFor="remember-me"
-                      className={`text-sm cursor-pointer ${
-                        errors.rememberMe
-                          ? "text-[#F04438]"
-                          : "dark:text-white text-gray-900"
-                      }`}
-                    >
-                      {t("auth.login.remember", "Remember me")}
-                    </label>
+              <div className="flex items-center">
+                <div className="relative flex items-center">
+                  <input
+                    type="checkbox"
+                    id="remember-me"
+                    checked={rememberMe}
+                    onChange={() => {
+                      setRememberMe(!rememberMe);
+                      if (errors.submitAttempted) {
+                        setErrors((prev) => ({ ...prev, rememberMe: "" }));
+                      }
+                    }}
+                    className={`opacity-0 absolute h-4 w-4 cursor-pointer ${
+                      errors.rememberMe ? "ring-2 ring-[#F04438] rounded" : ""
+                    }`}
+                  />
+                  <div
+                    className={`border ${
+                      errors.rememberMe
+                        ? "border-[#F04438]"
+                        : "border-[#1D8751]"
+                    } rounded h-4 w-4 flex flex-shrink-0 justify-center items-center mr-2 ${
+                      rememberMe ? "bg-[#1D8751]" : "bg-transparent"
+                    }`}
+                  >
+                    {rememberMe && (
+                      <svg
+                        className="fill-current w-2 h-2 text-white pointer-events-none"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M0 11l2-2 5 5L18 3l2 2L7 18z" />
+                      </svg>
+                    )}
                   </div>
-                </div>
-                <div className="flex items-center">
-                  <div className="relative flex items-center">
-                    <input
-                      type="checkbox"
-                      id="not-robot"
-                      checked={notRobot}
-                      onChange={() => {
-                        setNotRobot(!notRobot);
-                        if (errors.submitAttempted) {
-                          setErrors((prev) => ({ ...prev, notRobot: "" }));
-                        }
-                      }}
-                      className={`opacity-0 absolute h-4 w-4 cursor-pointer ${
-                        errors.notRobot ? "ring-2 ring-[#F04438] rounded" : ""
-                      }`}
-                    />
-                    <div
-                      className={`border ${
-                        errors.notRobot
-                          ? "border-[#F04438]"
-                          : "border-[#1D8751]"
-                      } rounded h-4 w-4 flex flex-shrink-0 justify-center items-center mr-2 ${
-                        notRobot ? "bg-[#1D8751]" : "bg-transparent"
-                      }`}
-                    >
-                      {notRobot && (
-                        <svg
-                          className="fill-current w-2 h-2 text-white pointer-events-none"
-                          viewBox="0 0 20 20"
-                        >
-                          <path d="M0 11l2-2 5 5L18 3l2 2L7 18z" />
-                        </svg>
-                      )}
-                    </div>
-                    <label
-                      htmlFor="not-robot"
-                      className={`text-sm cursor-pointer ${
-                        errors.notRobot
-                          ? "text-[#F04438]"
-                          : "dark:text-white text-gray-900"
-                      }`}
-                    >
-                      {t("auth.login.notRobot", "I'm not a robot")}
-                    </label>
-                  </div>
+                  <label
+                    htmlFor="remember-me"
+                    className={`text-sm cursor-pointer ${
+                      errors.rememberMe
+                        ? "text-[#F04438]"
+                        : "dark:text-white text-gray-900"
+                    }`}
+                  >
+                    {t("auth.login.remember", "Remember me")}
+                  </label>
                 </div>
               </div>
 
@@ -500,27 +465,33 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Error messages for checkboxes - only show after submit attempt */}
-            {errors.submitAttempted && (
-              <div className="space-y-1 mt-2">
-                {errors.notRobot && (
-                  <p className="text-sm text-[#F04438] flex items-center">
-                    <svg
-                      className="w-4 h-4 mr-1"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    {errors.notRobot}
-                  </p>
-                )}
-              </div>
-            )}
+            {/* Captcha Verification */}
+            <div>
+              <label className="block dark:text-white text-gray-900 font-medium mb-2">
+                {t("auth.login.captcha", "Security Verification")}
+              </label>
+              <DragFitCaptcha
+                imgSrc="https://picsum.photos/280/140?random=10"
+                onSuccess={handleCaptchaSuccess}
+                darkMode={isDark}
+              />
+              {errors.captcha && (
+                <p className="mt-2 text-sm text-[#F04438] flex items-center">
+                  <svg
+                    className="w-4 h-4 mr-1"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  {errors.captcha}
+                </p>
+              )}
+            </div>
 
             {/* Login Button */}
             <button
@@ -609,7 +580,6 @@ export default function LoginPage() {
           </form>
         </div>
       </div>
-      {/* <PuzzleSliderCaptcha /> */}
     </div>
   );
 }

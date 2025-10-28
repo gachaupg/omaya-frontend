@@ -57,6 +57,29 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        {/* Facebook SDK */}
+        <script
+          async
+          defer
+          crossOrigin="anonymous"
+          src="https://connect.facebook.net/en_US/sdk.js"
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.fbAsyncInit = function() {
+                FB.init({
+                  appId: '596315263341600',
+                  cookie: true,
+                  xfbml: true,
+                  version: 'v18.0'
+                });
+              };
+            `,
+          }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${mulish.variable} antialiased`}
         suppressHydrationWarning

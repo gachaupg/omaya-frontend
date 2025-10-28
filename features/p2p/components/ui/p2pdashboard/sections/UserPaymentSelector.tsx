@@ -139,19 +139,29 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
                 key={detail.id}
                 className="flex items-center justify-between p-3 rounded-[24px] bg-gray-50 dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E]"
               >
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-[#788099]">
-                    Account Name
-                  </p>
-                  <p className="font-semibold text-gray-900 dark:text-white">
-                    {detail.account_name}
-                  </p>
-                  <p className="mt-1 text-xs text-gray-500 dark:text-[#788099]">
-                    Account Number
-                  </p>
-                  <p className="font-semibold text-gray-900 dark:text-white">
-                    {detail.account_number}
-                  </p>
+                <div className="flex items-center gap-3">
+                  <img
+                    src={detail.provider_logo || "/default-provider-logo.svg"}
+                    alt={`${detail.payment_provider_name} logo`}
+                    className="w-8 h-8 rounded-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = "/default-provider-logo.svg";
+                    }}
+                  />
+                  <div>
+                    <p className="text-xs text-gray-500 dark:text-[#788099]">
+                      Account Name
+                    </p>
+                    <p className="font-semibold text-gray-900 dark:text-white">
+                      {detail.account_name}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-[#788099]">
+                      Account Number
+                    </p>
+                    <p className="font-semibold text-gray-900 dark:text-white">
+                      {detail.account_number}
+                    </p>
+                  </div>
                 </div>
 
                 {isSelected(detail) ? (

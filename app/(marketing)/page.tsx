@@ -93,6 +93,7 @@ export default function MarketingPage() {
   const [showContactSuccess, setShowContactSuccess] = useState(false);
   const [showContactError, setShowContactError] = useState(false);
   const [contactErrorMessage, setContactErrorMessage] = useState("");
+  const [showAllFAQs, setShowAllFAQs] = useState(false);
   const { blogs, news, loading, error } = useBlog();
   const { faqs: faqItems, loading: faqLoading, error: faqError } = useFAQ();
   const { statistics, loading: statsLoading, error: statsError } = useHighlightStatistics();
@@ -1170,88 +1171,114 @@ export default function MarketingPage() {
                     </p>
                   </div>
                 ) : (
-                  // FAQ items
-                  faqItems.map((item) => (
-                    <div key={item.id || item._id} className="relative">
-                      <div
-                        className={`border rounded-xl overflow-hidden ${
-                          openFAQ === (item.id || 0)
-                            ? "border-[#1D8751]"
-                            : "border-[#35353E]"
-                        }`}
-                      >
-                        {/* Accordion Header */}
-                        <button
-                          onClick={() => toggleFAQ(item.id || 0)}
-                          className="w-full flex justify-between items-center px-4 py-3 text-left dark:bg-[#1D1D23] bg-[#F5F5F5]"
+                  <>
+                    {/* FAQ items - show only 5 initially */}
+                    {faqItems.slice(0, showAllFAQs ? faqItems.length : 5).map((item) => (
+                      <div key={item.id || item._id} className="relative">
+                        <div
+                          className={`border rounded-xl overflow-hidden ${
+                            openFAQ === (item.id || 0)
+                              ? "border-[#1D8751]"
+                              : "border-[#35353E]"
+                          }`}
                         >
-                          <span className="dark:text-white text-black">
-                            {item.question}
-                          </span>
-                          {openFAQ === (item.id || 0) ? (
-                            <svg
-                              width="16"
-                              height="16"
-                              viewBox="0 0 16 16"
-                              fill="none"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                d="M12 4L4 12"
-                                stroke="#1D8751"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                              <path
-                                d="M4 4L12 12"
-                                stroke="#1D8751"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          ) : (
-                            <svg
-                              width="16"
-                              height="16"
-                              viewBox="0 0 16 16"
-                              fill="none"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                d="M8 4V12"
-                                stroke="#1D8751"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                              <path
-                                d="M4 8H12"
-                                stroke="#1D8751"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          )}
-                        </button>
+                          {/* Accordion Header */}
+                          <button
+                            onClick={() => toggleFAQ(item.id || 0)}
+                            className="w-full flex justify-between items-center px-4 py-3 text-left dark:bg-[#1D1D23] bg-[#F5F5F5]"
+                          >
+                            <span className="dark:text-white text-black">
+                              {item.question}
+                            </span>
+                            {openFAQ === (item.id || 0) ? (
+                              <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 16 16"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  d="M12 4L4 12"
+                                  stroke="#1D8751"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                                <path
+                                  d="M4 4L12 12"
+                                  stroke="#1D8751"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            ) : (
+                              <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 16 16"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  d="M8 4V12"
+                                  stroke="#1D8751"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                                <path
+                                  d="M4 8H12"
+                                  stroke="#1D8751"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            )}
+                          </button>
 
-                        {/* Accordion Content */}
-                        {openFAQ === (item.id || 0) && (
-                          <>
-                            {/* Dashed separator line */}
-                            <div className="border-t border-dashed border-gray-600 ml-2 mr-2"></div>
-                            <div className="px-4 py-3 dark:bg-[#1D1D23] bg-[#F5F5F5]">
-                              <p className="text-gray-400 text-sm 2xl:text-lg">
-                                {item.answer}
-                              </p>
-                            </div>
-                          </>
-                        )}
+                          {/* Accordion Content */}
+                          {openFAQ === (item.id || 0) && (
+                            <>
+                              {/* Dashed separator line */}
+                              <div className="border-t border-dashed border-gray-600 ml-2 mr-2"></div>
+                              <div className="px-4 py-3 dark:bg-[#1D1D23] bg-[#F5F5F5]">
+                                <p className="text-gray-400 text-sm 2xl:text-lg">
+                                  {item.answer}
+                                </p>
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    ))}
+                    
+                    {/* Load All Button - only show if there are more than 5 FAQs */}
+                    {faqItems.length > 5 && !showAllFAQs && (
+                      <div className="text-center pt-4">
+                        <button
+                          onClick={() => setShowAllFAQs(true)}
+                          className="bg-[#1D8751] text-white px-6 py-3 rounded-lg hover:bg-[#167a47] transition-colors font-medium"
+                        >
+                          {t("marketing.faq.loadAll", "Load All FAQs")} ({faqItems.length - 5} more)
+                        </button>
+                      </div>
+                    )}
+                    
+                    {/* Show Less Button - only show when all FAQs are displayed */}
+                    {faqItems.length > 5 && showAllFAQs && (
+                      <div className="text-center pt-4">
+                        <button
+                          onClick={() => setShowAllFAQs(false)}
+                          className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                        >
+                          {t("marketing.faq.showLess", "Show Less")}
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>

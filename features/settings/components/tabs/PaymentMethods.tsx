@@ -87,13 +87,16 @@ const PaymentMethods = () => {
               <p className="text-sm dark:text-white text-gray-900">
                 {payment?.payment_method_name}
               </p>
-              <p className="text-xs dark:text-[#808080] text-gray-600 mt-1">
+              <p className="text-xs dark:text-[#808080] text-gray-600 mt-1 flex items-center">
                 <img
-                  src={payment?.provider_logo || "/default-provider-logo.png"}
+                  src={payment?.provider_logo || "/default-provider-logo.svg"}
                   alt={payment?.payment_provider_name}
                   width={20}
                   height={20}
-                  className="inline-block mr-1"
+                  className="inline-block mr-2 rounded-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = "/default-provider-logo.svg";
+                  }}
                 />
                 {payment?.payment_provider_name}
               </p>

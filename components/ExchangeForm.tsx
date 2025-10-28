@@ -1032,32 +1032,23 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
                       let displayName = asset.name || asset.ticker || asset.symbol || "Unknown Asset";
                       const originalName = displayName;
                       
-                      // Remove common redundant patterns - more aggressive approach
+                      // Remove common redundant patterns - less aggressive approach
+                      // Only remove redundant network info when it's duplicated in the network badge
                       displayName = displayName
-                        // Specific patterns first
-                        .replace(/\s*\(Binance Smart Chain\)/gi, '')
-                        .replace(/\s*\(BSC\)/gi, '')
-                        .replace(/\s*\(Ethereum\)/gi, '')
-                        .replace(/\s*\(ETH\)/gi, '')
-                        .replace(/\s*\(Polygon\)/gi, '')
-                        .replace(/\s*\(MATIC\)/gi, '')
-                        .replace(/\s*\(Avalanche\)/gi, '')
-                        .replace(/\s*\(AVAX\)/gi, '')
-                        .replace(/\s*\(TRON\)/gi, '')
-                        .replace(/\s*\(TRX\)/gi, '')
-                        .replace(/\s*\(Solana\)/gi, '')
-                        .replace(/\s*\(SOL\)/gi, '')
-                        .replace(/\s*\(Base\)/gi, '')
-                        .replace(/\s*\(Arbitrum\)/gi, '')
-                        .replace(/\s*\(Optimism\)/gi, '')
-                        // More general patterns
-                        .replace(/\s*\(.*Smart Chain.*\)/gi, '')
-                        .replace(/\s*\(.*Chain.*\)/gi, '')
-                        .replace(/\s*\(.*Network.*\)/gi, '')
-                        .replace(/\s*\(.*Protocol.*\)/gi, '')
-                        // Handle cases like "Tether (Binance Smart Chain) (BSC)"
-                        .replace(/\s*\([^)]*\)\s*\([^)]*\)/gi, '')
-                        .replace(/\s*\([^)]*\)/gi, '')
+                        // Handle cases like "Tether (Binance Smart Chain) (BSC)" - remove duplicate BSC
+                        .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, '')
+                        .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, '')
+                        .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, '')
+                        .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, '')
+                        .replace(/\s*\(TRON\)\s*\(TRX\)/gi, '')
+                        .replace(/\s*\(Solana\)\s*\(SOL\)/gi, '')
+                        // Only remove single network references if they're clearly redundant
+                        .replace(/\s*\(BSC\)$/gi, '') // Only remove BSC at the end
+                        .replace(/\s*\(ETH\)$/gi, '') // Only remove ETH at the end
+                        .replace(/\s*\(MATIC\)$/gi, '') // Only remove MATIC at the end
+                        .replace(/\s*\(AVAX\)$/gi, '') // Only remove AVAX at the end
+                        .replace(/\s*\(TRX\)$/gi, '') // Only remove TRX at the end
+                        .replace(/\s*\(SOL\)$/gi, '') // Only remove SOL at the end
                         .trim();
                       
                       // Debug logging for all assets to see the pattern

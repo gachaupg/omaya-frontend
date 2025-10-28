@@ -61,6 +61,7 @@ export const API_CONFIG = {
     CONFIRM_TRADES: "/trading_engine/p2p/trades/",
     USER_TRADES: "/trading_engine/p2p/user-trades/",
     FEEDBACK_REVIEW: "/trading_engine/feedback_review/",
+    FEEDBACK_SUBMIT: (tradeId: string) => `/trading_engine/trades/${tradeId}/feedback/`,
     ALL_TRANSACTIONS: "/trading_engine/all-transactions/",
     USER_TRANSACTIONS: "/trading_engine/transactions/",
     DELETE_ORDER: "/trading_engine/p2p/orders/",

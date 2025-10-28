@@ -8,6 +8,7 @@ import {
   clearPostStatus,
 } from "../../../../slices/paymentMethodsSlice";
 import { showToast } from "../../../../../../lib/utils/toast";
+import { PaymentMethod, PaymentProvider, AdminPaymentMethod } from "../../../../types/paymentMethods";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -104,9 +105,9 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
      ? Array.from(new Set((adminMethods || []).map((m: any) => m.payment_method_type))).filter(Boolean) as string[]
      : hardcodedMethods;
 
-   // Providers for selected method
+   // Providers for selected method - handle both old and new data structures
    const providers = method && hardcodedProviders[method as keyof typeof hardcodedProviders]
-     ? hardcodedProviders[method as keyof typeof hardcodedProviders].map(name => ({ provider_name: name }))
+     ? hardcodedProviders[method as keyof typeof hardcodedProviders].map(name => ({ provider_name: name, logo: "" }))
      : (adminMethods || []).filter((m: any) => m.payment_method_type === method);
 
    logger.debug('p2p', "DEBUG: adminMethods:", adminMethods);
@@ -242,22 +243,60 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                <label className="block text-gray-600 dark:text-[#788099] text-sm mb-1">
                  Provider
                </label>
-               <select
-                 className="w-full p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
-                 value={provider}
-                 onChange={(e) => setProvider(e.target.value)}
-                 disabled={loading}
-               >
-                 <option value="">Select Provider</option>
-                 {providers.map((p: any, index: number) => (
-                   <option
-                     key={`${p.provider_name}-${index}`}
-                     value={p.provider_name}
-                   >
-                     {p.provider_name}
-                   </option>
-                 ))}
-               </select>
+               <div className="relative">
+                 <select
+                   className="w-full p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] appearance-none pr-10"
+                   value={provider}
+                   onChange={(e) => setProvider(e.target.value)}
+                   disabled={loading}
+                 >
+                   <option value="">Select Provider</option>
+                   {providers.map((p: any, index: number) => (
+                     <option
+                       key={`${p.provider_name}-${index}`}
+                       value={p.provider_name}
+                     >
+                       {p.provider_name}
+                     </option>
+                   ))}
+                 </select>
+                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                   <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                   </svg>
+                 </div>
+               </div>
+               
+               {/* Provider Preview with Logo */}
+               {provider && (
+                 <div className="mt-2 p-3 rounded-lg bg-gray-50 dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E]">
+                   <div className="flex items-center gap-3">
+                     {(() => {
+                       const selectedProvider = providers.find((p: any) => p.provider_name === provider);
+                       return (
+                         <>
+                           <img
+                             src={selectedProvider?.logo || "/default-provider-logo.svg"}
+                             alt={`${provider} logo`}
+                             className="w-8 h-8 rounded-full object-cover"
+                             onError={(e) => {
+                               e.currentTarget.src = "/default-provider-logo.svg";
+                             }}
+                           />
+                           <div>
+                             <p className="text-sm font-medium text-gray-900 dark:text-white">
+                               {provider}
+                             </p>
+                             <p className="text-xs text-gray-500 dark:text-[#788099]">
+                               Selected Provider
+                             </p>
+                           </div>
+                         </>
+                       );
+                     })()}
+                   </div>
+                 </div>
+               )}
              </div>
            )}
 
