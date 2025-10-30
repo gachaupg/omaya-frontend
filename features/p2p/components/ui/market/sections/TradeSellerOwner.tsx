@@ -69,14 +69,12 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       if (oldStatus !== newStatus) {
         logger.debug('p2p', `📢 Status changed: ${oldStatus} → ${newStatus}`);
         if (oldStatus === "matched" && newStatus === "half-matched") {
-          // showToast.success("Status Updated", "Buyer has sent payment notification");
+         
         } else if (oldStatus === "half-matched" && newStatus === "completed") {
-          // showToast.success("Trade Completed!", "Transaction completed successfully");
+         
         } else if (newStatus === "cancelled") {
-          //  showToast.error("Trade Cancelled", "The trade has been cancelled");
         } else {
-          // Generic status change notification
-          // showToast.success("Status Updated", `Trade status is now: ${newStatus}`);
+          
         }
       } else {
         logger.debug('p2p', "ℹ️ Status unchanged, still refreshing data");

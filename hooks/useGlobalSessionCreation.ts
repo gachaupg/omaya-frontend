@@ -172,7 +172,6 @@ export const useGlobalSessionCreation = () => {
 
       await Promise.race([sessionPromise, timeoutPromise]);
       console.log("Global session created successfully");
-      showToast.success("Device session created successfully");
     } catch (error) {
       console.error("Failed to create global device session:", error);
       // Don't reset the flag on auth errors to prevent retries
