@@ -44,6 +44,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
   const [isClient, setIsClient] = useState(false);
   const prevStatusRef = useRef<string | undefined>(undefined);
   const prevTradeIdRef = useRef<string | null>(null);
+  const lastActionTradeIdRef = useRef<string | null>(null);
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
@@ -69,13 +70,13 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
       if (oldStatus !== newStatus) {
         logger.debug('p2p', `📢 Status changed: ${oldStatus} → ${newStatus}`);
         if (oldStatus === "matched" && newStatus === "half-matched") {
-          showToast.success("Status Updated", "Payment notification sent to seller");
+          // showToast.success("Status Updated", "Payment notification sent to seller");
         } else if (oldStatus === "half-matched" && newStatus === "completed") {
-          showToast.success("Trade Completed!", "Transaction completed successfully");
+          // showToast.success("Trade Completed!", "Transaction completed successfully");
         } else if (newStatus === "cancelled") {
-          showToast.error("Trade Cancelled", "The trade has been cancelled");
+          // showToast.error("Trade Cancelled", "The trade has been cancelled");
         } else {
-          showToast.success("Status Updated", `Trade status is now: ${newStatus}`);
+          // showToast.success("Status Updated", `Trade status is now: ${newStatus}`);
         }
       } else {
         logger.debug('p2p', "ℹ️ Status unchanged, still refreshing data");
@@ -320,6 +321,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
   // Add handler for confirming trade
   const handleConfirmTrade = () => {
     if (isAuthenticated && confirmOrder?.id) {
+      lastActionTradeIdRef.current = confirmOrder.id;
       dispatch(confirmP2PTradeThunk(confirmOrder.id))
         .unwrap()
         .then(() => {
@@ -663,25 +665,41 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
                       {cancelLoading ? "Cancelling..." : "Cancel Transaction"}
                     </button>
                     <button
-                      className={`w-full md:w-auto flex-1 py-2 rounded-2xl text-lg  ${
+                    className={`w-full md:w-auto flex-1 py-2 rounded-2xl text-lg  ${
                         confirmOrder?.status === "half-matched"
                           ? "bg-white dark:bg-[#23232A] text-gray-400 dark:text-[#888]"
                           : "bg-[#1D8751] text-white"
-                      } ${
-                        confirmTradeLoading
-                          ? "opacity-60 cursor-not-allowed"
-                          : ""
-                      }`}
+                      } ${(() => {
+                        const isThisTradeLoading =
+                          confirmTradeLoading &&
+                          !!confirmOrder?.id &&
+                          lastActionTradeIdRef.current === confirmOrder.id;
+                        return isThisTradeLoading ? "opacity-60 cursor-not-allowed" : "";
+                      })()}`}
                       onClick={handleConfirmTrade}
                       disabled={
-                        confirmTradeLoading ||
+                        (() => {
+                          const isThisTradeLoading =
+                            confirmTradeLoading &&
+                            !!confirmOrder?.id &&
+                            lastActionTradeIdRef.current === confirmOrder.id;
+                          return (
+                            isThisTradeLoading ||
                         !confirmOrder?.id ||
                         confirmOrder?.status === "half-matched"
+                          );
+                        })()
                       }
                     >
-                      {confirmTradeLoading
+                      {(() => {
+                        const isThisTradeLoading =
+                          confirmTradeLoading &&
+                          !!confirmOrder?.id &&
+                          lastActionTradeIdRef.current === confirmOrder.id;
+                        return isThisTradeLoading
                         ? "Notifying seller..."
-                        : "Money sent, notify seller"}
+                        : "Money sent, notify seller";
+                      })()}
                     </button>
                   </div>
                 </div>

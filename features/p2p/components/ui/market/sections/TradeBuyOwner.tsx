@@ -56,6 +56,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const [isClient, setIsClient] = useState(false);
   const prevStatusRef = useRef<string | undefined>(undefined);
   const prevTradeIdRef = useRef<string | null>(null);
+  const lastActionTradeIdRef = useRef<string | null>(null);
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
@@ -88,25 +89,25 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
         if (oldStatus !== newStatus) {
           logger.debug("p2p", `📢 Status changed: ${oldStatus} → ${newStatus}`);
           if (oldStatus === "matched" && newStatus === "half-matched") {
-            showToast.success(
-              "Status Updated",
-              "Seller has notified payment sent"
-            );
+            // showToast.success(
+            //   "Status Updated",
+            //   "Seller has notified payment sent"
+            // );
           } else if (
             oldStatus === "half-matched" &&
             newStatus === "completed"
           ) {
-            showToast.success(
-              "Trade Completed!",
-              "Transaction completed successfully"
-            );
+            // showToast.success(
+            //   "Trade Completed!",
+            //   "Transaction completed successfully"
+            // );
           } else if (newStatus === "cancelled") {
             showToast.error("Trade Cancelled", "The trade has been cancelled");
           } else {
-            showToast.success(
-              "Status Updated",
-              `Trade status is now: ${newStatus}`
-            );
+            // showToast.success(
+            //   "Status Updated",
+            //   `Trade status is now: ${newStatus}`
+            // );
           }
         } else {
           logger.debug("p2p", "ℹ️ Status unchanged, still refreshing data");
@@ -284,7 +285,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
   // --- Calculation logic ---
   const sendAmount = Number(confirmOrder?.amount) || 0;
-  const commissionRate = Number(singleOrder?.commission_rate) || 0;
+  const commissionRate = Number(confirmOrder?.commission_rate) || 0;
   const orderType = singleOrder?.order_type || "buy";
   let receiveAmount = sendAmount;
 
@@ -316,7 +317,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   };
 
   const getButtonText = () => {
-    if (confirmTradeLoading) return "Notifying seller...";
+    const isThisTradeLoading =
+      confirmTradeLoading &&
+      !!confirmOrder?.id &&
+      lastActionTradeIdRef.current === confirmOrder.id;
+    if (isThisTradeLoading) return "Notifying seller...";
     return "Payments Received Notify Seller";
   };
 
@@ -360,6 +365,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     const orderId = params?.id as string;
 
     if (confirmOrder?.id) {
+      lastActionTradeIdRef.current = confirmOrder.id;
       dispatch(completeP2PTradeThunk(confirmOrder.id))
         .unwrap()
         .then(() => {
@@ -488,10 +494,10 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             </div>
 
             <div className="flex flex-col gap-2 w-full">
-              <p className="text-[#788099] text-sm">Commission</p>
+              <p className="text-[#788099] text-sm">Rate</p>
               <div className="flex f w-full flex-row  justify-between items-center bg-[#EEF1F4] dark:bg-[#35353E] rounded-xl px-6 py-2">
                 <span className="text-[#1D8751] text-xl">
-                  $ {saveOrder?.commission_rate ?? commissionRate}%
+                  $ {commissionRate}%
                 </span>
                 <span className="text-sm text-[#051015] dark:text-[#F79330]">
                   USD
@@ -629,18 +635,26 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 confirmOrder?.status === "matched"
                   ? "bg-gray-100 dark:bg-[#23232A]"
                   : "bg-[#1D8751] text-white"
-              }  dark:text-white rounded-lg px-6 py-2 font-semibold ${
-                confirmTradeLoading ||
-                !confirmOrder?.id ||
-                confirmOrder?.status === "matched"
+              }  dark:text-white rounded-lg px-6 py-2 font-semibold ${(() => {
+                const isThisTradeLoading =
+                  confirmTradeLoading &&
+                  !!confirmOrder?.id &&
+                  lastActionTradeIdRef.current === confirmOrder.id;
+                return isThisTradeLoading || !confirmOrder?.id || confirmOrder?.status === "matched"
                   ? "opacity-50 cursor-not-allowed"
-                  : ""
-              }`}
+                  : "";
+              })()}`}
               onClick={handleConfirmTrade}
               disabled={
-                confirmTradeLoading ||
-                !confirmOrder?.id ||
-                confirmOrder?.status === "matched"
+                (() => {
+                  const isThisTradeLoading =
+                    confirmTradeLoading &&
+                    !!confirmOrder?.id &&
+                    lastActionTradeIdRef.current === confirmOrder.id;
+                  return (
+                    isThisTradeLoading || !confirmOrder?.id || confirmOrder?.status === "matched"
+                  );
+                })()
               }
             >
               {getButtonText()}
@@ -732,7 +746,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 </div>
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-gray-600 dark:text-[#A3A3C2]">
-                    Commission:
+                    Rate:
                   </span>
                   <span className="text-[#1D8751] font-semibold">
                     {commissionRate}%

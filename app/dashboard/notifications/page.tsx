@@ -223,7 +223,7 @@ const Notifications = () => {
     <div className="max-w-5xl mx-auto px-4">
       <div className="flex items-center justify-between mb-6">
         <h6 className="text-gray-700 dark:text-[#A3A3C2] text-xl font-semibold">
-          Notifications Center
+          Notification Center
         </h6>
         <span className="text-sm text-gray-500 dark:text-[#A3A3C2]">
           {matchedTrades.count || matchedTrades.results.length}{" "}
