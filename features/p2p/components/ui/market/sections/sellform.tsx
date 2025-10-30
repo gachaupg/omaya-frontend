@@ -46,6 +46,8 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [feedbackRating, setFeedbackRating] = useState<boolean | null>(null);
   const [feedbackComment, setFeedbackComment] = useState("");
+  const prevStatusRef = useRef<string | undefined>(undefined);
+  const prevTradeIdRef = useRef<string | null>(null);
   const { user } = useSelector((state: RootState) => state.auth);
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const completionTime = Number(singleOrder?.completion_time);
@@ -181,20 +183,60 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     }
   }, [confirmOrder, dispatch]);
 
-  // New useEffect to check for completed status and show success modal (only if not already shown)
+  // Reset modal and previous status when switching to a different trade
   useEffect(() => {
-    if (confirmOrder?.status === "completed" && !showSuccessModal) {
-      // Check if we've already shown the success modal for this trade
-      const modalShownKey = `success_modal_shown_${confirmOrder?.id}`;
+    if (confirmOrder?.id !== prevTradeIdRef.current) {
+      setShowSuccessModal(false);
+      prevTradeIdRef.current = confirmOrder?.id || null;
+      prevStatusRef.current = undefined;
+    }
+  }, [confirmOrder?.id]);
+
+  // Show success modal only on transition to completed for the current trade
+  useEffect(() => {
+    const currentId = confirmOrder?.id || "";
+    const newStatus = confirmOrder?.status;
+    const prevStatus = prevStatusRef.current;
+    const paramId = (params?.id as string) || localStorage.getItem('p2p_trade_id') || "";
+
+    // Ensure we're reacting only to the currently viewed trade
+    if (!currentId || (paramId && currentId !== paramId)) {
+      prevStatusRef.current = newStatus;
+      return;
+    }
+
+    if (newStatus === "completed" && prevStatus !== "completed") {
+      const modalShownKey = `success_modal_shown_${currentId}`;
       const hasShownModal = localStorage.getItem(modalShownKey);
-      
       if (!hasShownModal) {
         setShowSuccessModal(true);
-        // Mark that we've shown the modal for this trade
         localStorage.setItem(modalShownKey, 'true');
       }
     }
-  }, [confirmOrder?.status, confirmOrder?.id, showSuccessModal]);
+
+    prevStatusRef.current = newStatus;
+  }, [confirmOrder?.status, confirmOrder?.id, params?.id]);
+
+  // Cleanup on unmount to treat next visit as new
+  useEffect(() => {
+    return () => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const orderSlice = require("@/features/p2p/slices/orderSlice");
+        if (orderSlice?.resetConfirmOrderState) {
+          dispatch(orderSlice.resetConfirmOrderState());
+        }
+        if (orderSlice?.resetSingleOrderState) {
+          dispatch(orderSlice.resetSingleOrderState());
+        }
+      } catch (_) {
+        // no-op
+      }
+      prevStatusRef.current = undefined;
+      prevTradeIdRef.current = null;
+      setShowSuccessModal(false);
+    };
+  }, [dispatch]);
 
   // Handle countdown
   useEffect(() => {

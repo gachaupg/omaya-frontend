@@ -32,13 +32,13 @@ export const usePendingTotal = () => {
 
   // Calculate total pending (for display): pending exchange withdrawals + pending sell orders
   const total = 
-    (statistics?.total_pending_exchange_withdrawals || 0) + 
+    (statistics?.total_pending_p2p_deposits || 0) + 
     (statistics?.total_sell_orders_by_status?.pending || 0);
 
   // Calculate total locked amount (for available balance):
   // Exchange withdrawals + Sell orders + P2P withdrawals
   const totalLocked = 
-    (statistics?.total_pending_exchange_withdrawals || 0) + 
+    (statistics?.total_pending_p2p_deposits || 0) + 
     (statistics?.total_sell_orders_by_status?.pending || 0) 
 
   // Calculate available balance: balance - all locked funds
