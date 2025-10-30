@@ -48,6 +48,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const [feedbackComment, setFeedbackComment] = useState("");
   const prevStatusRef = useRef<string | undefined>(undefined);
   const prevTradeIdRef = useRef<string | null>(null);
+  const lastActionTradeIdRef = useRef<string | null>(null);
   const { user } = useSelector((state: RootState) => state.auth);
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const completionTime = Number(singleOrder?.completion_time);
@@ -78,14 +79,10 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       if (oldStatus !== newStatus) {
         logger.debug('p2p', `📢 Status changed: ${oldStatus} → ${newStatus}`);
         if (oldStatus === "matched" && newStatus === "half-matched") {
-          showToast.success("Status Updated", "Seller has confirmed payment receipt");
         } else if (oldStatus === "half-matched" && newStatus === "completed") {
-          showToast.success("Trade Completed!", "Transaction completed successfully");
         } else if (newStatus === "cancelled") {
           showToast.error("Trade Cancelled", "The trade has been cancelled");
         } else {
-          // Generic status change notification
-          showToast.success("Status Updated", `Trade status is now: ${newStatus}`);
         }
       } else {
         logger.debug('p2p', "ℹ️ Status unchanged, still refreshing data");
@@ -313,6 +310,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
   const handleConfirmTrade = () => {
     if (isAuthenticated && confirmOrder?.id) {
+      lastActionTradeIdRef.current = confirmOrder.id;
       dispatch(completeP2PTradeThunk(confirmOrder.id))
         .unwrap()
         .then(() => {
@@ -693,21 +691,35 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                         confirmOrder?.status === "matched"
                           ? "bg-gray-100 dark:bg-[#23232A] text-gray-400 dark:text-[#888]"
                           : "bg-[#F79330] text-white"
-                      } ${
-                        confirmTradeLoading
-                          ? "opacity-60 cursor-not-allowed"
-                          : ""
-                      }`}
+                      } ${(() => {
+                        const isThisTradeLoading =
+                          confirmTradeLoading &&
+                          !!confirmOrder?.id &&
+                          lastActionTradeIdRef.current === confirmOrder.id;
+                        return isThisTradeLoading ? "opacity-60 cursor-not-allowed" : "";
+                      })()}`}
                       onClick={handleConfirmTrade}
                       disabled={
-                        confirmTradeLoading ||
-                        !confirmOrder?.id ||
-                        confirmOrder?.status === "matched"
+                        (() => {
+                          const isThisTradeLoading =
+                            confirmTradeLoading &&
+                            !!confirmOrder?.id &&
+                            lastActionTradeIdRef.current === confirmOrder.id;
+                          return (
+                            isThisTradeLoading ||
+                            !confirmOrder?.id ||
+                            confirmOrder?.status === "matched"
+                          );
+                        })()
                       }
                     >
-                      {confirmTradeLoading
-                        ? "Notifying seller..."
-                        : "Payments Received"}
+                      {(() => {
+                        const isThisTradeLoading =
+                          confirmTradeLoading &&
+                          !!confirmOrder?.id &&
+                          lastActionTradeIdRef.current === confirmOrder.id;
+                        return isThisTradeLoading ? "Notifying seller..." : "Payments Received";
+                      })()}
                     </button>
                   </div>
                 </div>
