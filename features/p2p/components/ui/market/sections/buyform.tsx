@@ -42,6 +42,8 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
   const [showAppealModal, setShowAppealModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const prevStatusRef = useRef<string | undefined>(undefined);
+  const prevTradeIdRef = useRef<string | null>(null);
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
@@ -209,20 +211,60 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
     }
   }, [confirmOrder?.status, displaySeconds]);
 
-  // Show success modal when trade is completed (only if not already shown)
+  // Reset modal and previous status when switching to a different trade
   useEffect(() => {
-    if ((confirmOrder?.status as string) === "completed") {
-      // Check if we've already shown the success modal for this trade
-      const modalShownKey = `success_modal_shown_${confirmOrder?.id}`;
+    if (confirmOrder?.id !== prevTradeIdRef.current) {
+      setShowSuccessModal(false);
+      prevTradeIdRef.current = confirmOrder?.id || null;
+      prevStatusRef.current = undefined;
+    }
+  }, [confirmOrder?.id]);
+
+  // Show success modal only on transition to completed for the current trade
+  useEffect(() => {
+    const currentId = confirmOrder?.id || "";
+    const newStatus = confirmOrder?.status as string | undefined;
+    const prevStatus = prevStatusRef.current;
+    const paramId = (params?.id as string) || localStorage.getItem('p2p_trade_id') || "";
+
+    // Ensure we're reacting only to the currently viewed trade
+    if (!currentId || (paramId && currentId !== paramId)) {
+      prevStatusRef.current = newStatus;
+      return;
+    }
+
+    if (newStatus === "completed" && prevStatus !== "completed") {
+      const modalShownKey = `success_modal_shown_${currentId}`;
       const hasShownModal = localStorage.getItem(modalShownKey);
-      
       if (!hasShownModal) {
         setShowSuccessModal(true);
-        // Mark that we've shown the modal for this trade
         localStorage.setItem(modalShownKey, 'true');
       }
     }
-  }, [confirmOrder?.status, confirmOrder?.id]);
+
+    prevStatusRef.current = newStatus;
+  }, [confirmOrder?.status, confirmOrder?.id, params?.id]);
+
+  // Cleanup on unmount to treat next visit as new
+  useEffect(() => {
+    return () => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const orderSlice = require("@/features/p2p/slices/orderSlice");
+        if (orderSlice?.resetConfirmOrderState) {
+          dispatch(orderSlice.resetConfirmOrderState());
+        }
+        if (orderSlice?.resetSingleOrderState) {
+          dispatch(orderSlice.resetSingleOrderState());
+        }
+      } catch (_) {
+        // no-op
+      }
+      prevStatusRef.current = undefined;
+      prevTradeIdRef.current = null;
+      setShowSuccessModal(false);
+    };
+  }, [dispatch]);
 
   // Get payment details from order data
   const paymentDetails = singleOrder?.payment_details?.[0];
