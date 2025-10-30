@@ -66,17 +66,28 @@ const GradientLineChart = React.memo(
     showData1?: boolean;
     showData2?: boolean;
   }) => {
-    // Memoize chart dimensions (constants)
+    // Memoize chart dimensions (responsive)
+    const [windowWidth, setWindowWidth] = React.useState(
+      typeof window !== "undefined" ? window.innerWidth : 1200
+    );
+
+    React.useEffect(() => {
+      if (typeof window === "undefined") return;
+      const handleResize = () => setWindowWidth(window.innerWidth);
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
+    }, []);
+
     const chartDimensions = React.useMemo(
       () => ({
         width: "100%",
-        height: 240,
-        left: 60,
-        right: 400,
-        top: 40,
-        bottom: 200,
+        height: windowWidth < 640 ? 200 : 240,
+        left: windowWidth < 640 ? 40 : windowWidth < 1024 ? 50 : 60,
+        right: windowWidth < 640 ? 80 : windowWidth < 1024 ? 300 : 400,
+        top: windowWidth < 640 ? 30 : 40,
+        bottom: windowWidth < 640 ? 160 : 200,
       }),
-      []
+      [windowWidth]
     );
 
     // Memoize min/max calculations
@@ -170,14 +181,14 @@ const GradientLineChart = React.memo(
     );
 
     return (
-      <div className="w-full overflow-x-auto">
+      <div className="w-full overflow-x-auto scrollbar-thin">
         <svg
           width="100%"
-          height="100%"
-          viewBox="0 0 440 240"
-          preserveAspectRatio="none"
-          className="block w-full h-full"
-          style={{ display: "block" }}
+          height={chartDimensions.height}
+          viewBox={`0 0 440 ${chartDimensions.height}`}
+          preserveAspectRatio="xMidYMid meet"
+          className="block w-full"
+          style={{ display: "block", minHeight: `${chartDimensions.height}px` }}
         >
           <defs>
             <linearGradient
@@ -232,7 +243,7 @@ const GradientLineChart = React.memo(
                   2
                 }
                 fill="#A3A3A3"
-                fontSize="11"
+                fontSize={windowWidth < 640 ? "9" : "11"}
                 textAnchor="end"
                 alignmentBaseline="middle"
                 className="font-medium"
@@ -308,7 +319,13 @@ function SimpleDonutChart({
   const circumference = 2 * Math.PI * radius;
   let offset = 0;
   return (
-    <svg width="100" height="100" viewBox="0 0 100 100">
+    <svg
+      width="100"
+      height="100"
+      viewBox="0 0 100 100"
+      className="w-full h-auto max-w-[100px]"
+      preserveAspectRatio="xMidYMid meet"
+    >
       {data.map((d, i) => {
         const value = total > 0 ? ((d.value || 0) / total) * circumference : 0;
         const el = (
@@ -355,7 +372,13 @@ function DonutChartWithCenter({
   const allZero = actualTotal === 0;
 
   return (
-    <svg width="180" height="180" viewBox="0 0 180 180">
+    <svg
+      width="180"
+      height="180"
+      viewBox="0 0 180 180"
+      className="w-full h-auto max-w-[180px]"
+      preserveAspectRatio="xMidYMid meet"
+    >
       {allZero ? (
         // Show gray circle when all values are 0
         <circle
@@ -602,12 +625,12 @@ const LineCharts = React.memo(
       [selectedTimePeriod]
     );
 
-  // Get user email from storage
-  useEffect(() => {
-    const profile = storage.getProfile();
-    const email = profile?.user?.email || "";
+    // Get user email from storage
+    useEffect(() => {
+      const profile = storage.getProfile();
+      const email = profile?.user?.email || "";
       setUserEmail(email);
-  }, []);
+    }, []);
 
     const { transactions: p2pTransactions } = useSelector(
       (state: any) => state.p2pTransactions
@@ -709,22 +732,17 @@ const LineCharts = React.memo(
       (state: RootState) => state.auth
     );
 
-  
-
     useEffect(() => {
       const fetchData = async () => {
         if (user?.referral_code && isAuthenticated) {
           try {
             await Promise.all([
               dispatch(fetchReferralWallet()).catch((error) => {
-                
                 return null;
               }),
             ]);
             await Promise.all([dispatch(fetchReferralWallet())]);
-          } catch (error) {
-           
-          }
+          } catch (error) {}
         }
       };
       fetchData();

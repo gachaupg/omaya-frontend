@@ -96,7 +96,6 @@ const getColorScheme = (symbol: string) => {
   }
 };
 
-
 const MiniChart = ({
   color,
   bg,
@@ -190,8 +189,7 @@ const CryptoCard = ({
 
 const PriceCards = React.memo(() => {
   const [isMounted, setIsMounted] = useState(false);
-  const [cryptoData, setCryptoData] =
-    useState<CryptoData[]>([]);
+  const [cryptoData, setCryptoData] = useState<CryptoData[]>([]);
   const [loading, setLoading] = useState(true);
   const fetchedRef = React.useRef(false);
   const lastFetchRef = React.useRef<number>(0);
@@ -252,19 +250,22 @@ const PriceCards = React.memo(() => {
 
   return (
     <div className="w-full">
-      <h2 className="dark:text-white text-[16px] mb-4">
+      <h2 className="dark:text-white text-sm sm:text-base mb-3 sm:mb-4">
         Market Overview{" "}
-        {loading && <span className="text-sm text-gray-500">(Loading...)</span>}
+        {loading && (
+          <span className="text-xs sm:text-sm text-gray-500">(Loading...)</span>
+        )}
       </h2>
       {cryptoData.length > 0 ? (
-        <div className="flex flex-row gap-4 overflow-x-auto pb-4">
+        <div className="flex flex-row gap-3 sm:gap-4 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory pb-4 -mx-1 px-1">
           {cryptoData.map((crypto, index) => (
-            <CryptoCard key={`${crypto.symbol}-${index}`} {...crypto} />
+            <div key={`${crypto.symbol}-${index}`} className="snap-start">
+              <CryptoCard {...crypto} />
+            </div>
           ))}
         </div>
       ) : !loading ? (
-        <div className="">
-        </div>
+        <div className=""></div>
       ) : null}
     </div>
   );

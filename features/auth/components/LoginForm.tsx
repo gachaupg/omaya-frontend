@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import GoogleAuthButton from "./GoogleAuthButton";
 import { useI18n } from "@/lib/useI18n";
 
-import { logger } from '@/lib/utils/logger';
+import { logger } from "@/lib/utils/logger";
 import DragFitCaptcha from "./capture";
 import { useTheme } from "@/context/theme";
 
@@ -44,11 +44,11 @@ export default function LoginPage() {
   }, [isAuthenticated, router]);
 
   const handleGoogleSuccess = (userData: any) => {
-    logger.debug('auth', "Google authentication successful:", userData);
+    logger.debug("auth", "Google authentication successful:", userData);
     // Handle successful Google authentication
     if (userData.user) {
       // You can dispatch to Redux store here if needed
-      logger.debug('auth', "User authenticated:", userData.user);
+      logger.debug("auth", "User authenticated:", userData.user);
     }
   };
 
@@ -58,12 +58,15 @@ export default function LoginPage() {
 
   const handleCaptchaSuccess = () => {
     setCaptchaVerified(true);
-    setErrors(prev => ({ ...prev, captcha: "" }));
+    setErrors((prev) => ({ ...prev, captcha: "" }));
   };
 
   const handleCaptchaFail = () => {
     setCaptchaVerified(false);
-    setErrors(prev => ({ ...prev, captcha: "Captcha verification failed. Please try again." }));
+    setErrors((prev) => ({
+      ...prev,
+      captcha: "Captcha verification failed. Please try again.",
+    }));
   };
 
   const validateForm = () => {
@@ -168,9 +171,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen dark:bg-[#18181D] bg-gray-50 flex flex-col md:flex-row items-start justify-center relative overflow-hidden px-6 py-16 md:pt-24 md:pb-24">
+    <div className="min-h-screen dark:bg-[#18181D] bg-gray-50 flex flex-col lg:flex-row items-start justify-center relative overflow-hidden px-4 sm:px-6 py-12 sm:py-16 lg:pt-24 lg:pb-24">
       {/* Left Side - Mobile App Preview */}
-      <div className="w-full md:w-1/2 flex justify-center mb-8 md:mb-0 relative z-10">
+      <div className="hidden lg:flex lg:w-1/2 justify-center mb-8 lg:mb-0 relative z-10">
         {/* Background Glow Effect */}
         <div className="w-[438px] h-[403px] bg-[#1D8751] blur-[60px] absolute left-16 2xl:left-54 opacity-60"></div>
         <div className="relative">
@@ -219,8 +222,8 @@ export default function LoginPage() {
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="w-full md:w-1/2 relative z-10">
-        <div className="max-w-md mx-auto 2xl:max-w-3/4">
+      <div className="w-full lg:w-1/2 relative z-10">
+        <div className="max-w-md mx-auto lg:max-w-lg xl:max-w-xl 2xl:max-w-2xl">
           <div className="mb-6">
             <h1 className="dark:text-white text-gray-900 text-2xl font-semibold">
               {t("auth.login.title", "Welcome")}
@@ -230,7 +233,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             {/* Email Field */}
             <div>
               <label
@@ -553,14 +556,14 @@ export default function LoginPage() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4">
                 <GoogleAuthButton
                   onSuccess={handleGoogleSuccess}
                   onError={handleGoogleError}
                 />
                 <button
                   type="button"
-                  className="flex items-center justify-center py-2 px-4 rounded-lg border dark:border-gray-700 border-gray-300 dark:bg-[#1D1D23] bg-white dark:text-white text-gray-900 dark:hover:bg-[#1a1a1a] hover:bg-gray-100 transition-colors duration-300"
+                  className="flex items-center justify-center py-2.5 sm:py-2 px-4 rounded-lg border dark:border-gray-700 border-gray-300 dark:bg-[#1D1D23] bg-white dark:text-white text-gray-900 dark:hover:bg-[#1a1a1a] hover:bg-gray-100 transition-colors duration-300"
                 >
                   <svg
                     className="w-6 h-6 mr-2"

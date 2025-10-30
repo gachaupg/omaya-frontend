@@ -8,7 +8,7 @@ import TradePreview from "./sections/tradePreview";
 import Loader from "../../Common/Loader";
 import Image from "next/image";
 
-import { logger } from '@/lib/utils/logger';
+import { logger } from "@/lib/utils/logger";
 
 // Bank icons mapping
 const BANK_ICONS: Record<string, string> = {
@@ -49,18 +49,18 @@ const MarketTable: React.FC<MarketTableProps> = ({
   });
 
   const handleTradeClick = (i: number) => setSelectedRowIndex(i);
-  
+
   const handleMessagesClick = (row: any) => {
     // Open messages in new tab using the order ID
     const orderId = row.id;
     if (orderId) {
-      console.log('Opening messages for order:', orderId);
-      window.open(`/p2p/messages/${orderId}`, '_blank');
+      console.log("Opening messages for order:", orderId);
+      window.open(`/p2p/messages/${orderId}`, "_blank");
     } else {
-      console.error('No order ID found for trade:', row);
+      console.error("No order ID found for trade:", row);
     }
   };
-  
+
   const handleImageClick = (imageUrl: string, advertiserName: string) => {
     setImageModal({
       isOpen: true,
@@ -91,8 +91,8 @@ const MarketTable: React.FC<MarketTableProps> = ({
     }
   }, [imageModal.isOpen]);
 
-  logger.debug('p2p', "data in table", data);
-  logger.debug('p2p', "currentPage", currentPage);
+  logger.debug("p2p", "data in table", data);
+  logger.debug("p2p", "currentPage", currentPage);
   const handleSort = (key: string) => {
     setSortConfig((prev) => ({
       key,
@@ -106,10 +106,10 @@ const MarketTable: React.FC<MarketTableProps> = ({
 
   return (
     <div className="w-full">
-      <div className="overflow-x-auto rounded-2xl">
-        <div className="min-w-[800px] w-full overflow-hidden border bg-white border-gray-200 rounded-2xl dark:bg-[#1D1D23] dark:border-[#35353E]">
+      <div className="overflow-x-auto scrollbar-thin scroll-smooth rounded-2xl">
+        <div className="min-w-[800px] lg:min-w-full w-full overflow-hidden border bg-white border-gray-200 rounded-2xl dark:bg-[#1D1D23] dark:border-[#35353E]">
           {/* ---------------- header row ---------------- */}
-          <div className="grid grid-cols-5 py-3 px-4 border-b bg-gray-50 border-gray-200 text-xs font-semibold text-gray-500 dark:bg-[#35353E] dark:border-[#35353E] dark:text-[#788099]">
+          <div className="grid grid-cols-5 py-3 px-3 sm:px-4 border-b bg-gray-50 border-gray-200 text-[10px] sm:text-xs font-semibold text-gray-500 dark:bg-[#35353E] dark:border-[#35353E] dark:text-[#788099]">
             <div
               className="min-w-[200px] flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
               onClick={() => handleSort("advertiser")}
@@ -156,22 +156,27 @@ const MarketTable: React.FC<MarketTableProps> = ({
             /* ---------------- table rows --------------- */
             data.map((row, idx) => (
               <React.Fragment key={idx}>
-                <div className="grid grid-cols-5 items-center py-4 px-4 border-b last:border-b-0 bg-white hover:bg-gray-50 border-gray-200 dark:bg-[#18181D] dark:hover:bg-[#2d2d36] dark:border-[#35353E]">
+                <div className="grid grid-cols-5 items-center py-3 sm:py-4 px-3 sm:px-4 border-b last:border-b-0 bg-white hover:bg-gray-50 border-gray-200 dark:bg-[#18181D] dark:hover:bg-[#2d2d36] dark:border-[#35353E]">
                   {/* Advertiser */}
                   <div className="flex flex-col gap-1 min-w-[200px]">
                     <div className="flex items-center gap-2">
-                    {row.advertiser_photo ? (
-                      <img 
-                        src={row.advertiser_photo} 
-                        alt={row.advertiser} 
-                        className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity" 
-                        onClick={() => handleImageClick(row.advertiser_photo, row.advertiser)}
-                      />
-                    ) : (
-                      <span className="bg-[#1D8751] text-white h-10 w-10 rounded-[10px] text-xs font-bold flex items-center justify-center">
-                        {row.advertiserInitials}
-                      </span>
-                    )}
+                      {row.advertiser_photo ? (
+                        <img
+                          src={row.advertiser_photo}
+                          alt={row.advertiser}
+                          className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() =>
+                            handleImageClick(
+                              row.advertiser_photo,
+                              row.advertiser
+                            )
+                          }
+                        />
+                      ) : (
+                        <span className="bg-[#1D8751] text-white h-10 w-10 rounded-[10px] text-xs font-bold flex items-center justify-center">
+                          {row.advertiserInitials}
+                        </span>
+                      )}
                       <span className="font-medium flex items-center text-sm text-gray-900 dark:text-[#E4E4E6]">
                         {row.advertiser}
                         <FaCheckCircle className="text-[#FFD600] ml-1" />
@@ -185,10 +190,11 @@ const MarketTable: React.FC<MarketTableProps> = ({
                     </span>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="flex items-center gap-1 text-xs text-[#1D8751] font-semibold">
-                        <ThumbsUp height={10} /> {row.exchange_rate || '0'} %
+                        <ThumbsUp height={10} /> {row.exchange_rate || "0"} %
                       </span>
                       <span className="flex items-center gap-1 text-xs text-[#1D8751] font-semibold">
-                        <FaRegClock className="text-xs" /> {row.avgRealiseTime || '0'}
+                        <FaRegClock className="text-xs" />{" "}
+                        {row.avgRealiseTime || "0"}
                       </span>
                     </div>
                   </div>
@@ -215,21 +221,31 @@ const MarketTable: React.FC<MarketTableProps> = ({
                           className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-white w-1/2"
                         >
                           <img
-                            src={method.provider_logo || "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"}
+                            src={
+                              method.provider_logo ||
+                              "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                            }
                             alt={method.provider}
                             className="w-4 h-4 rounded object-cover border border-red-500"
-                            style={{ 
-                              width: '16px', 
-                              height: '16px', 
-                              display: 'block',
-                              backgroundColor: 'red'
+                            style={{
+                              width: "16px",
+                              height: "16px",
+                              display: "block",
+                              backgroundColor: "red",
                             }}
                             onError={(e) => {
-                              console.log("Image failed to load:", method.provider_logo);
-                              e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                              console.log(
+                                "Image failed to load:",
+                                method.provider_logo
+                              );
+                              e.currentTarget.src =
+                                "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
                             }}
                             onLoad={() => {
-                              console.log("Image loaded successfully:", method.provider);
+                              console.log(
+                                "Image loaded successfully:",
+                                method.provider
+                              );
                             }}
                           />
                           {method.provider}
@@ -239,19 +255,18 @@ const MarketTable: React.FC<MarketTableProps> = ({
                   </div>
 
                   {/* Trade */}
-                  <div className="flex justify-end gap-2 min-w-[200px]">
+                  <div className="flex justify-end gap-2 min-w-[120px]">
                     <Button
                       width={116}
                       height={35}
                       borderRadius={10}
                       variant={activeTab === "sell" ? "secondary" : "primary"}
                       size="sm"
-                      className="min-w-[90px] font-semibold"
+                      className="min-w-[90px] sm:min-w-[100px] font-semibold text-xs sm:text-sm min-h-[44px] sm:min-h-[35px] px-3 sm:px-4"
                       onClick={() => handleTradeClick(idx)}
                     >
                       {activeTab === "sell" ? "SELL USDT" : "BUY USDT"}
                     </Button>
-                   
                   </div>
                 </div>
                 {selectedRowIndex === idx && (
@@ -313,11 +328,11 @@ const MarketTable: React.FC<MarketTableProps> = ({
 
       {/* Image Modal */}
       {imageModal.isOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
           onClick={closeImageModal}
         >
-          <div 
+          <div
             className="relative bg-white dark:bg-[#1D1D23] rounded-2xl max-w-2xl max-h-[90vh] w-full"
             onClick={(e) => e.stopPropagation()}
           >
@@ -333,7 +348,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                 <FaTimes className="w-5 h-5 text-gray-500 dark:text-[#8C8CA1]" />
               </button>
             </div>
-            
+
             {/* Image */}
             <div className="p-4">
               <div className="relative w-full h-96 bg-gray-100 dark:bg-[#35353E] rounded-xl overflow-hidden">
@@ -342,12 +357,13 @@ const MarketTable: React.FC<MarketTableProps> = ({
                   alt={imageModal.advertiserName}
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    e.currentTarget.src = "https://via.placeholder.com/400x400/1D8751/ffffff?text=Image+Not+Found";
+                    e.currentTarget.src =
+                      "https://via.placeholder.com/400x400/1D8751/ffffff?text=Image+Not+Found";
                   }}
                 />
               </div>
             </div>
-            
+
             {/* Footer */}
             <div className="flex justify-end p-4 border-t border-gray-200 dark:border-[#35353E]">
               <Button

@@ -645,7 +645,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
           </Button> */}
         </div>
       </div>
-      <div className="w-full overflow-x-auto">
+      <div className="w-full overflow-x-auto scrollbar-thin scroll-smooth">
         <MarketTable
           data={transformedData}
           currentPage={currentPage}

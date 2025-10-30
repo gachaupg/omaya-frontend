@@ -6,10 +6,16 @@ import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { AppDispatch } from "@/store";
 import { fetchAssets } from "@/features/exchange/slices/exchangeSlice";
-import { fetchSupportedAssets, fetchSwapEstimate } from "@/features/swap/slices/swapSlice";
+import {
+  fetchSupportedAssets,
+  fetchSwapEstimate,
+} from "@/features/swap/slices/swapSlice";
 import { fetchAdminPaymentDetails } from "@/features/exchange/slices/paymentSlice";
 import { fetchPublicPaymentMethods } from "@/features/p2p/slices/paymentMethodsSlice";
-import { useAssetsDisplay, usePaymentMethodsDisplay } from "@/features/express/hooks/useDataDisplay";
+import {
+  useAssetsDisplay,
+  usePaymentMethodsDisplay,
+} from "@/features/express/hooks/useDataDisplay";
 import { FaSearch } from "react-icons/fa";
 import SwapWidget from "@/features/swap/components/SwapWidget";
 import Express from "@/features/express/components/express";
@@ -57,22 +63,22 @@ interface Asset {
 // Network mapping function
 const getNetworkDisplayName = (network: string) => {
   const networkMap: { [key: string]: string } = {
-    'bsc': 'BSC',
-    'matic': 'Polygon',
-    'avaxc': 'Avalanche',
-    'eth': 'Ethereum',
-    'osmo': 'Osmosis',
-    'band': 'Band Protocol',
-    'sol': 'Solana',
-    'nano': 'Nano',
-    'sxp': 'Solar',
-    'luna': 'Terra',
-    'base': 'Base',
-    'trc20': 'TRON',
-    'trx': 'TRON'
+    bsc: "BSC",
+    matic: "Polygon",
+    avaxc: "Avalanche",
+    eth: "Ethereum",
+    osmo: "Osmosis",
+    band: "Band Protocol",
+    sol: "Solana",
+    nano: "Nano",
+    sxp: "Solar",
+    luna: "Terra",
+    base: "Base",
+    trc20: "TRON",
+    trx: "TRON",
   };
-  
-  return networkMap[network?.toLowerCase()] || network || 'Unknown';
+
+  return networkMap[network?.toLowerCase()] || network || "Unknown";
 };
 
 // Get asset network
@@ -80,8 +86,8 @@ const getAssetNetwork = (asset: Asset) => {
   if (asset?.network) {
     return asset.network;
   }
-  
-  return '';
+
+  return "";
 };
 
 // Get asset image URL with fallbacks
@@ -94,7 +100,7 @@ const getAssetImageUrl = (asset: Asset) => {
     asset?.icon_url,
     (asset as any)?.image,
     (asset as any)?.logo,
-    (asset as any)?.logo_url
+    (asset as any)?.logo_url,
   ].filter(Boolean);
 
   if (possibleUrls.length > 0) {
@@ -102,8 +108,8 @@ const getAssetImageUrl = (asset: Asset) => {
   }
 
   // Generate common crypto asset image URLs based on ticker/symbol
-  const ticker = (asset?.ticker || asset?.symbol || '').toLowerCase();
-  
+  const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
+
   if (ticker) {
     // Common crypto asset image patterns
     const commonPatterns = [
@@ -112,9 +118,9 @@ const getAssetImageUrl = (asset: Asset) => {
       `https://cryptoicons.org/api/color/${ticker}/200`,
       `https://cryptoicons.org/api/icon/${ticker}/200`,
       `https://s2.coinmarketcap.com/static/img/coins/64x64/${ticker}.png`,
-      `https://s2.coinmarketcap.com/static/img/coins/32x32/${ticker}.png`
+      `https://s2.coinmarketcap.com/static/img/coins/32x32/${ticker}.png`,
     ];
-    
+
     // Return the first pattern (we'll let the onError handle fallbacks)
     return commonPatterns[0];
   }
@@ -126,20 +132,20 @@ const getAssetImageUrl = (asset: Asset) => {
 // Check if asset uses simple calculation (USDT on BSC, USDC on BSC) - only for Express Exchange
 const isSimpleCalculationAsset = (asset: Asset, activeTab: Tab) => {
   if (!asset || activeTab !== "express") return false;
-  
-  const ticker = (asset?.ticker || asset?.symbol || '').toLowerCase();
-  const network = (asset?.network || '').toLowerCase();
-  
+
+  const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
+  const network = (asset?.network || "").toLowerCase();
+
   return (
-    (ticker === 'usdt' && network === 'bsc') ||
-    (ticker === 'usdc' && network === 'bsc')
+    (ticker === "usdt" && network === "bsc") ||
+    (ticker === "usdc" && network === "bsc")
   );
 };
 
 // Calculate amounts based on mode and asset type
 const calculateAmounts = (
-  fromAmount: number, 
-  fromPay: boolean, 
+  fromAmount: number,
+  fromPay: boolean,
   selectedAsset: Asset | null,
   activeTab: Tab,
   dispatch: AppDispatch,
@@ -163,13 +169,17 @@ const calculateAmounts = (
   setCalculationError(null);
 
   try {
-    if (activeTab === "express" && isSimpleCalculationAsset(selectedAsset, activeTab)) {
+    if (
+      activeTab === "express" &&
+      isSimpleCalculationAsset(selectedAsset, activeTab)
+    ) {
       // Express Exchange: Simple calculation for USDT/USDC on BSC - Flat $2 fee
       let calculatedAmount;
-      
+
       if (fromPay) {
         // From pay amount to get amount
-        calculatedAmount = fromAmount >= 2 ? Math.max(0, fromAmount - 2) : fromAmount;
+        calculatedAmount =
+          fromAmount >= 2 ? Math.max(0, fromAmount - 2) : fromAmount;
         setGetAmount(calculatedAmount);
         setGetAmountInput(calculatedAmount.toString());
       } else {
@@ -198,20 +208,22 @@ const calculateAmounts = (
             amount: fromAmount,
           })
         ),
-        timeoutPromise
+        timeoutPromise,
       ])
         .then((result: any) => {
           if (result.payload) {
             setEstimate(result.payload);
             if (fromPay) {
-              const estimatedAmount = result.payload.estimated_amount || result.payload.toAmount;
+              const estimatedAmount =
+                result.payload.estimated_amount || result.payload.toAmount;
               if (estimatedAmount) {
                 setGetAmount(estimatedAmount);
                 setGetAmountInput(estimatedAmount.toString());
-      }
-    } else {
+              }
+            } else {
               // For reverse calculation, we need to estimate from the receive amount
-              const estimatedAmount = result.payload.estimated_amount || result.payload.toAmount;
+              const estimatedAmount =
+                result.payload.estimated_amount || result.payload.toAmount;
               if (estimatedAmount) {
                 setPayAmount(estimatedAmount);
                 setPayAmountInput(estimatedAmount.toString());
@@ -222,14 +234,15 @@ const calculateAmounts = (
         })
         .catch((error) => {
           console.error("Failed to fetch swap estimate:", error);
-          
+
           // Handle errors gracefully - fallback to percentage calculation
-      const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
-        ? parseFloat(String(selectedAsset.range_commissions[0].commission))
-        : 2; // Default 2%
-      
+          const commissionRate = selectedAsset?.range_commissions?.[0]
+            ?.commission
+            ? parseFloat(String(selectedAsset.range_commissions[0].commission))
+            : 2; // Default 2%
+
           const networkFee = 0;
-          
+
           if (fromPay) {
             const commissionAmount = (fromAmount * commissionRate) / 100;
             const totalFees = networkFee + commissionAmount;
@@ -243,7 +256,7 @@ const calculateAmounts = (
             setPayAmount(calculatedAmount);
             setPayAmountInput(calculatedAmount.toString());
           }
-          
+
           setEstimateError("API unavailable, using fallback calculation");
           setIsCalculating(false);
         })
@@ -256,9 +269,9 @@ const calculateAmounts = (
       const commissionRate = selectedAsset?.range_commissions?.[0]?.commission
         ? parseFloat(String(selectedAsset.range_commissions[0].commission))
         : 0.5; // Default 0.5% for swap
-      
+
       const networkFee = 0;
-      
+
       if (fromPay) {
         // From pay amount to get amount
         const commissionAmount = (fromAmount * commissionRate) / 100;
@@ -287,7 +300,9 @@ interface ExchangeFormProps {
   isHomePage?: boolean;
 }
 
-export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) {
+export default function ExchangeForm({
+  isHomePage = false,
+}: ExchangeFormProps) {
   const { isDark } = useTheme();
   const { t } = useMarketingI18n();
   const dispatch = useDispatch<AppDispatch>();
@@ -297,15 +312,13 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
   const { assets, loading: assetsLoading } = useSelector(
     (state: any) => state.exchange
   );
-  const { supportedAssets: swapAssets, loading: swapAssetsLoading } = useSelector(
-    (state: any) => state.swap
-  );
+  const { supportedAssets: swapAssets, loading: swapAssetsLoading } =
+    useSelector((state: any) => state.swap);
   const { adminPaymentDetails, loading: paymentLoading } = useSelector(
     (state: any) => state.payment
   );
-  const { publicPaymentMethods, publicMethodsLoading, publicMethodsError } = useSelector(
-    (state: any) => state.paymentMethods
-  );
+  const { publicPaymentMethods, publicMethodsLoading, publicMethodsError } =
+    useSelector((state: any) => state.paymentMethods);
   const { isAuthenticated } = useSelector((state: any) => state.auth);
 
   /* ------------------- State ------------------- */
@@ -324,7 +337,7 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
   const [isCalculating, setIsCalculating] = useState(false);
   const [calculationError, setCalculationError] = useState<string | null>(null);
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
-  
+
   // API calculation states
   const [estimate, setEstimate] = useState<any>(null);
   const [estimateLoading, setEstimateLoading] = useState(false);
@@ -341,7 +354,7 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
     assetsLoading,
     swapAssetsLoading,
     null, // exchange error
-    null  // swap error
+    null // swap error
   );
 
   // Process payment methods data based on API structure - same logic as RatesCalculator
@@ -374,17 +387,27 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
 
   // Get unique payment methods from processed data
   const uniquePaymentMethods = Array.from(
-    new Set((processedPaymentMethods || []).map(getPaymentMethodName).filter(Boolean))
-  ).filter(method => method && typeof method === 'string' && method.trim().length > 0) as string[];
+    new Set(
+      (processedPaymentMethods || []).map(getPaymentMethodName).filter(Boolean)
+    )
+  ).filter(
+    (method) => method && typeof method === "string" && method.trim().length > 0
+  ) as string[];
 
   // Add "Bank" as a default option if not already present
-  const validPaymentMethods = uniquePaymentMethods.filter(method => 
-    method && typeof method === 'string' && method.trim().length > 0
+  const validPaymentMethods = uniquePaymentMethods.filter(
+    (method) => method && typeof method === "string" && method.trim().length > 0
   );
-  
+
   // Fallback payment methods if data is corrupted or not loaded yet
-  const fallbackPaymentMethods = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
-  
+  const fallbackPaymentMethods = [
+    "Bank",
+    "Crypto",
+    "Forex",
+    "Mobile",
+    "Marchant",
+  ];
+
   // Use API data if available and valid, otherwise use fallback
   const finalPaymentMethods = useMemo(() => {
     // If we have valid payment methods from API, use them (with Bank added if not present)
@@ -394,14 +417,16 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
         : ["Bank", ...validPaymentMethods];
       return methodsWithBank;
     }
-    
+
     // Otherwise, use fallback methods
     console.log("🔍 Using fallback payment methods:", fallbackPaymentMethods);
     return fallbackPaymentMethods;
   }, [validPaymentMethods]);
 
   // Don't use usePaymentMethodsDisplay for string arrays - handle loading state directly
-  const paymentMethodsLoading = isHomePage ? publicMethodsLoading : paymentLoading;
+  const paymentMethodsLoading = isHomePage
+    ? publicMethodsLoading
+    : paymentLoading;
   const paymentMethodsError = isHomePage ? publicMethodsError : null;
 
   // Debug logging for data display
@@ -417,7 +442,7 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
     publicMethodsError: publicMethodsError,
     paymentMethodsLoading: paymentMethodsLoading,
     paymentMethodsError: paymentMethodsError,
-    finalPaymentMethodsLength: finalPaymentMethods.length
+    finalPaymentMethodsLength: finalPaymentMethods.length,
   });
 
   const presets: Record<Tab, Preset> = {
@@ -438,11 +463,21 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
   useEffect(() => {
     // Skip API calls on home page if user is not authenticated
     if (isHomePage && !isAuthenticated) {
-      console.log("Skipping asset fetch: isHomePage =", isHomePage, "isAuthenticated =", isAuthenticated);
+      console.log(
+        "Skipping asset fetch: isHomePage =",
+        isHomePage,
+        "isAuthenticated =",
+        isAuthenticated
+      );
       return;
     }
-    
-    console.log("Fetching exchange assets: isHomePage =", isHomePage, "isAuthenticated =", isAuthenticated);
+
+    console.log(
+      "Fetching exchange assets: isHomePage =",
+      isHomePage,
+      "isAuthenticated =",
+      isAuthenticated
+    );
     // Fetch assets
     dispatch(fetchAssets(false))
       .unwrap()
@@ -459,8 +494,13 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
     if (isHomePage && !isAuthenticated) {
       return;
     }
-    
-    console.log("Fetching swap assets: isHomePage =", isHomePage, "isAuthenticated =", isAuthenticated);
+
+    console.log(
+      "Fetching swap assets: isHomePage =",
+      isHomePage,
+      "isAuthenticated =",
+      isAuthenticated
+    );
     // Fetch swap assets
     dispatch(fetchSupportedAssets(false))
       .unwrap()
@@ -473,8 +513,13 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
   }, [dispatch, isHomePage, isAuthenticated]);
 
   useEffect(() => {
-    console.log("Fetching payment methods: isHomePage =", isHomePage, "isAuthenticated =", isAuthenticated);
-    
+    console.log(
+      "Fetching payment methods: isHomePage =",
+      isHomePage,
+      "isAuthenticated =",
+      isAuthenticated
+    );
+
     if (isHomePage) {
       // For home page, use public payment methods (no authentication required)
       dispatch(fetchPublicPaymentMethods())
@@ -490,7 +535,7 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
       if (!isAuthenticated) {
         return;
       }
-      
+
       dispatch(fetchAdminPaymentDetails(false))
         .unwrap()
         .then((result) => {
@@ -505,34 +550,57 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
   /* ------------------- Asset Selection ------------------- */
   // Auto-select first asset when assets are loaded
   useEffect(() => {
-    if (assetsDisplay.shouldShowData && assetsDisplay.displayData.length > 0 && !selectedAsset) {
-
+    if (
+      assetsDisplay.shouldShowData &&
+      assetsDisplay.displayData.length > 0 &&
+      !selectedAsset
+    ) {
       // Sort assets based on active tab
       const sortedAssets = [...assetsDisplay.displayData].sort((a, b) => {
         if (activeTab === "express") {
           // For Express Exchange: USDT on BSC first, then USDC on BSC, then others
-        const tickerA = (a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase();
-        const tickerB = (b?.ticker || b?.symbol || b?.name || "").toString().toLowerCase();
-        const networkA = (a?.network || "").toString().toLowerCase();
-        const networkB = (b?.network || "").toString().toLowerCase();
+          const tickerA = (a?.ticker || a?.symbol || a?.name || "")
+            .toString()
+            .toLowerCase();
+          const tickerB = (b?.ticker || b?.symbol || b?.name || "")
+            .toString()
+            .toLowerCase();
+          const networkA = (a?.network || "").toString().toLowerCase();
+          const networkB = (b?.network || "").toString().toLowerCase();
 
-        // Priority 1: USDT on BSC
-        if (tickerA === "usdt" && networkA === "bsc" && !(tickerB === "usdt" && networkB === "bsc")) {
-          return -1;
-        }
-        if (tickerB === "usdt" && networkB === "bsc" && !(tickerA === "usdt" && networkA === "bsc")) {
-          return 1;
-        }
-        
-        // Priority 2: USDC on BSC
-        if (tickerA === "usdc" && networkA === "bsc" && !(tickerB === "usdc" && networkB === "bsc")) {
-          return -1;
-        }
-        if (tickerB === "usdc" && networkB === "bsc" && !(tickerA === "usdc" && networkA === "bsc")) {
-          return 1;
-        }
-        
-        return 0;
+          // Priority 1: USDT on BSC
+          if (
+            tickerA === "usdt" &&
+            networkA === "bsc" &&
+            !(tickerB === "usdt" && networkB === "bsc")
+          ) {
+            return -1;
+          }
+          if (
+            tickerB === "usdt" &&
+            networkB === "bsc" &&
+            !(tickerA === "usdt" && networkA === "bsc")
+          ) {
+            return 1;
+          }
+
+          // Priority 2: USDC on BSC
+          if (
+            tickerA === "usdc" &&
+            networkA === "bsc" &&
+            !(tickerB === "usdc" && networkB === "bsc")
+          ) {
+            return -1;
+          }
+          if (
+            tickerB === "usdc" &&
+            networkB === "bsc" &&
+            !(tickerA === "usdc" && networkA === "bsc")
+          ) {
+            return 1;
+          }
+
+          return 0;
         } else {
           // For Swap Crypto: keep original order
           return 0;
@@ -541,7 +609,7 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
 
       const firstAsset = sortedAssets[0];
       setSelectedAsset(firstAsset);
-      
+
       // Update currency display based on mode
       if (mode === "deposit") {
         // For deposit: payment method -> asset
@@ -549,14 +617,14 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
         setGetCurrency({
           label: firstAsset?.ticker || firstAsset?.symbol || "USDT",
           sub: firstAsset?.name || "Tether US",
-          icon: getAssetImageUrl(firstAsset)
+          icon: getAssetImageUrl(firstAsset),
         });
       } else {
         // For withdrawal: asset -> payment method
         setPayCurrency({
           label: firstAsset?.ticker || firstAsset?.symbol || "USDT",
           sub: firstAsset?.name || "Tether US",
-          icon: getAssetImageUrl(firstAsset)
+          icon: getAssetImageUrl(firstAsset),
         });
         setGetCurrency(presets.express.pay); // Bank as get
       }
@@ -566,25 +634,32 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
   /* ------------------- Click Outside Handler ------------------- */
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-        const target = event.target as HTMLElement;
-      
+      const target = event.target as HTMLElement;
+
       // Check if click is inside any dropdown using refs
       const isInsideAssetDropdown = assetDropdownRef.current?.contains(target);
-      const isInsidePaymentDropdown = paymentDropdownRef.current?.contains(target);
+      const isInsidePaymentDropdown =
+        paymentDropdownRef.current?.contains(target);
       const isInsideMainDropdown = dropdownRef.current?.contains(target);
-      const isInsideGetDropdown = getDropdownContainerRef.current?.contains(target);
-      
+      const isInsideGetDropdown =
+        getDropdownContainerRef.current?.contains(target);
+
       // Only close dropdowns if click is completely outside all dropdown areas
-      if (!isInsideAssetDropdown && !isInsidePaymentDropdown && !isInsideMainDropdown && !isInsideGetDropdown) {
-          setIsAssetDropdownOpen(false);
-          setIsPaymentDropdownOpen(false);
+      if (
+        !isInsideAssetDropdown &&
+        !isInsidePaymentDropdown &&
+        !isInsideMainDropdown &&
+        !isInsideGetDropdown
+      ) {
+        setIsAssetDropdownOpen(false);
+        setIsPaymentDropdownOpen(false);
       }
     };
 
     // Use regular event listener (not capture) to avoid conflicts
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -601,21 +676,21 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
     setSelectedPaymentMethod(paymentMethod);
     setIsPaymentDropdownOpen(false);
     setPaymentSearchTerm("");
-    
+
     // Update currency display based on current mode
     if (mode === "deposit") {
       // For deposit: payment method -> asset
       setPayCurrency({
         label: paymentMethod,
         sub: "Payment Method",
-        icon: "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+        icon: "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png",
       });
     } else {
       // For withdrawal: asset -> payment method
       setGetCurrency({
         label: paymentMethod,
         sub: "Payment Method",
-        icon: "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+        icon: "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png",
       });
     }
   };
@@ -624,7 +699,7 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
   const handleModeToggle = () => {
     const newMode = mode === "deposit" ? "withdrawal" : "deposit";
     setMode(newMode);
-    
+
     // Update currency display based on new mode
     if (newMode === "deposit") {
       // For deposit: payment method -> asset
@@ -632,17 +707,17 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
         setPayCurrency({
           label: selectedPaymentMethod,
           sub: "Payment Method",
-          icon: "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+          icon: "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png",
         });
       } else {
         setPayCurrency(presets.express.pay); // Fallback to default
       }
-      
+
       if (selectedAsset) {
         setGetCurrency({
           label: selectedAsset?.ticker || selectedAsset?.symbol || "USDT",
           sub: selectedAsset?.name || "Tether US",
-          icon: getAssetImageUrl(selectedAsset)
+          icon: getAssetImageUrl(selectedAsset),
         });
       }
     } else {
@@ -651,15 +726,15 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
         setPayCurrency({
           label: selectedAsset?.ticker || selectedAsset?.symbol || "USDT",
           sub: selectedAsset?.name || "Tether US",
-          icon: getAssetImageUrl(selectedAsset)
+          icon: getAssetImageUrl(selectedAsset),
         });
       }
-      
+
       if (selectedPaymentMethod) {
         setGetCurrency({
           label: selectedPaymentMethod,
           sub: "Payment Method",
-          icon: "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+          icon: "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png",
         });
       } else {
         setGetCurrency(presets.express.pay); // Fallback to default
@@ -673,7 +748,7 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
     const numValue = parseFloat(value) || 0;
     setPayAmount(numValue);
     setIsCalculatingFromPay(true);
-    
+
     // Calculate get amount
     calculateAmounts(
       numValue,
@@ -698,7 +773,7 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
     const numValue = parseFloat(value) || 0;
     setGetAmount(numValue);
     setIsCalculatingFromPay(false);
-    
+
     // Calculate pay amount
     calculateAmounts(
       numValue,
@@ -730,47 +805,66 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
 
   /* ------------------- Asset Filtering and Sorting ------------------- */
   // Filter assets based on search term - search by ticker and name
-  const filteredAssets = assetsDisplay.displayData?.filter((asset: Asset) => {
-    const ticker = asset?.ticker?.toUpperCase() || "";
-    const name = asset?.name?.toUpperCase() || "";
-    const symbol = asset?.symbol?.toUpperCase() || "";
-    const searchTerm = assetSearchTerm.toUpperCase();
+  const filteredAssets =
+    assetsDisplay.displayData?.filter((asset: Asset) => {
+      const ticker = asset?.ticker?.toUpperCase() || "";
+      const name = asset?.name?.toUpperCase() || "";
+      const symbol = asset?.symbol?.toUpperCase() || "";
+      const searchTerm = assetSearchTerm.toUpperCase();
 
-    return ticker.includes(searchTerm) || 
-           name.includes(searchTerm) || 
-           symbol.includes(searchTerm);
-  }) || [];
+      return (
+        ticker.includes(searchTerm) ||
+        name.includes(searchTerm) ||
+        symbol.includes(searchTerm)
+      );
+    }) || [];
 
   // Sort assets based on active tab
   const sortedAssets = [...filteredAssets].sort((a, b) => {
     if (activeTab === "express") {
       // For Express Exchange: USDT on BSC first, then USDC on BSC, then rest
-    const tickerA = (a?.ticker || a?.symbol || a?.name || "")
-      .toString()
-      .toLowerCase();
-    const tickerB = (b?.ticker || b?.symbol || b?.name || "")
-      .toString()
-      .toLowerCase();
-    const networkA = (a?.network || "").toString().toLowerCase();
-    const networkB = (b?.network || "").toString().toLowerCase();
+      const tickerA = (a?.ticker || a?.symbol || a?.name || "")
+        .toString()
+        .toLowerCase();
+      const tickerB = (b?.ticker || b?.symbol || b?.name || "")
+        .toString()
+        .toLowerCase();
+      const networkA = (a?.network || "").toString().toLowerCase();
+      const networkB = (b?.network || "").toString().toLowerCase();
 
-    // Priority 1: USDT on BSC
-    if (tickerA === "usdt" && networkA === "bsc" && !(tickerB === "usdt" && networkB === "bsc")) {
-      return -1;
-    }
-    if (tickerB === "usdt" && networkB === "bsc" && !(tickerA === "usdt" && networkA === "bsc")) {
-      return 1;
-    }
-    
-    // Priority 2: USDC on BSC
-    if (tickerA === "usdc" && networkA === "bsc" && !(tickerB === "usdc" && networkB === "bsc")) {
-      return -1;
-    }
-    if (tickerB === "usdc" && networkB === "bsc" && !(tickerA === "usdc" && networkA === "bsc")) {
-      return 1;
-    }
-    
-    return 0;
+      // Priority 1: USDT on BSC
+      if (
+        tickerA === "usdt" &&
+        networkA === "bsc" &&
+        !(tickerB === "usdt" && networkB === "bsc")
+      ) {
+        return -1;
+      }
+      if (
+        tickerB === "usdt" &&
+        networkB === "bsc" &&
+        !(tickerA === "usdt" && networkA === "bsc")
+      ) {
+        return 1;
+      }
+
+      // Priority 2: USDC on BSC
+      if (
+        tickerA === "usdc" &&
+        networkA === "bsc" &&
+        !(tickerB === "usdc" && networkB === "bsc")
+      ) {
+        return -1;
+      }
+      if (
+        tickerB === "usdc" &&
+        networkB === "bsc" &&
+        !(tickerA === "usdc" && networkA === "bsc")
+      ) {
+        return 1;
+      }
+
+      return 0;
     } else {
       // For Swap Crypto: keep original order
       return 0;
@@ -779,10 +873,12 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
 
   /* ------------------- Payment Method Filtering ------------------- */
   // Filter payment methods based on search term - use finalPaymentMethods
-  const filteredPaymentMethods = finalPaymentMethods.filter((method: string) => {
-    const searchTerm = paymentSearchTerm.toUpperCase();
-    return method.toUpperCase().includes(searchTerm);
-  });
+  const filteredPaymentMethods = finalPaymentMethods.filter(
+    (method: string) => {
+      const searchTerm = paymentSearchTerm.toUpperCase();
+      return method.toUpperCase().includes(searchTerm);
+    }
+  );
 
   // Debug filtered payment methods
   console.log("🔍 Filtered Payment Methods:", {
@@ -792,30 +888,29 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
     searchTerm: paymentSearchTerm.toUpperCase(),
     validPaymentMethods,
     uniquePaymentMethods,
-    processedPaymentMethods
+    processedPaymentMethods,
   });
 
   /* ------------------- Asset Selection ------------------- */
   const handleAssetSelect = (asset: Asset) => {
-    
     setSelectedAsset(asset);
     setIsAssetDropdownOpen(false);
     setAssetSearchTerm(""); // Clear search term when asset is selected
-    
+
     // Update currency display based on current mode
     if (mode === "deposit") {
       // For deposit: payment method -> asset
       setGetCurrency({
         label: asset?.ticker || asset?.symbol || "USDT",
         sub: asset?.name || "Tether US",
-        icon: getAssetImageUrl(asset)
+        icon: getAssetImageUrl(asset),
       });
     } else {
       // For withdrawal: asset -> payment method
       setPayCurrency({
         label: asset?.ticker || asset?.symbol || "USDT",
         sub: asset?.name || "Tether US",
-        icon: getAssetImageUrl(asset)
+        icon: getAssetImageUrl(asset),
       });
     }
   };
@@ -830,7 +925,7 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
     if (!isOpen) return null;
 
     return (
-      <div 
+      <div
         ref={paymentDropdownRef}
         className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E] rounded-xl shadow-lg z-[9999] min-w-[350px]"
       >
@@ -857,9 +952,9 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
               filteredMethods: filteredPaymentMethods,
               finalPaymentMethods: finalPaymentMethods,
               finalPaymentMethodsLength: finalPaymentMethods.length,
-              paymentSearchTerm: paymentSearchTerm
+              paymentSearchTerm: paymentSearchTerm,
             });
-            
+
             if (paymentMethodsLoading && finalPaymentMethods.length === 0) {
               return (
                 <div className="p-4 text-center text-gray-500 dark:text-gray-400">
@@ -867,51 +962,56 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
                 </div>
               );
             }
-            
+
             if (filteredPaymentMethods.length === 0) {
-              console.log("🔍 No filtered payment methods - showing empty state");
+              console.log(
+                "🔍 No filtered payment methods - showing empty state"
+              );
               return (
                 <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                  {finalPaymentMethods.length === 0 ? "No payment methods available" : "No payment methods found"}
+                  {finalPaymentMethods.length === 0
+                    ? "No payment methods available"
+                    : "No payment methods found"}
                 </div>
               );
             }
-            
-            console.log("🔍 Rendering payment methods:", filteredPaymentMethods);
-            
-            return (
-            filteredPaymentMethods.map((method: string, index: number) => (
-              <div
-                key={index}
-                className={`p-3 hover:bg-gray-50 dark:hover:bg-[#2A2A2A] cursor-pointer border-b border-gray-100 dark:border-[#35353E] last:border-b-0 ${
-                  selectedPayment === method ? "bg-[#1D8751]/10" : ""
-                }`}
-                onClick={() => {
-                  onSelect(method);
-                }}
-              >
-                <div className="flex items-center gap-3">
-                  <img
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
-                    alt="payment method icon"
-                    className="w-6 h-6 rounded-full object-cover"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2 flex-wrap">
-                      <span className="truncate">
-                        {method}
-                      </span>
-                      {selectedPayment === method && (
-                        <span className="text-[#1D8751] text-sm">✓</span>
-                      )}
-                    </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                      Payment Method
+
+            console.log(
+              "🔍 Rendering payment methods:",
+              filteredPaymentMethods
+            );
+
+            return filteredPaymentMethods.map(
+              (method: string, index: number) => (
+                <div
+                  key={index}
+                  className={`p-3 hover:bg-gray-50 dark:hover:bg-[#2A2A2A] cursor-pointer border-b border-gray-100 dark:border-[#35353E] last:border-b-0 ${
+                    selectedPayment === method ? "bg-[#1D8751]/10" : ""
+                  }`}
+                  onClick={() => {
+                    onSelect(method);
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <img
+                      src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                      alt="payment method icon"
+                      className="w-6 h-6 rounded-full object-cover"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2 flex-wrap">
+                        <span className="truncate">{method}</span>
+                        {selectedPayment === method && (
+                          <span className="text-[#1D8751] text-sm">✓</span>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                        Payment Method
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))
+              )
             );
           })()}
         </div>
@@ -935,7 +1035,7 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
   }) => (
     <button
       onClick={() => handleTabClick(id)}
-      className={`w-1/2 flex justify-center p-5 transition-opacity ${
+      className={`flex-1 flex justify-center items-center p-3 sm:p-4 md:p-5 transition-opacity min-h-[44px] ${
         activeTab === id ? "opacity-100" : "opacity-50 hover:opacity-75"
       }`}
     >
@@ -950,11 +1050,12 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
   }> = ({ amount, onChange, disabled = false }) => (
     <input
       type="text"
+      inputMode="decimal"
       value={amount}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
       placeholder="0"
-      className={`border border-gray-300 dark:border-gray-300/20 bg-white dark:bg-transparent text-gray-900 dark:text-white w-full px-5 py-4 rounded-3xl placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent ${
+      className={`border border-gray-300 dark:border-gray-300/20 bg-white dark:bg-transparent text-gray-900 dark:text-white w-full px-3 sm:px-4 md:px-5 py-3 sm:py-3.5 md:py-4 rounded-3xl placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent min-h-[48px] text-base ${
         disabled ? "opacity-50 cursor-not-allowed" : ""
       }`}
     />
@@ -969,9 +1070,9 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
     if (!isOpen) return null;
 
     return (
-      <div 
+      <div
         ref={assetDropdownRef}
-        className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl z-[9999] max-h-96 overflow-hidden min-w-[350px] w-full shadow-lg"
+        className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl z-[9999] max-h-[60vh] overflow-hidden w-full shadow-lg"
       >
         {/* Search Input */}
         <div className="p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
@@ -996,7 +1097,7 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
           ) : sortedAssets.length > 0 ? (
             sortedAssets.map((asset: Asset, index: number) => (
               <div
-                key={`${asset.asset_id || 'asset'}-${asset.symbol || asset.ticker || asset.name}-${asset.network || 'unknown'}-${index}`}
+                key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
                 className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0 min-w-0"
                 onClick={(e) => {
                   e.preventDefault();
@@ -1009,7 +1110,6 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
                   alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
                   className="w-6 h-6 rounded-full object-cover"
                   onError={(e) => {
-                   
                     e.currentTarget.src =
                       "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                   }}
@@ -1017,10 +1117,12 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
                 <div className="flex-1 min-w-0">
                   <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2 flex-wrap">
                     <span className="truncate">
-                      {(asset.ticker ||
+                      {(
+                        asset.ticker ||
                         asset.symbol ||
                         asset.name ||
-                        "Unknown").toUpperCase()}
+                        "Unknown"
+                      ).toUpperCase()}
                     </span>
                     <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0">
                       {getNetworkDisplayName(getAssetNetwork(asset))}
@@ -1029,28 +1131,32 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
                   <div className="text-[#35353e] dark:text-[#788099] text-sm truncate">
                     {(() => {
                       // Clean up asset name to remove redundant network information
-                      let displayName = asset.name || asset.ticker || asset.symbol || "Unknown Asset";
+                      let displayName =
+                        asset.name ||
+                        asset.ticker ||
+                        asset.symbol ||
+                        "Unknown Asset";
                       const originalName = displayName;
-                      
+
                       // Remove common redundant patterns - less aggressive approach
                       // Only remove redundant network info when it's duplicated in the network badge
                       displayName = displayName
                         // Handle cases like "Tether (Binance Smart Chain) (BSC)" - remove duplicate BSC
-                        .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, '')
-                        .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, '')
-                        .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, '')
-                        .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, '')
-                        .replace(/\s*\(TRON\)\s*\(TRX\)/gi, '')
-                        .replace(/\s*\(Solana\)\s*\(SOL\)/gi, '')
+                        .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, "")
+                        .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, "")
+                        .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, "")
+                        .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, "")
+                        .replace(/\s*\(TRON\)\s*\(TRX\)/gi, "")
+                        .replace(/\s*\(Solana\)\s*\(SOL\)/gi, "")
                         // Only remove single network references if they're clearly redundant
-                        .replace(/\s*\(BSC\)$/gi, '') // Only remove BSC at the end
-                        .replace(/\s*\(ETH\)$/gi, '') // Only remove ETH at the end
-                        .replace(/\s*\(MATIC\)$/gi, '') // Only remove MATIC at the end
-                        .replace(/\s*\(AVAX\)$/gi, '') // Only remove AVAX at the end
-                        .replace(/\s*\(TRX\)$/gi, '') // Only remove TRX at the end
-                        .replace(/\s*\(SOL\)$/gi, '') // Only remove SOL at the end
+                        .replace(/\s*\(BSC\)$/gi, "") // Only remove BSC at the end
+                        .replace(/\s*\(ETH\)$/gi, "") // Only remove ETH at the end
+                        .replace(/\s*\(MATIC\)$/gi, "") // Only remove MATIC at the end
+                        .replace(/\s*\(AVAX\)$/gi, "") // Only remove AVAX at the end
+                        .replace(/\s*\(TRX\)$/gi, "") // Only remove TRX at the end
+                        .replace(/\s*\(SOL\)$/gi, "") // Only remove SOL at the end
                         .trim();
-                      
+
                       // Debug logging for all assets to see the pattern
                       console.log("🔍 Asset name processing:", {
                         original: originalName,
@@ -1059,9 +1165,9 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
                         assetTicker: asset.ticker,
                         assetSymbol: asset.symbol,
                         assetNetwork: asset.network,
-                        changed: originalName !== displayName
+                        changed: originalName !== displayName,
                       });
-                      
+
                       return displayName;
                     })()}
                   </div>
@@ -1073,9 +1179,7 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
             ))
           ) : (
             <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
-              {assetSearchTerm
-                ? "No assets found"
-                : "No assets available"}
+              {assetSearchTerm ? "No assets found" : "No assets available"}
             </div>
           )}
         </div>
@@ -1086,37 +1190,37 @@ export default function ExchangeForm({ isHomePage = false }: ExchangeFormProps) 
   /* ------------------- UI ------------------- */
   // If Swap Crypto tab is active, render SwapWidget with tab controls
   if (activeTab === "swap") {
-  return (
-      <div className="w-full bg-white dark:bg-[#18181D] rounded-3xl px-6 py-2 shadow-lg mr-8 ml-4 border border-gray-200 dark:border-transparent">
-      {/* Tabs */}
-      <div className="w-full flex justify-between">
-        <TabButton id="express">
-          <h3 className="text-lg font-bold transition-colors text-gray-500 dark:text-white/50">
-            {t("marketing.exchange.tabs.express", "Express Exchange")}
-          </h3>
-        </TabButton>
-        <TabButton id="swap">
-          <h3 className="text-lg font-bold transition-colors text-gray-900 dark:text-white">
-            {t("marketing.exchange.tabs.swap", "Swap Crypto")}
-          </h3>
-        </TabButton>
-      </div>
+    return (
+      <div className="w-full bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl px-3 sm:px-4 md:px-6 py-2 shadow-lg mr-0 sm:mr-4 md:mr-8 ml-0 sm:ml-2 md:ml-4 border border-gray-200 dark:border-transparent">
+        {/* Tabs */}
+        <div className="w-full flex justify-between border-b border-gray-200 dark:border-gray-700">
+          <TabButton id="express">
+            <h3 className="text-sm sm:text-base md:text-lg font-bold transition-colors text-gray-500 dark:text-white/50">
+              {t("marketing.exchange.tabs.express", "Express Exchange")}
+            </h3>
+          </TabButton>
+          <TabButton id="swap">
+            <h3 className="text-sm sm:text-base md:text-lg font-bold transition-colors text-gray-900 dark:text-white">
+              {t("marketing.exchange.tabs.swap", "Swap Crypto")}
+            </h3>
+          </TabButton>
+        </div>
         <SwapWidget />
       </div>
     );
   }
 
   return (
-    <div className="w-full bg-white dark:bg-[#18181D] rounded-3xl px-6 py-2 shadow-lg mr-8 ml-4 border border-gray-200 dark:border-transparent">
+    <div className="w-full bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl px-3 sm:px-4 md:px-6 py-2 shadow-lg mr-0 sm:mr-4 md:mr-8 ml-0 sm:ml-2 md:ml-4 border border-gray-200 dark:border-transparent">
       {/* Tabs */}
-      <div className="w-full flex justify-between">
+      <div className="w-full flex justify-between border-b border-gray-200 dark:border-gray-700">
         <TabButton id="express">
-          <h3 className="text-lg font-bold transition-colors text-gray-900 dark:text-white">
+          <h3 className="text-sm sm:text-base md:text-lg font-bold transition-colors text-gray-900 dark:text-white">
             {t("marketing.exchange.tabs.express", "Express Exchange")}
           </h3>
         </TabButton>
         <TabButton id="swap">
-          <h3 className="text-lg font-bold transition-colors text-gray-500 dark:text-white/50">
+          <h3 className="text-sm sm:text-base md:text-lg font-bold transition-colors text-gray-500 dark:text-white/50">
             {t("marketing.exchange.tabs.swap", "Swap Crypto")}
           </h3>
         </TabButton>
