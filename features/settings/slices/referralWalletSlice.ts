@@ -124,6 +124,11 @@ const referralWalletSlice = createSlice({
       state.fees = null;
       state.feesError = null;
     },
+    setFeesFromCache: (state, action) => {
+      state.fees = action.payload;
+      state.feesLoading = false;
+      state.feesError = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -192,6 +197,6 @@ const referralWalletSlice = createSlice({
   },
 });
 
-export const { clearSuccess, clearError, closeOtpModal, clearFees } = referralWalletSlice.actions;
+export const { clearSuccess, clearError, closeOtpModal, clearFees, setFeesFromCache } = referralWalletSlice.actions;
 
 export default referralWalletSlice.reducer;

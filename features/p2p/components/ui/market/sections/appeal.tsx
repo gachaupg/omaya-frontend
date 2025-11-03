@@ -123,7 +123,7 @@ const AppealModal: React.FC<AppealModalProps> = ({
         {/* Instruction Box */}
         <div className="bg-[#A05C2F] bg-opacity-30 rounded-xl p-4 mb-6">
           <div className="text-[#FFB37A] text-[13px] mb-1">
-            1. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sedl
+            1. Select the reason for your appeal from the dropdown menu below
           </div>
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
@@ -162,8 +162,7 @@ const AppealModal: React.FC<AppealModalProps> = ({
               Upload Proof Documents (Optional)
             </label>
             <div className="text-[#888] text-[13px] mb-4">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
-              eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
+              Upload screenshots or images that support your appeal. Acceptable formats include PNG, JPG, and other common image types.
             </div>
             <div className="flex items-center gap-4">
               <button

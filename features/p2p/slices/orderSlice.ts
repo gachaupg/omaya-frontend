@@ -390,6 +390,32 @@ const p2pMarketSlice = createSlice({
     updateOrdersFromWS: (state, action) => {
       const { buy_orders, sell_orders, pagination, full_refresh } = action.payload;
       
+      // Helper function to merge payment_details preserving provider_logo
+      const mergePaymentDetails = (existing: any[], incoming: any[]) => {
+        if (!incoming || incoming.length === 0) {
+          return existing || [];
+        }
+        if (!existing || existing.length === 0) {
+          return incoming;
+        }
+        
+        // Create a map of existing payment details by id
+        const existingMap = new Map(existing.map(pd => [pd.id, pd]));
+        
+        // Merge incoming details, preserving provider_logo from existing if missing
+        return incoming.map(incomingPd => {
+          const existingPd = existingMap.get(incomingPd.id);
+          if (existingPd) {
+            // If incoming has null/missing provider_logo, preserve existing one
+            return {
+              ...incomingPd,
+              provider_logo: incomingPd.provider_logo || existingPd.provider_logo || null,
+            };
+          }
+          return incomingPd;
+        });
+      };
+      
       // Helper function to merge orders intelligently
       const mergeOrders = (existingOrders: P2POrder[], newOrders: P2POrder[]) => {
         if (!existingOrders || existingOrders.length === 0) {
@@ -398,9 +424,22 @@ const p2pMarketSlice = createSlice({
         
         const orderMap = new Map(existingOrders.map(order => [order.id, order]));
         
-        // Update existing orders and add new ones
+        // Update existing orders and add new ones, preserving payment_details
         newOrders.forEach(newOrder => {
-          orderMap.set(newOrder.id, newOrder);
+          const existingOrder = orderMap.get(newOrder.id);
+          if (existingOrder) {
+            // Merge order, preserving payment_details with provider_logo
+            orderMap.set(newOrder.id, {
+              ...newOrder,
+              payment_details: mergePaymentDetails(
+                existingOrder.payment_details,
+                newOrder.payment_details
+              ),
+            });
+          } else {
+            // New order, add as-is
+            orderMap.set(newOrder.id, newOrder);
+          }
         });
         
         const mergedResults = Array.from(orderMap.values());

@@ -54,7 +54,6 @@ const MarketTable: React.FC<MarketTableProps> = ({
     // Open messages in new tab using the order ID
     const orderId = row.id;
     if (orderId) {
-      console.log('Opening messages for order:', orderId);
       window.open(`/p2p/messages/${orderId}`, '_blank');
     } else {
       console.error('No order ID found for trade:', row);
@@ -91,8 +90,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
     }
   }, [imageModal.isOpen]);
 
-  logger.debug('p2p', "data in table", data);
-  logger.debug('p2p', "currentPage", currentPage);
+
   const handleSort = (key: string) => {
     setSortConfig((prev) => ({
       key,
@@ -206,30 +204,31 @@ const MarketTable: React.FC<MarketTableProps> = ({
                     </span>
                   </div>
                   {/* Payment */}
+                  {/* <img src="https://omayabucket.s3.amazonaws.com/bank_logo/image_7.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAW7TPBKP2YLA7Y4X4%2F20251103%2Feu-north-1%2Fs3%2Faws4_request&X-Amz-Date=20251103T064943Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=4e3815352b9f85511eaab1e0c8dac2fe0b94e901f3961182ecee9c60411d85e2" alt="" /> */}
                   <div className="flex flex-wrap gap-2 min-w-[200px]">
                     {row.payment_details?.map((method, i) => {
-                      console.log("Rendering payment method:", method);
+                      const fallbackUrl = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                      const imageUrl = method.provider_logo || fallbackUrl;
+                      
                       return (
                         <span
                           key={i}
                           className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-white w-1/2"
                         >
                           <img
-                            src={method.provider_logo || "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"}
+                            src={imageUrl}
                             alt={method.provider}
-                            className="w-4 h-4 rounded object-cover border border-red-500"
+                            className="w-4 h-4 rounded object-contain flex-shrink-0"
                             style={{ 
                               width: '16px', 
-                              height: '16px', 
-                              display: 'block',
-                              backgroundColor: 'red'
+                              height: '16px',
+                              display: 'block'
                             }}
+                            loading="lazy"
                             onError={(e) => {
-                              console.log("Image failed to load:", method.provider_logo);
-                              e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
-                            }}
-                            onLoad={() => {
-                              console.log("Image loaded successfully:", method.provider);
+                              if (e.currentTarget.src !== fallbackUrl) {
+                                e.currentTarget.src = fallbackUrl;
+                              }
                             }}
                           />
                           {method.provider}
