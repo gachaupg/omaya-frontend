@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import GoogleAuthButton from "./GoogleAuthButton";
 import { useI18n } from "@/lib/useI18n";
 
-import { logger } from "@/lib/utils/logger";
+import { logger } from '@/lib/utils/logger';
 import DragFitCaptcha from "./capture";
 import { useTheme } from "@/context/theme";
 
@@ -22,6 +22,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [captchaVerified, setCaptchaVerified] = useState(false);
+  const [showCaptchaModal, setShowCaptchaModal] = useState(false);
   const [errors, setErrors] = useState({
     email: "",
     password: "",
@@ -44,29 +45,16 @@ export default function LoginPage() {
   }, [isAuthenticated, router]);
 
   const handleGoogleSuccess = (userData: any) => {
-    logger.debug("auth", "Google authentication successful:", userData);
+    logger.debug('auth', "Google authentication successful:", userData);
     // Handle successful Google authentication
     if (userData.user) {
       // You can dispatch to Redux store here if needed
-      logger.debug("auth", "User authenticated:", userData.user);
+      logger.debug('auth', "User authenticated:", userData.user);
     }
   };
 
   const handleGoogleError = (error: any) => {
     console.error("Google authentication error:", error);
-  };
-
-  const handleCaptchaSuccess = () => {
-    setCaptchaVerified(true);
-    setErrors((prev) => ({ ...prev, captcha: "" }));
-  };
-
-  const handleCaptchaFail = () => {
-    setCaptchaVerified(false);
-    setErrors((prev) => ({
-      ...prev,
-      captcha: "Captcha verification failed. Please try again.",
-    }));
   };
 
   const validateForm = () => {
@@ -92,18 +80,11 @@ export default function LoginPage() {
       isValid = false;
     }
 
-    if (!captchaVerified) {
-      newErrors.captcha = "Please complete the captcha verification";
-      isValid = false;
-    }
-
     setErrors(newErrors);
     return isValid;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const proceedWithLogin = async () => {
     if (!validateForm()) {
       return;
     }
@@ -170,10 +151,41 @@ export default function LoginPage() {
     }
   };
 
+  const handleCaptchaSuccess = () => {
+    setCaptchaVerified(true);
+    setErrors(prev => ({ ...prev, captcha: "" }));
+    setShowCaptchaModal(false);
+    // Proceed with form submission after captcha is verified
+    proceedWithLogin();
+  };
+
+  const handleCaptchaFail = () => {
+    setCaptchaVerified(false);
+    setErrors(prev => ({ ...prev, captcha: "Captcha verification failed. Please try again." }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validate email and password first
+    if (!validateForm()) {
+      return;
+    }
+
+    // If captcha is already verified, proceed directly
+    if (captchaVerified) {
+      proceedWithLogin();
+      return;
+    }
+
+    // Otherwise, show captcha modal
+    setShowCaptchaModal(true);
+  };
+
   return (
-    <div className="min-h-screen dark:bg-[#18181D] bg-gray-50 flex flex-col lg:flex-row items-start justify-center relative overflow-hidden px-4 sm:px-6 py-12 sm:py-16 lg:pt-24 lg:pb-24">
+    <div className="min-h-screen dark:bg-[#18181D] bg-gray-50 flex flex-col md:flex-row items-start justify-center relative overflow-hidden px-6 py-16 md:pt-24 md:pb-24">
       {/* Left Side - Mobile App Preview */}
-      <div className="hidden lg:flex lg:w-1/2 justify-center mb-8 lg:mb-0 relative z-10">
+      <div className="w-full md:w-1/2 flex justify-center mb-8 md:mb-0 relative z-10">
         {/* Background Glow Effect */}
         <div className="w-[438px] h-[403px] bg-[#1D8751] blur-[60px] absolute left-16 2xl:left-54 opacity-60"></div>
         <div className="relative">
@@ -222,8 +234,8 @@ export default function LoginPage() {
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="w-full lg:w-1/2 relative z-10">
-        <div className="max-w-md mx-auto lg:max-w-lg xl:max-w-xl 2xl:max-w-2xl">
+      <div className="w-full md:w-1/2 relative z-10">
+        <div className="max-w-md mx-auto 2xl:max-w-3/4">
           <div className="mb-6">
             <h1 className="dark:text-white text-gray-900 text-2xl font-semibold">
               {t("auth.login.title", "Welcome")}
@@ -233,7 +245,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email Field */}
             <div>
               <label
@@ -468,33 +480,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Captcha Verification */}
-            <div>
-              <label className="block dark:text-white text-gray-900 font-medium mb-2">
-                {t("auth.login.captcha", "Security Verification")}
-              </label>
-              <DragFitCaptcha
-                imgSrc="https://picsum.photos/280/140?random=10"
-                onSuccess={handleCaptchaSuccess}
-                darkMode={isDark}
-              />
-              {errors.captcha && (
-                <p className="mt-2 text-sm text-[#F04438] flex items-center">
-                  <svg
-                    className="w-4 h-4 mr-1"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  {errors.captcha}
-                </p>
-              )}
-            </div>
 
             {/* Login Button */}
             <button
@@ -556,14 +541,14 @@ export default function LoginPage() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4">
+              <div className="grid grid-cols-2 gap-4 mt-4">
                 <GoogleAuthButton
                   onSuccess={handleGoogleSuccess}
                   onError={handleGoogleError}
                 />
                 <button
                   type="button"
-                  className="flex items-center justify-center py-2.5 sm:py-2 px-4 rounded-lg border dark:border-gray-700 border-gray-300 dark:bg-[#1D1D23] bg-white dark:text-white text-gray-900 dark:hover:bg-[#1a1a1a] hover:bg-gray-100 transition-colors duration-300"
+                  className="flex items-center justify-center py-2 px-4 rounded-lg border dark:border-gray-700 border-gray-300 dark:bg-[#1D1D23] bg-white dark:text-white text-gray-900 dark:hover:bg-[#1a1a1a] hover:bg-gray-100 transition-colors duration-300"
                 >
                   <svg
                     className="w-6 h-6 mr-2"
@@ -583,6 +568,69 @@ export default function LoginPage() {
           </form>
         </div>
       </div>
+
+      {/* Captcha Modal */}
+      {showCaptchaModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
+          {/* Modal */}
+          <div 
+            className="relative bg-white dark:bg-[#18181D] rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 pointer-events-auto border border-gray-200 dark:border-gray-700"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold dark:text-white text-gray-900">
+                {t("auth.login.captcha", "Security Verification")}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowCaptchaModal(false);
+                  setCaptchaVerified(false);
+                }}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-[#2C2C32] rounded-full transition-colors"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 text-gray-500 dark:text-gray-400"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Captcha Content */}
+            <div className="flex flex-col items-center">
+              <DragFitCaptcha
+                imgSrc="https://picsum.photos/280/140?random=10"
+                onSuccess={handleCaptchaSuccess}
+                darkMode={isDark}
+              />
+              {errors.captcha && (
+                <p className="mt-4 text-sm text-[#F04438] flex items-center">
+                  <svg
+                    className="w-4 h-4 mr-1"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  {errors.captcha}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

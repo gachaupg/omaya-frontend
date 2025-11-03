@@ -218,17 +218,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
   );
   const orders = { buy_orders, sell_orders };
 
-  // Log component render and Redux state
-  logger.debug("p2p", "🎨 [Component] MarketTransactions render:", {
-    buyOrdersCount: buy_orders?.results?.length || 0,
-    sellOrdersCount: sell_orders?.results?.length || 0,
-    totalBuyCount,
-    totalSellCount,
-    currentPage,
-    activeTab,
-    isAuthenticated,
-    timestamp: new Date().toISOString(),
-  });
+ 
 
   const [mounted, setMounted] = useState(false);
   const [amount, setAmount] = useState("");
@@ -238,10 +228,6 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
 
-  // Initialize WebSocket connection for real-time P2P orders updates
-  logger.debug("p2p", "🔌 [Component] Initializing WebSocket connection:", {
-    isAuthenticated,
-  });
   const { isConnected: wsConnected, connectionError: wsError } =
     useP2POrdersWebSocket({
       enabled: isAuthenticated,
@@ -249,28 +235,19 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
       pollingInterval: 30000, // Poll every 30 seconds if WebSocket is unavailable
     });
 
-  logger.debug("p2p", "🔌 [Component] WebSocket status:", {
-    wsConnected,
-    wsError,
-    willUsePolling: !wsConnected && isAuthenticated,
-  });
+
 
   useEffect(() => {
     setMounted(true);
     // Fetch initial data only once on mount
     if (isAuthenticated) {
-      logger.debug("p2p", "🚀 [Component] Fetching initial P2P orders");
-      dispatch(fetchAllP2PBuyandSell(1) as any);
+        dispatch(fetchAllP2PBuyandSell(1) as any);
     }
   }, []); // Only run once on mount
 
   // Track Redux state changes
   useEffect(() => {
-    logger.debug("p2p", "🔄 [Component] Redux state changed:", {
-      buyOrdersCount: buy_orders?.results?.length || 0,
-      sellOrdersCount: sell_orders?.results?.length || 0,
-      timestamp: new Date().toISOString(),
-    });
+   
   }, [buy_orders, sell_orders]);
 
   const providerOptions = useMemo(() => getProviderOptions(orders), [orders]);
@@ -279,15 +256,11 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
     [orders]
   );
 
-  // Debug: Log available options
-  logger.debug("p2p", "Filter options:", {
-    providerOptions,
-    paymentMethodOptions,
-  });
+ 
 
   const getActiveOrders = useMemo(() => {
     if (!orders) {
-      logger.debug("p2p", "⚠️ [ActiveOrders] No orders object");
+     
       return [];
     }
 
@@ -298,54 +271,29 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
     if (activeTab === "buy") {
       // User wants to buy, so show sell orders
       activeOrdersList = orders.sell_orders?.results || [];
-      logger.debug(
-        "p2p",
-        "📋 [ActiveOrders] Showing sell orders for buy tab:",
-        activeOrdersList.length
-      );
+     
     } else if (activeTab === "sell") {
       // User wants to sell, so show buy orders
       activeOrdersList = orders.buy_orders?.results || [];
-      logger.debug(
-        "p2p",
-        "📋 [ActiveOrders] Showing buy orders for sell tab:",
-        activeOrdersList.length
-      );
+      
     } else {
       // Default: combine both
       activeOrdersList = [
         ...(orders.buy_orders?.results || []),
         ...(orders.sell_orders?.results || []),
       ];
-      logger.debug(
-        "p2p",
-        "📋 [ActiveOrders] Showing combined orders:",
-        activeOrdersList.length
-      );
+      
     }
 
-    logger.debug("p2p", "📊 [ActiveOrders] Active orders list:", {
-      activeTab,
-      buyOrdersCount: orders.buy_orders?.results?.length || 0,
-      sellOrdersCount: orders.sell_orders?.results?.length || 0,
-      activeOrdersCount: activeOrdersList.length,
-      firstOrderType: activeOrdersList[0]?.order_type,
-      firstOrderId: activeOrdersList[0]?.id,
-    });
+   
 
     return activeOrdersList;
   }, [orders, activeTab, buy_orders, sell_orders]); // Add direct dependencies
 
   const transformedData: MarketRow[] = useMemo(() => {
-    logger.debug(
-      "p2p",
-      "🔄 [TransformedData] Recalculating with",
-      getActiveOrders.length,
-      "orders"
-    );
+   
 
     if (!getActiveOrders || getActiveOrders.length === 0) {
-      logger.debug("p2p", "⚠️ [TransformedData] No active orders to transform");
       return [];
     }
 
@@ -353,11 +301,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
       .map((order: any, index: number) => {
         // Debug: Log the first order to understand the structure
         if (index === 0) {
-          logger.debug(
-            "p2p",
-            "📄 [TransformedData] Sample order structure:",
-            order
-          );
+         
         }
 
         const firstName = order.advertiser_first_name || "";
@@ -366,6 +310,16 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
           0
         )}`.toUpperCase();
         const fullName = `${firstName} ${lastName}`.toLowerCase();
+
+        // Ensure payment_details are properly preserved with all properties
+        const paymentDetails = order.payment_details ? order.payment_details.map((pd: any) => ({
+          id: pd.id,
+          provider: pd.provider,
+          payment_method: pd.payment_method,
+          account_name: pd.account_name,
+          account_number: pd.account_number,
+          provider_logo: pd.provider_logo || null, // Explicitly preserve, even if null
+        })) : [];
 
         return {
           id: order.id,
@@ -402,7 +356,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
           ),
           terms_and_conditions: order.terms_and_conditions || "",
           autoReply: order.auto_reply,
-          payment_details: order.payment_details || [],
+          payment_details: paymentDetails,
         };
       })
       .filter((row: MarketRow) => {
@@ -478,12 +432,6 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
         return true;
       });
 
-    logger.debug("p2p", "✅ [TransformedData] Transformed data:", {
-      originalCount: getActiveOrders.length,
-      filteredCount: data.length,
-      filters: { currency, provider, paymentType, amount, searchQuery },
-      timestamp: new Date().toISOString(),
-    });
 
     return data;
   }, [

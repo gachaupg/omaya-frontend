@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Button from "@/components/ui/Button";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -7,12 +7,14 @@ import {
   verifyReferralOtp,
   closeOtpModal,
   calculateReferralFees,
+  setFeesFromCache,
 } from "@/features/settings/slices/referralWalletSlice";
 import { AppDispatch } from "@/store/rootReducer";
 import { validateWithdrawalForm } from "@/features/p2p/components/ui/p2pdashboard/sections/validation";
 import { useRouter } from "next/navigation";
 import Cash from "./cash";
 import { useDebounce } from "@/hooks/useDebounce";
+import { ReferralFeeCalculation } from "@/features/settings/types";
 
 const Withdraw = () => {
   const [activeTab, setActiveTab] = useState<"usdt" | "cash">("usdt");
@@ -31,6 +33,10 @@ const Withdraw = () => {
   const { loading, error, success, showOtpModal, withdrawalId, otpVerifying, otpError, fees, feesLoading } = useSelector(
     (state: any) => state.referralWallet
   );
+  
+  // Cache for fees by amount to avoid redundant API calls
+  const feesCacheRef = useRef<Map<string, ReferralFeeCalculation>>(new Map());
+  const lastCalculatedAmountRef = useRef<string>("");
   
   // Debounce amount to avoid too many API calls
   const debouncedAmount = useDebounce(amount, 500);
@@ -110,12 +116,49 @@ const Withdraw = () => {
     }
   }, [success]);
 
-  // Fetch fees when amount changes
-  useEffect(() => {
-    if (debouncedAmount && Number(debouncedAmount) > 0) {
-      dispatch(calculateReferralFees(debouncedAmount));
+  // Helper function to fetch fees with caching
+  const fetchFeesWithCache = useCallback((amountValue: string) => {
+    if (!amountValue || Number(amountValue) <= 0) {
+      lastCalculatedAmountRef.current = "";
+      return;
     }
-  }, [debouncedAmount, dispatch]);
+
+    const amountKey = amountValue.trim();
+    
+    // Check if we already have this amount in cache
+    const cachedFees = feesCacheRef.current.get(amountKey);
+    
+    if (cachedFees) {
+      // Use cached fees, update Redux state
+      dispatch(setFeesFromCache(cachedFees));
+      lastCalculatedAmountRef.current = amountKey;
+      return;
+    }
+    
+    // Only make API call if amount changed or not in cache
+    if (lastCalculatedAmountRef.current !== amountKey) {
+      lastCalculatedAmountRef.current = amountKey;
+      dispatch(calculateReferralFees(amountValue)).then((result: any) => {
+        // Cache the result if successful
+        if (result.type === "referralWallet/calculateFees/fulfilled") {
+          feesCacheRef.current.set(amountKey, result.payload);
+        }
+      });
+    }
+  }, [dispatch]);
+
+  // Make API call first on mount if amount exists
+  useEffect(() => {
+    if (amount && Number(amount) > 0) {
+      fetchFeesWithCache(amount);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
+
+  // Fetch fees when amount changes - with caching
+  useEffect(() => {
+    fetchFeesWithCache(debouncedAmount);
+  }, [debouncedAmount, fetchFeesWithCache]);
 
   const commission = fees?.commission_fee ? Number(fees.commission_fee) : 0;
   const networkFee = fees?.network_fee ? Number(fees.network_fee) : 0;

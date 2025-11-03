@@ -48,24 +48,53 @@ function EmailVerificationModal({
   const [canResend, setCanResend] = useState(false);
   const [error, setError] = useState("");
   const [profile, setProfile] = useState<any>(null);
+  const timerRef = React.useRef<NodeJS.Timeout | null>(null);
 
-  // Timer countdown
+  // Reset timer when modal opens
+  React.useEffect(() => {
+    if (isOpen) {
+      setTimeLeft(300);
+      setCanResend(false);
+    } else {
+      // Clear timer when modal closes
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+  }, [isOpen]);
+
+  // Timer countdown - runs continuously while modal is open and timeLeft > 0
   React.useEffect(() => {
     if (!isOpen) {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
       return;
     }
 
-    const timer = setInterval(() => {
+    // Start the countdown timer
+    timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           setCanResend(true);
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
   }, [isOpen]);
 
   // Format time display
@@ -164,10 +193,32 @@ function EmailVerificationModal({
 
   // Handle resend code
   const handleResendCode = async () => {
+    // Clear existing timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    
     setCanResend(false);
-    setTimeLeft(120);
     setVerificationCode(["", "", "", "", "", ""]);
     setError("");
+    setTimeLeft(300); // Reset timer
+    
+    // Restart timer manually
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          setCanResend(true);
+          if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    
     await onResendCode();
   };
   if (!isOpen) return null;
