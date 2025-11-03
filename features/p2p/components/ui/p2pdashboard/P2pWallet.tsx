@@ -76,29 +76,31 @@ const P2pWallet = memo(
           borderRadius="rounded-[24px]"
           className="p-0 mb-2 shadow-none dark:bg-[#18181D] bg-white"
         >
-          <div className="flex flex-col gap-3 pl-4 py-2 px-2">
-            <div className="flex flex-wrap justify-between items-center w-full">
-              <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3 px-3 sm:px-4 py-3">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap justify-between items-start sm:items-center w-full gap-3">
+              <div className="flex flex-col gap-2 min-w-0 flex-1">
                 <p
-                  className={`text-sm font-medium opacity-70 dark:text-[${tokens.colors.dark.textBody}] text-gray-600`}
+                  className={`text-xs sm:text-sm font-medium opacity-70 dark:text-[${tokens.colors.dark.textBody}] text-gray-600`}
                 >
                   Balance
                 </p>
-                <div className="flex flex-wrap items-baseline gap-2">
+                <div className="flex flex-wrap items-baseline gap-1.5 sm:gap-2">
                   <span
-                    className={`text-lg font-bold dark:text-[${tokens.colors.dark.textTitle}] text-gray-900`}
+                    className={`text-base sm:text-lg font-bold dark:text-[${tokens.colors.dark.textTitle}] text-gray-900 truncate`}
                   >
                     {formatCurrency(balance ?? 0, "USDT")}
                   </span>
                   <span
-                    className={`text-base font-semibold dark:text-[${tokens.colors.dark.textBody}] text-gray-600 opacity-80 flex items-center`}
+                    className={`text-sm sm:text-base font-semibold dark:text-[${tokens.colors.dark.textBody}] text-gray-600 opacity-80 flex items-center`}
                   >
-                    <span className="mx-1 opacity-50 text-lg">≈</span>
+                    <span className="mx-0.5 sm:mx-1 opacity-50 text-base sm:text-lg">
+                      ≈
+                    </span>
                     {formatCurrency(balance ?? 0, "USD")}
                   </span>
                 </div>
               </div>
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto">
                 <Button
                   onClick={() => setIsOpenForm("deposit")}
                   width={120}
@@ -107,7 +109,7 @@ const P2pWallet = memo(
                   variant={isOpenForm === "deposit" ? "primary" : "outline"}
                   borderColor={tokens.colors.brand.primary}
                   size="md"
-                  className={`transition-all duration-150 flex items-center gap-2 ${
+                  className={`transition-all duration-150 flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm min-h-[44px] sm:min-h-[35px] px-3 sm:px-4 flex-1 sm:flex-initial justify-center ${
                     isOpenForm === "deposit"
                       ? "bg-[" + tokens.colors.brand.primary + "] text-white"
                       : "bg-transparent text-[" +
@@ -155,7 +157,7 @@ const P2pWallet = memo(
                   variant={isOpenForm === "withdraw" ? "secondary" : "outline"}
                   borderColor={tokens.colors.brand.secondary}
                   size="md"
-                  className={`transition-all duration-150 flex items-center gap-2 ${
+                  className={`transition-all duration-150 flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm min-h-[44px] sm:min-h-[40px] px-3 sm:px-4 flex-1 sm:flex-initial justify-center ${
                     isOpenForm === "withdraw"
                       ? "bg-[" + tokens.colors.brand.secondary + "] text-white"
                       : "bg-transparent text-[" +

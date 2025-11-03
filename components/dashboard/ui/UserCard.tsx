@@ -50,8 +50,7 @@ function UserCard() {
             setProfileImage(response.profile.photo);
           }
         })
-        .catch((error) => {
-        });
+        .catch((error) => {});
     }
   }, [dispatch, isAuthenticated]);
 
@@ -124,11 +123,11 @@ function UserCard() {
           <HelpSupportForm />
         </div>
       ) : (
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between w-full gap-3 md:gap-0">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-3 sm:gap-4 md:gap-6">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* User Avatar with Edit Button */}
-            <div className="relative">
-              <div className="h-14 w-14 rounded-full overflow-hidden relative">
+            <div className="relative flex-shrink-0">
+              <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full overflow-hidden relative">
                 {profileImage ? (
                   <Image
                     src={profileImage}
@@ -201,21 +200,21 @@ function UserCard() {
             </div>
 
             {/* User Info */}
-            <div>
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <h2 className="text-lg text-[14px] font-semibold dark:text-[#FFFFFF] text-[#0D0D0D]">
+                <h2 className="text-sm sm:text-base font-semibold dark:text-[#FFFFFF] text-[#0D0D0D] truncate">
                   {t("userCard.hello", "Hello, {{name}}!", {
                     name: `${user?.first_name} ${user?.last_name}`,
                   })}
                 </h2>
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-[#1D8751] text-[14px]">
+                <span className="text-[#1D8751] text-xs sm:text-sm">
                   {t("userCard.verifiedProfile", "Verified Profile")}
                 </span>
-                <div className="rounded-full p-0.5 ">
+                <div className="rounded-full p-0.5 flex-shrink-0">
                   <img
-                    className="h-4 w-4 bg-amber-50 rounded-full"
+                    className="h-3 w-3 sm:h-4 sm:w-4 bg-amber-50 rounded-full"
                     src="https://res.cloudinary.com/pitz/image/upload/v1753946849/download__3_-removebg-preview_1_clnjwy.png"
                     alt=""
                   />
@@ -225,7 +224,7 @@ function UserCard() {
           </div>
 
           {/* User Details and Actions */}
-          <div className="flex  text-[14px] flex-col w-full md:w-auto md:flex-row items-start md:items-center gap-4 md:gap-6">
+          <div className="flex text-xs sm:text-sm flex-col w-full sm:w-auto sm:flex-row items-start sm:items-center gap-3 sm:gap-4 md:gap-6">
             {/* User ID */}
             <div>
               <p className="text-xs text-[#788099]">
@@ -252,14 +251,14 @@ function UserCard() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               <Button
                 variant="ghost"
                 size="sm"
-                className=" flex items-center justify-center p-0"
+                className="flex items-center justify-center p-0"
                 onClick={() => router.push("/dashboard/notifications")}
                 icon={
-                  <div className="w-10 h-10 rounded-full border border-[#1D8751] flex items-center justify-center p-1 relative">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#1D8751] flex items-center justify-center p-1 relative min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0">
                     <svg
                       width="16"
                       height="16"
@@ -290,12 +289,12 @@ function UserCard() {
                       )}
                     {/* WebSocket connection indicator */}
                     {wsConnected ? (
-                      <span 
+                      <span
                         className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#1D8751] rounded-full border border-white dark:border-[#18181D]"
                         title="Real-time WebSocket updates active"
                       />
                     ) : (
-                      <span 
+                      <span
                         className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-[#F79330] rounded-full border border-white dark:border-[#18181D]"
                         title="Using HTTP polling (WebSocket unavailable)"
                       />
@@ -306,14 +305,12 @@ function UserCard() {
               <Button
                 variant="ghost"
                 size="sm"
-                className=" flex items-center justify-center p-0"
-                onClick={
-                  () => {
-                   router.push("/contactUs");
-                  }
-                }
+                className="flex items-center justify-center p-0"
+                onClick={() => {
+                  router.push("/contactUs");
+                }}
                 icon={
-                  <div className="w-10 h-10 rounded-[50%] border border-[#1D8751] flex items-center justify-center p-0">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full border border-[#1D8751] flex items-center justify-center p-0 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0">
                     <svg
                       width="16"
                       height="16"

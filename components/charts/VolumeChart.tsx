@@ -33,7 +33,7 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ transactionSummary }) => {
       title: "P2P ",
       value: formatValue(transactionSummary.total_approved_p2p_combined),
     },
-   
+
     {
       title: "Swap ",
       value: formatValue(transactionSummary.total_completed_changenow_swaps),
@@ -42,17 +42,19 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ transactionSummary }) => {
 
   return (
     <div className="w-full">
-      <h2 className="dark:text-white text-[16px] mb-4">Transaction Volume</h2>
-      <div className="flex flex-col sm:flex-row gap-4 overflow-x-auto pb-4">
+      <h2 className="dark:text-white text-sm sm:text-base mb-3 sm:mb-4">
+        Transaction Volume
+      </h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 overflow-x-auto pb-2 sm:pb-4">
         {volumeData.map((item, idx) => (
           <Card
             key={idx}
-            className="flex-1 flex flex-col items-center justify-center w-full sm:w-[225px] h-[175px] border border-[#E8EFF5] dark:border-[#35353E] dark:bg-[#1D1D23] bg-white rounded-[24px]"
+            className="flex flex-col items-center justify-center w-full h-[150px] sm:h-[175px] border border-[#E8EFF5] dark:border-[#35353E] dark:bg-[#1D1D23] bg-white rounded-2xl sm:rounded-[24px] p-4 sm:p-6"
           >
-            <span className="dark:text-[#ffff] text-[#0D0D0D] text-[16px] sm:text-[19px] mb-2 text-center">
+            <span className="dark:text-[#ffff] text-[#0D0D0D] text-xs sm:text-sm md:text-base mb-2 sm:mb-3 text-center">
               {item.title}
             </span>
-            <span className="text-[#F79330] text-[20px] sm:text-[26px] font-semibold text-center">
+            <span className="text-[#F79330] text-lg sm:text-xl md:text-2xl font-semibold text-center">
               {item.value}
             </span>
           </Card>

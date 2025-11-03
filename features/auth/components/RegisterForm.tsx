@@ -267,7 +267,7 @@ function EmailVerificationModal({
           </p>
 
           {/* Verification code inputs */}
-          <div className="flex justify-center space-x-3 mb-6">
+          <div className="flex justify-center gap-2 sm:gap-3 mb-6">
             {verificationCode.map((digit, index) => (
               <input
                 key={index}
@@ -280,7 +280,7 @@ function EmailVerificationModal({
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 onPaste={(e) => handlePaste(e, index)}
                 onFocus={(e) => e.target.select()}
-                className={`w-12 h-12 text-center dark:text-white text-gray-900 text-xl font-semibold dark:bg-[#35353E] bg-gray-100 border ${
+                className={`w-10 h-12 sm:w-12 sm:h-14 text-center dark:text-white text-gray-900 text-xl font-semibold dark:bg-[#35353E] bg-gray-100 border ${
                   error
                     ? "border-[#F04438]"
                     : "dark:border-gray-700 border-gray-300"
@@ -336,7 +336,6 @@ function EmailVerificationModal({
   );
 }
 
-
 export default function RegistrationPage() {
   const { t } = useI18n("auth");
   const dispatch = useDispatch<AppDispatch>();
@@ -364,26 +363,30 @@ export default function RegistrationPage() {
   const [profile, setProfile] = useState<any>(null);
 
   // Filter countries based on search term
-  const filteredCountries = countries.filter(country =>
-    country.name.toLowerCase().includes(countrySearchTerm.toLowerCase()) ||
-    country.code.toLowerCase().includes(countrySearchTerm.toLowerCase()) ||
-    country.dialCode.includes(countrySearchTerm)
+  const filteredCountries = countries.filter(
+    (country) =>
+      country.name.toLowerCase().includes(countrySearchTerm.toLowerCase()) ||
+      country.code.toLowerCase().includes(countrySearchTerm.toLowerCase()) ||
+      country.dialCode.includes(countrySearchTerm)
   );
 
   // Close dropdown when clicking outside
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      if (showCountryDropdown && !target.closest('.country-dropdown-container')) {
+      if (
+        showCountryDropdown &&
+        !target.closest(".country-dropdown-container")
+      ) {
         setShowCountryDropdown(false);
         setCountrySearchTerm(""); // Clear search when closing
       }
     };
 
-    if (typeof document !== 'undefined') {
-      document.addEventListener('mousedown', handleClickOutside);
+    if (typeof document !== "undefined") {
+      document.addEventListener("mousedown", handleClickOutside);
       return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener("mousedown", handleClickOutside);
       };
     }
   }, [showCountryDropdown]);
@@ -483,7 +486,9 @@ export default function RegistrationPage() {
     setIsSubmitting(true);
 
     try {
-      const selectedCountryData = countries.find((c) => c.code === selectedCountry);
+      const selectedCountryData = countries.find(
+        (c) => c.code === selectedCountry
+      );
       const phoneNumber = `${selectedCountryData?.dialCode}${phone}`;
 
       const result = await dispatch(
@@ -546,9 +551,11 @@ export default function RegistrationPage() {
   const handleResendCode = async () => {
     try {
       // Re-register to get a new OTP
-      const selectedCountryData = countries.find((c) => c.code === selectedCountry);
+      const selectedCountryData = countries.find(
+        (c) => c.code === selectedCountry
+      );
       const phoneNumber = `${selectedCountryData?.dialCode}${phone}`;
-      
+
       const result = await dispatch(
         registerUser({
           email,
@@ -586,7 +593,6 @@ export default function RegistrationPage() {
   const handleGoogleError = (error: any) => {
     // console.error("Google authentication error:", error);
   };
-
 
   return (
     <>
@@ -655,8 +661,8 @@ export default function RegistrationPage() {
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label
                     htmlFor="first-name"
@@ -828,7 +834,9 @@ export default function RegistrationPage() {
                   <div className="relative country-dropdown-container">
                     <button
                       type="button"
-                      onClick={() => setShowCountryDropdown(!showCountryDropdown)}
+                      onClick={() =>
+                        setShowCountryDropdown(!showCountryDropdown)
+                      }
                       className="w-full py-2 px-4 pl-3 pr-20 rounded-full dark:bg-[#1D1D23] bg-white border dark:border-gray-700 border-gray-300 dark:text-white text-gray-900 focus:outline-none focus:border-[#13B562] text-left flex items-center"
                     >
                       <img
@@ -836,14 +844,17 @@ export default function RegistrationPage() {
                         alt={`${selectedCountry} flag`}
                         className="w-4 h-3 object-cover rounded-sm mr-2"
                         onError={(e) => {
-                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.style.display = "none";
                         }}
                       />
                       <span>{selectedCountry}</span>
                     </button>
                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                       <span className="mr-2 text-[#788099] text-sm">
-                        {countries.find((c) => c.code === selectedCountry)?.dialCode}
+                        {
+                          countries.find((c) => c.code === selectedCountry)
+                            ?.dialCode
+                        }
                       </span>
                       <svg
                         width="12"
@@ -861,19 +872,21 @@ export default function RegistrationPage() {
                         />
                       </svg>
                     </div>
-                    
+
                     {/* Custom Dropdown */}
                     {showCountryDropdown && (
-                      <div className="absolute z-50 w-80 mt-1 max-h-80 overflow-hidden dark:bg-[#1D1D23] bg-white border dark:border-gray-700 border-gray-300 rounded-lg shadow-lg">
+                      <div className="absolute z-50 w-full sm:w-80 left-0 right-0 sm:right-auto mt-1 max-h-[60vh] overflow-hidden dark:bg-[#1D1D23] bg-white border dark:border-gray-700 border-gray-300 rounded-lg shadow-lg">
                         {/* Search Input */}
-                        <div className="p-3 border-b dark:border-gray-700 border-gray-300">
+                        <div className="p-2 sm:p-3 border-b dark:border-gray-700 border-gray-300">
                           <div className="relative">
                             <input
                               type="text"
                               placeholder="Search countries..."
                               value={countrySearchTerm}
-                              onChange={(e) => setCountrySearchTerm(e.target.value)}
-                              className="w-full py-2 px-3 pl-9 rounded-md dark:bg-[#2A2A30] bg-gray-50 border dark:border-gray-600 border-gray-300 dark:text-white text-gray-900 focus:outline-none focus:border-[#13B562] text-sm"
+                              onChange={(e) =>
+                                setCountrySearchTerm(e.target.value)
+                              }
+                              className="w-full py-2 px-3 pl-9 rounded-md dark:bg-[#2A2A30] bg-gray-50 border dark:border-gray-600 border-gray-300 dark:text-white text-gray-900 focus:outline-none focus:border-[#13B562] text-xs sm:text-sm"
                               autoFocus
                             />
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -902,9 +915,9 @@ export default function RegistrationPage() {
                             </div>
                           </div>
                         </div>
-                        
+
                         {/* Countries List */}
-                        <div className="max-h-60 overflow-y-auto">
+                        <div className="max-h-[50vh] sm:max-h-60 overflow-y-auto scrollbar-thin">
                           {filteredCountries.length > 0 ? (
                             filteredCountries.map((country) => (
                               <button
@@ -915,22 +928,28 @@ export default function RegistrationPage() {
                                   setShowCountryDropdown(false);
                                   setCountrySearchTerm("");
                                 }}
-                                className="w-full px-4 py-3 text-left hover:bg-[#13B562] hover:bg-opacity-10 flex items-center dark:text-white text-gray-900 border-b dark:border-gray-700 border-gray-200 last:border-b-0"
+                                className="w-full px-3 sm:px-4 py-3 sm:py-3 text-left hover:bg-[#13B562] hover:bg-opacity-10 flex items-center dark:text-white text-gray-900 border-b dark:border-gray-700 border-gray-200 last:border-b-0 min-h-[48px]"
                               >
                                 <img
                                   src={`https://flagcdn.com/16x12/${country.code.toLowerCase()}.png`}
                                   alt={`${country.code} flag`}
-                                  className="w-4 h-3 object-cover rounded-sm mr-3"
+                                  className="w-4 h-3 object-cover rounded-sm mr-2 sm:mr-3 flex-shrink-0"
                                   onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
+                                    e.currentTarget.style.display = "none";
                                   }}
                                 />
-                                <div className="flex-1">
-                                  <div className="flex items-center justify-between">
-                                    <span className="font-medium">{country.name}</span>
-                                    <span className="text-[#788099] text-sm">{country.dialCode}</span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="font-medium text-sm sm:text-base truncate">
+                                      {country.name}
+                                    </span>
+                                    <span className="text-[#788099] text-xs sm:text-sm flex-shrink-0">
+                                      {country.dialCode}
+                                    </span>
                                   </div>
-                                  <div className="text-[#788099] text-xs">{country.code}</div>
+                                  <div className="text-[#788099] text-xs">
+                                    {country.code}
+                                  </div>
                                 </div>
                               </button>
                             ))
@@ -1274,20 +1293,22 @@ export default function RegistrationPage() {
                 <div className="flex items-center space-x-2">
                   <div
                     className={`h-2 w-2 rounded-full ${
-                      hasMinChars 
-                        ? "bg-[#1D8751]" 
-                        : submitAttempted 
-                        ? "bg-red-500" 
-                        : "bg-gray-400 dark:bg-gray-600"
+                      hasMinChars
+                        ? "bg-[#1D8751]"
+                        : submitAttempted
+                          ? "bg-red-500"
+                          : "bg-gray-400 dark:bg-gray-600"
                     }`}
                   ></div>
-                  <span className={`text-sm ${
-                    hasMinChars
-                      ? "text-[#1D8751]"
-                      : submitAttempted
-                      ? "text-red-500"
-                      : "text-gray-500 dark:text-gray-400"
-                  }`}>
+                  <span
+                    className={`text-sm ${
+                      hasMinChars
+                        ? "text-[#1D8751]"
+                        : submitAttempted
+                          ? "text-red-500"
+                          : "text-gray-500 dark:text-gray-400"
+                    }`}
+                  >
                     {t(
                       "auth.register.requirements.8chars",
                       "At least 8 characters"
@@ -1298,19 +1319,21 @@ export default function RegistrationPage() {
                   <div
                     className={`h-2 w-2 rounded-full ${
                       hasNumber || hasSymbol
-                        ? "bg-[#1D8751]" 
-                        : submitAttempted 
-                        ? "bg-red-500" 
-                        : "bg-gray-400 dark:bg-gray-600"
+                        ? "bg-[#1D8751]"
+                        : submitAttempted
+                          ? "bg-red-500"
+                          : "bg-gray-400 dark:bg-gray-600"
                     }`}
                   ></div>
-                  <span className={`text-sm ${
-                    hasNumber || hasSymbol
-                      ? "text-[#1D8751]"
-                      : submitAttempted
-                      ? "text-red-500"
-                      : "text-gray-500 dark:text-gray-400"
-                  }`}>
+                  <span
+                    className={`text-sm ${
+                      hasNumber || hasSymbol
+                        ? "text-[#1D8751]"
+                        : submitAttempted
+                          ? "text-red-500"
+                          : "text-gray-500 dark:text-gray-400"
+                    }`}
+                  >
                     {t(
                       "auth.register.requirements.numberSymbol",
                       "At least one number or symbol"
@@ -1321,19 +1344,21 @@ export default function RegistrationPage() {
                   <div
                     className={`h-2 w-2 rounded-full ${
                       hasMixedCase
-                        ? "bg-[#1D8751]" 
-                        : submitAttempted 
-                        ? "bg-red-500" 
-                        : "bg-gray-400 dark:bg-gray-600"
+                        ? "bg-[#1D8751]"
+                        : submitAttempted
+                          ? "bg-red-500"
+                          : "bg-gray-400 dark:bg-gray-600"
                     }`}
                   ></div>
-                  <span className={`text-sm ${
-                    hasMixedCase
-                      ? "text-[#1D8751]"
-                      : submitAttempted
-                      ? "text-red-500"
-                      : "text-gray-500 dark:text-gray-400"
-                  }`}>
+                  <span
+                    className={`text-sm ${
+                      hasMixedCase
+                        ? "text-[#1D8751]"
+                        : submitAttempted
+                          ? "text-red-500"
+                          : "text-gray-500 dark:text-gray-400"
+                    }`}
+                  >
                     {t(
                       "auth.register.requirements.mixedCase",
                       "Both uppercase and lowercase letters"
@@ -1403,37 +1428,37 @@ export default function RegistrationPage() {
                 id="terms-container"
                 className={`mt-4 ${!agreeToTerms && errors.firstName ? "ring-2 ring-[#F04438] rounded-lg p-2" : ""}`}
               >
-                <div className="flex items-center">
-                  <div className="relative flex items-center">
+                <div className="flex items-start gap-2">
+                  <div className="relative flex items-start pt-0.5">
                     <input
                       type="checkbox"
                       id="terms"
                       checked={agreeToTerms}
                       onChange={() => setAgreeToTerms(!agreeToTerms)}
-                      className="opacity-0 absolute h-4 w-4 cursor-pointer"
+                      className="opacity-0 absolute h-5 w-5 sm:h-4 sm:w-4 cursor-pointer"
                     />
                     <div
-                      className={`border border-[#871D1DFF] rounded h-4 w-4 flex flex-shrink-0 justify-center items-center mr-2 ${agreeToTerms ? "bg-[#1D8751]" : "bg-transparent"}`}
+                      className={`border border-[#871D1DFF] rounded h-5 w-5 sm:h-4 sm:w-4 flex flex-shrink-0 justify-center items-center ${agreeToTerms ? "bg-[#1D8751]" : "bg-transparent"}`}
                     >
                       {agreeToTerms && (
                         <svg
-                          className="fill-current w-2 h-2 text-white pointer-events-none"
+                          className="fill-current w-3 h-3 sm:w-2 sm:h-2 text-white pointer-events-none"
                           viewBox="0 0 20 20"
                         >
                           <path d="M0 11l2-2 5 5L18 3l2 2L7 18z" />
                         </svg>
                       )}
                     </div>
-                    <label
-                      htmlFor="terms"
-                      className="text-sm dark:text-white text-gray-900 cursor-pointer"
-                    >
-                      {t(
-                        "auth.register.terms",
-                        "By clicking Register, you agree to our Terms of Services and that you have read our Data Use Policy, including our Cookie Use"
-                      )}
-                    </label>
                   </div>
+                  <label
+                    htmlFor="terms"
+                    className="text-xs sm:text-sm dark:text-white text-gray-900 cursor-pointer break-words leading-relaxed flex-1"
+                  >
+                    {t(
+                      "auth.register.terms",
+                      "By clicking Register, you agree to our Terms of Services and that you have read our Data Use Policy, including our Cookie Use"
+                    )}
+                  </label>
                 </div>
                 {!agreeToTerms && errors.firstName && (
                   <p className="mt-1 text-xs text-[#F04438]">
@@ -1454,7 +1479,9 @@ export default function RegistrationPage() {
                 {isSubmitting ? (
                   <>
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    <span>{t("auth.register.registering", "Registering...")}</span>
+                    <span>
+                      {t("auth.register.registering", "Registering...")}
+                    </span>
                   </>
                 ) : (
                   t("auth.register.submit", "Register")
@@ -1510,11 +1537,15 @@ export default function RegistrationPage() {
                     <FacebookAuthButton
                       onSuccess={(userData) => {
                         setProfile(userData);
-                        showToast.success("Facebook authentication successful!");
+                        showToast.success(
+                          "Facebook authentication successful!"
+                        );
                       }}
                       onError={(error) => {
                         console.error("Facebook authentication error:", error);
-                        showToast.error("Facebook authentication failed. Please try again.");
+                        showToast.error(
+                          "Facebook authentication failed. Please try again."
+                        );
                       }}
                     />
                   </React.Suspense>

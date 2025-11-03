@@ -384,10 +384,10 @@ export default function Navbar() {
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-4 sm:px-6 md:px-12 2xl:px-20 transition-all duration-300 ${getNavbarBackground()}`}
+        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-3 py-3 sm:px-4 sm:py-4 md:px-12 2xl:px-20 transition-all duration-300 ${getNavbarBackground()}`}
       >
-        <div className="flex items-center">
-          <Link href="/" className="mr-4 md:mr-10">
+        <div className="flex items-center min-w-0">
+          <Link href="/" className="mr-2 sm:mr-4 md:mr-10 flex-shrink-0">
             {/* Optimized logo selection using memoized config */}
             {logoConfig && (
               <Image
@@ -395,7 +395,7 @@ export default function Navbar() {
                 alt={logoConfig.alt}
                 width={150}
                 height={40}
-                className="h-auto w-32 md:w-40 2xl:w-48"
+                className="h-auto w-20 sm:w-28 md:w-40 2xl:w-48"
                 priority
               />
             )}
@@ -435,7 +435,7 @@ export default function Navbar() {
         </div>
 
         {/* Desktop Auth Buttons */}
-        <div className="hidden md:flex items-center space-x-4 2xl:space-x-6 relative">
+        <div className="hidden md:flex items-center space-x-3 lg:space-x-4 2xl:space-x-6 relative">
           {isAuthenticated ? (
             <div className="flex items-center space-x-4">
               <div className="" ref={depositDropdownRef}>
@@ -799,7 +799,7 @@ export default function Navbar() {
             </>
           )}
 
-          <div className="flex items-center space-x-4 2xl:space-x-6">
+          <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4 2xl:space-x-6">
             <LanguageSelector />
             <ThemeToggle />
           </div>
@@ -807,21 +807,25 @@ export default function Navbar() {
 
         {/* Mobile Menu Button */}
         <button
-          className={`md:hidden p-2 rounded-md focus:outline-none ${
+          className={`md:hidden p-1.5 sm:p-2 rounded-md focus:outline-none ${
             isTransparentNavbar
               ? "text-white" // White when navbar is transparent
               : "dark:text-white text-gray-900" // Theme-based when navbar has background
           }`}
           onClick={toggleMobileMenu}
         >
-          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          {mobileMenuOpen ? (
+            <X size={20} className="sm:w-6 sm:h-6" />
+          ) : (
+            <Menu size={20} className="sm:w-6 sm:h-6" />
+          )}
         </button>
       </nav>
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
         <div
-          className={`fixed top-16 left-0 right-0 z-40 md:hidden p-6 space-y-6 shadow-lg transition-all duration-300 dark:bg-[#1D1D23] bg-white`}
+          className={`fixed top-14 sm:top-16 left-0 right-0 z-40 md:hidden p-4 sm:p-6 space-y-4 sm:space-y-6 shadow-lg transition-all duration-300 dark:bg-[#1D1D23] bg-white max-h-[calc(100vh-3.5rem)] sm:max-h-[calc(100vh-4rem)] overflow-y-auto`}
         >
           <MobileNavLink href="/" onClick={toggleMobileMenu}>
             Home
@@ -995,7 +999,7 @@ export default function Navbar() {
             )}
           </div>
 
-          <div className="flex items-center justify-between pt-4">
+          <div className="flex items-center justify-center gap-6 pt-4 border-t dark:border-gray-700 border-gray-200">
             <LanguageSelector />
             <ThemeToggle />
           </div>

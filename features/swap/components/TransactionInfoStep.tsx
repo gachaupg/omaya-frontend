@@ -31,7 +31,7 @@ interface TransactionInfoStepProps {
   swapLoading: boolean;
   hideContinueButton?: boolean;
   onSwapAssets?: () => void;
-  activeInputField?: 'from' | 'to';
+  activeInputField?: "from" | "to";
 }
 
 const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
@@ -65,18 +65,18 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
   const { isDark } = useTheme();
 
   return (
-    <div className="w-full flex flex-col ">
-      <h2 className="text-xl font-bold mb-2 text-[#788099]">
+    <div className="w-full flex flex-col">
+      <h2 className="text-base sm:text-lg md:text-xl font-bold mb-2 sm:mb-3 text-[#788099]">
         <span className="text-[#7e7e8f]">1-</span> Transaction Info
       </h2>
-      <div className="w-full  mx-auto text-gray-900 dark:text-white">
+      <div className="w-full mx-auto text-gray-900 dark:text-white">
         {/* Top Section - You Send and You Get in one card */}
         <div className="relative mb-4">
           {/* Top Card Container */}
-          <div className="flex border-2 border-gray-200 dark:border-[#39394a] bg-white dark:bg-transparent rounded-2xl p-4">
+          <div className="flex flex-col sm:flex-row border-2 border-gray-200 dark:border-[#39394a] bg-white dark:bg-transparent rounded-2xl p-3 sm:p-4 gap-3 sm:gap-0">
             {/* You Send Section */}
-            <div className="flex-1 pr-4">
-              <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+            <div className="flex-1 sm:pr-4">
+              <label className="block text-sm sm:text-base md:text-[17px] text-[#7e7e8f] mb-2 font-semibold">
                 You Send
               </label>
               <div className="relative">
@@ -86,25 +86,29 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   value={fromAmount}
                   onChange={onFromAmountChange}
                   placeholder="Enter amount"
-                  className={`w-full bg-white dark:bg-[#1D1D23] rounded-2xl px-4 py-2 pr-16 text-lg text-gray-900 dark:text-white focus:outline-none border appearance-none placeholder-gray-400 dark:placeholder-[#7e7e8f]  border-[#35353E] dark:border-[#39394a]'
+                  className={`w-full bg-white dark:bg-[#1D1D23] rounded-2xl px-3 sm:px-4 py-3 sm:py-2.5 pr-14 sm:pr-16 text-base sm:text-lg text-gray-900 dark:text-white focus:outline-none border appearance-none placeholder-gray-400 dark:placeholder-[#7e7e8f] border-[#35353E] dark:border-[#39394a] min-h-[48px] sm:min-h-[44px]'
                   }`}
                 />
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
                   <span className="text-gray-600 dark:text-white text-sm font-medium">
-                    {fromAsset ? (fromAsset.ticker?.toUpperCase() || fromAsset.symbol?.toUpperCase() || "USDT") : "USDT"}
+                    {fromAsset
+                      ? fromAsset.ticker?.toUpperCase() ||
+                        fromAsset.symbol?.toUpperCase() ||
+                        "USDT"
+                      : "USDT"}
                   </span>
                 </div>
               </div>
             </div>
 
             {/* You Get Section */}
-            <div className="flex-1 pl-4">
-              <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+            <div className="flex-1 sm:pl-4 sm:border-l-2 sm:border-gray-200 sm:dark:border-[#39394a]">
+              <label className="block text-sm sm:text-base md:text-[17px] text-[#7e7e8f] mb-2 font-semibold">
                 Asset
               </label>
               <div className="relative">
                 <div
-                  className={`w-full bg-white dark:bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg text-gray-900 dark:text-white focus:outline-none border border-gray-300 dark:border-[#39394a] flex items-center justify-between cursor-pointer`}
+                  className={`w-full bg-white dark:bg-[#1D1D23] rounded-2xl px-3 sm:px-4 py-3 sm:py-2.5 text-base sm:text-lg text-gray-900 dark:text-white focus:outline-none border border-gray-300 dark:border-[#39394a] flex items-center justify-between cursor-pointer min-h-[48px] sm:min-h-[44px]`}
                   onClick={onFromAssetToggle}
                 >
                   <div className="flex items-center gap-3">
@@ -141,9 +145,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                           alt="asset icon"
                           className="w-6 h-6"
                         />
-                        <span className="text-[#7e7e8f]">
-                          Select Asset
-                        </span>
+                        <span className="text-[#7e7e8f]">Select Asset</span>
                       </>
                     )}
                   </div>
@@ -170,8 +172,18 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                     {/* Search Input */}
                     <div className="p-3 border-b border-gray-200 dark:border-[#39394a]">
                       <div className="relative">
-                        <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        <svg
+                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                          />
                         </svg>
                         <input
                           type="text"
@@ -186,19 +198,23 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                     {/* Asset List */}
                     <div className="max-h-60 overflow-y-auto">
                       {(() => {
-                        const filteredAssets = supportedAssets.filter((asset: SupportedAsset) => {
-                          if (!searchTerm) return true;
-                          
-                          const searchLower = searchTerm.toLowerCase();
-                          const ticker = asset.ticker?.toLowerCase() || '';
-                          const name = asset.name?.toLowerCase() || '';
-                          const network = asset.network?.toLowerCase() || '';
-                          
-                          return ticker.includes(searchLower) || 
-                                 name.includes(searchLower) || 
-                                 network.includes(searchLower);
-                        });
-                        
+                        const filteredAssets = supportedAssets.filter(
+                          (asset: SupportedAsset) => {
+                            if (!searchTerm) return true;
+
+                            const searchLower = searchTerm.toLowerCase();
+                            const ticker = asset.ticker?.toLowerCase() || "";
+                            const name = asset.name?.toLowerCase() || "";
+                            const network = asset.network?.toLowerCase() || "";
+
+                            return (
+                              ticker.includes(searchLower) ||
+                              name.includes(searchLower) ||
+                              network.includes(searchLower)
+                            );
+                          }
+                        );
+
                         return filteredAssets.length > 0 ? (
                           filteredAssets.map((asset: SupportedAsset, index) => (
                             <div
@@ -240,9 +256,10 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                                     "Unknown Asset"}
                                 </div>
                               </div>
-                              {fromAsset?.ticker === asset.ticker && fromAsset?.network === asset.network && (
-                                <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                              )}
+                              {fromAsset?.ticker === asset.ticker &&
+                                fromAsset?.network === asset.network && (
+                                  <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                                )}
                             </div>
                           ))
                         ) : (
@@ -261,30 +278,34 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
           </div>
 
           {/* Swap Circle - positioned to touch both borders equally */}
-          <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/3 z-10">
+          <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/2 sm:-translate-y-1/3 z-10">
             <button
-              className="w-16 h-16 bg-transparent rounded-full flex items-center justify-center hover:bg-[#23232b]/10 transition-colors shadow-lg"
+              className="w-12 h-12 sm:w-16 sm:h-16 bg-transparent rounded-full flex items-center justify-center hover:bg-[#23232b]/10 transition-colors shadow-lg min-h-[48px] min-w-[48px] sm:min-h-[64px] sm:min-w-[64px]"
               onClick={onSwapAssets}
             >
-             {isDark ? <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
-                alt="swap icon"
-                className="w-12 h-12"
-              /> : <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
-                alt="swap icon"
-                className="w-12 h-12"
-              />}
+              {isDark ? (
+                <img
+                  src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
+                  alt="swap icon"
+                  className="w-10 h-10 sm:w-12 sm:h-12"
+                />
+              ) : (
+                <img
+                  src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
+                  alt="swap icon"
+                  className="w-10 h-10 sm:w-12 sm:h-12"
+                />
+              )}
             </button>
           </div>
         </div>
 
         {/* Bottom Section - You Receive and Asset in one card */}
         <div className="relative mb-3">
-          <div className="flex border-2 border-gray-200 dark:border-[#39394a] bg-white dark:bg-transparent rounded-2xl p-4">
+          <div className="flex flex-col sm:flex-row border-2 border-gray-200 dark:border-[#39394a] bg-white dark:bg-transparent rounded-2xl p-3 sm:p-4 gap-3 sm:gap-0">
             {/* You Receive Section */}
-            <div className="flex-1 pr-4">
-              <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+            <div className="flex-1 sm:pr-4">
+              <label className="block text-sm sm:text-base md:text-[17px] text-[#7e7e8f] mb-2 font-semibold">
                 You Receive
               </label>
               <div className="relative">
@@ -294,18 +315,22 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   value={toAmount}
                   onChange={onToAmountChange}
                   placeholder="Enter amount"
-                  className={`w-full bg-white dark:bg-[#1D1D23] rounded-2xl px-4 py-2 pr-16 text-lg text-gray-900 dark:text-white focus:outline-none border appearance-none placeholder-gray-400 dark:placeholder-[#7e7e8f] ${
-                    activeInputField === 'to' 
-                      ? 'border-[#1D8751] ring-2 ring-[#1D8751]/20' 
-                      : 'border-gray-300 dark:border-[#39394a]'
+                  className={`w-full bg-white dark:bg-[#1D1D23] rounded-2xl px-3 sm:px-4 py-3 sm:py-2.5 pr-14 sm:pr-16 text-base sm:text-lg text-gray-900 dark:text-white focus:outline-none border appearance-none placeholder-gray-400 dark:placeholder-[#7e7e8f] min-h-[48px] sm:min-h-[44px] ${
+                    activeInputField === "to"
+                      ? "border-[#1D8751] ring-2 ring-[#1D8751]/20"
+                      : "border-gray-300 dark:border-[#39394a]"
                   }`}
                 />
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
                   <span className="text-gray-600 dark:text-white text-sm font-medium">
-                    {toAsset ? (toAsset.ticker?.toUpperCase() || toAsset.symbol?.toUpperCase() || "USDT") : "USDT"}
+                    {toAsset
+                      ? toAsset.ticker?.toUpperCase() ||
+                        toAsset.symbol?.toUpperCase() ||
+                        "USDT"
+                      : "USDT"}
                   </span>
                 </div>
-                {estimateLoading && activeInputField === 'to' && (
+                {estimateLoading && activeInputField === "to" && (
                   <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
                   </div>
@@ -314,13 +339,13 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
             </div>
 
             {/* Asset Section */}
-            <div className="flex-1 pl-4">
-              <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+            <div className="flex-1 sm:pl-4 sm:border-l-2 sm:border-gray-200 sm:dark:border-[#39394a]">
+              <label className="block text-sm sm:text-base md:text-[17px] text-[#7e7e8f] mb-2 font-semibold">
                 Asset
               </label>
               <div className="relative">
                 <div
-                  className={`w-full bg-white dark:bg-[#1D1D23] rounded-2xl px-4 py-2 text-lg text-gray-900 dark:text-white focus:outline-none border border-gray-300 dark:border-[#39394a] flex items-center justify-between cursor-pointer`}
+                  className={`w-full bg-white dark:bg-[#1D1D23] rounded-2xl px-3 sm:px-4 py-3 sm:py-2.5 text-base sm:text-lg text-gray-900 dark:text-white focus:outline-none border border-gray-300 dark:border-[#39394a] flex items-center justify-between cursor-pointer min-h-[48px] sm:min-h-[44px]`}
                   onClick={onToAssetToggle}
                 >
                   <div className="flex items-center gap-3">
@@ -357,9 +382,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                           alt="asset icon"
                           className="w-6 h-6"
                         />
-                        <span className="text-[#7e7e8f]">
-                          Select Asset
-                        </span>
+                        <span className="text-[#7e7e8f]">Select Asset</span>
                       </>
                     )}
                   </div>
@@ -386,8 +409,18 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                     {/* Search Input */}
                     <div className="p-3 border-b border-gray-200 dark:border-[#39394a]">
                       <div className="relative">
-                        <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        <svg
+                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                          />
                         </svg>
                         <input
                           type="text"
@@ -402,19 +435,23 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                     {/* Asset List */}
                     <div className="max-h-60 overflow-y-auto">
                       {(() => {
-                        const filteredAssets = supportedAssets.filter((asset: SupportedAsset) => {
-                          if (!toSearchTerm) return true;
-                          
-                          const searchLower = toSearchTerm.toLowerCase();
-                          const ticker = asset.ticker?.toLowerCase() || '';
-                          const name = asset.name?.toLowerCase() || '';
-                          const network = asset.network?.toLowerCase() || '';
-                          
-                          return ticker.includes(searchLower) || 
-                                 name.includes(searchLower) || 
-                                 network.includes(searchLower);
-                        });
-                        
+                        const filteredAssets = supportedAssets.filter(
+                          (asset: SupportedAsset) => {
+                            if (!toSearchTerm) return true;
+
+                            const searchLower = toSearchTerm.toLowerCase();
+                            const ticker = asset.ticker?.toLowerCase() || "";
+                            const name = asset.name?.toLowerCase() || "";
+                            const network = asset.network?.toLowerCase() || "";
+
+                            return (
+                              ticker.includes(searchLower) ||
+                              name.includes(searchLower) ||
+                              network.includes(searchLower)
+                            );
+                          }
+                        );
+
                         return filteredAssets.length > 0 ? (
                           filteredAssets.map((asset: SupportedAsset, index) => (
                             <div
@@ -456,9 +493,10 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                                     "Unknown Asset"}
                                 </div>
                               </div>
-                              {toAsset?.ticker === asset.ticker && toAsset?.network === asset.network && (
-                                <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                              )}
+                              {toAsset?.ticker === asset.ticker &&
+                                toAsset?.network === asset.network && (
+                                  <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                                )}
                             </div>
                           ))
                         ) : (
@@ -478,17 +516,15 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
         </div>
 
         {/* Disclaimer Banner */}
-        <div className="flex items-center rounded-2xl px-4 py-3 mb-4">
-          
-        </div>
-{/* <SuccessPage
+        <div className="flex items-center rounded-2xl px-4 py-3 mb-4"></div>
+        {/* <SuccessPage
             // 
         /> */}
         {/* Submit Button */}
         {!hideContinueButton && (
           <div className="mt-4">
             <button
-              className={`w-full text-white dark:text-white text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
+              className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2.5 rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[48px] sm:min-h-[44px] ${
                 !fromAsset ||
                 !toAsset ||
                 !fromAmount ||

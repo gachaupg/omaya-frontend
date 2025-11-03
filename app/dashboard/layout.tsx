@@ -21,7 +21,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen ml-6 mt-28">
+    <div className="min-h-screen ml-0 md:ml-4 lg:ml-6 mt-28">
       {/* Mobile Sidebar */}
       <motion.div
         initial={{ y: -20, opacity: 0 }}
@@ -37,7 +37,7 @@ export default function DashboardLayout({
         initial={{ x: -20, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className="hidden md:mb-28 md:block fixed top-28 left-0 w-[222.28px] h-[calc(100vh-7rem)]"
+        className="hidden md:mb-28 md:block fixed top-28 left-0 w-48 lg:w-56 xl:w-[222.28px] h-[calc(100vh-7rem)] overflow-y-auto"
       >
         <Sidebar />
       </motion.div>
@@ -51,7 +51,7 @@ export default function DashboardLayout({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.15 }} // Reduced from 0.3s to 0.15s for snappier feel
-            className="max-md:mt-40 md:mt-28 md:pl-[222.28px] px-4 md:px-6"
+            className="max-md:mt-40 md:mt-28 md:pl-48 lg:pl-56 xl:pl-[222.28px] px-3 sm:px-4 md:px-4 lg:px-6"
           >
             {children}
           </motion.div>

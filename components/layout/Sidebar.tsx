@@ -35,7 +35,12 @@ export default function Sidebar() {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className={clsx("hidden md:block  left-0  ", "w-[222.28px]")}>
+      <aside
+        className={clsx(
+          "hidden md:block left-0",
+          "w-48 lg:w-56 xl:w-[222.28px]"
+        )}
+      >
         <nav>
           <ul className="space-y-1">
             {navItems.map((item) => {
@@ -52,8 +57,8 @@ export default function Sidebar() {
                     href={item.href}
                     onClick={(e) => handleNavClick(item, e)}
                     className={clsx(
-                      "flex items-center px-6 py-3 rounded-lg text-base font-medium gap-4 transition",
-                      "w-full sm:w-auto",
+                      "flex items-center px-3 md:px-4 lg:px-6 py-3 rounded-lg text-sm md:text-base font-medium gap-2 md:gap-3 lg:gap-4 transition",
+                      "w-full",
                       isActive
                         ? "bg-[#E1E1E1] dark:bg-[#303038] text-[#051015] dark:text-white"
                         : "text-[#727272] dark:hover:text-white hover:bg-white dark:hover:bg-[#23262F]"
@@ -62,7 +67,7 @@ export default function Sidebar() {
                     <img
                       src={item.icon}
                       alt={label + " icon"}
-                      className="w-6 h-6 object-contain"
+                      className="w-5 h-5 md:w-6 md:h-6 object-contain flex-shrink-0"
                     />
                     {item.labelKey === "navigation.express" ? (
                       <span
@@ -85,7 +90,10 @@ export default function Sidebar() {
                             </span>
                           ) : (
                             <span className="flex items-center justify-center">
-                            <span className="dark:text-white text-[#727272]">E</span><img
+                              <span className="dark:text-white text-[#727272]">
+                                E
+                              </span>
+                              <img
                                 className="mt-2"
                                 src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
                                 alt=""
@@ -94,7 +102,9 @@ export default function Sidebar() {
                           )
                         ) : (
                           <span className="flex items-center justify-center">
-                                                          <span className="text-[#727272] text-base uppercase font-bold">E</span>
+                            <span className="text-[#727272] text-base uppercase font-bold">
+                              E
+                            </span>
                             <img
                               className="mt-2"
                               src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
@@ -115,9 +125,9 @@ export default function Sidebar() {
       </aside>
 
       {/* Mobile Top Navigation */}
-      <div className="md:hidden w-full overflow-x-auto bg-[#1D1D23] sticky top-0 z-40">
-        <nav className="px-6">
-          <ul className="flex items-center space-x-4 py-3">
+      <div className="md:hidden w-full overflow-x-auto scrollbar-hide scroll-smooth bg-[#1D1D23] sticky top-0 z-40">
+        <nav className="px-4 sm:px-6">
+          <ul className="flex items-center space-x-2 sm:space-x-3 py-3 snap-x snap-mandatory">
             {navItems.map((item) => {
               const isActive =
                 item.href === "/dashboard"
@@ -126,12 +136,12 @@ export default function Sidebar() {
                     (pathname && pathname.startsWith(item.href + "/"));
               const label = t(item.labelKey, item.labelKey);
               return (
-                <li key={item.labelKey}>
+                <li key={item.labelKey} className="snap-start">
                   <Link
                     href={item.href}
                     onClick={(e) => handleNavClick(item, e)}
                     className={clsx(
-                      "flex items-center justify-center px-3 py-2 rounded-lg text-sm font-medium gap-2 whitespace-nowrap transition",
+                      "flex items-center justify-center px-2.5 sm:px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium gap-1.5 sm:gap-2 whitespace-nowrap transition min-h-[44px]",
                       isActive
                         ? "bg-[#303038] text-white"
                         : "text-[#727272] hover:text-white hover:bg-[#23262F]"
@@ -140,7 +150,7 @@ export default function Sidebar() {
                     <img
                       src={item.icon}
                       alt={label + " icon"}
-                      className="w-5 h-5 object-contain"
+                      className="w-4 h-4 sm:w-5 sm:h-5 object-contain flex-shrink-0"
                     />
                     {item.labelKey === "navigation.express" ? (
                       <span
