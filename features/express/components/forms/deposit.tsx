@@ -143,30 +143,48 @@ export default function DepositForm({
       let activeMethods;
       
       if (isHomePage) {
-        // For public payment methods, flatten the structure to match admin format
-        const methods = publicPaymentMethods?.data?.payment_methods || publicPaymentMethods || [];
-        console.log("🔍 Public payment methods structure:", {
-          publicPaymentMethods,
-          methods,
-          methodsLength: methods.length
-        });
+        // For public payment methods, handle the new API structure
+        let flattenedMethods: any[] = [];
         
-        // Flatten the nested structure: payment_methods -> providers
-        const flattenedMethods: any[] = [];
-        methods.forEach((method: any) => {
-          if (method.providers && method.providers.length > 0) {
-            method.providers.forEach((provider: any) => {
-              flattenedMethods.push({
-                provider_name: provider.provider_name,
-                payment_method: method.method_name,
-                payment_method_type: method.method_name,
-                provider_logo: provider.logo,
-                is_active: true, // All public methods are considered active
-                payment_details: provider.payment_details || []
-              });
+        // Check for new structure: data.providers (direct providers array)
+        if (Array.isArray(publicPaymentMethods?.data?.providers)) {
+          const providers = publicPaymentMethods.data.providers;
+          // Flatten providers directly (new structure)
+          flattenedMethods = providers.map((provider: any) => ({
+            provider_name: provider.provider_name,
+            payment_method: provider.method?.method_name || provider.method?.method_display || '',
+            payment_method_type: provider.method?.method_name || provider.method?.method_display || '',
+            provider_logo: provider.logo,
+            is_active: true, // All public methods are considered active
+            payment_details: provider.payment_details || []
+          }));
+        } else {
+          // Fallback to old structure: data.payment_methods -> providers
+          const methods = publicPaymentMethods?.data?.payment_methods || publicPaymentMethods || [];
+          console.log("🔍 Public payment methods structure:", {
+            publicPaymentMethods,
+            methods,
+            methodsLength: Array.isArray(methods) ? methods.length : 0
+          });
+          
+          // Flatten the nested structure: payment_methods -> providers
+          if (Array.isArray(methods)) {
+            methods.forEach((method: any) => {
+              if (method.providers && Array.isArray(method.providers) && method.providers.length > 0) {
+                method.providers.forEach((provider: any) => {
+                  flattenedMethods.push({
+                    provider_name: provider.provider_name,
+                    payment_method: method.method_name,
+                    payment_method_type: method.method_name,
+                    provider_logo: provider.logo,
+                    is_active: true, // All public methods are considered active
+                    payment_details: provider.payment_details || []
+                  });
+                });
+              }
             });
           }
-        });
+        }
         
         console.log("🔍 Flattened payment methods:", {
           flattenedMethods,

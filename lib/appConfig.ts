@@ -92,6 +92,8 @@ export const API_CONFIG = {
         `${getWebSocketBaseUrl()}/ws/p2p-trade-confirm/${tradeId}/?token=${token}`,
       P2P_ORDERS: (token: string) =>
         `${getWebSocketBaseUrl()}/ws/p2p-orders/?token=${token}`,
+      RECENT_MESSAGES: (token: string) =>
+        `${getWebSocketBaseUrl()}/ws/messages/?token=${token}`,
     },
   },
   SWAP: {

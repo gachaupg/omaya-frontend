@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { getUnreadMessages, markMessageAsRead } from "../api";
 import { logger } from "@/lib/utils/logger";
+import { RecentMessage } from "../services/unreadMessagesWebSocket";
 
 export interface UnreadMessage {
   id: string;
@@ -32,6 +33,7 @@ interface UnreadMessagesState {
   error: string | null;
   currentPage: number;
   totalUnreadCount: number;
+  recentMessages: RecentMessage[];
 }
 
 const initialState: UnreadMessagesState = {
@@ -45,6 +47,7 @@ const initialState: UnreadMessagesState = {
   error: null,
   currentPage: 1,
   totalUnreadCount: 0,
+  recentMessages: [],
 };
 
 // Async thunk to fetch unread messages
@@ -150,6 +153,10 @@ const unreadMessagesSlice = createSlice({
         state.totalUnreadCount = Math.max(0, state.totalUnreadCount - 1);
       }
     },
+    // WebSocket action to set recent messages
+    setRecentMessages: (state, action: PayloadAction<RecentMessage[]>) => {
+      state.recentMessages = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -195,6 +202,7 @@ export const {
   updateUnreadCount,
   addUnreadMessage,
   removeUnreadMessage,
+  setRecentMessages,
 } = unreadMessagesSlice.actions;
 
 export default unreadMessagesSlice.reducer;
