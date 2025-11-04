@@ -11,6 +11,7 @@ import { orderStatusTabs as staticOrderStatusTabs } from "../../data";
 import { RootState } from "@/store/rootReducer";
 import { selectUserTradesByStatus } from "../../selectors";
 import { OrdersListSkeleton } from "@/components/ui/Skeletons";
+import { useUnreadMessagesWebSocket } from "../../hooks/useUnreadMessagesWebSocket";
 
 import { logger } from "@/lib/utils/logger";
 
@@ -20,6 +21,7 @@ const Orders = memo(() => {
     (state: RootState) => state.userTrades
   );
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
+  const { totalUnreadCount } = useSelector((state: RootState) => state.unreadMessages);
 
   // Filter states with proper initial values
   const [filters, setFilters] = useState({
@@ -31,6 +33,9 @@ const Orders = memo(() => {
 
   // State for unread messages view
   const [showUnreadMessages, setShowUnreadMessages] = useState(false);
+
+  // Initialize WebSocket for unread messages
+  useUnreadMessagesWebSocket({ enabled: isAuthenticated });
 
   // Memoize the fetch function to prevent unnecessary re-renders
   const fetchTrades = useCallback(() => {
@@ -177,6 +182,7 @@ const Orders = memo(() => {
         orderStatusTabs={orderStatusTabs}
         onUnreadMessagesClick={handleUnreadMessagesClick}
         showUnreadMessages={showUnreadMessages}
+        totalUnreadCount={totalUnreadCount}
       />
       <div className="flex flex-col w-full">
         {showUnreadMessages ? (

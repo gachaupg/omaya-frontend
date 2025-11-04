@@ -30,6 +30,7 @@ interface FiltersProps {
   orderStatusTabs: Array<{ id: string; label: string; count?: number }>;
   onUnreadMessagesClick?: () => void;
   showUnreadMessages?: boolean;
+  totalUnreadCount?: number;
 }
 
 /**
@@ -43,9 +44,8 @@ const Filters: React.FC<FiltersProps> = ({
   loading = false,
   onUnreadMessagesClick,
   showUnreadMessages = false,
+  totalUnreadCount = 0,
 }) => {
-  // Mock unread count for demonstration
-  const totalUnreadCount = 3;
   const handleTypeChange = (value: string) => {
     if (loading) return;
     onFilterChange({ ...filters, type: value });

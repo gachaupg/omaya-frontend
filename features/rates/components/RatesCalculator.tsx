@@ -158,6 +158,8 @@ const RatesCalculator = () => {
     swapAssetsError
   );
 
+
+
   const { 
     userPaymentDetails, 
     userDetailsLoading, 
@@ -168,7 +170,7 @@ const RatesCalculator = () => {
   } = useSelector((state: RootState) => state.paymentMethods);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const methodDropdownRef = useRef<HTMLDivElement>(null);
-
+  console.log('publicPaymentMethods', publicPaymentMethods);
   useEffect(() => {
     // Fetch exchange assets
     dispatch(fetchAssets(false))
@@ -584,8 +586,18 @@ const RatesCalculator = () => {
     setIsAssetDropdownOpen(false);
   };
 
-  const handlePaymentMethodSelect = (method: string) => {
-    setSelectedPaymentMethod(method);
+  const handlePaymentMethodSelect = (method: string | any) => {
+    // Handle both string (old format) and provider object (new format)
+    if (typeof method === 'string') {
+      setSelectedPaymentMethod(method);
+      setSelectedPaymentDetail(null); // Clear provider object for string method
+    } else if (method?.provider_name) {
+      // For provider objects, use provider_name as display name
+      const displayName = method.provider_name;
+      setSelectedPaymentMethod(displayName);
+      // Store the selected provider object for later use (contains logo, payment_details, etc.)
+      setSelectedPaymentDetail(method);
+    }
     setIsMethodDropdownOpen(false);
   };
 
@@ -751,19 +763,30 @@ const RatesCalculator = () => {
       : [];
       
   // Handle the new API response structure for public payment methods
+  // Extract providers array from the response
+  const publicPaymentProviders = Array.isArray(publicPaymentMethods?.data?.providers)
+    ? publicPaymentMethods.data.providers
+    : [];
+  
   const publicPaymentArray = Array.isArray(publicPaymentMethods) 
     ? publicPaymentMethods 
     : Array.isArray(publicPaymentMethods?.data?.payment_methods) 
       ? publicPaymentMethods.data.payment_methods 
-      : Array.isArray(publicPaymentMethods?.data) 
-        ? publicPaymentMethods.data 
-        : [];
+      : Array.isArray(publicPaymentMethods?.data?.providers)
+        ? publicPaymentMethods.data.providers
+        : Array.isArray(publicPaymentMethods?.data) 
+          ? publicPaymentMethods.data 
+          : [];
   
   // Extract payment method names based on the API structure
   const getPaymentMethodName = (item: any) => {
     // For user payment details (old structure)
     if (item?.payment_method_name) {
       return item.payment_method_name;
+    }
+    // For public payment methods provider structure (new structure)
+    if (item?.method?.method_name) {
+      return item.method.method_name;
     }
     // For public payment methods (new structure)
     if (item?.method_name) {
@@ -780,11 +803,13 @@ const RatesCalculator = () => {
   console.log("RatesCalculator Debug:", {
     userPaymentDetails: userPaymentDetails,
     publicPaymentMethods: publicPaymentMethods,
+    publicPaymentProviders: publicPaymentProviders.length,
     userPaymentArray: userPaymentArray.length,
     publicPaymentArray: publicPaymentArray.length,
     availablePaymentMethods: availablePaymentMethods.length,
     isArray: Array.isArray(availablePaymentMethods),
     firstItem: availablePaymentMethods[0],
+    firstProvider: publicPaymentProviders[0],
     paymentMethodNames: availablePaymentMethods.map(getPaymentMethodName)
   });
 
@@ -846,6 +871,7 @@ const RatesCalculator = () => {
     typeof method === 'string' && method.trim().length > 0
   ) ? allPaymentMethods : fallbackPaymentMethods;
 
+  
   // selectedPaymentDetail is now a state variable
 
   // Filter assets based on search term - search by ticker and name
@@ -1463,6 +1489,7 @@ const RatesCalculator = () => {
                       setIsMethodDropdownOpen(!isMethodDropdownOpen)
                     }
                   >
+                    
                     <div className="flex items-center">
                       <FaUniversity />
                       <span className="ml-2 text-gray-900 dark:text-white">
@@ -1759,7 +1786,20 @@ const RatesCalculator = () => {
                     }
               >
                 <div className="flex items-center">
-                  <FaUniversity />
+                  {selectedPaymentDetail && typeof selectedPaymentDetail === 'object' && selectedPaymentDetail.logo ? (
+                    <img
+                      src={selectedPaymentDetail.logo}
+                      alt={selectedPaymentDetail.provider_name || 'Selected provider'}
+                      className="w-6 h-6 object-contain rounded"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                        if (fallback) fallback.style.display = 'block';
+                      }}
+                    />
+                  ) : (
+                    <FaUniversity />
+                  )}
                   <span className="ml-2 text-gray-900 dark:text-white">
                     {selectedPaymentMethod ||
                       t("rates.selectMethod", "Select Method")}
@@ -1782,7 +1822,48 @@ const RatesCalculator = () => {
                             "Loading payment methods..."
                           )}
                     </div>
-                  ) :  finalPaymentMethods.length > 0 ? (
+                  ) : publicPaymentProviders.length > 0 ? (
+                    publicPaymentProviders.map((provider: any) => (
+                      <div
+                        key={provider.provider_id || provider.provider_name}
+                        className="p-3 flex items-center hover:bg-gray-100 dark:hover:bg-[#35353E] cursor-pointer transition-colors first:rounded-t-[18px] last:rounded-b-[18px]"
+                        onClick={() => handlePaymentMethodSelect(provider)}
+                      >
+                        {provider.logo ? (
+                          <div className="relative w-8 h-8 flex-shrink-0">
+                            <img
+                              src={provider.logo}
+                              alt={provider.provider_name || 'Provider logo'}
+                              className="w-8 h-8 object-contain rounded"
+                              onError={(e) => {
+                                // Hide image and show icon instead
+                                const img = e.currentTarget;
+                                img.style.display = 'none';
+                                const icon = img.parentElement?.querySelector('.fallback-icon') as HTMLElement;
+                                if (icon) icon.style.display = 'block';
+                              }}
+                            />
+                            <FaUniversity 
+                              className="fallback-icon hidden absolute inset-0 w-full h-full" 
+                              style={{ display: 'none' }}
+                            />
+                          </div>
+                        ) : (
+                          <FaUniversity className="w-5 h-5 flex-shrink-0" />
+                        )}
+                        <div className="ml-2 flex-1 min-w-0">
+                          <div className="font-medium text-gray-900 dark:text-white truncate">
+                            {provider.provider_name || 'Unknown Provider'}
+                          </div>
+                          {provider.method?.method_display && (
+                            <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                              {provider.method.method_display}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : finalPaymentMethods.length > 0 ? (
                     finalPaymentMethods.map((method: string) => (
                       <div
                         key={method}

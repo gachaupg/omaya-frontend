@@ -361,15 +361,27 @@ export default function ExchangeForm({
   const processedPaymentMethods = useMemo(() => {
     if (isHomePage) {
       // Handle new API structure for public payment methods
-      if (publicPaymentMethods?.data?.payment_methods) {
+      // First check for providers array (new structure)
+      if (Array.isArray(publicPaymentMethods?.data?.providers)) {
+        return publicPaymentMethods.data.providers;
+      }
+      // Check for payment_methods array (older structure)
+      if (Array.isArray(publicPaymentMethods?.data?.payment_methods)) {
         return publicPaymentMethods.data.payment_methods;
       }
-      if (publicPaymentMethods) {
+      // Check if publicPaymentMethods itself is an array (fallback)
+      if (Array.isArray(publicPaymentMethods)) {
         return publicPaymentMethods;
       }
-      return []; // Return empty array if no data yet
+      return []; // Return empty array if no valid data
     }
-    return adminPaymentDetails || [];
+    // For authenticated users, use admin payment details
+    const adminArray = Array.isArray(adminPaymentDetails)
+      ? adminPaymentDetails
+      : Array.isArray(adminPaymentDetails?.data)
+        ? adminPaymentDetails.data
+        : [];
+    return adminArray;
   }, [isHomePage, publicPaymentMethods, adminPaymentDetails]);
 
   // Extract payment method names based on the API structure - same as RatesCalculator
@@ -378,7 +390,11 @@ export default function ExchangeForm({
     if (item?.payment_method_name) {
       return item.payment_method_name;
     }
-    // For public payment methods (new structure)
+    // For public payment methods provider structure (new structure)
+    if (item?.method?.method_name) {
+      return item.method.method_name;
+    }
+    // For public payment methods (older structure)
     if (item?.method_name) {
       return item.method_name;
     }
