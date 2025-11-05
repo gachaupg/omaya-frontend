@@ -734,3 +734,58 @@ export const getUnreadMessageCount = async (): Promise<{ count: number }> => {
     return response.data;
   });
 };
+
+// New API for fetching messages grouped by user
+export interface GroupedMessage {
+  id: string;
+  content: string;
+  timestamp: string;
+  images: string[];
+  sender_id: number;
+  sender_name: string;
+  is_admin?: boolean;
+  sender_role?: string;
+  sender_type?: string;
+  support_document?: string;
+}
+
+export interface GroupedUser {
+  messages: GroupedMessage[];
+  sender_id: number;
+  sender_name: string;
+  sender_email: string;
+  entity_id: string;
+  message_type: string;
+  peer_id?: number;
+  peer_name?: string;
+  peer_email?: string;
+}
+
+export interface GroupedMessagesResponse {
+  type: string;
+  data: {
+    users: GroupedUser[];
+    summary: {
+      total_conversations: number;
+      total_messages: number;
+      entity_groups: Record<string, string>;
+    };
+  };
+}
+
+export const getGroupedMessages = async (
+  limit: number = 100
+): Promise<GroupedMessagesResponse> => {
+  return withRetry(async () => {
+    logger.debug("p2p", "Fetching grouped messages:", { limit });
+    const response = await get<GroupedMessagesResponse>(
+      `/trading_engine/messages/?limit=${limit}`
+    );
+    logger.debug("p2p", "Grouped messages API response:", {
+      status: response.status,
+      usersCount: response.data.data.users.length,
+      totalMessages: response.data.data.summary.total_messages,
+    });
+    return response.data;
+  });
+};

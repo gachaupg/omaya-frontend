@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/rootReducer";
 import ChatBox from "@/features/p2p/components/ui/market/sections/ChatBox";
-import { getTradeMessages } from "@/features/p2p/api";
+import { getTradeMessages, getGroupedMessages } from "@/features/p2p/api";
 import { logger } from "@/lib/utils/logger";
 
 interface TradeData {
@@ -33,6 +33,8 @@ const TradeMessagesPage = () => {
   const [tradeData, setTradeData] = useState<TradeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [messageType, setMessageType] = useState<'p2p' | 'support'>('p2p');
+  const [peerName, setPeerName] = useState<string | undefined>(undefined);
 
   // Mock trade data for demonstration
   const mockTradeData: TradeData = {
@@ -63,24 +65,55 @@ const TradeMessagesPage = () => {
       return;
     }
 
-    // For now, use mock data
-    // In a real implementation, you would fetch trade data from API
-    setTradeData(mockTradeData);
-    setLoading(false);
+    // Fetch grouped messages to get message type and peer name
+    const fetchMessageInfo = async () => {
+      try {
+        const groupedMessages = await getGroupedMessages(100);
+        const userGroup = groupedMessages.data.users.find(
+          (user) => user.entity_id === tradeId
+        );
+        
+        if (userGroup) {
+          setMessageType(userGroup.message_type as 'p2p' | 'support');
+          // For P2P, use peer_name; for support, use sender_name or "Support"
+          if (userGroup.message_type === 'p2p' && userGroup.peer_name) {
+            setPeerName(userGroup.peer_name);
+          } else if (userGroup.message_type === 'support') {
+            // For support, show the sender name or "Support"
+            setPeerName(userGroup.sender_name || "Support");
+          }
+        }
+      } catch (err) {
+        logger.error("p2p", "Error fetching message info:", err);
+        // Continue with defaults
+      }
+    };
 
-    // Example of how to fetch real trade data:
-    // const fetchTradeData = async () => {
-    //   try {
-    //     const data = await getTradeData(tradeId);
-    //     setTradeData(data);
-    //   } catch (err) {
-    //     setError("Failed to load trade data");
-    //     logger.error("p2p", "Error fetching trade data:", err);
-    //   } finally {
-    //     setLoading(false);
-    //   }
-    // };
-    // fetchTradeData();
+    // Fetch message info and set trade data
+    const initialize = async () => {
+      await fetchMessageInfo();
+      
+      // For now, use mock data
+      // In a real implementation, you would fetch trade data from API
+      setTradeData(mockTradeData);
+      setLoading(false);
+
+      // Example of how to fetch real trade data:
+      // const fetchTradeData = async () => {
+      //   try {
+      //     const data = await getTradeData(tradeId);
+      //     setTradeData(data);
+      //   } catch (err) {
+      //     setError("Failed to load trade data");
+      //     logger.error("p2p", "Error fetching trade data:", err);
+      //   } finally {
+      //     setLoading(false);
+      //   }
+      // };
+      // fetchTradeData();
+    };
+
+    initialize();
   }, [tradeId, isAuthenticated, router]);
 
   if (loading) {
@@ -106,7 +139,7 @@ const TradeMessagesPage = () => {
             The requested trade could not be found.
           </p>
           <button
-            onClick={() => router.push('/p2p')}
+            onClick={() => router.push('/dashboard/p2p')}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             Back to P2P
@@ -128,7 +161,7 @@ const TradeMessagesPage = () => {
             {error || "The trade you're looking for doesn't exist or you don't have permission to view it."}
           </p>
           <button
-            onClick={() => router.push('/p2p/orders')}
+            onClick={() => router.push('/dashboard/p2p/?tab=orders')}
             className="px-6 py-3 bg-[#1D8751] text-white rounded-lg hover:bg-[#166b3e] transition-colors"
           >
             Back to Orders
@@ -146,7 +179,7 @@ const TradeMessagesPage = () => {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => router.push('/p2p/orders')}
+                onClick={() => router.push('/dashboard/p2p/?tab=orders')}
                 className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-[#1D8751] transition-colors"
               >
                 <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -194,6 +227,9 @@ const TradeMessagesPage = () => {
             owner={tradeData.owner}
             buyerName={tradeData.buyer_name}
             sellerName={tradeData.seller_name}
+            messageType={messageType}
+            peerName={peerName}
+            onClose={() => router.push('/dashboard/p2p/?tab=orders')}
           />
         </div>
       </div>

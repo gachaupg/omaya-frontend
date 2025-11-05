@@ -36,10 +36,45 @@ const ChatBox: React.FC<{
   owner: string;
   buyerName?: string;
   sellerName?: string;
-}> = ({ tradeId, userId, userName, autoreply, seller_photo, buyer_photo, buyer, seller, currentUserEmail, owner, buyerName, sellerName }) => {
+  messageType?: 'p2p' | 'support';
+  peerName?: string;
+  onClose?: () => void;
+}> = ({ tradeId, userId, userName, autoreply, seller_photo, buyer_photo, buyer, seller, currentUserEmail, owner, buyerName, sellerName, messageType = 'p2p', peerName, onClose }) => {
   
   // Determine which photo and display name to show for the other person
   const otherPersonData = React.useMemo(() => {
+    // For P2P messages, use peerName from API if available, otherwise use existing logic
+    if (messageType === 'p2p' && peerName) {
+      if (currentUserEmail && owner) {
+        // If current user is the owner, show buyer's info (the other person)
+        if (currentUserEmail === owner) {
+          return {
+            photo: buyer_photo,
+            displayName: peerName || buyerName || userName || buyer || "Buyer"
+          };
+        }
+        // If current user is not the owner, show seller's info (the owner's info)
+        return {
+          photo: seller_photo,
+          displayName: peerName || sellerName || userName || seller || "Seller"
+        };
+      }
+      // Fallback with peerName
+      return {
+        photo: seller_photo || buyer_photo,
+        displayName: peerName || userName || sellerName || buyerName || seller || buyer || "Unknown"
+      };
+    }
+    
+    // Support messages - use peerName if available
+    if (messageType === 'support' && peerName) {
+      return {
+        photo: seller_photo || buyer_photo,
+        displayName: peerName || "Support"
+      };
+    }
+    
+    // Original logic for P2P messages without peerName
     if (currentUserEmail && owner) {
       // If current user is the owner, show buyer's info (the other person)
       if (currentUserEmail === owner) {
@@ -59,7 +94,7 @@ const ChatBox: React.FC<{
       photo: seller_photo || buyer_photo,
       displayName: userName || sellerName || buyerName || seller || buyer || "Unknown"
     };
-  }, [currentUserEmail, owner, seller_photo, buyer_photo, buyer, seller, buyerName, sellerName, userName]);
+  }, [currentUserEmail, owner, seller_photo, buyer_photo, buyer, seller, buyerName, sellerName, userName, messageType, peerName]);
   const dispatch = useDispatch();
   const message = useSelector((state: RootState) => state.message.message);
   const uploaded_images = useSelector(
@@ -107,12 +142,11 @@ const ChatBox: React.FC<{
     (state: RootState) => state.auth.isAuthenticated
   );
 
-  // Use WebSocket for real-time messages
-
-  
+  // Use WebSocket for real-time messages only for P2P messages
+  // For support messages, use API polling instead
   const { isConnected: wsConnected } = useTradeMessagesWebSocket({
     tradeId,
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && messageType === 'p2p', // Only enable WebSocket for P2P messages
   });
 
   // Ref for auto-scroll
@@ -169,7 +203,7 @@ const ChatBox: React.FC<{
   }, [sortedMessages, userHasScrolled, isAtBottom]);
 
   // Fetch messages initially (WebSocket will keep them updated)
-  const fetchMessages = async () => {
+  const fetchMessages = React.useCallback(async () => {
     if (isAuthenticated && tradeId) {
       setIsRefreshing(true);
       try {
@@ -188,13 +222,32 @@ const ChatBox: React.FC<{
         setIsRefreshing(false);
       }
     }
-  };
+  }, [isAuthenticated, tradeId, dispatch]);
+
+  // Polling interval for support messages (API-based)
+  const pollingIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Fetch initial messages once on mount
-    // WebSocket will then keep them updated in real-time
-    fetchMessages();
-  }, [tradeId]);
+    if (messageType === 'p2p') {
+      // For P2P: WebSocket will keep them updated in real-time
+      fetchMessages();
+    } else if (messageType === 'support') {
+      // For support: Use API polling every 5 seconds
+      fetchMessages();
+      pollingIntervalRef.current = setInterval(() => {
+        fetchMessages();
+      }, 5000);
+    } else {
+      fetchMessages();
+    }
+    
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, [tradeId, messageType, fetchMessages]);
 
   // Auto-refresh when new messages with images arrive via WebSocket
   const lastMessageIdRef = React.useRef<string | null>(null);
@@ -233,7 +286,7 @@ const ChatBox: React.FC<{
         clearTimeout(refreshTimeoutRef.current);
       }
     };
-  }, [sortedMessages.length]); // Only trigger when message count changes
+  }, [sortedMessages.length, fetchMessages]); // Only trigger when message count changes
 
   // Handle manual refresh
   const handleRefresh = () => {
@@ -311,24 +364,33 @@ const ChatBox: React.FC<{
 
   return (
     <div>
-        <div className="flex items-center justify-between text-xs mb-2">
-          <div className="flex items-center gap-2">
-            <span>Chat with {otherPersonData.displayName}</span>
-          {wsConnected ? (
-            <span className="text-[10px] text-[#1D8751] flex items-center gap-1">
-              <span className="w-1.5 h-1.5 bg-[#1D8751] rounded-full animate-pulse"></span>
-              Live
-            </span>
+      <div className="flex items-center justify-between text-xs mb-2">
+        <div className="flex items-center gap-2">
+          <span>Chat with {otherPersonData.displayName}</span>
+          {messageType === 'p2p' ? (
+            wsConnected ? (
+              <span className="text-[10px] text-[#1D8751] flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-[#1D8751] rounded-full animate-pulse"></span>
+                Live
+              </span>
+            ) : (
+              <span className="text-[10px] text-[#F79330] flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-[#F79330] rounded-full"></span>
+                Reconnecting...
+              </span>
+            )
           ) : (
-            <span className="text-[10px] text-[#F79330] flex items-center gap-1">
-              <span className="w-1.5 h-1.5 bg-[#F79330] rounded-full"></span>
-              Reconnecting...
+            <span className="text-[10px] text-[#788099] flex items-center gap-1">
+              <span className="w-1.5 h-1.5 bg-[#788099] rounded-full"></span>
+              API
             </span>
           )}
           <span className="text-[10px] text-[#788099]">
             ({sortedMessages.length} msgs)
           </span>
         </div>
+      </div>
+      <div className="flex items-center justify-between mb-2">
         <button
           onClick={handleRefresh}
           disabled={isRefreshing}
@@ -350,13 +412,36 @@ const ChatBox: React.FC<{
               strokeLinejoin="round"
             />
             <path
-              d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"
+              d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10M23 10l-4.64 4.36A9 9 0 0 1 3.51 15"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
           </svg>
-          {isRefreshing ? "Refreshing..." : "Refresh"}
+          Refresh
         </button>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            aria-label="Close chat"
+            title="Close"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        )}
       </div>
       <div className="chat-container mt-6 flex flex-col pr-10 mb-2 h-96 bg-white dark:bg-[#18181D] border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px] p-2 md:p-4 relative">
         <div>

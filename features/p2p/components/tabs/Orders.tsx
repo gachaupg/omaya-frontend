@@ -11,7 +11,7 @@ import { orderStatusTabs as staticOrderStatusTabs } from "../../data";
 import { RootState } from "@/store/rootReducer";
 import { selectUserTradesByStatus } from "../../selectors";
 import { OrdersListSkeleton } from "@/components/ui/Skeletons";
-import { useUnreadMessagesWebSocket } from "../../hooks/useUnreadMessagesWebSocket";
+import { useGroupedMessages } from "../../hooks/useGroupedMessages";
 
 import { logger } from "@/lib/utils/logger";
 
@@ -34,8 +34,12 @@ const Orders = memo(() => {
   // State for unread messages view
   const [showUnreadMessages, setShowUnreadMessages] = useState(false);
 
-  // Initialize WebSocket for unread messages
-  useUnreadMessagesWebSocket({ enabled: isAuthenticated });
+  // Initialize API hook for grouped messages
+  useGroupedMessages({ 
+    enabled: isAuthenticated,
+    limit: 100,
+    refetchInterval: 30000, // Poll every 30 seconds
+  });
 
   // Memoize the fetch function to prevent unnecessary re-renders
   const fetchTrades = useCallback(() => {

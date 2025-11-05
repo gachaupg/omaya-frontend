@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { getUnreadMessages, markMessageAsRead } from "../api";
+import { getUnreadMessages, markMessageAsRead, getGroupedMessages, GroupedUser } from "../api";
 import { logger } from "@/lib/utils/logger";
 import { RecentMessage } from "../services/unreadMessagesWebSocket";
 
@@ -34,6 +34,9 @@ interface UnreadMessagesState {
   currentPage: number;
   totalUnreadCount: number;
   recentMessages: RecentMessage[];
+  groupedUsers: GroupedUser[];
+  groupedMessagesLoading: boolean;
+  groupedMessagesError: string | null;
 }
 
 const initialState: UnreadMessagesState = {
@@ -48,6 +51,9 @@ const initialState: UnreadMessagesState = {
   currentPage: 1,
   totalUnreadCount: 0,
   recentMessages: [],
+  groupedUsers: [],
+  groupedMessagesLoading: false,
+  groupedMessagesError: null,
 };
 
 // Async thunk to fetch unread messages
@@ -119,6 +125,31 @@ export const markAllAsRead = createAsyncThunk<
   }
 );
 
+// Async thunk to fetch grouped messages
+export const fetchGroupedMessages = createAsyncThunk<
+  GroupedUser[],
+  { limit?: number },
+  { rejectValue: string }
+>(
+  "unreadMessages/fetchGroupedMessages",
+  async ({ limit = 100 }, { rejectWithValue }) => {
+    try {
+      logger.debug("p2p", "Fetching grouped messages:", { limit });
+      const response = await getGroupedMessages(limit);
+      logger.debug("p2p", "Grouped messages fetched successfully:", {
+        usersCount: response.data.users.length,
+        totalMessages: response.data.summary.total_messages,
+      });
+      return response.data.users;
+    } catch (error) {
+      logger.error("p2p", "Error fetching grouped messages:", error);
+      return rejectWithValue(
+        error instanceof Error ? error.message : "Failed to fetch grouped messages"
+      );
+    }
+  }
+);
+
 const unreadMessagesSlice = createSlice({
   name: "unreadMessages",
   initialState,
@@ -157,6 +188,10 @@ const unreadMessagesSlice = createSlice({
     setRecentMessages: (state, action: PayloadAction<RecentMessage[]>) => {
       state.recentMessages = action.payload;
     },
+    // Set grouped users
+    setGroupedUsers: (state, action: PayloadAction<GroupedUser[]>) => {
+      state.groupedUsers = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -192,6 +227,26 @@ const unreadMessagesSlice = createSlice({
         state.messages.results = [];
         state.messages.count = 0;
         state.totalUnreadCount = 0;
+      })
+      // Fetch grouped messages
+      .addCase(fetchGroupedMessages.pending, (state) => {
+        state.groupedMessagesLoading = true;
+        state.groupedMessagesError = null;
+      })
+      .addCase(fetchGroupedMessages.fulfilled, (state, action) => {
+        state.groupedMessagesLoading = false;
+        state.groupedUsers = action.payload;
+        state.groupedMessagesError = null;
+        // Calculate total unread count from grouped messages
+        const totalMessages = action.payload.reduce(
+          (sum, user) => sum + user.messages.length,
+          0
+        );
+        state.totalUnreadCount = totalMessages;
+      })
+      .addCase(fetchGroupedMessages.rejected, (state, action) => {
+        state.groupedMessagesLoading = false;
+        state.groupedMessagesError = action.payload || "Failed to fetch grouped messages";
       });
   },
 });
@@ -203,6 +258,7 @@ export const {
   addUnreadMessage,
   removeUnreadMessage,
   setRecentMessages,
+  setGroupedUsers,
 } = unreadMessagesSlice.actions;
 
 export default unreadMessagesSlice.reducer;
