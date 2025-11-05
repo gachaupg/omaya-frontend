@@ -401,6 +401,28 @@ export default function ExchangeForm({
     return null;
   };
 
+  // Get provider name from provider object
+  const getProviderName = (provider: any) => {
+    if (provider?.provider_name) {
+      return provider.provider_name;
+    }
+    if (provider?.payment_provider_name) {
+      return provider.payment_provider_name;
+    }
+    return null;
+  };
+
+  // Get provider logo from provider object
+  const getProviderLogo = (provider: any) => {
+    if (provider?.logo) {
+      return provider.logo;
+    }
+    if (provider?.provider_logo) {
+      return provider.provider_logo;
+    }
+    return "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+  };
+
   // Get unique payment methods from processed data
   const uniquePaymentMethods = Array.from(
     new Set(
@@ -414,6 +436,24 @@ export default function ExchangeForm({
   const validPaymentMethods = uniquePaymentMethods.filter(
     (method) => method && typeof method === "string" && method.trim().length > 0
   );
+
+  // Create a list of providers with their method names for display
+  // This will show all providers with their names and logos
+  const paymentProviders = useMemo(() => {
+    if (!processedPaymentMethods || processedPaymentMethods.length === 0) {
+      return [];
+    }
+
+    // Map providers to include method name for filtering
+    return processedPaymentMethods.map((provider: any) => ({
+      provider_id: provider.provider_id || provider.id,
+      provider_name: getProviderName(provider),
+      logo: getProviderLogo(provider),
+      method_name: getPaymentMethodName(provider),
+      method_display: provider?.method?.method_display || getPaymentMethodName(provider),
+      provider: provider, // Keep full provider object for reference
+    })).filter((item: any) => item.provider_name && item.method_name);
+  }, [processedPaymentMethods]);
 
   // Fallback payment methods if data is corrupted or not loaded yet
   const fallbackPaymentMethods = [
@@ -688,25 +728,28 @@ export default function ExchangeForm({
   }, [activeTab]);
 
   /* ------------------- Payment Method Selection ------------------- */
-  const handlePaymentMethodSelect = (paymentMethod: string) => {
-    setSelectedPaymentMethod(paymentMethod);
+  const handlePaymentMethodSelect = (provider: any) => {
+    setSelectedPaymentMethod(provider);
     setIsPaymentDropdownOpen(false);
     setPaymentSearchTerm("");
+
+    const providerName = provider.provider_name || provider.method_name || "Payment Method";
+    const providerLogo = provider.logo || "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
 
     // Update currency display based on current mode
     if (mode === "deposit") {
       // For deposit: payment method -> asset
       setPayCurrency({
-        label: paymentMethod,
-        sub: "Payment Method",
-        icon: "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png",
+        label: providerName,
+        sub: provider.method_display || provider.method_name || "Payment Method",
+        icon: providerLogo,
       });
     } else {
       // For withdrawal: asset -> payment method
       setGetCurrency({
-        label: paymentMethod,
-        sub: "Payment Method",
-        icon: "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png",
+        label: providerName,
+        sub: provider.method_display || provider.method_name || "Payment Method",
+        icon: providerLogo,
       });
     }
   };
@@ -720,10 +763,12 @@ export default function ExchangeForm({
     if (newMode === "deposit") {
       // For deposit: payment method -> asset
       if (selectedPaymentMethod) {
+        const providerName = selectedPaymentMethod.provider_name || selectedPaymentMethod.method_name || "Payment Method";
+        const providerLogo = selectedPaymentMethod.logo || "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
         setPayCurrency({
-          label: selectedPaymentMethod,
-          sub: "Payment Method",
-          icon: "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png",
+          label: providerName,
+          sub: selectedPaymentMethod.method_display || selectedPaymentMethod.method_name || "Payment Method",
+          icon: providerLogo,
         });
       } else {
         setPayCurrency(presets.express.pay); // Fallback to default
@@ -747,10 +792,12 @@ export default function ExchangeForm({
       }
 
       if (selectedPaymentMethod) {
+        const providerName = selectedPaymentMethod.provider_name || selectedPaymentMethod.method_name || "Payment Method";
+        const providerLogo = selectedPaymentMethod.logo || "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
         setGetCurrency({
-          label: selectedPaymentMethod,
-          sub: "Payment Method",
-          icon: "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png",
+          label: providerName,
+          sub: selectedPaymentMethod.method_display || selectedPaymentMethod.method_name || "Payment Method",
+          icon: providerLogo,
         });
       } else {
         setGetCurrency(presets.express.pay); // Fallback to default
@@ -888,18 +935,20 @@ export default function ExchangeForm({
   });
 
   /* ------------------- Payment Method Filtering ------------------- */
-  // Filter payment methods based on search term - use finalPaymentMethods
-  const filteredPaymentMethods = finalPaymentMethods.filter(
-    (method: string) => {
+  // Filter payment providers based on search term - search by provider name and method name
+  const filteredPaymentProviders = paymentProviders.filter(
+    (provider: any) => {
       const searchTerm = paymentSearchTerm.toUpperCase();
-      return method.toUpperCase().includes(searchTerm);
+      const providerName = (provider.provider_name || "").toUpperCase();
+      const methodName = (provider.method_name || "").toUpperCase();
+      return providerName.includes(searchTerm) || methodName.includes(searchTerm);
     }
   );
 
   // Debug filtered payment methods
-  console.log("🔍 Filtered Payment Methods:", {
-    finalPaymentMethods,
-    filteredPaymentMethods,
+  console.log("🔍 Filtered Payment Providers:", {
+    paymentProviders,
+    filteredPaymentProviders,
     paymentSearchTerm,
     searchTerm: paymentSearchTerm.toUpperCase(),
     validPaymentMethods,
@@ -940,6 +989,16 @@ export default function ExchangeForm({
   }> = ({ isOpen, onClose, onSelect, selectedPayment }) => {
     if (!isOpen) return null;
 
+    // Helper to check if provider is selected
+    const isProviderSelected = (provider: any) => {
+      if (!selectedPayment) return false;
+      if (typeof selectedPayment === 'string') {
+        return selectedPayment === provider.provider_name || selectedPayment === provider.method_name;
+      }
+      return selectedPayment.provider_id === provider.provider_id || 
+             selectedPayment.provider_name === provider.provider_name;
+    };
+
     return (
       <div
         ref={paymentDropdownRef}
@@ -951,7 +1010,7 @@ export default function ExchangeForm({
             <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
-              placeholder="Search payment methods..."
+              placeholder="Search payment providers..."
               value={paymentSearchTerm}
               onChange={(e) => setPaymentSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-transparent text-[#35353e] dark:text-[#ffffff] placeholder-gray-400 focus:outline-none"
@@ -959,19 +1018,19 @@ export default function ExchangeForm({
           </div>
         </div>
 
-        {/* Payment Methods List */}
+        {/* Payment Providers List */}
         <div className="max-h-60 overflow-y-auto">
           {(() => {
             console.log("🔍 Dropdown Render Debug:", {
               isLoading: paymentMethodsLoading,
-              filteredLength: filteredPaymentMethods.length,
-              filteredMethods: filteredPaymentMethods,
-              finalPaymentMethods: finalPaymentMethods,
-              finalPaymentMethodsLength: finalPaymentMethods.length,
+              filteredLength: filteredPaymentProviders.length,
+              filteredProviders: filteredPaymentProviders,
+              paymentProviders: paymentProviders,
+              paymentProvidersLength: paymentProviders.length,
               paymentSearchTerm: paymentSearchTerm,
             });
 
-            if (paymentMethodsLoading && finalPaymentMethods.length === 0) {
+            if (paymentMethodsLoading && paymentProviders.length === 0) {
               return (
                 <div className="p-4 text-center text-gray-500 dark:text-gray-400">
                   Loading payment methods...
@@ -979,55 +1038,65 @@ export default function ExchangeForm({
               );
             }
 
-            if (filteredPaymentMethods.length === 0) {
+            if (filteredPaymentProviders.length === 0) {
               console.log(
-                "🔍 No filtered payment methods - showing empty state"
+                "🔍 No filtered payment providers - showing empty state"
               );
               return (
                 <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                  {finalPaymentMethods.length === 0
+                  {paymentProviders.length === 0
                     ? "No payment methods available"
-                    : "No payment methods found"}
+                    : "No payment providers found"}
                 </div>
               );
             }
 
             console.log(
-              "🔍 Rendering payment methods:",
-              filteredPaymentMethods
+              "🔍 Rendering payment providers:",
+              filteredPaymentProviders
             );
 
-            return filteredPaymentMethods.map(
-              (method: string, index: number) => (
-                <div
-                  key={index}
-                  className={`p-3 hover:bg-gray-50 dark:hover:bg-[#2A2A2A] cursor-pointer border-b border-gray-100 dark:border-[#35353E] last:border-b-0 ${
-                    selectedPayment === method ? "bg-[#1D8751]/10" : ""
-                  }`}
-                  onClick={() => {
-                    onSelect(method);
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <img
-                      src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
-                      alt="payment method icon"
-                      className="w-6 h-6 rounded-full object-cover"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2 flex-wrap">
-                        <span className="truncate">{method}</span>
-                        {selectedPayment === method && (
-                          <span className="text-[#1D8751] text-sm">✓</span>
-                        )}
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                        Payment Method
+            return filteredPaymentProviders.map(
+              (provider: any, index: number) => {
+                const isSelected = isProviderSelected(provider);
+                const fallbackLogo = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                
+                return (
+                  <div
+                    key={provider.provider_id || index}
+                    className={`p-3 hover:bg-gray-50 dark:hover:bg-[#2A2A2A] cursor-pointer border-b border-gray-100 dark:border-[#35353E] last:border-b-0 ${
+                      isSelected ? "bg-[#1D8751]/10" : ""
+                    }`}
+                    onClick={() => {
+                      onSelect(provider);
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={provider.logo || fallbackLogo}
+                        alt={provider.provider_name || "provider icon"}
+                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                        onError={(e) => {
+                          if (e.currentTarget.src !== fallbackLogo) {
+                            e.currentTarget.src = fallbackLogo;
+                          }
+                        }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2 flex-wrap">
+                          <span className="truncate">{provider.provider_name}</span>
+                          {isSelected && (
+                            <span className="text-[#1D8751] text-sm">✓</span>
+                          )}
+                        </div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                          {provider.method_display || provider.method_name || "Payment Method"}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              )
+                );
+              }
             );
           })()}
         </div>

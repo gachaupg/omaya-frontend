@@ -136,10 +136,17 @@ export default function DepositForm({
       paymentMethodsData,
       publicPaymentMethods,
       adminPaymentDetails,
-      paymentMethodsDataLength: paymentMethodsData?.length || 0
+      hasProviders: !!publicPaymentMethods?.data?.providers,
+      providersLength: publicPaymentMethods?.data?.providers?.length || 0,
+      paymentMethodsDataLength: Array.isArray(paymentMethodsData) ? paymentMethodsData.length : 0
     });
 
-    if (paymentMethodsData && paymentMethodsData.length > 0) {
+    // Check if we have payment methods data
+    const hasPaymentData = isHomePage 
+      ? (publicPaymentMethods?.data?.providers && Array.isArray(publicPaymentMethods.data.providers) && publicPaymentMethods.data.providers.length > 0)
+      : (paymentMethodsData && Array.isArray(paymentMethodsData) && paymentMethodsData.length > 0);
+
+    if (hasPaymentData) {
       let activeMethods;
       
       if (isHomePage) {
@@ -149,15 +156,49 @@ export default function DepositForm({
         // Check for new structure: data.providers (direct providers array)
         if (Array.isArray(publicPaymentMethods?.data?.providers)) {
           const providers = publicPaymentMethods.data.providers;
+          console.log("🔍 Processing providers from API:", {
+            providersCount: providers.length,
+            firstProvider: providers[0] ? {
+              provider_name: providers[0].provider_name,
+              logo: providers[0].logo,
+              method: providers[0].method
+            } : null
+          });
+          
           // Flatten providers directly (new structure)
-          flattenedMethods = providers.map((provider: any) => ({
-            provider_name: provider.provider_name,
-            payment_method: provider.method?.method_name || provider.method?.method_display || '',
-            payment_method_type: provider.method?.method_name || provider.method?.method_display || '',
-            provider_logo: provider.logo,
-            is_active: true, // All public methods are considered active
-            payment_details: provider.payment_details || []
-          }));
+          flattenedMethods = providers.map((provider: any) => {
+            // Get the first payment detail for easy access
+            const firstPaymentDetail = provider.payment_details && provider.payment_details.length > 0 
+              ? provider.payment_details[0] 
+              : {};
+            
+            const flattened = {
+              provider_name: provider.provider_name,
+              payment_method: provider.method?.method_name || provider.method?.method_display || '',
+              payment_method_type: provider.method?.method_name || provider.method?.method_display || '',
+              provider_logo: provider.logo,
+              logo: provider.logo, // Also add as 'logo' for backward compatibility
+              is_active: true, // All public methods are considered active
+              payment_details: provider.payment_details || [],
+              // Flatten first payment detail for easy access
+              account_name: firstPaymentDetail.account_name || '',
+              account_number: firstPaymentDetail.account_number || firstPaymentDetail.mobile_number || '',
+              mobile_number: firstPaymentDetail.mobile_number || null,
+              wallet_address: firstPaymentDetail.wallet_address || null,
+              how_to_send: firstPaymentDetail.how_to_send || null,
+              account_type: firstPaymentDetail.account_type || null,
+              provider_id: provider.provider_id,
+            };
+            
+            console.log("🔍 Flattened provider:", {
+              provider_name: flattened.provider_name,
+              provider_logo: flattened.provider_logo,
+              logo: flattened.logo,
+              hasLogo: !!(flattened.provider_logo || flattened.logo)
+            });
+            
+            return flattened;
+          });
         } else {
           // Fallback to old structure: data.payment_methods -> providers
           const methods = publicPaymentMethods?.data?.payment_methods || publicPaymentMethods || [];
@@ -172,13 +213,27 @@ export default function DepositForm({
             methods.forEach((method: any) => {
               if (method.providers && Array.isArray(method.providers) && method.providers.length > 0) {
                 method.providers.forEach((provider: any) => {
+                  // Get the first payment detail for easy access
+                  const firstPaymentDetail = provider.payment_details && provider.payment_details.length > 0 
+                    ? provider.payment_details[0] 
+                    : {};
+                  
                   flattenedMethods.push({
                     provider_name: provider.provider_name,
                     payment_method: method.method_name,
                     payment_method_type: method.method_name,
                     provider_logo: provider.logo,
+                    logo: provider.logo, // Also add as 'logo' for backward compatibility
                     is_active: true, // All public methods are considered active
-                    payment_details: provider.payment_details || []
+                    payment_details: provider.payment_details || [],
+                    // Flatten first payment detail for easy access
+                    account_name: firstPaymentDetail.account_name || '',
+                    account_number: firstPaymentDetail.account_number || firstPaymentDetail.mobile_number || '',
+                    mobile_number: firstPaymentDetail.mobile_number || null,
+                    wallet_address: firstPaymentDetail.wallet_address || null,
+                    how_to_send: firstPaymentDetail.how_to_send || null,
+                    account_type: firstPaymentDetail.account_type || null,
+                    provider_id: provider.provider_id,
                   });
                 });
               }
@@ -188,15 +243,41 @@ export default function DepositForm({
         
         console.log("🔍 Flattened payment methods:", {
           flattenedMethods,
-          flattenedLength: flattenedMethods.length
+          flattenedLength: flattenedMethods.length,
+          // Log first provider for debugging
+          firstProvider: flattenedMethods.length > 0 ? {
+            provider_name: flattenedMethods[0].provider_name,
+            provider_logo: flattenedMethods[0].provider_logo,
+            logo: flattenedMethods[0].logo,
+            payment_method: flattenedMethods[0].payment_method,
+          } : null
         });
         
         activeMethods = flattenedMethods;
       } else {
         // For admin payment methods, use the existing logic
+        console.log("🔍 Processing admin payment methods:", {
+          paymentMethodsData,
+          paymentMethodsDataLength: Array.isArray(paymentMethodsData) ? paymentMethodsData.length : 0,
+          firstPayment: Array.isArray(paymentMethodsData) && paymentMethodsData.length > 0 ? {
+            provider_name: paymentMethodsData[0].provider_name,
+            provider_logo: paymentMethodsData[0].provider_logo,
+            logo: paymentMethodsData[0].logo,
+            admin_payment_detail_id: paymentMethodsData[0].admin_payment_detail_id
+          } : null
+        });
+        
         activeMethods = paymentMethodsData.filter((payment: any) => {
           if (payment.is_active === undefined || payment.is_active === null) return true;
           return payment.is_active === true || payment.is_active === 'true' || payment.is_active === 1 || payment.is_active === '1';
+        }).map((payment: any) => {
+          // Ensure admin payment methods have logo field properly set
+          return {
+            ...payment,
+            // Ensure logo field is available (admin payment methods might have provider_logo)
+            logo: payment.logo || payment.provider_logo || undefined,
+            provider_logo: payment.provider_logo || payment.logo || undefined,
+          };
         });
       }
       
@@ -206,10 +287,25 @@ export default function DepositForm({
       });
       
       if (activeMethods.length > 0) {
+        console.log("🔍 Setting stable payment methods:", {
+          count: activeMethods.length,
+          firstMethod: activeMethods[0] ? {
+            provider_name: activeMethods[0].provider_name,
+            provider_logo: activeMethods[0].provider_logo,
+            logo: activeMethods[0].logo
+          } : null
+        });
         setStablePaymentMethods(activeMethods);
+      } else {
+        console.log("🔍 No active methods found after filtering");
       }
     } else {
-      console.log("🔍 No payment methods data available");
+      console.log("🔍 No payment methods data available", {
+        isHomePage,
+        hasPublicPaymentMethods: !!publicPaymentMethods,
+        hasPaymentMethodsData: !!paymentMethodsData,
+        publicPaymentMethodsStructure: publicPaymentMethods
+      });
     }
   }, [paymentMethodsData, isHomePage, publicPaymentMethods]); // Update when payment data changes
   
@@ -229,12 +325,19 @@ export default function DepositForm({
   const finalPaymentMethods = effectivePaymentMethods.length > 0 ? effectivePaymentMethods : fallbackPaymentMethods;
   
   console.log("🔍 Effective Payment Methods:", {
+    isHomePage,
     effectivePaymentMethods,
     effectivePaymentMethodsLength: effectivePaymentMethods.length,
-    stablePaymentMethods,
-    stablePaymentMethodsLength: stablePaymentMethods.length,
     finalPaymentMethods,
-    finalPaymentMethodsLength: finalPaymentMethods.length
+    finalPaymentMethodsLength: finalPaymentMethods.length,
+    stablePaymentMethodsLength: stablePaymentMethods.length,
+    // Log first method details if available
+    firstMethod: finalPaymentMethods.length > 0 ? {
+      provider_name: finalPaymentMethods[0].provider_name,
+      provider_logo: finalPaymentMethods[0].provider_logo,
+      logo: finalPaymentMethods[0].logo,
+      hasLogo: !!(finalPaymentMethods[0].provider_logo || finalPaymentMethods[0].logo)
+    } : null
   });
 
   const [payAmount, setPayAmount] = useState(100); // Set default amount to $100
@@ -2057,16 +2160,86 @@ export default function DepositForm({
              
               <div className="relative">
                 <CustomSelect
-                  options={(finalPaymentMethods || []).map((payment: any, index: number) => ({
-                    value: payment.provider_name,
-                    label: `${payment.provider_name} - ${payment.payment_method || payment.payment_method_type || payment.payment_type}`,
-                    logo: payment.provider_logo || undefined,
-                  }))}
+                  options={(() => {
+                    const mappedOptions = (finalPaymentMethods || []).map((payment: any, index: number) => {
+                      // Get logo URL - check both fields and ensure it's a valid string
+                      let logoUrl: string | undefined = undefined;
+                      
+                      if (payment.provider_logo && typeof payment.provider_logo === 'string' && payment.provider_logo.trim()) {
+                        logoUrl = payment.provider_logo.trim();
+                      } else if (payment.logo && typeof payment.logo === 'string' && payment.logo.trim()) {
+                        logoUrl = payment.logo.trim();
+                      }
+                      
+                      if (index < 3) {
+                        console.log(`🔍 Payment Method Option ${index}:`, {
+                          isHomePage,
+                          provider_name: payment.provider_name,
+                          provider_logo: payment.provider_logo,
+                          logo: payment.logo,
+                          logoUrl: logoUrl,
+                          logoUrlType: typeof logoUrl,
+                          logoUrlIsValid: !!logoUrl && logoUrl.length > 0,
+                          payment_method: payment.payment_method,
+                          admin_payment_detail_id: payment.admin_payment_detail_id,
+                          allKeys: Object.keys(payment)
+                        });
+                      }
+                      
+                      if (!logoUrl && index < 3) {
+                        console.warn(`⚠️ No logo found for payment method ${index}: ${payment.provider_name}`, {
+                          paymentKeys: Object.keys(payment),
+                          hasProviderLogo: !!payment.provider_logo,
+                          hasLogo: !!payment.logo,
+                          providerLogoValue: payment.provider_logo,
+                          logoValue: payment.logo,
+                          providerLogoType: typeof payment.provider_logo,
+                          logoType: typeof payment.logo
+                        });
+                      }
+                      
+                      return {
+                        value: payment.provider_name,
+                        label: `${payment.provider_name} - ${payment.payment_method || payment.payment_method_type || payment.payment_type}`,
+                        logo: logoUrl,
+                      };
+                    });
+                    
+                    console.log("🔍 Final CustomSelect Options:", {
+                      optionsCount: mappedOptions.length,
+                      optionsWithLogos: mappedOptions.filter(opt => opt.logo).length,
+                      optionsWithoutLogos: mappedOptions.filter(opt => !opt.logo).length,
+                      firstOption: mappedOptions[0] || null,
+                      allOptions: mappedOptions.map(opt => ({
+                        value: opt.value,
+                        label: opt.label,
+                        hasLogo: !!opt.logo,
+                        logo: opt.logo
+                      }))
+                    });
+                    
+                    return mappedOptions;
+                  })()}
                   value={payBank}
                   onChange={(value) => {
                     const selectedPayment = finalPaymentMethods?.find(
                       (payment: any) => payment.provider_name === value
                     );
+                    
+                    // Debug logging when payment method is selected
+                    if (selectedPayment) {
+                      console.log("🔍 Selected Payment Method:", {
+                        isHomePage,
+                        provider_name: selectedPayment.provider_name,
+                        provider_logo: selectedPayment.provider_logo,
+                        logo: selectedPayment.logo,
+                        account_name: selectedPayment.account_name,
+                        account_number: selectedPayment.account_number,
+                        hasLogo: !!(selectedPayment.provider_logo || selectedPayment.logo),
+                        admin_payment_detail_id: selectedPayment.admin_payment_detail_id,
+                        fullPayment: selectedPayment
+                      });
+                    }
                     
                     setPayBank(value);
                     setSelectedPaymentDetail(selectedPayment || null);
@@ -2673,11 +2846,15 @@ export default function DepositForm({
                     <div className="flex items-center gap-2">
                       <img
                         src={
+                          selectedPaymentDetail.provider_logo ||
                           selectedPaymentDetail.logo ||
                           "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
                         }
-                        alt="Bank Logo"
+                        alt={`${selectedPaymentDetail.provider_name || 'Bank'} Logo`}
                         className="w-8 h-8 rounded-full object-contain"
+                        onError={(e) => {
+                          e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                        }}
                       />
                       <span className="text-[#35353e] dark:text-[#788099] text-base font-semibold">
                         {selectedPaymentDetail.provider_name}
@@ -2860,11 +3037,15 @@ export default function DepositForm({
                 <div className="flex items-center gap-2">
                   <img
                     src={
+                      selectedPaymentDetail.provider_logo ||
                       selectedPaymentDetail.logo ||
                       "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
                     }
-                    alt="Bank Logo"
+                    alt={`${selectedPaymentDetail.provider_name || 'Bank'} Logo`}
                     className="w-8 h-8 rounded-full object-contain"
+                    onError={(e) => {
+                      e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                    }}
                   />
                   <span className="text-[#35353e] dark:text-[#788099] text-base font-semibold">
                     {selectedPaymentDetail.provider_name}
