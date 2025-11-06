@@ -219,6 +219,12 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       setShowSuccessModal(false);
       prevTradeIdRef.current = confirmOrder?.id || null;
       prevStatusRef.current = undefined;
+      // Reset lastActionTradeIdRef when viewing a different trade
+      // This prevents showing loading state for actions on different trades
+      lastActionTradeIdRef.current = null;
+    } else if (confirmOrder?.id && !prevTradeIdRef.current) {
+      // Reset on initial load when confirmOrder is first set
+      lastActionTradeIdRef.current = null;
     }
   }, [confirmOrder?.id]);
 

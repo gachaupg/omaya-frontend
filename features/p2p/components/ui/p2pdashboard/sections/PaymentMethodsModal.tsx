@@ -19,6 +19,7 @@ type PaymentDetailPayload = {
   payment_provider_name: string;
   provider_name: string;
   wallet_address?: string | null;
+  allow_auto_send?: boolean;
 };
 
 interface PaymentMethodsModalProps {
@@ -51,6 +52,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   const [provider, setProvider] = useState("");
   const [name, setName] = useState("");
   const [account, setAccount] = useState("");
+  const [allowAutoSend, setAllowAutoSend] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
   // Set isClient to true after mount
@@ -88,9 +90,17 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
          : "";
        setName(fullName);
        setAccount("");
+       setAllowAutoSend(false);
        dispatch(clearPostStatus());
      }
    }, [open, dispatch, isClient, user]);
+
+   // Reset allowAutoSend when method changes away from bank
+   useEffect(() => {
+     if (method && !method.toLowerCase().includes('bank')) {
+       setAllowAutoSend(false);
+     }
+   }, [method]);
 
    // Hardcoded payment methods for testing
    const hardcodedMethods = ["Bank Transfer", "Mobile Money", "Credit Card"];
@@ -129,20 +139,22 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
        return;
      }
      
-     const selectedProvider = providers.find(
-       (p: any) => p.provider_name === provider
-     );
-     logger.debug('p2p', "Selected provider", selectedProvider);
-     const payload = {
-       account_name: name,
-       account_number: account,
-       payment_method_name: method,
-       payment_provider_name: provider,
-       provider_name: provider,
-       wallet_address: selectedProvider?.wallet_address || null,
-     };
-     logger.debug('p2p', "Dispatching payload", payload);
-     dispatch(postUserPaymentDetail(payload));
+    const selectedProvider = providers.find(
+      (p: any) => p.provider_name === provider
+    );
+    logger.debug('p2p', "Selected provider", selectedProvider);
+    const isBankMethod = method.toLowerCase().includes('bank');
+    const payload = {
+      account_name: name,
+      account_number: account,
+      payment_method_name: method,
+      payment_provider_name: provider,
+      provider_name: provider,
+      wallet_address: selectedProvider?.wallet_address || null,
+      ...(isBankMethod && allowAutoSend && { allow_auto_send: true }),
+    };
+    logger.debug('p2p', "Dispatching payload", payload);
+    dispatch(postUserPaymentDetail(payload));
    };
 
   // Close modal on success
@@ -326,6 +338,26 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                disabled={loading}
              />
            </div>
+
+           {/* Allow Auto Send Checkbox - Only for Bank methods */}
+           {method && method.toLowerCase().includes('bank') && (
+             <div className="flex items-center gap-2">
+               <input
+                 type="checkbox"
+                 id="allowAutoSend"
+                 checked={allowAutoSend}
+                 onChange={(e) => setAllowAutoSend(e.target.checked)}
+                 className="w-4 h-4 text-[#1D8751] bg-gray-100 dark:bg-[#23232B] border-gray-300 dark:border-[#35353E] rounded focus:ring-2 focus:ring-[#1D8751] cursor-pointer"
+                 disabled={loading}
+               />
+               <label
+                 htmlFor="allowAutoSend"
+                 className="text-sm text-gray-700 dark:text-[#788099] cursor-pointer"
+               >
+                 Allow auto send
+               </label>
+             </div>
+           )}
           {/* Error/Loading */}
           {error && <div className="text-red-500 text-sm">{error}</div>}
           {postError && <div className="text-red-500 text-sm">{postError}</div>}

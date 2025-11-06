@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
+import { RootState } from "@/store/rootReducer";
+import { store } from "@/store";
 import {
   updateOrdersFromWS,
   fetchAllP2PBuyandSell,
@@ -31,11 +33,15 @@ export const useP2POrdersWebSocket = (
   } = options;
 
   const dispatch = useDispatch<AppDispatch>();
+  const { currentPage } = useSelector(
+    (state: RootState) => state.p2pMarket || { currentPage: 1 }
+  );
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const wsRef = useRef(getP2POrdersWebSocket());
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const mountedRef = useRef(true);
+  const currentPageRef = useRef(currentPage);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -43,6 +49,12 @@ export const useP2POrdersWebSocket = (
       mountedRef.current = false;
     };
   }, []);
+
+  // Update ref whenever currentPage changes - use a callback to ensure immediate update
+  useEffect(() => {
+    currentPageRef.current = currentPage;
+    logger.debug('p2p', "📄 [WS Hook] Updated currentPageRef to:", currentPage);
+  }, [currentPage]);
 
   useEffect(() => {
     if (!enabled) {
@@ -189,17 +201,29 @@ export const useP2POrdersWebSocket = (
       try {
         switch (message.type) {
           case "connection_established":
-            logger.debug('p2p', "✅ [WS Hook] Connection established");
+            logger.debug('p2p', "✅ [WS Hook] Connection established, current page:", currentPageRef.current);
             setIsConnected(true);
             setConnectionError(null);
             // Stop polling when WebSocket is connected
             stopPolling();
+            // Don't fetch page 1 on reconnect if user is on a different page
+            // The initial_data message will handle data loading if needed
             break;
 
           case "initial_data":
-            logger.debug('p2p', "📊 [WS Hook] Processing initial_data");
+            // Get current page from Redux state directly (most up-to-date)
+            const currentPageFromState = store.getState()?.p2pMarket?.currentPage || 1;
+            logger.debug('p2p', "📊 [WS Hook] Processing initial_data, current page (ref):", currentPageRef.current, "state:", currentPageFromState);
             // Initial data from WebSocket - full refresh
+            // CRITICAL: Only apply if user is on page 1, otherwise skip to preserve pagination
+            // This prevents WebSocket from resetting pagination when user is on page 2+
             if (message.data.buy_orders || message.data.sell_orders) {
+              // Check current page from both ref and Redux state - if not page 1, completely skip this message
+              if (currentPageRef.current !== 1 || currentPageFromState !== 1) {
+                logger.debug('p2p', "⏭️ [WS Hook] SKIPPING initial_data - user is on page", currentPageRef.current, "/", currentPageFromState, "- preserving pagination");
+                return; // Return early, don't process this message at all
+              }
+              
               logger.debug('p2p', "📊 [WS Hook] Initial P2P orders from WebSocket", {
                 buyOrdersCount: message.data.buy_orders?.length || 0,
                 sellOrdersCount: message.data.sell_orders?.length || 0,
@@ -224,9 +248,19 @@ export const useP2POrdersWebSocket = (
             break;
 
           case "orders_update":
-            logger.debug('p2p', "🔄 [WS Hook] Processing orders_update");
+            // Get current page from Redux state directly (most up-to-date)
+            const currentPageFromStateUpdate = store.getState()?.p2pMarket?.currentPage || 1;
+            logger.debug('p2p', "🔄 [WS Hook] Processing orders_update, current page (ref):", currentPageRef.current, "state:", currentPageFromStateUpdate);
             // Incremental update from WebSocket - merge with existing
             if (message.data.buy_orders || message.data.sell_orders) {
+              // CRITICAL: Skip full_refresh updates if user is not on page 1
+              // This prevents WebSocket from resetting pagination when user is on page 2+
+              // Check both ref and Redux state to ensure we have the latest page
+              if (message.data.full_refresh && (currentPageRef.current !== 1 || currentPageFromStateUpdate !== 1)) {
+                logger.debug('p2p', "⏭️ [WS Hook] SKIPPING orders_update full_refresh - user is on page", currentPageRef.current, "/", currentPageFromStateUpdate, "- preserving pagination");
+                return; // Return early, don't process this message at all
+              }
+              
               logger.debug('p2p', "🔄 [WS Hook] Incremental P2P orders update from WebSocket", {
                 buyOrdersCount: message.data.buy_orders?.length || 0,
                 sellOrdersCount: message.data.sell_orders?.length || 0,
@@ -234,6 +268,7 @@ export const useP2POrdersWebSocket = (
                 fullRefresh: message.data.full_refresh,
                 hasBuyOrders: !!message.data.buy_orders,
                 hasSellOrders: !!message.data.sell_orders,
+                currentPage: currentPageRef.current,
               });
               
               logger.debug('p2p', "🚀 [WS Hook] Dispatching updateOrdersFromWS with update");
@@ -249,6 +284,11 @@ export const useP2POrdersWebSocket = (
             } else {
               console.warn("⚠️ [WS Hook] orders_update message has no buy_orders or sell_orders");
             }
+            break;
+
+          case "pong":
+            // Pong response - connection is alive, silently ignore
+            logger.debug('p2p', "💓 [WS Hook] Received pong heartbeat");
             break;
 
           case "error":
@@ -340,13 +380,26 @@ export const useP2POrdersWebSocket = (
       logger.debug('p2p', "🔄 Starting HTTP polling for P2P orders");
     }
     
-    // Fetch immediately
-    dispatch(fetchAllP2PBuyandSell(1));
+    // DISABLED: Don't auto-fetch on polling start - only fetch if on page 1
+    // This prevents overwriting pagination when user is on other pages
+    const currentPageFromState = store.getState()?.p2pMarket?.currentPage || 1;
+    if (currentPageFromState === 1 && currentPageRef.current === 1) {
+      console.log('📡 [WS Hook] Polling: Fetching page 1');
+      dispatch(fetchAllP2PBuyandSell(1));
+    } else {
+      console.log('📡 [WS Hook] Polling: Skipping fetch - user on page', currentPageFromState);
+    }
 
-    // Then set up interval
+    // Then set up interval - only poll if on page 1
     pollingIntervalRef.current = setInterval(() => {
       if (mountedRef.current && !wsRef.current.isConnected()) {
-        dispatch(fetchAllP2PBuyandSell(1));
+        const pageInState = store.getState()?.p2pMarket?.currentPage || 1;
+        if (pageInState === 1) {
+          console.log('📡 [WS Hook] Polling interval: Fetching page 1');
+          dispatch(fetchAllP2PBuyandSell(1));
+        } else {
+          console.log('📡 [WS Hook] Polling interval: Skipping - user on page', pageInState);
+        }
       }
     }, pollingInterval);
   };

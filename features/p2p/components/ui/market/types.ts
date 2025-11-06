@@ -10,6 +10,7 @@ export interface MarketRow {
   online: boolean;
   commission: string;
   available: string;
+  availableAmount: number;
   limit: string;
   payment: string[];
   minAmount: number;

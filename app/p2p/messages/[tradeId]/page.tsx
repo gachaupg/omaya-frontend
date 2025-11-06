@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/rootReducer";
 import ChatBox from "@/features/p2p/components/ui/market/sections/ChatBox";
-import { getTradeMessages, getGroupedMessages } from "@/features/p2p/api";
+import { getTradeMessages, getGroupedMessages, GroupedMessage } from "@/features/p2p/api";
 import { logger } from "@/lib/utils/logger";
 
 interface TradeData {
@@ -27,6 +27,7 @@ interface TradeData {
 const TradeMessagesPage = () => {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const tradeId = params?.tradeId as string;
   
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
@@ -35,6 +36,7 @@ const TradeMessagesPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [messageType, setMessageType] = useState<'p2p' | 'support'>('p2p');
   const [peerName, setPeerName] = useState<string | undefined>(undefined);
+  const [supportMessages, setSupportMessages] = useState<GroupedMessage[] | null>(null);
 
   // Mock trade data for demonstration
   const mockTradeData: TradeData = {
@@ -65,7 +67,26 @@ const TradeMessagesPage = () => {
       return;
     }
 
-    // Fetch grouped messages to get message type and peer name
+    // Check if support messages are passed via URL params
+    const urlMessageType = searchParams?.get('type');
+    const urlMessages = searchParams?.get('messages');
+    
+    if (urlMessageType === 'support' && urlMessages) {
+      // Support messages passed as props - use them directly
+      try {
+        const parsedMessages = JSON.parse(urlMessages) as GroupedMessage[];
+        setSupportMessages(parsedMessages);
+        setMessageType('support');
+        setPeerName(searchParams?.get('sender_name') || 'Support');
+        setTradeData(mockTradeData);
+        setLoading(false);
+        return;
+      } catch (err) {
+        logger.error("p2p", "Error parsing support messages from URL:", err);
+      }
+    }
+
+    // For P2P messages or if no URL params, fetch from API
     const fetchMessageInfo = async () => {
       try {
         const groupedMessages = await getGroupedMessages(100);
@@ -81,6 +102,7 @@ const TradeMessagesPage = () => {
           } else if (userGroup.message_type === 'support') {
             // For support, show the sender name or "Support"
             setPeerName(userGroup.sender_name || "Support");
+            setSupportMessages(userGroup.messages);
           }
         }
       } catch (err) {
@@ -114,7 +136,7 @@ const TradeMessagesPage = () => {
     };
 
     initialize();
-  }, [tradeId, isAuthenticated, router]);
+  }, [tradeId, isAuthenticated, router, searchParams]);
 
   if (loading) {
     return (
@@ -229,6 +251,7 @@ const TradeMessagesPage = () => {
             sellerName={tradeData.seller_name}
             messageType={messageType}
             peerName={peerName}
+            supportMessages={supportMessages || undefined}
             onClose={() => router.push('/dashboard/p2p/?tab=orders')}
           />
         </div>

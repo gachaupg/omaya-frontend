@@ -1,7 +1,7 @@
 import React from 'react'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/rootReducer'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { MdAccountCircle } from 'react-icons/md'
 import { useGroupedMessages } from '../../../hooks/useGroupedMessages'
 
@@ -12,14 +12,18 @@ interface UnreadMessagesProps {
 
 const UnreadMessages: React.FC<UnreadMessagesProps> = ({ loading = false, onBackToOrders }) => {
   const router = useRouter()
+  const pathname = usePathname()
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth)
   const { totalUnreadCount } = useSelector((state: RootState) => state.unreadMessages)
 
+  // Check if we're on the messages detail page - stop refetching if so
+  const isOnMessagesPage = pathname?.includes('/p2p/messages/')
+
   // Use API to get messages grouped by user
   const { groupedUsers, loading: messagesLoading, error } = useGroupedMessages({
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && !isOnMessagesPage, // Disable when on messages page
     limit: 100,
-    refetchInterval: 30000, // Poll every 30 seconds
+    refetchInterval: isOnMessagesPage ? 0 : 30000, // Stop polling when on messages page
   })
 
   const formatTimestamp = (timestamp: string) => {
@@ -47,13 +51,26 @@ const UnreadMessages: React.FC<UnreadMessagesProps> = ({ loading = false, onBack
     return name.charAt(0).toUpperCase()
   }
 
-  const handleMessageClick = (entityId: string, messageType: string) => {
+  const handleMessageClick = (entityId: string, messageType: string, userGroup?: any) => {
     // Navigate to the appropriate page based on message type
     if (entityId) {
       if (messageType === 'p2p') {
+        // P2P messages use the API, just navigate
         router.push(`/p2p/messages/${entityId}`)
       } else if (messageType === 'support') {
-        router.push(`/p2p/messages/${entityId}`)
+        // Support messages: pass data as URL params
+        if (userGroup) {
+          const params = new URLSearchParams({
+            type: 'support',
+            sender_id: userGroup.sender_id?.toString() || '',
+            sender_name: userGroup.sender_name || '',
+            sender_email: userGroup.sender_email || '',
+            messages: JSON.stringify(userGroup.messages || [])
+          })
+          router.push(`/p2p/messages/${entityId}?${params.toString()}`)
+        } else {
+          router.push(`/p2p/messages/${entityId}?type=support`)
+        }
       }
     }
   }
@@ -162,18 +179,26 @@ const UnreadMessages: React.FC<UnreadMessagesProps> = ({ loading = false, onBack
       <div className="space-y-2 max-h-96 overflow-y-auto">
         {groupedUsers.map((userGroup, index) => {
           const isCurrentUser = user?.email === userGroup.sender_email
+          // For support messages, show "Support" as display name
+          // For p2p messages, show peer name
           const displayName = userGroup.message_type === 'p2p' 
             ? (userGroup.peer_name || userGroup.peer_email?.split('@')[0] || 'Unknown')
-            : (userGroup.sender_name || userGroup.sender_email?.split('@')[0] || 'Unknown')
+            : (userGroup.message_type === 'support' ? 'Support' : (userGroup.sender_name || userGroup.sender_email?.split('@')[0] || 'Unknown'))
           
           // Get the most recent message
           const latestMessage = userGroup.messages[0]
           const messageCount = userGroup.messages.length
           
+          // Check if message has images (for p2p) or support_document (for support)
+          // Images can be an array of objects or strings
+          const hasImages = latestMessage?.images && Array.isArray(latestMessage.images) && latestMessage.images.length > 0
+          const imageCount = hasImages ? latestMessage.images.length : 0
+          const hasSupportDocument = latestMessage?.support_document && userGroup.message_type === 'support'
+          
           return (
             <div
               key={userGroup.entity_id || index}
-              onClick={() => handleMessageClick(userGroup.entity_id, userGroup.message_type)}
+              onClick={() => handleMessageClick(userGroup.entity_id, userGroup.message_type, userGroup)}
               className="bg-white dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E] rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-[#23232B] cursor-pointer transition-colors"
             >
               <div className="flex items-start space-x-3">
@@ -210,13 +235,15 @@ const UnreadMessages: React.FC<UnreadMessagesProps> = ({ loading = false, onBack
 
                   {/* Message Preview */}
                   <div className="flex items-center space-x-2">
-                    {latestMessage?.images && latestMessage.images.length > 0 && (
+                    {(hasImages || hasSupportDocument) && (
                       <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                     )}
                     <p className="text-sm text-gray-600 dark:text-gray-300 truncate">
-                      {latestMessage?.content || (latestMessage?.images?.length ? `${latestMessage.images.length} image${latestMessage.images.length !== 1 ? 's' : ''}` : 'No content')}
+                      {latestMessage?.content || 
+                        (hasImages ? `${imageCount} image${imageCount !== 1 ? 's' : ''}` : 
+                        (hasSupportDocument ? 'Support document attached' : 'No content'))}
                     </p>
                   </div>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, memo } from "react";
+import React, { useState, useEffect, useMemo, memo, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Input from "../../Common/Input";
 import Select from "../../Common/Select";
@@ -12,6 +12,7 @@ import {
   setCurrentPage,
 } from "@/features/p2p/slices/orderSlice";
 import { RootState } from "@/store/rootReducer";
+import { store } from "@/store";
 import { useP2POrdersWebSocket } from "@/features/p2p/hooks/useP2POrdersWebSocket";
 import { selectAllP2POrders } from "@/features/p2p/selectors";
 import { P2PMarketTableSkeleton } from "@/components/ui/Skeletons";
@@ -186,6 +187,7 @@ interface MarketRow {
   online: boolean;
   commission: string;
   available: string;
+  availableAmount: number;
   limit: string;
   payment: string[];
   minAmount: number;
@@ -221,6 +223,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
  
 
   const [mounted, setMounted] = useState(false);
+  const hasInitializedRef = useRef(false);
   const [amount, setAmount] = useState("");
   const currency = "USDT"; // Fixed to USDT
   const [paymentType, setPaymentType] = useState("");
@@ -230,25 +233,44 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
 
   const { isConnected: wsConnected, connectionError: wsError } =
     useP2POrdersWebSocket({
-      enabled: isAuthenticated,
-      fallbackToPolling: true, // Enable automatic fallback to polling if WebSocket fails
-      pollingInterval: 30000, // Poll every 30 seconds if WebSocket is unavailable
+      enabled: isAuthenticated && currentPage === 1, // Only enable WebSocket on page 1 to prevent overwrites
+      fallbackToPolling: false, // Disable polling to prevent overwrites when on other pages
+      pollingInterval: 30000,
     });
 
 
 
   useEffect(() => {
+    console.log('🔵 [MarketTransactions] Component mounted/remounted');
     setMounted(true);
-    // Fetch initial data only once on mount
-    if (isAuthenticated) {
-        dispatch(fetchAllP2PBuyandSell(1) as any);
+    
+    // Only fetch on FIRST mount if no data exists AND user is authenticated
+    // This prevents automatic resets but ensures initial data loads
+    if (!hasInitializedRef.current && isAuthenticated) {
+      hasInitializedRef.current = true;
+      const currentPageInState = store.getState()?.p2pMarket?.currentPage || 1;
+      const hasBuyOrders = store.getState()?.p2pMarket?.p2pBuyOrders?.results?.length > 0;
+      const hasSellOrders = store.getState()?.p2pMarket?.p2pSellOrders?.results?.length > 0;
+      
+      console.log('🔵 [MarketTransactions] FIRST mount - currentPage:', currentPageInState, 'hasData:', hasBuyOrders || hasSellOrders);
+      
+      // Only fetch if we have NO data at all (first visit)
+      if (!hasBuyOrders && !hasSellOrders) {
+        console.log('🔵 [MarketTransactions] No data found, fetching page:', currentPageInState);
+        dispatch(fetchAllP2PBuyandSell(currentPageInState) as any);
+      } else {
+        console.log('🔵 [MarketTransactions] Data already exists, skipping fetch');
+      }
+    } else {
+      console.log('🔵 [MarketTransactions] Skipping fetch - already initialized or not authenticated');
     }
   }, []); // Only run once on mount
 
-  // Track Redux state changes
+  // Track Redux state changes - but don't reset page
   useEffect(() => {
-   
-  }, [buy_orders, sell_orders]);
+    console.log('🟡 [MarketTransactions] Orders changed, currentPage:', currentPage);
+    // Don't reset page when orders change - this was causing the issue
+  }, [buy_orders, sell_orders, currentPage]);
 
   const providerOptions = useMemo(() => getProviderOptions(orders), [orders]);
   const paymentMethodOptions = useMemo(
@@ -285,10 +307,17 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
       
     }
 
-   
+    // REMOVED FILTER - Show all orders regardless of status
+    // No filtering applied - display all orders from the API response
+
+    // Log to verify we're getting the right data for the current page
+    console.log('📊 [MarketTransactions] getActiveOrders - currentPage:', currentPage, 'activeTab:', activeTab, 'orders count:', activeOrdersList.length);
+    if (activeOrdersList.length > 0) {
+      console.log('📊 [MarketTransactions] First order ID:', activeOrdersList[0]?.id, 'Last order ID:', activeOrdersList[activeOrdersList.length - 1]?.id);
+    }
 
     return activeOrdersList;
-  }, [orders, activeTab, buy_orders, sell_orders]); // Add direct dependencies
+  }, [orders, activeTab, buy_orders, sell_orders, currentPage]); // Add currentPage to dependencies
 
   const transformedData: MarketRow[] = useMemo(() => {
    
@@ -335,7 +364,8 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
           ),
           online: true,
           commission: `${order.commission_rate || 0}`,
-          available: `${parseFloat(order.amount || 0).toFixed(2)} ${order.currency}`,
+          available: `${parseFloat(order.available_amount || 0).toFixed(2)} ${order.currency}`,
+          availableAmount: parseFloat(order.available_amount || 0),
           limit: `${parseFloat(order.min_order_amount || 0).toFixed(
             2
           )} - ${parseFloat(order.max_order_amount || 0).toFixed(2)} ${
@@ -446,11 +476,35 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
     sell_orders,
   ]); // Add direct Redux state dependencies to ensure re-calculation
 
-  const handlePageChange = (newPage: number) => {
+  const handlePageChange = useCallback((newPage: number) => {
+    // Get current page from Redux state directly (most up-to-date)
+    const currentPageInState = store.getState()?.p2pMarket?.currentPage || 1;
+    
+    // Prevent unnecessary page changes
+    if (newPage === currentPageInState) {
+      console.log('⏭️ [MarketTransactions] Skipping page change - already on page', newPage);
+      return;
+    }
+    
+    console.log('🔄 [MarketTransactions] ========== PAGE CHANGE START ==========');
+    console.log('🔄 [MarketTransactions] Requesting page:', newPage, 'from:', currentPageInState);
+    
+    // CRITICAL: Set page FIRST, then fetch
     dispatch(setCurrentPage(newPage));
-    // Fetch orders for the new page
-    dispatch(fetchAllP2PBuyandSell(newPage) as any);
-  };
+    console.log('✅ [MarketTransactions] Set currentPage to:', newPage);
+    
+    // Small delay to ensure state update, then fetch
+    setTimeout(() => {
+      const verifyPage = store.getState()?.p2pMarket?.currentPage;
+      console.log('📡 [MarketTransactions] Verifying page before fetch:', verifyPage, 'requested:', newPage);
+      if (verifyPage === newPage) {
+        console.log('📡 [MarketTransactions] Fetching page:', newPage);
+        dispatch(fetchAllP2PBuyandSell(newPage) as any);
+      } else {
+        console.error('❌ [MarketTransactions] Page mismatch! State:', verifyPage, 'Requested:', newPage);
+      }
+    }, 10);
+  }, [dispatch]);
 
   const handleRefresh = () => {
     // Always fetch fresh data on manual refresh, even if WebSocket is connected

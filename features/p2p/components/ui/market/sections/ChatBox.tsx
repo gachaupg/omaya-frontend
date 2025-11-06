@@ -7,8 +7,9 @@ import {
   setUploadedImages,
   clearMessage,
   TradeMessage,
+  setMessages,
 } from "@/features/p2p/slices/messageSlice";
-import { getTradeMessages, postTradeMessage } from "@/features/p2p/api";
+import { getTradeMessages, postTradeMessage, GroupedMessage } from "@/features/p2p/api";
 import { MdAccountCircle } from "react-icons/md";
 import { useTradeMessagesWebSocket } from "@/features/p2p/hooks/useTradeMessagesWebSocket";
 
@@ -38,8 +39,9 @@ const ChatBox: React.FC<{
   sellerName?: string;
   messageType?: 'p2p' | 'support';
   peerName?: string;
+  supportMessages?: GroupedMessage[];
   onClose?: () => void;
-}> = ({ tradeId, userId, userName, autoreply, seller_photo, buyer_photo, buyer, seller, currentUserEmail, owner, buyerName, sellerName, messageType = 'p2p', peerName, onClose }) => {
+}> = ({ tradeId, userId, userName, autoreply, seller_photo, buyer_photo, buyer, seller, currentUserEmail, owner, buyerName, sellerName, messageType = 'p2p', peerName, supportMessages, onClose }) => {
   
   // Determine which photo and display name to show for the other person
   const otherPersonData = React.useMemo(() => {
@@ -228,16 +230,40 @@ const ChatBox: React.FC<{
   const pollingIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    // If support messages are passed as props, use them directly (don't fetch)
+    if (messageType === 'support' && supportMessages && supportMessages.length > 0) {
+      // Convert GroupedMessage[] to TradeMessage[] format and set in Redux
+      const convertedMessages: TradeMessage[] = supportMessages.map((msg) => ({
+        id: msg.id,
+        trade: parseInt(tradeId) || 0,
+        sender: msg.sender_id,
+        sender_name: msg.sender_name,
+        message: msg.content,
+        images: Array.isArray(msg.images) ? msg.images.map((img: any) => 
+          typeof img === 'string' ? img : img.image_url || img.image
+        ) : [],
+        timestamp: msg.timestamp,
+        seller_photo: seller_photo || '',
+      }));
+      dispatch(setMessages({
+        tradeId,
+        messages: convertedMessages,
+      }));
+      return;
+    }
+
     // Fetch initial messages once on mount
     if (messageType === 'p2p') {
-      // For P2P: WebSocket will keep them updated in real-time
+      // For P2P: WebSocket will keep them updated in real-time, use API
       fetchMessages();
     } else if (messageType === 'support') {
-      // For support: Use API polling every 5 seconds
-      fetchMessages();
-      pollingIntervalRef.current = setInterval(() => {
+      // For support: Use API polling every 5 seconds (only if not passed as props)
+      if (!supportMessages || supportMessages.length === 0) {
         fetchMessages();
-      }, 5000);
+        pollingIntervalRef.current = setInterval(() => {
+          fetchMessages();
+        }, 5000);
+      }
     } else {
       fetchMessages();
     }
@@ -247,7 +273,7 @@ const ChatBox: React.FC<{
         clearInterval(pollingIntervalRef.current);
       }
     };
-  }, [tradeId, messageType, fetchMessages]);
+  }, [tradeId, messageType, fetchMessages, supportMessages, dispatch]);
 
   // Auto-refresh when new messages with images arrive via WebSocket
   const lastMessageIdRef = React.useRef<string | null>(null);
