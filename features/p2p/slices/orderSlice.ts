@@ -363,7 +363,10 @@ const p2pMarketSlice = createSlice({
   } as P2PState,
   reducers: {
     setCurrentPage: (state, action) => {
-      state.currentPage = action.payload;
+      const newPage = action.payload;
+      const oldPage = state.currentPage;
+      console.log('🔴 [Redux] setCurrentPage called:', { oldPage, newPage, stack: new Error().stack });
+      state.currentPage = newPage;
     },
     resetMatchState: (state) => {
       state.matchLoading = false;
@@ -389,6 +392,28 @@ const p2pMarketSlice = createSlice({
     // WebSocket actions - intelligently merge new/updated orders
     updateOrdersFromWS: (state, action) => {
       const { buy_orders, sell_orders, pagination, full_refresh } = action.payload;
+      
+      // CRITICAL: Block ALL WebSocket updates when user is NOT on page 1
+      // This prevents WebSocket from overwriting paginated data
+      if (state.currentPage !== 1) {
+        console.log('🚫 [Redux] BLOCKED ALL WebSocket updates - user on page', state.currentPage, 'not page 1');
+        // Only update total counts, don't touch results at all
+        if (buy_orders && pagination?.total_buy_orders !== undefined) {
+          state.p2pBuyOrders = {
+            ...state.p2pBuyOrders,
+            total_orders_count: pagination.total_buy_orders,
+          };
+        }
+        if (sell_orders && pagination?.total_sell_orders !== undefined) {
+          state.p2pSellOrders = {
+            ...state.p2pSellOrders,
+            total_orders_count: pagination.total_sell_orders,
+          };
+        }
+        return; // Exit early, don't replace ANY results
+      }
+      
+      console.log('✅ [Redux] Applying WebSocket update - user on page 1');
       
       // Helper function to merge payment_details preserving provider_logo
       const mergePaymentDetails = (existing: any[], incoming: any[]) => {
@@ -448,7 +473,7 @@ const p2pMarketSlice = createSlice({
       
       if (buy_orders) {
         if (full_refresh) {
-          // Full refresh - replace all
+          // Full refresh - replace all (only happens when on page 1)
           state.p2pBuyOrders = {
             next: null,
             previous: null,
@@ -468,7 +493,7 @@ const p2pMarketSlice = createSlice({
       
       if (sell_orders) {
         if (full_refresh) {
-          // Full refresh - replace all
+          // Full refresh - replace all (only happens when on page 1)
           state.p2pSellOrders = {
             next: null,
             previous: null,
@@ -540,6 +565,19 @@ const p2pMarketSlice = createSlice({
         state.loading = false;
         const response = action.payload as any;
         
+        // Log the page being fetched and current page in state
+        const requestedPage = action.meta.arg || 1;
+        const currentPageBeforeUpdate = state.currentPage;
+        console.log('📥 [Redux] fetchAllP2PBuyandSell.fulfilled - requested page:', requestedPage, 'currentPage BEFORE update:', currentPageBeforeUpdate);
+        
+        // CRITICAL: Always sync currentPage with requested page
+        // This ensures the page number matches what was actually fetched
+        if (requestedPage !== currentPageBeforeUpdate) {
+          console.log('⚠️ [Redux] Page mismatch detected! Requested:', requestedPage, 'but state had:', currentPageBeforeUpdate);
+          console.log('⚠️ [Redux] Updating currentPage to match requested page:', requestedPage);
+        }
+        state.currentPage = requestedPage; // Always sync with requested page
+        
         // The API returns buy_orders and sell_orders objects
         const buyOrders = response.buy_orders || {
           next: null,
@@ -555,11 +593,17 @@ const p2pMarketSlice = createSlice({
           results: []
         };
         
-        // Update buy orders
-        state.p2pBuyOrders = buyOrders;
+        // Log the first order ID to verify we got the right page's data
+        const firstBuyOrderId = buyOrders.results?.[0]?.id;
+        const firstSellOrderId = sellOrders.results?.[0]?.id;
+        console.log('📦 [Redux] Received orders - buy count:', buyOrders.results?.length || 0, 'sell count:', sellOrders.results?.length || 0);
+        console.log('📦 [Redux] First buy order ID:', firstBuyOrderId, 'First sell order ID:', firstSellOrderId);
         
-        // Update sell orders
+        // IMPORTANT: Update orders data
+        state.p2pBuyOrders = buyOrders;
         state.p2pSellOrders = sellOrders;
+        
+        console.log('✅ [Redux] Updated orders, currentPage AFTER update:', state.currentPage);
       })
       .addCase(fetchAllP2PBuyandSell.rejected, (state, action) => {
         state.loading = false;

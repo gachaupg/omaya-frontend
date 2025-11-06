@@ -7,7 +7,7 @@ import {
 
 // P2P-specific WebSocket message interface
 export interface WebSocketMessage extends BaseWebSocketMessage {
-  type: "connection_established" | "orders_update" | "initial_data" | "error";
+  type: "connection_established" | "orders_update" | "initial_data" | "error" | "pong";
   data: {
     buy_orders?: P2POrder[];
     sell_orders?: P2POrder[];

@@ -109,16 +109,24 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   // Get USDT wallet balance from the wallet response structure
   const walletBalance =wallets?.total_balance ? toNumber(wallets.total_balance) : 0;
   const handleSendAmountChange = (value: string) => {
-    setSendAmount(value);
-
     if (!value) {
+      setSendAmount("");
       setIsAmountValid(true);
       setErrorMessage("");
       setReceiveAmount("");
       return;
     }
 
-    const numericAmount = parseFloat(value);
+    // Handle invalid input (empty or just minus sign)
+    if (value === "-" || value === "." || value === ",") {
+      setSendAmount(value);
+      return;
+    }
+
+    let numericAmount = parseFloat(value);
+    
+    // Always set the input value (allow user to type anything)
+    setSendAmount(value);
     setNumericAmount(numericAmount);
 
     // Only validate balance for sell orders
@@ -139,49 +147,90 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         setReceiveAmount("");
         return;
       }
+      
+      // Calculate receive amount for sell orders
+      const calculatedReceive = (numericAmount * commissionRate).toFixed(2);
+      setReceiveAmount(calculatedReceive);
+      return;
     } else {
-      // For buy orders, only check min/max amounts
-      if (numericAmount < minAmount) {
+      // For buy orders, calculate receive amount first to validate against available amount
+      if (isNaN(numericAmount)) {
+        setReceiveAmount("");
+        setIsAmountValid(true);
+        setErrorMessage("");
+        return;
+      }
+      
+      const calculatedReceive = numericAmount / commissionRate;
+      const availableAmount = advertiserData.availableAmount || 0;
+      const maxSendAmount = availableAmount * commissionRate;
+      
+      // Validate against available amount (show error but don't cap input)
+      if (calculatedReceive > availableAmount) {
         setIsAmountValid(false);
-        setErrorMessage(`Minimum amount is ${minAmount} USDT`);
+        setErrorMessage(`Maximum available is ${availableAmount.toFixed(2)} USDT (${maxSendAmount.toFixed(2)} USD)`);
         setReceiveAmount("");
         return;
       }
-      if (numericAmount > maxAmount) {
+      
+      // Check minimum amount (convert minAmount USD to USDT for comparison)
+      // For buy: send is USD, receive is USDT, minAmount and maxAmount are in USDT
+      // So we need to check if calculatedReceive (USDT) is within min/max
+      if (calculatedReceive < minAmount) {
         setIsAmountValid(false);
-        setErrorMessage(`Maximum amount is ${maxAmount} USDT`);
+        setErrorMessage(`Minimum amount is ${minAmount} USDT (${(minAmount * commissionRate).toFixed(2)} USD)`);
         setReceiveAmount("");
         return;
       }
+      
+      if (calculatedReceive > maxAmount) {
+        setIsAmountValid(false);
+        setErrorMessage(`Maximum amount is ${maxAmount} USDT (${(maxAmount * commissionRate).toFixed(2)} USD)`);
+        setReceiveAmount("");
+        return;
+      }
+      
+      // Validation passed - calculate and set receive amount
       setIsAmountValid(true);
       setErrorMessage("");
+      setReceiveAmount(calculatedReceive.toFixed(2));
+      return;
     }
-
-    // Calculate receive amount based on trade type
-    const calculatedReceive =
-      tradeType === "sell"
-        ? (numericAmount * commissionRate).toFixed(2)
-        : (numericAmount / commissionRate).toFixed(2);
-    setReceiveAmount(calculatedReceive);
   };
 
   const handleReceiveAmountChange = (value: string) => {
-    setReceiveAmount(value);
-
     if (!value) {
+      setReceiveAmount("");
       setIsAmountValid(true);
       setErrorMessage("");
       setSendAmount("");
       return;
     }
 
-    const numericAmount = parseFloat(value);
-    setNumericAmount(numericAmount);
+    // Handle invalid input (empty or just minus sign)
+    if (value === "-" || value === "." || value === ",") {
+      setReceiveAmount(value);
+      return;
+    }
 
-    // Get available amount from the order
-    const availableAmount = parseFloat(advertiserData.available);
+    let numericAmount = parseFloat(value);
     
-    // Validate against available amount
+    // Always set the input value (allow user to type anything)
+    setReceiveAmount(value);
+    setNumericAmount(numericAmount);
+    
+    // Handle invalid number input
+    if (isNaN(numericAmount)) {
+      setIsAmountValid(true);
+      setErrorMessage("");
+      setSendAmount("");
+      return;
+    }
+    
+    // Get available amount from the order
+    const availableAmount = advertiserData.availableAmount || 0;
+
+    // Validate against available amount (show error but don't cap input)
     if (numericAmount > availableAmount) {
       setIsAmountValid(false);
       setErrorMessage(`Amount cannot exceed available balance (${availableAmount.toFixed(2)} USDT)`);
@@ -197,7 +246,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       return;
     }
 
-    // Check maximum amount
+    // Check maximum amount (this should not exceed availableAmount, but check for consistency)
     if (numericAmount > maxAmount) {
       setIsAmountValid(false);
       setErrorMessage(`Maximum amount is ${maxAmount} USDT`);
@@ -393,6 +442,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                     value={sendAmount}
                     onChange={(e) => handleSendAmountChange(e.target.value)}
                     placeholder="220"
+                    max={tradeType === "buy" ? (advertiserData.availableAmount || 0) * commissionRate : undefined}
                     className={`flex-1 bg-transparent text-xl font-semibold focus:outline-none rounded-xl px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${
                       !isAmountValid && sendAmount
                         ? "border border-red-500"
@@ -430,6 +480,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                     value={receiveAmount}
                     onChange={(e) => handleReceiveAmountChange(e.target.value)}
                     placeholder={`220 ${tradeType === "buy" ? "USDT" : "USD"}`}
+                    max={advertiserData.availableAmount || 0}
                     className={`flex-1 bg-transparent text-xl font-semibold focus:outline-none rounded-xl px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${
                       !isAmountValid && receiveAmount
                         ? "border border-red-500"

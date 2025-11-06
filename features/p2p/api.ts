@@ -266,11 +266,38 @@ export const getAllP2POrders = async (
 export const getAllP2PBuyandSell = async (
   page: number = 1
 ): Promise<P2PMyOrders> => {
+  console.log('🌐 [API] getAllP2PBuyandSell called with page:', page);
   logger.debug('p2p', "API call getAllP2PBuyandSell with page:", page);
   return withRetry(async () => {
     const url = `${API_CONFIG.P2P.ALL_ORDERS}?page=${page}`;
+    console.log('🌐 [API] Making request to:', url);
     logger.debug('p2p', "Making API request to:", url);
     const response = await get<P2PMyOrders>(url);
+    
+    // Log the actual response structure
+    console.log('🌐 [API] Response structure:', {
+      hasBuyOrders: !!response.data.buy_orders,
+      hasSellOrders: !!response.data.sell_orders,
+      buyOrdersType: typeof response.data.buy_orders,
+      sellOrdersType: typeof response.data.sell_orders,
+      buyOrdersIsArray: Array.isArray(response.data.buy_orders),
+      sellOrdersIsArray: Array.isArray(response.data.sell_orders),
+      buyOrdersKeys: response.data.buy_orders ? Object.keys(response.data.buy_orders) : [],
+      sellOrdersKeys: response.data.sell_orders ? Object.keys(response.data.sell_orders) : [],
+    });
+    
+    // Check if buy_orders has results property
+    if (response.data.buy_orders && !Array.isArray(response.data.buy_orders)) {
+      const buyOrdersObj = response.data.buy_orders as { results?: P2POrder[] };
+      console.log('🌐 [API] buy_orders.results count:', buyOrdersObj?.results?.length || 0);
+      console.log('🌐 [API] First buy order ID:', buyOrdersObj?.results?.[0]?.id);
+    }
+    if (response.data.sell_orders && !Array.isArray(response.data.sell_orders)) {
+      const sellOrdersObj = response.data.sell_orders as { results?: P2POrder[] };
+      console.log('🌐 [API] sell_orders.results count:', sellOrdersObj?.results?.length || 0);
+      console.log('🌐 [API] First sell order ID:', sellOrdersObj?.results?.[0]?.id);
+    }
+    
     logger.debug('p2p', "API response for page", page, ":", {
       buyOrdersCount: response.data.buy_orders?.length || 0,
       sellOrdersCount: response.data.sell_orders?.length || 0,
@@ -736,11 +763,17 @@ export const getUnreadMessageCount = async (): Promise<{ count: number }> => {
 };
 
 // New API for fetching messages grouped by user
+export interface GroupedMessageImage {
+  id: string;
+  image: string;
+  image_url: string;
+}
+
 export interface GroupedMessage {
   id: string;
   content: string;
   timestamp: string;
-  images: string[];
+  images: GroupedMessageImage[] | string[];
   sender_id: number;
   sender_name: string;
   is_admin?: boolean;

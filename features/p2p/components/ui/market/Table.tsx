@@ -102,6 +102,12 @@ const MarketTable: React.FC<MarketTableProps> = ({
     return <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />;
   };
 
+  // Filter out trades where amount is 0 or "00"
+  const filteredData = data.filter((row) => {
+    const amount = row.availableAmount ?? parseFloat(row.available?.replace(/[^\d.]/g, '') || '0');
+    return amount > 0;
+  });
+
   return (
     <div className="w-full">
       <div className="overflow-x-auto rounded-2xl">
@@ -136,7 +142,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
           </div>
 
           {/* ---------------- empty state --------------- */}
-          {data.length === 0 ? (
+          {filteredData.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 px-4 bg-white dark:bg-transparent">
               <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-[#35353E] flex items-center justify-center">
                 <FaRegClock className="text-gray-400 dark:text-[#788099] text-2xl" />
@@ -152,7 +158,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
             </div>
           ) : (
             /* ---------------- table rows --------------- */
-            data.map((row, idx) => (
+            filteredData.map((row, idx) => (
               <React.Fragment key={idx}>
                 <div className="grid grid-cols-5 items-center py-4 px-4 border-b last:border-b-0 bg-white hover:bg-gray-50 border-gray-200 dark:bg-[#18181D] dark:hover:bg-[#2d2d36] dark:border-[#35353E]">
                   {/* Advertiser */}
@@ -268,7 +274,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
           )}
 
           {/* ---------------- pagination --------------- */}
-          {data.length > 0 && (
+          {filteredData.length > 0 && (
             <div className="flex justify-center items-center gap-2 py-4 bg-gray-50 dark:bg-transparent">
               <button
                 onClick={() => onPageChange(currentPage - 1)}
