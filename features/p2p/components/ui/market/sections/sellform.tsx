@@ -480,7 +480,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               <div className="flex items-center h-[46px] rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#23232A] px-2">
                 <span className="text-[#1D8751] text-2xl mr-2">$</span>
                 <span className="text-[#1D8751] text-xl font-semibold">
-                  {formatAmount(sendAmount)}
+                  {formatAmount(Math.ceil(Number(sendAmount) / Number(commissionRate)))}
                 </span>
                 <span className="ml-auto text-gray-900 dark:text-white text-base font-medium">
                   USD
@@ -495,7 +495,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               <div className="flex items-center h-[46px] rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#23232A] px-2">
                 <span className="text-[#1D8751] text-2xl mr-2">&#x20BF;</span>
                 <span className="text-[#1D8751] text-xl font-semibold">
-                  {formatAmount(receiveAmount)}
+                  {formatAmount(sendAmount)}
                 </span>
                 <span className="ml-2 text-gray-900 dark:text-white text-base font-medium">
                   USDT
