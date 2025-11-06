@@ -484,7 +484,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               <div className="flex flex-row items-center justify-between w-full  bg-[#EEF1F4] dark:bg-[#35353E] rounded-xl px-6 py-2">
                 <span className="text-[#F79330] text-lg font-bold">
                   <span className="text-[#1D8751] text-xl">$</span>{" "}
-                  {formatAmount(sendAmount)}
+                  {formatAmount(Math.round(Number(sendAmount) * Number(commissionRate)))}
                 </span>
                 <span className="text-xs text-[#F79330]">USD</span>
               </div>

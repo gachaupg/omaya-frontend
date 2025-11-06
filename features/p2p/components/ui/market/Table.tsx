@@ -102,10 +102,11 @@ const MarketTable: React.FC<MarketTableProps> = ({
     return <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />;
   };
 
-  // Filter out trades where amount is 0 or "00"
+  // Filter out trades where amount is 0 or "00" and offline orders
   const filteredData = data.filter((row) => {
     const amount = row.availableAmount ?? parseFloat(row.available?.replace(/[^\d.]/g, '') || '0');
-    return amount > 0;
+    // Only show orders that are explicitly online (true), filter out false, undefined, or null
+    return amount > 0 && row.online === true;
   });
 
   return (

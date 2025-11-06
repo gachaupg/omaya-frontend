@@ -362,7 +362,8 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
           completion_time: formatLimitDuration(
             order.completion_time || "00:00:00"
           ),
-          online: true,
+          // Check online status from API - status "offline" means offline, otherwise online
+          online: order.status !== 'offline',
           commission: `${order.commission_rate || 0}`,
           available: `${parseFloat(order.available_amount || 0).toFixed(2)} ${order.currency}`,
           availableAmount: parseFloat(order.available_amount || 0),
