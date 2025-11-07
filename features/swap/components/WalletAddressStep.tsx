@@ -46,7 +46,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   };
 
   return (
-    <div className="w-full flex flex-col">
+    <div className="w-full flex flex-col px-3 sm:px-4">
       <div className="mb-2 text-base sm:text-lg md:text-xl font-bold text-[#788099]">
         <span className="text-[#7e7e8f]">2-</span> Your Wallet Address
       </div>
@@ -85,7 +85,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                       type="text"
                       value={walletAddress}
                       onChange={onWalletAddressChange}
-                      className="flex-1 bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#7e7e8f]"
+                      className="flex-1 bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#7e7e8f] text-sm sm:text-base"
                       placeholder={`Paste your ${toAsset?.name || toAsset?.symbol || ""} address here`}
                       disabled={isLoading}
                     />
@@ -148,34 +148,34 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                     d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                <h3 className="text-gray-900 dark:text-white font-medium">
+                <h3 className="text-gray-900 dark:text-white font-medium text-sm sm:text-base">
                   Terms and Conditions Summary
                 </h3>
               </div>
 
               {/* Terms Box */}
-              <div className="bg-gray-50 dark:bg-[#23232b] border border-[#1D8751] dark:border-[#1D8751] rounded-xl p-4">
-                <div className="space-y-3">
+              <div className="bg-gray-50 dark:bg-[#23232b] border border-[#1D8751] dark:border-[#1D8751] rounded-xl p-3 sm:p-4">
+                <div className="space-y-2 sm:space-y-3">
                   {/* Term 1 */}
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-[#1D8751] rounded-full mt-2 flex-shrink-0"></div>
-                    <p className="text-sm text-gray-900 dark:text-white">
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <div className="w-2 h-2 bg-[#1D8751] rounded-full mt-1.5 sm:mt-2 flex-shrink-0"></div>
+                    <p className="text-xs sm:text-sm text-gray-900 dark:text-white">
                       Please send the money from your own account Only
                     </p>
                   </div>
 
                   {/* Term 2 */}
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-[#1D8751] rounded-full mt-2 flex-shrink-0"></div>
-                    <p className="text-sm text-gray-900 dark:text-white">
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <div className="w-2 h-2 bg-[#1D8751] rounded-full mt-1.5 sm:mt-2 flex-shrink-0"></div>
+                    <p className="text-xs sm:text-sm text-gray-900 dark:text-white">
                       Put transaction ID in the description field of the bank
                     </p>
                   </div>
 
                   {/* Term 3 */}
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-[#1D8751] rounded-full mt-2 flex-shrink-0"></div>
-                    <p className="text-sm text-gray-900 dark:text-white">
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <div className="w-2 h-2 bg-[#1D8751] rounded-full mt-1.5 sm:mt-2 flex-shrink-0"></div>
+                    <p className="text-xs sm:text-sm text-gray-900 dark:text-white">
                       Please note, If you do not follow above conditions, we
                       will reject your transaction and send you back your money.
                     </p>
@@ -184,18 +184,18 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
               </div>
 
               {/* Terms Acceptance Checkbox */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <input
                   type="checkbox"
                   id="accept-terms"
                   checked={hasAcceptedTerms}
                   onChange={(e) => setHasAcceptedTerms(e.target.checked)}
                   disabled={isLoading}
-                  className="w-4 h-4 text-[#1D8751] bg-white dark:bg-[#1D1D23] border-gray-300 dark:border-[#39394a] rounded focus:ring-[#1D8751] focus:ring-2 disabled:opacity-50"
+                  className="w-4 h-4 sm:w-5 sm:h-5 text-[#1D8751] bg-white dark:bg-[#1D1D23] border-gray-300 dark:border-[#39394a] rounded focus:ring-[#1D8751] focus:ring-2 disabled:opacity-50 flex-shrink-0"
                 />
                 <label
                   htmlFor="accept-terms"
-                  className="text-sm text-gray-900 dark:text-white"
+                  className="text-xs sm:text-sm text-gray-900 dark:text-white"
                 >
                   I accept the terms and conditions
                 </label>

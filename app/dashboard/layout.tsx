@@ -21,7 +21,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen ml-0 md:ml-4 lg:ml-6 mt-28">
+    <div className="min-h-screen ml-0 md:ml-4 lg:ml-6 mt-10 w-full overflow-x-hidden">
       {/* Mobile Sidebar */}
       <motion.div
         initial={{ y: -20, opacity: 0 }}
@@ -43,7 +43,7 @@ export default function DashboardLayout({
       </motion.div>
 
       {/* Main Content */}
-      <div className="w-full h-full">
+      <div className="w-full h-full max-w-full overflow-x-hidden">
         <AnimatePresence mode="wait">
           <motion.div
             key={pathname} // Use pathname for proper React reconciliation (fixes performance issue)
@@ -51,7 +51,7 @@ export default function DashboardLayout({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.15 }} // Reduced from 0.3s to 0.15s for snappier feel
-            className="max-md:mt-40 md:mt-28 md:pl-48 lg:pl-56 xl:pl-[222.28px] px-3 sm:px-4 md:px-4 lg:px-6"
+            className="max-md:mt-28 md:mt-20 md:pl-48 lg:pl-56 xl:pl-[222.28px] px-3 sm:px-4 md:px-4 lg:px-6 w-full max-w-full"
           >
             {children}
           </motion.div>

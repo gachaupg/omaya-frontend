@@ -61,7 +61,7 @@ export const Table: React.FC<TableProps> = ({
     tableRows = paginatedData.map((row: any, index: number) => (
       <div
         key={index}
-        className={`w-full grid grid-cols-5 py-4 px-4 border-b last:border-b-0 items-center border-[${tokens.colors.dark.border}]`}
+        className={`w-full grid grid-cols-3 sm:grid-cols-5 py-4 px-4 border-b last:border-b-0 items-center border-[${tokens.colors.dark.border}]`}
         style={{ background: "#1D1D23" }}
       >
         {/* Asset */}
@@ -111,7 +111,7 @@ export const Table: React.FC<TableProps> = ({
           ${row.amount}
         </div>
         {/* Payment Method */}
-        <div className="flex items-center gap-2">
+        <div className="hidden sm:flex items-center gap-2">
           {row.payment?.logo && (
             <img
               src={row.payment.logo}
@@ -200,7 +200,7 @@ export const Table: React.FC<TableProps> = ({
         >
           {/* Table Header */}
           {type === "transactions" ? (
-            <div className="grid grid-cols-5 py-3 px-4 border-b bg-[${tokens.colors.dark.card}] border-[${tokens.colors.dark.border}]">
+            <div className="grid grid-cols-3 sm:grid-cols-5 py-3 px-4 border-b bg-[${tokens.colors.dark.card}] border-[${tokens.colors.dark.border}]">
               <div className="text-sm font-medium text-[${tokens.colors.dark.textTitle}]">
                 Asset
               </div>
@@ -210,7 +210,7 @@ export const Table: React.FC<TableProps> = ({
               <div className="text-sm font-medium text-[${tokens.colors.dark.textTitle}]">
                 Amount
               </div>
-              <div className="text-sm font-medium text-[${tokens.colors.dark.textTitle}]">
+              <div className="hidden sm:block text-sm font-medium text-[${tokens.colors.dark.textTitle}]">
                 Payment Method
               </div>
               <div className="text-sm font-medium text-[${tokens.colors.dark.textTitle}]">
@@ -219,7 +219,7 @@ export const Table: React.FC<TableProps> = ({
             </div>
           ) : (
             <div
-              className={`grid grid-cols-7 md:grid-cols-8 py-3 px-4 border-b bg-[${tokens.colors.dark.card}] border-[${tokens.colors.dark.border}]`}
+              className={`grid grid-cols-4 sm:grid-cols-7 md:grid-cols-8 py-3 px-4 border-b bg-[${tokens.colors.dark.card}] border-[${tokens.colors.dark.border}]`}
             >
               <div
                 className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
@@ -230,7 +230,7 @@ export const Table: React.FC<TableProps> = ({
                 <>
                   {" "}
                   <div
-                    className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
+                    className={`hidden sm:block text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
                   >
                     ID
                   </div>
@@ -248,15 +248,13 @@ export const Table: React.FC<TableProps> = ({
               </div>
               {type === "orders" && (
                 <div
-                  className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
+                  className={`hidden sm:block text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
                 >
                   Rate
                 </div>
               )}
 
-              <div
-                className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
-              >
+              <div className={`hidden sm:block text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}>
                 Date
               </div>
               <div
@@ -268,7 +266,7 @@ export const Table: React.FC<TableProps> = ({
               {type === "p2p" ? (
                 <>
                   <div
-                    className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}] flex items-center gap-1`}
+                    className={`hidden sm:flex text-sm font-medium text-[${tokens.colors.dark.textTitle}] items-center gap-1`}
                   >
                     <svg
                       width="16"
@@ -295,15 +293,13 @@ export const Table: React.FC<TableProps> = ({
                     </svg>
                     Receipt
                   </div>
-                  <div
-                    className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
-                  >
+                  <div className={`hidden sm:block text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}>
                     More
                   </div>
                 </>
               ) : (
                 <div
-                  className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
+                  className={`hidden sm:block text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}
                 >
                   Payments
                 </div>

@@ -108,7 +108,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         onKeyDown={handleKeyDown}
         disabled={disabled || loading}
         className={`
-          w-full text-left px-4 py-3 rounded-2xl border
+          w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 rounded-2xl border text-sm sm:text-base
           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
           transition-colors duration-200
           ${disabled || loading
@@ -127,7 +127,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
               <img
                 src={selectedLogo}
                 alt=""
-                className="w-5 h-5 rounded object-cover flex-shrink-0"
+                className="w-4 h-4 sm:w-5 sm:h-5 rounded object-cover flex-shrink-0"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none';
                 }}
@@ -138,7 +138,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
             </span>
           </div>
           <svg
-            className={`w-5 h-5 transition-transform duration-200 ${
+            className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-200 ${
               isOpen ? "rotate-180" : ""
             } ${disabled || loading ? "text-gray-400" : "text-gray-500"}`}
             fill="none"
@@ -160,7 +160,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       {isOpen && (
         <div 
           id={dropdownId}
-          className="absolute z-50 w-full mt-1 bg-white dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg max-h-60 overflow-hidden"
+          className="absolute z-50 w-full mt-1 bg-white dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg max-h-[70vh] sm:max-h-60 overflow-hidden"
           role="listbox"
         >
           {/* Search Input */}
@@ -172,13 +172,13 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search options..."
-                className="w-full px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
+                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
               />
             </div>
           )}
 
           {/* Options List */}
-          <div className="max-h-48 overflow-y-auto p-1">
+          <div className="max-h-[50vh] sm:max-h-48 overflow-y-auto p-1">
             {filteredOptions.length === 0 ? (
               <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
                 {searchTerm ? "No matching options" : emptyText}
@@ -191,7 +191,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                   onClick={() => handleOptionClick(option.value)}
                   disabled={option.disabled}
                   className={`
-                    w-full text-left px-4 py-3 text-sm transition-colors duration-150
+                    w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm transition-colors duration-150
                     hover:bg-blue-50 dark:hover:bg-blue-900/20
                     focus:outline-none focus:bg-blue-50 dark:focus:bg-blue-900/20
                     ${value === option.value
@@ -204,16 +204,16 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                     }
                     ${optionClassName}
                   `}
-                  style={{ minHeight: '44px', marginBottom: '2px' }}
+                  style={{ minHeight: '40px', marginBottom: '2px' }}
                   role="option"
                   aria-selected={value === option.value}
                 >
-                  <div className="flex items-center gap-3 min-w-0 w-full">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 w-full">
                     {option.logo && (
                       <img
                         src={option.logo}
                         alt=""
-                        className="w-5 h-5 rounded object-cover flex-shrink-0"
+                        className="w-4 h-4 sm:w-5 sm:h-5 rounded object-cover flex-shrink-0"
                         onError={(e) => {
                           (e.target as HTMLImageElement).style.display = 'none';
                         }}

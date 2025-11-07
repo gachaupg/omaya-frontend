@@ -127,7 +127,7 @@ const Filters = () => {
   const { t } = useSettingsI18n();
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col px-3 sm:px-4">
       {/* Mobile: Vertical column tabs */}
       <div className="md:hidden">
         <div className="flex flex-col rounded-lg border dark:bg-[#1D1D23] bg-white dark:border-[#35353E] border-gray-300 w-full overflow-hidden">
@@ -181,8 +181,10 @@ const Filters = () => {
 
       {/* Content area */}
       <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 mt-4 lg:mt-6">
+        <div className="w-full">
         {showHelpSupport ? <HelpSupportForm /> : tabs[activeIdx].component}
-        <div className="lg:w-[300px] lg:flex-shrink-0">
+        </div>
+        <div className="w-full lg:w-[300px] lg:flex-shrink-0">
           <Stats onSupportClick={() => setShowHelpSupport((prev) => !prev)} />
         </div>
       </div>

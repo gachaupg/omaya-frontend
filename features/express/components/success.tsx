@@ -377,7 +377,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
   }, [realData.date]);
   
   return (
-    <div className="flex flex-col mt-1 w-full max-w-2xl mx-auto px-4">
+    <div className="flex flex-col mt-1 w-full max-w-2xl mx-auto px-3 sm:px-4 py-2">
       {/* Success Image */}
       <div className="flex flex-col w-full items-center mb-4">
         <img 
@@ -401,16 +401,16 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
           <h2 className={`text-lg font-semibold ${
             isDark ? "text-white" : "text-gray-900"
           }`}>Transaction Details</h2>
-          <div className="flex justify-between text-sm">
+          <div className="flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
             <div>
               <div className={`${
                 isDark ? "text-gray-400" : "text-gray-600"
               }`}>Transaction ID</div>
-              <div className={`font-mono ${
+              <div className={`font-mono break-all ${
                 isDark ? "text-white" : "text-gray-900"
               }`}>{realData.transactionId}</div>
             </div>
-            <div className="text-right">
+            <div className="text-left sm:text-right">
               <div className={`${
                 isDark ? "text-gray-400" : "text-gray-600"
               }`}>Date & Time</div>
@@ -468,7 +468,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
               <div className={`text-sm mb-1 ${
                 isDark ? "text-gray-400" : "text-gray-600"
               }`}>Transaction Hash</div>
-              <div className={` text-[12px] font-mono ${
+              <div className={` text-[12px] font-mono break-all ${
                 isDark ? "text-white" : "text-gray-900"
               }`}>{realData.transactionHash} </div>
             </div>

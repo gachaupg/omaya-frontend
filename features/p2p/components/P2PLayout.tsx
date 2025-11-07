@@ -48,7 +48,7 @@ const P2PLayout = () => {
     <P2PDataProvider>
       <div className="dark:bg-[#18181D] bg-[#EEF1F4] w-full min-h-screen">
         <Tabs tabs={p2pTabs} activeTab={activeTab} onTabChange={setActiveTab} />
-        <div className="pl-4 pt-0 mb-4  flex flex-col gap-4 rounded-lg w-full">
+        <div className="px-3 sm:px-4 pt-0 mb-4 flex flex-col gap-4 rounded-lg w-full">
           {renderTabContent()}
         </div>
       </div>

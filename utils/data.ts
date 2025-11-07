@@ -4,12 +4,12 @@ export const navItems = [
   {
     labelKey: "navigation.dashboard",
     icon: "https://res.cloudinary.com/pitz/image/upload/v1747237691/svgexport-54_1_ldjke6.png",
-    href: "/dashboard",
+    href: "/dashboard/",
   },
   {
     labelKey: "navigation.express",
     icon: "https://res.cloudinary.com/pitz/image/upload/v1752243765/Vector_2_xauedx.png",
-    href: "/dashboard/express-exchange",
+    href: "/dashboard/express-exchange/",
   },
   // {
   //   labelKey: "navigation.exchange",
@@ -19,12 +19,12 @@ export const navItems = [
   {
     labelKey: "navigation.p2pTrading",
     icon: "https://res.cloudinary.com/pitz/image/upload/v1747237692/users-profiles-left_e2oejc.png",
-    href: "/dashboard/p2p",
+    href: "/dashboard/p2p/",
   },
   {
     labelKey: "navigation.swapCrypto",
     icon: "https://res.cloudinary.com/pitz/image/upload/v1747237691/Group_164002_fgt2kf.png",
-    href: "/dashboard/swap",
+    href: "/dashboard/swap/",
   },
   // {
   //   labelKey: "navigation.buyCrypto",
@@ -34,7 +34,7 @@ export const navItems = [
   {
     labelKey: "navigation.account",
     icon: "https://res.cloudinary.com/pitz/image/upload/v1747237692/users-profiles-left_e2oejc.png",
-    href: "/dashboard/account",
+    href: "/dashboard/account/",
   },
   // {
   //   labelKey: "navigation.settings",

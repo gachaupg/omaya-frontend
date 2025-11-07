@@ -149,36 +149,36 @@ const CryptoCard = ({
 "
   >
     <div className="flex items-center justify-between mb-1">
-      <div className="flex items-center gap-1.5">
-        {image ? <img src={image} alt={name} className="w-8 h-8" /> : icon}
-        <div className="flex flex-col">
-          <span className="dark:text-white font-semibold text-sm sm:text-base">
+      <div className="flex items-center gap-1.5 min-w-0 flex-1">
+        {image ? <img src={image} alt={name} className="w-6 h-6 sm:w-8 sm:h-8 flex-shrink-0" /> : <span className="flex-shrink-0">{icon}</span>}
+        <div className="flex flex-col min-w-0">
+          <span className="dark:text-white font-semibold text-xs sm:text-sm md:text-base truncate">
             {symbol}
           </span>
           {volume !== undefined && (
-            <span className="text-xs text-gray-500">
+            <span className="text-[10px] sm:text-xs text-gray-500 truncate">
               Vol: {volume.toFixed(3)}
             </span>
           )}
         </div>
       </div>
-      <span className="bg-[#23262F] text-xs text-white px-1.5 py-0.5 rounded-lg">
+      <span className="bg-[#23262F] text-[10px] sm:text-xs text-white px-1 sm:px-1.5 py-0.5 rounded-lg flex-shrink-0 ml-1">
         24h
       </span>
     </div>
-    <div className="dark:text-white text-black flex flex-row justify-between items-end gap-1.5 text-[13px] font-bold text-base sm:text-lg mb-1">
-      <div className="flex flex-col gap-0.5">
+    <div className="dark:text-white text-black flex flex-row justify-between items-end gap-1 sm:gap-1.5 text-[11px] sm:text-[13px] font-bold text-sm sm:text-base md:text-lg mb-1">
+      <div className="flex flex-col gap-0.5 min-w-0 flex-1">
         {transactionCount !== undefined ? (
           <>
-            <p className="text-xs text-gray-500"> Omaya Transactions</p>
-            <p className="text-lg">{transactionCount}</p>
+            <p className="text-[10px] sm:text-xs text-gray-500 truncate"> Omaya Transactions</p>
+            <p className="text-base sm:text-lg">{transactionCount}</p>
           </>
         ) : (
-          <p>{price}</p>
+          <p className="truncate">{price}</p>
         )}
       </div>
-      <div className="h-5 px-2 rounded-md flex flex-row gap-1 items-center justify-center bg-[#48CC544D]">
-        <p className="text-xs text-[#48CC54] font-semibold">{rate}</p>
+      <div className="h-4 sm:h-5 px-1.5 sm:px-2 rounded-md flex flex-row gap-1 items-center justify-center bg-[#48CC544D] flex-shrink-0">
+        <p className="text-[10px] sm:text-xs text-[#48CC54] font-semibold whitespace-nowrap">{rate}</p>
       </div>
     </div>
     <div className="w-full h-8">

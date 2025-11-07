@@ -2673,10 +2673,10 @@ export default function WithdrawalForm({
         {/* Top Section - You Send and You Get in one card */}
         <div className="relative mb-4">
           {/* Top Card Container */}
-          <div className="flex border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-4">
+          <div className="flex flex-col sm:flex-row border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-3 sm:p-4 gap-4 sm:gap-0">
             {/* You Send Section */}
-            <div className="flex-1 pr-4">
-              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
+            <div className="flex-1 sm:pr-4">
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 You Send
                 {isCalculatingFromPay &&
                   (isCalculating || isCalculatingReceive) && (
@@ -2784,23 +2784,9 @@ export default function WithdrawalForm({
                           setIsCalculating(false);
                           setIsCalculatingReceive(false);
                         }
-                      } else {
-                        // For invalid input, clear the receive amount but don't show "0"
-                        setGetAmount(0);
-                        setGetAmountInput("");
-                        setReceiveAmountError(null);
-                        setApiValidationError(null);
-                        setIsCalculating(false);
-                        setIsCalculatingReceive(false);
                         }
                       }
                     }
-                  }}
-                  onKeyDown={(e) => {
-                    // Allow all numeric input including negative signs
-                  }}
-                  onBlur={() => {
-                    // Allow any value on blur
                   }}
                   placeholder={
                     (isCalculating || isCalculatingReceive) &&
@@ -2808,7 +2794,7 @@ export default function WithdrawalForm({
                       ? "Calculating..."
                       : "Enter amount"
                   }
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg  focus:outline-none border appearance-none ${
+                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 py-2 pr-12 sm:pr-16 text-base sm:text-lg  focus:outline-none border appearance-none ${
                     apiValidationError
                       ? "border-red-500"
                       : isCalculating || isCalculatingReceive
@@ -2822,60 +2808,13 @@ export default function WithdrawalForm({
                       ? (
                           selectedAsset.ticker ||
                           selectedAsset.symbol ||
-                          "USDT"
-                        ).toUpperCase()
-                      : "USDT"}
+                          selectedAsset.name ||
+                          "USD"
+                        )
+                      : "USD"}
                   </span>
                 </div>
-                {(isCalculatingReceive || isCalculating) &&
-                  !apiValidationError && (
-                    <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
                     </div>
-                  )}
-                {apiValidationError && (
-                  <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
-                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        className="text-red-500"
-                      />
-                      <line
-                        x1="12"
-                        y1="8"
-                        x2="12"
-                        y2="12"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        className="text-red-500"
-                      />
-                      <circle
-                        cx="12"
-                        cy="16"
-                        r="1"
-                        fill="currentColor"
-                        className="text-red-500"
-                      />
-                    </svg>
-                  </div>
-                )}
-              </div>
-              {/* Display calculation error below You Send input */}
-              {calculationError && (
-                <div className="mt-2 text-sm text-yellow-500 dark:text-yellow-400">
-                  {calculationError}
-                </div>
-              )}
-              {apiValidationError && (
-                <div className="mt-2 text-sm text-yellow-500 dark:text-yellow-400">
-                  {apiValidationError}
-                </div>
-              )}
             </div>
 
             {/* You Get Section */}
@@ -2970,15 +2909,15 @@ export default function WithdrawalForm({
 
                 {/* Asset Dropdown */}
                 {isAssetDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl z-50 max-h-80 overflow-hidden">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl z-50 max-h-[70vh] sm:max-h-80 overflow-hidden">
                     {/* Search Input */}
-                    <div className="p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+                    <div className="p-2 sm:p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
                       <div className="relative">
-                        <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
+                        <FaSearch className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-3 h-3 sm:w-4 sm:h-4" />
                         <input
                           type="text"
                           placeholder="Search assets..."
-                          className="w-full text-gray-900 dark:text-white dark:bg-[#1D1D23] bg-white rounded-xl px-10 py-2 text-sm focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400"
+                          className="w-full text-gray-900 dark:text-white dark:bg-[#1D1D23] bg-white rounded-xl px-8 sm:px-10 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400"
                           value={assetSearchTerm}
                           onChange={(e) => setAssetSearchTerm(e.target.value)}
                         />
@@ -2986,7 +2925,7 @@ export default function WithdrawalForm({
                     </div>
 
                     {/* Asset List */}
-                    <div className="max-h-60 overflow-y-auto">
+                    <div className="max-h-[50vh] sm:max-h-60 overflow-y-auto">
                       {sortedSwapAssets.length > 0 ? (
                         <>
                           {/* Popular Section - First 3 assets only if no search */}

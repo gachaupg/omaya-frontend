@@ -196,17 +196,17 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-3 sm:p-4"
       onClick={onClose}
       style={{ pointerEvents: 'auto' }}
     >
       <div 
-        className="bg-white dark:bg-[#19191D] rounded-2xl p-6 w-full max-w-sm shadow-xl border border-gray-200 dark:border-[#35353E] mx-4 relative z-[10000]"
+        className="bg-white dark:bg-[#19191D] rounded-2xl p-4 sm:p-6 w-full max-w-sm shadow-xl border border-gray-200 dark:border-[#35353E] relative z-[10000] max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
         style={{ pointerEvents: 'auto' }}
       >
         <div className="flex items-center justify-between mb-4">
-          <div className="text-gray-900 dark:text-white text-lg font-semibold">
+          <div className="text-gray-900 dark:text-white text-base sm:text-lg font-semibold">
             Add Payment Details
           </div>
                      <button
@@ -218,7 +218,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors p-1"
              type="button"
            >
-             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+             <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
              </svg>
            </button>
@@ -235,12 +235,12 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
              <label className="block text-gray-600 dark:text-[#788099] text-sm mb-1">
                Payment Method
              </label>
-            <select
-              className="w-full p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
-              value={method}
-              onChange={(e) => setMethod(e.target.value)}
-              disabled={loading || methodTypes.length === 0}
-            >
+             <select
+               className="w-full p-2.5 sm:p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm sm:text-base"
+               value={method}
+               onChange={(e) => setMethod(e.target.value)}
+               disabled={loading || methodTypes.length === 0}
+             >
                <option value="">Select Method</option>
                {methodTypes.map((type, index: number) => (
                  <option key={`${type}-${index}`} value={type}>
@@ -263,7 +263,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                </label>
                <div className="relative">
                  <select
-                   className="w-full p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] appearance-none pr-10"
+                   className="w-full p-2.5 sm:p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] appearance-none pr-10 text-sm sm:text-base"
                    value={provider}
                    onChange={(e) => setProvider(e.target.value)}
                   disabled={loading || providers.length === 0}
@@ -331,7 +331,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                Account Name (Auto-filled)
              </label>
              <input
-               className="w-full bg-gray-100 dark:bg-[#2A2A30] text-gray-500 dark:text-[#788099] rounded-lg px-4 py-3 cursor-not-allowed"
+               className="w-full bg-gray-100 dark:bg-[#2A2A30] text-gray-500 dark:text-[#788099] rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 cursor-not-allowed text-sm sm:text-base"
                placeholder="Your name will be auto-filled"
                value={name}
                readOnly
@@ -344,12 +344,12 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
               {shouldUseWalletAddressField ? "Wallet Address" : "Account Number"}
             </label>
              <input
-               className="w-full bg-gray-50 dark:bg-[#23232B] text-gray-900 dark:text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1D8751] placeholder:text-gray-400 dark:placeholder:text-[#788099]"
-              placeholder={
-                shouldUseWalletAddressField
-                  ? "Enter wallet address"
-                  : "Enter account number"
-              }
+               className="w-full bg-gray-50 dark:bg-[#23232B] text-gray-900 dark:text-white rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 focus:outline-none focus:ring-2 focus:ring-[#1D8751] placeholder:text-gray-400 dark:placeholder:text-[#788099] text-sm sm:text-base"
+               placeholder={
+                 shouldUseWalletAddressField
+                   ? "Enter wallet address"
+                   : "Enter account number"
+               }
                value={account}
                onChange={(e) => setAccount(e.target.value)}
                disabled={loading}
@@ -384,9 +384,9 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
           )}
 
                                            {/* Buttons */}
-            <div className="flex gap-3 mt-4">
+            <div className="flex flex-col sm:flex-row gap-3 mt-4">
                              <button
-                 className="flex-1 rounded-xl border border-gray-200 dark:border-[#35353E] bg-transparent text-gray-700 dark:text-white py-3 font-medium hover:bg-gray-50 dark:hover:bg-[#23232B] transition-colors"
+                 className="flex-1 rounded-xl border border-gray-200 dark:border-[#35353E] bg-transparent text-gray-700 dark:text-white py-2.5 sm:py-3 font-medium hover:bg-gray-50 dark:hover:bg-[#23232B] transition-colors text-sm sm:text-base"
                  onClick={(e) => {
                    e.preventDefault();
                    e.stopPropagation();
@@ -398,7 +398,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                  Cancel
                </button>
             <button
-              className="flex-1 rounded-xl bg-[#1D8751] text-white py-3 font-medium hover:bg-[#17693f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 rounded-xl bg-[#1D8751] text-white py-2.5 sm:py-3 font-medium hover:bg-[#17693f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
               type="submit"
               disabled={
                 loading ||

@@ -65,7 +65,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
   const { isDark } = useTheme();
 
   return (
-    <div className="w-full flex flex-col">
+    <div className="w-full flex flex-col px-3 sm:px-4">
       <h2 className="text-base sm:text-lg md:text-xl font-bold mb-2 sm:mb-3 text-[#788099]">
         <span className="text-[#7e7e8f]">1-</span> Transaction Info
       </h2>
@@ -168,12 +168,12 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
 
                 {/* Asset Dropdown */}
                 {isFromAssetOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1D1D23] border border-gray-200 dark:border-[#39394a] rounded-2xl z-50 max-h-80 overflow-hidden">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1D1D23] border border-gray-200 dark:border-[#39394a] rounded-2xl z-50 max-h-[70vh] sm:max-h-80 overflow-hidden">
                     {/* Search Input */}
-                    <div className="p-3 border-b border-gray-200 dark:border-[#39394a]">
+                    <div className="p-2 sm:p-3 border-b border-gray-200 dark:border-[#39394a]">
                       <div className="relative">
                         <svg
-                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4"
+                          className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-3 h-3 sm:w-4 sm:h-4"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -190,13 +190,13 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                           placeholder="Search assets..."
                           value={searchTerm}
                           onChange={(e) => onSearchTermChange(e.target.value)}
-                          className="w-full bg-white dark:bg-[#23232b] rounded-xl px-10 py-2 text-gray-900 dark:text-white text-sm focus:outline-none border border-gray-300 dark:border-[#39394a] placeholder-gray-400 dark:placeholder-[#7e7e8f]"
+                          className="w-full bg-white dark:bg-[#23232b] rounded-xl px-8 sm:px-10 py-1.5 sm:py-2 text-gray-900 dark:text-white text-xs sm:text-sm focus:outline-none border border-gray-300 dark:border-[#39394a] placeholder-gray-400 dark:placeholder-[#7e7e8f]"
                         />
                       </div>
                     </div>
 
                     {/* Asset List */}
-                    <div className="max-h-60 overflow-y-auto">
+                    <div className="max-h-[50vh] sm:max-h-60 overflow-y-auto">
                       {(() => {
                         const filteredAssets = supportedAssets.filter(
                           (asset: SupportedAsset) => {
@@ -405,12 +405,12 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
 
                 {/* Asset Dropdown */}
                 {isToAssetOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1D1D23] border border-gray-200 dark:border-[#39394a] rounded-2xl z-50 max-h-80 overflow-hidden">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1D1D23] border border-gray-200 dark:border-[#39394a] rounded-2xl z-50 max-h-[70vh] sm:max-h-80 overflow-hidden">
                     {/* Search Input */}
-                    <div className="p-3 border-b border-gray-200 dark:border-[#39394a]">
+                    <div className="p-2 sm:p-3 border-b border-gray-200 dark:border-[#39394a]">
                       <div className="relative">
                         <svg
-                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4"
+                          className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-3 h-3 sm:w-4 sm:h-4"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -427,13 +427,13 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                           placeholder="Search assets..."
                           value={toSearchTerm}
                           onChange={(e) => onToSearchTermChange(e.target.value)}
-                          className="w-full bg-white dark:bg-[#23232b] rounded-xl px-10 py-2 text-gray-900 dark:text-white text-sm focus:outline-none border border-gray-300 dark:border-[#39394a] placeholder-gray-400 dark:placeholder-[#7e7e8f]"
+                          className="w-full bg-white dark:bg-[#23232b] rounded-xl px-8 sm:px-10 py-1.5 sm:py-2 text-gray-900 dark:text-white text-xs sm:text-sm focus:outline-none border border-gray-300 dark:border-[#39394a] placeholder-gray-400 dark:placeholder-[#7e7e8f]"
                         />
                       </div>
                     </div>
 
                     {/* Asset List */}
-                    <div className="max-h-60 overflow-y-auto">
+                    <div className="max-h-[50vh] sm:max-h-60 overflow-y-auto">
                       {(() => {
                         const filteredAssets = supportedAssets.filter(
                           (asset: SupportedAsset) => {
@@ -560,15 +560,15 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
 
         {/* Error Display */}
         {estimateError && (
-          <div className="mt-4 bg-red-500/10 border border-red-500 rounded-2xl p-4">
-            <h3 className="text-red-500 font-semibold mb-2">Estimate Error</h3>
-            <p className="text-red-400 text-sm">{estimateError}</p>
+          <div className="mt-4 bg-red-500/10 border border-red-500 rounded-2xl p-3 sm:p-4">
+            <h3 className="text-red-500 font-semibold mb-2 text-sm sm:text-base">Estimate Error</h3>
+            <p className="text-red-400 text-xs sm:text-sm break-words">{estimateError}</p>
           </div>
         )}
         {localSwapError && (
-          <div className="mt-4 bg-red-500/10 border border-red-500 rounded-2xl p-4">
-            <h3 className="text-red-500 font-semibold mb-2">Error</h3>
-            <p className="text-red-400 text-sm">{localSwapError}</p>
+          <div className="mt-4 bg-red-500/10 border border-red-500 rounded-2xl p-3 sm:p-4">
+            <h3 className="text-red-500 font-semibold mb-2 text-sm sm:text-base">Error</h3>
+            <p className="text-red-400 text-xs sm:text-sm break-words">{localSwapError}</p>
           </div>
         )}
       </div>

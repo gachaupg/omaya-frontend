@@ -98,7 +98,7 @@ const P2PCenter: React.FC = () => {
   }, [myOrders]);
 
   return (
-    <div className="flex flex-col gap-6 w-full h-full min-h-screen px-0 sm:px-1 lg:px-2 overflow-x-hidden">
+    <div className="flex flex-col gap-6 w-full h-full min-h-screen px-3 sm:px-4">
       <P2pProfile wallets={wallets} summary={summary} loading={loading} />
       <Stats summary={summary} />
       <FiterTabs

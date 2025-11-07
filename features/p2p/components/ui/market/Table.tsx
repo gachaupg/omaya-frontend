@@ -112,9 +112,9 @@ const MarketTable: React.FC<MarketTableProps> = ({
   return (
     <div className="w-full">
       <div className="overflow-x-auto rounded-2xl">
-        <div className="min-w-[800px] w-full overflow-hidden border bg-white border-gray-200 rounded-2xl dark:bg-[#1D1D23] dark:border-[#35353E]">
-          {/* ---------------- header row ---------------- */}
-          <div className="grid grid-cols-5 py-3 px-4 border-b bg-gray-50 border-gray-200 text-xs font-semibold text-gray-500 dark:bg-[#35353E] dark:border-[#35353E] dark:text-[#788099]">
+        <div className="min-w-0 md:min-w-[800px] w-full overflow-hidden border bg-white border-gray-200 rounded-2xl dark:bg-[#1D1D23] dark:border-[#35353E]">
+          {/* ---------------- Desktop header row ---------------- */}
+          <div className="hidden md:grid grid-cols-5 py-3 px-4 border-b bg-gray-50 border-gray-200 text-xs font-semibold text-gray-500 dark:bg-[#35353E] dark:border-[#35353E] dark:text-[#788099]">
             <div
               className="min-w-[200px] flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
               onClick={() => handleSort("advertiser")}
@@ -161,7 +161,8 @@ const MarketTable: React.FC<MarketTableProps> = ({
             /* ---------------- table rows --------------- */
             filteredData.map((row, idx) => (
               <React.Fragment key={idx}>
-                <div className="grid grid-cols-5 items-center py-4 px-4 border-b last:border-b-0 bg-white hover:bg-gray-50 border-gray-200 dark:bg-[#18181D] dark:hover:bg-[#2d2d36] dark:border-[#35353E]">
+                {/* Desktop Grid View */}
+                <div className="hidden md:grid grid-cols-5 items-center py-4 px-4 border-b last:border-b-0 bg-white hover:bg-gray-50 border-gray-200 dark:bg-[#18181D] dark:hover:bg-[#2d2d36] dark:border-[#35353E]">
                   {/* Advertiser */}
                   <div className="flex flex-col gap-1 min-w-[200px]">
                     <div className="flex items-center gap-2">
@@ -211,7 +212,6 @@ const MarketTable: React.FC<MarketTableProps> = ({
                     </span>
                   </div>
                   {/* Payment */}
-                  {/* <img src="https://omayabucket.s3.amazonaws.com/bank_logo/image_7.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAW7TPBKP2YLA7Y4X4%2F20251103%2Feu-north-1%2Fs3%2Faws4_request&X-Amz-Date=20251103T064943Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=4e3815352b9f85511eaab1e0c8dac2fe0b94e901f3961182ecee9c60411d85e2" alt="" /> */}
                   <div className="flex flex-wrap gap-2 min-w-[200px]">
                     {row.payment_details?.map((method, i) => {
                       const fallbackUrl = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
@@ -260,8 +260,124 @@ const MarketTable: React.FC<MarketTableProps> = ({
                    
                   </div>
                 </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden flex flex-col gap-3 p-4 border-b last:border-b-0 bg-white hover:bg-gray-50 border-gray-200 dark:bg-[#18181D] dark:hover:bg-[#2d2d36] dark:border-[#35353E]">
+                  {/* Advertiser Section */}
+                  <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-[#35353E]">
+                    {row.advertiser_photo ? (
+                      <img 
+                        src={row.advertiser_photo} 
+                        alt={row.advertiser} 
+                        className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity" 
+                        onClick={() => handleImageClick(row.advertiser_photo, row.advertiser)}
+                      />
+                    ) : (
+                      <span className="bg-[#1D8751] text-white h-10 w-10 rounded-[10px] text-xs font-bold flex items-center justify-center">
+                        {row.advertiserInitials}
+                      </span>
+                    )}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-1">
+                        <span className="font-medium text-sm text-gray-900 dark:text-[#E4E4E6]">
+                          {row.advertiser}
+                        </span>
+                        <FaCheckCircle className="text-[#FFD600] text-xs" />
+                      </div>
+                      <div className="text-xs text-gray-400 dark:text-[#8C8CA1] mt-0.5">
+                        <span className="text-[#1D8751]">{row.orders}</span> Orders | <span className="text-[#1D8751]">{row.completion}</span> Completion
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Rate and Stats */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs text-gray-500 dark:text-[#8C8CA1]">Rate</span>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-[#E4E4E6]">
+                        {row.commission}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1 text-xs text-[#1D8751] font-semibold">
+                        <ThumbsUp height={10} /> {row.exchange_rate || '0'}%
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-[#1D8751] font-semibold">
+                        <FaRegClock className="text-xs" /> {row.avgRealiseTime || '0'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Available/Limit */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-xs text-gray-500 dark:text-[#8C8CA1]">Available</span>
+                      <span className="text-sm font-semibold text-gray-900 dark:text-[#E4E4E6]">
+                        {row.available}
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <span className="text-xs text-gray-500 dark:text-[#8C8CA1]">Limit</span>
+                      <span className="text-xs text-gray-400 dark:text-[#8C8CA1]">
+                        {row.limit}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Payment Methods */}
+                  <div className="flex flex-col gap-2 pt-2 border-t border-gray-200 dark:border-[#35353E]">
+                    <span className="text-xs text-gray-500 dark:text-[#8C8CA1]">Payment Methods</span>
+                    <div className="flex flex-wrap gap-2">
+                      {row.payment_details?.slice(0, 2).map((method, i) => {
+                        const fallbackUrl = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                        const imageUrl = method.provider_logo || fallbackUrl;
+                        
+                        return (
+                          <span
+                            key={i}
+                            className="flex items-center gap-1 text-xs font-medium text-gray-700 dark:text-white"
+                          >
+                            <img
+                              src={imageUrl}
+                              alt={method.provider}
+                              className="w-3 h-3 rounded object-contain"
+                              loading="lazy"
+                              onError={(e) => {
+                                if (e.currentTarget.src !== fallbackUrl) {
+                                  e.currentTarget.src = fallbackUrl;
+                                }
+                              }}
+                            />
+                            {method.provider}
+                          </span>
+                        );
+                      })}
+                      {row.payment_details && row.payment_details.length > 2 && (
+                        <span className="text-xs text-gray-500 dark:text-[#8C8CA1]">
+                          +{row.payment_details.length - 2} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Trade Button */}
+                  <div className="pt-2">
+                    <Button
+                      width="100%"
+                      height={40}
+                      borderRadius={10}
+                      variant={activeTab === "sell" ? "secondary" : "primary"}
+                      size="sm"
+                      className="w-full font-semibold"
+                      onClick={() => handleTradeClick(idx)}
+                    >
+                      {activeTab === "sell" ? "SELL USDT" : "BUY USDT"}
+                    </Button>
+                  </div>
+                </div>
+
                 {selectedRowIndex === idx && (
-                  <div className="mt-4 p-2 sm:p-4 w-full">
+                  <div className="mt-4 p-2 sm:p-3 lg:p-4 w-full -mx-2 sm:mx-0">
                     <TradePreview
                       advertiserData={row}
                       onClose={() => setSelectedRowIndex(null)}

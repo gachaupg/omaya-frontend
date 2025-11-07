@@ -136,12 +136,12 @@ const Stats = ({ onSupportClick }: StatsProps) => {
   }, [dispatch, isAuthenticated, user?.referral_code]);
 
  return (
-    <Card className="w-full p-2 dark:bg-[#1D1D23] bg-gray-50 rounded-2xl dark:border-[#35353E] border-gray-300 border-2 dark:text-white text-gray-900 shadow-lg">
+   <Card className="w-full p-3 sm:p-4 dark:bg-[#1D1D23] bg-gray-50 rounded-2xl dark:border-[#35353E] border-gray-300 border-2 dark:text-white text-gray-900 shadow-lg">
       {/* Header */}
-      <div className="flex w-full items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
+      <div className="flex w-full flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="flex items-center gap-3 sm:gap-4">
           {profileImage ? (
-            <div className="w-14 h-14 rounded-full overflow-hidden">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden">
               <Image
                 src={profileImage}
                 alt="User avatar"
@@ -152,7 +152,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
               />
             </div>
           ) : (
-            <div className="w-14 h-14 dark:bg-[#35353E] bg-gray-300 rounded-full flex items-center justify-center">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 dark:bg-[#35353E] bg-gray-300 rounded-full flex items-center justify-center">
               <svg
                 width="24"
                 height="24"
@@ -177,24 +177,24 @@ const Stats = ({ onSupportClick }: StatsProps) => {
               </svg>
             </div>
           )}
-          <div className="flex flex-col">
-            <span className="text-[14px] font-semibold">
+          <div className="flex flex-col min-w-0">
+            <span className="text-sm sm:text-[14px] font-semibold truncate">
               {user?.first_name}
             </span>
-            <span className="flex items-center gap-1 text-[#1D8751] text-xs font-medium">
+            <span className="flex items-center gap-1 text-[#1D8751] text-[11px] sm:text-xs font-medium">
               Verified Profile
             </span>
           </div>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2 sm:gap-3">
           <div 
             className="p-2 rounded-full border border-[#1D8751] flex items-center justify-center relative cursor-pointer"
             onClick={() => router.push("/dashboard/notifications")}
             >
             <svg 
               xmlns="http://www.w3.org/2000/svg" 
-              width="18" 
-              height="18" 
+              width="16" 
+              height="16" 
               viewBox="0 0 24 24" 
               fill="none" 
               stroke="currentColor" 
@@ -207,7 +207,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
               <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>
             </svg>
             {matchedTrades?.results && matchedTrades.results.length > 0 && (
-              <span className="absolute -top-1 -right-2 bg-[#E23D3A] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              <span className="absolute -top-1 -right-2 bg-[#E23D3A] text-white text-[10px] sm:text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center">
                 {matchedTrades.results.length}
               </span>
             )}
@@ -217,8 +217,8 @@ const Stats = ({ onSupportClick }: StatsProps) => {
             onClick={onSupportClick}
           >
             <svg xmlns="http://www.w3.org/2000/svg"
-             width="18" 
-             height="18" 
+             width="16" 
+             height="16" 
              viewBox="0 0 24 24" 
              fill="none" 
              stroke="currentColor" 
@@ -234,11 +234,11 @@ const Stats = ({ onSupportClick }: StatsProps) => {
       </div>
 
       {/* Total Transactions */}
-      <div className="mb-6">
-        <div className="dark:text-[#788099] text-gray-600 text-sm font-medium">
+      <div className="mb-4 sm:mb-6">
+        <div className="dark:text-[#788099] text-gray-600 text-xs sm:text-sm font-medium">
           Total Transactions
         </div>
-        <div className="text-[15px] font-semibold mt-1 mb-2">
+        <div className="text-sm sm:text-[15px] font-semibold mt-1 mb-2">
           {formatCurrency(
             (summary?.total_approved_p2p_combined || 0) +
             (summary?.total_p2p_orders || 0),
@@ -249,19 +249,19 @@ const Stats = ({ onSupportClick }: StatsProps) => {
       </div>
 
       {/* Deposits & Withdrawals */}
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         {/* Deposits */}
         <div className="mb-4">
           <div className="flex w-full items-center justify-between mb-2">
-            <div className="dark:text-[#788099] text-gray-600 font-medium">
+            <div className="dark:text-[#788099] text-gray-600 text-sm font-medium">
               Deposits
             </div>
             <div
-              className="relative w-32 flex justify-end"
+              className="relative w-28 sm:w-32 flex justify-end"
               ref={depositsDropdownRef}
             >
               <span
-                className="dark:text-[#788099] text-gray-600 text-sm cursor-pointer flex items-center gap-1"
+                className="dark:text-[#788099] text-gray-600 text-xs sm:text-sm cursor-pointer flex items-center gap-1"
                 onClick={() => setShowDepositsDropdown(!showDepositsDropdown)}
               >
                 <span>{depositsTimeFilter}</span>
@@ -288,7 +288,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
                   {timeFilterOptions.map((option) => (
                     <div
                       key={option}
-                      className="px-3 py-2 text-sm dark:text-white text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 cursor-pointer"
+                      className="px-3 py-2 text-xs sm:text-sm dark:text-white text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 cursor-pointer"
                       onClick={() => {
                         setDepositsTimeFilter(option);
                         setShowDepositsDropdown(false);
@@ -310,9 +310,9 @@ const Stats = ({ onSupportClick }: StatsProps) => {
             )}
           </div>
         </div>
-        <div className="w-full h-3 dark:bg-[#35353E] bg-gray-300 rounded-full mb-4">
+        <div className="w-full h-2 sm:h-3 dark:bg-[#35353E] bg-gray-300 rounded-full mb-4">
           <div
-            className={`h-3 rounded-full ${
+            className={`h-2 sm:h-3 rounded-full ${
               (summary?.total_approved_p2p_deposits || 0) > 0
                 ? "bg-[#1D8751]"
                 : "bg-[#788099]"
@@ -330,15 +330,15 @@ const Stats = ({ onSupportClick }: StatsProps) => {
         {/* Withdrawals */}
         <div className="mb-4">
           <div className="flex w-full items-center justify-between mb-2">
-            <div className="dark:text-[#788099] text-gray-600 font-medium">
+            <div className="dark:text-[#788099] text-gray-600 text-sm font-medium">
               Withdrawals
             </div>
             <div
-              className="relative w-32 flex justify-end"
+              className="relative w-28 sm:w-32 flex justify-end"
               ref={withdrawalsDropdownRef}
             >
               <span
-                className="dark:text-[#788099] text-gray-600 text-sm cursor-pointer flex items-center gap-1"
+                className="dark:text-[#788099] text-gray-600 text-xs sm:text-sm cursor-pointer flex items-center gap-1"
                 onClick={() =>
                   setShowWithdrawalsDropdown(!showWithdrawalsDropdown)
                 }
@@ -367,7 +367,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
                   {timeFilterOptions.map((option) => (
                     <div
                       key={option}
-                      className="px-3 py-2 text-sm dark:text-white text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 cursor-pointer"
+                      className="px-3 py-2 text-xs sm:text-sm dark:text-white text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 cursor-pointer"
                       onClick={() => {
                         setWithdrawalsTimeFilter(option);
                         setShowWithdrawalsDropdown(false);
@@ -389,9 +389,9 @@ const Stats = ({ onSupportClick }: StatsProps) => {
             )}
           </div>
         </div>
-        <div className="w-full h-3 dark:bg-[#35353E] bg-gray-300 rounded-full mb-4">
+        <div className="w-full h-2 sm:h-3 dark:bg-[#35353E] bg-gray-300 rounded-full mb-4">
           <div
-            className={`h-3 rounded-full ${
+            className={`h-2 sm:h-3 rounded-full ${
               (summary?.total_approved_p2p_withdrawals || 0) > 0
                 ? "bg-[#E23D3A]"
                 : "bg-[#788099]"

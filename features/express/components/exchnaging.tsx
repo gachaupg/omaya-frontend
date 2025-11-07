@@ -732,7 +732,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   }
 
   return (
-    <div className={`w-full min-h-screen flex flex-col items-center pt-2`}>
+    <div className={`w-full min-h-screen flex flex-col items-center pt-2 px-3 sm:px-4`}>
       {/* Timer Banner */}
       {timerActive && timeRemaining > 0 && (
         <div

@@ -89,17 +89,17 @@ const PasswordSection: React.FC = () => {
 
   return (
     <>
-      <div className="text-base font-semibold dark:text-[#788099] text-gray-600 mb-0">
+      <div className="text-base sm:text-lg font-semibold dark:text-[#788099] text-gray-600 mb-0">
         3-Password
       </div>
 
-      <section className="dark:bg-[#1D1D23] bg-white rounded-xl dark:border-[#35353E] border-[#E8EFF5] border-2 p-3 shadow-lg">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+      <section className="dark:bg-[#1D1D23] bg-white rounded-xl dark:border-[#35353E] border-[#E8EFF5] border-2 p-3 sm:p-4 lg:p-6 shadow-lg">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 mb-2">
           <div>
             <label className="block text-xs dark:text-[#fff] text-[#051015] mb-1">
               Current Password*
             </label>
-            <div className="flex items-center dark:bg-[#23232B] bg-gray-100 rounded-lg px-3 py-2 dark:border-[#35353E] border-[#E8EFF5] border">
+            <div className="flex items-center dark:bg-[#23232B] bg-gray-100 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 dark:border-[#35353E] border-[#E8EFF5] border">
               <svg
                 width="16"
                 height="16"
@@ -119,7 +119,7 @@ const PasswordSection: React.FC = () => {
               </svg>
               <input
                 type={showPasswords.current ? "text" : "password"}
-                className="bg-transparent flex-1 ml-2 outline-none text-sm text-[#788099] dark:text-white autofill:bg-transparent autofill:shadow-[inset_0_0_0px_1000px_transparent] dark:autofill:bg-transparent dark:autofill:shadow-[inset_0_0_0px_1000px_transparent]"
+                className="bg-transparent flex-1 ml-2 outline-none text-sm sm:text-base text-[#788099] dark:text-white autofill:bg-transparent autofill:shadow-[inset_0_0_0px_1000px_transparent] dark:autofill:bg-transparent dark:autofill:shadow-[inset_0_0_0px_1000px_transparent]"
                 placeholder="Enter current password"
                 value={formData.current_password}
                 onChange={(e) =>
@@ -166,7 +166,7 @@ const PasswordSection: React.FC = () => {
             <label className="block text-xs dark:text-[#fff] text-[#051015] mb-1">
               New Password*
             </label>
-            <div className="flex items-center dark:bg-[#23232B] bg-gray-100 rounded-lg px-3 py-2 dark:border-[#35353E] border-gray-300 border">
+            <div className="flex items-center dark:bg-[#23232B] bg-gray-100 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 dark:border-[#35353E] border-gray-300 border">
               <svg
                 width="16"
                 height="16"
@@ -186,7 +186,7 @@ const PasswordSection: React.FC = () => {
               </svg>
               <input
                 type={showPasswords.new ? "text" : "password"}
-                className="bg-transparent flex-1 ml-2 outline-none text-sm text-[#788099] dark:text-white autofill:bg-transparent autofill:shadow-[inset_0_0_0px_1000px_transparent] dark:autofill:bg-transparent dark:autofill:shadow-[inset_0_0_0px_1000px_transparent]"
+                className="bg-transparent flex-1 ml-2 outline-none text-sm sm:text-base text-[#788099] dark:text-white autofill:bg-transparent autofill:shadow-[inset_0_0_0px_1000px_transparent] dark:autofill:bg-transparent dark:autofill:shadow-[inset_0_0_0px_1000px_transparent]"
                 placeholder="Enter new password"
                 value={formData.new_password}
                 onChange={(e) =>
@@ -233,7 +233,7 @@ const PasswordSection: React.FC = () => {
             <label className="block text-xs dark:text-[#fff] text-[#051015] mb-1">
               Confirm New Password*
             </label>
-            <div className="flex items-center dark:bg-[#23232B] bg-gray-100 rounded-lg px-3 py-2 dark:border-[#35353E] border-gray-300 border">
+            <div className="flex items-center dark:bg-[#23232B] bg-gray-100 rounded-lg px-3 sm:px-4 py-2 sm:py-2.5 dark:border-[#35353E] border-gray-300 border">
               <svg
                 width="16"
                 height="16"
@@ -253,7 +253,7 @@ const PasswordSection: React.FC = () => {
               </svg>
               <input
                 type={showPasswords.confirm ? "text" : "password"}
-                className="bg-transparent flex-1 ml-2 outline-none text-sm text-[#788099] dark:text-white autofill:bg-transparent autofill:shadow-[inset_0_0_0px_1000px_transparent] dark:autofill:bg-transparent dark:autofill:shadow-[inset_0_0_0px_1000px_transparent]"
+                className="bg-transparent flex-1 ml-2 outline-none text-sm sm:text-base text-[#788099] dark:text-white autofill:bg-transparent autofill:shadow-[inset_0_0_0px_1000px_transparent] dark:autofill:bg-transparent dark:autofill:shadow-[inset_0_0_0px_1000px_transparent]"
                 placeholder="Confirm new password"
                 value={formData.confirm_password}
                 onChange={(e) =>
@@ -298,7 +298,7 @@ const PasswordSection: React.FC = () => {
           </div>
         </div>
         <button
-          className="w-full py-1.5 rounded-lg border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-2 sm:py-2.5 rounded-lg border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleSubmit}
           disabled={updating}
         >

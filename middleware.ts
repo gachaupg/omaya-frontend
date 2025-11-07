@@ -5,6 +5,25 @@ export function middleware(request: NextRequest) {
   const token = request.cookies.get("access_token")?.value;
   const { pathname } = request.nextUrl;
 
+  // Guard against common truncated mobile URLs and redirect to full routes
+  // e.g., '/dashbc' or '/dashbo' → '/dashboard'
+  // Respect trailingSlash=true in next.config.ts to avoid redirect loops
+  // Only catch specific truncated paths (avoid catching real subroutes like /dashboard/expr...)
+  const redirectMap: Record<string, string> = {
+    "/dashbc": "/dashboard/",
+    "/dashbo": "/dashboard/",
+    "/marke": "/market/",
+    "/rat": "/rates/",
+    "/blo": "/blog/",
+    "/p2": "/p2p/",
+  };
+
+  for (const [partial, full] of Object.entries(redirectMap)) {
+    if (pathname === partial || pathname === partial + "/") {
+      return NextResponse.redirect(new URL(full, request.url));
+    }
+  }
+
   // Allow API routes to handle their own authentication
   if (pathname.startsWith("/api")) {
     return NextResponse.next();

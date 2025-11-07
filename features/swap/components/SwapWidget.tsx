@@ -486,15 +486,15 @@ const SwapWidget = () => {
   // If timeout reached but still loading, show a fallback instead of skeleton
   if (loading && supportedAssets.length === 0 && skeletonTimeout) {
     return (
-      <div className="w-full max-w-lg mx-auto p-6 bg-white dark:bg-[#1D1D23] rounded-lg border dark:border-[#35353E] border-gray-200">
+      <div className="w-full max-w-lg mx-auto p-4 sm:p-6 bg-white dark:bg-[#1D1D23] rounded-lg border dark:border-[#35353E] border-gray-200 px-3 sm:px-4">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1D8751] mx-auto mb-4"></div>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
             Loading swap data...
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-3 px-4 py-2 bg-[#1D8751] hover:bg-[#1a6b3f] text-white rounded-md text-sm"
+            className="mt-3 px-3 sm:px-4 py-2 bg-[#1D8751] hover:bg-[#1a6b3f] text-white rounded-md text-xs sm:text-sm"
           >
             Refresh
           </button>
@@ -505,15 +505,15 @@ const SwapWidget = () => {
 
   if (error) {
     return (
-      <div className="mx-auto dark:text-white text-gray-900">
-        <div className="bg-red-500/10 dark:bg-red-500/10 border border-red-500/20 dark:border-red-500/20 rounded-lg p-4">
-          <h3 className="text-red-600 dark:text-red-400 font-semibold mb-2">
+      <div className="mx-auto dark:text-white text-gray-900 px-3 sm:px-4">
+        <div className="bg-red-500/10 dark:bg-red-500/10 border border-red-500/20 dark:border-red-500/20 rounded-lg p-3 sm:p-4">
+          <h3 className="text-red-600 dark:text-red-400 font-semibold mb-2 text-sm sm:text-base">
             Error Loading Swap
           </h3>
-          <p className="text-red-500 dark:text-red-300 text-sm">{error}</p>
+          <p className="text-red-500 dark:text-red-300 text-xs sm:text-sm">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-3 px-4 py-2 bg-red-500 hover:bg-red-600 dark:bg-red-500 dark:hover:bg-red-600 rounded-md text-white text-sm"
+            className="mt-3 px-3 sm:px-4 py-2 bg-red-500 hover:bg-red-600 dark:bg-red-500 dark:hover:bg-red-600 rounded-md text-white text-xs sm:text-sm"
           >
             Try Again
           </button>
@@ -523,8 +523,8 @@ const SwapWidget = () => {
   }
 
   return (
-    <div className="mx-auto dark:text-white text-gray-900">
-      <h2 className="text-lg font-semibold mb-6 text-gray-900 dark:text-white">
+    <div className="mx-auto dark:text-white text-gray-900 px-3 sm:px-4">
+      <h2 className="text-base sm:text-lg font-semibold mb-4 sm:mb-6 text-gray-900 dark:text-white">
         Swap Crypto
       </h2>
 

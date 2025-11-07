@@ -131,9 +131,9 @@ const UnreadMessages: React.FC<UnreadMessagesProps> = ({ loading = false, onBack
   return (
     <div className="w-full">
       {/* Header */}
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
             Recent Messages
           </h2>
           <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">

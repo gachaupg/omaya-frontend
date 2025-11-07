@@ -2018,7 +2018,7 @@ export default function DepositForm({
 
   return (
     <div className="w-full flex flex-col dark:bg-[#18181D]  ">
-      <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
+      <h2 className="text-base sm:text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
         <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Transaction Info
       </h2>
       
@@ -2034,10 +2034,10 @@ export default function DepositForm({
         {/* Top Section - Amount and Bank/Payment Method in one card */}
         <div className="relative mb-4">
           {/* Top Card Container */}
-          <div className="flex border border-[#D1D2D4FF] dark:border-[#35353E]  rounded-2xl p-4">
+          <div className="flex flex-col sm:flex-row border border-[#D1D2D4FF] dark:border-[#35353E]  rounded-2xl p-3 sm:p-4 gap-4 sm:gap-0">
             {/* Amount Section */}
-            <div className="flex-1 pr-4">
-              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
+            <div className="flex-1 sm:pr-4">
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 You Send
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                 {/* {isCalculatingFromPay && (
@@ -2119,7 +2119,7 @@ export default function DepositForm({
                     }
                   }}
                   placeholder="Enter amount"
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg  focus:outline-none border appearance-none ${
+                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 py-2 pr-12 sm:pr-16 text-base sm:text-lg  focus:outline-none border appearance-none ${
                     (isCalculating || isCalculatingReceive) && isCalculatingFromPay && selectedAsset && !isForexAsset(selectedAsset) ? 'border-[#1D8751]' : 'border-[#A2A4A9FF] dark:border-[#35353E]'
                   }`}
                 />
@@ -2142,8 +2142,8 @@ export default function DepositForm({
             </div>
 
             {/* Bank/Payment Method Section */}
-            <div className="flex-1 pl-4">
-              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+            <div className="flex-1 sm:pl-4">
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                 Bank/Payment Method
               </label>
               {/* <div>
@@ -2299,10 +2299,10 @@ export default function DepositForm({
           
          
           
-          <div className="flex border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-4">
+          <div className="flex flex-col sm:flex-row border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-3 sm:p-4 gap-4 sm:gap-0">
             {/* You Receive Section */}
-            <div className="flex-1 pr-4">
-              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
+            <div className="flex-1 sm:pr-4">
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 You Receive
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                 {!isCalculatingFromPay && (
@@ -2376,7 +2376,7 @@ export default function DepositForm({
                     }
                   }}
                   placeholder="Enter amount"
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg  focus:outline-none border appearance-none ${
+                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 py-2 pr-12 sm:pr-16 text-base sm:text-lg  focus:outline-none border appearance-none ${
                     receiveAmountError && (receiveAmountError.includes('Rough estimate') || receiveAmountError.includes('Using estimated rate')) ? 'border-[#F79330]' : 
                     receiveAmountError ? 'border-red-500' :
                     (isCalculating || isCalculatingReceive) && selectedAsset && !isForexAsset(selectedAsset) ? 'border-[#1D8751]' : 'border-[#A2A4A9FF] dark:border-[#35353E]'
@@ -2435,8 +2435,8 @@ export default function DepositForm({
             </div>
 
             {/* Asset Section */}
-            <div className="flex-1 pl-4">
-              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+            <div className="flex-1 sm:pl-4">
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                 Asset
               </label>
               <div className="relative" ref={assetDropdownRef}>
@@ -2515,23 +2515,23 @@ export default function DepositForm({
 
                 {/* Asset Dropdown */}
                 {isAssetDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl z-50 max-h-80 overflow-hidden">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl z-50 max-h-[70vh] sm:max-h-80 overflow-hidden">
                     {/* Search Input */}
-                    <div className="p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+                    <div className="p-2 sm:p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
                       <div className="relative">
-                        <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
+                        <FaSearch className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-3 h-3 sm:w-4 sm:h-4" />
                         <input
                           type="text"
                           placeholder="Search assets..."
                           value={assetSearchTerm}
                           onChange={(e) => setAssetSearchTerm(e.target.value)}
-                          className="w-full text-gray-900 dark:text-white dark:bg-[#1D1D23] bg-white rounded-xl px-10 py-2 text-sm focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400"
+                          className="w-full text-gray-900 dark:text-white dark:bg-[#1D1D23] bg-white rounded-xl px-8 sm:px-10 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400"
                         />
                       </div>
                     </div>
 
                     {/* Asset List */}
-                    <div className="max-h-60 overflow-y-auto">
+                    <div className="max-h-[50vh] sm:max-h-60 overflow-y-auto">
                       {sortedSwapAssets.length > 0 ? (
                         <>
                           {/* Popular Section - First 3 assets only if no search */}
@@ -2834,13 +2834,13 @@ export default function DepositForm({
             {/* Payment Method Details */}
             {selectedPaymentDetail && (
               <>
-            <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
+            <h2 className="text-base sm:text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
                   <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span> Payment Details
                 </h2>
                 <div className="flex-1 dark:bg-[#1D1D23] rounded-2xl border border-[#39394a] dark:border-[#35353E] flex flex-col justify-between p-5 relative min-h-[120px]">
                   {/* Bank and logo */}
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-semibold">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                    <span className="text-[#7e7e8f] dark:text-[#788099] text-sm sm:text-base font-semibold">
                       Bank:
                     </span>
                     <div className="flex items-center gap-2">
@@ -2851,34 +2851,34 @@ export default function DepositForm({
                           "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
                         }
                         alt={`${selectedPaymentDetail.provider_name || 'Bank'} Logo`}
-                        className="w-8 h-8 rounded-full object-contain"
+                        className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-contain flex-shrink-0"
                         onError={(e) => {
                           e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
                         }}
                       />
-                      <span className="text-[#35353e] dark:text-[#788099] text-base font-semibold">
+                      <span className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base font-semibold break-words">
                         {selectedPaymentDetail.provider_name}
                       </span>
                     </div>
                   </div>
                   <div className="border-t border-dashed border-[#39394a] mb-2"></div>
                   {/* Account Name */}
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-medium">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0 mb-2">
+                    <span className="text-[#7e7e8f] dark:text-[#788099] text-sm sm:text-base font-medium">
                       Account Name :
                     </span>
-                    <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
+                    <span className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base font-medium break-words text-left sm:text-right">
                       {selectedPaymentDetail.account_name}
                     </span>
                   </div>
                   <div className="border-t border-dashed border-[#39394a] mb-2"></div>
                   {/* Account Number */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-medium">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0">
+                    <span className="text-[#7e7e8f] dark:text-[#788099] text-sm sm:text-base font-medium">
                       Account Number :
                     </span>
                     <div className="flex items-center gap-2">
-                      <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
+                      <span className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base font-medium break-all">
                         {selectedPaymentDetail.account_number}
                       </span>
                       <button
@@ -2918,7 +2918,7 @@ export default function DepositForm({
               </>
             )}
             
-            <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
+            <h2 className="text-base sm:text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
               <span className="text-[#7e7e8f] dark:text-[#788099]">3-</span> Forex Account Details
             </h2>
             
@@ -2951,7 +2951,7 @@ export default function DepositForm({
 
             {/* Submit Forex Exchange Button */}
             <button
-              className={`w-full text-white text-base font-medium py-3 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
+              className={`w-full text-white text-sm sm:text-base font-medium py-2.5 sm:py-3 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
                 isSubmitting || !forexAccountNumber.trim()
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
@@ -3021,7 +3021,7 @@ export default function DepositForm({
       {selectedPaymentDetail && isFirstCardSubmitted && (
         <>
           {/* Payment Details Card */}
-          <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
+          <h2 className="text-base sm:text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
             <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span> Payment Details
           </h2>
           <div
@@ -3030,8 +3030,8 @@ export default function DepositForm({
           >
             <div className="flex-1  dark:bg-[#1D1D23] rounded-2xl border border-[#39394a] dark:border-[#35353E] flex flex-col justify-between p-5 relative min-h-[120px]">
               {/* Bank and logo */}
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-semibold">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                <span className="text-[#7e7e8f] dark:text-[#788099] text-sm sm:text-base font-semibold">
                   Bank:
                 </span>
                 <div className="flex items-center gap-2">
@@ -3042,34 +3042,34 @@ export default function DepositForm({
                       "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
                     }
                     alt={`${selectedPaymentDetail.provider_name || 'Bank'} Logo`}
-                    className="w-8 h-8 rounded-full object-contain"
+                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-contain flex-shrink-0"
                     onError={(e) => {
                       e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
                     }}
                   />
-                  <span className="text-[#35353e] dark:text-[#788099] text-base font-semibold">
+                  <span className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base font-semibold break-words">
                     {selectedPaymentDetail.provider_name}
                   </span>
                 </div>
               </div>
               <div className="border-t border-dashed border-[#39394a] mb-2"></div>
               {/* Account Name */}
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-medium">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0 mb-2">
+                <span className="text-[#7e7e8f] dark:text-[#788099] text-sm sm:text-base font-medium">
                   Account Name :
                 </span>
-                <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
+                <span className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base font-medium break-words text-left sm:text-right">
                   {selectedPaymentDetail.account_name}
                 </span>
               </div>
               <div className="border-t border-dashed border-[#39394a] mb-2"></div>
               {/* Account Number */}
-              <div className="flex items-center justify-between">
-                <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-medium">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0">
+                <span className="text-[#7e7e8f] dark:text-[#788099] text-sm sm:text-base font-medium">
                   Account Number :
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
+                  <span className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base font-medium break-all">
                     {selectedPaymentDetail.account_number}
                   </span>
                   <button
@@ -3111,7 +3111,7 @@ export default function DepositForm({
           {/* Transaction Code Card - below Payment Details, before Wallet Address */}
           {apiResponse && apiResponse.deposit_code && (
             <>
-              <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
+              <h2 className="text-base sm:text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
                 <span className="text-[#7e7e8f] dark:text-[#788099]">3-</span> Transaction Code
               </h2>
               <div className="mb-6 flex flex-col gap-3 w-full px-2">
@@ -3219,7 +3219,7 @@ export default function DepositForm({
           )}
 
           {/* Wallet Address Section */}
-          <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
+          <h2 className="text-base sm:text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
             <span className="text-[#7e7e8f] dark:text-[#788099]">4-</span> Wallet Address
           </h2>
           <div className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-6">
@@ -3418,7 +3418,7 @@ export default function DepositForm({
           {/* Button outside the card */}
           <div className="flex flex-col gap-3 w-full px-2">
             <button
-              className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
+              className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-2.5 sm:py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
                 isSubmitting
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"

@@ -501,44 +501,44 @@ const PrivacySecurity = () => {
   return (
     <>
       {show2FAModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="dark:bg-[#23232B] bg-white p-6 rounded-xl w-full max-w-xl ">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
+          <div className="dark:bg-[#23232B] bg-white p-4 sm:p-6 rounded-xl w-full max-w-md sm:max-w-xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-2 dark:text-white text-gray-900">
               Enable 2FA
             </h3>
             {qrData && (
-              <div className="flex flex-col items-center mb-4">
+              <div className="flex flex-col items-center mb-3 sm:mb-4">
                 <img
                   src={qrData}
                   alt="2FA QR Code"
-                  className="w-40 h-40 mb-2"
+                  className="w-32 h-32 sm:w-40 sm:h-40 mb-2"
                 />
-                <div className="text-xs dark:text-[#8C8CA1] text-gray-600 break-all">
+                <div className="text-xs dark:text-[#8C8CA1] text-gray-600 break-all px-2 text-center">
                   Scan this QR code with your authenticator app.
                 </div>
               </div>
             )}
             <input
               type="text"
-              className="w-full p-2 rounded dark:border-[#35353E] border-gray-300 border mb-2 dark:bg-[#18181D] bg-gray-100 dark:text-white text-gray-900"
+              className="w-full p-2 sm:p-2.5 rounded dark:border-[#35353E] border-gray-300 border mb-2 dark:bg-[#18181D] bg-gray-100 dark:text-white text-gray-900 text-sm sm:text-base"
               placeholder="Enter code from app"
               value={verifyCode}
               onChange={(e) => setVerifyCode(e.target.value)}
               disabled={verifyLoading}
             />
             {verifyError && (
-              <div className="text-red-500 text-xs mb-2">{verifyError}</div>
+              <div className="text-red-500 text-xs sm:text-sm mb-2 break-words">{verifyError}</div>
             )}
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <button
-                className="flex-1 bg-[#1D8751] text-white rounded px-4 py-2 font-semibold"
+                className="flex-1 bg-[#1D8751] text-white rounded px-4 py-2 sm:py-2.5 font-semibold"
                 onClick={handleVerify2FA}
                 disabled={verifyLoading}
               >
                 {verifyLoading ? "Verifying..." : "Verify"}
               </button>
               <button
-                className="flex-1 dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 rounded px-4 py-2 font-semibold"
+                className="flex-1 dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 rounded px-4 py-2 sm:py-2.5 font-semibold"
                 onClick={() => setShow2FAModal(false)}
                 disabled={verifyLoading}
               >
@@ -551,8 +551,8 @@ const PrivacySecurity = () => {
 
       {/* Enhanced Logout Modal */}
       {showLogoutModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="dark:bg-[#23232B] bg-white p-6 rounded-xl w-full max-w-md">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
+          <div className="dark:bg-[#23232B] bg-white p-4 sm:p-6 rounded-xl w-full max-w-sm sm:max-w-md max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4 dark:text-white text-gray-900">
               Sign Out Options
             </h3>
@@ -565,7 +565,7 @@ const PrivacySecurity = () => {
 
                 <div className="flex flex-col gap-3 mb-4">
                   <button
-                    className="w-full py-3 px-4 rounded-xl border border-[#E23D3A] text-[#E23D3A] hover:bg-[#E23D3A] hover:text-white transition font-semibold text-sm"
+                    className="w-full py-2.5 sm:py-3 px-4 rounded-xl border border-[#E23D3A] text-[#E23D3A] hover:bg-[#E23D3A] hover:text-white transition font-semibold text-sm"
                     onClick={handleLogoutAllDevices}
                   >
                     Sign out from ALL devices (including this one)
@@ -579,7 +579,7 @@ const PrivacySecurity = () => {
                   </button>
 
                   <button
-                    className={`w-full py-3 px-4 rounded-xl border transition font-semibold text-sm ${
+                    className={`w-full py-2.5 sm:py-3 px-4 rounded-xl border transition font-semibold text-sm ${
                       hasOtherActiveSessions
                         ? "border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white"
                         : "border-[#808080] text-[#808080] cursor-not-allowed"
@@ -864,29 +864,29 @@ const PrivacySecurity = () => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-6 dark:text-[#808080] text-gray-600 text-xs font-medium dark:border-[#35353E] border-gray-300 border-b pb-2 mb-2">
+              <div className="grid grid-cols-3 sm:grid-cols-6 dark:text-[#808080] text-gray-600 text-xs font-medium dark:border-[#35353E] border-gray-300 border-b pb-2 mb-2">
                 <div>Session ID</div>
                 <div>Signed In</div>
-                <div>Location</div>
-                <div>IP Address</div>
-                <div>Browser</div>
+                <div className="hidden sm:block">Location</div>
+                <div className="hidden sm:block">IP Address</div>
+                <div className="hidden sm:block">Browser</div>
                 <div>Status</div>
               </div>
               <div className="flex flex-col gap-3">
                 {paginatedSessions.map((session: DeviceSession) => (
                   <div
                     key={session.session_id}
-                    className="grid grid-cols-6 text-sm dark:text-white text-gray-900 dark:border-[#35353E] border-gray-300 border-b pb-2 relative group"
+                    className="grid grid-cols-3 sm:grid-cols-6 text-sm dark:text-white text-gray-900 dark:border-[#35353E] border-gray-300 border-b pb-2 relative group"
                   >
-                    <div className="text-xs dark:text-[#808080] text-gray-600 font-mono">
+                    <div className="text-xs dark:text-[#808080] text-gray-600 font-mono break-all">
                       {session.session_id.substring(0, 8)}...
                     </div>
-                    <div>{formatDate(session.sign_in_time)}</div>
-                    <div>{session.location}</div>
-                    <div className="font-mono text-xs">
+                    <div className="truncate">{formatDate(session.sign_in_time)}</div>
+                    <div className="hidden sm:block truncate">{session.location}</div>
+                    <div className="hidden sm:block font-mono text-xs break-all">
                       {session.ip_address}
                     </div>
-                    <div>{session.browser}</div>
+                    <div className="hidden sm:block truncate">{session.browser}</div>
                     <div className="flex items-center justify-between">
                       <span
                         className={
