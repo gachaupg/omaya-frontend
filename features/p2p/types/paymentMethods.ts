@@ -66,4 +66,5 @@ export interface AdminPaymentMethod {
   provider_name: string;
   logo?: string;
   wallet_address?: string | null;
+  linked_bank_provider?: string | null;
 }

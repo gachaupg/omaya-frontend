@@ -18,8 +18,31 @@
  * - 0.001234 -> "0.00123"
  * - 1234.56 -> "1,234.56"
  */
+const extractNumericValue = (
+  value: number | string | null | undefined
+): number | null => {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.replace(/,/g, "").match(/-?\d+(\.\d+)?/);
+    if (normalized) {
+      const parsed = parseFloat(normalized[0]);
+      return Number.isNaN(parsed) ? null : parsed;
+    }
+    return null;
+  }
+
+  return null;
+};
+
 export const formatAmount = (
-  value: number,
+  rawValue: number | string,
   options: {
     decimals?: number;
     showCurrency?: boolean;
@@ -34,22 +57,24 @@ export const formatAmount = (
     threshold = 1000
   } = options;
 
-  if (isNaN(value) || value === null || value === undefined) {
+  const numericValue = extractNumericValue(rawValue);
+
+  if (numericValue === null) {
     return showCurrency ? `0 ${currency}` : '0';
   }
 
-  const absValue = Math.abs(value);
-  const sign = value < 0 ? '-' : '';
+  const absValue = Math.abs(numericValue);
+  const sign = numericValue < 0 ? '-' : '';
 
   // For very small numbers, show full precision
   if (absValue < 0.01 && absValue > 0) {
-    const formatted = value.toFixed(Math.max(5, decimals));
+    const formatted = numericValue.toFixed(Math.max(5, decimals));
     return showCurrency ? `${formatted} ${currency}` : formatted;
   }
 
   // For numbers below threshold, show with normal formatting
   if (absValue < threshold) {
-    const formatted = value.toLocaleString('en-US', {
+    const formatted = numericValue.toLocaleString('en-US', {
       minimumFractionDigits: 0,
       maximumFractionDigits: decimals
     });
@@ -74,7 +99,7 @@ export const formatAmount = (
   }
 
   // Fallback for edge cases
-  const formatted = value.toLocaleString('en-US', {
+  const formatted = numericValue.toLocaleString('en-US', {
     minimumFractionDigits: 0,
     maximumFractionDigits: decimals
   });
@@ -95,7 +120,7 @@ export const formatAmount = (
  * - formatCurrency(1234.56) -> "1,234.56 USD"
  */
 export const formatCurrency = (
-  amount: number,
+  amount: number | string,
   currency: string = 'USD'
 ): string => {
   return formatAmount(amount, {
@@ -113,7 +138,7 @@ export const formatCurrency = (
  * @returns Formatted string
  */
 export const formatNumber = (
-  value: number,
+  value: number | string,
   options: {
     decimals?: number;
     compact?: boolean;
@@ -125,7 +150,13 @@ export const formatNumber = (
     return formatAmount(value, { decimals });
   }
 
-  return value.toLocaleString('en-US', {
+  const numericValue = extractNumericValue(value);
+
+  if (numericValue === null) {
+    return '0';
+  }
+
+  return numericValue.toLocaleString('en-US', {
     minimumFractionDigits: 0,
     maximumFractionDigits: decimals
   });

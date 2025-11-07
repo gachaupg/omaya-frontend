@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useMarketingI18n } from "@/lib/useMarketingI18n";
 import Image from "next/image";
 import Link from "next/link";
@@ -11,6 +11,7 @@ import { BlogPost } from "@/features/blogs/types";
 import { useFAQ } from "@/features/faq/hooks/useFAQ";
 import { ContactForm } from "@/features/contact/components";
 import { useHighlightStatistics } from "@/features/contact/hooks/useHighlightStatistics";
+import { useSimpleMarkets } from "@/features/markets/hooks/useSimpleMarkets";
 
 const steps = [
   {
@@ -62,6 +63,51 @@ const features = [
   "We Work 24/7",
 ];
 
+const fallbackSupportedAssets = [
+  {
+    id: "fxprimus",
+    name: "FXPRIMUS",
+    symbol: "FXP",
+    image:
+      "https://res.cloudinary.com/dam1sxczj/image/upload/v1746793801/FXPRIMUS-logo_2_k8ikwb.png",
+  },
+  {
+    id: "perfect-money",
+    name: "Perfect Money",
+    symbol: "PM",
+    image:
+      "https://res.cloudinary.com/dam1sxczj/image/upload/v1746793801/Perfect_Money_Logo_2_niaa2j.png",
+  },
+  {
+    id: "usdt-erc20",
+    name: "USDT Tether (ERC20)",
+    symbol: "USDT",
+    image:
+      "https://res.cloudinary.com/dam1sxczj/image/upload/v1746793800/Group_164023_bluiv9.png",
+  },
+  {
+    id: "bitcoin",
+    name: "Bitcoin",
+    symbol: "BTC",
+    image:
+      "https://res.cloudinary.com/dam1sxczj/image/upload/v1746793800/Bitcoin-1_b6ku56.png",
+  },
+  {
+    id: "usdt-trc20",
+    name: "USDT Tether (TRC20)",
+    symbol: "USDT",
+    image:
+      "https://res.cloudinary.com/dam1sxczj/image/upload/v1746793800/Tether_ttkeym.png",
+  },
+  {
+    id: "icm-capital",
+    name: "ICM Capital",
+    symbol: "ICM",
+    image:
+      "https://res.cloudinary.com/dam1sxczj/image/upload/v1746793800/ICMCapital_1_qte6tt.png",
+  },
+];
+
 type Category = "News" | "Blog";
 
 interface ArticleTag {
@@ -94,9 +140,49 @@ export default function MarketingPage() {
   const [showContactError, setShowContactError] = useState(false);
   const [contactErrorMessage, setContactErrorMessage] = useState("");
   const [showAllFAQs, setShowAllFAQs] = useState(false);
+  const [showAllAssets, setShowAllAssets] = useState(false);
   const { blogs, news, loading, error } = useBlog();
   const { faqs: faqItems, loading: faqLoading, error: faqError } = useFAQ();
   const { statistics, loading: statsLoading, error: statsError } = useHighlightStatistics();
+  const {
+    markets: marketAssets,
+    loading: marketsLoading,
+    error: marketsError,
+  } = useSimpleMarkets(50);
+
+  const transformedMarketAssets = useMemo(
+    () =>
+      (marketAssets || []).map((asset) => ({
+        id: asset.id,
+        name: asset.name,
+        symbol: asset.symbol?.toUpperCase() ?? "",
+        image: asset.image ?? "/images/alert-circle.svg",
+      })),
+    [marketAssets]
+  );
+
+  const assetsSource = transformedMarketAssets.length
+    ? transformedMarketAssets
+    : fallbackSupportedAssets;
+
+  const maxPreviewAssets = 6;
+
+  const displayedAssets = useMemo(
+    () =>
+      showAllAssets
+        ? assetsSource
+        : assetsSource.slice(0, maxPreviewAssets),
+    [assetsSource, showAllAssets]
+  );
+
+  const shouldRenderToggle = assetsSource.length > maxPreviewAssets;
+
+  const toggleLabel = showAllAssets
+    ? t("marketing.assets.toggleLess", "Show Less")
+    : t(
+        "marketing.assets.toggleMore",
+        `Show All (${assetsSource.length})`
+      );
 
   // Transform API statistics to achievements format
   const achievements = statistics ? [
@@ -713,117 +799,78 @@ export default function MarketingPage() {
       </div>
 
       {/* Supported Assets Section*/}
-      <div className="w-full dark:bg-[#18181D] bg-[#EEF1F4]  py-16">
+      <div
+        id="supported-assets"
+        className="w-full dark:bg-[#18181D] bg-[#EEF1F4]  py-16"
+      >
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
           <h2 className="text-center text-2xl md:text-3xl 2xl:text-4xl font-medium darK:text-white mb-12">
             {t("marketing.assets.title", "Supported Assets")}
           </h2>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
-            {/* FXPRIMUS */}
-            <div className="dark:bg-[#1D1D23] bg-[#F5F5F5] rounded-lg py-6 px-4 flex flex-col items-center">
-              <div className="w-16 h-16 mb-3">
-                <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746793801/FXPRIMUS-logo_2_k8ikwb.png"
-                  alt="FXPRIMUS"
-                  width={64}
-                  height={64}
-                  className="object-contain"
-                />
-              </div>
-              <span className="darK:text-white text-sm 2xl:text-lg">
-                FXPRIMUS
-              </span>
-            </div>
-
-            {/* Perfect Money */}
-            <div className="dark:bg-[#1D1D23] bg-[#F5F5F5] rounded-lg py-6 px-4 flex flex-col items-center">
-              <div className="w-16 h-16 mb-3">
-                <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746793801/Perfect_Money_Logo_2_niaa2j.png"
-                  alt="Perfect Money"
-                  width={64}
-                  height={64}
-                  className="object-contain"
-                />
-              </div>
-              <span className="darK:text-white text-sm 2xl:text-lg">
-                Perfect Money
-              </span>
-            </div>
-
-            {/* USDT Tether (ERC20) */}
-            <div className="dark:bg-[#1D1D23] bg-[#F5F5F5] rounded-lg py-6 px-4 flex flex-col items-center">
-              <div className="w-16 h-16 mb-3">
-                <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746793800/Group_164023_bluiv9.png"
-                  alt="USDT Tether (ERC20)"
-                  width={64}
-                  height={64}
-                  className="object-contain"
-                />
-              </div>
-              <span className="darK:text-white text-sm 2xl:text-lg">
-                USDT Tether (ERC20)
-              </span>
-            </div>
-
-            {/* Bitcoin */}
-            <div className="dark:bg-[#1D1D23] bg-[#F5F5F5] rounded-lg py-6 px-4 flex flex-col items-center">
-              <div className="w-16 h-16 mb-3">
-                <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746793800/Bitcoin-1_b6ku56.png"
-                  alt="Bitcoin"
-                  width={64}
-                  height={64}
-                  className="object-contain"
-                />
-              </div>
-              <span className="darK:text-white text-sm 2xl:text-lg">
-                Bitcoin
-              </span>
-            </div>
-
-            {/* USDT Tether (TRC20) */}
-            <div className="dark:bg-[#1D1D23] bg-[#F5F5F5] rounded-lg py-6 px-4 flex flex-col items-center">
-              <div className="w-16 h-16 mb-3">
-                <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746793800/Tether_ttkeym.png"
-                  alt="USDT Tether (TRC20)"
-                  width={64}
-                  height={64}
-                  className="object-contain"
-                />
-              </div>
-              <span className="darK:text-white text-sm 2xl:text-lg">
-                USDT Tether (TRC20)
-              </span>
-            </div>
-
-            {/* ICM Capital */}
-            <div className="dark:bg-[#1D1D23] bg-[#F5F5F5] rounded-lg py-6 px-4 flex flex-col items-center">
-              <div className="w-16 h-16 mb-3">
-                <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746793800/ICMCapital_1_qte6tt.png"
-                  alt="ICM Capital"
-                  width={64}
-                  height={64}
-                  className="object-contain"
-                />
-              </div>
-              <span className="darK:text-white text-sm 2xl:text-lg">
-                ICM Capital
-              </span>
-            </div>
-
-            {/* +300 More */}
-            <div className="dark:bg-[#1D1D23] bg-[#F5F5F5] rounded-lg py-6 px-4 flex flex-col items-center justify-center">
-              <div className="text-[#FFA500] font-semibold 2xl:text-2xl">
-                +300
-              </div>
-              <span className="text-gray-400 text-sm 2xl:text-lg">More</span>
-            </div>
+            {marketsLoading
+              ? Array.from({ length: maxPreviewAssets }).map((_, index) => (
+                  <div
+                    key={`asset-skeleton-${index}`}
+                    className="dark:bg-[#1D1D23] bg-[#F5F5F5] rounded-lg py-6 px-4 flex flex-col items-center animate-pulse"
+                  >
+                    <div className="w-16 h-16 mb-3 bg-gray-300 dark:bg-[#23232B] rounded" />
+                    <span className="darK:text-white text-sm 2xl:text-lg bg-gray-300 dark:bg-[#23232B] h-4 w-20 rounded" />
+                  </div>
+                ))
+              : (
+                  <>
+                    {displayedAssets.map((asset) => (
+                      <div
+                        key={asset.id}
+                        className="dark:bg-[#1D1D23] bg-[#F5F5F5] rounded-lg py-6 px-4 flex flex-col items-center"
+                      >
+                        <div className="w-16 h-16 mb-3">
+                          <Image
+                            src={asset.image}
+                            alt={asset.name}
+                            width={64}
+                            height={64}
+                            className="object-contain"
+                            unoptimized
+                          />
+                        </div>
+                        <span className="darK:text-white text-sm 2xl:text-lg text-center">
+                          {asset.name}
+                        </span>
+                        {asset.symbol && (
+                          <span className="text-xs text-[#788099] mt-1">
+                            {asset.symbol}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                    {shouldRenderToggle && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAllAssets((prev) => !prev)}
+                        className="dark:bg-[#1D1D23] bg-[#F5F5F5] rounded-lg py-6 px-4 flex flex-col items-center justify-center border border-dashed border-[#1D8751] transition-colors hover:bg-[#E6F4EC] dark:hover:bg-[#23232B]"
+                      >
+                        <div className="text-[#FFA500] font-semibold text-3xl mb-2">
+                          {showAllAssets ? "−" : "+"}
+                        </div>
+                        <span className="text-sm 2xl:text-lg text-[#1D8751]">
+                          {toggleLabel}
+                        </span>
+                      </button>
+                    )}
+                  </>
+                )}
           </div>
+          {marketsError && (
+            <p className="text-center text-sm text-red-400 mt-6">
+              {t(
+                "marketing.assets.error",
+                "Unable to load live assets right now. Showing defaults."
+              )}
+            </p>
+          )}
         </div>
       </div>
 
@@ -1103,7 +1150,10 @@ export default function MarketingPage() {
       </section>
 
       {/* FAQ Section */}
-      <section className="w-full dark:bg-[#18181D]  bg-[#EEF1F4]   dark:text-white text-[#0D0D0D] py-16 px-4 md:px-8">
+      <section
+        id="faq"
+        className="w-full dark:bg-[#18181D]  bg-[#EEF1F4]   dark:text-white text-[#0D0D0D] py-16 px-4 md:px-8"
+      >
         <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto">
           <div className="flex flex-col lg:flex-row items-center gap-12">
             {/* Illustration */}

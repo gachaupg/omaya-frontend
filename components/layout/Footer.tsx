@@ -176,17 +176,17 @@ export default function Footer() {
             <h3 className="text-lg font-medium mb-4 text-white">Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="#" className="hover:text-[#1D8751] text-white">
+                <Link href="/#contact" className="hover:text-[#1D8751] text-white">
                   Support center
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-[#1D8751] text-white">
+                <Link href="/#supported-assets" className="hover:text-[#1D8751] text-white">
                   Our Partners
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-[#1D8751] text-white">
+                <Link href="/#faq" className="hover:text-[#1D8751] text-white">
                   FAQ
                 </Link>
               </li>
@@ -198,17 +198,17 @@ export default function Footer() {
             <h3 className="text-lg font-medium mb-4 text-white">Company</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="#" className="hover:text-[#1D8751] text-white">
+                <Link href="/blog" className="hover:text-[#1D8751] text-white">
                   Blog
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-[#1D8751] text-white">
+                <Link href="/contactUs" className="hover:text-[#1D8751] text-white">
                   Contact us
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-[#1D8751] text-white">
+                <Link href="/about" className="hover:text-[#1D8751] text-white">
                   About us
                 </Link>
               </li>
@@ -222,27 +222,27 @@ export default function Footer() {
             </h3>
             <ul className="space-y-2">
               <li>
-                <Link href="#" className="hover:text-[#1D8751] text-white">
+                <Link href="/legal/terms-of-service" className="hover:text-[#1D8751] text-white">
                   Terms of Service
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-[#1D8751] text-white">
+                <Link href="/legal/privacy-policy" className="hover:text-[#1D8751] text-white">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-[#1D8751] text-white">
+                <Link href="/legal/cookies-policy" className="hover:text-[#1D8751] text-white">
                   Cookies Policy
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-[#1D8751] text-white">
+                <Link href="/legal/disclaimer-policy" className="hover:text-[#1D8751] text-white">
                   Disclaimer Policy
                 </Link>
               </li>
               <li>
-                <Link href="#" className="hover:text-[#1D8751] text-white">
+                <Link href="/legal/payment-policy" className="hover:text-[#1D8751] text-white">
                   Payment Policy
                 </Link>
               </li>

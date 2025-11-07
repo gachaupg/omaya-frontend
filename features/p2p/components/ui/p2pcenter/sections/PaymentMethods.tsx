@@ -14,6 +14,7 @@ import { showToast } from "@/lib/utils/toast";
 import { Trash } from "lucide-react";
 
 import { logger } from '@/lib/utils/logger';
+import { AdminPaymentMethod } from "@/features/p2p/types/paymentMethods";
 
 // Types
 interface PaymentMethod {
@@ -79,12 +80,16 @@ const PaymentMethods = () => {
 
   // Providers for selected method
   const providers = (adminMethods || []).filter(
-    (m: any) => m.payment_method_type === selectedMethod
+    (m: AdminPaymentMethod) => m.payment_method_type === selectedMethod
   );
 
   // Unique method types for dropdown
   const methodTypes = Array.from(
-    new Set((adminMethods || []).map((m: any) => m.payment_method_type))
+    new Set(
+      (adminMethods || [])
+        .map((m: AdminPaymentMethod) => m.payment_method_type)
+        .filter(Boolean)
+    )
   ) as string[];
 
   /** Handlers */

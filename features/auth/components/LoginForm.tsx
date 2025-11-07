@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
@@ -31,6 +31,8 @@ export default function LoginPage() {
     submitAttempted: false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [captchaSuccess, setCaptchaSuccess] = useState(false);
+  const captchaSuccessTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -151,17 +153,41 @@ export default function LoginPage() {
     }
   };
 
+  const clearCaptchaSuccessState = () => {
+    if (captchaSuccessTimeoutRef.current) {
+      clearTimeout(captchaSuccessTimeoutRef.current);
+      captchaSuccessTimeoutRef.current = null;
+    }
+    setCaptchaSuccess(false);
+  };
+
   const handleCaptchaSuccess = () => {
     setCaptchaVerified(true);
     setErrors(prev => ({ ...prev, captcha: "" }));
-    setShowCaptchaModal(false);
-    // Proceed with form submission after captcha is verified
-    proceedWithLogin();
+    setCaptchaSuccess(true);
+
+    if (captchaSuccessTimeoutRef.current) {
+      clearTimeout(captchaSuccessTimeoutRef.current);
+    }
+
+    captchaSuccessTimeoutRef.current = setTimeout(() => {
+      setShowCaptchaModal(false);
+      clearCaptchaSuccessState();
+      // Proceed with form submission after captcha is verified
+      proceedWithLogin();
+    }, 2000);
   };
 
   const handleCaptchaFail = () => {
     setCaptchaVerified(false);
     setErrors(prev => ({ ...prev, captcha: "Captcha verification failed. Please try again." }));
+    clearCaptchaSuccessState();
+  };
+
+  const handleCloseCaptchaModal = () => {
+    clearCaptchaSuccessState();
+    setShowCaptchaModal(false);
+    setCaptchaVerified(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -179,8 +205,17 @@ export default function LoginPage() {
     }
 
     // Otherwise, show captcha modal
+    clearCaptchaSuccessState();
     setShowCaptchaModal(true);
   };
+
+  useEffect(() => {
+    return () => {
+      if (captchaSuccessTimeoutRef.current) {
+        clearTimeout(captchaSuccessTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="min-h-screen dark:bg-[#18181D] bg-gray-50 flex flex-col md:flex-row items-start justify-center relative overflow-hidden px-6 py-16 md:pt-24 md:pb-24">
@@ -583,10 +618,8 @@ export default function LoginPage() {
                 {t("auth.login.captcha", "Security Verification")}
               </h2>
               <button
-                onClick={() => {
-                  setShowCaptchaModal(false);
-                  setCaptchaVerified(false);
-                }}
+                onClick={handleCloseCaptchaModal}
+                disabled={captchaSuccess}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-[#2C2C32] rounded-full transition-colors"
               >
                 <svg
@@ -606,26 +639,53 @@ export default function LoginPage() {
 
             {/* Captcha Content */}
             <div className="flex flex-col items-center">
-              <DragFitCaptcha
-                imgSrc="https://picsum.photos/280/140?random=10"
-                onSuccess={handleCaptchaSuccess}
-                darkMode={isDark}
-              />
-              {errors.captcha && (
-                <p className="mt-4 text-sm text-[#F04438] flex items-center">
-                  <svg
-                    className="w-4 h-4 mr-1"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  {errors.captcha}
-                </p>
+              {captchaSuccess ? (
+                <div className="flex flex-col items-center text-center py-6">
+                  <div className="w-16 h-16 rounded-full bg-[#E6F4EC] dark:bg-[#1F3B2C] flex items-center justify-center mb-4">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="w-8 h-8 text-[#1D8751]"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.704 5.29a1 1 0 010 1.42l-7.778 7.777a1 1 0 01-1.414 0L3.296 10.27a1 1 0 111.414-1.414l3.095 3.094 7.071-7.071a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {t("auth.login.captchaSuccessTitle", "Verification complete")}
+                  </p>
+                  <p className="mt-2 text-sm text-gray-500 dark:text-[#9CA3AF]">
+                    {t("auth.login.captchaSuccessDescription", "Redirecting to your account...")}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <DragFitCaptcha
+                    imgSrc="https://picsum.photos/280/140?random=10"
+                    onSuccess={handleCaptchaSuccess}
+                    darkMode={isDark}
+                  />
+                  {errors.captcha && (
+                    <p className="mt-4 text-sm text-[#F04438] flex items-center">
+                      <svg
+                        className="w-4 h-4 mr-1"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      {errors.captcha}
+                    </p>
+                  )}
+                </>
               )}
             </div>
           </div>

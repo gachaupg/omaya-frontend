@@ -8,7 +8,7 @@ import {
   clearPostStatus,
 } from "../../../../slices/paymentMethodsSlice";
 import { showToast } from "../../../../../../lib/utils/toast";
-import { PaymentMethod, PaymentProvider, AdminPaymentMethod } from "../../../../types/paymentMethods";
+import { AdminPaymentMethod } from "../../../../types/paymentMethods";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -102,23 +102,22 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
      }
    }, [method]);
 
-   // Hardcoded payment methods for testing
-   const hardcodedMethods = ["Bank Transfer", "Mobile Money", "Credit Card"];
-   const hardcodedProviders = {
-     "Bank Transfer": ["Chase Bank", "Wells Fargo", "Bank of America"],
-     "Mobile Money": ["PayPal", "Venmo", "Cash App"],
-     "Credit Card": ["Visa", "Mastercard", "American Express"]
-   };
+  const methodTypes = Array.from(
+    new Set(
+      (adminMethods || [])
+        .map((m: AdminPaymentMethod) => m.payment_method_type)
+        .filter(Boolean)
+    )
+  ) as string[];
 
-   // Use hardcoded data if adminMethods is empty or loading
-   const methodTypes = adminMethods && adminMethods.length > 0 
-     ? Array.from(new Set((adminMethods || []).map((m: any) => m.payment_method_type))).filter(Boolean) as string[]
-     : hardcodedMethods;
+  const providers = (adminMethods || []).filter(
+    (m: AdminPaymentMethod) => m.payment_method_type === method
+  );
 
-   // Providers for selected method - handle both old and new data structures
-   const providers = method && hardcodedProviders[method as keyof typeof hardcodedProviders]
-     ? hardcodedProviders[method as keyof typeof hardcodedProviders].map(name => ({ provider_name: name, logo: "" }))
-     : (adminMethods || []).filter((m: any) => m.payment_method_type === method);
+  const normalizedMethod = method.trim().toLowerCase();
+  const isCryptoMethod = normalizedMethod.includes("crypto");
+  const isForexMethod = normalizedMethod.includes("forex");
+  const shouldUseWalletAddressField = isCryptoMethod || isForexMethod;
 
    logger.debug('p2p', "DEBUG: adminMethods:", adminMethods);
    logger.debug('p2p', "DEBUG: methodTypes:", methodTypes);
@@ -139,9 +138,9 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
        return;
      }
      
-    const selectedProvider = providers.find(
-      (p: any) => p.provider_name === provider
-    );
+   const selectedProvider = providers.find(
+     (p: AdminPaymentMethod) => p.provider_name === provider
+   );
     logger.debug('p2p', "Selected provider", selectedProvider);
     const isBankMethod = method.toLowerCase().includes('bank');
     const payload = {
@@ -150,7 +149,9 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
       payment_method_name: method,
       payment_provider_name: provider,
       provider_name: provider,
-      wallet_address: selectedProvider?.wallet_address || null,
+      wallet_address: shouldUseWalletAddressField
+        ? account
+        : selectedProvider?.wallet_address || null,
       ...(isBankMethod && allowAutoSend && { allow_auto_send: true }),
     };
     logger.debug('p2p', "Dispatching payload", payload);
@@ -234,12 +235,12 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
              <label className="block text-gray-600 dark:text-[#788099] text-sm mb-1">
                Payment Method
              </label>
-             <select
-               className="w-full p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
-               value={method}
-               onChange={(e) => setMethod(e.target.value)}
-               disabled={loading}
-             >
+            <select
+              className="w-full p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
+              value={method}
+              onChange={(e) => setMethod(e.target.value)}
+              disabled={loading || methodTypes.length === 0}
+            >
                <option value="">Select Method</option>
                {methodTypes.map((type, index: number) => (
                  <option key={`${type}-${index}`} value={type}>
@@ -247,6 +248,11 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                  </option>
                ))}
              </select>
+            {!loading && methodTypes.length === 0 && (
+              <p className="mt-2 text-sm text-gray-500 dark:text-[#788099]">
+                No payment methods available.
+              </p>
+            )}
            </div>
 
                      {/* Provider Dropdown */}
@@ -260,10 +266,10 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                    className="w-full p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] appearance-none pr-10"
                    value={provider}
                    onChange={(e) => setProvider(e.target.value)}
-                   disabled={loading}
+                  disabled={loading || providers.length === 0}
                  >
                    <option value="">Select Provider</option>
-                   {providers.map((p: any, index: number) => (
+                  {providers.map((p: AdminPaymentMethod, index: number) => (
                      <option
                        key={`${p.provider_name}-${index}`}
                        value={p.provider_name}
@@ -280,11 +286,13 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                </div>
                
                {/* Provider Preview with Logo */}
-               {provider && (
+              {provider && (
                  <div className="mt-2 p-3 rounded-lg bg-gray-50 dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E]">
                    <div className="flex items-center gap-3">
                      {(() => {
-                       const selectedProvider = providers.find((p: any) => p.provider_name === provider);
+                       const selectedProvider = providers.find(
+                         (p: AdminPaymentMethod) => p.provider_name === provider
+                       );
                        return (
                          <>
                            <img
@@ -309,6 +317,11 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                    </div>
                  </div>
                )}
+              {!loading && method && providers.length === 0 && (
+                <p className="mt-2 text-sm text-gray-500 dark:text-[#788099]">
+                  No providers found for the selected method.
+                </p>
+              )}
              </div>
            )}
 
@@ -326,13 +339,17 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
              />
            </div>
                      {/* Account Number Input */}
-           <div>
-             <label className="block text-gray-600 dark:text-[#788099] text-sm mb-1">
-               Account Number
-             </label>
+          <div>
+            <label className="block text-gray-600 dark:text-[#788099] text-sm mb-1">
+              {shouldUseWalletAddressField ? "Wallet Address" : "Account Number"}
+            </label>
              <input
                className="w-full bg-gray-50 dark:bg-[#23232B] text-gray-900 dark:text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#1D8751] placeholder:text-gray-400 dark:placeholder:text-[#788099]"
-               placeholder="Enter account number"
+              placeholder={
+                shouldUseWalletAddressField
+                  ? "Enter wallet address"
+                  : "Enter account number"
+              }
                value={account}
                onChange={(e) => setAccount(e.target.value)}
                disabled={loading}
@@ -340,7 +357,6 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
            </div>
 
            {/* Allow Auto Send Checkbox - Only for Bank methods */}
-           {method && method.toLowerCase().includes('bank') && (
              <div className="flex items-center gap-2">
                <input
                  type="checkbox"
@@ -357,7 +373,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                  Allow auto send
                </label>
              </div>
-           )}
+           
           {/* Error/Loading */}
           {error && <div className="text-red-500 text-sm">{error}</div>}
           {postError && <div className="text-red-500 text-sm">{postError}</div>}
