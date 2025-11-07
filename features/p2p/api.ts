@@ -31,6 +31,7 @@ import {
   DepositAddressResponse,
   MerchantApplicationStatus,
 } from "./types";
+import { AdminPaymentMethod } from "./types/paymentMethods";
 import { UnreadMessagesResponse } from "./slices/unreadMessagesSlice";
 import { API_CONFIG } from "@/lib/appConfig";
 
@@ -194,12 +195,56 @@ export const getWallets = async (): Promise<WalletResponse> => {
 };
 
 // Payment API calls
-export const getAdminPaymentDetails = async (): Promise<P2PResponse> => {
-  return withRetry(async () => {
-    const response = await get<P2PResponse>(
-      API_CONFIG.P2P.ADMIN_PAYMENT_DETAILS
+const normalizeAdminPaymentProviders = (
+  payload: any
+): AdminPaymentMethod[] => {
+  const possibleLists: any[] = [];
+
+  if (Array.isArray(payload)) {
+    possibleLists.push(payload);
+  }
+  if (Array.isArray(payload?.data)) {
+    possibleLists.push(payload.data);
+  }
+  if (Array.isArray(payload?.results)) {
+    possibleLists.push(payload.results);
+  }
+  if (Array.isArray(payload?.payment_providers)) {
+    possibleLists.push(payload.payment_providers);
+  }
+
+  const providersSource = possibleLists.find((list) => list.length) || [];
+
+  return providersSource
+    .map((item: any) => {
+      const paymentMethodType =
+        item?.method || item?.payment_method_type || item?.payment_method_name;
+      const providerName = item?.provider_name || item?.name || "";
+
+      return {
+        id:
+          item?.provider_id ||
+          item?.id ||
+          `${providerName || "provider"}-${paymentMethodType || "method"}`,
+        payment_method_type: paymentMethodType || "",
+        provider_name: providerName,
+        logo: item?.logo ?? item?.provider_logo ?? null,
+        wallet_address: item?.wallet_address ?? null,
+        linked_bank_provider: item?.linked_bank_provider ?? null,
+      } as AdminPaymentMethod;
+    })
+    .filter(
+      (item: AdminPaymentMethod) =>
+        Boolean(item.payment_method_type) && Boolean(item.provider_name)
     );
-    return response.data;
+};
+
+export const getAdminPaymentDetails = async (): Promise<AdminPaymentMethod[]> => {
+  return withRetry(async () => {
+    const response = await get<any>(API_CONFIG.P2P.ADMIN_PAYMENT_DETAILS);
+    const normalized = normalizeAdminPaymentProviders(response.data);
+    logger.debug('p2p', "API: Normalized admin payment providers", normalized);
+    return normalized;
   });
 };
 
@@ -235,12 +280,32 @@ export const addUserPaymentDetail = async (data: {
   });
 };
 
-export const getUserPaymentDetails = async (): Promise<P2PResponse> => {
+export const getUserPaymentDetails = async (): Promise<P2PResponse[]> => {
   return withRetry(async () => {
-    const response = await get<P2PResponse>(
+    const response = await get<P2PResponse | P2PResponse[] | { results?: P2PResponse[] }>(
       API_CONFIG.P2P.USER_PAYMENT_DETAILS
     );
-    return response.data;
+
+    const data = response.data;
+
+    if (Array.isArray(data)) {
+      return data;
+    }
+
+    if (
+      data &&
+      typeof data === "object" &&
+      "results" in data &&
+      Array.isArray((data as { results?: P2PResponse[] }).results)
+    ) {
+      return (data as { results: P2PResponse[] }).results;
+    }
+
+    if (data && typeof data === "object") {
+      return [data as P2PResponse];
+    }
+
+    return [];
   });
 };
 

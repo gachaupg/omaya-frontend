@@ -758,24 +758,26 @@ const RatesCalculator = () => {
   // Handle potential API response wrappers
   const userPaymentArray = Array.isArray(userPaymentDetails) 
     ? userPaymentDetails 
-    : Array.isArray(userPaymentDetails?.data) 
-      ? userPaymentDetails.data 
+    : Array.isArray((userPaymentDetails as any)?.data) 
+      ? (userPaymentDetails as any).data 
       : [];
       
   // Handle the new API response structure for public payment methods
   // Extract providers array from the response
-  const publicPaymentProviders = Array.isArray(publicPaymentMethods?.data?.providers)
-    ? publicPaymentMethods.data.providers
+  const publicMethodsData = publicPaymentMethods as any;
+
+  const publicPaymentProviders = Array.isArray(publicMethodsData?.data?.providers)
+    ? publicMethodsData.data.providers
     : [];
   
   const publicPaymentArray = Array.isArray(publicPaymentMethods) 
     ? publicPaymentMethods 
-    : Array.isArray(publicPaymentMethods?.data?.payment_methods) 
-      ? publicPaymentMethods.data.payment_methods 
-      : Array.isArray(publicPaymentMethods?.data?.providers)
-        ? publicPaymentMethods.data.providers
-        : Array.isArray(publicPaymentMethods?.data) 
-          ? publicPaymentMethods.data 
+    : Array.isArray(publicMethodsData?.data?.payment_methods) 
+      ? publicMethodsData.data.payment_methods 
+      : Array.isArray(publicMethodsData?.data?.providers)
+        ? publicMethodsData.data.providers
+        : Array.isArray(publicMethodsData?.data) 
+          ? publicMethodsData.data 
           : [];
   
   // Extract payment method names based on the API structure
