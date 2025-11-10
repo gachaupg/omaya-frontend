@@ -1267,6 +1267,7 @@ export default function WithdrawalForm({
             fromCurrency: selectedAsset.ticker?.toUpperCase(),
             fromNetwork: selectedAsset.network,
             amount: payAmount,
+            usePublicApi: !!isHomePage,
           })
         )
           .then((result) => {
@@ -1533,6 +1534,7 @@ export default function WithdrawalForm({
             toCurrency: selectedAsset.ticker, // TO selected asset (what we need to send)
             toNetwork: selectedAsset.network,
             amount: getAmount, // Use receive amount directly
+            usePublicApi: !!isHomePage,
           })
         ),
         timeoutPromise,

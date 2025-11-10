@@ -33,7 +33,11 @@ import { useChangeNowAssets } from "../../hooks/useChangeNowAssets";
 import { useRouter } from "next/navigation";
 import { logger } from "@/lib/utils/logger";
 
-const SwapWidget = () => {
+interface SwapWidgetProps {
+  usePublicApi?: boolean;
+}
+
+const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const [skeletonTimeout, setSkeletonTimeout] = useState(false);
@@ -120,7 +124,7 @@ const SwapWidget = () => {
       return;
     }
 
-    if (!isAuthenticated) {
+    if (!isAuthenticated && !usePublicApi) {
       return;
     }
 
@@ -158,7 +162,12 @@ const SwapWidget = () => {
               amount: amount,
             };
 
-      dispatch(fetchSwapEstimate(estimateParams)).catch((error) => {
+      dispatch(
+        fetchSwapEstimate({
+          ...estimateParams,
+          usePublicApi: !!usePublicApi,
+        })
+      ).catch((error) => {
         logger.error("swap", "Failed to fetch swap estimate:", error);
         logger.debug("swap", "Estimate params:", estimateParams);
         logger.debug("swap", "Active input field:", activeInputField);
@@ -186,6 +195,7 @@ const SwapWidget = () => {
     activeInputField,
     hasUserInteracted,
     isAuthenticated,
+    usePublicApi,
   ]);
 
   // Update amounts when estimate is received

@@ -110,6 +110,46 @@ export const getEstimateSwap = async (
   });
 };
 
+export const getPublicEstimateSwap = async (
+  fromCurrency: string,
+  fromNetwork: string,
+  toCurrency: string,
+  toNetwork: string,
+  amount: number
+): Promise<SwapEstimate> => {
+  return withRetry(async () => {
+    try {
+      const response = await get<SwapEstimate>(
+        API_CONFIG.SWAP.PUBLIC_ESTIMATE_SWAP +
+          `?from_currency=${fromCurrency}&from_network=${fromNetwork}&to_currency=${toCurrency}&to_network=${toNetwork}&amount=${amount}`
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error("Failed to fetch public swap estimate:", error);
+
+      if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
+        throw new Error(
+          "Network connection issue. Please check your internet connection and try again."
+        );
+      }
+
+      if (error.response?.status === 500) {
+        throw new Error(
+          "Server Error: Unable to calculate swap estimate. Please try again later."
+        );
+      } else if (error.response?.status === 400) {
+        throw new Error("Invalid swap parameters. Please check your input.");
+      } else if (error.response?.status === 404) {
+        throw new Error("Swap service not available. Please try again later.");
+      }
+
+      throw new Error(
+        "Unable to calculate swap estimate. Please try again later."
+      );
+    }
+  });
+};
+
 export const createSwap = async (
   swapData: CreateSwapRequest
 ): Promise<CreateSwapResponse> => {

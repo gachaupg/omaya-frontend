@@ -4,7 +4,7 @@ import { useMarketingI18n } from "@/lib/useMarketingI18n";
 import Image from "next/image";
 import Link from "next/link";
 import { tokens } from "@/styles/tokens";
-import { Play, MessageCircle } from "lucide-react";
+import { Play, MessageCircle, Plus } from "lucide-react";
 import ExchangeForm from "@/components/ExchangeForm";
 import { useBlog } from "@/features/blogs/hooks/blog";
 import { BlogPost } from "@/features/blogs/types";
@@ -374,9 +374,9 @@ export default function MarketingPage() {
           ></div>
         </div>
 
-        <div className="container mx-auto px-0 relative z-10 mt-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3  items-starts">
-            <div className="space-y-6 pl-6 md:pl-12 md:text-left text-center 2xl:col-span-2">
+        <div className="container mx-auto px-4 md:px-6 relative z-10 mt-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 items-starts">
+            <div className="space-y-5 pl-4 md:pl-10 md:text-left text-center 2xl:col-span-2">
               <h1 className="text-4xl md:text-5xl font-bold text-white tracking-wide ">
                 <span className="inline-block w-full 2xl:text-7xl">
                   {t("marketing.hero.heading1", "Welcome to")}
@@ -404,7 +404,7 @@ export default function MarketingPage() {
                 </button>
               </div>
             </div>
-            <div className="flex justify-center w-full 2xl:justify-end 2xl:col-span-1">
+            <div className="flex justify-center w-full 2xl:justify-end 2xl:col-span-1 mx-2">
               {/* <div className="relative">
                 <Image
                   src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746561970/iPhone_13_Mockup_1_zzm7tt.png"
@@ -423,11 +423,19 @@ export default function MarketingPage() {
       <div className="py-20 px-4 bg-[#EEF1F4] dark:bg-[#18181D]">
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
           {/* Section Title */}
-          <h2 className="text-center text-2xl md:text-3xl 2xl:text-4xl font-medium darK:text-white mb-12">
-            {t(
-              "marketing.achievements.title",
-              "Celebrating Success: Key Achievements at OMAYA EXCHANGE"
-            )}
+        <h2 className="text-center text-2xl md:text-3xl 2xl:text-4xl font-medium mb-12">
+            <span className="text-white dark:text-white">
+              {t(
+                "marketing.achievements.title.leading",
+                "Celebrating Success:"
+              )}
+            </span>{" "}
+            <span className="text-[#1D8751] dark:text-[#1D8751]">
+              {t(
+                "marketing.achievements.title.highlight",
+                "Key Achievements at OMAYA EXCHANGE"
+              )}
+            </span>
           </h2>
           {/* Achievement Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -436,8 +444,13 @@ export default function MarketingPage() {
                 key={index}
                 className="border border-[#13B562]/40 rounded-lg p-6 flex flex-col items-center justify-center darrk:bg-[#1D1D23]"
               >
-                <div className="text-[#F79330] text-3xl md:text-4xl font-bold mb-2">
-                  {achievement.value}
+                <div className="text-[#13B562] text-3xl md:text-4xl font-bold mb-2 flex items-center gap-2">
+                  <Plus
+                    size={24}
+                    strokeWidth={2.5}
+                    className="text-[#13B562] drop-shadow-sm"
+                  />
+                  <span>{achievement.value}</span>
                 </div>
                 <div className="darK:text-white text-xm text-center 2xl:text-sm">
                   {t(achievement.label, achievement.label)}
