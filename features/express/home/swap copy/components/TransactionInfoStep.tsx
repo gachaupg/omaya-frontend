@@ -556,12 +556,6 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
         )}
 
         {/* Error Display */}
-        {estimateError && (
-          <div className="mt-4 bg-red-500/10 border border-red-500 rounded-2xl p-4">
-            <h3 className="text-red-500 font-semibold mb-2">Estimate Error</h3>
-            <p className="text-red-400 text-sm">{estimateError}</p>
-          </div>
-        )}
         {localSwapError && (
           <div className="mt-4 bg-red-500/10 border border-red-500 rounded-2xl p-4">
             <h3 className="text-red-500 font-semibold mb-2">Error</h3>

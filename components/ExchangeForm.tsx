@@ -147,6 +147,7 @@ const calculateAmounts = (
   fromPay: boolean,
   selectedAsset: Asset | null,
   activeTab: Tab,
+  usePublicApi: boolean = false,
   dispatch: AppDispatch,
   setPayAmount: (amount: number) => void,
   setPayAmountInput: (input: string) => void,
@@ -205,6 +206,7 @@ const calculateAmounts = (
             toCurrency: selectedAsset.ticker || selectedAsset.symbol || "",
             toNetwork: getAssetNetwork(selectedAsset),
             amount: fromAmount,
+            usePublicApi,
           })
         ),
         timeoutPromise,
@@ -828,6 +830,7 @@ export default function ExchangeForm({
       true, // fromPay = true
       selectedAsset,
       activeTab,
+      isHomePage,
       dispatch,
       setPayAmount,
       setPayAmountInput,
@@ -853,6 +856,7 @@ export default function ExchangeForm({
       false, // fromPay = false
       selectedAsset,
       activeTab,
+      isHomePage,
       dispatch,
       setPayAmount,
       setPayAmountInput,
@@ -955,16 +959,7 @@ export default function ExchangeForm({
     }
   );
 
-  // Debug filtered payment methods
-  console.log("🔍 Filtered Payment Providers:", {
-    paymentProviders,
-    filteredPaymentProviders,
-    paymentSearchTerm,
-    searchTerm: paymentSearchTerm.toUpperCase(),
-    validPaymentMethods,
-    uniquePaymentMethods,
-    processedPaymentMethods,
-  });
+
 
   /* ------------------- Asset Selection ------------------- */
   const handleAssetSelect = (asset: Asset) => {
@@ -1012,7 +1007,7 @@ export default function ExchangeForm({
     return (
       <div
         ref={paymentDropdownRef}
-        className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E] rounded-xl shadow-lg z-[9999] min-w-[350px]"
+        className="absolute top-full left-0 right-3 mt-2 bg-white dark:bg-[#0505F0FF] border border-gray-200 dark:border-[#35353E] rounded-xl shadow-lg z-[9999] min-w-[350px]"
       >
         {/* Search Input */}
         <div className="p-3 border-b border-gray-200 dark:border-[#35353E]">
@@ -1133,7 +1128,7 @@ export default function ExchangeForm({
 
     const buttonClasses = [
       "relative flex w-full items-center justify-center overflow-hidden border transition-all duration-200",
-      "px-5 sm:px-6 md:px-7 py-3 sm:py-3.5 md:py-4 min-h-[50px] sm:min-h-[58px]",
+      "px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 md:py-3.5 min-h-[46px] sm:min-h-[54px]",
       isActive
         ? isDark
           ? "bg-[#20262F] border-[#2E3944] text-white shadow-[0_20px_38px_rgba(6,29,18,0.32)]"
@@ -1153,7 +1148,7 @@ export default function ExchangeForm({
       >
         <div className={buttonClasses}>
           <span
-            className={`relative z-[1] text-sm sm:text-base md:text-lg font-semibold tracking-wide transition-colors ${
+            className={`relative z-[1] text-xs sm:text-sm md:text-base font-semibold tracking-wide transition-colors ${
               isActive ? "text-white" : "text-[#7C8A97] group-hover:text-[#1D8751]"
             }`}
           >
@@ -1176,7 +1171,7 @@ export default function ExchangeForm({
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
       placeholder="0"
-      className={`border border-gray-300 dark:border-gray-300/20 bg-white dark:bg-transparent text-gray-900 dark:text-white w-full px-3 sm:px-4 md:px-5 py-3 sm:py-3.5 md:py-4 rounded-3xl placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent min-h-[48px] text-base ${
+      className={`border border-gray-300 dark:border-gray-300/20 bg-white dark:bg-transparent text-gray-900 dark:text-white w-full px-3 sm:px-4 md:px-5 py-2.5 sm:py-3 md:py-3.5 rounded-3xl placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent min-h-[44px] text-sm sm:text-base ${
         disabled ? "opacity-50 cursor-not-allowed" : ""
       }`}
     />
@@ -1312,7 +1307,7 @@ export default function ExchangeForm({
   // If Swap Crypto tab is active, render SwapWidget with tab controls
   if (activeTab === "swap") {
     return (
-      <div className="w-full bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl px-3 sm:px-4 md:px-6 py-2 shadow-lg mr-0 sm:mr-4 md:mr-8 ml-0 sm:ml-2 md:ml-4 border border-gray-200 dark:border-transparent">
+      <div className="w-full max-w-[640px] mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl px-4 sm:px-6 md:px-8 py-4 shadow-lg border border-gray-200 dark:border-transparent">
         {/* Tabs */}
         <div className="relative flex w-full overflow-hidden rounded-[28px] border border-gray-200 bg-white/60 p-0.5 dark:border-[#262C34] dark:bg-[#12171E]">
         <TabButton
@@ -1326,15 +1321,15 @@ export default function ExchangeForm({
           label={t("marketing.exchange.tabs.swap", "Swap")}
         />
         </div>
-        <SwapWidget />
+        <SwapWidget usePublicApi={isHomePage} />
       </div>
     );
   }
 
   return (
-    <div className="w-full bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl px-3 sm:px-4 md:px-6 py-2 shadow-lg mr-0 sm:mr-4 md:mr-8 ml-0 sm:ml-2 md:ml-4 border border-gray-200 dark:border-transparent">
+    <div className="w-full max-w-[640px] mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl px-4 sm:px-6 md:px-8 py-4 shadow-lg border border-gray-200 dark:border-transparent">
       {/* Tabs */}
-      <div className="relative flex w-full overflow-hidden rounded-[28px]   bg-white/60 p-0.5  dark:bg-[#12171E]">
+      <div className="relative flex w-full overflow-hidden rounded-[28px] bg-white/60 p-0.5 dark:bg-[#12171E]">
         <TabButton
           id="express"
           variant="express"

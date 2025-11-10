@@ -9,7 +9,7 @@ import {
   CreateSwapRequest,
   CreateSwapResponse,
 } from "../types";
-import { getSupportedAssets, getEstimateSwap, createSwap } from "../api";
+import { getSupportedAssets, getEstimateSwap, getPublicEstimateSwap, createSwap } from "../api";
 import { showToast } from "@/lib/utils/toast";
 import { handleApiError } from "@/lib/utils/errorHandler";
 import { sliceCache } from "@/lib/utils/sliceCache";
@@ -162,12 +162,14 @@ export const fetchSwapEstimate = createAsyncThunk(
       toCurrency,
       toNetwork,
       amount,
+      usePublicApi = false,
     }: {
       fromCurrency: string;
       fromNetwork: string;
       toCurrency: string;
       toNetwork: string;
       amount: number;
+      usePublicApi?: boolean;
     },
     { rejectWithValue }
   ) => {
@@ -178,13 +180,15 @@ export const fetchSwapEstimate = createAsyncThunk(
         toCurrency,
         toNetwork,
         amount,
+        usePublicApi,
       };
       
       const data = await sliceCache.getOrSet(
         'swap',
         'fetchSwapEstimate',
         async () => {
-          const response = await getEstimateSwap(
+          const fetchFn = usePublicApi ? getPublicEstimateSwap : getEstimateSwap;
+          const response = await fetchFn(
             fromCurrency,
             fromNetwork,
             toCurrency,

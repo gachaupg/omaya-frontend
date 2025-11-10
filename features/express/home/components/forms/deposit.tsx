@@ -149,6 +149,65 @@ const getAssetPrimaryLabel = (asset: any): string => {
   return getCleanAssetName(asset);
 };
 
+const escapeRegex = (value: string) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const getPaymentMethodNameToStrip = (payment: any): string | null => {
+  if (typeof payment?.method_display === "string" && payment.method_display.trim()) {
+    return payment.method_display.trim();
+  }
+  if (typeof payment?.method_name === "string" && payment.method_name.trim()) {
+    return payment.method_name.trim();
+  }
+  if (
+    typeof payment?.payment_method_name === "string" &&
+    payment.payment_method_name.trim()
+  ) {
+    return payment.payment_method_name.trim();
+  }
+  if (
+    typeof payment?.payment_method_type === "string" &&
+    payment.payment_method_type.trim()
+  ) {
+    return payment.payment_method_type.trim();
+  }
+  return null;
+};
+
+const formatPaymentProviderLabel = (payment: any): string => {
+  const providerName =
+    (typeof payment?.provider_name === "string" && payment.provider_name.trim()) ||
+    (typeof payment?.payment_provider_name === "string" &&
+      payment.payment_provider_name.trim()) ||
+    "";
+
+  if (!providerName) {
+    return "Payment Provider";
+  }
+
+  const methodToStrip = getPaymentMethodNameToStrip(payment);
+
+  if (!methodToStrip) {
+    return providerName;
+  }
+
+  try {
+    const suffixPattern = new RegExp(
+      `\\s*-\\s*${escapeRegex(methodToStrip)}\\s*$`,
+      "i"
+    );
+    const cleaned = providerName.replace(suffixPattern, "").trim();
+    return cleaned || providerName;
+  } catch (error) {
+    console.warn("Failed to format provider label", {
+      providerName,
+      methodToStrip,
+      error,
+    });
+    return providerName;
+  }
+};
+
 export default function DepositForm({
   onExchange,
   mode,
@@ -776,6 +835,7 @@ export default function DepositForm({
           toCurrency: selectedAsset.ticker, 
           toNetwork: getAssetNetwork(selectedAsset), 
           amount: payAmount,
+          usePublicApi: !!isHomePage,
         })
         ),
         timeoutPromise
@@ -936,6 +996,7 @@ export default function DepositForm({
             toCurrency: "USDT", // TO USDT
             toNetwork: "BSC", 
             amount: getAmount, // Use receive amount directly
+            usePublicApi: !!isHomePage,
           })
         ),
         timeoutPromise
@@ -2113,9 +2174,9 @@ export default function DepositForm({
         {/* Top Section - Amount and Bank/Payment Method in one card */}
         <div className="relative mb-4">
           {/* Top Card Container */}
-          <div className="flex border border-[#D1D2D4FF] dark:border-[#35353E]  rounded-2xl p-4">
+          <div className="flex flex-col gap-4 lg:flex-row border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-4">
             {/* Amount Section */}
-            <div className="flex-1 pr-4">
+            <div className="w-full lg:flex-1 lg:pr-4">
               <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 You Send
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
@@ -2221,7 +2282,7 @@ export default function DepositForm({
             </div>
 
             {/* Bank/Payment Method Section */}
-            <div className="flex-1 pl-4">
+            <div className="w-full lg:flex-1 lg:pl-4">
               <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                 Bank/Payment Method
               </label>
@@ -2279,7 +2340,7 @@ export default function DepositForm({
                       
                       return {
                         value: payment.provider_name,
-                        label: payment.provider_name,
+                        label: formatPaymentProviderLabel(payment),
                         logo: logoUrl,
                         raw: payment,
                       };
