@@ -14,7 +14,7 @@ import { cachedGet } from "../../../lib/cachedApiClient";
 import { EXCHANGE_ENDPOINTS } from "../api";
 import NetworkFallback from "../../../lib/utils/networkFallback";
 import CircuitBreaker from "../../../lib/utils/circuitBreaker";
-import { sliceCache } from "../../../lib/utils/sliceCache";
+import { sliceCache } from "@/lib/utils/sliceCache";
 import { logger } from '@/lib/utils/logger';
 
 import {

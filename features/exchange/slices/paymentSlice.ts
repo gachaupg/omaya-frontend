@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { get, post, del } from '../../../lib/apiClient';
 import { EXCHANGE_ENDPOINTS } from '../api';
-import { sliceCache } from '../../../lib/utils/sliceCache';
+import { sliceCache } from "@/lib/utils/sliceCache";
 import { logger } from '@/lib/utils/logger';
 
 import {

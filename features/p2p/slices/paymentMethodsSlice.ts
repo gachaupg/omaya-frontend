@@ -36,6 +36,50 @@ export const fetchPublicPaymentMethods = createAsyncThunk<
   }
 );
 
+const extractPaymentDetailError = (error: any): string => {
+  const fallbackMessage = "Failed to add payment detail";
+
+  if (!error) return fallbackMessage;
+
+  const responseData = error?.response?.data ?? error?.data ?? null;
+
+  if (typeof responseData === "string") {
+    return responseData;
+  }
+
+  if (responseData && typeof responseData === "object") {
+    const allowAutoSendError = responseData.allow_auto_send;
+
+    if (Array.isArray(allowAutoSendError) && allowAutoSendError.length > 0) {
+      const message = allowAutoSendError.find(
+        (item) => typeof item === "string" && item.trim()
+      );
+      if (message) return message;
+    }
+
+    const detailKeys = ["detail", "message", "error"];
+    for (const key of detailKeys) {
+      const value = responseData[key];
+      if (typeof value === "string" && value.trim()) {
+        return value;
+      }
+      if (Array.isArray(value) && value.length > 0) {
+        const message = value.find(
+          (item) => typeof item === "string" && item.trim()
+        );
+        if (message) return message;
+      }
+    }
+  }
+
+  const errorMessage = error?.message;
+  if (typeof errorMessage === "string" && errorMessage.trim()) {
+    return errorMessage;
+  }
+
+  return fallbackMessage;
+};
+
 export const postUserPaymentDetail = createAsyncThunk<
   unknown,
   {
@@ -45,6 +89,7 @@ export const postUserPaymentDetail = createAsyncThunk<
     payment_provider_name: string;
     provider_name: string;
     wallet_address?: string | null;
+    allow_auto_send?: boolean;
   },
   { rejectValue: string }
 >(
@@ -53,7 +98,7 @@ export const postUserPaymentDetail = createAsyncThunk<
     try {
       return await addUserPaymentDetail(data);
     } catch (err: any) {
-      return rejectWithValue(err.message || "Failed to add payment detail");
+      return rejectWithValue(extractPaymentDetailError(err));
     }
   }
 );

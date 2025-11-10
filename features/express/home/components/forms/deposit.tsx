@@ -4,22 +4,32 @@ import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { FaExchangeAlt, FaExclamationCircle } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch } from "../../../../store";
-import { fetchPublicPaymentMethods, fetchAdminPaymentMethods } from "../../../p2p/slices/paymentMethodsSlice";
-import { fetchAssets } from "../../../exchange/slices/exchangeSlice";
-import { createDeposit, updateDepositAddress } from "../../../exchange/slices/exchangeSlice";
+import { AppDispatch } from "../../../../../store";
+import {
+  fetchPublicPaymentMethods,
+  fetchAdminPaymentMethods,
+} from "../../../../p2p/slices/paymentMethodsSlice";
+import {
+  fetchAssets,
+  createDeposit,
+  updateDepositAddress,
+} from "../../../../exchange/slices/exchangeSlice";
 import {
   fetchSupportedAssets,
   fetchSwapEstimate,
-} from "../../../swap/slices/swapSlice";
+} from "../../../../swap/slices/swapSlice";
 
-import { showToast } from "../../../../lib/utils/toast";
-import { DepositResponse } from "../../../exchange/types";
-import { SupportedAsset } from "../../../swap/types";
+import { showToast } from "../../../../../lib/utils/toast";
+import { DepositResponse } from "../../../../exchange/types";
+import { SupportedAsset } from "../../../../swap/types";
 import { FaSearch } from "react-icons/fa";
 import InfoModal from "./info";
 import { useTheme } from "@/context/theme";
-import { useAssetsDisplay, usePaymentMethodsDisplay } from "../../hooks/useDataDisplay";
+import {
+  useAssetsDisplay,
+  usePaymentMethodsDisplay,
+} from "../../../hooks/useDataDisplay";
+import { useChangeNowAssets } from "../../hooks/useChangeNowAssets";
 import CustomSelect from "@/components/ui/CustomSelect";
 import Select from "@/features/p2p/components/Common/Select";
 
@@ -81,6 +91,64 @@ const getAssetNetwork = (asset: any): string => {
   return '';
 };
 
+const networkSuffixesToStrip = [
+  'BSC',
+  'Binance Smart Chain',
+  'ETH',
+  'Ethereum',
+  'MATIC',
+  'Polygon',
+  'AVAX',
+  'Avalanche',
+  'TRX',
+  'Tron',
+  'Solana',
+  'SOL',
+  'Base',
+];
+
+const stripNetworkSuffix = (value: string): string => {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const pattern = new RegExp(
+    `\\s*\\((?:${networkSuffixesToStrip
+      .map((suffix) => suffix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+      .join('|')})\\)`,
+    'gi'
+  );
+
+  return value.replace(pattern, '').trim();
+};
+
+const getCleanAssetName = (asset: any): string => {
+  const rawName =
+    (typeof asset?.name === 'string' && asset?.name) ||
+    (typeof asset?.ticker === 'string' && asset?.ticker) ||
+    (typeof asset?.symbol === 'string' && asset?.symbol) ||
+    '';
+
+  if (!rawName) {
+    return 'Unknown Asset';
+  }
+
+  return stripNetworkSuffix(rawName);
+};
+
+const getAssetPrimaryLabel = (asset: any): string => {
+  const raw =
+    (typeof asset?.ticker === 'string' && asset?.ticker?.trim()) ||
+    (typeof asset?.symbol === 'string' && asset?.symbol?.trim());
+
+  if (raw) {
+    const cleaned = stripNetworkSuffix(raw);
+    return cleaned || raw;
+  }
+
+  return getCleanAssetName(asset);
+};
+
 export default function DepositForm({
   onExchange,
   mode,
@@ -104,16 +172,33 @@ export default function DepositForm({
   // Add swap assets state
   const { supportedAssets: swapAssets, loading: swapAssetsLoading } =
     useSelector((state: any) => state.swap);
-    const { isDark } = useTheme();
+  const { isAuthenticated } = useSelector((state: any) => state.auth);
+  const { isDark } = useTheme();
+
+  const {
+    assets: homeAssets,
+    loading: homeAssetsLoading,
+    error: homeAssetsError,
+  } = useChangeNowAssets(isHomePage);
+
+  const exchangeAssetsSource = isHomePage ? homeAssets : assets?.assets;
+  const swapAssetsSource = isHomePage ? [] : swapAssets;
+  const exchangeAssetsLoadingState = isHomePage
+    ? homeAssetsLoading
+    : assetsLoading;
+  const swapAssetsLoadingState = isHomePage ? false : swapAssetsLoading;
+  const exchangeAssetsErrorState = isHomePage ? homeAssetsError : null;
+  const swapAssetsErrorState = isHomePage ? null : null;
+  const requiresLoginRedirect = isHomePage && !isAuthenticated;
 
   // Use the data display hooks for consistent data handling
   const assetsDisplay = useAssetsDisplay(
-    assets?.assets,
-    swapAssets,
-    assetsLoading,
-    swapAssetsLoading,
-    null, // exchange error
-    null  // swap error
+    exchangeAssetsSource,
+    swapAssetsSource,
+    exchangeAssetsLoadingState,
+    swapAssetsLoadingState,
+    exchangeAssetsErrorState,
+    swapAssetsErrorState
   );
 
   // Use state to hold payment methods - will trigger re-render when updated
@@ -315,11 +400,36 @@ export default function DepositForm({
   
   // Fallback payment methods if no data is available
   const fallbackPaymentMethods = [
-    { provider_name: "Bank", payment_method: "Bank Transfer", is_active: true },
-    { provider_name: "Crypto", payment_method: "Cryptocurrency", is_active: true },
-    { provider_name: "Forex", payment_method: "Forex", is_active: true },
-    { provider_name: "Mobile", payment_method: "Mobile Money", is_active: true },
-    { provider_name: "Marchant", payment_method: "Marchant", is_active: true }
+    {
+      provider_name: "Bank",
+      payment_method: "Bank Transfer",
+      payment_method_type: "Bank Transfer",
+      is_active: true,
+    },
+    {
+      provider_name: "Crypto",
+      payment_method: "Cryptocurrency",
+      payment_method_type: "Cryptocurrency",
+      is_active: true,
+    },
+    {
+      provider_name: "Forex",
+      payment_method: "Forex",
+      payment_method_type: "Forex",
+      is_active: true,
+    },
+    {
+      provider_name: "Mobile",
+      payment_method: "Mobile Money",
+      payment_method_type: "Mobile Money",
+      is_active: true,
+    },
+    {
+      provider_name: "Marchant",
+      payment_method: "Marchant",
+      payment_method_type: "Marchant",
+      is_active: true,
+    },
   ];
   
   // Use fallback if no effective payment methods
@@ -397,6 +507,30 @@ export default function DepositForm({
   // Add state for API validation errors
   const [apiValidationError, setApiValidationError] = useState<string | null>(null);
 
+
+  // Auto-select the first payment method on home page so the button behaves like the dashboard form
+  useEffect(() => {
+    if (finalPaymentMethods.length === 0) {
+      return;
+    }
+
+    const hasSelected = finalPaymentMethods.some(
+      (method: any) => method?.provider_name === payBank
+    );
+
+    if (!payBank || !hasSelected) {
+      const defaultMethod = finalPaymentMethods[0];
+      setPayBank(defaultMethod.provider_name);
+      setSelectedPaymentDetail(defaultMethod);
+    } else if (!selectedPaymentDetail) {
+      const matchedMethod = finalPaymentMethods.find(
+        (method: any) => method?.provider_name === payBank
+      );
+      if (matchedMethod) {
+        setSelectedPaymentDetail(matchedMethod);
+      }
+    }
+  }, [finalPaymentMethods, payBank, selectedPaymentDetail]);
 
   // Handle asset selection with inline calculation
   const handleAssetSelection = (asset: any) => {
@@ -1965,10 +2099,8 @@ export default function DepositForm({
 
   return (
     <div className="w-full flex flex-col dark:bg-[#18181D]  ">
-      <h2 className="text-base sm:text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
-        <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Transaction Info
-      </h2>
-      
+      <div className="mb-2" />
+    
       {/* API Validation Error - Show as simple red text */}
       {apiValidationError && (
         <div className="mb-4 text-red-500 text-sm font-medium">
@@ -1981,10 +2113,10 @@ export default function DepositForm({
         {/* Top Section - Amount and Bank/Payment Method in one card */}
         <div className="relative mb-4">
           {/* Top Card Container */}
-          <div className="flex flex-col sm:flex-row border border-[#D1D2D4FF] dark:border-[#35353E]  rounded-2xl p-3 sm:p-4 gap-4 sm:gap-0">
+          <div className="flex border border-[#D1D2D4FF] dark:border-[#35353E]  rounded-2xl p-4">
             {/* Amount Section */}
-            <div className="flex-1 sm:pr-4">
-              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
+            <div className="flex-1 pr-4">
+              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 You Send
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                 {/* {isCalculatingFromPay && (
@@ -2066,7 +2198,7 @@ export default function DepositForm({
                     }
                   }}
                   placeholder="Enter amount"
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 py-2 pr-12 sm:pr-16 text-base sm:text-lg  focus:outline-none border appearance-none ${
+                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg  focus:outline-none border appearance-none ${
                     (isCalculating || isCalculatingReceive) && isCalculatingFromPay && selectedAsset && !isForexAsset(selectedAsset) ? 'border-[#1D8751]' : 'border-[#A2A4A9FF] dark:border-[#35353E]'
                   }`}
                 />
@@ -2089,8 +2221,8 @@ export default function DepositForm({
             </div>
 
             {/* Bank/Payment Method Section */}
-            <div className="flex-1 sm:pl-4">
-              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+            <div className="flex-1 pl-4">
+              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                 Bank/Payment Method
               </label>
               {/* <div>
@@ -2147,8 +2279,9 @@ export default function DepositForm({
                       
                       return {
                         value: payment.provider_name,
-                        label: `${payment.provider_name} - ${payment.payment_method || payment.payment_method_type || payment.payment_type}`,
+                        label: payment.provider_name,
                         logo: logoUrl,
+                        raw: payment,
                       };
                     });
                     
@@ -2210,35 +2343,6 @@ export default function DepositForm({
             </div>
           </div>
 
-          {/* Swap Circle - positioned to touch both borders equally */}
-          <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/3 z-10">
-            {!isHomePage && (
-            <button
-              className="w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105"
-              onClick={() => {
-                // Switch between deposit and withdrawal modes
-                if (onModeChange) {
-                  onModeChange(mode === "deposit" ? "withdrawal" : "deposit");
-                }
-              }}
-            >
-             
-             
-             {/* Light mode image */}
-             <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
-                alt="swap icon"
-                className="w-16 h-16 dark:hidden"
-              />
-              {/* Dark mode image */}
-              <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
-                alt="swap icon"
-                className="w-16 h-16 hidden dark:block"
-              />
-            </button>
-            )}
-          </div>
         </div>
 
                 {/* Bottom Section - You Receive and Asset in one card */}
@@ -2246,10 +2350,10 @@ export default function DepositForm({
           
          
           
-          <div className="flex flex-col sm:flex-row border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-3 sm:p-4 gap-4 sm:gap-0">
+          <div className="flex border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-4">
             {/* You Receive Section */}
-            <div className="flex-1 sm:pr-4">
-              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
+            <div className="flex-1 pr-4">
+              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 You Receive
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                 {!isCalculatingFromPay && (
@@ -2323,7 +2427,7 @@ export default function DepositForm({
                     }
                   }}
                   placeholder="Enter amount"
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 py-2 pr-12 sm:pr-16 text-base sm:text-lg  focus:outline-none border appearance-none ${
+                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg  focus:outline-none border appearance-none ${
                     receiveAmountError && (receiveAmountError.includes('Rough estimate') || receiveAmountError.includes('Using estimated rate')) ? 'border-[#F79330]' : 
                     receiveAmountError ? 'border-red-500' :
                     (isCalculating || isCalculatingReceive) && selectedAsset && !isForexAsset(selectedAsset) ? 'border-[#1D8751]' : 'border-[#A2A4A9FF] dark:border-[#35353E]'
@@ -2382,8 +2486,8 @@ export default function DepositForm({
             </div>
 
             {/* Asset Section */}
-            <div className="flex-1 sm:pl-4">
-              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+            <div className="flex-1 pl-4">
+              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                 Asset
               </label>
               <div className="relative" ref={assetDropdownRef}>
@@ -2413,19 +2517,12 @@ export default function DepositForm({
                         <div className="flex flex-col">
                           <div className="flex items-center gap-2">
                             <span className="text-[#35353e] dark:text-[#788099] font-medium">
-                              {(selectedAsset.ticker ||
-                                selectedAsset.symbol ||
-                                selectedAsset.name ||
-                                "Unknown").toUpperCase()}
+                              {getAssetPrimaryLabel(selectedAsset).toUpperCase()}
                             </span>
                             <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
                               {getNetworkDisplayName(getAssetNetwork(selectedAsset))}
                             </span>
                           </div>
-                          <span className="text-[#788099] text-xs">
-                            {selectedAsset.name || 
-                             (selectedAsset.ticker || selectedAsset.symbol || "Unknown")} ({getNetworkDisplayName(getAssetNetwork(selectedAsset))})
-                          </span>
                         </div>
                       </>
                     ) : (
@@ -2462,23 +2559,23 @@ export default function DepositForm({
 
                 {/* Asset Dropdown */}
                 {isAssetDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl z-50 max-h-[70vh] sm:max-h-80 overflow-hidden">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl z-50 max-h-80 overflow-hidden">
                     {/* Search Input */}
-                    <div className="p-2 sm:p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+                    <div className="p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
                       <div className="relative">
-                        <FaSearch className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-3 h-3 sm:w-4 sm:h-4" />
+                        <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
                         <input
                           type="text"
                           placeholder="Search assets..."
                           value={assetSearchTerm}
                           onChange={(e) => setAssetSearchTerm(e.target.value)}
-                          className="w-full text-gray-900 dark:text-white dark:bg-[#1D1D23] bg-white rounded-xl px-8 sm:px-10 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400"
+                          className="w-full text-gray-900 dark:text-white dark:bg-[#1D1D23] bg-white rounded-xl px-10 py-2 text-sm focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400"
                         />
                       </div>
                     </div>
 
                     {/* Asset List */}
-                    <div className="max-h-[50vh] sm:max-h-60 overflow-y-auto">
+                    <div className="max-h-60 overflow-y-auto">
                       {sortedSwapAssets.length > 0 ? (
                         <>
                           {/* Popular Section - First 3 assets only if no search */}
@@ -2515,40 +2612,13 @@ export default function DepositForm({
                                   />
                                   <div className="flex-1">
                                     <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
-                                      {(asset.ticker ||
-                                        asset.symbol ||
-                                        asset.name ||
-                                        "Unknown").toUpperCase()}
+                                      {getAssetPrimaryLabel(asset).toUpperCase()}
                                       <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
                                         {getNetworkDisplayName(getAssetNetwork(asset))}
                                       </span>
                                     </div>
                                     <div className="text-[#35353e] dark:text-[#788099] text-sm">
-                                      {(() => {
-                                        // Clean up asset name to remove redundant network information
-                                        let displayName = asset.name || asset.ticker || asset.symbol || "Unknown Asset";
-                                        
-                                        // Remove common redundant patterns - less aggressive approach
-                                        // Only remove redundant network info when it's duplicated in the network badge
-                                        displayName = displayName
-                                          // Handle cases like "Tether (Binance Smart Chain) (BSC)" - remove duplicate BSC
-                                          .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, '')
-                                          .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, '')
-                                          .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, '')
-                                          .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, '')
-                                          .replace(/\s*\(TRON\)\s*\(TRX\)/gi, '')
-                                          .replace(/\s*\(Solana\)\s*\(SOL\)/gi, '')
-                                          // Only remove single network references if they're clearly redundant
-                                          .replace(/\s*\(BSC\)$/gi, '') // Only remove BSC at the end
-                                          .replace(/\s*\(ETH\)$/gi, '') // Only remove ETH at the end
-                                          .replace(/\s*\(MATIC\)$/gi, '') // Only remove MATIC at the end
-                                          .replace(/\s*\(AVAX\)$/gi, '') // Only remove AVAX at the end
-                                          .replace(/\s*\(TRX\)$/gi, '') // Only remove TRX at the end
-                                          .replace(/\s*\(SOL\)$/gi, '') // Only remove SOL at the end
-                                          .trim();
-                                        
-                                        return displayName;
-                                      })()}
+                                      {getCleanAssetName(asset)}
                                     </div>
                                   </div>
                                   {selectedAsset?.asset_id === asset.asset_id && (
@@ -2596,40 +2666,13 @@ export default function DepositForm({
                             />
                             <div className="flex-1">
                               <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
-                                {(asset.ticker ||
-                                  asset.symbol ||
-                                  asset.name ||
-                                  "Unknown").toUpperCase()}
+                                {getAssetPrimaryLabel(asset).toUpperCase()}
                                 <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
                                   {getNetworkDisplayName(getAssetNetwork(asset))}
                                 </span>
                               </div>
                               <div className="text-[#35353e] dark:text-[#788099] text-sm">
-                                {(() => {
-                                  // Clean up asset name to remove redundant network information
-                                  let displayName = asset.name || asset.ticker || asset.symbol || "Unknown Asset";
-                                  
-                                  // Remove common redundant patterns - less aggressive approach
-                                  // Only remove redundant network info when it's duplicated in the network badge
-                                  displayName = displayName
-                                    // Handle cases like "Tether (Binance Smart Chain) (BSC)" - remove duplicate BSC
-                                    .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, '')
-                                    .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, '')
-                                    .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, '')
-                                    .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, '')
-                                    .replace(/\s*\(TRON\)\s*\(TRX\)/gi, '')
-                                    .replace(/\s*\(Solana\)\s*\(SOL\)/gi, '')
-                                    // Only remove single network references if they're clearly redundant
-                                    .replace(/\s*\(BSC\)$/gi, '') // Only remove BSC at the end
-                                    .replace(/\s*\(ETH\)$/gi, '') // Only remove ETH at the end
-                                    .replace(/\s*\(MATIC\)$/gi, '') // Only remove MATIC at the end
-                                    .replace(/\s*\(AVAX\)$/gi, '') // Only remove AVAX at the end
-                                    .replace(/\s*\(TRX\)$/gi, '') // Only remove TRX at the end
-                                    .replace(/\s*\(SOL\)$/gi, '') // Only remove SOL at the end
-                                    .trim();
-                                  
-                                  return displayName;
-                                })()}
+                                {getCleanAssetName(asset)}
                               </div>
                             </div>
                             {selectedAsset?.asset_id === asset.asset_id && (
@@ -2695,20 +2738,11 @@ export default function DepositForm({
 
         {/* Submit Button for First Card */}
           {!isFirstCardSubmitted && !showForexForm && (
-            <div 
-              className="mt-4 relative"
-              onClick={(e) => {
-                // On home page, redirect to login on any click
-                if (isHomePage) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  router.push("/auth/login");
-                }
-              }}
-            >
+            <div className="mt-4 relative">
               <button
+                type="button"
                 className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
-                  isHomePage 
+                  isHomePage
                     ? "bg-[#1D8751] hover:bg-[#166b3e] cursor-pointer"
                     : isSubmitting ||
                       !selectedAsset ||
@@ -2720,40 +2754,37 @@ export default function DepositForm({
                       ? "bg-gray-500 cursor-not-allowed"
                       : "bg-[#1D8751] hover:bg-[#166b3e]"
                 }`}
-                onClick={
-                  isHomePage 
-                    ? undefined 
-                    : () => {
-                        // Check if it's FXP - expand forex form instead of submitting
-                        if (selectedAsset && isForexAsset(selectedAsset)) {
-                          // Validate basic fields first
-                          if (!payAmount || payAmount <= 0) {
-                            showToast.error("Please enter a valid amount");
-                            return;
-                          }
-                          if (!selectedPaymentDetail) {
-                            showToast.error("Please select a payment method");
-                            return;
-                          }
-                          // Expand forex form
-                          setShowForexForm(true);
-                        } else {
-                          // Regular crypto deposit
-                          handleFirstCardSubmit();
-                        }
-                      }
-                }
+                onClick={() => {
+                  if (requiresLoginRedirect) {
+                    router.push("/auth/login");
+                    return;
+                  }
+
+                  if (selectedAsset && isForexAsset(selectedAsset)) {
+                    if (!payAmount || payAmount <= 0) {
+                      showToast.error("Please enter a valid amount");
+                      return;
+                    }
+                    if (!selectedPaymentDetail) {
+                      showToast.error("Please select a payment method");
+                      return;
+                    }
+                    setShowForexForm(true);
+                  } else {
+                    handleFirstCardSubmit();
+                  }
+                }}
                 disabled={
-                  isHomePage ? false : (
-                    isSubmitting ||
-                    !selectedAsset ||
-                    !payBank ||
-                    (walletAddress.trim() && !!walletError) ||
-                    (selectedAsset &&
-                      !isSimpleCalculationAsset(selectedAsset) &&
-                      !isForexAsset(selectedAsset) &&
-                      estimateLoading)
-                  )
+                  requiresLoginRedirect
+                    ? false
+                    : isSubmitting ||
+                      !selectedAsset ||
+                      !payBank ||
+                      (walletAddress.trim() && !!walletError) ||
+                      (selectedAsset &&
+                        !isSimpleCalculationAsset(selectedAsset) &&
+                        !isForexAsset(selectedAsset) &&
+                        estimateLoading)
                 }
               >
                 {isSubmitting ? (
@@ -2781,13 +2812,13 @@ export default function DepositForm({
             {/* Payment Method Details */}
             {selectedPaymentDetail && (
               <>
-            <h2 className="text-base sm:text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
+            <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
                   <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span> Payment Details
                 </h2>
                 <div className="flex-1 dark:bg-[#1D1D23] rounded-2xl border border-[#39394a] dark:border-[#35353E] flex flex-col justify-between p-5 relative min-h-[120px]">
                   {/* Bank and logo */}
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-                    <span className="text-[#7e7e8f] dark:text-[#788099] text-sm sm:text-base font-semibold">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-semibold">
                       Bank:
                     </span>
                     <div className="flex items-center gap-2">
@@ -2798,34 +2829,34 @@ export default function DepositForm({
                           "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
                         }
                         alt={`${selectedPaymentDetail.provider_name || 'Bank'} Logo`}
-                        className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-contain flex-shrink-0"
+                        className="w-8 h-8 rounded-full object-contain"
                         onError={(e) => {
                           e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
                         }}
                       />
-                      <span className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base font-semibold break-words">
+                      <span className="text-[#35353e] dark:text-[#788099] text-base font-semibold">
                         {selectedPaymentDetail.provider_name}
                       </span>
                     </div>
                   </div>
                   <div className="border-t border-dashed border-[#39394a] mb-2"></div>
                   {/* Account Name */}
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0 mb-2">
-                    <span className="text-[#7e7e8f] dark:text-[#788099] text-sm sm:text-base font-medium">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-medium">
                       Account Name :
                     </span>
-                    <span className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base font-medium break-words text-left sm:text-right">
+                    <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
                       {selectedPaymentDetail.account_name}
                     </span>
                   </div>
                   <div className="border-t border-dashed border-[#39394a] mb-2"></div>
                   {/* Account Number */}
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0">
-                    <span className="text-[#7e7e8f] dark:text-[#788099] text-sm sm:text-base font-medium">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-medium">
                       Account Number :
                     </span>
                     <div className="flex items-center gap-2">
-                      <span className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base font-medium break-all">
+                      <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
                         {selectedPaymentDetail.account_number}
                       </span>
                       <button
@@ -2865,7 +2896,7 @@ export default function DepositForm({
               </>
             )}
             
-            <h2 className="text-base sm:text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
+            <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
               <span className="text-[#7e7e8f] dark:text-[#788099]">3-</span> Forex Account Details
             </h2>
             
@@ -2898,7 +2929,7 @@ export default function DepositForm({
 
             {/* Submit Forex Exchange Button */}
             <button
-              className={`w-full text-white text-sm sm:text-base font-medium py-2.5 sm:py-3 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
+              className={`w-full text-white text-base font-medium py-3 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
                 isSubmitting || !forexAccountNumber.trim()
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
@@ -2917,7 +2948,7 @@ export default function DepositForm({
                 setIsSubmitting(true);
                 
                 try {
-                  const { createForexExchangeThunk } = await import("../../slices/forexSlice");
+                  const { createForexExchangeThunk } = await import("../../../slices/forexSlice");
                   
                   const forexPayload = {
                     transaction_type: "deposit" as const,
@@ -2968,7 +2999,7 @@ export default function DepositForm({
       {selectedPaymentDetail && isFirstCardSubmitted && (
         <>
           {/* Payment Details Card */}
-          <h2 className="text-base sm:text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
+          <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
             <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span> Payment Details
           </h2>
           <div
@@ -2977,8 +3008,8 @@ export default function DepositForm({
           >
             <div className="flex-1  dark:bg-[#1D1D23] rounded-2xl border border-[#39394a] dark:border-[#35353E] flex flex-col justify-between p-5 relative min-h-[120px]">
               {/* Bank and logo */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-                <span className="text-[#7e7e8f] dark:text-[#788099] text-sm sm:text-base font-semibold">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-semibold">
                   Bank:
                 </span>
                 <div className="flex items-center gap-2">
@@ -2989,34 +3020,34 @@ export default function DepositForm({
                       "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
                     }
                     alt={`${selectedPaymentDetail.provider_name || 'Bank'} Logo`}
-                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-contain flex-shrink-0"
+                    className="w-8 h-8 rounded-full object-contain"
                     onError={(e) => {
                       e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
                     }}
                   />
-                  <span className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base font-semibold break-words">
+                  <span className="text-[#35353e] dark:text-[#788099] text-base font-semibold">
                     {selectedPaymentDetail.provider_name}
                   </span>
                 </div>
               </div>
               <div className="border-t border-dashed border-[#39394a] mb-2"></div>
               {/* Account Name */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0 mb-2">
-                <span className="text-[#7e7e8f] dark:text-[#788099] text-sm sm:text-base font-medium">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-medium">
                   Account Name :
                 </span>
-                <span className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base font-medium break-words text-left sm:text-right">
+                <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
                   {selectedPaymentDetail.account_name}
                 </span>
               </div>
               <div className="border-t border-dashed border-[#39394a] mb-2"></div>
               {/* Account Number */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0">
-                <span className="text-[#7e7e8f] dark:text-[#788099] text-sm sm:text-base font-medium">
+              <div className="flex items-center justify-between">
+                <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-medium">
                   Account Number :
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base font-medium break-all">
+                  <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
                     {selectedPaymentDetail.account_number}
                   </span>
                   <button
@@ -3058,7 +3089,7 @@ export default function DepositForm({
           {/* Transaction Code Card - below Payment Details, before Wallet Address */}
           {apiResponse && apiResponse.deposit_code && (
             <>
-              <h2 className="text-base sm:text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
+              <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
                 <span className="text-[#7e7e8f] dark:text-[#788099]">3-</span> Transaction Code
               </h2>
               <div className="mb-6 flex flex-col gap-3 w-full px-2">
@@ -3166,7 +3197,7 @@ export default function DepositForm({
           )}
 
           {/* Wallet Address Section */}
-          <h2 className="text-base sm:text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
+          <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
             <span className="text-[#7e7e8f] dark:text-[#788099]">4-</span> Wallet Address
           </h2>
           <div className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-6">
@@ -3365,7 +3396,7 @@ export default function DepositForm({
           {/* Button outside the card */}
           <div className="flex flex-col gap-3 w-full px-2">
             <button
-              className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-2.5 sm:py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
+              className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
                 isSubmitting
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"

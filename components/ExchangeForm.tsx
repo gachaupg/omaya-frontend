@@ -3,7 +3,6 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useTheme } from "@/context/theme";
 import { useMarketingI18n } from "@/lib/useMarketingI18n";
 import { useDispatch, useSelector } from "react-redux";
-import { useRouter } from "next/navigation";
 import { AppDispatch } from "@/store";
 import { fetchAssets } from "@/features/exchange/slices/exchangeSlice";
 import {
@@ -17,8 +16,8 @@ import {
   usePaymentMethodsDisplay,
 } from "@/features/express/hooks/useDataDisplay";
 import { FaSearch } from "react-icons/fa";
-import SwapWidget from "@/features/swap/components/SwapWidget";
-import Express from "@/features/express/components/express";
+import Express from "@/features/express/home/express/express";
+import SwapWidget from "@/features/express/home/swap copy/components/SwapWidget";
 
 /**
  * ExchangeForm – TypeScript version with BTC ⇄ ETH swap support.
@@ -306,7 +305,6 @@ export default function ExchangeForm({
   const { isDark } = useTheme();
   const { t } = useMarketingI18n();
   const dispatch = useDispatch<AppDispatch>();
-  const router = useRouter();
 
   /* ------------------- Redux State ------------------- */
   const { assets, loading: assetsLoading } = useSelector(
@@ -1118,27 +1116,53 @@ export default function ExchangeForm({
 
   /* ------------------- Helpers ------------------- */
   const handleTabClick = (tabId: Tab) => {
-    // If on home page and not authenticated, navigate to login
-    if (isHomePage && !isAuthenticated) {
-      router.push("/auth/login");
-      return;
-    }
+    // Allow tab switching without forcing navigation to the login page
     setActiveTab(tabId);
   };
 
-  const TabButton: React.FC<{ id: Tab; children: React.ReactNode }> = ({
-    id,
-    children,
-  }) => (
-    <button
-      onClick={() => handleTabClick(id)}
-      className={`flex-1 flex justify-center items-center p-3 sm:p-4 md:p-5 transition-opacity min-h-[44px] ${
-        activeTab === id ? "opacity-100" : "opacity-50 hover:opacity-75"
-      }`}
-    >
-      {children}
-    </button>
-  );
+  const TabButton: React.FC<{
+    id: Tab;
+    label: string;
+    variant: "express" | "swap";
+  }> = ({ id, label, variant }) => {
+    const isActive = activeTab === id;
+    const clipPath =
+      variant === "express"
+        ? "polygon(0 0, 88% 0, 100% 100%, 0 100%)"
+        : "polygon(12% 0, 100% 0, 100% 100%, 0 100%)";
+
+    const buttonClasses = [
+      "relative flex w-full items-center justify-center overflow-hidden border transition-all duration-200",
+      "px-5 sm:px-6 md:px-7 py-3 sm:py-3.5 md:py-4 min-h-[50px] sm:min-h-[58px]",
+      isActive
+        ? isDark
+          ? "bg-[#20262F] border-[#2E3944] text-white shadow-[0_20px_38px_rgba(6,29,18,0.32)]"
+          : "bg-white border-[#D7EFE2] text-[#0B1418] shadow-[0_22px_42px_rgba(23,108,70,0.22)]"
+        : isDark
+        ? "bg-[#13191F] border-transparent text-[#7C8A97] hover:bg-[#181F26] hover:border-[#20985E]/35"
+        : "bg-[#F4F7F6] border-transparent text-[#627180] hover:border-[#1D8751]/25 hover:bg-white"
+    ].join(" ");
+
+    return (
+      <button
+        type="button"
+        onClick={() => handleTabClick(id)}
+        aria-pressed={isActive}
+        className="group flex-1 px-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1D8751] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+        style={{ clipPath }}
+      >
+        <div className={buttonClasses}>
+          <span
+            className={`relative z-[1] text-sm sm:text-base md:text-lg font-semibold tracking-wide transition-colors ${
+              isActive ? "text-white" : "text-[#7C8A97] group-hover:text-[#1D8751]"
+            }`}
+          >
+            {label}
+          </span>
+        </div>
+      </button>
+    );
+  };
 
   const AmountInput: React.FC<{
     amount: string;
@@ -1290,17 +1314,17 @@ export default function ExchangeForm({
     return (
       <div className="w-full bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl px-3 sm:px-4 md:px-6 py-2 shadow-lg mr-0 sm:mr-4 md:mr-8 ml-0 sm:ml-2 md:ml-4 border border-gray-200 dark:border-transparent">
         {/* Tabs */}
-        <div className="w-full flex justify-between border-b border-gray-200 dark:border-gray-700">
-          <TabButton id="express">
-            <h3 className="text-sm sm:text-base md:text-lg font-bold transition-colors text-gray-500 dark:text-white/50">
-              {t("marketing.exchange.tabs.express", "Express Exchange")}
-            </h3>
-          </TabButton>
-          <TabButton id="swap">
-            <h3 className="text-sm sm:text-base md:text-lg font-bold transition-colors text-gray-900 dark:text-white">
-              {t("marketing.exchange.tabs.swap", "Swap Crypto")}
-            </h3>
-          </TabButton>
+        <div className="relative flex w-full overflow-hidden rounded-[28px] border border-gray-200 bg-white/60 p-0.5 dark:border-[#262C34] dark:bg-[#12171E]">
+        <TabButton
+          id="express"
+          variant="express"
+          label={t("marketing.exchange.tabs.express", "Express Exchange")}
+        />
+        <TabButton
+          id="swap"
+          variant="swap"
+          label={t("marketing.exchange.tabs.swap", "Swap")}
+        />
         </div>
         <SwapWidget />
       </div>
@@ -1310,17 +1334,17 @@ export default function ExchangeForm({
   return (
     <div className="w-full bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl px-3 sm:px-4 md:px-6 py-2 shadow-lg mr-0 sm:mr-4 md:mr-8 ml-0 sm:ml-2 md:ml-4 border border-gray-200 dark:border-transparent">
       {/* Tabs */}
-      <div className="w-full flex justify-between border-b border-gray-200 dark:border-gray-700">
-        <TabButton id="express">
-          <h3 className="text-sm sm:text-base md:text-lg font-bold transition-colors text-gray-900 dark:text-white">
-            {t("marketing.exchange.tabs.express", "Express Exchange")}
-          </h3>
-        </TabButton>
-        <TabButton id="swap">
-          <h3 className="text-sm sm:text-base md:text-lg font-bold transition-colors text-gray-500 dark:text-white/50">
-            {t("marketing.exchange.tabs.swap", "Swap Crypto")}
-          </h3>
-        </TabButton>
+      <div className="relative flex w-full overflow-hidden rounded-[28px]   bg-white/60 p-0.5  dark:bg-[#12171E]">
+        <TabButton
+          id="express"
+          variant="express"
+          label={t("marketing.exchange.tabs.express", "Express Exchange")}
+        />
+        <TabButton
+          id="swap"
+          variant="swap"
+          label={t("marketing.exchange.tabs.swap", "Swap")}
+        />
       </div>
 
       {/* Express Exchange Content */}
