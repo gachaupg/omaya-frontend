@@ -11,7 +11,7 @@ import {
   debugChartAPI,
   debugDetailsAPI,
 } from "../api";
-import { sliceCache } from "../../../lib/utils/sliceCache";
+import { sliceCache } from "@/lib/utils/sliceCache";
 
 // Async thunks
 export const fetchMarketsAsync = createAsyncThunk(

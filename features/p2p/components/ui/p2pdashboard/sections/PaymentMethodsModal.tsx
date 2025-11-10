@@ -95,13 +95,6 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
      }
    }, [open, dispatch, isClient, user]);
 
-   // Reset allowAutoSend when method changes away from bank
-   useEffect(() => {
-     if (method && !method.toLowerCase().includes('bank')) {
-       setAllowAutoSend(false);
-     }
-   }, [method]);
-
   const methodTypes = Array.from(
     new Set(
       (adminMethods || [])
@@ -142,8 +135,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
      (p: AdminPaymentMethod) => p.provider_name === provider
    );
     logger.debug('p2p', "Selected provider", selectedProvider);
-    const isBankMethod = method.toLowerCase().includes('bank');
-    const payload = {
+    const payload: PaymentDetailPayload = {
       account_name: name,
       account_number: account,
       payment_method_name: method,
@@ -152,8 +144,9 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
       wallet_address: shouldUseWalletAddressField
         ? account
         : selectedProvider?.wallet_address || null,
-      ...(isBankMethod && allowAutoSend && { allow_auto_send: true }),
     };
+
+    payload.allow_auto_send = allowAutoSend;
     logger.debug('p2p', "Dispatching payload", payload);
     dispatch(postUserPaymentDetail(payload));
    };
@@ -356,23 +349,24 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
              />
            </div>
 
-           {/* Allow Auto Send Checkbox - Only for Bank methods */}
-             <div className="flex items-center gap-2">
-               <input
-                 type="checkbox"
-                 id="allowAutoSend"
-                 checked={allowAutoSend}
-                 onChange={(e) => setAllowAutoSend(e.target.checked)}
-                 className="w-4 h-4 text-[#1D8751] bg-gray-100 dark:bg-[#23232B] border-gray-300 dark:border-[#35353E] rounded focus:ring-2 focus:ring-[#1D8751] cursor-pointer"
-                 disabled={loading}
-               />
-               <label
-                 htmlFor="allowAutoSend"
-                 className="text-sm text-gray-700 dark:text-[#788099] cursor-pointer"
-               >
-                 Allow auto send
-               </label>
-             </div>
+          {method && (
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="allowAutoSend"
+                checked={allowAutoSend}
+                onChange={(e) => setAllowAutoSend(e.target.checked)}
+                className="w-4 h-4 text-[#1D8751] bg-gray-100 dark:bg-[#23232B] border-gray-300 dark:border-[#35353E] rounded focus:ring-2 focus:ring-[#1D8751] cursor-pointer"
+                disabled={loading}
+              />
+              <label
+                htmlFor="allowAutoSend"
+                className="text-sm text-gray-700 dark:text-[#788099] cursor-pointer"
+              >
+                Allow auto send
+              </label>
+            </div>
+          )}
            
           {/* Error/Loading */}
           {error && <div className="text-red-500 text-sm">{error}</div>}

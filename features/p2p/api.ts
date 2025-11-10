@@ -266,6 +266,7 @@ export const addUserPaymentDetail = async (data: {
   payment_provider_name: string;
   provider_name: string;
   wallet_address?: string | null;
+  allow_auto_send?: boolean;
 }): Promise<P2PResponse> => {
   logger.debug('p2p', "API: addUserPaymentDetail called with data:", data);
   logger.debug('p2p', "API: endpoint:", API_CONFIG.P2P.USER_PAYMENT_DETAILS);

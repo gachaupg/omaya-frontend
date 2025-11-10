@@ -374,7 +374,7 @@ export default function MarketingPage() {
           ></div>
         </div>
 
-        <div className="container mx-auto px-4 relative z-10 mt-20">
+        <div className="container mx-auto px-0 relative z-10 mt-10">
           <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3  items-starts">
             <div className="space-y-6 pl-6 md:pl-12 md:text-left text-center 2xl:col-span-2">
               <h1 className="text-4xl md:text-5xl font-bold text-white tracking-wide ">
@@ -404,7 +404,7 @@ export default function MarketingPage() {
                 </button>
               </div>
             </div>
-            <div className="flex justify-center 2xl:justify-end 2xl:col-span-1">
+            <div className="flex justify-center w-full 2xl:justify-end 2xl:col-span-1">
               {/* <div className="relative">
                 <Image
                   src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746561970/iPhone_13_Mockup_1_zzm7tt.png"

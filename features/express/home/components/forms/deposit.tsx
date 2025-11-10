@@ -4,22 +4,32 @@ import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { FaExchangeAlt, FaExclamationCircle } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch } from "../../../../store";
-import { fetchPublicPaymentMethods, fetchAdminPaymentMethods } from "../../../p2p/slices/paymentMethodsSlice";
-import { fetchAssets } from "../../../exchange/slices/exchangeSlice";
-import { createDeposit, updateDepositAddress } from "../../../exchange/slices/exchangeSlice";
+import { AppDispatch } from "../../../../../store";
+import {
+  fetchPublicPaymentMethods,
+  fetchAdminPaymentMethods,
+} from "../../../../p2p/slices/paymentMethodsSlice";
+import {
+  fetchAssets,
+  createDeposit,
+  updateDepositAddress,
+} from "../../../../exchange/slices/exchangeSlice";
 import {
   fetchSupportedAssets,
   fetchSwapEstimate,
-} from "../../../swap/slices/swapSlice";
+} from "../../../../swap/slices/swapSlice";
 
-import { showToast } from "../../../../lib/utils/toast";
-import { DepositResponse } from "../../../exchange/types";
-import { SupportedAsset } from "../../../swap/types";
+import { showToast } from "../../../../../lib/utils/toast";
+import { DepositResponse } from "../../../../exchange/types";
+import { SupportedAsset } from "../../../../swap/types";
 import { FaSearch } from "react-icons/fa";
 import InfoModal from "./info";
 import { useTheme } from "@/context/theme";
-import { useAssetsDisplay, usePaymentMethodsDisplay } from "../../hooks/useDataDisplay";
+import {
+  useAssetsDisplay,
+  usePaymentMethodsDisplay,
+} from "../../../hooks/useDataDisplay";
+import { useChangeNowAssets } from "../../hooks/useChangeNowAssets";
 import CustomSelect from "@/components/ui/CustomSelect";
 import Select from "@/features/p2p/components/Common/Select";
 
@@ -81,6 +91,64 @@ const getAssetNetwork = (asset: any): string => {
   return '';
 };
 
+const networkSuffixesToStrip = [
+  'BSC',
+  'Binance Smart Chain',
+  'ETH',
+  'Ethereum',
+  'MATIC',
+  'Polygon',
+  'AVAX',
+  'Avalanche',
+  'TRX',
+  'Tron',
+  'Solana',
+  'SOL',
+  'Base',
+];
+
+const stripNetworkSuffix = (value: string): string => {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const pattern = new RegExp(
+    `\\s*\\((?:${networkSuffixesToStrip
+      .map((suffix) => suffix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+      .join('|')})\\)`,
+    'gi'
+  );
+
+  return value.replace(pattern, '').trim();
+};
+
+const getCleanAssetName = (asset: any): string => {
+  const rawName =
+    (typeof asset?.name === 'string' && asset?.name) ||
+    (typeof asset?.ticker === 'string' && asset?.ticker) ||
+    (typeof asset?.symbol === 'string' && asset?.symbol) ||
+    '';
+
+  if (!rawName) {
+    return 'Unknown Asset';
+  }
+
+  return stripNetworkSuffix(rawName);
+};
+
+const getAssetPrimaryLabel = (asset: any): string => {
+  const raw =
+    (typeof asset?.ticker === 'string' && asset?.ticker?.trim()) ||
+    (typeof asset?.symbol === 'string' && asset?.symbol?.trim());
+
+  if (raw) {
+    const cleaned = stripNetworkSuffix(raw);
+    return cleaned || raw;
+  }
+
+  return getCleanAssetName(asset);
+};
+
 export default function DepositForm({
   onExchange,
   mode,
@@ -104,16 +172,33 @@ export default function DepositForm({
   // Add swap assets state
   const { supportedAssets: swapAssets, loading: swapAssetsLoading } =
     useSelector((state: any) => state.swap);
-    const { isDark } = useTheme();
+  const { isAuthenticated } = useSelector((state: any) => state.auth);
+  const { isDark } = useTheme();
+
+  const {
+    assets: homeAssets,
+    loading: homeAssetsLoading,
+    error: homeAssetsError,
+  } = useChangeNowAssets(isHomePage);
+
+  const exchangeAssetsSource = isHomePage ? homeAssets : assets?.assets;
+  const swapAssetsSource = isHomePage ? [] : swapAssets;
+  const exchangeAssetsLoadingState = isHomePage
+    ? homeAssetsLoading
+    : assetsLoading;
+  const swapAssetsLoadingState = isHomePage ? false : swapAssetsLoading;
+  const exchangeAssetsErrorState = isHomePage ? homeAssetsError : null;
+  const swapAssetsErrorState = isHomePage ? null : null;
+  const requiresLoginRedirect = isHomePage && !isAuthenticated;
 
   // Use the data display hooks for consistent data handling
   const assetsDisplay = useAssetsDisplay(
-    assets?.assets,
-    swapAssets,
-    assetsLoading,
-    swapAssetsLoading,
-    null, // exchange error
-    null  // swap error
+    exchangeAssetsSource,
+    swapAssetsSource,
+    exchangeAssetsLoadingState,
+    swapAssetsLoadingState,
+    exchangeAssetsErrorState,
+    swapAssetsErrorState
   );
 
   // Use state to hold payment methods - will trigger re-render when updated
@@ -315,11 +400,36 @@ export default function DepositForm({
   
   // Fallback payment methods if no data is available
   const fallbackPaymentMethods = [
-    { provider_name: "Bank", payment_method: "Bank Transfer", is_active: true },
-    { provider_name: "Crypto", payment_method: "Cryptocurrency", is_active: true },
-    { provider_name: "Forex", payment_method: "Forex", is_active: true },
-    { provider_name: "Mobile", payment_method: "Mobile Money", is_active: true },
-    { provider_name: "Marchant", payment_method: "Marchant", is_active: true }
+    {
+      provider_name: "Bank",
+      payment_method: "Bank Transfer",
+      payment_method_type: "Bank Transfer",
+      is_active: true,
+    },
+    {
+      provider_name: "Crypto",
+      payment_method: "Cryptocurrency",
+      payment_method_type: "Cryptocurrency",
+      is_active: true,
+    },
+    {
+      provider_name: "Forex",
+      payment_method: "Forex",
+      payment_method_type: "Forex",
+      is_active: true,
+    },
+    {
+      provider_name: "Mobile",
+      payment_method: "Mobile Money",
+      payment_method_type: "Mobile Money",
+      is_active: true,
+    },
+    {
+      provider_name: "Marchant",
+      payment_method: "Marchant",
+      payment_method_type: "Marchant",
+      is_active: true,
+    },
   ];
   
   // Use fallback if no effective payment methods
@@ -397,6 +507,30 @@ export default function DepositForm({
   // Add state for API validation errors
   const [apiValidationError, setApiValidationError] = useState<string | null>(null);
 
+
+  // Auto-select the first payment method on home page so the button behaves like the dashboard form
+  useEffect(() => {
+    if (finalPaymentMethods.length === 0) {
+      return;
+    }
+
+    const hasSelected = finalPaymentMethods.some(
+      (method: any) => method?.provider_name === payBank
+    );
+
+    if (!payBank || !hasSelected) {
+      const defaultMethod = finalPaymentMethods[0];
+      setPayBank(defaultMethod.provider_name);
+      setSelectedPaymentDetail(defaultMethod);
+    } else if (!selectedPaymentDetail) {
+      const matchedMethod = finalPaymentMethods.find(
+        (method: any) => method?.provider_name === payBank
+      );
+      if (matchedMethod) {
+        setSelectedPaymentDetail(matchedMethod);
+      }
+    }
+  }, [finalPaymentMethods, payBank, selectedPaymentDetail]);
 
   // Handle asset selection with inline calculation
   const handleAssetSelection = (asset: any) => {
@@ -1965,10 +2099,8 @@ export default function DepositForm({
 
   return (
     <div className="w-full flex flex-col dark:bg-[#18181D]  ">
-      <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
-        <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Transaction Info
-      </h2>
-      
+      <div className="mb-2" />
+    
       {/* API Validation Error - Show as simple red text */}
       {apiValidationError && (
         <div className="mb-4 text-red-500 text-sm font-medium">
@@ -2147,8 +2279,9 @@ export default function DepositForm({
                       
                       return {
                         value: payment.provider_name,
-                        label: `${payment.provider_name} - ${payment.payment_method || payment.payment_method_type || payment.payment_type}`,
+                        label: payment.provider_name,
                         logo: logoUrl,
+                        raw: payment,
                       };
                     });
                     
@@ -2210,35 +2343,6 @@ export default function DepositForm({
             </div>
           </div>
 
-          {/* Swap Circle - positioned to touch both borders equally */}
-          <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/3 z-10">
-            {!isHomePage && (
-            <button
-              className="w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105"
-              onClick={() => {
-                // Switch between deposit and withdrawal modes
-                if (onModeChange) {
-                  onModeChange(mode === "deposit" ? "withdrawal" : "deposit");
-                }
-              }}
-            >
-             
-             
-             {/* Light mode image */}
-             <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
-                alt="swap icon"
-                className="w-16 h-16 dark:hidden"
-              />
-              {/* Dark mode image */}
-              <img
-                src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
-                alt="swap icon"
-                className="w-16 h-16 hidden dark:block"
-              />
-            </button>
-            )}
-          </div>
         </div>
 
                 {/* Bottom Section - You Receive and Asset in one card */}
@@ -2413,19 +2517,12 @@ export default function DepositForm({
                         <div className="flex flex-col">
                           <div className="flex items-center gap-2">
                             <span className="text-[#35353e] dark:text-[#788099] font-medium">
-                              {(selectedAsset.ticker ||
-                                selectedAsset.symbol ||
-                                selectedAsset.name ||
-                                "Unknown").toUpperCase()}
+                              {getAssetPrimaryLabel(selectedAsset).toUpperCase()}
                             </span>
                             <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
                               {getNetworkDisplayName(getAssetNetwork(selectedAsset))}
                             </span>
                           </div>
-                          <span className="text-[#788099] text-xs">
-                            {selectedAsset.name || 
-                             (selectedAsset.ticker || selectedAsset.symbol || "Unknown")} ({getNetworkDisplayName(getAssetNetwork(selectedAsset))})
-                          </span>
                         </div>
                       </>
                     ) : (
@@ -2515,40 +2612,13 @@ export default function DepositForm({
                                   />
                                   <div className="flex-1">
                                     <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
-                                      {(asset.ticker ||
-                                        asset.symbol ||
-                                        asset.name ||
-                                        "Unknown").toUpperCase()}
+                                      {getAssetPrimaryLabel(asset).toUpperCase()}
                                       <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
                                         {getNetworkDisplayName(getAssetNetwork(asset))}
                                       </span>
                                     </div>
                                     <div className="text-[#35353e] dark:text-[#788099] text-sm">
-                                      {(() => {
-                                        // Clean up asset name to remove redundant network information
-                                        let displayName = asset.name || asset.ticker || asset.symbol || "Unknown Asset";
-                                        
-                                        // Remove common redundant patterns - less aggressive approach
-                                        // Only remove redundant network info when it's duplicated in the network badge
-                                        displayName = displayName
-                                          // Handle cases like "Tether (Binance Smart Chain) (BSC)" - remove duplicate BSC
-                                          .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, '')
-                                          .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, '')
-                                          .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, '')
-                                          .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, '')
-                                          .replace(/\s*\(TRON\)\s*\(TRX\)/gi, '')
-                                          .replace(/\s*\(Solana\)\s*\(SOL\)/gi, '')
-                                          // Only remove single network references if they're clearly redundant
-                                          .replace(/\s*\(BSC\)$/gi, '') // Only remove BSC at the end
-                                          .replace(/\s*\(ETH\)$/gi, '') // Only remove ETH at the end
-                                          .replace(/\s*\(MATIC\)$/gi, '') // Only remove MATIC at the end
-                                          .replace(/\s*\(AVAX\)$/gi, '') // Only remove AVAX at the end
-                                          .replace(/\s*\(TRX\)$/gi, '') // Only remove TRX at the end
-                                          .replace(/\s*\(SOL\)$/gi, '') // Only remove SOL at the end
-                                          .trim();
-                                        
-                                        return displayName;
-                                      })()}
+                                      {getCleanAssetName(asset)}
                                     </div>
                                   </div>
                                   {selectedAsset?.asset_id === asset.asset_id && (
@@ -2596,40 +2666,13 @@ export default function DepositForm({
                             />
                             <div className="flex-1">
                               <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
-                                {(asset.ticker ||
-                                  asset.symbol ||
-                                  asset.name ||
-                                  "Unknown").toUpperCase()}
+                                {getAssetPrimaryLabel(asset).toUpperCase()}
                                 <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
                                   {getNetworkDisplayName(getAssetNetwork(asset))}
                                 </span>
                               </div>
                               <div className="text-[#35353e] dark:text-[#788099] text-sm">
-                                {(() => {
-                                  // Clean up asset name to remove redundant network information
-                                  let displayName = asset.name || asset.ticker || asset.symbol || "Unknown Asset";
-                                  
-                                  // Remove common redundant patterns - less aggressive approach
-                                  // Only remove redundant network info when it's duplicated in the network badge
-                                  displayName = displayName
-                                    // Handle cases like "Tether (Binance Smart Chain) (BSC)" - remove duplicate BSC
-                                    .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, '')
-                                    .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, '')
-                                    .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, '')
-                                    .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, '')
-                                    .replace(/\s*\(TRON\)\s*\(TRX\)/gi, '')
-                                    .replace(/\s*\(Solana\)\s*\(SOL\)/gi, '')
-                                    // Only remove single network references if they're clearly redundant
-                                    .replace(/\s*\(BSC\)$/gi, '') // Only remove BSC at the end
-                                    .replace(/\s*\(ETH\)$/gi, '') // Only remove ETH at the end
-                                    .replace(/\s*\(MATIC\)$/gi, '') // Only remove MATIC at the end
-                                    .replace(/\s*\(AVAX\)$/gi, '') // Only remove AVAX at the end
-                                    .replace(/\s*\(TRX\)$/gi, '') // Only remove TRX at the end
-                                    .replace(/\s*\(SOL\)$/gi, '') // Only remove SOL at the end
-                                    .trim();
-                                  
-                                  return displayName;
-                                })()}
+                                {getCleanAssetName(asset)}
                               </div>
                             </div>
                             {selectedAsset?.asset_id === asset.asset_id && (
@@ -2695,20 +2738,11 @@ export default function DepositForm({
 
         {/* Submit Button for First Card */}
           {!isFirstCardSubmitted && !showForexForm && (
-            <div 
-              className="mt-4 relative"
-              onClick={(e) => {
-                // On home page, redirect to login on any click
-                if (isHomePage) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  router.push("/auth/login");
-                }
-              }}
-            >
+            <div className="mt-4 relative">
               <button
+                type="button"
                 className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
-                  isHomePage 
+                  isHomePage
                     ? "bg-[#1D8751] hover:bg-[#166b3e] cursor-pointer"
                     : isSubmitting ||
                       !selectedAsset ||
@@ -2720,40 +2754,37 @@ export default function DepositForm({
                       ? "bg-gray-500 cursor-not-allowed"
                       : "bg-[#1D8751] hover:bg-[#166b3e]"
                 }`}
-                onClick={
-                  isHomePage 
-                    ? undefined 
-                    : () => {
-                        // Check if it's FXP - expand forex form instead of submitting
-                        if (selectedAsset && isForexAsset(selectedAsset)) {
-                          // Validate basic fields first
-                          if (!payAmount || payAmount <= 0) {
-                            showToast.error("Please enter a valid amount");
-                            return;
-                          }
-                          if (!selectedPaymentDetail) {
-                            showToast.error("Please select a payment method");
-                            return;
-                          }
-                          // Expand forex form
-                          setShowForexForm(true);
-                        } else {
-                          // Regular crypto deposit
-                          handleFirstCardSubmit();
-                        }
-                      }
-                }
+                onClick={() => {
+                  if (requiresLoginRedirect) {
+                    router.push("/auth/login");
+                    return;
+                  }
+
+                  if (selectedAsset && isForexAsset(selectedAsset)) {
+                    if (!payAmount || payAmount <= 0) {
+                      showToast.error("Please enter a valid amount");
+                      return;
+                    }
+                    if (!selectedPaymentDetail) {
+                      showToast.error("Please select a payment method");
+                      return;
+                    }
+                    setShowForexForm(true);
+                  } else {
+                    handleFirstCardSubmit();
+                  }
+                }}
                 disabled={
-                  isHomePage ? false : (
-                    isSubmitting ||
-                    !selectedAsset ||
-                    !payBank ||
-                    (walletAddress.trim() && !!walletError) ||
-                    (selectedAsset &&
-                      !isSimpleCalculationAsset(selectedAsset) &&
-                      !isForexAsset(selectedAsset) &&
-                      estimateLoading)
-                  )
+                  requiresLoginRedirect
+                    ? false
+                    : isSubmitting ||
+                      !selectedAsset ||
+                      !payBank ||
+                      (walletAddress.trim() && !!walletError) ||
+                      (selectedAsset &&
+                        !isSimpleCalculationAsset(selectedAsset) &&
+                        !isForexAsset(selectedAsset) &&
+                        estimateLoading)
                 }
               >
                 {isSubmitting ? (
@@ -2917,7 +2948,7 @@ export default function DepositForm({
                 setIsSubmitting(true);
                 
                 try {
-                  const { createForexExchangeThunk } = await import("../../slices/forexSlice");
+                  const { createForexExchangeThunk } = await import("../../../slices/forexSlice");
                   
                   const forexPayload = {
                     transaction_type: "deposit" as const,
