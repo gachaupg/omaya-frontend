@@ -381,14 +381,14 @@ export default function MarketingPage() {
                 <span className="inline-block w-full 2xl:text-7xl">
                   {t("marketing.hero.heading1", "Welcome to")}
                 </span>
-                <span className="inline-block w-full 2xl:text-7xl">
+                <span className="inline-block w-full 2xl:text-5xl">
                   {t("marketing.hero.heading2", "OMAYA Exchange")}
                 </span>
               </h1>
-              <p className="text-white/80  max-w-xl 2xl:max-w-3xl mx-auto md:mx-0 2xl:text-lg">
+              <p className="text-white/80  max-w-xl 2xl:max-w-3xl mx-auto md:mx-0 xl:text-lg">
                 {t(
                   "marketing.hero.subtitle",
-                  "We are OMAYA EXCHANGE, Somalia's leading platform for exchanging cryptocurrencies and Forex."
+                  "We are OMAYA EXCHANGE, Somalia's leading platform for exchanging cryptocurrencies and Forex. Founded by experts with over 15 years of IT experience, we bridge traditional finance with the digital economy in East Africa. Our secure and user-friendly platform is designed to meet the unique needs of our market, empowering users with seamless access to the world of digital assets. Committed to transparency, innovation, and education, we are shaping the future of finance in our region."
                 )}
               </p>
               <div className="flex flex-wrap gap-4 justify-center md:justify-start">

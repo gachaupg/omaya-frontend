@@ -995,7 +995,7 @@ export default function ExchangeForm({
     return (
       <div
         ref={paymentDropdownRef}
-        className="absolute top-full left-0 right-3 mt-2 bg-white dark:bg-[#0505F0FF] border border-gray-200 dark:border-[#35353E] rounded-xl shadow-lg z-[9999] min-w-[350px]"
+        className="absolute top-full left-0 right-3 mt-2 bg-white dark:bg-[#0505F0FF] border border-gray-200 dark:border-[#35353E] rounded-xl shadow-lg z-[9999] w-full"
       >
         {/* Search Input */}
         <div className="p-3 border-b border-gray-200 dark:border-[#35353E]">
@@ -1295,7 +1295,7 @@ export default function ExchangeForm({
   // If Swap Crypto tab is active, render SwapWidget with tab controls
   if (activeTab === "swap") {
     return (
-      <div className="w-full max-w-[640px] mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl px-4 sm:px-6 md:px-8 py-4 shadow-lg border border-gray-200 dark:border-transparent">
+      <div className="w-full w-full mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl px-4 sm:px-6 md:px-8 py-4 shadow-lg border border-gray-200 dark:border-transparent">
         {/* Tabs */}
         <div className="relative flex w-full overflow-hidden rounded-[28px] border border-gray-200 bg-white/60 p-0.5 dark:border-[#262C34] dark:bg-[#12171E]">
         <TabButton
@@ -1315,7 +1315,7 @@ export default function ExchangeForm({
   }
 
   return (
-    <div className="w-full max-w-[640px] mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl px-4 sm:px-6 md:px-8 py-4 shadow-lg border border-gray-200 dark:border-transparent">
+    <div className="w-full w-full mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl px-4 sm:px-6 md:px-8 py-4 shadow-lg border border-gray-200 dark:border-transparent">
       {/* Tabs */}
       <div className="relative flex w-full overflow-hidden rounded-[28px] bg-white/60 p-0.5 dark:bg-[#12171E]">
         <TabButton
