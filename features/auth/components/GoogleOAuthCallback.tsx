@@ -173,6 +173,5 @@ const GoogleOAuthCallback: React.FC<GoogleOAuthCallbackProps> = ({
     </div>
   );
 };
-};
 
 export default GoogleOAuthCallback;
