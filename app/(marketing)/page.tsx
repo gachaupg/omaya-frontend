@@ -444,13 +444,14 @@ export default function MarketingPage() {
                 key={index}
                 className="border border-[#13B562]/40 rounded-lg p-6 flex flex-col items-center justify-center darrk:bg-[#1D1D23]"
               >
-                <div className="text-[#13B562] text-3xl md:text-4xl font-bold mb-2 flex items-center gap-2">
+                <div className="text-[#F79330] text-3xl md:text-4xl font-bold mb-2 flex items-center gap-2">
+                  
+                  <span>{achievement.value}</span>
                   <Plus
                     size={24}
                     strokeWidth={2.5}
-                    className="text-[#13B562] drop-shadow-sm"
+                    className="text-[#F79330] drop-shadow-sm"
                   />
-                  <span>{achievement.value}</span>
                 </div>
                 <div className="darK:text-white text-xm text-center 2xl:text-sm">
                   {t(achievement.label, achievement.label)}
