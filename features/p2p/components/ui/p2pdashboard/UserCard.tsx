@@ -186,9 +186,9 @@ const [showUpdateIndicator, setShowUpdateIndicator] = useState(false);
                 <Image
                   src={profileImage}
                   alt="User avatar"
-                  width={56}
-                  height={56}
-                  className="object-cover"
+                  fill
+                  sizes="56px"
+                  className="rounded-full object-fit"
                   unoptimized={true}
                   onError={(
                     e: React.SyntheticEvent<HTMLImageElement, Event>
