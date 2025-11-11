@@ -80,9 +80,9 @@ const HelpSupportForm: React.FC = () => {
   return (
     <div className="min-h-screen">
       <div>
-        <h1 className="text-lg font-medium text-[#788099] mb-4">Help &j Support</h1>
+        <h1 className="text-base sm:text-lg font-medium text-[#788099] mb-3 sm:mb-4">Help & Support</h1>
         
-        <div className="container mx-auto bg-white dark:bg-[#18181D] border border-[#E8EFF5] dark:border-[#35353E] rounded-2xl shadow-sm p-8 space-y-6">
+        <div className="container mx-auto bg-white dark:bg-[#18181D] border border-[#E8EFF5] dark:border-[#35353E] rounded-2xl shadow-sm p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
           {/* Email Address Field */}
           <div>
             <label htmlFor="email_address" className="block text-sm font-medium text-[#344054] dark:text-white mb-2">
@@ -95,7 +95,7 @@ const HelpSupportForm: React.FC = () => {
               value={formData.email_address}
               onChange={handleInputChange}
               placeholder="Your email address"
-              className="w-full px-4 py-3 border border-[#E8EFF5]  dark:border-[#35353E] rounded-2xl focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors"
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-[#E8EFF5]  dark:border-[#35353E] rounded-2xl focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors text-sm sm:text-base"
             />
           </div>
 
@@ -111,32 +111,32 @@ const HelpSupportForm: React.FC = () => {
               onChange={handleInputChange}
               placeholder="Please describe your question or issue..."
               rows={4}
-              className="w-full px-4 py-3 border border-[#E8EFF5] dark:border-[#35353E] rounded-2xl focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors resize-none"
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-[#E8EFF5] dark:border-[#35353E] rounded-2xl focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors resize-none text-sm sm:text-base"
             />
           </div>
 
           {/* Upload Section */}
-          <div className="border-t border-[#E8EFF5] dark:border-[#35353E] pt-6">
-            <h3 className="text-lg font-medium text-gray-800 dark:text-white mb-2">
-              Upload Supjjjjporting Files
+          <div className="border-t border-[#E8EFF5] dark:border-[#35353E] pt-4 sm:pt-6">
+            <h3 className="text-base sm:text-lg font-medium text-gray-800 dark:text-white mb-2">
+              Upload Supporting Files
             </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-3 sm:mb-4">
               You can attach supporting documents, screenshots, or other files that might help us understand your issue better. Supported formats: PDF, DOC, DOCX, TXT, PNG, JPG, JPEG
             </p>
             
             <div 
               onClick={handleUploadClick}
-              className="border-2 border-dashed border-[#E8EFF5] dark:border-[#35353E] rounded-2xl p-6 cursor-pointer hover:border-[#1D8751] transition-colors"
+              className="border-2 border-dashed border-[#E8EFF5] dark:border-[#35353E] rounded-2xl p-4 sm:p-6 cursor-pointer hover:border-[#1D8751] transition-colors"
             >
               <div className='flex flex-col items-center gap-3'>
                 <div className="p-3 bg-[#1D8751]/10 rounded-full">
                   <Upload className="h-6 w-6 text-[#1D8751]" />
                 </div>
                 <div className="text-center">
-                  <p className="text-sm font-medium text-gray-800 dark:text-white mb-1">
+                  <p className="text-sm sm:text-base font-medium text-gray-800 dark:text-white mb-1">
                     Click to upload file
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
                     PDF, DOC, DOCX, TXT, PNG, JPG, JPEG (Max 10MB)
                   </p>
                 </div>
@@ -152,8 +152,8 @@ const HelpSupportForm: React.FC = () => {
             </div>
             
             {formData.supporting_file && (
-              <div className="mt-3 p-3 bg-[#1D8751]/10 rounded-lg">
-                <p className="text-sm text-[#1D8751] font-medium">
+              <div className="mt-3 p-2 sm:p-3 bg-[#1D8751]/10 rounded-lg">
+                <p className="text-xs sm:text-sm text-[#1D8751] font-medium">
                   ✓ Selected: {formData.supporting_file.name}
                 </p>
               </div>
@@ -161,17 +161,17 @@ const HelpSupportForm: React.FC = () => {
           </div>
 
           {/* Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-[#E8EFF5] dark:border-[#35353E]">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 border-t border-[#E8EFF5] dark:border-[#35353E]">
             <button
               onClick={handleConnectLiveChat}
-              className="flex-1 bg-[#1D8751] text-white font-medium py-3 px-6 rounded-full transition-colors"
+              className="flex-1 bg-[#1D8751] text-white font-medium py-2.5 sm:py-3 px-5 sm:px-6 rounded-full transition-colors text-sm sm:text-base"
             >
               Connect with Live Chat
             </button>
             <button
               onClick={handleSubmitEmail}
               disabled={supportRequestLoading || !formData.email_address || !formData.question}
-              className="flex-1 bg-white dark:bg-[#18181D] hover:bg-gray-50 text-[#1D8751] font-medium py-3 px-6 rounded-full border border-[#1D8751] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 bg-white dark:bg-[#18181D] hover:bg-gray-50 text-[#1D8751] font-medium py-2.5 sm:py-3 px-5 sm:px-6 rounded-full border border-[#1D8751] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
             >
               {supportRequestLoading ? 'Submitting...' : 'Submit Request'}
             </button>

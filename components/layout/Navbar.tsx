@@ -246,6 +246,18 @@ export default function Navbar() {
     router.push("/auth/login");
   };
 
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
+
   //Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -824,48 +836,54 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
-        <div
-          className={`fixed top-14 sm:top-16 left-0 right-0 z-40 md:hidden p-4 sm:p-6 space-y-4 sm:space-y-6 shadow-lg transition-all duration-300 dark:bg-[#1D1D23] bg-white max-h-[calc(100vh-3.5rem)] sm:max-h-[calc(100vh-4rem)] overflow-y-auto`}
-        >
-          <MobileNavLink href="/" onClick={toggleMobileMenu}>
-            Home
-          </MobileNavLink>
-          <MobileNavLink href="/dashboard" onClick={toggleMobileMenu}>
-            Dashboard
-          </MobileNavLink>
-          <MobileNavLink href="/market" onClick={toggleMobileMenu}>
-            Market
-          </MobileNavLink>
-          <MobileNavLink href="/rates" onClick={toggleMobileMenu}>
-            Rates
-          </MobileNavLink>
-          <MobileNavLink href="/blog" onClick={toggleMobileMenu}>
-            Blog
-          </MobileNavLink>
-          {/* Show Contact us only on auth pages */}
-          {(pathname?.startsWith("/auth/login") ||
-            pathname?.startsWith("/auth/register") ||
-            pathname?.startsWith("/auth/forgotPassword") ||
-            pathname?.startsWith("/auth/resetPassword")) && (
-            <MobileNavLink href="#" onClick={toggleMobileMenu}>
-              Contact us
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={toggleMobileMenu}
+          />
+          <div
+            className={`fixed top-14 sm:top-16 left-0 right-0 z-50 md:hidden p-4 sm:p-6 space-y-4 sm:space-y-6 shadow-lg transition-all duration-300 dark:bg-[#1D1D23] bg-white max-h-[calc(100vh-3.5rem)] sm:max-h-[calc(100vh-4rem)] overflow-y-auto`}
+          >
+            <MobileNavLink href="/" onClick={toggleMobileMenu}>
+              Home
             </MobileNavLink>
-          )}
+            <MobileNavLink href="/dashboard" onClick={toggleMobileMenu}>
+              Dashboard
+            </MobileNavLink>
+            <MobileNavLink href="/market" onClick={toggleMobileMenu}>
+              Market
+            </MobileNavLink>
+            <MobileNavLink href="/rates" onClick={toggleMobileMenu}>
+              Rates
+            </MobileNavLink>
+            <MobileNavLink href="/blog" onClick={toggleMobileMenu}>
+              Blog
+            </MobileNavLink>
+            {/* Show Contact us only on auth pages */}
+            {(pathname?.startsWith("/auth/login") ||
+              pathname?.startsWith("/auth/register") ||
+              pathname?.startsWith("/auth/forgotPassword") ||
+              pathname?.startsWith("/auth/resetPassword")) && (
+              <MobileNavLink href="#" onClick={toggleMobileMenu}>
+                Contact us
+              </MobileNavLink>
+            )}
 
-          <div className="flex flex-col space-y-4 pt-4">
-            {isAuthenticated ? (
-              <>
-                <Link href="/dashboard/deposit" onClick={toggleMobileMenu}>
-                  <button className="flex items-center w-full bg-[#1D8751] hover:bg-[#13B562] text-white px-6 py-2 rounded-full transition-colors duration-200 text-base">
-                    <img
-                      src="https://res.cloudinary.com/dam1sxczj/image/upload/v1748294216/deposit-new-f_okzshs.png"
-                      alt=""
-                    />
-                    Deposit
-                  </button>
-                </Link>
-                <div className="relative mt-4 flex justify-center">
-                  {/* <button
+            <div className="flex flex-col space-y-4 pt-4">
+              {isAuthenticated ? (
+                <>
+                  <Link href="/dashboard/deposit" onClick={toggleMobileMenu}>
+                    <button className="flex items-center w-full bg-[#1D8751] hover:bg-[#13B562] text-white px-6 py-2 rounded-full transition-colors duration-200 text-base">
+                      <img
+                        src="https://res.cloudinary.com/dam1sxczj/image/upload/v1748294216/deposit-new-f_okzshs.png"
+                        alt=""
+                      />
+                      Deposit
+                    </button>
+                  </Link>
+                  <div className="relative mt-4 flex justify-center">
+                    {/* <button
                     onClick={toggleProfileModal}
                     className="text-white focus:outline-none"
                   >
@@ -891,119 +909,124 @@ export default function Navbar() {
                       />
                     </svg>
                   </span> */}
-                </div>
-                <div className="flex flex-col items-center space-y-3 mt-4">
-                  <div className="flex items-center space-x-3 justify-between w-full">
-                    <div>
-                      <Link
-                        href="/dashboard/account"
-                        onClick={toggleMobileMenu}
-                        className="text-white"
-                      >
-                        {userProfile?.photo ? (
-                          <img
-                            src={userProfile.photo}
-                            alt="Profile"
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
-                        ) : (
-                          <DefaultProfileIcon />
-                        )}
-                      </Link>
-                    </div>
-                    <div className="text-left">
-                      <h4 className="text-white font-medium text-sm">
-                        {user?.first_name && user?.last_name
-                          ? `${user.first_name} ${user.last_name}`
-                          : user?.email}
-                      </h4>
-                      <p className="text-gray-400 text-xs">{user?.email}</p>
-                    </div>
                   </div>
-                </div>
-
-                {/* Mobile Profile Modal */}
-                {profileModalOpen && (
-                  <div className="fixed inset-0 z-[9999] md:hidden">
-                    <div
-                      className="absolute inset-0 bg-black bg-opacity-50"
-                      onClick={() => setProfileModalOpen(false)}
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 bg-[#1E2329] border-t border-[#35353E] rounded-t-lg">
-                      <div className="p-6">
-                        {/* User Info */}
-                        <div className="flex items-center mb-6">
-                          <div className="mr-4">
-                            {userProfile?.photo ? (
-                              <img
-                                src={userProfile.photo}
-                                alt="Profile"
-                                className="w-16 h-16 rounded-full object-cover"
-                              />
-                            ) : (
-                              <DefaultProfileIcon />
-                            )}
-                          </div>
-                          <div>
-                            <h4 className="text-white font-medium text-lg">
-                              {user?.first_name} {user?.last_name}
-                            </h4>
-                            <p className="text-gray-400 text-sm">
-                              {user?.email}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Menu Items */}
-                        <div className="space-y-4">
-                          <Link
-                            href="/dashboard/account"
-                            className="flex items-center w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-lg transition-colors duration-200"
-                            onClick={() => setProfileModalOpen(false)}
-                          >
-                            <User size={20} className="mr-4" />
-                            <span className="text-base">Account</span>
-                          </Link>
-
-                          <Link
-                            href="/dashboard/settings"
-                            className="flex items-center w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-lg transition-colors duration-200"
-                            onClick={() => setProfileModalOpen(false)}
-                          >
-                            <Settings size={20} className="mr-4" />
-                            <span className="text-base">Settings</span>
-                          </Link>
-
-                          <button
-                            onClick={handleLogout}
-                            className="flex items-center w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-lg transition-colors duration-200"
-                          >
-                            <LogOut size={20} className="mr-4" />
-                            <span className="text-base">Logout</span>
-                          </button>
-                        </div>
+                  <div className="flex flex-col items-center space-y-3 mt-4">
+                    <div className="flex items-center space-x-3 justify-between w-full">
+                      <div>
+                        <Link
+                          href="/dashboard/account"
+                          onClick={toggleMobileMenu}
+                          className="text-white"
+                        >
+                          {userProfile?.photo ? (
+                            <img
+                              src={userProfile.photo}
+                              alt="Profile"
+                              className="w-10 h-10 rounded-full object-cover"
+                            />
+                          ) : (
+                            <DefaultProfileIcon />
+                          )}
+                        </Link>
+                      </div>
+                      <div className="text-left">
+                        <h4 className="text-white font-medium text-sm">
+                          {user?.first_name && user?.last_name
+                            ? `${user.first_name} ${user.last_name}`
+                            : user?.email}
+                        </h4>
+                        <p className="text-gray-400 text-xs">{user?.email}</p>
                       </div>
                     </div>
                   </div>
-                )}
-              </>
-            ) : (
-              <>
-                <AuthButton variant="primary" fullWidth>
-                  Register
-                </AuthButton>
-                <AuthButton variant="secondary" fullWidth>
-                  Log In
-                </AuthButton>
-              </>
-            )}
-          </div>
 
-          <div className="flex items-center justify-center gap-6 pt-4 border-t dark:border-gray-700 border-gray-200">
-            <LanguageSelector />
-            <ThemeToggle />
+                  {/* Mobile Profile Modal */}
+                  {profileModalOpen && (
+                    <div className="fixed inset-0 z-[9999] md:hidden">
+                      <div
+                        className="absolute inset-0 bg-black bg-opacity-50"
+                        onClick={() => setProfileModalOpen(false)}
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 bg-[#1E2329] border-t border-[#35353E] rounded-t-lg">
+                        <div className="p-6">
+                          {/* User Info */}
+                          <div className="flex items-center mb-6">
+                            <div className="mr-4">
+                              {userProfile?.photo ? (
+                                <img
+                                  src={userProfile.photo}
+                                  alt="Profile"
+                                  className="w-16 h-16 rounded-full object-cover"
+                                />
+                              ) : (
+                                <DefaultProfileIcon />
+                              )}
+                            </div>
+                            <div>
+                              <h4 className="text-white font-medium text-lg">
+                                {user?.first_name} {user?.last_name}
+                              </h4>
+                              <p className="text-gray-400 text-sm">
+                                {user?.email}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Menu Items */}
+                          <div className="space-y-4">
+                            <Link
+                              href="/dashboard/account"
+                              className="flex items-center w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-lg transition-colors duration-200"
+                              onClick={() => setProfileModalOpen(false)}
+                            >
+                              <User size={20} className="mr-4" />
+                              <span className="text-base">Account</span>
+                            </Link>
+
+                            <Link
+                              href="/dashboard/settings"
+                              className="flex items-center w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-lg transition-colors duration-200"
+                              onClick={() => setProfileModalOpen(false)}
+                            >
+                              <Settings size={20} className="mr-4" />
+                              <span className="text-base">Settings</span>
+                            </Link>
+
+                            <button
+                              onClick={handleLogout}
+                              className="flex items-center w-full px-4 py-3 text-gray-300 hover:text-white hover:bg-[#35353E] rounded-lg transition-colors duration-200"
+                            >
+                              <LogOut size={20} className="mr-4" />
+                              <span className="text-base">Logout</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Link href="/auth/register" onClick={toggleMobileMenu}>
+                    <AuthButton variant="primary" fullWidth>
+                      Register
+                    </AuthButton>
+                  </Link>
+                  <Link href="/auth/login" onClick={toggleMobileMenu}>
+                    <AuthButton variant="secondary" fullWidth>
+                      Log In
+                    </AuthButton>
+                  </Link>
+                </>
+              )}
+            </div>
+
+            <div className="flex items-center justify-center gap-6 pt-4 border-t dark:border-gray-700 border-gray-200">
+              <LanguageSelector />
+              <ThemeToggle />
+            </div>
           </div>
-        </div>
+        </>
       )}
     </>
   );

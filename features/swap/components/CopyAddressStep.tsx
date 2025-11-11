@@ -241,29 +241,29 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center py-8 w-full">
+    <div className="min-h-screen flex flex-col items-center py-4 sm:py-8 w-full px-3 sm:px-4">
       {/* Top Card */}
-      <div className="flex flex-col md:flex-row justify-between items-stretch bg-white dark:bg-[#23232b] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl p-3 shadow-lg w-full max-w-4xl mb-4 min-h-[180px]">
+      <div className="flex flex-col md:flex-row justify-between items-stretch bg-white dark:bg-[#23232b] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl p-3 sm:p-4 shadow-lg w-full max-w-4xl mb-4 min-h-[180px]">
         <div className="flex-1 flex flex-col justify-between py-2 pr-2">
                       <div>
               <div className="text-gray-600 dark:text-[#7e7e8f] text-xs font-semibold mb-0.5">
                 Amount:
               </div>
-              <div className="text-gray-900 dark:text-white text-base font-semibold mb-1">
-                {statusObj?.amount_from || swapResponse.fromAmount} 
-                <span className='uppercase ml-4'>{statusObj?.from_currency || swapResponse.fromCurrency}</span>
+              <div className="text-gray-900 dark:text-white text-sm sm:text-base font-semibold mb-1 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-0">
+                <span>{statusObj?.amount_from || swapResponse.fromAmount}</span>
+                <span className='uppercase sm:ml-4'>{statusObj?.from_currency || swapResponse.fromCurrency}</span>
               </div>
              
-              <div className="mt-4">
+              <div className="mt-3 sm:mt-4">
                 <div className="text-gray-600 dark:text-[#7e7e8f] text-xs font-semibold mb-1">
                   To this address:
                 </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[#1D8751] dark:text-[#1D8751] font-mono text-base truncate">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[#1D8751] dark:text-[#1D8751] font-mono text-xs sm:text-base break-all flex-1 min-w-0">
                   {swapResponse.payinAddress}
                 </span>
                 <button
-                  className="bg-[#1D8751] hover:bg-[#16663d] dark:bg-[#1D8751] dark:hover:bg-[#16663d] p-2 rounded-lg text-white transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
+                  className="bg-[#1D8751] hover:bg-[#16663d] dark:bg-[#1D8751] dark:hover:bg-[#16663d] p-1.5 sm:p-2 rounded-lg text-white transition-colors min-w-[36px] min-h-[36px] sm:min-w-[40px] sm:min-h-[40px] flex items-center justify-center flex-shrink-0"
                   onClick={onCopyAddress}
                   title="Copy Address"
                 >
@@ -289,20 +289,20 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
         </div>
         <div className="flex-shrink-0 ml-0 md:ml-6 flex items-center justify-center py-2">
           {/* QR code */}
-          <div className="w-36 h-36 bg-white rounded-lg flex items-center justify-center">
+          <div className="w-24 h-24 sm:w-36 sm:h-36 bg-white rounded-lg flex items-center justify-center">
             <img
               src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${swapResponse.payinAddress}`}
               alt="QR Code"
-              className="w-32 h-32"
+              className="w-20 h-20 sm:w-32 sm:h-32"
             />
           </div>
         </div>
       </div>
 
       {/* Stepper */}
-      <div className="w-full max-w-4xl mb-3">
+      <div className="w-full max-w-4xl mb-3 overflow-x-auto">
         {/* Circle and connecting line row */}
-        <div className="flex items-center mb-2">
+        <div className="flex items-center mb-2 min-w-max sm:min-w-0">
           {statusSteps.map((step, idx) => {
             const isActive = idx === currentStepIndex;
             const isCompleted = idx < currentStepIndex;
@@ -311,7 +311,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
               <React.Fragment key={step.key}>
                 <div className="flex items-center">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center p-1 ${
+                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center p-1 flex-shrink-0 ${
                       isActive
                         ? "bg-[#F79330] dark:bg-[#F79330]"
                         : isCompleted
@@ -327,7 +327,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
                 </div>
                 {/* Connecting line at circle center */}
                 {idx < statusSteps.length - 1 && (
-                  <div className="flex-1 h-1 mx-2 rounded-full">
+                  <div className="flex-1 h-1 mx-1 sm:mx-2 rounded-full min-w-[20px] sm:min-w-0">
                     <div
                       className={`h-full rounded-full transition-all duration-300 ${
                         idx < currentStepIndex
@@ -345,16 +345,16 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
         </div>
         
         {/* Text and dots row */}
-        <div className="flex items-center">
+        <div className="flex items-center min-w-max sm:min-w-0">
           {statusSteps.map((step, idx) => {
             const isActive = idx === currentStepIndex;
             const isCompleted = idx < currentStepIndex;
             
             return (
               <React.Fragment key={`text-${step.key}`}>
-                <div className="flex flex-col items-center w-10">
+                <div className="flex flex-col items-center w-10 sm:w-auto min-w-[60px] sm:min-w-0">
                   <span
-                    className={`font-medium text-xs text-center ${
+                    className={`font-medium text-[10px] sm:text-xs text-center ${
                       isActive
                         ? "text-[#F79330] dark:text-[#F79330]"
                         : isCompleted
@@ -383,22 +383,22 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
       </div>
 
       {/* Transaction Details Card */}
-      <div className="bg-white dark:bg-[#23232b] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl p-6 shadow-lg w-full max-w-4xl mb-3">
+      <div className="bg-white dark:bg-[#23232b] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl p-4 sm:p-6 shadow-lg w-full max-w-4xl mb-3">
         {/* Title */}
-        <div className="text-gray-900 dark:text-white text-2xl font-semibold mb-4">
+        <div className="text-gray-900 dark:text-white text-lg sm:text-xl md:text-2xl font-semibold mb-3 sm:mb-4">
           Transaction Details
         </div>
         {/* Transaction ID Row */}
-        <div className="flex items-center justify-between mb-1">
-          <div className="text-gray-600 dark:text-[#7e7e8f] text-base font-medium">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-1">
+          <div className="text-gray-600 dark:text-[#7e7e8f] text-sm sm:text-base font-medium">
             Transaction ID
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-gray-900 dark:text-white text-base font-mono font-semibold">
+            <span className="text-gray-900 dark:text-white text-xs sm:text-base font-mono font-semibold break-all">
               {swapResponse.id}
             </span>
             <button
-              className="ml-2 p-1 rounded transition"
+              className="ml-2 p-1 rounded transition flex-shrink-0"
               onClick={() => navigator.clipboard.writeText(swapResponse.id)}
               title="Copy Transaction ID"
             >
@@ -409,20 +409,20 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
         {/* Dashed Divider */}
         <div className="border-t border-dashed border-gray-400 dark:border-[#7e7e8f] mb-4"></div>
         {/* You Get and Recipient Wallet */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-gray-600 dark:text-[#7e7e8f] text-base font-medium">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-2">
+          <div className="text-gray-600 dark:text-[#7e7e8f] text-sm sm:text-base font-medium">
             You Get
           </div>
-          <div className="text-gray-600 dark:text-[#7e7e8f] text-base font-medium">
+          <div className="text-gray-600 dark:text-[#7e7e8f] text-sm sm:text-base font-medium">
             Recipient Wallet
           </div>
         </div>
-        <div className="flex items-center justify-between mt-2">
-          <div className="text-gray-900 dark:text-white text-base font-mono font-semibold">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mt-2">
+          <div className="text-gray-900 dark:text-white text-sm sm:text-base font-mono font-semibold">
             {statusObj?.amount_to || swapResponse.toAmount} {statusObj?.to_currency || swapResponse.toCurrency}
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-gray-600 dark:text-[#7e7e8f] text-sm font-mono">
+            <span className="text-gray-600 dark:text-[#7e7e8f] text-xs sm:text-sm font-mono break-all">
               {swapResponse.payoutAddress}
             </span>
           </div>
@@ -432,11 +432,11 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
       {/* View Results Button - shown when transaction is finished */}
       {mappedStatus === "finished" && (
         <div className="w-full max-w-4xl mb-4">
-          <div className="bg-[#1D8751] dark:bg-[#1D8751] border border-[#1D8751] dark:border-[#1D8751] rounded-2xl p-4 shadow-lg text-center">
-            <h3 className="text-white dark:text-white text-lg font-semibold mb-2">🎉 Transaction Completed!</h3>
-            <p className="text-white/90 dark:text-white/90 text-sm mb-4">Your swap has been processed successfully.</p>
+          <div className="bg-[#1D8751] dark:bg-[#1D8751] border border-[#1D8751] dark:border-[#1D8751] rounded-2xl p-3 sm:p-4 shadow-lg text-center">
+            <h3 className="text-white dark:text-white text-base sm:text-lg font-semibold mb-2">🎉 Transaction Completed!</h3>
+            <p className="text-white/90 dark:text-white/90 text-xs sm:text-sm mb-4">Your swap has been processed successfully.</p>
             <button
-              className="bg-white hover:bg-gray-100 dark:bg-white dark:hover:bg-gray-100 text-[#1D8751] dark:text-[#1D8751] font-semibold py-3 px-8 rounded-xl text-lg transition"
+              className="bg-white hover:bg-gray-100 dark:bg-white dark:hover:bg-gray-100 text-[#1D8751] dark:text-[#1D8751] font-semibold py-2.5 sm:py-3 px-6 sm:px-8 rounded-xl text-sm sm:text-lg transition"
               onClick={onNext}
             >
               View Results

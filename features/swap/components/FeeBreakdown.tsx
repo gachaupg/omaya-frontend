@@ -21,8 +21,8 @@ const FeeBreakdown: React.FC<FeeBreakdownProps> = ({
   return (
     <>
       {/* Estimated Rate */}
-      <div className="mt-2 flex items-center gap-2 dark:border-[#35353E] border-gray-300 border justify-center rounded-[24px] px-3 py-2">
-        <span className="dark:text-[#8C8CA1] text-gray-600 dark:bg-[#35353E] bg-gray-200 text-xs px-3 py-1 rounded-full">
+      <div className="mt-2 flex items-center gap-2 dark:border-[#35353E] border-gray-300 border justify-center rounded-[24px] px-2 sm:px-3 py-1.5 sm:py-2">
+        <span className="dark:text-[#8C8CA1] text-gray-600 dark:bg-[#35353E] bg-gray-200 text-[10px] sm:text-xs px-2 sm:px-3 py-1 rounded-full break-words text-center">
           {estimateLoading
             ? "Calculating rate..."
             : estimate &&

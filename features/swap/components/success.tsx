@@ -261,11 +261,11 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
   }, []);
   
   return (
-    <div className="flex flex-col mt-1 w-full max-w-2xl mx-auto px-4">
+    <div className="flex flex-col mt-1 w-full max-w-2xl mx-auto px-3 sm:px-4">
       {/* Success Image */}
       <div className="flex flex-col w-full items-center mb-4">
         <img 
-          className="w-80 h-40 object-contain" 
+          className="w-full max-w-80 h-auto object-contain" 
           src={isDark 
             ? "https://res.cloudinary.com/pitz/image/upload/v1756484286/Screenshot_2025-08-29_191548_two36s.png" 
             : "https://res.cloudinary.com/pitz/image/upload/v1756925670/success_wdhc19.png"
@@ -281,20 +281,20 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
           : "bg-white border-gray-200"
       }`}>
         {/* Transaction Details Section */}
-        <div className="p-6">
-          <h2 className={`text-lg font-semibold ${
+        <div className="p-4 sm:p-6">
+          <h2 className={`text-base sm:text-lg font-semibold ${
             isDark ? "text-white" : "text-gray-900"
           }`}>Transaction Details</h2>
-          <div className="flex justify-between text-sm">
+          <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-0 text-xs sm:text-sm">
             <div>
               <div className={`${
                 isDark ? "text-gray-400" : "text-gray-600"
               }`}>Transaction ID</div>
-              <div className={`font-mono ${
+              <div className={`font-mono break-all ${
                 isDark ? "text-white" : "text-gray-900"
               }`}>{realData.transactionId}</div>
             </div>
-            <div className="text-right">
+            <div className="text-left sm:text-right">
               <div className={`${
                 isDark ? "text-gray-400" : "text-gray-600"
               }`}>Date & Time</div>
@@ -306,35 +306,35 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
         </div>
 
         {/* Exchange Summary Section */}
-        <div className=" pl-6 pr-6">
+        <div className="px-4 sm:px-6 pb-4 sm:pb-6">
         <div className={`border-t border-1 my-4 ${
           isDark ? "border-gray-600" : "border-gray-300"
         }`}></div>
 
-          <h3 className={`text-lg font-semibold mb-4 ${
+          <h3 className={`text-base sm:text-lg font-semibold mb-4 ${
             isDark ? "text-white" : "text-gray-900"
           }`}>Exchange Summary</h3>
           <div className={`border-t border-dashed my-4 ${
             isDark ? "border-gray-600" : "border-gray-300"
           }`}></div>
           {/* You Paid / You Received */}
-          <div className="flex justify-between mb-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-0 mb-4">
             <div>
-              <div className={`text-sm mb-1 ${
+              <div className={`text-xs sm:text-sm mb-1 ${
                 isDark ? "text-gray-400" : "text-gray-600"
               }`}>You Paid</div>
-              <div className="font-bold flex items-center gap-2" style={{ color: GREEN }}>
+              <div className="font-bold flex items-center gap-2 text-sm sm:text-base" style={{ color: GREEN }}>
                 <span>{realData.paidAmount}</span>
               </div>
               <div className={`text-xs ${
                 isDark ? "text-gray-400" : "text-gray-600"
               }`}>Via {realData.payinMethod}</div>
             </div>
-            <div className="text-right">
-              <div className={`text-sm mb-1 ${
+            <div className="text-left sm:text-right">
+              <div className={`text-xs sm:text-sm mb-1 ${
                 isDark ? "text-gray-400" : "text-gray-600"
               }`}>You Received</div>
-              <div className="font-bold flex items-center justify-end gap-2" style={{ color: GREEN }}>
+              <div className="font-bold flex items-center justify-start sm:justify-end gap-2 text-sm sm:text-base" style={{ color: GREEN }}>
                 <span>{realData.receivedAmount} </span>
                 <span>{realData.receivedCurrency}</span>
               </div>
@@ -349,10 +349,10 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
           {/* Transaction Hash and Net Amount */}
           <div className="space-y-3">
             <div>
-              <div className={`text-sm mb-1 ${
+              <div className={`text-xs sm:text-sm mb-1 ${
                 isDark ? "text-gray-400" : "text-gray-600"
               }`}>Transaction Hash</div>
-              <div className={` text-[12px] font-mono ${
+              <div className={`text-[10px] sm:text-[12px] font-mono break-all ${
                 isDark ? "text-white" : "text-gray-900"
               }`}>{realData.transactionHash} </div>
             </div>
@@ -361,13 +361,13 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
                 ? "bg-[#1D1D23] border-[#35353E]" 
                 : "bg-gray-50 border-gray-200"
             }`}></div>
-            <div className="flex justify-between mb-3">
-              <div className={`text-sm ${
+            <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-0 mb-3">
+              <div className={`text-xs sm:text-sm ${
                 isDark ? "text-white" : "text-gray-900"
               }`}>
                 Net Amount Processed
               </div>
-              <div className="font-mono flex items-center gap-2" style={{ color: GREEN }}>
+              <div className="font-mono flex items-center gap-2 text-sm sm:text-base" style={{ color: GREEN }}>
                 {transactionData?.asset?.icon && (
                   <img
                     src={transactionData.asset.icon}
@@ -397,11 +397,11 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
          alt="" 
        />
         
-        <div className={`text-center text-xs ${
+        <div className={`text-center text-xs px-4 ${
           isDark ? "text-gray-400" : "text-gray-600"
         }`}>
           Need help? Contact our support team at{" "}
-          <a href="mailto:support@omayaexchange.com" className="underline text-green-400">
+          <a href="mailto:support@omayaexchange.com" className="underline text-green-400 break-all">
             support@omayaexchange.com
           </a>
         </div>

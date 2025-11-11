@@ -43,13 +43,13 @@ const KYC = () => {
   };
 
   return (
-    <div className="p-3 dark:text-white text-[#0D0D0D] flex flex-col gap-2">
-      <p className="text-base font-semibold">KYC Verification</p>
-      <div className="flex flex-col dark:bg-[#1D1D23] bg-gray-50 dark:border-[#35353E] border-gray-300 border-2 rounded-xl p-3 gap-3">
-        <div className="flex flex-col border dark:bg-[#18181D] bg-[#F5F5F5] dark:border-[#35353E] border-gray-300 rounded-xl p-3 gap-3">
+    <div className="p-3 sm:p-4 dark:text-white text-[#0D0D0D] flex flex-col gap-2">
+      <p className="text-base sm:text-lg font-semibold">KYC Verification</p>
+      <div className="flex flex-col dark:bg-[#1D1D23] bg-gray-50 dark:border-[#35353E] border-gray-300 border-2 rounded-xl p-3 sm:p-4 gap-3">
+        <div className="flex flex-col border dark:bg-[#18181D] bg-[#F5F5F5] dark:border-[#35353E] border-gray-300 rounded-xl p-3 sm:p-4 gap-3">
           {/* Avatar, Name, and Status */}
           {/* KYC Info */}
-          <p className="text-sm dark:text-[#808080] text-gray-600">
+          <p className="text-xs sm:text-sm dark:text-[#808080] text-gray-600">
             Complete your KYC verification to unlock all platform features and enhance your account security. 
             This process helps us verify your identity and comply with regulatory requirements, ensuring a 
             safe and compliant trading environment for all users.
@@ -63,8 +63,8 @@ const KYC = () => {
               {!profileImage || profileImage === DEFAULT_AVATAR ? (
                 // Simple SVG avatar icon
                 <svg
-                  width="48"
-                  height="48"
+                  width="44"
+                  height="44"
                   viewBox="0 0 48 48"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
@@ -78,8 +78,8 @@ const KYC = () => {
                 <Image
                   src={profileImage}
                   alt="User avatar"
-                  width={48}
-                  height={48}
+                  width={44}
+                  height={44}
                   className="object-cover rounded-full aspect-square"
                   unoptimized={true}
                   onError={(
@@ -100,10 +100,10 @@ const KYC = () => {
               />
             </div>
             <div>
-              <div className="text-base font-semibold">
+              <div className="text-sm sm:text-base font-semibold">
                 {user?.first_name} {user?.last_name}
               </div>
-              <div className="flex items-center gap-2 text-[#1D8751] text-sm">
+              <div className="flex items-center gap-2 text-[#1D8751] text-xs sm:text-sm">
                 Verified Profile
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                   <circle

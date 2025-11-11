@@ -390,28 +390,28 @@ const ChatBox: React.FC<{
 
   return (
     <div>
-      <div className="flex items-center justify-between text-xs mb-2">
-        <div className="flex items-center gap-2">
-          <span>Chat with {otherPersonData.displayName}</span>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs mb-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+          <span className="truncate">Chat with {otherPersonData.displayName}</span>
           {messageType === 'p2p' ? (
             wsConnected ? (
-              <span className="text-[10px] text-[#1D8751] flex items-center gap-1">
+              <span className="text-[10px] text-[#1D8751] flex items-center gap-1 whitespace-nowrap">
                 <span className="w-1.5 h-1.5 bg-[#1D8751] rounded-full animate-pulse"></span>
                 Live
               </span>
             ) : (
-              <span className="text-[10px] text-[#F79330] flex items-center gap-1">
+              <span className="text-[10px] text-[#F79330] flex items-center gap-1 whitespace-nowrap">
                 <span className="w-1.5 h-1.5 bg-[#F79330] rounded-full"></span>
                 Reconnecting...
               </span>
             )
           ) : (
-            <span className="text-[10px] text-[#788099] flex items-center gap-1">
+            <span className="text-[10px] text-[#788099] flex items-center gap-1 whitespace-nowrap">
               <span className="w-1.5 h-1.5 bg-[#788099] rounded-full"></span>
               API
             </span>
           )}
-          <span className="text-[10px] text-[#788099]">
+          <span className="text-[10px] text-[#788099] whitespace-nowrap">
             ({sortedMessages.length} msgs)
           </span>
         </div>
@@ -420,17 +420,17 @@ const ChatBox: React.FC<{
         <button
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className="flex items-center gap-1 px-2 py-1 dark:bg-[#1D8751] bg-[#1D8751] text-white rounded hover:bg-[#166b3e] transition-colors disabled:opacity-50 text-xs font-medium"
+          className="flex items-center gap-1 px-2 py-1.5 sm:py-1 dark:bg-[#1D8751] bg-[#1D8751] text-white rounded hover:bg-[#166b3e] transition-colors disabled:opacity-50 text-xs font-medium self-start sm:self-auto"
           title="Refresh messages and load images"
         >
           <svg
-            width="14"
-            height="14"
+            width="12"
+            height="12"
+            className={`sm:w-[14px] sm:h-[14px] ${isRefreshing ? "animate-spin" : ""}`}
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
             viewBox="0 0 24 24"
-            className={`${isRefreshing ? "animate-spin" : ""}`}
           >
             <path
               d="M1 4v6h6M23 20v-6h-6"
@@ -443,7 +443,8 @@ const ChatBox: React.FC<{
               strokeLinejoin="round"
             />
           </svg>
-          Refresh
+          <span className="hidden sm:inline">{isRefreshing ? "Refreshing..." : "Refresh"}</span>
+          <span className="sm:hidden">{isRefreshing ? "..." : "↻"}</span>
         </button>
         {onClose && (
           <button
@@ -469,12 +470,12 @@ const ChatBox: React.FC<{
           </button>
         )}
       </div>
-      <div className="chat-container mt-6 flex flex-col pr-10 mb-2 h-96 bg-white dark:bg-[#18181D] border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px] p-2 md:p-4 relative">
+      <div className="chat-container mt-4 sm:mt-6 flex flex-col pr-2 sm:pr-10 mb-2 h-80 sm:h-96 bg-white dark:bg-[#18181D] border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px] p-2 sm:p-4 relative">
         <div>
           <div className="flex items-center justify-center gap-2">
-            {otherPersonData.photo ? <img className="w-8 h-8 rounded-full object-cover" src={otherPersonData.photo} alt={otherPersonData.displayName} /> : <MdAccountCircle  className="w-6 h-6 text-[#1D8751]"/>}
-            <div className="flex-1">
-              <div className="font-semibold text-md">{otherPersonData.displayName}</div>
+            {otherPersonData.photo ? <img className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0" src={otherPersonData.photo} alt={otherPersonData.displayName} /> : <MdAccountCircle  className="w-5 h-5 sm:w-6 sm:h-6 text-[#1D8751] flex-shrink-0"/>}
+            <div className="flex-1 min-w-0">
+              <div className="font-semibold text-sm sm:text-md truncate">{otherPersonData.displayName}</div>
             </div>
           </div>
         </div>
@@ -532,15 +533,15 @@ const ChatBox: React.FC<{
                 <div
                   className={
                     isSender
-                      ? "bg-[#1D8751] text-white rounded-lg p-3 max-w-xs min-w-[120px]"
-                      : "dark:bg-[#23232B] bg-gray-200 dark:text-white text-gray-900 rounded-lg p-3 max-w-xs min-w-[120px]"
+                      ? "bg-[#1D8751] text-white rounded-lg p-2 sm:p-3 max-w-[85%] sm:max-w-xs min-w-[100px] sm:min-w-[120px]"
+                      : "dark:bg-[#23232B] bg-gray-200 dark:text-white text-gray-900 rounded-lg p-2 sm:p-3 max-w-[85%] sm:max-w-xs min-w-[100px] sm:min-w-[120px]"
                   }
                 >
                   {/* Show sender username - "You" for own messages, username for their messages */}
                   <div className={`text-xs font-semibold mb-1 ${isSender ? "text-green-100" : "text-[#1D8751] dark:text-[#1D8751]"}`}>
                     {isSender ? "You" : displayName}
                   </div>
-                  {msg.message && msg.message.trim() && <div className="text-sm break-words mb-2">{msg.message}</div>}
+                  {msg.message && msg.message.trim() && <div className="text-xs sm:text-sm break-words mb-2">{msg.message}</div>}
                   
                   {/* Image attachments */}
                   {msg.images && msg.images.length > 0 && (
@@ -636,12 +637,13 @@ const ChatBox: React.FC<{
         {userHasScrolled && !isAtBottom && (
           <button
             onClick={scrollToBottom}
-            className="absolute bottom-20 right-14 bg-[#1D8751] text-white rounded-full p-2 shadow-lg hover:bg-[#166339] transition-colors z-10 animate-bounce"
+            className="absolute bottom-16 sm:bottom-20 right-2 sm:right-14 bg-[#1D8751] text-white rounded-full p-1.5 sm:p-2 shadow-lg hover:bg-[#166339] transition-colors z-10 animate-bounce"
             title="Scroll to bottom"
           >
             <svg
-              width="20"
-              height="20"
+              width="16"
+              height="16"
+              className="sm:w-5 sm:h-5"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
@@ -657,9 +659,9 @@ const ChatBox: React.FC<{
         )}
         
         <hr className="border-[#E8EFF5] dark:border-[#35353E] mt-2" />
-        <div className="flex gap-2 mt-2">
+        <div className="flex gap-1.5 sm:gap-2 mt-2">
           <input
-            className="flex-1 rounded px-2 py-1 text-[#788099] dark:text-white border-none outline-none"
+            className="flex-1 rounded px-2 py-1.5 sm:py-1 text-xs sm:text-sm text-[#788099] dark:text-white border-none outline-none"
             value={message}
             onChange={(e) => dispatch(setMessage(e.target.value))}
             onKeyDown={(e) => {
@@ -673,11 +675,11 @@ const ChatBox: React.FC<{
           {/* Paperclip icon for image upload */}
           <button
             type="button"
-            className="flex items-center justify-center w-10 h-10 dark:bg-[#23232B] bg-gray-100 rounded-lg"
+            className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 dark:bg-[#23232B] bg-gray-100 rounded-lg flex-shrink-0"
             onClick={() => fileInputRef.current && fileInputRef.current.click()}
             title="Attach image"
           >
-            <svg width="24" height="24" fill="#1D8751" viewBox="0 0 24 24">
+            <svg width="18" height="18" className="sm:w-6 sm:h-6" fill="#1D8751" viewBox="0 0 24 24">
               <path
                 d="M16.5 6.5l-7.8 7.8a3 3 0 104.2 4.2l7.1-7.1a5 5 0 00-7.1-7.1l-8.5 8.5"
                 stroke="#1D8751"
@@ -699,11 +701,12 @@ const ChatBox: React.FC<{
           <button
             onClick={handleSend}
             disabled={!message.trim() && uploaded_images.length === 0}
-            className="rounded-full h-10 w-10 flex items-center justify-center bg-[#1D8751] text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-full h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center bg-[#1D8751] text-white disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
           >
             <svg
-              width="24"
-              height="24"
+              width="18"
+              height="18"
+              className="sm:w-6 sm:h-6"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"

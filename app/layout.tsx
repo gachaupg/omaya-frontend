@@ -1,7 +1,7 @@
 // app/layout.tsx
 
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Mulish } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -9,19 +9,41 @@ import Providers from "./providers";
 import { Toaster } from "@/components/ui/Toast";
 import GlobalSessionManager from "@/components/GlobalSessionManager";
 
-// Load all three fonts with CSS-variable support
-const geistSans = Geist({
-  subsets: ["latin"],
+// Load all three fonts from local assets for offline-friendly builds
+const geistSans = localFont({
+  src: [
+    {
+      path: "./fonts/GeistVariable.woff2",
+      weight: "100 900",
+      style: "normal",
+    },
+  ],
   variable: "--font-geist-sans",
+  display: "swap",
 });
-const geistMono = Geist_Mono({
-  subsets: ["latin"],
+
+const geistMono = localFont({
+  src: [
+    {
+      path: "./fonts/GeistMonoVariable.woff2",
+      weight: "100 900",
+      style: "normal",
+    },
+  ],
   variable: "--font-geist-mono",
+  display: "swap",
 });
-const mulish = Mulish({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+
+const mulish = localFont({
+  src: [
+    {
+      path: "./fonts/Mulish-VariableFont_wght.ttf",
+      weight: "100 900",
+      style: "normal",
+    },
+  ],
   variable: "--font-mulish",
+  display: "swap",
 });
 
 export const metadata: Metadata = {

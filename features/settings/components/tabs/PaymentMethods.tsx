@@ -44,25 +44,24 @@ const PaymentMethods = () => {
   };
 
   return (
-
-    <div className="p-3 dark:text-white w-full text-gray-900 w-full">
+    <div className="p-3 sm:p-4 dark:text-white text-gray-900 w-full">
       {/* Top Header Section */}
-      <div className="flex items-center w-full justify-between mb-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center w-full justify-between gap-2 sm:gap-3 mb-4">
         <div>
-          <div className="text-sm font-semibold dark:text-white text-gray-900 mb-2">
+          <div className="text-sm sm:text-base font-semibold dark:text-white text-gray-900 mb-2">
             Wallet Address
           </div>
           <div className="flex gap-2">
-            <button className={`px-3 py-1 rounded-full border border-[#1D8751] text-[#1D8751] text-xs font-semibold focus:outline-none ${activeButton === "Approved" ? "bg-[#1D8751] text-white" : "bg-transparent"}`} onClick={() => setActiveButton("Approved")} >
+            <button className={`px-3 py-1.5 rounded-full border border-[#1D8751] text-[#1D8751] text-xs sm:text-sm font-semibold focus:outline-none ${activeButton === "Approved" ? "bg-[#1D8751] text-white" : "bg-transparent"}`} onClick={() => setActiveButton("Approved")} >
               Approved
             </button>
-            <button className={`px-3 py-1 rounded-full border border-[#1D8751] text-[#1D8751] text-xs font-semibold focus:outline-none ${activeButton === "Pending"? "bg-[#1D8751] text-white" : "bg-transparent"}` } onClick={() => setActiveButton("Pending")}>
+            <button className={`px-3 py-1.5 rounded-full border border-[#1D8751] text-[#1D8751] text-xs sm:text-sm font-semibold focus:outline-none ${activeButton === "Pending"? "bg-[#1D8751] text-white" : "bg-transparent"}` } onClick={() => setActiveButton("Pending")}>
               Pending
             </button>
           </div>
         </div>
         <button
-          className="flex items-center gap-1 text-xs dark:text-white text-gray-900 font-medium hover:underline focus:outline-none"
+          className="flex items-center gap-1 text-xs sm:text-sm dark:text-white text-gray-900 font-medium hover:underline focus:outline-none self-start"
           onClick={() => setShowPaymentModal(true)}
         >
           Add Payment Method
@@ -70,7 +69,7 @@ const PaymentMethods = () => {
         </button>
       </div>
       <div className="flex w-full flex-col gap-3">
-        <p className="text-base font-semibold dark:text-white text-gray-900">
+        <p className="text-sm sm:text-base font-semibold dark:text-white text-gray-900">
           {" "}
           Payment Methods
         </p>
@@ -81,13 +80,13 @@ const PaymentMethods = () => {
           .map((payment: UserPaymentDetail) => (
           <div
             key={payment.id}
-            className="flex dark:bg-[#1D1D23] bg-gray-50 dark:border-[#35353E] border-gray-300 border-2 rounded-xl p-3 justify-between gap-3 items-center"
+            className="flex flex-col sm:flex-row dark:bg-[#1D1D23] bg-gray-50 dark:border-[#35353E] border-gray-300 border-2 rounded-xl p-3 sm:p-4 justify-between gap-3 sm:gap-4 items-start sm:items-center"
           >
-            <div>
-              <p className="text-sm dark:text-white text-gray-900">
+            <div className="min-w-0">
+              <p className="text-sm sm:text-base dark:text-white text-gray-900 truncate">
                 {payment?.payment_method_name}
               </p>
-              <p className="text-xs dark:text-[#808080] text-gray-600 mt-1 flex items-center">
+              <p className="text-xs dark:text-[#808080] text-gray-600 mt-1 flex items-center min-w-0">
                 <img
                   src={payment?.provider_logo || "/default-provider-logo.svg"}
                   alt={payment?.payment_provider_name}
@@ -98,19 +97,19 @@ const PaymentMethods = () => {
                     e.currentTarget.src = "/default-provider-logo.svg";
                   }}
                 />
-                {payment?.payment_provider_name}
+                <span className="truncate">{payment?.payment_provider_name}</span>
               </p>
             </div>
-            <div>
-              <p className="text-sm dark:text-white text-gray-900">
+            <div className="min-w-0">
+              <p className="text-sm sm:text-base dark:text-white text-gray-900 break-all">
                 {payment?.account_number}
               </p>
-              <p className="text-xs dark:text-[#808080] text-gray-600 mt-1">
+              <p className="text-xs dark:text-[#808080] text-gray-600 mt-1 truncate">
                 {payment?.account_name}
               </p>
             </div>
             <button
-              className="ml-2 text-[#1D8751] hover:text-red-500"
+              className="sm:ml-2 text-[#1D8751] hover:text-red-500 self-stretch sm:self-auto"
               title="Delete"
               disabled={deletingMethodId === payment.id.toString()}
               onClick={() => handleDeleteMethod(payment.id.toString())}

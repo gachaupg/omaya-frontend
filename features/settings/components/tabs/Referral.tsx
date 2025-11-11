@@ -28,11 +28,11 @@ const ApplicationSubmittedModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-black rounded-2xl p-8 max-w-md w-full mx-4 text-center shadow-2xl">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
+      <div className="bg-black rounded-2xl p-4 sm:p-6 max-w-sm sm:max-w-md w-full mx-auto text-center shadow-2xl">
         {/* Success Icon */}
-        <div className="flex justify-start mb-6">
-          <div className="w-12 h-12 border-2 border-green-500 rounded-full flex items-center justify-center">
+        <div className="flex justify-start mb-4 sm:mb-6">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 border-2 border-green-500 rounded-full flex items-center justify-center">
             <svg
               width="24"
               height="24"
@@ -49,19 +49,19 @@ const ApplicationSubmittedModal = ({
         </div>
 
         {/* Success Title */}
-        <h2 className="text-white text-2xl font-bold mb-4 text-left">
+        <h2 className="text-white text-lg sm:text-2xl font-bold mb-3 sm:mb-4 text-left">
           Application Submitted
         </h2>
 
         {/* Success Message */}
-        <p className="text-gray-300 text-sm mb-8 text-left leading-relaxed">
+        <p className="text-gray-300 text-xs sm:text-sm mb-6 sm:mb-8 text-left leading-relaxed">
           We received your application for verified advertiser. Upon our review, you will receive notification about the outcome of your application
         </p>
 
         {/* OK Button */}
         <button
           onClick={onClose}
-          className="w-full bg-green-500 text-white py-3 rounded-xl text-lg font-medium hover:bg-green-600 transition-colors"
+          className="w-full bg-green-500 text-white py-2.5 sm:py-3 rounded-xl text-base sm:text-lg font-medium hover:bg-green-600 transition-colors"
         >
           OK
         </button>
@@ -123,7 +123,7 @@ const Referral: React.FC = () => {
   /* ───────────────────────────── early exit ───────────────────────── */
   if (showWithdraw) {
     return (
-      <div className="min-h-screen flex flex-col items-center bg-gray-50 text-gray-900 dark:bg-[#18181b] dark:text-white">
+      <div className="min-h-screen flex flex-col items-center bg-gray-50 text-gray-900 dark:bg-[#18181b] dark:text-white px-3 sm:px-4 pt-2 w-full">
         <Withdraw />
       </div>
     );
@@ -131,14 +131,14 @@ const Referral: React.FC = () => {
 
   /* ─────────────────────────────── render ─────────────────────────── */
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-[#18181b] dark:text-white w-full">
+    <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-[#18181b] dark:text-white w-full px-3 sm:px-4 pt-2">
       <ReferralTabs
         tab={activeTab}
         setTab={setActiveTab as (tab: string) => void}
       />
 
       {activeTab === "Referral" && (
-        <div className="flex flex-col border border-[#35353F] rounded-[18px] p-4">
+        <div className="flex flex-col border border-[#35353F] rounded-[18px] p-3 sm:p-4">
           <ReferralMainCard
             user={user}
             walletData={wallet}
@@ -154,7 +154,7 @@ const Referral: React.FC = () => {
         </div>
       )}
       {activeTab === "History" && (
-        <div className="border border-[#35353F] rounded-[18px] p-4">
+        <div className="border border-[#35353F] rounded-[18px] p-3 sm:p-4">
           <ReferralWithdrawalHistory />
         </div>
       )}

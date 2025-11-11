@@ -220,7 +220,7 @@ const PaymentMethods = () => {
         <Input
           placeholder="Accounthhhh Name"
           value={method.account_name}
-          className="w-full sm:w-[539px] h-[52px] rounded-3xl border border-gray-300 dark:border-[#353535] bg-white dark:bg-[#353535] text-gray-900 dark:text-white px-[14px] py-[10px] text-base"
+          className="w-full sm:flex-1 h-[52px] rounded-3xl border border-gray-300 dark:border-[#353535] bg-white dark:bg-[#353535] text-gray-900 dark:text-white px-[14px] py-[10px] text-base"
           bgColor="#ffffff"
           borderColor="#d1d5db"
           disabled={!method.editable}
@@ -232,7 +232,7 @@ const PaymentMethods = () => {
         <Input
           placeholder="Account Number"
           value={method.account_number}
-          className="w-full sm:w-[539px] h-[52px] rounded-3xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#18181D] text-gray-900 dark:text-white px-[14px] py-[10px] text-base"
+          className="w-full sm:flex-1 h-[52px] rounded-3xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#18181D] text-gray-900 dark:text-white px-[14px] py-[10px] text-base"
           bgColor="#ffffff"
           borderColor="#d1d5db"
           disabled={!method.editable}
@@ -282,7 +282,7 @@ const PaymentMethods = () => {
     if (totalPages <= 1) return null;
 
     return (
-      <div className="flex items-center justify-center gap-2 mt-6">
+      <div className="flex flex-wrap items-center justify-center gap-2 mt-6">
         <button
           onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
           disabled={currentPage === 1}

@@ -401,6 +401,16 @@ export default function ExchangeForm({
     return null;
   };
 
+  // Normalize processed payment methods to a plain array before mapping
+  const normalizedPaymentMethods = useMemo<any[]>(() => {
+    if (Array.isArray(processedPaymentMethods)) return processedPaymentMethods;
+    const viaDataArray = (processedPaymentMethods as any)?.data;
+    if (Array.isArray(viaDataArray)) return viaDataArray;
+    const viaDataPaymentMethods = (processedPaymentMethods as any)?.data?.payment_methods;
+    if (Array.isArray(viaDataPaymentMethods)) return viaDataPaymentMethods;
+    return [];
+  }, [processedPaymentMethods]);
+
   // Get provider name from provider object
   const getProviderName = (provider: any) => {
     if (provider?.provider_name) {
@@ -423,10 +433,12 @@ export default function ExchangeForm({
     return "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
   };
 
-  // Get unique payment methods from processed data
+  // Get unique payment methods from normalized data
   const uniquePaymentMethods = Array.from(
     new Set(
-      (processedPaymentMethods || []).map(getPaymentMethodName).filter(Boolean)
+      (normalizedPaymentMethods || [])
+        .map(getPaymentMethodName)
+        .filter(Boolean)
     )
   ).filter(
     (method) => method && typeof method === "string" && method.trim().length > 0

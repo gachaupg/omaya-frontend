@@ -269,9 +269,9 @@ export const Table: React.FC<TableProps> = ({
           <div
             className={`w-full border-2 bg-white dark:bg-[${tokens.colors.dark.card}] border-gray-200 dark:border-[${tokens.colors.dark.border}] shadow-lg rounded-[24px]`}
           >
-            {/* Table Header */}
+            {/* Desktop Table Header - Hidden on mobile */}
             <div
-              className={`grid grid-cols-6 md:grid-cols-7 py-3 px-4 border-b bg-gray-50 dark:bg-[#35353E] border-gray-200 dark:border-[${tokens.colors.dark.border}] rounded-t-[24px]`}
+              className={`hidden md:grid grid-cols-6 ${type === "p2p" ? "md:grid-cols-7" : ""} py-3 px-4 border-b bg-gray-50 dark:bg-[#35353E] border-gray-200 dark:border-[${tokens.colors.dark.border}] rounded-t-[24px]`}
             >
               <div
                 className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
@@ -324,9 +324,10 @@ export const Table: React.FC<TableProps> = ({
             {/* Table Body */}
             <div>
               {data.map((row, idx) => (
+                <React.Fragment key={idx}>
+                  {/* Desktop Grid View */}
                 <div
-                  key={idx}
-                  className={`w-full grid grid-cols-6 md:grid-cols-7 py-4 px-4 border-b last:border-b-0 items-center hover:bg-gray-50 dark:hover:bg-[#2A2A35] transition-colors duration-200 border-gray-200 dark:border-[${tokens.colors.dark.border}] bg-white dark:bg-[${tokens.colors.dark.background}]`}
+                    className={`hidden md:grid w-full grid-cols-6 ${type === "p2p" ? "md:grid-cols-7" : ""} py-4 px-4 border-b last:border-b-0 items-center hover:bg-gray-50 dark:hover:bg-[#2A2A35] transition-colors duration-200 border-gray-200 dark:border-[${tokens.colors.dark.border}] bg-white dark:bg-[${tokens.colors.dark.background}]`}
                 >
                   <div className="flex items-center gap-2">
                     <img
@@ -411,6 +412,94 @@ export const Table: React.FC<TableProps> = ({
                     </Button>
                   </div>
                 </div>
+
+                  {/* Mobile Card View */}
+                  <div
+                    className={`md:hidden flex flex-col gap-3 p-4 border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-[#2A2A35] transition-colors duration-200 border-gray-200 dark:border-[${tokens.colors.dark.border}] bg-white dark:bg-[${tokens.colors.dark.background}]`}
+                  >
+                    {/* Top Row: Asset and Type */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <img
+                          src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
+                          alt={row.asset}
+                          className="w-6 h-6"
+                        />
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {row.asset}
+                        </span>
+                      </div>
+                      <div
+                        className={`text-sm font-semibold ${getAmountColor(String(row.type))}`}
+                      >
+                        {row.type}
+                      </div>
+                    </div>
+
+                    {/* Amount Row */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500 dark:text-[#788099]">Amount</span>
+                      <div
+                        className={`text-sm font-semibold ${getAmountColor(String(row.type))}`}
+                      >
+                        {formatNumber(Number(row.amount)).toString()}
+                      </div>
+                    </div>
+
+                    {/* Date and Status Row */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col">
+                        <span className="text-xs text-gray-500 dark:text-[#788099]">Date</span>
+                        <span className={`text-sm text-gray-500 dark:text-[${tokens.colors.dark.textBody}]`}>
+                          {formatDate(row.date)}
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span className="text-xs text-gray-500 dark:text-[#788099]">Status</span>
+                        <span className={`text-sm ${getStatusColor(String(row.status))}`}>
+                          {row.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* ID Row (only for p2p type) */}
+                    {type === "p2p" && row.id && (
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-[#35353E]">
+                        <span className="text-xs text-gray-500 dark:text-[#788099]">ID</span>
+                        <div
+                          className={`text-xs text-gray-500 dark:text-[${tokens.colors.dark.textBody}] cursor-pointer relative`}
+                          onClick={() => {
+                            if (row.id) {
+                              navigator.clipboard.writeText(row.id);
+                              setCopiedId(row.id);
+                              setTimeout(() => setCopiedId(null), 2000);
+                            }
+                          }}
+                        >
+                          {row.id.slice(0, 8)}...{row.id.slice(-6)}
+                          {copiedId === row.id && (
+                            <div className="absolute z-50 px-2 py-1 text-xs text-white bg-green-600 rounded shadow-lg whitespace-nowrap -top-8 right-0">
+                              Copied!
+                              <div className="absolute top-full right-4 transform w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-green-600"></div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Action Button */}
+                    <div className="pt-2 border-t border-gray-200 dark:border-[#35353E]">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full text-[#1D8751] justify-center"
+                        onClick={() => handleViewTransaction(row)}
+                      >
+                        View Receipt
+                      </Button>
+                    </div>
+                  </div>
+                </React.Fragment>
               ))}
             </div>
             {/* Pagination */}
@@ -587,23 +676,23 @@ export const Table: React.FC<TableProps> = ({
       {/* Modal Portal */}
       {selectedTransaction && (
         <div
-          className="fixed inset-0 flex items-center justify-center z-[9999] bg-black/30 dark:bg-black/60"
+          className="fixed inset-0 flex items-center justify-center z-[9999] bg-black/30 dark:bg-black/60 p-3 sm:p-4"
           onClick={() => setSelectedTransaction(null)}
         >
           <div
             ref={modalContentRef}
-            className="bg-white dark:bg-[#23232B] rounded-[24px] p-6 w-full max-w-[500px] mx-4"
+            className="bg-white dark:bg-[#23232B] rounded-[24px] p-4 sm:p-6 w-full max-w-[500px] max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Image at the top */}
             <img
               src="https://res.cloudinary.com/pitz/image/upload/v1749881460/Group_3_uwzqa8.png"
               alt="Transaction"
-              className="block mx-auto mb-4 max-w-[120px] w-full h-auto"
+              className="block mx-auto mb-3 sm:mb-4 max-w-[100px] sm:max-w-[120px] w-full h-auto"
             />
             {/* Header: Coin, Type, Date, Share/Note */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <img
                   src={
                     selectedTransaction.asset === "Tron"
@@ -611,11 +700,11 @@ export const Table: React.FC<TableProps> = ({
                       : "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                   }
                   alt={selectedTransaction.asset}
-                  className="w-10 h-10 rounded-full"
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0"
                 />
-                <div>
-                  <div className="text-gray-900 dark:text-white font-semibold">
-                    {selectedTransaction.asset}{" "}
+                <div className="min-w-0">
+                  <div className="text-gray-900 dark:text-white font-semibold text-sm sm:text-base">
+                    <span className="truncate">{selectedTransaction.asset}</span>{" "}
                     <span
                       className={
                         selectedTransaction.type === "buy"
@@ -633,7 +722,7 @@ export const Table: React.FC<TableProps> = ({
                   </div>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 justify-end sm:justify-start">
                 {/* Share button */}
                 <button 
                   onClick={() => {
@@ -682,16 +771,16 @@ export const Table: React.FC<TableProps> = ({
               </div>
             </div>
             {/* Amount and Fees */}
-            <div className="flex justify-between items-center border-b border-gray-200 dark:border-[#35353E] pb-4 mb-4">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0 border-b border-gray-200 dark:border-[#35353E] pb-3 sm:pb-4 mb-3 sm:mb-4">
               <div>
                 <div className="text-gray-400 dark:text-[#8C8CA1] text-xs">
                   Total Amount
                 </div>
-                <div className="text-[#1D8751] text-2xl font-bold">
+                <div className="text-[#1D8751] text-xl sm:text-2xl font-bold">
                   {formatNumber(Number(selectedTransaction?.amount ?? 0))} USD
                 </div>
               </div>
-              <div className="text-right text-xs text-gray-400 dark:text-[#8C8CA1]">
+              <div className="text-left sm:text-right text-xs text-gray-400 dark:text-[#8C8CA1]">
                 <div>
                   Total Fee{" "}
                   <span className="text-gray-900 dark:text-white">$3</span>
@@ -703,68 +792,68 @@ export const Table: React.FC<TableProps> = ({
               </div>
             </div>
             {/* Payment Info */}
-            <div className="border-b border-gray-200 dark:border-[#35353E] pb-4 mb-4">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-gray-400 dark:text-[#8C8CA1]">
+            <div className="border-b border-gray-200 dark:border-[#35353E] pb-3 sm:pb-4 mb-3 sm:mb-4">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-2">
+                <span className="text-xs sm:text-sm text-gray-400 dark:text-[#8C8CA1]">
                   Payment:
                 </span>
-                <span className="text-gray-500 dark:text-[#788099] flex items-center gap-1">
-                  Salaam Bank{" "}
+                <span className="text-gray-500 dark:text-[#788099] flex items-center gap-1 text-xs sm:text-sm">
+                  <span className="truncate">Salaam Bank</span>{" "}
                   <img
                     src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
                     alt=""
-                    className="w-5 h-5"
+                    className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0"
                   />
                 </span>
               </div>
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-gray-400 dark:text-[#8C8CA1]">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-2">
+                <span className="text-xs sm:text-sm text-gray-400 dark:text-[#8C8CA1]">
                   Account Number:
                 </span>
-                <span className="text-gray-500 dark:text-[#788099]">
+                <span className="text-gray-500 dark:text-[#788099] text-xs sm:text-sm break-all sm:break-normal">
                   485634612949050
                 </span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400 dark:text-[#8C8CA1]">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0">
+                <span className="text-xs sm:text-sm text-gray-400 dark:text-[#8C8CA1]">
                   Account Name:
                 </span>
-                <span className="text-gray-500 dark:text-[#788099]">
+                <span className="text-gray-500 dark:text-[#788099] text-xs sm:text-sm break-words">
                   Omar Ali Omar
                 </span>
               </div>
             </div>
             {/* Deposit Sent To */}
-            <div className="border-b border-gray-200 dark:border-[#35353E] pb-4 mb-4">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-gray-400 dark:text-[#8C8CA1]">
+            <div className="border-b border-gray-200 dark:border-[#35353E] pb-3 sm:pb-4 mb-3 sm:mb-4">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-2">
+                <span className="text-xs sm:text-sm text-gray-400 dark:text-[#8C8CA1]">
                   Deposit Sent to
                 </span>
-                <span className="text-gray-500 dark:text-[#788099]">
+                <span className="text-gray-500 dark:text-[#788099] text-xs sm:text-sm break-all">
                   3434343233
                 </span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400 dark:text-[#8C8CA1]">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0">
+                <span className="text-xs sm:text-sm text-gray-400 dark:text-[#8C8CA1]">
                   Transaction Hash:
                 </span>
-                <span className="text-[#1D8751] underline cursor-pointer">
+                <span className="text-[#1D8751] underline cursor-pointer text-xs sm:text-sm break-all text-left sm:text-right">
                   4673u98948294r89589374933rq
                 </span>
               </div>
             </div>
             {/* Status, Receipt, Rating */}
             <div>
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-gray-400 dark:text-[#8C8CA1]">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-2">
+                <span className="text-xs sm:text-sm text-gray-400 dark:text-[#8C8CA1]">
                   Status:
                 </span>
-                <span className="text-[#1D8751] font-semibold">
+                <span className="text-[#1D8751] font-semibold text-xs sm:text-sm">
                   {selectedTransaction.status || "Completed"}
                 </span>
               </div>
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-gray-400 dark:text-[#8C8CA1]">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-2">
+                <span className="text-xs sm:text-sm text-gray-400 dark:text-[#8C8CA1]">
                   Receipt:
                 </span>
                 <div className="flex items-center gap-2">
@@ -773,20 +862,20 @@ export const Table: React.FC<TableProps> = ({
                     className="text-[#1D8751] hover:text-[#166b3e] transition-colors cursor-pointer"
                     title="Download Receipt as Image"
                   >
-                    <Download size={18} />
+                    <Download size={16} className="sm:w-[18px] sm:h-[18px]" />
                   </button>
                   
                 </div>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-400 dark:text-[#8C8CA1]">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">
+                <span className="text-xs sm:text-sm text-gray-400 dark:text-[#8C8CA1]">
                   Service Rating:
                 </span>
                 <span className="flex flex-row">
                   {[...Array(5)].map((_, i) => (
                     <svg
                       key={i}
-                      className="text-[#FFB800] w-5 h-5"
+                      className="text-[#FFB800] w-4 h-4 sm:w-5 sm:h-5"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >

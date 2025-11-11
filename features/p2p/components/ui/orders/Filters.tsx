@@ -71,7 +71,7 @@ const Filters: React.FC<FiltersProps> = ({
     <div className="w-full flex flex-col">
       {/* ───────────────────────── Tabs */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-0 bg-transparent rounded-[10px] border border-[#1D8751] w-full sm:w-fit px-1 py-1 overflow-x-auto">
+        <div className="flex items-center gap-0 bg-transparent rounded-[10px] border border-[#1D8751] w-full sm:w-fit px-1 py-1 overflow-x-auto snap-x snap-mandatory scrollbar-none">
           {orderStatusTabs.map((tab) => (
             <Button
               key={tab.id}
@@ -79,7 +79,7 @@ const Filters: React.FC<FiltersProps> = ({
               size="md"
               borderRadius={10}
               disabled={loading}
-              className={`px-4 py-2 font-medium text-sm transition-all flex items-center gap-1 shadow-none border-none min-w-[100px] ${
+              className={`px-4 py-2 font-medium text-sm transition-all flex items-center gap-1 shadow-none border-none min-w-[100px] snap-start shrink-0 ${
                 filters.status === tab.id
                   ? "bg-[#1D8751] text-white"
                   : "bg-transparent text-[#788099] hover:bg-[#788099]/10"
@@ -125,7 +125,7 @@ const Filters: React.FC<FiltersProps> = ({
       </div>
 
       {/* ───────────────────────── Filter bar */}
-      <div className="flex w-full flex-wrap gap-4 items-center justify-between bg-transparent mt-4">
+      <div className="flex w-full flex-wrap gap-3 sm:gap-4 items-stretch sm:items-center justify-between bg-transparent mt-4">
         {/* token selector */}
         <div
           className={`flex items-center gap-2 bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#444454] p-1 rounded-[24px] w-full sm:w-auto min-w-[200px] ${

@@ -176,14 +176,14 @@ const Charts: React.FC<ChartProps> = ({
   return (
     <div className="w-full">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-0 mb-6">
         {/* Title + buy/sell buttons */}
-        <div className="flex items-center gap-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
           <h3 className="text-gray-900 dark:text-white font-medium">
             {title}
           </h3>
 
-          <div className="flex gap-2">
+          <div className="flex gap-3 sm:gap-3">
             {(["All", "Sells", "Buys"] as const).map((t) => (
               <Button
                 key={t}
@@ -203,7 +203,7 @@ const Charts: React.FC<ChartProps> = ({
         </div>
 
         {/* Time-filter dropdown */}
-        <div className="relative" ref={dropdownRef}>
+        <div className="relative sm:ml-4" ref={dropdownRef}>
           {showTimeFilter ? (
             <>
               <button
@@ -291,7 +291,7 @@ const Charts: React.FC<ChartProps> = ({
           dark:bg-[#18181D]
           dark:border-[${tokens.colors.dark.border}]`}
       >
-        <div className="h-[320px]">
+        <div className="h-48 sm:h-64 md:h-80">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
               data={chartData}

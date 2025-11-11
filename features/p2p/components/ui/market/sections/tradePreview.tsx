@@ -341,46 +341,46 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     return (
       <>
         {/* Main Content Section */}
-        <div className="flex gap-6">
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
           {/* Left Panel */}
           <div className="flex-1 flex flex-col gap-3">
           {/* Advertiser Info */}
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl font-bold bg-[#1D8751] text-white">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xl sm:text-2xl font-bold bg-[#1D8751] text-white flex-shrink-0">
               {advertiserData.advertiserInitials} 
             </div>
-            <div>
-              <div className="flex items-center gap-2 text-lg font-semibold text-gray-900 dark:text-white">
-                {advertiserData.advertiser}
-                <div className="bg-[#E59906] text-base w-3.5 h-3.5 rounded-full"></div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                <span className="truncate">{advertiserData.advertiser}</span>
+                <div className="bg-[#E59906] text-base w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full flex-shrink-0"></div>
               </div>
-              <div className="text-sm font-medium flex items-center gap-2 text-[#1D8751]">
+              <div className="text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2 text-[#1D8751] flex-wrap">
                 <span>{advertiserData.orders} Orders</span>
-                <span className="text-gray-400 dark:text-[#788099]">|</span>
+                <span className="text-gray-400 dark:text-[#788099] hidden sm:inline">|</span>
                 <span>{advertiserData.completion} Completion</span>
-                <span className="ml-1 text-[#1D8751]">👍 95%</span>
+                <span className="text-[#1D8751]">👍 95%</span>
               </div>
             </div>
           </div>
-            <div className="flex gap-6">
-              <div>
-                <div className="text-base font-semibold text-gray-900 dark:text-white">
+            <div className="flex flex-wrap gap-4 sm:gap-6">
+              <div className="flex-1 min-w-[80px]">
+                <div className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
                   {advertiserData.timeLimit}
                 </div>
                 <div className="text-xs text-gray-500 dark:text-[#788099]">
                   Time limit
                 </div>
               </div>
-              <div>
-                <div className="text-base font-semibold text-gray-900 dark:text-white">
+              <div className="flex-1 min-w-[80px]">
+                <div className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
                   {advertiserData.avgRealiseTime}
                 </div>
                 <div className="text-xs text-gray-500 dark:text-[#788099]">
                   Avg. realise time
                 </div>
               </div>
-              <div>
-                <div className="text-base font-semibold text-gray-900 dark:text-white">
+              <div className="flex-1 min-w-[80px]">
+                <div className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
                   {advertiserData.available}
                 </div>
                 <div className="text-xs text-gray-500 dark:text-[#788099]">
@@ -388,32 +388,32 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                 </div>
               </div>
             </div>
-            <div className="rounded-xl h-full p-3 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[#23242A]">
-              <div className="flex items-center gap-2 mb-1">
+            <div className="rounded-xl p-3 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[#23242A]">
+              <div className="flex items-start sm:items-center gap-2 mb-1 flex-wrap">
                 <svg 
                  xmlns="http://www.w3.org/2000/svg" 
-                 width="20" 
-                 height="20" 
+                 width="18" 
+                 height="18" 
                  viewBox="0 0 24 24" 
                  fill="none" 
                  stroke="currentColor" 
                  strokeWidth="2" 
                  strokeLinecap="round" 
                  strokeLinejoin="round"
-                 className="text-[#E23D3A]"
+                 className="text-[#E23D3A] flex-shrink-0 mt-0.5 sm:mt-0"
                  >
                 <circle cx="12" cy="12" r="10"/>
                 <line x1="12" x2="12" y1="8" y2="12"/>
                 <line x1="12" x2="12.01" y1="16" y2="16"/>
                 </svg>
-                <span className="font-semibold text-gray-900 dark:text-white">
+                <span className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white">
                   Advertiser's Terms
                 </span>
-                <span className="text-[#E23D3A] font-medium">
+                <span className="text-[#E23D3A] font-medium text-xs sm:text-sm">
                   (Please read carefully)
                 </span>
               </div>
-              <div className="text-sm text-gray-600 dark:text-[#788099]">
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-[#788099] leading-relaxed">
                 {advertiserData.terms_and_conditions}
               </div>
             </div>
@@ -422,35 +422,37 @@ const TradePreview: React.FC<TradePreviewProps> = ({
           {/* Right Panel */}
           <div className="flex-1 flex flex-col gap-3">
               {/* Commission */}
-            <div className="text-left text-base font-medium text-gray-900 dark:text-white mt-4">
+            <div className="text-left text-sm sm:text-base font-medium text-gray-900 dark:text-white mt-0 lg:mt-4">
               Rate:{" "}
               <span className="text-[#1D8751]">{advertiserData.commission}</span>
             </div>
             {/* I Want to Send */}
-            <div className="rounded-xl p-2 flex flex-col gap-1 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[#23242A]">
-              <div className="text-sm text-gray-500 dark:text-[#788099]">
+            <div className="rounded-xl p-3 sm:p-2 flex flex-col gap-2 sm:gap-1 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[#23242A]">
+              <div className="text-xs sm:text-sm text-gray-500 dark:text-[#788099] font-medium">
                 I Want to Send
               </div>
-              <div className="flex flex-col gap-1">
-                <div className="text-xs text-gray-500 dark:text-[#788099] pl-2">
+              <div className="flex flex-col gap-2 sm:gap-1">
+                <div className="text-xs text-gray-500 dark:text-[#788099] pl-0 sm:pl-2">
                   Range: {minAmount}-{maxAmount} USDT
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl text-[#1D8751]">$</span>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <span className="text-xl sm:text-2xl text-[#1D8751] flex-shrink-0">$</span>
                   <input
                     type="number"
                     value={sendAmount}
                     onChange={(e) => handleSendAmountChange(e.target.value)}
                     placeholder="220"
-                    max={tradeType === "buy" ? (advertiserData.availableAmount || 0) * commissionRate : undefined}
-                    className={`flex-1 bg-transparent text-xl font-semibold focus:outline-none rounded-xl px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${
-                      !isAmountValid && sendAmount
-                        ? "border border-red-500"
-                        : ""
+                    max={
+                      tradeType === "buy"
+                        ? (advertiserData.availableAmount || 0) * commissionRate
+                        : undefined
+                    }
+                    className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${
+                      !isAmountValid && sendAmount ? "border border-red-500" : ""
                     }`}
                   />
                   <select
-                    className="rounded px-2 py-2 text-sm min-w-[80px] bg-white dark:bg-[#23242A] text-gray-900 dark:text-white"
+                    className="rounded px-2 py-2 text-xs sm:text-sm min-w-[70px] sm:min-w-[80px] w-full sm:w-auto bg-white dark:bg-[#23242A] text-gray-900 dark:text-white border border-gray-300 dark:border-[#35353E]"
                     value="USDT"
                     disabled
                   >
@@ -458,38 +460,36 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                   </select>
                 </div>
                 {!isAmountValid && sendAmount && (
-                  <div className="text-xs text-red-500 pl-2">
+                  <div className="text-xs text-red-500 pl-0 sm:pl-2">
                     {errorMessage}
                   </div>
                 )}
               </div>
             </div>
             {/* I Want to Receive */}
-            <div className="rounded-xl p-2 flex flex-col gap-1 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[#23242A]">
-              <div className="text-sm text-gray-500 dark:text-[#788099]">
+            <div className="rounded-xl p-3 sm:p-2 flex flex-col gap-2 sm:gap-1 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[#23242A]">
+              <div className="text-xs sm:text-sm text-gray-500 dark:text-[#788099] font-medium">
                 I Want to Receive
               </div>
-              <div className="flex flex-col gap-1">
-                <div className="text-xs text-gray-500 dark:text-[#788099] pl-2">
+              <div className="flex flex-col gap-2 sm:gap-1">
+                <div className="text-xs text-gray-500 dark:text-[#788099] pl-0 sm:pl-2">
                   Available: {advertiserData.available}
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl text-[#1D8751]">$</span>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <span className="text-xl sm:text-2xl text-[#1D8751] flex-shrink-0">$</span>
                   <input
                     type="number"
                     value={receiveAmount}
                     onChange={(e) => handleReceiveAmountChange(e.target.value)}
                     placeholder={`220 ${tradeType === "buy" ? "USDT" : "USD"}`}
                     max={advertiserData.availableAmount || 0}
-                    className={`flex-1 bg-transparent text-xl font-semibold focus:outline-none rounded-xl px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${
-                      !isAmountValid && receiveAmount
-                        ? "border border-red-500"
-                        : ""
+                    className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${
+                      !isAmountValid && receiveAmount ? "border border-red-500" : ""
                     }`}
                   />
                 </div>
                 {!isAmountValid && receiveAmount && (
-                  <div className="text-xs text-red-500 pl-2">
+                  <div className="text-xs text-red-500 pl-0 sm:pl-2">
                     {errorMessage}
                   </div>
                 )}
@@ -499,15 +499,15 @@ const TradePreview: React.FC<TradePreviewProps> = ({
             <div className="relative" ref={paymentDropdownRef}>
               <div
                 onClick={() => setIsPaymentDropdownOpen(!isPaymentDropdownOpen)}
-                className="rounded-xl px-4 py-2 text-sm border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#23242A] cursor-pointer flex justify-between items-center"
+                className="rounded-xl px-3 sm:px-4 py-2.5 sm:py-2 text-xs sm:text-sm border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#23242A] cursor-pointer flex justify-between items-center"
               >
-                <span className="text-gray-900 dark:text-white">
+                <span className="text-gray-900 dark:text-white truncate pr-2">
                   {paymentMethod.length === 0
                     ? "Select payment method"
                     : `${paymentMethod.length} method(s) selected`}
                 </span>
                 <svg
-                  className={`w-4 h-4 text-gray-500 dark:text-[#788099] transition-transform ${
+                  className={`w-4 h-4 text-gray-500 dark:text-[#788099] transition-transform flex-shrink-0 ${
                     isPaymentDropdownOpen ? "rotate-180" : ""
                   }`}
                   fill="none"
@@ -523,7 +523,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                 </svg>
               </div>
               {isPaymentDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#23242A] border border-gray-300 dark:border-[#35353E] rounded-xl shadow-lg z-10">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#23242A] border border-gray-300 dark:border-[#35353E] rounded-xl shadow-lg z-10 max-h-60 overflow-y-auto">
                   <div className="p-2">
               {paymentOptions.map((opt) => (
                       <label
@@ -542,9 +542,9 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                               );
                             }
                           }}
-                          className="w-4 h-4 text-[#1D8751] bg-white dark:bg-[#23242A] border-gray-300 dark:border-[#35353E] rounded focus:ring-[#1D8751] focus:ring-2"
+                          className="w-4 h-4 text-[#1D8751] bg-white dark:bg-[#23242A] border-gray-300 dark:border-[#35353E] rounded focus:ring-[#1D8751] focus:ring-2 flex-shrink-0"
                         />
-                        <span className="text-gray-900 dark:text-white text-sm">
+                        <span className="text-gray-900 dark:text-white text-xs sm:text-sm">
                   {opt.label}
                         </span>
                       </label>
@@ -553,16 +553,16 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                 </div>
               )}
             </div>
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <button
-                className="flex-1 py-2 rounded-lg border font-semibold transition border-gray-400 dark:border-[#788099] text-gray-700 dark:text-[#788099] hover:bg-gray-200 dark:hover:bg-[#23242A]"
+                className="w-full sm:flex-1 py-2.5 sm:py-2 rounded-lg border font-semibold text-sm sm:text-base transition border-gray-400 dark:border-[#788099] text-gray-700 dark:text-[#788099] hover:bg-gray-200 dark:hover:bg-[#23242A]"
                 onClick={onClose}
                 disabled={isSubmitting}
               >
                 Close
               </button>
               <button
-                className={`flex-1 py-2 rounded-lg font-semibold transition text-white ${
+                className={`w-full sm:flex-1 py-2.5 sm:py-2 rounded-lg font-semibold text-sm sm:text-base transition text-white ${
                   tradeType === "sell"
                     ? "bg-[#E23D3A] hover:bg-[#b71c1c]"
                     : "bg-[#1D8751] hover:bg-[#17643a]"
@@ -593,7 +593,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   };
 
   return (
-    <div className="rounded-2xl p-3 w-full max-w-5xl mx-auto flex flex-col gap-4 border border-gray-300 dark:border-[#35353E] bg-white dark:bg-transparent text-gray-900 dark:text-white">
+    <div className="rounded-2xl p-3 sm:p-4 lg:p-6 w-full max-w-5xl mx-auto flex flex-col gap-3 sm:gap-4 border border-gray-300 dark:border-[#35353E] bg-white dark:bg-transparent text-gray-900 dark:text-white">
       {!isAuthenticated ? (
         <div className="text-center py-4 text-red-500">
           Please login to continue with the trade
