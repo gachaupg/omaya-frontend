@@ -2918,7 +2918,7 @@ export default function WithdrawalForm({
                         />
                         <div className="flex flex-col">
                           <div className="flex items-center gap-2">
-                            <span className="text-[#35353e] dark:text-[#788099] font-medium">
+                            <span className="text-white font-medium">
                           {(
                             selectedAsset.ticker ||
                             selectedAsset.symbol ||
@@ -3761,16 +3761,23 @@ export default function WithdrawalForm({
             }
           }}
         >
+          {(() => {
+            const isDisabled =
+              isHomePage
+                ? false
+                : isSubmitting ||
+                  isTransactionSubmitted ||
+                  isInfoModalOpen ||
+                  getAmount > 15000 ||
+                  selectedPaymentDetails.length === 0;
+            return (
             <button
               className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
                 isHomePage
                   ? "bg-[#1D8751] hover:bg-[#166b3e] cursor-pointer"
-                  : isSubmitting ||
-                    isTransactionSubmitted ||
-                    isInfoModalOpen ||
-                    getAmount > 15000
-                    ? "bg-gray-500 cursor-not-allowed"
-                    : "bg-[#1D8751] hover:bg-[#166b3e]"
+                  : isDisabled
+                  ? "bg-gray-500 cursor-not-allowed"
+                  : "bg-[#1D8751] hover:bg-[#166b3e]"
               }`}
               onClick={
                 isHomePage 
@@ -3795,14 +3802,7 @@ export default function WithdrawalForm({
                       }
                     }
               }
-              disabled={
-                isHomePage ? false : (
-                  isSubmitting ||
-                  isTransactionSubmitted ||
-                  isInfoModalOpen ||
-                  getAmount > 15000
-                )
-              }
+              disabled={isDisabled}
             >
               {isSubmitting ? (
                 <div className="flex items-center gap-2">
@@ -3824,7 +3824,7 @@ export default function WithdrawalForm({
                 </div>
               ) : (
                 <span className="flex items-center justify-center">
-                 
+                  <span className="text-base font-bold dark:text-white text-white">E</span>
                   <img
                     className="mt-2"
                     src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
@@ -3833,6 +3833,8 @@ export default function WithdrawalForm({
                 </span>
               )}
             </button>
+            );
+          })()}
         </div>
           )}
 
@@ -3952,7 +3954,6 @@ export default function WithdrawalForm({
                 </div>
               )}
             </div>
-
             {/* QR Code */}
             <div className="mb-4">
               <div className=" dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl p-4 flex justify-center">
@@ -4096,7 +4097,7 @@ export default function WithdrawalForm({
             )}
             <button
               className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
-                isSubmitting || isInfoModalOpen || getAmount > 15000
+                isSubmitting || isInfoModalOpen || getAmount > 15000 || !withdrawalAddress
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
               }`}
@@ -4126,7 +4127,12 @@ export default function WithdrawalForm({
                   onExchange(transactionData);
                 }
               }}
-              disabled={isSubmitting || isInfoModalOpen || getAmount > 15000}
+              disabled={
+                isSubmitting ||
+                isInfoModalOpen ||
+                getAmount > 15000 ||
+                !withdrawalAddress
+              }
             >
               {isSubmitting ? (
                 <div className="flex items-center gap-2">
@@ -4135,7 +4141,7 @@ export default function WithdrawalForm({
                 </div>
               ) : (
                 <span className="flex items-center justify-center">
-                  
+                  <span className="text-base font-bold dark:text-white text-white">E</span>
                   <img
                     className="mt-2"
                     src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
