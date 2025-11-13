@@ -455,14 +455,16 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
           <div className="text-[13px] text-base text-gray-900 dark:text-white">
             Order Info
           </div>
-          <div className="text-xs text-gray-500 dark:text-[#788099] text-[0.75rem]">
+          <div className="text-xs text-gray-500 dark:text-[#788099] text-[0.75rem] flex items-center gap-2">
             Order Number:{" "}
-            <span
-              className="underline text-[#1D8751] cursor-pointer"
+            <button
+              type="button"
+              className="underline text-[#1D8751] cursor-pointer inline-flex items-center gap-1 hover:text-[#16663d] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1D8751] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#18181D]"
               onClick={() => handleCopy(singleOrder?.id || singleOrder?.buy_order)}
             >
-              {singleOrder?.id || "9346457687345"}
-            </span>
+              <span>{singleOrder?.id || "9346457687345"}</span>
+              <Copy className="w-4 h-4 text-[#1D8751]" strokeWidth={2} />
+            </button>
           </div>
         </div>
         <section className="order-info rounded-[18px] p-4 border-2 border-[#E8EFF5] dark:border-[#35353E] bg-gray-50 dark:bg-[#18181D] ">

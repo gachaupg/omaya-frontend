@@ -442,6 +442,8 @@ export default function WithdrawalForm({
     hasData: walletListRef.current.length > 0,
   };
 
+const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
+
  
 
   // Debug function to test asset fetching
@@ -2693,12 +2695,12 @@ export default function WithdrawalForm({
 
       <div className="w-full text-white">
         {/* Top Section - You Send and You Get in one card */}
-        <div className="relative mb-4">
+        <div className="relative mb-2">
           {/* Top Card Container */}
-          <div className="flex border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-4">
+          <div className="relative flex border border-[#23232F] dark:border-[#2F2F3A] bg-[#0F0F17] dark:bg-[#0F0F17] rounded-2xl p-4 overflow-visible">
             {/* You Send Section */}
             <div className="flex-1 pr-4">
-              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
+              <label className="block text-[15px] text-[#9CA3AF] dark:text-[#9CA3AF] mb-2 font-semibold flex items-center gap-2">
                 You Send
                 {isCalculatingFromPay &&
                   (isCalculating || isCalculatingReceive) && (
@@ -2830,7 +2832,7 @@ export default function WithdrawalForm({
                       ? "Calculating..."
                       : "Enter amount"
                   }
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg  focus:outline-none border appearance-none ${
+                  className={`w-full bg-transparent dark:bg-transparent text-[#35353e] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none ${
                     apiValidationError
                       ? "border-red-500"
                       : isCalculating || isCalculatingReceive
@@ -2902,12 +2904,12 @@ export default function WithdrawalForm({
 
             {/* You Get Section */}
             <div className="flex-1 pl-4">
-              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+              <label className="block text-[15px] text-[#9CA3AF] dark:text-[#9CA3AF] mb-2 font-semibold">
                 Asset
               </label>
               <div className="relative" ref={assetDropdownRef}>
                 <div
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 text-lg  focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer`}
+                  className={`w-full bg-transparent dark:bg-transparent text-white rounded-2xl px-4 py-2 text-lg focus:outline-none border border-[#39394A] dark:border-[#39394A] flex items-center justify-between cursor-pointer`}
                   onClick={() => {
                     setIsAssetDropdownOpen(!isAssetDropdownOpen);
                   }}
@@ -2940,22 +2942,18 @@ export default function WithdrawalForm({
                         />
                         <div className="flex flex-col">
                           <div className="flex items-center gap-2">
-                            <span className="text-[#35353e] dark:text-[#788099] font-medium">
-                          {(
-                            selectedAsset.ticker ||
-                            selectedAsset.symbol ||
-                            selectedAsset.name ||
-                            "Unknown"
-                          ).toUpperCase()}
-                        </span>
+                            <span className="text-white font-semibold">
+                              {(
+                                selectedAsset.ticker ||
+                                selectedAsset.symbol ||
+                                selectedAsset.name ||
+                                "Unknown"
+                              ).toUpperCase()}
+                            </span>
                             <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                          {getNetworkDisplayName(selectedAsset.network)}
-                        </span>
+                              {getNetworkDisplayName(selectedAsset.network)}
+                            </span>
                           </div>
-                          <span className="text-[#788099] text-xs">
-                            {selectedAsset.name || 
-                             (selectedAsset.ticker || selectedAsset.symbol || "Unknown")} ({getNetworkDisplayName(selectedAsset.network)})
-                          </span>
                         </div>
                       </>
                     ) : (
@@ -2992,7 +2990,7 @@ export default function WithdrawalForm({
 
                 {/* Asset Dropdown */}
                 {isAssetDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl z-50 max-h-80 overflow-hidden">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl z-50 max-h-80 overflow-y-auto">
                     {/* Search Input */}
                     <div className="p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
                       <div className="relative">
@@ -3260,9 +3258,9 @@ export default function WithdrawalForm({
           </div>
 
           {/* Swap Circle - positioned to touch both borders equally */}
-          <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/3 z-10">
+          <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-8 sm:-translate-y-6 z-10">
             <button
-              className="w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105"
+              className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105"
               onClick={() => {
                 // Switch between deposit and withdrawal modes
                 if (onModeChange) {
@@ -3274,24 +3272,24 @@ export default function WithdrawalForm({
               <img
                 src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
                 alt="swap icon"
-                className="w-16 h-16 dark:hidden"
+                className="w-14 h-14 dark:hidden"
               />
               {/* Dark mode image */}
               <img
                 src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
                 alt="swap icon"
-                className="w-16 h-16 hidden dark:block"
+                className="w-14 h-14 hidden dark:block"
               />
             </button>
           </div>
         </div>
 
         {/* Bottom Section - You Receive and Bank/Payment Method in one card */}
-        <div className="relative mb-3">
-          <div className="flex border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-4">
+        <div className="relative mb-2 mt-4">
+          <div className="relative flex border border-[#23232F] dark:border-[#2F2F3A] bg-[#0F0F17] dark:bg-[#0F0F17] rounded-2xl p-4 overflow-visible">
             {/* You Receive Section */}
             <div className="flex-1 pr-4">
-              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
+              <label className="block text-[15px] text-[#9CA3AF] dark:text-[#9CA3AF] mb-2 font-semibold flex items-center gap-2">
                 You Receive
                 {!isCalculatingFromPay &&
                   (isCalculating || isCalculatingReceive) && (
@@ -3450,7 +3448,7 @@ export default function WithdrawalForm({
                       ? "Calculating..."
                       : "Enter amount"
                   }
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg  focus:outline-none border appearance-none ${
+                  className={`w-full bg-transparent dark:bg-transparent text-[#35353e] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none ${
                     (receiveAmountError &&
                       (receiveAmountError.includes("Rough estimate") ||
                         receiveAmountError.includes("Using estimated rate"))) ||
@@ -3570,61 +3568,70 @@ export default function WithdrawalForm({
 
             {/* Payment Method Section */}
             <div className="flex-1 pl-4">
-              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+              <label className="block text-[15px] text-[#9CA3AF] dark:text-[#9CA3AF] mb-2 font-semibold">
                 Payment Method
               </label>
               <div className="relative">
-                <CustomSelect
-                  options={Array.from(
+                {(() => {
+                  const providerNames = Array.from(
                     new Set(
-                      (adminWalletListDisplay.displayData || []).map((wallet: any) => wallet?.admin_payment_detail?.provider_name)
+                      (adminWalletListDisplay.displayData || []).map(
+                        (wallet: any) => wallet?.admin_payment_detail?.provider_name
+                      )
                     )
-                  )
-                    .filter((type) => type) // Remove null/undefined values
-                    .map((paymentType: any, index: number) => {
-                      // Find the admin detail for this provider to get the logo
-                      const adminDetail = adminWalletListDisplay.displayData?.find(
-                        (wallet: any) => wallet.admin_payment_detail?.provider_name === paymentType
-                      )?.admin_payment_detail;
-                      
-                      return {
-                        value: paymentType,
-                        label: paymentType,
-                        logo: adminDetail?.provider_logo || undefined,
-                      };
-                    })}
-                  value={payBank}
-                  onChange={(value) => {
-                    const selectedWallet = adminWalletListDisplay.displayData?.find(
-                      (wallet: any) => wallet.admin_payment_detail?.provider_name === value
-                    );
-                    
-                    setPayBank(value);
-                    setSelectedPaymentDetail(selectedWallet?.admin_payment_detail || null);
-                    
-                    // Clear selected payment details when changing payment type
-                    setSelectedPaymentDetails([]);
-                    // Clear payment method error when selecting a payment type
-                    setPaymentMethodError(null);
-                  }}
-                  placeholder={
-                    adminWalletListDisplay.isLoading
-                      ? "Loading payment methods..."
-                      : !adminWalletListDisplay.hasData
-                        ? "No payment methods available"
-                        : "Select Payment Method"
-                  }
-                  disabled={adminWalletListDisplay.isLoading}
-                  loading={adminWalletListDisplay.isLoading}
-                  loadingText="Loading payment methods..."
-                  emptyText="No payment methods available"
-                  searchable={true}
-                  className={`w-full ${
-                    paymentMethodError 
-                      ? "border-red-500 dark:border-red-500" 
-                      : ""
-                  }`}
-                />
+                  ).filter((type) => Boolean(type && type.trim())) as string[];
+
+                  const optionProviders =
+                    providerNames.length > 0 ? providerNames : fallbackProviderNames;
+
+                  return (
+                    <CustomSelect
+                      options={optionProviders.map((paymentType: string) => {
+                        const adminDetail = adminWalletListDisplay.displayData?.find(
+                          (wallet: any) =>
+                            wallet.admin_payment_detail?.provider_name === paymentType
+                        )?.admin_payment_detail;
+
+                        return {
+                          value: paymentType,
+                          label: adminDetail?.provider_name || paymentType,
+                          logo: adminDetail?.provider_logo || undefined,
+                        };
+                      })}
+                      value={payBank}
+                      className={`w-full ${
+                        paymentMethodError ? "border-red-500 dark:border-red-500" : ""
+                      }`}
+                      triggerClassName="bg-transparent dark:bg-transparent text-white border border-[#39394A] dark:border-[#39394A] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base"
+                      onChange={(value) => {
+                        const selectedWallet = adminWalletListDisplay.displayData?.find(
+                          (wallet: any) =>
+                            wallet.admin_payment_detail?.provider_name === value
+                        );
+
+                        setPayBank(value);
+                        setSelectedPaymentDetail(
+                          selectedWallet?.admin_payment_detail || null
+                        );
+
+                        setSelectedPaymentDetails([]);
+                        setPaymentMethodError(null);
+                      }}
+                      placeholder={
+                        adminWalletListDisplay.isLoading
+                          ? "Loading payment methods..."
+                          : providerNames.length === 0
+                          ? "No payment methods available"
+                          : "Select Payment Method"
+                      }
+                      disabled={adminWalletListDisplay.isLoading}
+                      loading={adminWalletListDisplay.isLoading}
+                      loadingText="Loading payment methods..."
+                      emptyText="No payment methods available"
+                      searchable={true}
+                    />
+                  );
+                })()}
               </div>
               {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
               {paymentMethodError && <p className="text-red-500 text-sm mt-1">{paymentMethodError}</p>}
@@ -3748,27 +3755,7 @@ export default function WithdrawalForm({
             />
           </div>  */}
 
-        {/* Disclaimer Banner */}
-        <div className="flex items-center rounded-2xl px-4 py-3 mb-4 dark:bg-[#1D1D23]">
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 bg-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0">
-              <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                <path
-                  d="M12 8v4m0 4h.01"
-                  stroke="white"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" />
-              </svg>
-            </div>
-            <span className="text-[#35353e] dark:text-[#788099] text-sm font-medium">
-              This is only an estimated price based on current market rates. The
-              final price will be confirmed when we receive the funds.
-            </span>
-          </div>
-        </div>
+       
 
         {/* Submit Button for First Card */}
           {!isTransactionSubmitted && !showForexWithdrawalForm && (

@@ -1,5 +1,6 @@
 "use client";
-import React, { useEffect, useState, useRef, useMemo } from "react";
+import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { FaExchangeAlt, FaExclamationCircle } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
@@ -422,6 +423,8 @@ export default function WithdrawalForm({
     hasData: walletListRef.current.length > 0,
   };
 
+const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
+
  
 
   // Debug function to test asset fetching
@@ -480,6 +483,39 @@ export default function WithdrawalForm({
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
   const [assetSearchTerm, setAssetSearchTerm] = useState("");
   const assetDropdownRef = useRef<HTMLDivElement>(null);
+  const assetDropdownContentRef = useRef<HTMLDivElement | null>(null);
+  const [assetDropdownPosition, setAssetDropdownPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
+  const [isComponentMounted, setIsComponentMounted] = useState(false);
+
+  const updateAssetDropdownPosition = useCallback(() => {
+    if (!assetDropdownRef.current) return;
+    const rect = assetDropdownRef.current.getBoundingClientRect();
+    setAssetDropdownPosition({
+      top: rect.bottom + window.scrollY,
+      left: rect.left + window.scrollX,
+      width: rect.width,
+    });
+  }, []);
+
+  useEffect(() => {
+    setIsComponentMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isAssetDropdownOpen) return;
+    updateAssetDropdownPosition();
+    const handleReposition = () => updateAssetDropdownPosition();
+    window.addEventListener("resize", handleReposition);
+    window.addEventListener("scroll", handleReposition, true);
+    return () => {
+      window.removeEventListener("resize", handleReposition);
+      window.removeEventListener("scroll", handleReposition, true);
+    };
+  }, [isAssetDropdownOpen, updateAssetDropdownPosition]);
 
   // Estimate calculation state
   const [estimate, setEstimate] = useState<any>(null);
@@ -1046,9 +1082,12 @@ export default function WithdrawalForm({
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
       if (
         assetDropdownRef.current &&
-        !assetDropdownRef.current.contains(event.target as Node)
+        !assetDropdownRef.current.contains(target) &&
+        (!assetDropdownContentRef.current ||
+          !assetDropdownContentRef.current.contains(target))
       ) {
         setIsAssetDropdownOpen(false);
       }
@@ -2646,6 +2685,227 @@ export default function WithdrawalForm({
     }
   }, [selectedPaymentDetail]);
 
+  const getAssetNetwork = (asset: SupportedAsset) => {
+    if (!asset) return "Unknown";
+    if (asset.network) return asset.network;
+    if (asset.ticker) return asset.ticker;
+    if (asset.symbol) return asset.symbol;
+    if (asset.name) return asset.name;
+    return "Unknown";
+  };
+
+  const handleAssetSelection = (asset: SupportedAsset) => {
+    setSelectedAsset(asset);
+    setIsAssetDropdownOpen(false);
+    setAssetSearchTerm("");
+  };
+
+  const renderAssetDropdown = () => {
+    if (!isComponentMounted || !isAssetDropdownOpen) {
+      return null;
+    }
+
+    return createPortal(
+      (
+        <div
+          ref={assetDropdownContentRef}
+          className="mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl z-[1200] max-h-[70vh] sm:max-h-80 overflow-y-auto"
+          style={{
+            position: "absolute",
+            top: assetDropdownPosition.top,
+            left: assetDropdownPosition.left,
+            width:
+              assetDropdownPosition.width ||
+              assetDropdownRef.current?.offsetWidth ||
+              undefined,
+          }}
+        >
+          {/* Search Input */}
+          <div className="p-2 sm:p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+            <div className="relative">
+              <FaSearch className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-3 h-3 sm:w-4 sm:h-4" />
+              <input
+                type="text"
+                placeholder="Search assets..."
+                className="w-full text-gray-900 dark:text-white dark:bg-[#1D1D23] bg-white rounded-xl px-8 sm:px-10 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400"
+                value={assetSearchTerm}
+                onChange={(e) => setAssetSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Asset List */}
+          <div className="max-h-60 overflow-y-auto">
+            {sortedSwapAssets.length > 0 ? (
+              <>
+                {/* Popular Section - First 3 assets only if no search */}
+                {!assetSearchTerm && sortedSwapAssets.length > 3 && (
+                  <>
+                    <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+                      <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
+                        Popular
+                      </span>
+                    </div>
+                    {sortedSwapAssets
+                      .slice(0, 3)
+                      .map((asset: SupportedAsset, index: number) => (
+                        <div
+                          key={`popular-${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
+                          className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E]"
+                          onClick={() => {
+                            handleAssetSelection(asset);
+                            setIsAssetDropdownOpen(false);
+                            setAssetSearchTerm("");
+                          }}
+                        >
+                          <img
+                            src={
+                              asset?.image_url ||
+                              asset?.asset_image ||
+                              (asset as any)?.image ||
+                              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                            }
+                            alt={
+                              asset?.name ||
+                              asset?.ticker ||
+                              asset?.symbol ||
+                              "Asset"
+                            }
+                            className="w-6 h-6 rounded-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src =
+                                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                            }}
+                          />
+                          <div className="flex-1">
+                            <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
+                              {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
+                              <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                                {getNetworkDisplayName(getAssetNetwork(asset))}
+                              </span>
+                            </div>
+                            <div className="text-[#35353e] dark:text-[#788099] text-sm">
+                              {(() => {
+                                let displayName =
+                                  asset.name || asset.ticker || asset.symbol || "Unknown Asset";
+
+                                displayName = displayName
+                                  .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, "")
+                                  .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, "")
+                                  .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, "")
+                                  .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, "")
+                                  .replace(/\s*\(TRON\)\s*\(TRX\)/gi, "")
+                                  .replace(/\s*\(Solana\)\s*\(SOL\)/gi, "")
+                                  .replace(/\s*\(BSC\)$/gi, "")
+                                  .replace(/\s*\(ETH\)$/gi, "")
+                                  .replace(/\s*\(MATIC\)$/gi, "")
+                                  .replace(/\s*\(AVAX\)$/gi, "")
+                                  .replace(/\s*\(TRX\)$/gi, "")
+                                  .replace(/\s*\(SOL\)$/gi, "")
+                                  .trim();
+
+                                return displayName;
+                              })()}
+                            </div>
+                          </div>
+                          {selectedAsset?.asset_id === asset.asset_id && (
+                            <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                          )}
+                        </div>
+                      ))}
+
+                    <div className="border-t-2 border-[#D1D2D4FF] dark:border-[#35353E]"></div>
+
+                    <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+                      <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
+                        All Assets
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                {/* Rest of the assets or all assets if searching */}
+                {(assetSearchTerm
+                  ? sortedSwapAssets
+                  : sortedSwapAssets.slice(3)
+                ).map((asset: SupportedAsset, index: number) => (
+                  <div
+                    key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
+                    className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
+                    onClick={() => {
+                      handleAssetSelection(asset);
+                      setIsAssetDropdownOpen(false);
+                      setAssetSearchTerm("");
+                    }}
+                  >
+                    <img
+                      src={
+                        asset?.image_url ||
+                        asset?.asset_image ||
+                        (asset as any)?.image ||
+                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                      }
+                      alt={
+                        asset?.name ||
+                        asset?.ticker ||
+                        asset?.symbol ||
+                        "Asset"
+                      }
+                      className="w-6 h-6 rounded-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src =
+                          "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                      }}
+                    />
+                    <div className="flex-1">
+                      <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
+                        {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
+                        <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                          {getNetworkDisplayName(getAssetNetwork(asset))}
+                        </span>
+                      </div>
+                      <div className="text-[#35353e] dark:text-[#788099] text-sm">
+                        {(() => {
+                          let displayName =
+                            asset.name || asset.ticker || asset.symbol || "Unknown Asset";
+
+                          displayName = displayName
+                            .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, "")
+                            .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, "")
+                            .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, "")
+                            .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, "")
+                            .replace(/\s*\(TRON\)\s*\(TRX\)/gi, "")
+                            .replace(/\s*\(Solana\)\s*\(SOL\)/gi, "")
+                            .replace(/\s*\(BSC\)$/gi, "")
+                            .replace(/\s*\(ETH\)$/gi, "")
+                            .replace(/\s*\(MATIC\)$/gi, "")
+                            .replace(/\s*\(AVAX\)$/gi, "")
+                            .replace(/\s*\(TRX\)$/gi, "")
+                            .replace(/\s*\(SOL\)$/gi, "")
+                            .trim();
+
+                          return displayName;
+                        })()}
+                      </div>
+                    </div>
+                    {selectedAsset?.asset_id === asset.asset_id && (
+                      <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                    )}
+                  </div>
+                ))}
+              </>
+            ) : (
+              <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
+                {assetSearchTerm ? "No assets found" : "No assets available"}
+              </div>
+            )}
+          </div>
+        </div>
+      ),
+      document.body
+    );
+  };
+
   return (
     <div className="w-full flex flex-col dark:bg-[#18181D]  ">
       {/* Crypto/Forex Toggle Buttons Removed */}
@@ -2673,9 +2933,9 @@ export default function WithdrawalForm({
         {/* Top Section - You Send and You Get in one card */}
         <div className="relative mb-4">
           {/* Top Card Container */}
-          <div className="flex flex-col sm:flex-row border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-3 sm:p-4 gap-4 sm:gap-0">
+          <div className="relative flex flex-col sm:flex-row flex-col sm:flex-row border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-3 sm:p-4 gap-3 sm:p-4 gap-4 sm:gap-0 overflow-visible">
             {/* You Send Section */}
-            <div className="flex-1 sm:pr-4">
+            <div className="flex-1 sm:sm:pr-4">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 You Send
                 {isCalculatingFromPay &&
@@ -2794,7 +3054,7 @@ export default function WithdrawalForm({
                       ? "Calculating..."
                       : "Enter amount"
                   }
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 py-2 pr-12 sm:pr-16 text-base sm:text-lg  focus:outline-none border appearance-none ${
+                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-3 sm:px-3 sm:px-4 py-2 pr-12 sm:pr-16 text-base sm:text-base sm:text-lg focus:outline-none border appearance-none ${
                     apiValidationError
                       ? "border-red-500"
                       : isCalculating || isCalculatingReceive
@@ -2818,14 +3078,17 @@ export default function WithdrawalForm({
             </div>
 
             {/* You Get Section */}
-            <div className="flex-1 pl-4">
+            <div className="flex-1 sm:pl-4">
               <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                 Asset
               </label>
               <div className="relative" ref={assetDropdownRef}>
                 <div
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 text-lg  focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer`}
+                  className={`w-full bg-transparent dark:bg-transparent text-white rounded-2xl px-4 py-2 text-lg focus:outline-none border border-[#39394A] dark:border-[#39394A] flex items-center justify-between cursor-pointer`}
                   onClick={() => {
+                    if (!isAssetDropdownOpen) {
+                      updateAssetDropdownPosition();
+                    }
                     setIsAssetDropdownOpen(!isAssetDropdownOpen);
                   }}
                 >
@@ -2908,270 +3171,7 @@ export default function WithdrawalForm({
                 </div>
 
                 {/* Asset Dropdown */}
-                {isAssetDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl z-50 max-h-[70vh] sm:max-h-80 overflow-hidden">
-                    {/* Search Input */}
-                    <div className="p-2 sm:p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
-                      <div className="relative">
-                        <FaSearch className="absolute left-2 sm:left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-3 h-3 sm:w-4 sm:h-4" />
-                        <input
-                          type="text"
-                          placeholder="Search assets..."
-                          className="w-full text-gray-900 dark:text-white dark:bg-[#1D1D23] bg-white rounded-xl px-8 sm:px-10 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400"
-                          value={assetSearchTerm}
-                          onChange={(e) => setAssetSearchTerm(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Asset List */}
-                    <div className="max-h-[50vh] sm:max-h-60 overflow-y-auto">
-                      {sortedSwapAssets.length > 0 ? (
-                        <>
-                          {/* Popular Section - First 3 assets only if no search */}
-                          {!assetSearchTerm && sortedSwapAssets.length > 3 && (
-                            <>
-                              <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
-                                <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
-                                  Popular
-                                </span>
-                              </div>
-                              {sortedSwapAssets.slice(0, 3).map((asset: SupportedAsset, index: number) => {
-                                const handleAssetClick = () => {
-                                  // First, stop any ongoing calculations and clear previous states
-                                  if (calculationTimeout) {
-                                    clearTimeout(calculationTimeout);
-                                  }
-                                  if (estimateTimeout) {
-                                    clearTimeout(estimateTimeout);
-                                  }
-
-                                  // Clear all previous calculation states
-                                  setEstimate(null);
-                                  setEstimateError(null);
-                                  setEstimateLoading(false);
-                                  setCalculationError(null);
-                                  setReceiveAmountError(null);
-                                  setApiValidationError(null);
-                                  setApiValidationError(null);
-
-                                  // Set the new asset
-                                  setSelectedAsset(asset);
-                                  setIsAssetDropdownOpen(false);
-                                  setAssetSearchTerm("");
-
-                                  // Check asset type first and handle accordingly
-                                  if (isSimpleCalculationAsset(asset)) {
-                                    setIsCalculatingFromPay(true);
-                                    if (!isUserModifiedAmount) {
-                                      const defaultAmount = getDefaultAmount(asset);
-                                      setPayAmount(defaultAmount);
-                                      setPayAmountInput(defaultAmount.toString());
-                                      calculateAmounts(defaultAmount, true);
-                                    } else {
-                                      calculateAmounts(payAmount, true);
-                                    }
-                                  } else if (isForexAsset(asset)) {
-                                    // For FXP, calculate immediately without API
-                                    setIsCalculatingFromPay(true);
-                                    if (!isUserModifiedAmount) {
-                                      const defaultAmount = 1000; // Default FXP amount
-                                      setPayAmount(defaultAmount);
-                                      setPayAmountInput(defaultAmount.toString());
-                                      calculateAmounts(defaultAmount, true);
-                                    } else {
-                                      calculateAmounts(payAmount, true);
-                                    }
-                                  } else {
-                                    setIsCalculatingFromPay(true);
-                                    setIsCalculating(true);
-                                    setIsCalculatingReceive(true);
-                                    setEstimateLoading(true);
-                                    if (!isUserModifiedAmount) {
-                                      const defaultAmount = getDefaultAmount(asset);
-                                      setPayAmount(defaultAmount);
-                                      setPayAmountInput(defaultAmount.toString());
-                                    }
-                                  }
-                                };
-                                
-                                return (
-                                  <div
-                                    key={`popular-${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
-                                    className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E]"
-                                    onClick={handleAssetClick}
-                                  >
-                                    <img
-                                      src={
-                                        asset?.image_url ||
-                                        asset?.asset_image ||
-                                        (asset as any)?.image ||
-                                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                                      }
-                                      alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
-                                      className="w-6 h-6 rounded-full object-cover"
-                                      onError={(e) => {
-                                        e.currentTarget.src =
-                                          "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
-                                      }}
-                                    />
-                                    <div className="flex-1">
-                                      <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
-                                        {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
-                                        <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                                          {getNetworkDisplayName(asset.network)}
-                                        </span>
-                                      </div>
-                                      <div className="text-[#35353e] dark:text-[#788099] text-sm">
-                                        {asset.name ||
-                                          (asset.ticker || "").toUpperCase() ||
-                                          (asset.symbol || "").toUpperCase() ||
-                                          "Unknown Asset"}
-                                        {asset.legacy_ticker && (
-                                          <span className="text-xs text-[#f7c624] dark:text-[#f7c624] bg-[#f7c6241a] px-1 py-0.5 rounded-full">
-                                            {asset.legacy_ticker}
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                    {selectedAsset?.asset_id === asset.asset_id && (
-                                      <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                              
-                              {/* Separator Line */}
-                              <div className="border-t-2 border-[#D1D2D4FF] dark:border-[#35353E]"></div>
-                              
-                              {/* All Assets Header */}
-                              <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
-                                <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
-                                  All Assets
-                                </span>
-                              </div>
-                            </>
-                          )}
-                          
-                          {/* Rest of the assets or all assets if searching */}
-                          {(assetSearchTerm ? sortedSwapAssets : sortedSwapAssets.slice(3)).map(
-                          (asset: SupportedAsset, index: number) => (
-                            <div
-                              key={`${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
-                              className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
-                              onClick={() => {
-                                // First, stop any ongoing calculations and clear previous states
-                                if (calculationTimeout) {
-                                  clearTimeout(calculationTimeout);
-                                }
-                                if (estimateTimeout) {
-                                  clearTimeout(estimateTimeout);
-                                }
-
-                                // Clear all previous calculation states
-                                setEstimate(null);
-                                setEstimateError(null);
-                                setEstimateLoading(false);
-                                setCalculationError(null);
-                                setReceiveAmountError(null);
-                                setApiValidationError(null);
-                                setApiValidationError(null);
-
-                                // Set the new asset
-                                setSelectedAsset(asset);
-                                setIsAssetDropdownOpen(false);
-                                setAssetSearchTerm("");
-
-                                // Check asset type first and handle accordingly
-                                if (isSimpleCalculationAsset(asset)) {
-                                  setIsCalculatingFromPay(true);
-                                  if (!isUserModifiedAmount) {
-                                      const defaultAmount = getDefaultAmount(asset);
-                                    setPayAmount(defaultAmount);
-                                    setPayAmountInput(defaultAmount.toString());
-                                    calculateAmounts(defaultAmount, true);
-                                  } else {
-                                    calculateAmounts(payAmount, true);
-                                  }
-                                } else if (isForexAsset(asset)) {
-                                  // For FXP, calculate immediately without API
-                                  setIsCalculatingFromPay(true);
-                                  if (!isUserModifiedAmount) {
-                                      const defaultAmount = 1000; // Default FXP amount
-                                    setPayAmount(defaultAmount);
-                                    setPayAmountInput(defaultAmount.toString());
-                                    calculateAmounts(defaultAmount, true);
-                                  } else {
-                                    calculateAmounts(payAmount, true);
-                                  }
-                                } else {
-                                  setIsCalculatingFromPay(true);
-                                  setIsCalculating(true);
-                                  setIsCalculatingReceive(true);
-                                  setEstimateLoading(true);
-                                  if (!isUserModifiedAmount) {
-                                      const defaultAmount = getDefaultAmount(asset);
-                                    setPayAmount(defaultAmount);
-                                    setPayAmountInput(defaultAmount.toString());
-                                  }
-                                }
-                              }}
-                            >
-                              <img
-                                src={
-                                  asset?.image_url ||
-                                  asset?.asset_image ||
-                                  (asset as any)?.image ||
-                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                                }
-                                alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
-                                className="w-6 h-6 rounded-full object-cover"
-                                onError={(e) => {
-                                  e.currentTarget.src =
-                                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
-                                }}
-                              />
-                              <div className="flex-1">
-                                <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
-                                  {(
-                                    asset.ticker ||
-                                    asset.symbol ||
-                                    asset.name ||
-                                    "Unknown"
-                                  ).toUpperCase()}
-                                  <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                                    {getNetworkDisplayName(asset.network)}
-                                  </span>
-                                </div>
-                                <div className="text-[#35353e] dark:text-[#788099] text-sm">
-                                  {asset.name ||
-                                    (asset.ticker || "").toUpperCase() ||
-                                    (asset.symbol || "").toUpperCase() ||
-                                    "Unknown Asset"}
-                                  {asset.legacy_ticker && (
-                                    <span className="text-xs text-[#f7c624] dark:text-[#f7c624] bg-[#f7c6241a] px-1 py-0.5 rounded-full">
-                                      {asset.legacy_ticker}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              {selectedAsset?.asset_id === asset.asset_id && (
-                                <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                              )}
-                            </div>
-                          )
-                          )}
-                        </>
-                      ) : (
-                        <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
-                          {assetSearchTerm
-                            ? "No assets found"
-                            : "No assets available"}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
+                {renderAssetDropdown()}
               </div>
             </div>
           </div>
@@ -3205,9 +3205,9 @@ export default function WithdrawalForm({
 
         {/* Bottom Section - You Receive and Bank/Payment Method in one card */}
         <div className="relative mb-3">
-          <div className="flex border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-4">
+          <div className="relative flex flex-col sm:flex-row border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-3 sm:p-4 gap-4 overflow-visible">
             {/* You Receive Section */}
-            <div className="flex-1 pr-4">
+            <div className="flex-1 sm:pr-4">
               <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 You Receive
                 {!isCalculatingFromPay &&
@@ -3367,7 +3367,7 @@ export default function WithdrawalForm({
                       ? "Calculating..."
                       : "Enter amount"
                   }
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg  focus:outline-none border appearance-none ${
+                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 py-2 pr-16 text-base sm:text-lg focus:outline-none border appearance-none ${
                     (receiveAmountError &&
                       (receiveAmountError.includes("Rough estimate") ||
                         receiveAmountError.includes("Using estimated rate"))) ||
@@ -3486,62 +3486,71 @@ export default function WithdrawalForm({
             </div>
 
             {/* Payment Method Section */}
-            <div className="flex-1 pl-4">
-              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+            <div className="flex-1 sm:pl-4">
+              <label className="block text-[15px] text-[#9CA3AF] dark:text-[#9CA3AF] mb-2 font-semibold">
                 Payment Method
               </label>
               <div className="relative">
-                <CustomSelect
-                  options={Array.from(
+                {(() => {
+                  const providerNames = Array.from(
                     new Set(
-                      (adminWalletListDisplay.displayData || []).map((wallet: any) => wallet?.admin_payment_detail?.provider_name)
+                      (adminWalletListDisplay.displayData || []).map(
+                        (wallet: any) => wallet?.admin_payment_detail?.provider_name
+                      )
                     )
-                  )
-                    .filter((type) => type) // Remove null/undefined values
-                    .map((paymentType: any, index: number) => {
-                      // Find the admin detail for this provider to get the logo
-                      const adminDetail = adminWalletListDisplay.displayData?.find(
-                        (wallet: any) => wallet.admin_payment_detail?.provider_name === paymentType
-                      )?.admin_payment_detail;
-                      
-                      return {
-                        value: paymentType,
-                        label: paymentType,
-                        logo: adminDetail?.provider_logo || undefined,
-                      };
-                    })}
-                  value={payBank}
-                  onChange={(value) => {
-                    const selectedWallet = adminWalletListDisplay.displayData?.find(
-                      (wallet: any) => wallet.admin_payment_detail?.provider_name === value
-                    );
-                    
-                    setPayBank(value);
-                    setSelectedPaymentDetail(selectedWallet?.admin_payment_detail || null);
-                    
-                    // Clear selected payment details when changing payment type
-                    setSelectedPaymentDetails([]);
-                    // Clear payment method error when selecting a payment type
-                    setPaymentMethodError(null);
-                  }}
-                  placeholder={
-                    adminWalletListDisplay.isLoading
-                      ? "Loading payment methods..."
-                      : !adminWalletListDisplay.hasData
-                        ? "No payment methods available"
-                        : "Select Payment Method"
-                  }
-                  disabled={adminWalletListDisplay.isLoading}
-                  loading={adminWalletListDisplay.isLoading}
-                  loadingText="Loading payment methods..."
-                  emptyText="No payment methods available"
-                  searchable={true}
-                  className={`w-full ${
-                    paymentMethodError 
-                      ? "border-red-500 dark:border-red-500" 
-                      : ""
-                  }`}
-                />
+                  ).filter((type) => Boolean(type && type.trim())) as string[];
+
+                  const optionProviders =
+                    providerNames.length > 0 ? providerNames : fallbackProviderNames;
+
+                  return (
+                    <CustomSelect
+                      options={optionProviders.map((paymentType: string) => {
+                        const adminDetail = adminWalletListDisplay.displayData?.find(
+                          (wallet: any) =>
+                            wallet.admin_payment_detail?.provider_name === paymentType
+                        )?.admin_payment_detail;
+
+                        return {
+                          value: paymentType,
+                          label: adminDetail?.provider_name || paymentType,
+                          logo: adminDetail?.provider_logo || undefined,
+                        };
+                      })}
+                      value={payBank}
+                      className={`w-full ${
+                        paymentMethodError ? "border-red-500 dark:border-red-500" : ""
+                      }`}
+                      triggerClassName="bg-transparent dark:bg-transparent text-white border border-[#39394A] dark:border-[#39394A] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base"
+                      onChange={(value) => {
+                        const selectedWallet = adminWalletListDisplay.displayData?.find(
+                          (wallet: any) =>
+                            wallet.admin_payment_detail?.provider_name === value
+                        );
+
+                        setPayBank(value);
+                        setSelectedPaymentDetail(
+                          selectedWallet?.admin_payment_detail || null
+                        );
+
+                        setSelectedPaymentDetails([]);
+                        setPaymentMethodError(null);
+                      }}
+                      placeholder={
+                        adminWalletListDisplay.isLoading
+                          ? "Loading payment methods..."
+                          : providerNames.length === 0
+                          ? "No payment methods available"
+                          : "Select Payment Method"
+                      }
+                      disabled={adminWalletListDisplay.isLoading}
+                      loading={adminWalletListDisplay.isLoading}
+                      loadingText="Loading payment methods..."
+                      emptyText="No payment methods available"
+                      searchable={true}
+                    />
+                  );
+                })()}
               </div>
               {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
               {paymentMethodError && <p className="text-red-500 text-sm mt-1">{paymentMethodError}</p>}

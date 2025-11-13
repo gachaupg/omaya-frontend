@@ -69,6 +69,7 @@ const cashWithdrawalSlice = createSlice({
     clearFees: (state) => {
       state.fees = null;
       state.feesError = null;
+      state.feesLoading = false;
     },
   },
   extraReducers: (builder) => {
@@ -103,6 +104,7 @@ const cashWithdrawalSlice = createSlice({
       })
       .addCase(calculateCashWithdrawalFees.rejected, (state, action) => {
         state.feesLoading = false;
+        state.fees = null;
         state.feesError =
           (action.payload as string) ||
           "Failed to calculate fees";

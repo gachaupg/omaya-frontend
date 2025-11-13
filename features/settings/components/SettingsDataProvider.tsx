@@ -5,7 +5,7 @@ import { AppDispatch, RootState } from "@/store";
 import {
   fetchProfile,
   // fetchTheme, // Disabled - API returns 404
-  fetchSecuritySettings,
+  // fetchSecuritySettings, // Disabled - API returns 404
   // fetchPrivacySettings, // Disabled - API returns 404
 } from "../slices/settingsSlice";
 import { fetchWallets } from "@/features/p2p/slices/walletSlice";
@@ -46,7 +46,7 @@ export const SettingsDataProvider = ({
   const fetchedDataRef = useRef({
     profile: false,
     theme: false,
-    security: false,
+    security: true, // Disabled - API returns 404
     privacy: false,
   });
 
@@ -67,8 +67,7 @@ export const SettingsDataProvider = ({
       !fetchedDataRef.current.profile;
     // Theme and Privacy APIs are 404 - disabled for now (theme handled by local context)
     const needsTheme = false; // Disabled - theme handled by local context
-    const needsSecurity =
-      !settingsState.loading && !fetchedDataRef.current.security;
+    const needsSecurity = false; // Disabled - API returns 404
     const needsPrivacy = false; // Disabled - API returns 404
     const needsWallets = !walletsData;
     const needsSummary = !transactionSummary.summary;
@@ -100,7 +99,7 @@ export const SettingsDataProvider = ({
       if (needsProfile) promises.push(dispatch(fetchProfile()));
       // Theme and Privacy APIs disabled (404 errors)
       // if (needsTheme) promises.push(dispatch(fetchTheme()));
-      if (needsSecurity) promises.push(dispatch(fetchSecuritySettings()));
+      // if (needsSecurity) promises.push(dispatch(fetchSecuritySettings()));
       // if (needsPrivacy) promises.push(dispatch(fetchPrivacySettings()));
       if (needsWallets) promises.push(dispatch(fetchWallets()));
       if (needsSummary) promises.push(dispatch(fetchTransactionSummary()));
@@ -115,7 +114,7 @@ export const SettingsDataProvider = ({
           fetchedDataRef.current = {
             profile: fetchedDataRef.current.profile || needsProfile,
             theme: true, // Always true since we're not fetching theme API
-            security: fetchedDataRef.current.security || needsSecurity,
+            security: true, // Always true since we're not fetching security API
             privacy: true, // Always true since we're not fetching privacy API
           };
         })

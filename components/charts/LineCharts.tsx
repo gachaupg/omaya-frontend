@@ -369,9 +369,11 @@ function DonutChartWithCenter({
 
   // Calculate total from actual data values
   const actualTotal = data.reduce((sum, item) => sum + item.value, 0);
+  const displayTotal = total ?? actualTotal;
 
   // Check if all values are 0
   const allZero = actualTotal === 0;
+  const normalizedTotal = allZero ? 1 : actualTotal;
 
   return (
     <svg
@@ -392,13 +394,15 @@ function DonutChartWithCenter({
           strokeWidth={stroke}
           strokeDasharray={`${circumference} 0`}
           strokeLinecap="round"
+          shapeRendering="geometricPrecision"
         />
       ) : (
         // Show normal donut chart when there are values
         data.map((d, i) => {
           const value =
-            actualTotal > 0
-              ? (d.value / actualTotal) * (circumference - gap * data.length)
+            normalizedTotal > 0
+              ? (d.value / normalizedTotal) *
+                (circumference - gap * Math.max(data.length - 1, 0))
               : 0;
           const el = (
             <circle
@@ -412,10 +416,11 @@ function DonutChartWithCenter({
               strokeDasharray={`${value} ${circumference - value}`}
               strokeDashoffset={Number.isFinite(-offset) ? -offset : 0}
               strokeLinecap="round"
+              shapeRendering="geometricPrecision"
               style={{ opacity: 1 }}
             />
           );
-          offset += value + gap;
+          offset += value + (gap || 0);
           return el;
         })
       )}
@@ -428,14 +433,14 @@ function DonutChartWithCenter({
         fontWeight="bold"
         className="dark:fill-white fill-black"
       >
-        {allZero ? "00" : `${formatLargeNumber(actualTotal)} USD`}
+        {allZero ? "00" : `${formatLargeNumber(displayTotal)} USD`}
       </text>
       <text
         x={center}
-        y={center + 22}
+        y={center + 24}
         textAnchor="middle"
         fill="#A3A3A3"
-        fontSize="13"
+        fontSize="12"
       >
         {label}
       </text>
@@ -499,30 +504,32 @@ const Card = ({
 };
 
 const Legend = ({ data }: { data: DonutChartData[] }) => (
-  <div className="flex flex-col gap-3 sm:gap-4 justify-center min-w-0 sm:min-w-[170px] w-full sm:w-auto">
+  <div className="flex flex-col gap-3 sm:gap-4 justify-center min-w-0 sm:min-w-[200px] w-full sm:w-auto">
     {data.map((d) => (
       <div
         key={d.label}
-        className="flex items-center gap-2 sm:gap-3"
-        style={{ fontSize: "11px" }}
+        className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm md:text-base"
       >
         <span
           style={{
             background: d.color,
-            minWidth: 11,
-            minHeight: 11,
-            width: 11,
-            height: 11,
+            minWidth: 12,
+            minHeight: 12,
+            width: 12,
+            height: 12,
             display: "inline-block",
             borderRadius: "20%",
             flexShrink: 0,
           }}
         ></span>
-        <span className="dark:text-[#A3A3A3] font-medium flex-1 text-xs sm:text-sm truncate">
+        <span className="dark:text-[#D1D5DB] text-[#23232B] font-semibold flex-1 truncate">
           {d.label}
         </span>
-        <span className="dark:text-white font-semibold ml-auto min-w-[60px] sm:min-w-[70px] text-right text-xs sm:text-sm">
-          {d.value.toLocaleString()} USD
+        <span className="dark:text-white text-[#051015] font-semibold ml-auto min-w-[70px] sm:min-w-[90px] text-right">
+          {d.value.toLocaleString(undefined, {
+            maximumFractionDigits: 2,
+          })}{" "}
+          USD
         </span>
       </div>
     ))}
@@ -540,9 +547,9 @@ const LineCharts = React.memo(
     );
     const [period, setPeriod] = useState("Month");
     const [selectedTimePeriod, setSelectedTimePeriod] = useState("All");
-    const [activeTab, setActiveTab] = useState<"exchange" | "p2p" | "swap">(
-      "exchange"
-    );
+    const [activeTab, setActiveTab] = useState<
+      "exchange" | "p2p" | "swap" | "buy"
+    >("exchange");
     const [userEmail, setUserEmail] = useState<string | null>(null);
     const [chartData, setChartData] = useState<{
       depositData: LineChartData;
@@ -903,6 +910,16 @@ const LineCharts = React.memo(
                 >
                   Swap
                 </button>
+                <button
+                  className={`${
+                    activeTab === "buy"
+                      ? "bg-[#1D8751] text-white"
+                      : "bg-transparent border border-[#1D8751] text-[#1D8751]"
+                  } px-2 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs md:text-[13px] font-semibold whitespace-nowrap`}
+                  onClick={() => setActiveTab("buy")}
+                >
+                  Buy
+                </button>
               </div>
             </div>
             <div className="flex flex-col lg:flex-row w-full pt-10">
@@ -913,7 +930,13 @@ const LineCharts = React.memo(
                   total={
                     overviewTotalSummary(transactionSummary, activeTab).total
                   }
-                  label={activeTab === "swap" ? "Swaps" : "Transactions"}
+                  label={
+                    activeTab === "swap"
+                      ? "Swaps"
+                      : activeTab === "buy"
+                      ? "Buy Orders"
+                      : "Transactions"
+                  }
                 />
               </div>
             </div>
@@ -921,7 +944,7 @@ const LineCharts = React.memo(
           {/* Referral Commissions */}
           <Card className="w-full rounded-none lg:rounded-2xl flex flex-col lg:flex-row items-center h-full relative dark:bg-[#1D1D23] bg-white">
             <div className="absolute left-0 top-0 px-2 pt-2 flex flex-wrap w-full justify-between items-center gap-2">
-              <h3 className="dark:text-white text-xs sm:text-sm md:text-[14px] mb-2 font-semibold">
+              <h3 className="dark:text-white text-sm sm:text-base md:text-lg mb-2 font-semibold tracking-tight">
                 Your Referral Commissions
               </h3>
               <div className="w-full sm:w-auto">
