@@ -3,7 +3,7 @@
 import React from "react";
 import { useSelector } from "react-redux";
 import { selectGoogleOAuth } from "../slices/googleOAuthSlice";
-import { GOOGLE_API_ENDPOINTS } from "../../../utils/googleOAuthConfig";
+import { GOOGLE_OAUTH_CONFIG } from "../../../utils/googleOAuthConfig";
 import { RootState } from "../../../store";
 
 const GoogleOAuthDebug: React.FC = () => {
@@ -23,7 +23,7 @@ const GoogleOAuthDebug: React.FC = () => {
          <div>Has Error: {googleOAuth.error ? "❌" : "✅"}</div>
          <div>Is Redirecting: {googleOAuth.isRedirecting ? "✅" : "❌"}</div>
           <div className="mt-2 text-blue-400">
-            Backend URL: {GOOGLE_API_ENDPOINTS.djangoLogin}
+            Backend URL: {GOOGLE_OAUTH_CONFIG.backendAuthUrl}
           </div>
         {googleOAuth.error && (
           <div className="text-red-400 mt-2">
@@ -32,8 +32,9 @@ const GoogleOAuthDebug: React.FC = () => {
         )}
         {googleOAuth.user && (
           <div className="mt-2">
-            <div>User: {googleOAuth.user.name}</div>
+            <div>Name: {googleOAuth.user.first_name} {googleOAuth.user.last_name}</div>
             <div>Email: {googleOAuth.user.email}</div>
+            <div>Auth Provider: {googleOAuth.user.auth_provider}</div>
           </div>
         )}
       </div>

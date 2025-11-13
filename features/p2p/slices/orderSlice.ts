@@ -30,7 +30,7 @@ import {
   WithdrawalAddressesResponse,
 
 } from "../types";
-import { handleP2PError } from "../../../lib/utils/errorHandler";
+import { handleP2PErrorSafe } from "../../../lib/utils/errorHandler";
 import { fetchWallets } from "./walletSlice";
 import { logger } from "@/lib/logger";
 
@@ -86,8 +86,8 @@ export const fetchAllP2POrders = createAsyncThunk(
     try {
       return await getAllP2POrders(page);
     } catch (err: any) {
-      handleP2PError(err);
-      return rejectWithValue(err.message || "Failed to fetch all orders");
+      const msg = handleP2PErrorSafe(err);
+      return rejectWithValue(msg || err.message || "Failed to fetch all orders");
     }
   }
 );
@@ -98,8 +98,8 @@ export const fetchAllP2PBuyandSell = createAsyncThunk(
     try {
       return await getAllP2PBuyandSell(page);
     } catch (err: any) {
-      handleP2PError(err);
-      return rejectWithValue(err.message || "Failed to fetch buy and sell orders");
+      const msg = handleP2PErrorSafe(err);
+      return rejectWithValue(msg || err.message || "Failed to fetch buy and sell orders");
     }
   }
 );
@@ -110,10 +110,8 @@ export const fetchWithdrawalAddresses = createAsyncThunk(
     try {
       return await getWithdrawalAddresses();
     } catch (err: any) {
-      handleP2PError(err);
-      return rejectWithValue(
-        err.message || "Failed to fetch withdrawal addresses"
-      );
+      const msg = handleP2PErrorSafe(err);
+      return rejectWithValue(msg || err.message || "Failed to fetch withdrawal addresses");
     }
   }
 );
@@ -128,8 +126,8 @@ export const matchP2POrderThunk = createAsyncThunk(
       const response = await matchP2POrder(id, orderData);
       return response;
     } catch (error: any) {
-      handleP2PError(error);
-      return rejectWithValue(error.message || "An error occurred");
+      const msg = handleP2PErrorSafe(error);
+      return rejectWithValue(msg || error.message || "An error occurred");
     }
   }
 );
@@ -140,8 +138,8 @@ export const fetchConfirmOrder = createAsyncThunk(
     try {
       return await getConfirmOrder(id);
     } catch (err: any) {
-      handleP2PError(err);
-      return rejectWithValue(err.message || "Failed to fetch confirm order");
+      const msg = handleP2PErrorSafe(err);
+      return rejectWithValue(msg || err.message || "Failed to fetch confirm order");
     }
   }
 );
@@ -167,20 +165,16 @@ export const fetchSingleOrder = createAsyncThunk(
             );
           }
 
-          handleP2PError(orderErr);
-          return rejectWithValue(
-            orderErr.message || "Failed to fetch single order"
-          );
+          const msg = handleP2PErrorSafe(orderErr);
+          return rejectWithValue(msg || orderErr.message || "Failed to fetch single order");
         }
       } else {
         // For non-500 errors from trade endpoint, try order endpoint as fallback
         try {
           return await SingleOrder(id);
         } catch (orderErr: any) {
-          handleP2PError(orderErr);
-          return rejectWithValue(
-            orderErr.message || "Failed to fetch single order"
-          );
+          const msg = handleP2PErrorSafe(orderErr);
+          return rejectWithValue(msg || orderErr.message || "Failed to fetch single order");
         }
       }
     }
@@ -194,8 +188,8 @@ export const cancelP2POrderThunk = createAsyncThunk(
       const response = await cancelP2POrder(id);
       return response;
     } catch (error: any) {
-      handleP2PError(error);
-      return rejectWithValue(error.message || "An error occurred");
+      const msg = handleP2PErrorSafe(error);
+      return rejectWithValue(msg || error.message || "An error occurred");
     }
   }
 );
@@ -221,8 +215,8 @@ export const confirmP2PTradeThunk = createAsyncThunk(
         return rejectWithValue("Trade confirmation failed due to a backend configuration issue. Please contact support.");
       }
       
-      handleP2PError(error);
-      return rejectWithValue(error.message || "An error occurred");
+      const msg = handleP2PErrorSafe(error);
+      return rejectWithValue(msg || error.message || "An error occurred");
     }
   }
 );
@@ -240,8 +234,8 @@ export const completeP2PTradeThunk = createAsyncThunk(
         return rejectWithValue("Trade completion failed due to a backend configuration issue. Please contact support.");
       }
       
-      handleP2PError(error);
-      return rejectWithValue(error.message || "An error occurred");
+      const msg = handleP2PErrorSafe(error);
+      return rejectWithValue(msg || error.message || "An error occurred");
     }
   }
 );
@@ -252,8 +246,8 @@ export const deleteP2POrderThunk = createAsyncThunk(
     try {
       return await deleteP2POrder(id);
     } catch (error: any) {
-      handleP2PError(error);
-      return rejectWithValue(error.message || "An error occurred");
+      const msg = handleP2PErrorSafe(error);
+      return rejectWithValue(msg || error.message || "An error occurred");
     }
   }
 );
@@ -268,8 +262,8 @@ export const toggleP2POrderStatusThunk = createAsyncThunk(
       const response = await toggleP2POrderStatus(id, status);
       return response;
     } catch (error: any) {
-      handleP2PError(error);
-      return rejectWithValue(error.message || "An error occurred");
+      const msg = handleP2PErrorSafe(error);
+      return rejectWithValue(msg || error.message || "An error occurred");
     }
   }
 );
@@ -281,8 +275,8 @@ export const duplicateP2POrderThunk = createAsyncThunk(
       const response = await duplicateP2POrder(id);
       return response;
     } catch (error: any) {
-      handleP2PError(error);
-      return rejectWithValue(error.message || "An error occurred");
+      const msg = handleP2PErrorSafe(error);
+      return rejectWithValue(msg || error.message || "An error occurred");
     }
   }
 );
@@ -293,8 +287,8 @@ export const editP2POrderThunk = createAsyncThunk(
     try {
       return await editP2POrder(id, data);
     } catch (error: any) {
-      handleP2PError(error);
-      return rejectWithValue(error.message || "An error occurred");
+      const msg = handleP2PErrorSafe(error);
+      return rejectWithValue(msg || error.message || "An error occurred");
     }
   }
 );
@@ -305,8 +299,8 @@ export const updateProfileThunk = createAsyncThunk(
     try {
       return await updateProfile(data);
     } catch (error: any) {
-      handleP2PError(error);
-      return rejectWithValue(error.message || "An error occurred");
+      const msg = handleP2PErrorSafe(error);
+      return rejectWithValue(msg || error.message || "An error occurred");
     }
   }
 );
@@ -317,8 +311,8 @@ export const getP2PProfileThunk = createAsyncThunk(
     try {
       return await getP2PProfile();
     } catch (error: any) {
-      handleP2PError(error);
-      return rejectWithValue(error.message || "An error occurred");
+      const msg = handleP2PErrorSafe(error);
+      return rejectWithValue(msg || error.message || "An error occurred");
     }
   }
 );

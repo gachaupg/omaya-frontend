@@ -1,10 +1,12 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+
+import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/features/auth/store';
 import { showToast } from '@/lib/utils/toast';
 import axios from 'axios';
+import { storage } from '../utils/storage';
 
 interface FacebookAuthButtonProps {
   onSuccess?: (userData: any) => void;
@@ -23,7 +25,7 @@ declare global {
 const FacebookAuthButton: React.FC<FacebookAuthButtonProps> = ({
   onSuccess,
   onError,
-  className = "",
+  className = '',
   children,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -31,17 +33,126 @@ const FacebookAuthButton: React.FC<FacebookAuthButtonProps> = ({
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
 
+  // Handle Facebook response
+  const handleFacebookResponse = useCallback(async (response: any) => {
+    const { toast } = await import('react-toastify');
+    console.log('Handling Facebook response:', response);
+    try {
+      setIsLoading(true);
+      
+      if (response.status === 'connected') {
+        const { authResponse } = response;
+        
+        // Get user info
+        const userInfo = await new Promise((resolve, reject) => {
+          window.FB.api('/me', { 
+            fields: 'id,name,email,first_name,last_name,picture.type(large)' 
+          }, (res: any) => {
+            if (res.error) {
+              reject(res.error);
+            } else {
+              resolve(res);
+            }
+          });
+        });
+
+        // Send token to your backend
+        const backendResponse = await axios.post(
+          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/auth/facebook/`,
+          {
+            access_token: authResponse.accessToken,
+            user: userInfo,
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            withCredentials: true,
+          }
+        );
+
+        const { access, refresh, user } = backendResponse.data;
+        
+        // Store tokens and user data
+        if (access) {
+          localStorage.setItem('access_token', access);
+          if (refresh) localStorage.setItem('refresh_token', refresh);
+          localStorage.setItem('user', JSON.stringify(user));
+          // Persist to shared storage for apiClient Authorization header
+          storage.setProfile({
+            user,
+            tokens: { access, refresh: refresh || '' },
+          });
+          // Set cookie for middleware checks (1 hour)
+          const maxAge = 60 * 60;
+          document.cookie = `access_token=${access}; Max-Age=${maxAge}; Path=/; SameSite=Lax`;
+        }
+        
+        // Call success callback
+        onSuccess?.(user);
+        
+        // Show success message using toast
+        toast.success('Successfully logged in with Facebook');
+        
+        // Redirect to dashboard or intended URL
+        const redirectTo = localStorage.getItem('redirect_after_login') || '/dashboard';
+        localStorage.removeItem('redirect_after_login');
+        // Use full reload to ensure auth state is properly set everywhere
+        window.location.href = redirectTo;
+      } else {
+        throw new Error('Facebook login failed');
+      }
+    } catch (error: any) {
+      console.error('Facebook login error:', error);
+      const errorMessage = error.response?.data?.detail || 'Failed to login with Facebook';
+      onError?.(error);
+      
+      // Show error message using toast
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [onError, onSuccess, router]);
+
   // Initialize Facebook SDK
   useEffect(() => {
+    console.log('Initializing Facebook SDK...');
+    
     const initializeFacebookSDK = () => {
+      console.log('Checking for FB object...');
+      
       if (window.FB) {
+        console.log('FB object found, initializing...');
+        
         window.FB.init({
-          appId: '596315263341600',
+          appId: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '596315263341600',
           cookie: true,
           xfbml: true,
-          version: 'v18.0'
+          version: 'v18.0',
+          status: true,
+          autoLogAppEvents: true,
         });
-        setIsSDKLoaded(true);
+
+        // On HTTP pages, some SDK methods (like getLoginStatus) are blocked by Facebook.
+        // If not HTTPS, skip the preflight status check but keep the SDK usable on click.
+        if (typeof window !== 'undefined' && window.location.protocol !== 'https:') {
+          console.warn('Facebook SDK: Skipping getLoginStatus because page is not HTTPS. Login will still work on click.');
+          setIsSDKLoaded(true);
+        } else {
+          console.log('FB.init called, checking login status...');
+          // Check login status (only on HTTPS)
+          window.FB.getLoginStatus((response: any) => {
+            console.log('FB.getLoginStatus response:', response);
+            if (response.status === 'connected') {
+              console.log('Already connected to Facebook');
+              handleFacebookResponse(response);
+            } else {
+              console.log('Not connected to Facebook');
+            }
+            setIsSDKLoaded(true);
+          });
+        }
+        
         return;
       }
 
@@ -49,159 +160,105 @@ const FacebookAuthButton: React.FC<FacebookAuthButtonProps> = ({
       if (!document.getElementById('facebook-jssdk')) {
         const script = document.createElement('script');
         script.id = 'facebook-jssdk';
-        script.src = 'https://connect.facebook.net/en_US/sdk.js';
         script.async = true;
         script.defer = true;
         script.crossOrigin = 'anonymous';
+        script.src = 'https://connect.facebook.net/en_US/sdk.js';
         
         script.onload = () => {
-          if (window.fbAsyncInit) {
-            window.fbAsyncInit();
-          }
-          setIsSDKLoaded(true);
+          // Reinitialize after script loads
+          initializeFacebookSDK();
         };
         
-        document.head.appendChild(script);
+        script.onerror = (error) => {
+          console.error('Failed to load Facebook SDK', error);
+          onError?.({ message: 'Failed to load Facebook SDK' });
+        };
+        
+        document.body.appendChild(script);
       }
     };
 
-    // Check if SDK is already loaded
-    if (window.FB) {
-      initializeFacebookSDK();
-    } else {
-      // Wait for the SDK to load
-      const checkSDK = setInterval(() => {
-        if (window.FB) {
-          clearInterval(checkSDK);
-          initializeFacebookSDK();
-        }
-      }, 100);
+    // Add Facebook SDK initialization function to window
+    window.fbAsyncInit = initializeFacebookSDK;
 
-      // Cleanup interval after 10 seconds
-      setTimeout(() => clearInterval(checkSDK), 10000);
-    }
-  }, []);
+    // Initialize the SDK
+    initializeFacebookSDK();
 
-  const handleFacebookLogin = () => {
-    if (!isSDKLoaded || !window.FB) {
-      showToast.error("Facebook SDK is not loaded. Please try again.");
-      return;
-    }
+    // Cleanup
+    return () => {
+      // Remove the script if it exists
+      const script = document.getElementById('facebook-jssdk');
+      if (script) {
+        document.body.removeChild(script);
+      }
+    };
+  }, [handleFacebookResponse, onError]);
 
-    // Check if we're on HTTPS or localhost
-    const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
+  const handleFacebookLogin = async () => {
+    const { toast } = await import('react-toastify');
+    console.log('Facebook login button clicked');
     
-    if (!isSecure) {
-      showToast.error("Facebook login requires HTTPS. Please use HTTPS or localhost for development.");
+    if (typeof window === 'undefined' || !window.FB) {
+      console.error('Facebook SDK not loaded');
+      toast.error('Facebook SDK is not loaded yet. Please try again.');
       return;
     }
 
+    console.log('Calling FB.login()...');
     setIsLoading(true);
 
-    try {
-      window.FB.login(
-        (response: any) => {
-          if (response.authResponse) {
-            const accessToken = response.authResponse.accessToken;
-            authenticateWithBackend(accessToken);
-          } else {
-            setIsLoading(false);
-            onError?.({ message: "User cancelled login or did not fully authorize." });
-          }
-        },
-        {
-          scope: 'email,public_profile',
-          return_scopes: true
+    window.FB.login(
+      (response: any) => {
+        console.log('FB.login response:', response);
+        
+        if (response.authResponse) {
+          console.log('Auth response received, handling...');
+          handleFacebookResponse(response);
+        } else {
+          console.log('User cancelled login or did not fully authorize.');
+          setIsLoading(false);
+          onError?.({ message: 'Facebook login was cancelled or not authorized' });
+          
+          // Show info message using toast
+          toast.info('Facebook login was cancelled or not authorized');
         }
-      );
-    } catch (error) {
-      setIsLoading(false);
-      console.error("Facebook login error:", error);
-      onError?.(error);
-    }
-  };
-
-  const authenticateWithBackend = async (accessToken: string) => {
-    try {
-      const result = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/auth/facebook/`,
-        {
-          access_token: accessToken,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (result.data.access && result.data.refresh) {
-        // Store tokens in localStorage
-        localStorage.setItem('access_token', result.data.access);
-        localStorage.setItem('refresh_token', result.data.refresh);
-        
-        showToast.success("Facebook login successful!");
-        
-        // Call success callback
-        onSuccess?.(result.data.user);
-        
-        // Redirect to dashboard
-        router.push("/dashboard");
-      } else {
-        throw new Error("Invalid response from server");
+      },
+      {
+        scope: 'email,public_profile',
+        return_scopes: true,
+        auth_type: 'rerequest',
       }
-    } catch (error: any) {
-      console.error("Backend authentication error:", error);
-      const errorMessage = error.response?.data?.message || "Authentication failed. Please try again.";
-      showToast.error(errorMessage);
-      onError?.(error);
-    } finally {
-      setIsLoading(false);
-    }
+    );
   };
-
-  // Check if we're in development and not on HTTPS
-  const isDevelopment = process.env.NODE_ENV === 'development';
-  const isSecure = typeof window !== 'undefined' && (window.location.protocol === 'https:' || window.location.hostname === 'localhost');
-  const showHTTPSWarning = isDevelopment && !isSecure;
 
   return (
-    <div className="w-full">
-      {showHTTPSWarning && (
-        <div className="mb-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-          <p className="text-xs text-yellow-800 dark:text-yellow-200">
-            ⚠️ Facebook login requires HTTPS. Use <code className="bg-yellow-100 dark:bg-yellow-800 px-1 rounded">https://localhost:3000</code> for development.
-          </p>
-        </div>
+    <button
+      onClick={handleFacebookLogin}
+      disabled={isLoading || !isSDKLoaded}
+      className={`flex items-center justify-center w-full px-4 py-2 text-white bg-[#1877f2] rounded-md hover:bg-[#166fe5] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1877f2] ${className} ${!isSDKLoaded ? 'opacity-50 cursor-not-allowed' : ''}`}
+    >
+      {isLoading ? (
+        <span>Loading...</span>
+      ) : !isSDKLoaded ? (
+        <span>Initializing Facebook...</span>
+      ) : (
+        <>
+          <svg
+            className="w-5 h-5 mr-2"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fillRule="evenodd"
+              d="M20 10c0-5.523-4.477-10-10-10S0 4.477 0 10c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V10h2.54V7.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V10h2.773l-.443 2.89h-2.33v6.988C16.343 19.128 20 14.991 20 10z"
+              clipRule="evenodd"
+            />
+          </svg>
+          {children || 'Continue with Facebook'}
+        </>
       )}
-      <button
-        onClick={handleFacebookLogin}
-        disabled={isLoading || !isSDKLoaded}
-        className={`flex items-center justify-center py-3 px-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-transparent hover:bg-gray-50 dark:hover:bg-[#2A2A30] transition-colors duration-300 w-full disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
-      >
-        {isLoading ? (
-          <>
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-3"></div>
-            <span className="text-gray-700 dark:text-gray-300 font-medium text-sm">
-              Connecting...
-            </span>
-          </>
-        ) : (
-          children || (
-            <>
-              <img
-                className="w-5 h-5 mr-3 bg-white rounded-full"
-                src="https://res.cloudinary.com/pitz/image/upload/v1755777400/channels4_profile_z4k17x-removebg-preview_qf5kzv.png"
-                alt="Facebook"
-              />
-              <span className="text-gray-700 dark:text-gray-300 font-medium text-sm">
-                Facebook
-              </span>
-            </>
-          )
-        )}
-      </button>
-    </div>
+    </button>
   );
 };
 
