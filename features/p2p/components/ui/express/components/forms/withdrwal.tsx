@@ -67,7 +67,7 @@ const SuccessModal = ({
         </div>
 
         {/* Success Title */}
-        <h2 className="text-white text-xl font-semibold mb-4">
+        <h2 className="text-white text-lg sm:text-xl font-semibold mb-3 sm:mb-4">
           Successfully Submitted
         </h2>
 
@@ -88,7 +88,7 @@ const SuccessModal = ({
             onClose();
             onNavigateToP2P();
           }}
-          className="w-full bg-[#4CAF50] text-white py-3 rounded-2xl text-lg font-medium hover:bg-[#45a049] transition-colors"
+          className="w-full bg-[#4CAF50] text-white py-3 sm:py-3 rounded-xl sm:rounded-2xl text-sm sm:text-lg font-medium hover:bg-[#45a049] transition-colors min-h-[44px] sm:min-h-0"
         >
           OK
         </button>
@@ -2244,24 +2244,23 @@ export default function WithdrawalForm({
 
   return (
     <div className="w-full min-h-screen flex flex-col dark:bg-[#18181D]  ">
-      <h2 className="text-xl font-bold mb-2 text-[#788099]">
+      <h2 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3 text-[#788099]">
         <span className="text-[#7e7e8f]">1-</span> Transaction Info
-     
       </h2>
 
       <div className="w-full mx-auto text-white">
         {/* Single Outer Card Container */}
-        <div className="border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-6 mb-4">
+        <div className="border border-[#D1D2D4FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 mb-3 sm:mb-4">
           {/* Asset and Network Row */}
-          <div className="flex gap-6 mb-6">
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-4 sm:mb-6">
             {/* Asset Section */}
-            <div className="flex-1 pr-4">
-              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+            <div className="flex-1 sm:pr-4">
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                 Asset
               </label>
               <div className="relative" ref={assetDropdownRef}>
                 <div
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 text-lg  focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer`}
+                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 text-sm sm:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer min-h-[44px] sm:min-h-0`}
                   onClick={() => {
                     setIsAssetDropdownOpen(!isAssetDropdownOpen);
                   }}
@@ -2338,15 +2337,15 @@ export default function WithdrawalForm({
 
                 {/* Asset Dropdown */}
                 {isAssetDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl z-50 max-h-80 overflow-hidden">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl z-50 max-h-[60vh] sm:max-h-80 overflow-hidden">
                     {/* Search Input */}
-                    <div className="p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+                    <div className="p-2 sm:p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
                       <div className="relative">
                         <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
                         <input
                           type="text"
                           placeholder="Search assets..."
-                          className="w-full text-gray-900 dark:text-white dark:bg-[#1D1D23] bg-white rounded-xl px-10 py-2 text-sm focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400"
+                          className="w-full text-gray-900 dark:text-white dark:bg-[#1D1D23] bg-white rounded-xl px-10 py-2.5 sm:py-2 text-sm sm:text-base focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400 min-h-[44px] sm:min-h-0"
                           value={assetSearchTerm}
                           onChange={(e) => setAssetSearchTerm(e.target.value)}
                         />
@@ -2450,13 +2449,13 @@ export default function WithdrawalForm({
             </div>
 
             {/* Network Section */}
-            <div className="flex-1 pl-4">
-              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+            <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#D1D2D4FF] dark:border-[#35353E] pt-4 sm:pt-0 sm:border-none">
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                 Network
               </label>
               <div className="relative" ref={networkDropdownRef}>
                 <div
-                  className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer hover:border-[#1D8751] dark:hover:border-[#1D8751] transition-colors"
+                  className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 text-sm sm:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer hover:border-[#1D8751] dark:hover:border-[#1D8751] transition-colors min-h-[44px] sm:min-h-0"
                   onClick={() =>
                     setIsNetworkDropdownOpen(!isNetworkDropdownOpen)
                   }
@@ -2488,12 +2487,12 @@ export default function WithdrawalForm({
 
                 {/* Network Dropdown */}
                 {isNetworkDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg z-50 max-h-60 overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl shadow-lg z-50 max-h-[60vh] sm:max-h-60 overflow-y-auto">
                     <div className="p-2">
                       {availableNetworks.map((network, index) => (
                         <div
                           key={`${network.network_id}-${index}`}
-                          className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer rounded-xl transition-colors ${
+                              className={`flex items-center gap-3 p-2 sm:p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer rounded-xl transition-colors min-h-[44px] sm:min-h-0 ${
                             selectedNetwork?.network_id === network.network_id
                               ? "bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751]/30"
                               : ""
@@ -2547,10 +2546,10 @@ export default function WithdrawalForm({
           </div>
 
           {/* Amount and Wallet Address Row */}
-          <div className="flex gap-6">
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
             {/* Amount Section */}
-            <div className="flex-1 pr-4">
-              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
+            <div className="flex-1 sm:pr-4">
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 Amount
                 {isCalculatingFromPay &&
                   (isCalculating || isCalculatingReceive) && (
@@ -2612,7 +2611,7 @@ export default function WithdrawalForm({
                   }}
                   onFocus={() => setIsCalculatingFromPay(true)}
                   placeholder="Enter amount"
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg  focus:outline-none border appearance-none ${
+                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 pr-12 sm:pr-16 text-sm sm:text-lg focus:outline-none border appearance-none min-h-[44px] sm:min-h-0 ${
                     apiValidationError
                       ? "border-red-500"
                       : isCalculating || isCalculatingReceive
@@ -2651,12 +2650,12 @@ export default function WithdrawalForm({
             </div>
 
             {/* Wallet Address Section */}
-            <div className="flex-1 pl-4">
-              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+            <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#D1D2D4FF] dark:border-[#35353E] pt-4 sm:pt-0 sm:border-none">
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                 Wallet Address
               </label>
               <div className="relative">
-                <FaWallet className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#7e7e8f] dark:text-[#788099] pointer-events-none z-10" />
+                <FaWallet className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-[#7e7e8f] dark:text-[#788099] pointer-events-none z-10" />
                 <input
                   type="text"
                   value={walletAddress}
@@ -2667,7 +2666,7 @@ export default function WithdrawalForm({
                     setWalletAddress(pastedText); // Set the pasted text directly
                   }}
                   placeholder="Enter BEP20 wallet address (0x...)"
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-9 py-2 text-lg focus:outline-none border ${
+                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-8 sm:px-9 py-2.5 sm:py-2 text-sm sm:text-lg focus:outline-none border min-h-[44px] sm:min-h-0 ${
                     walletError
                       ? "border-red-500"
                       : walletAddress.trim() && !walletError
@@ -2688,7 +2687,7 @@ export default function WithdrawalForm({
           </div>
 
           {/* Disclaimer Banner */}
-          <div className="flex items-center rounded-2xl px-4 py-3 mt-6 bg-[#f8f9fa] dark:bg-[#1D1D23]">
+          <div className="flex items-center rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 mt-4 sm:mt-6 bg-[#f8f9fa] dark:bg-[#1D1D23]">
             <div className="flex items-center gap-3">
               <div className="w-6 h-6 bg-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0">
                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
@@ -2717,12 +2716,12 @@ export default function WithdrawalForm({
         </div>
 
         {/* Submit Button for First Card */}
-        <div className="mt-4">
+        <div className="mt-3 sm:mt-4">
           {isTransactionSubmitted ? (
             ""
           ) : (
             <button
-              className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
+              className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${
                 isSubmitting ||
                 isTransactionSubmitted ||
                 isInfoModalOpen ||

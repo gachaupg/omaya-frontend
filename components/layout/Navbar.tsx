@@ -119,9 +119,9 @@ const LanguageSelector = () => {
   };
 
   return (
-    <div className="relative ">
+    <div className="relative">
       <div
-        className="flex items-center justify-center cursor-pointer"
+        className="flex items-center justify-center cursor-pointer min-h-[44px] sm:min-h-0 lg:min-h-0 px-1 sm:px-0 lg:px-0"
         onClick={toggleDropdown}
       >
         <Image
@@ -131,67 +131,74 @@ const LanguageSelector = () => {
               : "https://res.cloudinary.com/dam1sxczj/image/upload/v1747216099/somali_jq5e97.png"
           }
           alt={selectedLanguage}
-          width={32}
-          height={32}
-          className="rounded-full"
+          width={24}
+          height={24}
+          className="rounded-full w-6 h-6 sm:w-8 sm:h-8 lg:w-8 lg:h-8"
         />
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          className="fill-white"
+          width="12"
+          height="12"
+          className="fill-white ml-1 sm:ml-1 lg:ml-1 w-3 h-3 sm:w-4 sm:h-4 lg:w-4 lg:h-4"
           viewBox="0 0 16 16"
         >
           <path d="M1.5 6.5l6 6 6-6h-12z" />
         </svg>
       </div>
       {dropdownOpen && (
-        <div className="absolute right-0 mt-2 w-[300px] bg-[#18181D] border border-[#35353E] rounded-lg shadow-lg z-50">
+        <>
+          {/* Backdrop for mobile */}
+          <div 
+            className="fixed inset-0 z-40 sm:hidden"
+            onClick={() => setDropdownOpen(false)}
+          />
+          <div className="fixed sm:absolute right-3 sm:right-0 top-14 sm:top-auto sm:mt-2 w-[180px] sm:w-[200px] lg:w-[250px] dark:bg-[#18181D] bg-white dark:border-[#35353E] border-gray-200 rounded-lg shadow-lg z-50 max-w-[calc(100vw-1.5rem)] sm:max-w-none">
           <button
-            className="block w-full text-left px-4 py-2 text-white hover:bg-[#35353E]"
+              className="block w-full text-left px-3 sm:px-4 lg:px-4 py-2.5 sm:py-2 lg:py-2 dark:text-white text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center transition-colors"
             onClick={() => selectLanguage("English")}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center space-x-2 sm:space-x-2 lg:space-x-2">
                 <Image
                   src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746538734/united_kingdom_zud79x.png"
                   alt="English"
                   width={20}
                   height={20}
-                  className="rounded-full"
+                    className="rounded-full w-5 h-5 sm:w-5 sm:h-5 lg:w-5 lg:h-5 flex-shrink-0"
                 />
-                <span className="text-sm">English</span>
+                  <span className="text-sm sm:text-sm lg:text-sm">English</span>
               </div>
               {selectedLanguage === "English" && (
-                <div className="w-4 h-4 rounded-full flex items-center justify-center">
-                  <Check size={16} className="text-[#1D8751]" />
+                  <div className="w-4 h-4 sm:w-4 sm:h-4 lg:w-4 lg:h-4 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-4 lg:h-4 text-[#1D8751]" />
                 </div>
               )}
             </div>
           </button>
           <button
-            className="block w-full text-left px-4 py-2 text-white hover:bg-[#35353E]"
+              className="block w-full text-left px-3 sm:px-4 lg:px-4 py-2.5 sm:py-2 lg:py-2 dark:text-white text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center transition-colors"
             onClick={() => selectLanguage("Somali")}
           >
-            <div className="flex items-center justify-between gap-8">
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center justify-between w-full gap-2 sm:gap-4 lg:gap-8">
+                <div className="flex items-center space-x-2 sm:space-x-2 lg:space-x-2">
                 <Image
                   src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747216099/somali_jq5e97.png"
                   alt="Somali"
                   width={20}
                   height={20}
-                  className="rounded-full"
+                    className="rounded-full w-5 h-5 sm:w-5 sm:h-5 lg:w-5 lg:h-5 flex-shrink-0"
                 />
-                <span className="text-sm">Somali</span>
+                  <span className="text-sm sm:text-sm lg:text-sm">Somali</span>
               </div>
               {selectedLanguage === "Somali" && (
-                <div className="w-4 h-4 rounded-full flex items-center justify-center">
-                  <span className="text-[10px] text-[#1D8751]">✓</span>
+                  <div className="w-4 h-4 sm:w-4 sm:h-4 lg:w-4 lg:h-4 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-[10px] sm:text-[10px] lg:text-[10px] text-[#1D8751]">✓</span>
                 </div>
               )}
             </div>
           </button>
         </div>
+        </>
       )}
     </div>
   );
@@ -203,6 +210,7 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [depositDropdownOpen, setDepositDropdownOpen] = useState(false);
+  const [mobileDepositDropdownOpen, setMobileDepositDropdownOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
 
   const {
@@ -233,6 +241,10 @@ export default function Navbar() {
 
   const toggleDepositDropdown = () => {
     setDepositDropdownOpen(!depositDropdownOpen);
+  };
+
+  const toggleMobileDepositDropdown = () => {
+    setMobileDepositDropdownOpen(!mobileDepositDropdownOpen);
   };
 
   const toggleProfileModal = (e: React.MouseEvent) => {
@@ -281,6 +293,13 @@ export default function Navbar() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  // Close mobile deposit dropdown when mobile menu closes
+  useEffect(() => {
+    if (!mobileMenuOpen) {
+      setMobileDepositDropdownOpen(false);
+    }
+  }, [mobileMenuOpen]);
 
   useEffect(() => {
     let ticking = false;
@@ -860,28 +879,285 @@ export default function Navbar() {
             <MobileNavLink href="/blog" onClick={toggleMobileMenu}>
               Blog
             </MobileNavLink>
-            {/* Show Contact us only on auth pages */}
-            {(pathname?.startsWith("/auth/login") ||
-              pathname?.startsWith("/auth/register") ||
-              pathname?.startsWith("/auth/forgotPassword") ||
-              pathname?.startsWith("/auth/resetPassword")) && (
-              <MobileNavLink href="#" onClick={toggleMobileMenu}>
+            <MobileNavLink href="/contactUs" onClick={toggleMobileMenu}>
                 Contact us
               </MobileNavLink>
-            )}
 
             <div className="flex flex-col space-y-4 pt-4">
               {isAuthenticated ? (
                 <>
-                  <Link href="/dashboard/deposit" onClick={toggleMobileMenu}>
-                    <button className="flex items-center w-full bg-[#1D8751] hover:bg-[#13B562] text-white px-6 py-2 rounded-full transition-colors duration-200 text-base">
-                      <img
-                        src="https://res.cloudinary.com/dam1sxczj/image/upload/v1748294216/deposit-new-f_okzshs.png"
-                        alt=""
+                  <div className="relative">
+                    <button
+                      onClick={toggleMobileDepositDropdown}
+                      className="flex items-center justify-center w-full bg-[#1D8751] hover:bg-[#13B562] text-white px-6 py-2 rounded-full transition-colors duration-200 text-base min-h-[44px]"
+                    >
+                      <svg
+                        className="mr-2"
+                        width="20"
+                        height="20"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+                          stroke="#FFB800"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M7 10l5 5 5-5"
+                          stroke="#FFB800"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M12 15V3"
+                          stroke="#FFB800"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                       />
+                      </svg>
                       Deposit
                     </button>
+
+                    {/* Mobile Deposit Dropdown */}
+                    {mobileDepositDropdownOpen && (
+                      <>
+                        {/* Backdrop */}
+                        <div
+                          className="fixed inset-0 bg-black/50 z-[60] md:hidden"
+                          onClick={toggleMobileDepositDropdown}
+                        />
+                        {/* Dropdown Menu */}
+                        <div className="fixed inset-x-4 top-20 sm:top-24 z-[70] md:hidden dark:bg-[#23242B] bg-white dark:border-[#35353E] border-gray-200 rounded-xl shadow-xl overflow-hidden">
+                          <div className="p-4 sm:p-6">
+                            {/* Exchange Option */}
+                            <Link
+                              href="/dashboard/express-exchange"
+                              className="block mb-4 last:mb-0"
+                              onClick={() => {
+                                setMobileDepositDropdownOpen(false);
+                                toggleMobileMenu();
+                              }}
+                            >
+                              <div className="flex items-center rounded-lg transition-colors duration-200 group dark:hover:bg-[#35353E] hover:bg-gray-100 p-3">
+                                <div className="flex items-center justify-center mr-4 flex-shrink-0">
+                                  <svg
+                                    width="45"
+                                    height="40"
+                                    viewBox="0 0 45 40"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <path
+                                      d="M28 12 L14 12 L18 8"
+                                      stroke="#F79330"
+                                      strokeWidth="4"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                    <path
+                                      d="M17 20 L31 20 L27 24"
+                                      stroke="#1D8751"
+                                      strokeWidth="4"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                  </svg>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="dark:text-white text-gray-900 font-medium text-base mb-1">
+                                    Exchange
+                                  </h4>
+                                  <p className="dark:text-gray-400 text-gray-600 text-sm leading-relaxed">
+                                    Trade cryptocurrencies on the exchange with
+                                    advanced tools and features for optimal
+                                    transactions
+                                  </p>
+                                </div>
+                                <svg
+                                  className="w-5 h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors flex-shrink-0 ml-2"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M9 5l7 7-7 7"
+                                  />
+                                </svg>
+                              </div>
                   </Link>
+
+                            {/* P2P Option */}
+                            <Link
+                              href="/dashboard/p2p"
+                              className="block mb-4 last:mb-0"
+                              onClick={() => {
+                                setMobileDepositDropdownOpen(false);
+                                toggleMobileMenu();
+                              }}
+                            >
+                              <div className="flex items-center rounded-lg transition-colors duration-200 group dark:hover:bg-[#35353E] hover:bg-gray-100 p-3">
+                                <div className="w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
+                                  <svg
+                                    width="120"
+                                    height="120"
+                                    viewBox="0 0 120 120"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <circle
+                                      cx="40"
+                                      cy="30"
+                                      r="10"
+                                      stroke="#1C8F4D"
+                                      strokeWidth="6"
+                                      fill="none"
+                                    />
+                                    <path
+                                      d="M58 22 A22 22 0 0 1 58 38"
+                                      fill="none"
+                                      stroke="#1C8F4D"
+                                      strokeWidth="6"
+                                      strokeLinecap="round"
+                                    />
+                                    <path
+                                      d="M20 90 Q20 65 45 65"
+                                      fill="none"
+                                      stroke="#1C8F4D"
+                                      strokeWidth="6"
+                                      strokeLinecap="round"
+                                    />
+                                    <path
+                                      d="M70 85 A20 20 0 0 1 110 85"
+                                      fill="none"
+                                      stroke="#F49A29"
+                                      strokeWidth="6"
+                                      strokeLinecap="round"
+                                    />
+                                    <path
+                                      d="M110 85 L104 80 M110 85 L108 77"
+                                      stroke="#F49A29"
+                                      strokeWidth="6"
+                                      strokeLinecap="round"
+                                    />
+                                    <path
+                                      d="M110 85 A20 20 0 0 1 70 85"
+                                      fill="none"
+                                      stroke="#F49A29"
+                                      strokeWidth="6"
+                                      strokeLinecap="round"
+                                    />
+                                    <path
+                                      d="M70 85 L75 90 M70 85 L67 93"
+                                      stroke="#F49A29"
+                                      strokeWidth="6"
+                                      strokeLinecap="round"
+                                    />
+                                  </svg>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="dark:text-white text-gray-900 font-medium text-base mb-1">
+                                    P2P
+                                  </h4>
+                                  <p className="dark:text-gray-400 text-gray-600 text-sm leading-relaxed">
+                                    Buy and sell cryptocurrencies directly with
+                                    flexible payment methods
+                                  </p>
+                                </div>
+                                <svg
+                                  className="w-5 h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors flex-shrink-0 ml-2"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M9 5l7 7-7 7"
+                                  />
+                                </svg>
+                              </div>
+                            </Link>
+
+                            {/* Swap Option */}
+                            <Link
+                              href="/dashboard/swap"
+                              className="block mb-4 last:mb-0"
+                              onClick={() => {
+                                setMobileDepositDropdownOpen(false);
+                                toggleMobileMenu();
+                              }}
+                            >
+                              <div className="flex items-center rounded-lg transition-colors duration-200 group dark:hover:bg-[#35353E] hover:bg-gray-100 p-3">
+                                <div className="w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
+                                  <svg
+                                    width="100"
+                                    height="100"
+                                    viewBox="0 0 100 100"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <path
+                                      d="M30 70H20V30H60V40"
+                                      fill="none"
+                                      stroke="#1C8F4D"
+                                      strokeWidth="5"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                    <polygon
+                                      points="30,60 20,70 30,80"
+                                      fill="#1D8751"
+                                    />
+                                    <path
+                                      d="M70 30H80V70H40V60"
+                                      fill="none"
+                                      stroke="#F49A29"
+                                      strokeWidth="5"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                    <polygon
+                                      points="70,40 80,30 70,20"
+                                      fill="#F79330"
+                                    />
+                                  </svg>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="dark:text-white text-gray-900 font-medium text-base mb-1">
+                                    Swap
+                                  </h4>
+                                  <p className="dark:text-gray-400 text-gray-600 text-sm leading-relaxed">
+                                    Exchange one cryptocurrency for another instantly
+                                    and securely within your wallet
+                                  </p>
+                                </div>
+                                <svg
+                                  className="w-5 h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors flex-shrink-0 ml-2"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M9 5l7 7-7 7"
+                                  />
+                                </svg>
+                              </div>
+                            </Link>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
                   <div className="relative mt-4 flex justify-center">
                     {/* <button
                     onClick={toggleProfileModal}

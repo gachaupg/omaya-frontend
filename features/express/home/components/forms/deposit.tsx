@@ -2416,10 +2416,10 @@ export default function DepositForm({
         {/* Top Section - Amount and Bank/Payment Method in one card */}
         <div className="relative mb-4">
           {/* Top Card Container */}
-          <div className="relative flex border border-[#23232F] dark:border-[#2F2F3A] bg-[#0F0F17] dark:bg-[#0F0F17] rounded-2xl p-4 overflow-visible">
+          <div className="relative flex flex-col sm:flex-row border border-[#23232F] dark:border-[#2F2F3A] bg-[#0F0F17] dark:bg-[#0F0F17] rounded-2xl p-3 sm:p-4 overflow-visible gap-4 sm:gap-0">
             {/* Amount Section */}
-            <div className="flex-1 pr-4">
-              <label className="block text-[15px] text-[#9CA3AF] dark:text-[#9CA3AF] mb-2 font-semibold flex items-center gap-2">
+            <div className="flex-1 sm:pr-4 w-full sm:w-auto">
+              <label className="block text-[14px] sm:text-[15px] text-[#9CA3AF] dark:text-[#9CA3AF] mb-2 font-semibold flex items-center gap-2">
                 You Send
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                 {/* {isCalculatingFromPay && (
@@ -2501,7 +2501,7 @@ export default function DepositForm({
                     }
                   }}
                   placeholder="Enter amount"
-                  className={`w-full bg-transparent dark:bg-transparent text-[#35353e] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none ${
+                  className={`w-full bg-transparent dark:bg-transparent text-[#35353e] dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 py-2 sm:py-2.5 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none border appearance-none ${
                     (isCalculating || isCalculatingReceive) && isCalculatingFromPay && selectedAsset && !isForexAsset(selectedAsset) ? 'border-[#1D8751]' : 'border-[#A2A4A9FF] dark:border-[#35353E]'
                   }`}
                 />
@@ -2524,8 +2524,8 @@ export default function DepositForm({
             </div>
 
             {/* Bank/Payment Method Section */}
-            <div className="flex-1 pl-4">
-              <label className="block text-[15px] text-[#9CA3AF] dark:text-[#9CA3AF] mb-2 font-semibold">
+            <div className="flex-1 sm:pl-4 w-full sm:w-auto">
+              <label className="block text-[14px] sm:text-[15px] text-[#9CA3AF] dark:text-[#9CA3AF] mb-2 font-semibold">
                 Bank/Payment Method
               </label>
               {/* <div>
@@ -2675,10 +2675,10 @@ export default function DepositForm({
 
                 {/* Bottom Section - You Receive and Asset in one card */}
         <div className="relative mb-3">
-          <div className="relative flex border border-[#23232F] dark:border-[#2F2F3A] bg-[#0F0F17] dark:bg-[#0F0F17] rounded-2xl p-4 overflow-visible">
+          <div className="relative flex flex-col sm:flex-row border border-[#23232F] dark:border-[#2F2F3A] bg-[#0F0F17] dark:bg-[#0F0F17] rounded-2xl p-3 sm:p-4 overflow-visible gap-4 sm:gap-0">
             {/* You Receive Section */}
-            <div className="flex-1 pr-4">
-              <label className="block text-[15px] text-[#9CA3AF] dark:text-[#9CA3AF] mb-2 font-semibold flex items-center gap-2">
+            <div className="flex-1 sm:pr-4 w-full sm:w-auto">
+              <label className="block text-[14px] sm:text-[15px] text-[#9CA3AF] dark:text-[#9CA3AF] mb-2 font-semibold flex items-center gap-2">
                 You Receive
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                 {!isCalculatingFromPay && (
@@ -2752,7 +2752,7 @@ export default function DepositForm({
                     }
                   }}
                   placeholder="Enter amount"
-                  className={`w-full bg-transparent dark:bg-transparent text-[#35353e] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none ${
+                  className={`w-full bg-transparent dark:bg-transparent text-[#35353e] dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 py-2 sm:py-2.5 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none border appearance-none ${
                     receiveAmountError && (receiveAmountError.includes('Rough estimate') || receiveAmountError.includes('Using estimated rate')) ? 'border-[#F79330]' : 
                     receiveAmountError ? 'border-red-500' :
                     (isCalculating || isCalculatingReceive) && selectedAsset && !isForexAsset(selectedAsset) ? 'border-[#1D8751]' : 'border-[#A2A4A9FF] dark:border-[#35353E]'
@@ -2811,13 +2811,13 @@ export default function DepositForm({
             </div>
 
             {/* Asset Section */}
-            <div className="flex-1 pl-4">
-              <label className="block text-[15px] text-[#9CA3AF] dark:text-[#9CA3AF] mb-2 font-semibold">
+            <div className="flex-1 sm:pl-4 w-full sm:w-auto">
+              <label className="block text-[14px] sm:text-[15px] text-[#9CA3AF] dark:text-[#9CA3AF] mb-2 font-semibold">
                 Asset
               </label>
               <div className="relative" ref={assetDropdownRef}>
                 <div
-                    className={`w-full bg-transparent dark:bg-transparent text-white rounded-2xl px-4 py-2 text-lg focus:outline-none border border-[#39394A] dark:border-[#39394A] flex items-center justify-between gap-3 cursor-pointer`}
+                    className={`w-full bg-transparent dark:bg-transparent text-white rounded-2xl px-3 sm:px-4 py-2 sm:py-2.5 text-base sm:text-lg focus:outline-none border border-[#39394A] dark:border-[#39394A] flex items-center justify-between gap-3 cursor-pointer`}
                   onClick={() => {
                     if (!isAssetDropdownOpen) {
                       updateAssetDropdownPosition();
