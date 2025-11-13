@@ -342,22 +342,25 @@ export default function RegistrationPage() {
   const router = useRouter();
 
   // Form state
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [referralCode, setReferralCode] = useState("");
-  const [agreeToTerms, setAgreeToTerms] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showVerificationModal, setShowVerificationModal] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [submitAttempted, setSubmitAttempted] = useState(false);
-  const [selectedCountry, setSelectedCountry] = useState("SO"); // Default to Somalia
-  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
-  const [countrySearchTerm, setCountrySearchTerm] = useState("");
+const [firstName, setFirstName] = useState("");
+const [lastName, setLastName] = useState("");
+const [email, setEmail] = useState("");
+const [phone, setPhone] = useState("");
+const [password, setPassword] = useState("");
+const [confirmPassword, setConfirmPassword] = useState("");
+const [referralCode, setReferralCode] = useState("");
+const [agreeToTerms, setAgreeToTerms] = useState(false);
+const [isSubmitting, setIsSubmitting] = useState(false);
+const [showVerificationModal, setShowVerificationModal] = useState(false);
+const [showPassword, setShowPassword] = useState(false);
+const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+const [submitAttempted, setSubmitAttempted] = useState(false);
+const [selectedCountry, setSelectedCountry] = useState("SO"); // Default to Somalia
+const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+const [countrySearchTerm, setCountrySearchTerm] = useState("");
+const [showReferralTooltip, setShowReferralTooltip] = useState(false);
+const referralTooltipRef = React.useRef<HTMLDivElement | null>(null);
+const referralTooltipButtonRef = React.useRef<HTMLButtonElement | null>(null);
 
   // Facebook login state
   const [profile, setProfile] = useState<any>(null);
@@ -390,6 +393,41 @@ export default function RegistrationPage() {
       };
     }
   }, [showCountryDropdown]);
+
+  React.useEffect(() => {
+    if (!showReferralTooltip) {
+      return;
+    }
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        referralTooltipRef.current &&
+        !referralTooltipRef.current.contains(event.target as Node) &&
+        referralTooltipButtonRef.current &&
+        !referralTooltipButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowReferralTooltip(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setShowReferralTooltip(false);
+      }
+    };
+
+    if (typeof document !== "undefined") {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleKeyDown);
+    }
+
+    return () => {
+      if (typeof document !== "undefined") {
+        document.removeEventListener("mousedown", handleClickOutside);
+        document.removeEventListener("keydown", handleKeyDown);
+      }
+    };
+  }, [showReferralTooltip]);
 
   // Validation errors
   const [errors, setErrors] = useState({
@@ -1297,7 +1335,7 @@ export default function RegistrationPage() {
                         ? "bg-[#1D8751]"
                         : submitAttempted
                           ? "bg-red-500"
-                          : "bg-gray-400 dark:bg-gray-600"
+                          : "bg-black dark:bg-white"
                     }`}
                   ></div>
                   <span
@@ -1306,7 +1344,7 @@ export default function RegistrationPage() {
                         ? "text-[#1D8751]"
                         : submitAttempted
                           ? "text-red-500"
-                          : "text-gray-500 dark:text-gray-400"
+                          : "text-gray-900 dark:text-white"
                     }`}
                   >
                     {t(
@@ -1322,7 +1360,7 @@ export default function RegistrationPage() {
                         ? "bg-[#1D8751]"
                         : submitAttempted
                           ? "bg-red-500"
-                          : "bg-gray-400 dark:bg-gray-600"
+                          : "bg-black dark:bg-white"
                     }`}
                   ></div>
                   <span
@@ -1331,7 +1369,7 @@ export default function RegistrationPage() {
                         ? "text-[#1D8751]"
                         : submitAttempted
                           ? "text-red-500"
-                          : "text-gray-500 dark:text-gray-400"
+                          : "text-gray-900 dark:text-white"
                     }`}
                   >
                     {t(
@@ -1347,7 +1385,7 @@ export default function RegistrationPage() {
                         ? "bg-[#1D8751]"
                         : submitAttempted
                           ? "bg-red-500"
-                          : "bg-gray-400 dark:bg-gray-600"
+                          : "bg-black dark:bg-white"
                     }`}
                   ></div>
                   <span
@@ -1356,7 +1394,7 @@ export default function RegistrationPage() {
                         ? "text-[#1D8751]"
                         : submitAttempted
                           ? "text-red-500"
-                          : "text-gray-500 dark:text-gray-400"
+                          : "text-gray-900 dark:text-white"
                     }`}
                   >
                     {t(
@@ -1395,30 +1433,63 @@ export default function RegistrationPage() {
                     />
                   </div>
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                    <svg
-                      viewBox="0 0 100 100"
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                    >
-                      <circle cx="50" cy="50" r="45" fill="none" />
-                      <circle
-                        cx="50"
-                        cy="50"
-                        r="40"
-                        fill="none"
-                        stroke="#98A2B3"
-                        strokeWidth="5"
-                      />
-                      <path
-                        d="M40 35 A10 10 0 0 1 50 25 A10 10 0 0 1 60 35 Q60 40 57.5 45 Q55 50 52.5 52.5 Q50 55 50 60"
-                        fill="none"
-                        stroke="#98A2B3"
-                        strokeWidth="6"
-                        strokeLinecap="round"
-                      />
-                      <circle cx="50" cy="70" r="5" fill="#98A2B3" />
-                    </svg>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        ref={referralTooltipButtonRef}
+                        onClick={() => setShowReferralTooltip((prev) => !prev)}
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-[#98A2B3] transition-colors hover:text-[#1D8751] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1D8751] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#1D1D23]"
+                        aria-label={t(
+                          "auth.register.referral.tooltipLabel",
+                          "Learn about the referral system"
+                        )}
+                        aria-expanded={showReferralTooltip}
+                      >
+                        <svg
+                          viewBox="0 0 100 100"
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                        >
+                          <circle cx="50" cy="50" r="45" fill="none" />
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="40"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="5"
+                          />
+                          <path
+                            d="M40 35 A10 10 0 0 1 50 25 A10 10 0 0 1 60 35 Q60 40 57.5 45 Q55 50 52.5 52.5 Q50 55 50 60"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="6"
+                            strokeLinecap="round"
+                          />
+                          <circle cx="50" cy="70" r="5" fill="currentColor" />
+                        </svg>
+                      </button>
+                      {showReferralTooltip && (
+                        <div
+                          ref={referralTooltipRef}
+                          className="absolute right-0 bottom-full z-20 mb-2 w-64 rounded-xl border border-gray-200 bg-white p-4 text-left shadow-lg dark:border-gray-700 dark:bg-[#1D1D23]"
+                        >
+                          <div className="mb-1 text-sm font-semibold text-gray-900 dark:text-white">
+                            {t(
+                              "auth.register.referral.tooltipTitle",
+                              "Referral System"
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-600 dark:text-gray-300">
+                            {t(
+                              "auth.register.referral.tooltipDescription",
+                              "Share your code with friends so you both earn rewards when they sign up and start trading."
+                            )}
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

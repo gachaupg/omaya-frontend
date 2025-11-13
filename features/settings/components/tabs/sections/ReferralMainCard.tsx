@@ -32,7 +32,7 @@ const ReferralMainCard: React.FC<Props> = ({
 
   const chartData =
     total === 0
-      ? [{ label: "No data", value: 1, color: "#35353F" }]
+      ? []
       : [
           { label: "Income from deposits", value: deposits, color: "#1D8751" },
           {
@@ -113,6 +113,7 @@ const ReferralMainCard: React.FC<Props> = ({
                     data={chartData}
                     total={total}
                     label="Commissions"
+                    centerValue={balance}
                   />
 
                   {/* legend */}

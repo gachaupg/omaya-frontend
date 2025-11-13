@@ -30,7 +30,8 @@ const AppealModal: React.FC<AppealModalProps> = ({
   const { loading, error, success } = useSelector(
     (state: RootState) => state.appeal
   );
-  const [reason, setReason] = useState("");
+  const [selectedReason, setSelectedReason] = useState("");
+  const [customReason, setCustomReason] = useState("");
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -39,11 +40,11 @@ const AppealModal: React.FC<AppealModalProps> = ({
     logger.debug('p2p', "AppealModal state:", {
       open,
       tradeId,
-      reason,
+      reason: selectedReason === "Other issues" ? customReason : selectedReason,
       loading,
       success,
     });
-  }, [open, tradeId, reason, loading, success]);
+  }, [open, tradeId, selectedReason, customReason, loading, success]);
 
   useEffect(() => {
     if (success) {
@@ -57,7 +58,8 @@ const AppealModal: React.FC<AppealModalProps> = ({
   // Reset form when modal opens/closes
   useEffect(() => {
     if (!open) {
-      setReason("");
+      setSelectedReason("");
+      setCustomReason("");
       setScreenshot(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -76,47 +78,55 @@ const AppealModal: React.FC<AppealModalProps> = ({
   };
 
   const handleReasonChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedReason = e.target.value;
-    logger.debug('p2p', "Reason changed to:", selectedReason);
-    setReason(selectedReason);
+    const value = e.target.value;
+    logger.debug('p2p', "Reason changed to:", value);
+    setSelectedReason(value);
+    if (value !== "Other issues") {
+      setCustomReason("");
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const reasonToSubmit =
+      selectedReason === "Other issues" ? customReason.trim() : selectedReason.trim();
+
     logger.debug('p2p', "Submit attempted with:", {
-      reason,
+      reason: reasonToSubmit,
       tradeId,
       hasScreenshot: !!screenshot,
     });
 
-    if (!reason || !tradeId) {
-      logger.debug('p2p', "Form validation failed:", { reason, tradeId });
+    if (!reasonToSubmit || !tradeId) {
+      logger.debug('p2p', "Form validation failed:", { reason: reasonToSubmit, tradeId });
       return;
     }
 
     const formData = new FormData();
     formData.append("trade_id", tradeId);
-    formData.append("reason_for_appeal", reason);
+    formData.append("reason_for_appeal", reasonToSubmit);
     if (screenshot) {
       formData.append("screenshot", screenshot);
     }
 
     logger.debug('p2p', "Submitting appeal with:", {
       tradeId,
-      reason,
+      reason: reasonToSubmit,
       hasScreenshot: !!screenshot,
     });
     dispatch(createAppealThunk(formData) as any);
   };
 
   // Simplified validation - only require reason to be selected
-  const isFormValid = reason.trim() !== "";
+  const resolvedReason =
+    selectedReason === "Other issues" ? customReason.trim() : selectedReason.trim();
+  const isFormValid = resolvedReason !== "" && !!tradeId;
 
-  logger.debug('p2p', "Form validation:", { isFormValid, reason, tradeId });
+  logger.debug('p2p', "Form validation:", { isFormValid, reason: resolvedReason, tradeId });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="dark:bg-[#23232A] bg-white rounded-[24px] p-8 w-full max-w-md shadow-lg relative">
+    <div className="fixed inset-0 z-[80] flex items-start justify-center pt-12 pb-12 px-4 md:pt-16 md:pb-20 md:px-0 pointer-events-none overflow-y-auto">
+      <div className="pointer-events-auto dark:bg-[#23232A] bg-white rounded-[24px] p-6 md:p-8 w-full max-w-md shadow-xl border border-[#E8EFF5] dark:border-[#35353E] relative max-h-[calc(100vh-4rem)] md:max-h-[calc(100vh-6rem)] overflow-y-auto">
         <h2 className="text-[13px] text-center dark:text-white text-gray-900 mb-6">
           Submit Appeal
         </h2>
@@ -135,7 +145,7 @@ const AppealModal: React.FC<AppealModalProps> = ({
             <div className="relative">
               <select
                 className="w-full rounded-xl px-4 py-3 dark:bg-[#18181D] bg-gray-100 dark:text-white text-gray-900 dark:border-[#35353E] border-gray-300 border focus:outline-none appearance-none"
-                value={reason}
+                value={selectedReason}
                 onChange={handleReasonChange}
                 required
               >
@@ -150,9 +160,32 @@ const AppealModal: React.FC<AppealModalProps> = ({
                 &#9662;
               </span>
             </div>
-            {reason && (
+            {selectedReason && selectedReason !== "Other issues" && (
               <div className="text-green-500 text-[11px] mt-1">
-                ✓ Reason selected: {reason}
+                ✓ Reason selected: {selectedReason}
+              </div>
+            )}
+            {selectedReason === "Other issues" && (
+              <div className="mt-3">
+                <label className="block text-[12px] text-gray-600 dark:text-[#A3A3C2] mb-1">
+                  Tell us more
+                </label>
+                <textarea
+                  className="w-full rounded-xl px-4 py-3 dark:bg-[#18181D] bg-gray-100 dark:text-white text-gray-900 dark:border-[#35353E] border-gray-300 border focus:outline-none resize-none"
+                  rows={3}
+                  placeholder="Describe the issue you’re experiencing"
+                  value={customReason}
+                  onChange={(e) => setCustomReason(e.target.value)}
+                />
+                {/* <div className="text-[11px] mt-1">
+                  {customReason.trim() ? (
+                    // <span className="text-green-500">
+                    //   ✓ Reason entered: {customReason.trim()}
+                    // </span>
+                  ) : (
+                    <span className="text-[#FFB37A]">Please describe the issue to continue.</span>
+                  )}
+                </div> */}
               </div>
             )}
           </div>

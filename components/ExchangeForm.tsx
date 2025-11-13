@@ -1127,32 +1127,58 @@ export default function ExchangeForm({
         : "polygon(12% 0, 100% 0, 100% 100%, 0 100%)";
 
     const buttonClasses = [
-      "relative flex w-full items-center justify-center overflow-hidden border transition-all duration-200",
+      "relative flex w-full items-center justify-center overflow-hidden transition-all duration-200",
       "px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 md:py-3.5 min-h-[46px] sm:min-h-[54px]",
       isActive
         ? isDark
-          ? "bg-[#20262F] border-[#2E3944] text-white shadow-[0_20px_38px_rgba(6,29,18,0.32)]"
-          : "bg-white border-[#D7EFE2] text-[#0B1418] shadow-[0_22px_42px_rgba(23,108,70,0.22)]"
+          ? "bg-[#20262F] text-white shadow-[0_20px_38px_rgba(6,29,18,0.32)]"
+          : "bg-white text-[#0B1418] shadow-[0_22px_42px_rgba(23,108,70,0.22)]"
         : isDark
-        ? "bg-[#13191F] border-transparent text-[#7C8A97] hover:bg-[#181F26] hover:border-[#20985E]/35"
-        : "bg-[#F4F7F6] border-transparent text-[#627180] hover:border-[#1D8751]/25 hover:bg-white"
+        ? "bg-[#13191F] text-[#7C8A97] hover:bg-[#181F26]"
+        : "bg-[#F4F7F6] text-[#627180] hover:bg-white"
     ].join(" ");
+
+    const labelWrapperClasses = [
+      "relative z-[1] flex items-center",
+      label?.trim() ? "gap-2" : "gap-0",
+      "text-xs sm:text-sm md:text-base font-semibold tracking-wide transition-colors"
+    ].join(" ");
+
+    const textColorClass = isActive
+      ? "text-white"
+      : isDark
+      ? "text-[#7C8A97] group-hover:text-[#1D8751]"
+      : "text-[#627180] group-hover:text-[#1D8751]";
+
+    const expressIconSrc =
+      "https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png";
+
+    const ariaLabel =
+      variant === "express"
+        ? t("marketing.exchange.tabs.express", "Express Exchange")
+        : label || t("marketing.exchange.tabs.swap", "Swap");
 
     return (
       <button
         type="button"
         onClick={() => handleTabClick(id)}
         aria-pressed={isActive}
+        aria-label={ariaLabel}
         className="group flex-1 px-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1D8751] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
         style={{ clipPath }}
       >
         <div className={buttonClasses}>
-          <span
-            className={`relative z-[1] text-xs sm:text-sm md:text-base font-semibold tracking-wide transition-colors ${
-              isActive ? "text-white" : "text-[#7C8A97] group-hover:text-[#1D8751]"
-            }`}
-          >
-            {label}
+          <span className={labelWrapperClasses}>
+            {label?.trim() && <span className={textColorClass}>{label}</span>}
+            {variant === "express" && (
+              <>
+                <img
+                  src={expressIconSrc}
+                  alt="Express Exchange"
+               className="mt-2 ml-0"
+                />
+              </>
+            )}
           </span>
         </div>
       </button>
@@ -1307,13 +1333,13 @@ export default function ExchangeForm({
   // If Swap Crypto tab is active, render SwapWidget with tab controls
   if (activeTab === "swap") {
     return (
-      <div className="w-full w-full mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl px-4 sm:px-6 md:px-8 py-4 shadow-lg border border-gray-200 dark:border-transparent">
+      <div className="w-full w-full mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl px-4 sm:px-6 md:px-8 py-4 shadow-lg">
         {/* Tabs */}
-        <div className="relative flex w-full overflow-hidden rounded-[28px] border border-gray-200 bg-white/60 p-0.5 dark:border-[#262C34] dark:bg-[#12171E]">
+        <div className="relative flex w-full overflow-hidden rounded-[28px] bg-white/70 p-1 dark:bg-[#12171E]/90">
         <TabButton
           id="express"
           variant="express"
-          label={t("marketing.exchange.tabs.express", "Express Exchange")}
+          label={t("marketing.exchange.tabs.express", "Express")}
         />
         <TabButton
           id="swap"
@@ -1327,13 +1353,13 @@ export default function ExchangeForm({
   }
 
   return (
-    <div className="w-full w-full mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl px-4 sm:px-6 md:px-8 py-4 shadow-lg border border-gray-200 dark:border-transparent">
+    <div className="w-full w-full mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl px-4 sm:px-6 md:px-8 py-4 shadow-lg">
       {/* Tabs */}
-      <div className="relative flex w-full overflow-hidden rounded-[28px] bg-white/60 p-0.5 dark:bg-[#12171E]">
+      <div className="relative flex w-full overflow-hidden rounded-[28px] bg-white/70 p-1 dark:bg-[#12171E]/90">
         <TabButton
           id="express"
           variant="express"
-          label={t("marketing.exchange.tabs.express", "Express Exchange")}
+          label={t("marketing.exchange.tabs.express", "Express")}
         />
         <TabButton
           id="swap"

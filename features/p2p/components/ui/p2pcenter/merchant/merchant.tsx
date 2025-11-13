@@ -3,12 +3,26 @@ import React, { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState } from '@/store'
 import { submitMerchantApplicationThunk, clearMerchantError, clearMerchantSuccess, fetchMerchantApplicationStatusThunk } from '@/features/p2p/slices/merchantSlice'
+import { showToast } from '@/lib/utils/toast'
 
 import { logger } from '@/lib/utils/logger';
 
 const Merchant = () => {
   const dispatch = useDispatch()
   const { loading, error, success, status, statusLoading } = useSelector((state: RootState) => state.merchant)
+  const { user } = useSelector((state: RootState) => state.auth)
+
+  const displayName = React.useMemo(() => {
+    if (!user) return 'Advertiser User Name'
+
+    const nameParts = [user.first_name, user.last_name]
+      .map(part => (part ? part.trim() : ''))
+      .filter(Boolean)
+      .join(' ')
+      .trim()
+
+    return nameParts || user.email || 'Advertiser User Name'
+  }, [user])
   
   const [files, setFiles] = useState<{
     bank_account_ownership_proof: File | null
@@ -73,7 +87,7 @@ const Merchant = () => {
       const duplicateFile = existingFiles.find(existingFile => existingFile?.name === file.name)
       
       if (duplicateFile) {
-        alert(`File "${file.name}" has already been uploaded for another document type. Please choose a different file.`)
+        showToast.error(`File "${file.name}" has already been uploaded for another document type. Please choose a different file.`)
         return
       }
       
@@ -92,7 +106,7 @@ const Merchant = () => {
   const handleSubmit = async () => {
     // Check if application already submitted
     if (status && status.status !== 'not_submitted') {
-      alert(`You have already submitted a merchant application. Status: ${status.status_display}`)
+      showToast.warning(`You have already submitted a merchant application. Status: ${status.status_display}`)
       return
     }
 
@@ -117,9 +131,15 @@ const Merchant = () => {
     // Check if required files are missing
     const requiredFiles = ['bank_account_ownership_proof', 'proof_of_address']
     const missingFiles = requiredFiles.filter(fileKey => !files[fileKey as keyof typeof files])
+    const formatLabel = (key: string) =>
+      key
+        .split('_')
+        .map(segment => segment.charAt(0).toUpperCase() + segment.slice(1))
+        .join(' ')
     
     if (missingFiles.length > 0) {
-      alert(`Please upload the following required documents: ${missingFiles.join(', ')}`)
+      const readableLabels = missingFiles.map(formatLabel).join(', ')
+      showToast.error(`Please upload the following required documents: ${readableLabels}`)
       return
     }
 
@@ -129,6 +149,7 @@ const Merchant = () => {
       dispatch(fetchMerchantApplicationStatusThunk() as any)
     } catch (err) {
       console.error('Error submitting merchant application:', err)
+      showToast.error('Failed to submit merchant application. Please try again.')
     }
   }
 
@@ -169,8 +190,20 @@ const Merchant = () => {
       
       <div className="relative mt-20 max-full mx-auto">
         {/* Header Section */}
-        <div className="text-center mb-1">
-        <img src="https://res.cloudinary.com/pitz/image/upload/v1759434631/Frame_35585_okqbnr.png" alt="logo" />
+        <div className="relative mb-6 px-4">
+          <img
+            src="https://res.cloudinary.com/pitz/image/upload/v1762878377/images_2_qysivu.jpg"
+            alt="P2P merchant hero"
+            className="w-full rounded-2xl object-cover max-h-[140px] md:max-h-[170px] lg:max-h-[190px]"
+          />
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-black/70 via-black/40 to-black/20 flex flex-col items-center justify-center text-center px-3">
+            <h1 className="text-xl md:text-2xl lg:text-3xl font-semibold text-white mb-1.5">
+              P2P Merchant Program
+            </h1>
+            <p className="text-xs md:text-sm text-[#B6C7D6] max-w-xl">
+              Unlock higher limits, priority support, and trusted visibility by becoming a verified liquidity partner in our marketplace.
+            </p>
+          </div>
         </div>
 
         {/* Status Banner */}
@@ -295,7 +328,7 @@ const Merchant = () => {
             <div className="space-y-4">
               <div>
                 <label className="text-sm text-gray-400">Name</label>
-                <p className="text-white">Advertiser User Name</p>
+                <p className="text-white">{displayName}</p>
               </div>
     <div>
                 <label className="text-sm text-gray-400">Country</label>

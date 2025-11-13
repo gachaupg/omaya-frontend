@@ -16,6 +16,7 @@ interface CustomSelectProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  triggerClassName?: string;
   optionClassName?: string;
   searchable?: boolean;
   loading?: boolean;
@@ -30,6 +31,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   placeholder = "Select an option",
   disabled = false,
   className = "",
+  triggerClassName = "",
   optionClassName = "",
   searchable = false,
   loading = false,
@@ -115,6 +117,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
             ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed border-gray-300 dark:border-gray-600"
             : "bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff] border-[#A2A4A9FF] dark:border-[#35353E] hover:border-blue-400 dark:hover:border-blue-400 cursor-pointer"
           }
+        ${triggerClassName}
         `}
         aria-expanded={isOpen}
         aria-haspopup="listbox"

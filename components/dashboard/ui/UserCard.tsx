@@ -134,7 +134,7 @@ function UserCard() {
                     alt="User avatar"
                     width={56}
                     height={56}
-                    className="object-cover"
+                    className="h-full w-full object-cover object-center"
                     unoptimized={true}
                     onError={(
                       e: React.SyntheticEvent<HTMLImageElement, Event>
@@ -221,12 +221,8 @@ function UserCard() {
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* User Details and Actions */}
-          <div className="flex text-xs sm:text-sm flex-col w-full sm:w-auto sm:flex-row items-start sm:items-center gap-3 sm:gap-4 md:gap-6">
-            {/* User ID */}
-            <div>
+             {/* User ID */}
+             <div className="flex flex-col gap-2 ml-12">
               <p className="text-xs text-[#788099]">
                 {t("userCard.userId", "User ID")}
               </p>
@@ -249,6 +245,11 @@ function UserCard() {
                 {t("userCard.individual", "Individual")}
               </p>
             </div>
+          </div>
+
+          {/* User Details and Actions */}
+          <div className="flex text-xs sm:text-sm flex-col w-full sm:w-auto sm:flex-row items-start sm:items-center gap-3 sm:gap-4 md:gap-6">
+           
 
             {/* Action Buttons */}
             <div className="flex flex-wrap gap-2 sm:gap-3">

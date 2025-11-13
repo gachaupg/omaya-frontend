@@ -374,18 +374,18 @@ export default function MarketingPage() {
           ></div>
         </div>
 
-        <div className="container mx-auto px-4 md:px-6 relative z-10 mt-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-3 items-starts">
-            <div className="space-y-5 pl-4 md:pl-10 md:text-left text-center 2xl:col-span-2">
-              <h1 className="text-4xl md:text-5xl font-bold text-white tracking-wide ">
-                <span className="inline-block w-full 2xl:text-7xl">
+        <div className="container mx-auto px-4 sm:px-6 md:px-8 relative z-10 mt-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 items-start gap-y-12 lg:gap-y-0 lg:gap-x-12">
+            <div className="space-y-5 pl-0 lg:pl-4 xl:pl-6 text-center lg:text-left 2xl:col-span-2">
+              <h1 className="text-[2.4rem] md:text-[3rem] 2xl:text-[3.75rem] font-bold text-white tracking-tight md:tracking-normal leading-tight text-balance">
+                <span className="inline-block w-full 2xl:text-[3.5rem]">
                   {t("marketing.hero.heading1", "Welcome to")}
                 </span>
-                <span className="inline-block w-full 2xl:text-5xl">
+                <span className="inline-block w-full 2xl:text-[3.25rem]">
                   {t("marketing.hero.heading2", "OMAYA Exchange")}
                 </span>
               </h1>
-              <p className="text-white/80  max-w-xl 2xl:max-w-3xl mx-auto md:mx-0 xl:text-lg">
+              <p className="text-white/90 leading-relaxed tracking-[0.08em] md:tracking-[0.06em] max-w-3xl mx-auto lg:mx-0 text-sm md:text-base 2xl:text-lg text-balance">
                 {t(
                   "marketing.hero.subtitle",
                   "We are OMAYA EXCHANGE, Somalia's leading platform for exchanging cryptocurrencies and Forex. Founded by experts with over 15 years of IT experience, we bridge traditional finance with the digital economy in East Africa. Our secure and user-friendly platform is designed to meet the unique needs of our market, empowering users with seamless access to the world of digital assets. Committed to transparency, innovation, and education, we are shaping the future of finance in our region."
@@ -404,7 +404,7 @@ export default function MarketingPage() {
                 </button>
               </div>
             </div>
-            <div className="flex justify-center w-full 2xl:justify-end 2xl:col-span-1 mx-2">
+            <div className="flex justify-center lg:justify-end w-full 2xl:col-span-1 mx-2">
               {/* <div className="relative">
                 <Image
                   src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746561970/iPhone_13_Mockup_1_zzm7tt.png"
@@ -523,101 +523,25 @@ export default function MarketingPage() {
 
         {/* Steps */}
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl relative mt-24">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {steps.map((step, index) => (
-              <div key={index} className="relative">
-                {/* Step card */}
-                <div className="border border-[#13B562]/40 rounded-lg p-6 flex flex-col items-center darK:bg-[#18181D] h-full">
-                  <div className="border border-[#13B562]/40 p-4 rounded-md mb-4 relative">
-                    <div className="bg-green-700 w-2 h-2 rounded-full absolute top-1.5 left-[-7]"></div>
-                    <div className="bg-green-700 w-2 h-2 rounded-full absolute bottom-3 right-[-4]"></div>
-                    <img
-                      src={step.icon || "/placeholder.svg"}
-                      alt={step.title}
-                      className="w-12 h-12 object-contain"
-                    ></img>
-                  </div>
-                  <h3 className="darK:text-white font-medium text-lg 2xl:text-xl mb-2 text-center">
-                    {t(String(step.title), String(step.title))}
-                  </h3>
-                  <p className="darK:text-[#788099] text-center text-sm 2xl:text-lg">
-                    {t(String(step.description), String(step.description))}
-                  </p>
-                </div>
-
-                {/* Bottom semi-circle curves for first and third connections */}
-                {(index === 0 || index === 2) && index < steps.length - 1 && (
-                  <div
-                    className="absolute hidden md:block"
-                    style={{
-                      left: "100%",
-                      top: "100%",
-                      transform: "translateX(-50%)",
-                      width: "130px",
-                      height: "60px",
-                      zIndex: 10,
-                    }}
-                  >
-                    <svg
-                      width="100%"
-                      height="100%"
-                      viewBox="0 0 120 50"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M0 0 C30 50, 75 50, 120 0"
-                        stroke="#1D8751"
-                        strokeWidth="2"
-                        strokeDasharray="5,5"
-                        fill="none"
-                      />
-                      <polygon
-                        points="115,5 125,0 115,-5"
-                        fill="#1D8751"
-                        transform="translate(-1,0) rotate(160, 120, 0)"
-                      />
-                    </svg>
-                  </div>
-                )}
-
-                {/* Top semi-circle curve for the middle connection */}
-                {index === 1 && (
-                  <div
-                    className="absolute hidden md:block"
-                    style={{
-                      left: "100%",
-                      bottom: "100%",
-                      transform: "translateX(-50%)",
-                      width: "130px",
-                      height: "75px",
-                      zIndex: 10,
-                    }}
-                  >
-                    <svg
-                      width="100%"
-                      height="100%"
-                      viewBox="0 0 120 50"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M0 50 C25 0, 75 0, 100 50"
-                        stroke="#1D8751"
-                        strokeWidth="2"
-                        strokeDasharray="5,5"
-                        fill="none"
-                      />
-                      <polygon
-                        points="95,55 100,50 90,50"
-                        fill="#1D8751"
-                        transform="translate(5, 0) rotate(-45, 100, 50)"
-                      />
-                    </svg>
-                  </div>
-                )}
-              </div>
-            ))}
+          <div className="w-full flex justify-center">
+            <div className="w-full max-w-6xl">
+              <Image
+                src="https://res.cloudinary.com/pitz/image/upload/v1762976253/Group_164012_mxn5oy.png"
+                alt={t("marketing.getSetup.flowLight", "Get started flow illustration for light mode")}
+                width={1680}
+                height={573}
+                className="w-full h-auto dark:hidden"
+                priority
+              />
+              <Image
+                src="https://res.cloudinary.com/pitz/image/upload/v1762976253/Group_164012_1_agui5m.png"
+                alt={t("marketing.getSetup.flowDark", "Get started flow illustration for dark mode")}
+                width={1680}
+                height={573}
+                className="hidden w-full h-auto dark:block"
+                priority
+              />
+            </div>
           </div>
         </div>
 
@@ -945,12 +869,9 @@ export default function MarketingPage() {
         <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto">
           {/* Header section */}
           <div className="mb-10">
-            <h2 className="text-center text-2xl 2xl:text-3xl font-semibold dark:text-white text-[#0D0D0D]">
-              {t(
-                "marketing.blogs.title",
-                "Enjoy Our Blog & News On the Latest Updates"
-              )}
-            </h2>
+          <h2 className="text-center text-2xl 2xl:text-3xl font-semibold dark:text-white text-[#0D0D0D]">
+  Enjoy Our <span className="text-[#1D8751]">Blog</span> & News On the <span className="text-[#1D8751]">Latest Updates</span>
+</h2>
 
             {/* Category toggle buttons */}
             <div className="mt-6 inline-flex bg-white dark:bg-[#1D1D23] rounded-full">

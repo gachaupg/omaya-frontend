@@ -399,7 +399,7 @@ export default function Navbar() {
         className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-3 py-3 sm:px-4 sm:py-4 md:px-12 2xl:px-20 transition-all duration-300 ${getNavbarBackground()}`}
       >
         <div className="flex items-center min-w-0">
-          <Link href="/" className="mr-2 sm:mr-4 md:mr-10 flex-shrink-0">
+          <Link href="/" className="mr-6 sm:mr-12 md:mr-20 flex-shrink-0">
             {/* Optimized logo selection using memoized config */}
             {logoConfig && (
               <Image

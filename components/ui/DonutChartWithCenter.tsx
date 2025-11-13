@@ -6,12 +6,14 @@ export interface DonutChartWithCenterProps {
   data: DonutChartData[];
   total: number;
   label: string;
+  centerValue?: number;
 }
 
 export const DonutChartWithCenter: React.FC<DonutChartWithCenterProps> = ({
   data,
   total,
   label,
+  centerValue,
 }) => {
   const radius = 64;
   const stroke = 20;
@@ -22,6 +24,9 @@ export const DonutChartWithCenter: React.FC<DonutChartWithCenterProps> = ({
 
   // Calculate total from actual data values
   const actualTotal = data.reduce((sum, item) => sum + item.value, 0);
+
+  const displayValue =
+    typeof centerValue === "number" ? centerValue : actualTotal;
 
   return (
     <svg width="180" height="180" viewBox="0 0 180 180">
@@ -53,10 +58,12 @@ export const DonutChartWithCenter: React.FC<DonutChartWithCenterProps> = ({
         y={center - 2}
         textAnchor="middle"
         className="fill-black dark:fill-white"
-        fontSize="13"
+        fontSize="18"
         fontWeight="bold"
       >
-        {actualTotal === 0 ? "00" : formatCurrency(actualTotal).replace(" USD", "")}
+        {displayValue === 0
+          ? "0.0"
+          : formatCurrency(displayValue).replace(" USD", "")}
       </text>
       <text
         x={center}

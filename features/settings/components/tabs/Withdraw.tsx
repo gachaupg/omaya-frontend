@@ -8,6 +8,7 @@ import {
   closeOtpModal,
   calculateReferralFees,
   setFeesFromCache,
+  clearFees,
 } from "@/features/settings/slices/referralWalletSlice";
 import { AppDispatch } from "@/store/rootReducer";
 import { validateWithdrawalForm } from "@/features/p2p/components/ui/p2pdashboard/sections/validation";
@@ -30,7 +31,7 @@ const Withdraw = () => {
   }>({});
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const { loading, error, success, showOtpModal, withdrawalId, otpVerifying, otpError, fees, feesLoading } = useSelector(
+  const { loading, error, success, showOtpModal, withdrawalId, otpVerifying, otpError, fees, feesLoading, feesError } = useSelector(
     (state: any) => state.referralWallet
   );
   
@@ -118,12 +119,21 @@ const Withdraw = () => {
 
   // Helper function to fetch fees with caching
   const fetchFeesWithCache = useCallback((amountValue: string) => {
-    if (!amountValue || Number(amountValue) <= 0) {
+    const amountKey = amountValue.trim();
+
+    if (!amountKey) {
       lastCalculatedAmountRef.current = "";
+      dispatch(clearFees());
       return;
     }
 
-    const amountKey = amountValue.trim();
+    const parsedAmount = Number(amountKey);
+
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      lastCalculatedAmountRef.current = "";
+      dispatch(clearFees());
+      return;
+    }
     
     // Check if we already have this amount in cache
     const cachedFees = feesCacheRef.current.get(amountKey);
@@ -138,7 +148,7 @@ const Withdraw = () => {
     // Only make API call if amount changed or not in cache
     if (lastCalculatedAmountRef.current !== amountKey) {
       lastCalculatedAmountRef.current = amountKey;
-      dispatch(calculateReferralFees(amountValue)).then((result: any) => {
+      dispatch(calculateReferralFees(amountKey)).then((result: any) => {
         // Cache the result if successful
         if (result.type === "referralWallet/calculateFees/fulfilled") {
           feesCacheRef.current.set(amountKey, result.payload);
@@ -165,6 +175,11 @@ const Withdraw = () => {
   const totalFees = fees?.total_fees ? Number(fees.total_fees) : 0;
   const netAmount = amount ? Number(amount) : 0;
   const totalWithFees = netAmount + totalFees;
+  const normalizedFeesError =
+    typeof feesError === "object" && feesError !== null
+      ? feesError.error || feesError.message || Object.values(feesError)[0]
+      : feesError;
+  const disableSubmit = loading || Boolean(normalizedFeesError);
 
   return (
     <div className="min-h-screen text-white flex flex-col items-center">
@@ -258,6 +273,11 @@ const Withdraw = () => {
                       {errors.amount}
                     </div>
                   )}
+                {normalizedFeesError && (
+                  <div className="text-red-500 text-xs mt-1 ml-2">
+                    {normalizedFeesError}
+                  </div>
+                )}
                 </div>
                 <div className="flex-1">
                   <label className="block text-sm text-[#788099] dark:text-[#A3A3A3] mb-1">
@@ -485,9 +505,9 @@ const Withdraw = () => {
                 <Button
                   variant="primary"
                   size="lg"
-                  className="w-full bg-[#EF4444] hover:bg-[#d32f2f] text-white font-semibold text-[14px] rounded-[18px] py-3 mt-4 flex items-center justify-center transition-all duration-200 transform hover:scale-[1.02]"
+                  className="w-full bg-[#EF4444] hover:bg-[#d32f2f] text-white font-semibold text-[14px] rounded-[18px] py-3 mt-4 flex items-center justify-center transition-all duration-200 transform hover:scale-[1.02] disabled:bg-[#4B5563] disabled:hover:bg-[#4B5563] disabled:text-white/70 disabled:cursor-not-allowed disabled:transform-none"
                   type="submit"
-                  disabled={loading}
+                  disabled={disableSubmit}
                 >
                   {loading && (
                     <svg
@@ -521,7 +541,7 @@ const Withdraw = () => {
             </div>
           </form>
           ) : (
-            <Cash />
+            <Cash sharedFeesError={normalizedFeesError} />
           )}
 
           {/* OTP Modal */}

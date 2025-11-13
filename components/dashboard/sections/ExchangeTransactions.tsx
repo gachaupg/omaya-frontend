@@ -207,12 +207,13 @@ const P2PTransactions = () => {
               t("transactions.asset", "Asset"),
               t("transactions.transactionType", "Transaction Type"),
               t("transactions.amount", "Amount"),
+              t("transactions.paymentMethod", "Payment Method"),
               t("transactions.status", "Status"),
               t("transactions.when", "When"),
             ].map((h) => (
               <th
                 key={h}
-                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider
+                className="px-6 py-4 text-left text-xs sm:text-sm font-semibold uppercase tracking-wider
                     text-gray-600 dark:text-gray-400"
               >
                 {h}
@@ -228,26 +229,30 @@ const P2PTransactions = () => {
               className="hover:bg-gray-100 dark:hover:bg-[#23232A] transition-colors"
             >
               {/* Asset */}
-              <td className="px-6 py-4 whitespace-nowrap flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              <td className="px-6 py-4 whitespace-nowrap flex items-center gap-3 text-sm sm:text-base text-gray-700 dark:text-gray-200">
                 <img
                   src={ASSET_ICON_URL}
                   alt={tx.currency || "Asset"}
-                  className="w-6 h-6 rounded-full"
+                  className="w-8 h-8 rounded-full shadow-sm"
                 />
-                <span className="font-bold">{tx.currency || "USDT"}</span>
-                <span className="ml-1 text-gray-500 dark:text-gray-400">
+                <div className="flex flex-col">
+                  <span className="font-semibold uppercase tracking-wide">
+                    {tx.currency || "USDT"}
+                  </span>
+                  <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                   {getAssetName(tx.currency || "USDT")}
-                </span>
+                  </span>
+                </div>
               </td>
 
               {/* Type */}
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 capitalize">
+              <td className="px-6 py-4 whitespace-nowrap text-sm sm:text-base text-gray-700 dark:text-gray-200 capitalize font-medium">
                 {tx.transaction_type}
               </td>
 
               {/* Amount */}
               <td
-                className={`px-6 py-4 whitespace-nowrap text-sm ${
+                className={`px-6 py-4 whitespace-nowrap text-sm sm:text-base font-semibold ${
                   tx.transaction_type === "deposit"
                     ? "text-[#1D8751]"
                     : "text-red-500 dark:text-red-400"
@@ -256,8 +261,22 @@ const P2PTransactions = () => {
                 {tx.amount || tx.requested_amount || tx.total_amount_due || "0.00"}
               </td>
 
+              {/* Payment Method */}
+              <td className="px-6 py-4 whitespace-nowrap text-sm sm:text-base text-gray-700 dark:text-gray-200">
+                <div className="flex flex-col">
+                  <span className="font-medium">
+                    {tx.payment_method || t("transactions.notAvailable", "N/A")}
+                  </span>
+                  {tx.payment_provider && (
+                    <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                      {tx.payment_provider}
+                    </span>
+                  )}
+                </div>
+              </td>
+
               {/* Status */}
-              <td className="px-6 py-4 whitespace-nowrap text-sm">
+              <td className="px-6 py-4 whitespace-nowrap text-sm sm:text-base">
                 <span
                   className={`px-2 py-1 rounded-full text-xs font-medium ${
                     tx.status === "completed"
@@ -276,7 +295,7 @@ const P2PTransactions = () => {
               </td>
 
               {/* When */}
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+              <td className="px-6 py-4 whitespace-nowrap text-sm sm:text-base text-gray-700 dark:text-gray-200">
                 {formatDistanceToNow(new Date(tx.created_at), {
                   addSuffix: true,
                 })}

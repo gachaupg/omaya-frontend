@@ -123,6 +123,7 @@ const referralWalletSlice = createSlice({
     clearFees: (state) => {
       state.fees = null;
       state.feesError = null;
+      state.feesLoading = false;
     },
     setFeesFromCache: (state, action) => {
       state.fees = action.payload;
@@ -190,6 +191,7 @@ const referralWalletSlice = createSlice({
       })
       .addCase(calculateReferralFees.rejected, (state, action) => {
         state.feesLoading = false;
+        state.fees = null;
         state.feesError =
           (action.payload as string) ||
           "Failed to calculate fees";

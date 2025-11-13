@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useEffect, useState, useRef, useMemo } from "react";
+import React, { useEffect, useState, useRef, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { FaExchangeAlt, FaExclamationCircle } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
@@ -486,6 +487,39 @@ export default function DepositForm({
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
   const [assetSearchTerm, setAssetSearchTerm] = useState("");
   const assetDropdownRef = useRef<HTMLDivElement>(null);
+  const assetDropdownContentRef = useRef<HTMLDivElement | null>(null);
+  const [assetDropdownPosition, setAssetDropdownPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
+  const [isComponentMounted, setIsComponentMounted] = useState(false);
+
+  const updateAssetDropdownPosition = useCallback(() => {
+    if (!assetDropdownRef.current) return;
+    const rect = assetDropdownRef.current.getBoundingClientRect();
+    setAssetDropdownPosition({
+      top: rect.bottom + window.scrollY,
+      left: rect.left + window.scrollX,
+      width: rect.width,
+    });
+  }, []);
+
+  useEffect(() => {
+    setIsComponentMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isAssetDropdownOpen) return;
+    updateAssetDropdownPosition();
+    const handleReposition = () => updateAssetDropdownPosition();
+    window.addEventListener("resize", handleReposition);
+    window.addEventListener("scroll", handleReposition, true);
+    return () => {
+      window.removeEventListener("resize", handleReposition);
+      window.removeEventListener("scroll", handleReposition, true);
+    };
+  }, [isAssetDropdownOpen, updateAssetDropdownPosition]);
 
   // Estimate calculation state
   const [estimate, setEstimate] = useState<any>(null);
@@ -741,9 +775,12 @@ export default function DepositForm({
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
       if (
         assetDropdownRef.current &&
-        !assetDropdownRef.current.contains(event.target as Node)
+        !assetDropdownRef.current.contains(target) &&
+        (!assetDropdownContentRef.current ||
+          !assetDropdownContentRef.current.contains(target))
       ) {
         setIsAssetDropdownOpen(false);
       }
@@ -1201,6 +1238,195 @@ export default function DepositForm({
     // Default: preserve original order (no change)
     return 0;
   });
+
+  const renderAssetDropdown = () => {
+    if (!isComponentMounted || !isAssetDropdownOpen) {
+      return null;
+    }
+
+    return createPortal(
+      (
+        <div
+          ref={assetDropdownContentRef}
+          className="mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg z-[1200]"
+          style={{
+            position: "absolute",
+            top: assetDropdownPosition.top,
+            left: assetDropdownPosition.left,
+            width:
+              assetDropdownPosition.width ||
+              assetDropdownRef.current?.offsetWidth ||
+              undefined,
+          }}
+        >
+          <div className="p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+            <div className="relative">
+              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search assets..."
+                value={assetSearchTerm}
+                onChange={(e) => setAssetSearchTerm(e.target.value)}
+                className="w-full text-gray-900 dark:text-white dark:bg-[#1D1D23] bg-white rounded-xl px-10 py-2 text-sm focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400"
+              />
+            </div>
+          </div>
+
+          <div className="max-h-60 overflow-y-auto">
+            {sortedSwapAssets.length > 0 ? (
+              <>
+                {!assetSearchTerm && sortedSwapAssets.length > 3 && (
+                  <>
+                    <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+                      <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
+                        Popular
+                      </span>
+                    </div>
+                    {sortedSwapAssets.slice(0, 3).map((asset: SupportedAsset, index: number) => (
+                      <div
+                        key={`popular-${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
+                        className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E]"
+                        onClick={() => {
+                          handleAssetSelection(asset);
+                          setIsAssetDropdownOpen(false);
+                          setAssetSearchTerm("");
+                        }}
+                      >
+                        <img
+                          src={
+                            asset?.image_url ||
+                            asset?.asset_image ||
+                            (asset as any)?.image ||
+                            "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                          }
+                          alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
+                          className="w-6 h-6 rounded-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src =
+                              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                          }}
+                        />
+                        <div className="flex-1">
+                          <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
+                            {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
+                            <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                              {getNetworkDisplayName(getAssetNetwork(asset))}
+                            </span>
+                          </div>
+                          <div className="text-[#35353e] dark:text-[#788099] text-sm">
+                            {(() => {
+                              let displayName =
+                                asset.name || asset.ticker || asset.symbol || "Unknown Asset";
+
+                              displayName = displayName
+                                .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, "")
+                                .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, "")
+                                .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, "")
+                                .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, "")
+                                .replace(/\s*\(TRON\)\s*\(TRX\)/gi, "")
+                                .replace(/\s*\(Solana\)\s*\(SOL\)/gi, "")
+                                .replace(/\s*\(BSC\)$/gi, "")
+                                .replace(/\s*\(ETH\)$/gi, "")
+                                .replace(/\s*\(MATIC\)$/gi, "")
+                                .replace(/\s*\(AVAX\)$/gi, "")
+                                .replace(/\s*\(TRX\)$/gi, "")
+                                .replace(/\s*\(SOL\)$/gi, "")
+                                .trim();
+
+                              return displayName;
+                            })()}
+                          </div>
+                        </div>
+                        {selectedAsset?.asset_id === asset.asset_id && (
+                          <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                        )}
+                      </div>
+                    ))}
+
+                    <div className="border-t-2 border-[#D1D2D4FF] dark:border-[#35353E]"></div>
+
+                    <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+                      <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
+                        All Assets
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                {(assetSearchTerm ? sortedSwapAssets : sortedSwapAssets.slice(3)).map(
+                  (asset: SupportedAsset, index: number) => (
+                    <div
+                      key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
+                      className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
+                      onClick={() => {
+                        handleAssetSelection(asset);
+                        setIsAssetDropdownOpen(false);
+                        setAssetSearchTerm("");
+                      }}
+                    >
+                      <img
+                        src={
+                          asset?.image_url ||
+                          asset?.asset_image ||
+                          (asset as any)?.image ||
+                          "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                        }
+                        alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
+                        className="w-6 h-6 rounded-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src =
+                            "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                        }}
+                      />
+                      <div className="flex-1">
+                        <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
+                          {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
+                          <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                            {getNetworkDisplayName(getAssetNetwork(asset))}
+                          </span>
+                        </div>
+                        <div className="text-[#35353e] dark:text-[#788099] text-sm">
+                          {(() => {
+                            let displayName =
+                              asset.name || asset.ticker || asset.symbol || "Unknown Asset";
+
+                            displayName = displayName
+                              .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, "")
+                              .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, "")
+                              .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, "")
+                              .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, "")
+                              .replace(/\s*\(TRON\)\s*\(TRX\)/gi, "")
+                              .replace(/\s*\(Solana\)\s*\(SOL\)/gi, "")
+                              .replace(/\s*\(BSC\)$/gi, "")
+                              .replace(/\s*\(ETH\)$/gi, "")
+                              .replace(/\s*\(MATIC\)$/gi, "")
+                              .replace(/\s*\(AVAX\)$/gi, "")
+                              .replace(/\s*\(TRX\)$/gi, "")
+                              .replace(/\s*\(SOL\)$/gi, "")
+                              .trim();
+
+                            return displayName;
+                          })()}
+                        </div>
+                      </div>
+                      {selectedAsset?.asset_id === asset.asset_id && (
+                        <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                      )}
+                    </div>
+                  )
+                )}
+              </>
+            ) : (
+              <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
+                {assetSearchTerm ? "No assets found" : "No assets available"}
+              </div>
+            )}
+          </div>
+        </div>
+      ),
+      document.body
+    );
+  };
 
   // Calculate fees and amounts - Network fee is always 0
   const networkFee = 0;
@@ -2285,7 +2511,7 @@ export default function DepositForm({
         {/* Top Section - Amount and Bank/Payment Method in one card */}
         <div className="relative mb-4">
           {/* Top Card Container */}
-          <div className="flex border border-[#D1D2D4FF] dark:border-[#35353E]  rounded-2xl p-4">
+          <div className="relative flex border border-[#D1D2D4FF] dark:border-[#35353E]  rounded-2xl p-4 overflow-visible">
             {/* Amount Section */}
             <div className="flex-1 pr-4">
               <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
@@ -2603,7 +2829,7 @@ export default function DepositForm({
 
         {/* Bottom Section - You Receive and Asset in one card */}
         <div className="relative mb-3">
-          <div className="flex border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-4">
+          <div className="relative flex border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-4 overflow-visible">
             {/* You Receive Section */}
             <div className="flex-1 pr-4">
               <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
@@ -2829,6 +3055,9 @@ export default function DepositForm({
                 <div
                   className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 text-lg  focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer`}
                   onClick={() => {
+                    if (!isAssetDropdownOpen) {
+                      updateAssetDropdownPosition();
+                    }
                     setIsAssetDropdownOpen(!isAssetDropdownOpen);
                   }}
                 >
@@ -2916,255 +3145,7 @@ export default function DepositForm({
                 </div>
 
                 {/* Asset Dropdown */}
-                {isAssetDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl z-50 max-h-80 overflow-hidden">
-                    {/* Search Input */}
-                    <div className="p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
-                      <div className="relative">
-                        <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
-                        <input
-                          type="text"
-                          placeholder="Search assets..."
-                          value={assetSearchTerm}
-                          onChange={(e) => setAssetSearchTerm(e.target.value)}
-                          className="w-full text-gray-900 dark:text-white dark:bg-[#1D1D23] bg-white rounded-xl px-10 py-2 text-sm focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Asset List */}
-                    <div className="max-h-60 overflow-y-auto">
-                      {sortedSwapAssets.length > 0 ? (
-                        <>
-                          {/* Popular Section - First 3 assets only if no search */}
-                          {!assetSearchTerm && sortedSwapAssets.length > 3 && (
-                            <>
-                              <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
-                                <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
-                                  Popular
-                                </span>
-                              </div>
-                              {sortedSwapAssets
-                                .slice(0, 3)
-                                .map((asset: SupportedAsset, index: number) => (
-                                  <div
-                                    key={`popular-${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
-                                    className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E]"
-                                    onClick={() => {
-                                      handleAssetSelection(asset);
-                                      setIsAssetDropdownOpen(false);
-                                      setAssetSearchTerm("");
-                                    }}
-                                  >
-                                    <img
-                                      src={
-                                        asset?.image_url ||
-                                        asset?.asset_image ||
-                                        (asset as any)?.image ||
-                                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                                      }
-                                      alt={
-                                        asset?.name ||
-                                        asset?.ticker ||
-                                        asset?.symbol ||
-                                        "Asset"
-                                      }
-                                      className="w-6 h-6 rounded-full object-cover"
-                                      onError={(e) => {
-                                        e.currentTarget.src =
-                                          "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
-                                      }}
-                                    />
-                                    <div className="flex-1">
-                                      <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
-                                        {(
-                                          asset.ticker ||
-                                          asset.symbol ||
-                                          asset.name ||
-                                          "Unknown"
-                                        ).toUpperCase()}
-                                        <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                                          {getNetworkDisplayName(
-                                            getAssetNetwork(asset)
-                                          )}
-                                        </span>
-                                      </div>
-                                      <div className="text-[#35353e] dark:text-[#788099] text-sm">
-                                        {(() => {
-                                          // Clean up asset name to remove redundant network information
-                                          let displayName =
-                                            asset.name ||
-                                            asset.ticker ||
-                                            asset.symbol ||
-                                            "Unknown Asset";
-
-                                          // Remove common redundant patterns - less aggressive approach
-                                          // Only remove redundant network info when it's duplicated in the network badge
-                                          displayName = displayName
-                                            // Handle cases like "Tether (Binance Smart Chain) (BSC)" - remove duplicate BSC
-                                            .replace(
-                                              /\s*\(Binance Smart Chain\)\s*\(BSC\)/gi,
-                                              ""
-                                            )
-                                            .replace(
-                                              /\s*\(Ethereum\)\s*\(ETH\)/gi,
-                                              ""
-                                            )
-                                            .replace(
-                                              /\s*\(Polygon\)\s*\(MATIC\)/gi,
-                                              ""
-                                            )
-                                            .replace(
-                                              /\s*\(Avalanche\)\s*\(AVAX\)/gi,
-                                              ""
-                                            )
-                                            .replace(
-                                              /\s*\(TRON\)\s*\(TRX\)/gi,
-                                              ""
-                                            )
-                                            .replace(
-                                              /\s*\(Solana\)\s*\(SOL\)/gi,
-                                              ""
-                                            )
-                                            // Only remove single network references if they're clearly redundant
-                                            .replace(/\s*\(BSC\)$/gi, "") // Only remove BSC at the end
-                                            .replace(/\s*\(ETH\)$/gi, "") // Only remove ETH at the end
-                                            .replace(/\s*\(MATIC\)$/gi, "") // Only remove MATIC at the end
-                                            .replace(/\s*\(AVAX\)$/gi, "") // Only remove AVAX at the end
-                                            .replace(/\s*\(TRX\)$/gi, "") // Only remove TRX at the end
-                                            .replace(/\s*\(SOL\)$/gi, "") // Only remove SOL at the end
-                                            .trim();
-
-                                          return displayName;
-                                        })()}
-                                      </div>
-                                    </div>
-                                    {selectedAsset?.asset_id ===
-                                      asset.asset_id && (
-                                      <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                                    )}
-                                  </div>
-                                ))}
-
-                              {/* Separator Line */}
-                              <div className="border-t-2 border-[#D1D2D4FF] dark:border-[#35353E]"></div>
-
-                              {/* All Assets Header */}
-                              <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
-                                <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
-                                  All Assets
-                                </span>
-                              </div>
-                            </>
-                          )}
-
-                          {/* Rest of the assets or all assets if searching */}
-                          {(assetSearchTerm
-                            ? sortedSwapAssets
-                            : sortedSwapAssets.slice(3)
-                          ).map((asset: SupportedAsset, index: number) => (
-                            <div
-                              key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
-                              className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
-                              onClick={() => {
-                                handleAssetSelection(asset);
-                                setIsAssetDropdownOpen(false);
-                                setAssetSearchTerm("");
-                              }}
-                            >
-                              <img
-                                src={
-                                  asset?.image_url ||
-                                  asset?.asset_image ||
-                                  (asset as any)?.image ||
-                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                                }
-                                alt={
-                                  asset?.name ||
-                                  asset?.ticker ||
-                                  asset?.symbol ||
-                                  "Asset"
-                                }
-                                className="w-6 h-6 rounded-full object-cover"
-                                onError={(e) => {
-                                  e.currentTarget.src =
-                                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
-                                }}
-                              />
-                              <div className="flex-1">
-                                <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
-                                  {(
-                                    asset.ticker ||
-                                    asset.symbol ||
-                                    asset.name ||
-                                    "Unknown"
-                                  ).toUpperCase()}
-                                  <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                                    {getNetworkDisplayName(
-                                      getAssetNetwork(asset)
-                                    )}
-                                  </span>
-                                </div>
-                                <div className="text-[#35353e] dark:text-[#788099] text-sm">
-                                  {(() => {
-                                    // Clean up asset name to remove redundant network information
-                                    let displayName =
-                                      asset.name ||
-                                      asset.ticker ||
-                                      asset.symbol ||
-                                      "Unknown Asset";
-
-                                    // Remove common redundant patterns - less aggressive approach
-                                    // Only remove redundant network info when it's duplicated in the network badge
-                                    displayName = displayName
-                                      // Handle cases like "Tether (Binance Smart Chain) (BSC)" - remove duplicate BSC
-                                      .replace(
-                                        /\s*\(Binance Smart Chain\)\s*\(BSC\)/gi,
-                                        ""
-                                      )
-                                      .replace(
-                                        /\s*\(Ethereum\)\s*\(ETH\)/gi,
-                                        ""
-                                      )
-                                      .replace(
-                                        /\s*\(Polygon\)\s*\(MATIC\)/gi,
-                                        ""
-                                      )
-                                      .replace(
-                                        /\s*\(Avalanche\)\s*\(AVAX\)/gi,
-                                        ""
-                                      )
-                                      .replace(/\s*\(TRON\)\s*\(TRX\)/gi, "")
-                                      .replace(/\s*\(Solana\)\s*\(SOL\)/gi, "")
-                                      // Only remove single network references if they're clearly redundant
-                                      .replace(/\s*\(BSC\)$/gi, "") // Only remove BSC at the end
-                                      .replace(/\s*\(ETH\)$/gi, "") // Only remove ETH at the end
-                                      .replace(/\s*\(MATIC\)$/gi, "") // Only remove MATIC at the end
-                                      .replace(/\s*\(AVAX\)$/gi, "") // Only remove AVAX at the end
-                                      .replace(/\s*\(TRX\)$/gi, "") // Only remove TRX at the end
-                                      .replace(/\s*\(SOL\)$/gi, "") // Only remove SOL at the end
-                                      .trim();
-
-                                    return displayName;
-                                  })()}
-                                </div>
-                              </div>
-                              {selectedAsset?.asset_id === asset.asset_id && (
-                                <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                              )}
-                            </div>
-                          ))}
-                        </>
-                      ) : (
-                        <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
-                          {assetSearchTerm
-                            ? "No assets found"
-                            : "No assets available"}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
+                {renderAssetDropdown()}
               </div>
             </div>
           </div>

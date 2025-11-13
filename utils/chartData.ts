@@ -31,8 +31,40 @@ export const p2pOverviewData: LineChartData = {
 // Dummy data for Overview Total (Donut)
 export const overviewTotalData = (
   transactionSummary: TransactionSummary,
-  type: "exchange" | "p2p" |"swap" = "exchange"
+  type: "exchange" | "p2p" | "swap" | "buy" = "exchange"
 ): DonutChartData[] => {
+  if (type === "buy") {
+    const status = transactionSummary.total_buy_orders_by_status || {
+      pending: 0,
+      completed: 0,
+      canceled: 0,
+      offline: 0,
+    };
+
+    return [
+      {
+        label: "Completed",
+        value: status.completed || 0,
+        color: "#1D8751",
+      },
+      {
+        label: "Pending",
+        value: status.pending || 0,
+        color: "#facc15",
+      },
+      {
+        label: "Canceled",
+        value: status.canceled || 0,
+        color: "#ef4444",
+      },
+      {
+        label: "Offline",
+        value: status.offline || 0,
+        color: "#64748b",
+      },
+    ];
+  }
+
   if (type === "p2p") {
     return [
       {
@@ -87,9 +119,14 @@ export const overviewTotalData = (
     {
       label: "In Progress",
       value:
-        transactionSummary.total_approved_exchange_deposits +
-        transactionSummary.total_approved_exchange_withdrawals,
+        transactionSummary.total_pending_exchange_deposits +
+        transactionSummary.total_pending_exchange_withdrawals,
       color: "#facc15",
+    },
+    {
+      label: "Exchange",
+      value: transactionSummary.total_approved_exchange_combined,
+      color: "#386AB5",
     },
   ];
 };
@@ -141,7 +178,7 @@ export const referralCommissionsData = (
 // Summary values
 export const overviewTotalSummary = (
   transactionSummary: TransactionSummary,
-  type: "exchange" | "p2p" | "swap" = "exchange"
+  type: "exchange" | "p2p" | "swap" | "buy" = "exchange"
 ) => {
   if (type === "p2p") {
     return {
@@ -155,8 +192,19 @@ export const overviewTotalSummary = (
       currency: "USD",
     };
   }
+  if (type === "buy") {
+    return {
+      total: transactionSummary.total_buy_orders,
+      currency: "USD",
+    };
+  }
   return {
-    total: transactionSummary.total_approved_exchange_combined,
+    total:
+      transactionSummary.total_approved_exchange_combined +
+      transactionSummary.total_approved_exchange_deposits +
+      transactionSummary.total_approved_exchange_withdrawals +
+      transactionSummary.total_pending_exchange_deposits +
+      transactionSummary.total_pending_exchange_withdrawals,
     currency: "USD",
   };
 };

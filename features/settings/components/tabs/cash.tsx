@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useRouter } from 'next/navigation'
 import Button from "@/components/ui/Button"
-import { createCashWithdrawal, clearSuccess, clearError, calculateCashWithdrawalFees } from '../../slices/cashWithdrawalSlice'
+import { createCashWithdrawal, clearSuccess, clearError, calculateCashWithdrawalFees, clearFees } from '../../slices/cashWithdrawalSlice'
 import { fetchUserPaymentDetails } from '@/features/p2p/slices/paymentMethodsSlice'
 import { AppDispatch } from '@/store/rootReducer'
 import UserPaymentSelector, { UserPaymentDetail } from '@/features/p2p/components/ui/p2pdashboard/sections/UserPaymentSelector'
@@ -11,10 +11,14 @@ import { useDebounce } from '@/hooks/useDebounce'
 
 import { logger } from '@/lib/utils/logger';
 
-const Cash = () => {
+interface CashProps {
+  sharedFeesError?: string | null;
+}
+
+function Cash({ sharedFeesError }: CashProps) {
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter()
-  const { loading, error, success, message, withdrawalData, fees, feesLoading } = useSelector((state: any) => state.cashWithdrawal)
+  const { loading, error, success, message, withdrawalData, fees, feesLoading, feesError } = useSelector((state: any) => state.cashWithdrawal)
   const { userPaymentDetails, userDetailsLoading } = useSelector((state: any) => state.paymentMethods)
   
   const [amount, setAmount] = useState("")
@@ -40,11 +44,29 @@ const Cash = () => {
     dispatch(fetchUserPaymentDetails() as any)
   }, [dispatch])
 
+  const normalizedFeesError =
+    typeof feesError === 'object' && feesError !== null
+      ? feesError.error || feesError.message || Object.values(feesError)[0]
+      : feesError
+  const effectiveFeesError = normalizedFeesError || sharedFeesError || null
+
   // Fetch fees when amount changes
   useEffect(() => {
-    if (debouncedAmount && Number(debouncedAmount) > 0) {
-      dispatch(calculateCashWithdrawalFees(debouncedAmount))
+    const trimmedAmount = debouncedAmount.trim()
+
+    if (!trimmedAmount) {
+      dispatch(clearFees())
+      return
     }
+
+    const parsedAmount = Number(trimmedAmount)
+
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      dispatch(clearFees())
+      return
+    }
+
+    dispatch(calculateCashWithdrawalFees(trimmedAmount))
   }, [debouncedAmount, dispatch])
 
   const handleSelectPaymentDetail = (detail: UserPaymentDetail) => {
@@ -214,6 +236,11 @@ const Cash = () => {
                 {errors.amount && (
                   <div className="text-red-500 text-xs mt-1 ml-2">
                     {errors.amount}
+                  </div>
+                )}
+                {effectiveFeesError && (
+                  <div className="text-red-500 text-xs mt-1 ml-2">
+                    {effectiveFeesError}
                   </div>
                 )}
               </div>
@@ -426,9 +453,9 @@ const Cash = () => {
               <Button
                 variant="primary"
                 size="lg"
-                className="w-full bg-[#EF4444] hover:bg-[#d32f2f] text-white font-semibold text-[14px] rounded-[18px] py-3 mt-4 flex items-center justify-center transition-all duration-200 transform hover:scale-[1.02]"
+                className="w-full bg-[#EF4444] hover:bg-[#d32f2f] text-white font-semibold text-[14px] rounded-[18px] py-3 mt-4 flex items-center justify-center transition-all duration-200 transform hover:scale-[1.02] disabled:bg-[#4B5563] disabled:hover:bg-[#4B5563] disabled:text-white/70 disabled:cursor-not-allowed disabled:transform-none"
                 type="submit"
-                disabled={loading}
+                disabled={loading || Boolean(effectiveFeesError)}
               >
                 {loading && (
                   <svg
