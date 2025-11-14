@@ -28,7 +28,7 @@ export default function GoogleOAuthCallback() {
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://dev.backend.omaya.io';
 
   // Function to get CSRF token from cookies
   const getCsrfToken = (): string => {

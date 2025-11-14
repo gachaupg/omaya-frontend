@@ -58,7 +58,7 @@ const FacebookAuthButton: React.FC<FacebookAuthButtonProps> = ({
 
         // Send token to your backend
         const backendResponse = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/auth/facebook/`,
+          `${process.env.NEXT_PUBLIC_API_URL || 'https://dev.backend.omaya.io'}/api/auth/facebook/`,
           {
             access_token: authResponse.accessToken,
             user: userInfo,

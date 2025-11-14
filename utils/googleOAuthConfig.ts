@@ -35,7 +35,7 @@ export interface AuthTokens {
 }
 
 // Environment Configuration
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dev.backend.omaya.io';
 const FRONTEND_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
 // Base URL for OAuth callbacks
