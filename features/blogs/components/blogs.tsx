@@ -109,7 +109,35 @@ const BlogPage = () => {
       <div className="container mx-auto">
         <header className="mb-4 md:mb-6 text-center md:text-left">
           <h1 className="text-2xl sm:text-2xl md:text-3xl font-bold leading-tight">
-            {t("blogs.title", "Enjoy Our Blog On the Latest Company Updates")}
+            {(() => {
+              const title = t("blogs.title", "Enjoy Our Blog the Latest Company Updates");
+              // Find positions of "Blog" and "Latest"
+              const blogIndex = title.indexOf("Blog");
+              const latestIndex = title.indexOf("Latest");
+              
+              if (blogIndex === -1 || latestIndex === -1) {
+                // Fallback if keywords not found
+                return title;
+              }
+              
+              // Split the title into parts
+              const beforeBlog = title.substring(0, blogIndex);
+              const afterBlog = title.substring(blogIndex + 4, latestIndex);
+              const afterLatest = title.substring(latestIndex + 6);
+              
+              return (
+                <>
+                  {beforeBlog}
+                  <span className="text-[#1D8751]">Blog</span>
+                  {afterBlog}
+                  <span className="text-[#1D8751]">
+                    Latest
+                    <br />
+                    {afterLatest.trim()}
+                  </span>
+                </>
+              );
+            })()}
           </h1>
         </header>
 

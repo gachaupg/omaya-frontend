@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 interface Option {
   value: string;
@@ -40,9 +41,16 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownContentRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const dropdownId = `custom-select-${Math.random().toString(36).substr(2, 9)}`;
+  const [dropdownStyles, setDropdownStyles] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
 
   // Filter options based on search term
   const filteredOptions = options.filter((option) =>
@@ -57,7 +65,12 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(target) &&
+        (!dropdownContentRef.current || !dropdownContentRef.current.contains(target))
+      ) {
         setIsOpen(false);
         setSearchTerm("");
       }
@@ -67,6 +80,37 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const updateDropdownPosition = () => {
+    if (typeof window === "undefined") return;
+    const triggerElement = triggerRef.current;
+    if (!triggerElement) return;
+
+    const rect = triggerElement.getBoundingClientRect();
+    setDropdownStyles({
+      top: rect.bottom + window.scrollY + 4,
+      left: rect.left + window.scrollX,
+      width: rect.width,
+    });
+  };
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    updateDropdownPosition();
+
+    const handleReposition = () => updateDropdownPosition();
+
+    window.addEventListener("resize", handleReposition);
+    window.addEventListener("scroll", handleReposition, true);
+
+    return () => {
+      window.removeEventListener("resize", handleReposition);
+      window.removeEventListener("scroll", handleReposition, true);
+    };
+  }, [isOpen]);
+
   // Focus search input when dropdown opens
   useEffect(() => {
     if (isOpen && searchable && searchInputRef.current) {
@@ -75,12 +119,19 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   }, [isOpen, searchable]);
 
   const handleToggle = () => {
-    if (!disabled && !loading) {
-      setIsOpen(!isOpen);
-      if (!isOpen) {
-        setSearchTerm("");
-      }
+    if (disabled || loading) {
+      return;
     }
+
+    if (isOpen) {
+      setIsOpen(false);
+      setSearchTerm("");
+      return;
+    }
+
+    updateDropdownPosition();
+    setIsOpen(true);
+    setSearchTerm("");
   };
 
   const handleOptionClick = (optionValue: string) => {
@@ -102,13 +153,14 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   };
 
   return (
-    <div className={`relative ${className}`} ref={dropdownRef}>
+    <div className={`relative ${className}`} ref={containerRef}>
       {/* Trigger Button */}
       <button
         type="button"
         onClick={handleToggle}
         onKeyDown={handleKeyDown}
         disabled={disabled || loading}
+        ref={triggerRef}
         className={`
           w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 rounded-2xl border text-sm sm:text-base
           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
@@ -160,40 +212,50 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       </button>
 
       {/* Dropdown Options */}
-      {isOpen && (
-        <div 
-          id={dropdownId}
-          className="absolute z-50 w-full mt-1 bg-white dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg max-h-[70vh] sm:max-h-60 overflow-hidden"
-          role="listbox"
-        >
-          {/* Search Input */}
-          {searchable && (
-            <div className="p-2 border-b border-gray-200 dark:border-gray-600">
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search options..."
-                className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
-              />
-            </div>
-          )}
-
-          {/* Options List */}
-          <div className="max-h-[50vh] sm:max-h-48 overflow-y-auto p-1">
-            {filteredOptions.length === 0 ? (
-              <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
-                {searchTerm ? "No matching options" : emptyText}
+      {isOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            id={dropdownId}
+            ref={dropdownContentRef}
+            className="z-[1200] bg-white dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg max-h-[70vh] sm:max-h-60 overflow-hidden"
+            role="listbox"
+            style={{
+              position: "absolute",
+              top: dropdownStyles.top,
+              left: dropdownStyles.left,
+              width: dropdownStyles.width,
+              minWidth: dropdownStyles.width,
+            }}
+          >
+            {/* Search Input */}
+            {searchable && (
+              <div className="p-2 border-b border-gray-200 dark:border-gray-600">
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search options..."
+                  className="w-full px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
+                />
               </div>
-            ) : (
-              filteredOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => handleOptionClick(option.value)}
-                  disabled={option.disabled}
-                  className={`
+            )}
+
+            {/* Options List */}
+            <div className="max-h-[50vh] sm:max-h-48 overflow-y-auto p-1">
+              {filteredOptions.length === 0 ? (
+                <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+                  {searchTerm ? "No matching options" : emptyText}
+                </div>
+              ) : (
+                filteredOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => handleOptionClick(option.value)}
+                    disabled={option.disabled}
+                    className={`
                     w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm transition-colors duration-150
                     hover:bg-blue-50 dark:hover:bg-blue-900/20
                     focus:outline-none focus:bg-blue-50 dark:focus:bg-blue-900/20
@@ -207,29 +269,30 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                     }
                     ${optionClassName}
                   `}
-                  style={{ minHeight: '40px', marginBottom: '2px' }}
-                  role="option"
-                  aria-selected={value === option.value}
-                >
-                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 w-full">
-                    {option.logo && (
-                      <img
-                        src={option.logo}
-                        alt=""
-                        className="w-4 h-4 sm:w-5 sm:h-5 rounded object-cover flex-shrink-0"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                    )}
-                    <span className="truncate min-w-0 flex-1 text-left">{option.label}</span>
-                  </div>
-                </button>
-              ))
-            )}
-          </div>
-        </div>
-      )}
+                    style={{ minHeight: "40px", marginBottom: "2px" }}
+                    role="option"
+                    aria-selected={value === option.value}
+                  >
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 w-full">
+                      {option.logo && (
+                        <img
+                          src={option.logo}
+                          alt=""
+                          className="w-4 h-4 sm:w-5 sm:h-5 rounded object-cover flex-shrink-0"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = "none";
+                          }}
+                        />
+                      )}
+                      <span className="truncate min-w-0 flex-1 text-left">{option.label}</span>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

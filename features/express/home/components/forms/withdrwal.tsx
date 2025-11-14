@@ -35,6 +35,7 @@ import {
 import { useChangeNowAssets } from "../../hooks/useChangeNowAssets";
 import CustomSelect from "@/components/ui/CustomSelect";
 import ForexWithdrawal from "./ForexWithdrawal";
+import { useTheme } from "@/context/theme";
 
 // Add UserPaymentDetail interface
 interface UserPaymentDetail {
@@ -191,6 +192,11 @@ export default function WithdrawalForm({
   const router = useRouter();
   const [transactionMode, setTransactionMode] = useState<"crypto" | "forex">("crypto");
   
+  // Declare all refs early to avoid initialization errors
+  const paymentDetailsRef = useRef<HTMLDivElement>(null);
+  const assetDropdownRef = useRef<HTMLDivElement>(null);
+  const assetDropdownContentRef = useRef<HTMLDivElement | null>(null);
+  
   // Helper function to check if asset is FXP (forex) - defined early to avoid hoisting issues
   const isForexAsset = (asset: any) => {
     if (!asset) return false;
@@ -218,6 +224,7 @@ export default function WithdrawalForm({
     error: swapAssetsError,
   } = useSelector((state: any) => state.swap);
   const { isAuthenticated } = useSelector((state: any) => state.auth);
+  const { isDark } = useTheme();
 
   const {
     assets: homeAssets,
@@ -497,11 +504,64 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
   // Forex-specific state for withdrawal
   const [userNotesForex, setUserNotesForex] = useState<string>("");
   const [showForexWithdrawalForm, setShowForexWithdrawalForm] = useState<boolean>(false);
-  const paymentDetailsRef = useRef<HTMLDivElement>(null);
   // Asset selection state for search functionality
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
   const [assetSearchTerm, setAssetSearchTerm] = useState("");
-  const assetDropdownRef = useRef<HTMLDivElement>(null);
+  const [assetDropdownPosition, setAssetDropdownPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
+  const [isComponentMounted, setIsComponentMounted] = useState(false);
+
+  // Calculate dropdown styles safely using useMemo
+  const assetDropdownStyles = useMemo(() => {
+    if (!isAssetDropdownOpen || !assetDropdownRef.current) {
+      return {};
+    }
+
+    const triggerRect = assetDropdownRef.current.getBoundingClientRect();
+    const triggerWidth = triggerRect?.width ?? 0;
+    let expandedWidth: number | undefined =
+      triggerWidth > 0 ? triggerWidth + 48 : undefined;
+    const viewportAllowance =
+      typeof window !== "undefined" ? window.innerWidth - 32 : undefined;
+
+    if (
+      expandedWidth !== undefined &&
+      viewportAllowance !== undefined &&
+      expandedWidth > viewportAllowance
+    ) {
+      expandedWidth = viewportAllowance;
+    }
+
+    let leftShift = 0;
+    if (
+      expandedWidth !== undefined &&
+      triggerWidth > 0 &&
+      triggerRect &&
+      typeof window !== "undefined"
+    ) {
+      leftShift = -(expandedWidth - triggerWidth) / 2;
+      let absoluteLeft = triggerRect.left + leftShift;
+      if (absoluteLeft < 16) {
+        leftShift += 16 - absoluteLeft;
+        absoluteLeft = 16;
+      }
+      const absoluteRight = absoluteLeft + expandedWidth;
+      const maxRight = window.innerWidth - 16;
+      if (absoluteRight > maxRight) {
+        leftShift -= absoluteRight - maxRight;
+      }
+    }
+
+    return {
+      width: expandedWidth ?? (triggerWidth > 0 ? triggerWidth : undefined),
+      left: expandedWidth !== undefined && triggerWidth > 0 ? `${leftShift}px` : undefined,
+      maxWidth: viewportAllowance !== undefined ? `${viewportAllowance}px` : undefined,
+      minWidth: triggerWidth > 0 ? `${triggerWidth}px` : undefined,
+    };
+  }, [isAssetDropdownOpen]);
 
   // Estimate calculation state
   const [estimate, setEstimate] = useState<any>(null);
@@ -2697,10 +2757,14 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
         {/* Top Section - You Send and You Get in one card */}
         <div className="relative mb-2">
           {/* Top Card Container */}
-          <div className="relative flex border border-[#23232F] dark:border-[#2F2F3A] bg-[#0F0F17] dark:bg-[#0F0F17] rounded-2xl p-4 overflow-visible">
+        <div
+          className={`relative flex rounded-2xl p-4 overflow-visible ${
+            isDark ? "border border-[#2F2F3A] bg-[#0F0F17]" : "border border-[#E2E8F0] bg-white shadow-sm"
+          }`}
+        >
             {/* You Send Section */}
             <div className="flex-1 pr-4">
-              <label className="block text-[15px] text-[#9CA3AF] dark:text-[#9CA3AF] mb-2 font-semibold flex items-center gap-2">
+              <label className="block text-[15px] text-[#475569] dark:text-[#9CA3AF] mb-2 font-semibold flex items-center gap-2">
                 You Send
                 {isCalculatingFromPay &&
                   (isCalculating || isCalculatingReceive) && (
@@ -2832,16 +2896,18 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                       ? "Calculating..."
                       : "Enter amount"
                   }
-                  className={`w-full bg-transparent dark:bg-transparent text-[#35353e] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none ${
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none ${
                     apiValidationError
                       ? "border-red-500"
                       : isCalculating || isCalculatingReceive
-                        ? "border-[#1D8751]"
-                        : "border-[#A2A4A9FF] dark:border-[#35353E]"
+                      ? "border-[#1D8751]"
+                      : isDark
+                      ? "border-[#35353E] bg-transparent text-white"
+                      : "border-[#CBD5F5] bg-white text-[#111827]"
                   }`}
                 />
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                  <span className="text-[#35353e] dark:text-[#ffffff] text-sm font-medium">
+                  <span className={`${isDark ? "text-white" : "text-[#1F2937]"} text-sm font-medium`}>
                     {selectedAsset
                       ? (
                           selectedAsset.ticker ||
@@ -2904,12 +2970,14 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
 
             {/* You Get Section */}
             <div className="flex-1 pl-4">
-              <label className="block text-[15px] text-[#9CA3AF] dark:text-[#9CA3AF] mb-2 font-semibold">
+              <label className="block text-[15px] text-[#475569] dark:text-[#9CA3AF] mb-2 font-semibold">
                 Asset
               </label>
               <div className="relative" ref={assetDropdownRef}>
                 <div
-                  className={`w-full bg-transparent dark:bg-transparent text-white rounded-2xl px-4 py-2 text-lg focus:outline-none border border-[#39394A] dark:border-[#39394A] flex items-center justify-between cursor-pointer`}
+                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between cursor-pointer ${
+                    isDark ? "bg-transparent text-white border-[#39394A]" : "bg-white text-[#1F2937] border-[#CBD5F5]"
+                  }`}
                   onClick={() => {
                     setIsAssetDropdownOpen(!isAssetDropdownOpen);
                   }}
@@ -2963,7 +3031,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                           alt="asset icon"
                           className="w-6 h-6"
                         />
-                        <span className="text-[#7e7e8f] dark:text-[#788099]">
+                        <span className={`${isDark ? "text-[#788099]" : "text-[#64748B]"}`}>
                           {assetsDisplay.isLoading
                             ? "Loading assets..."
                             : "Select Asset"}
@@ -2990,7 +3058,10 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
 
                 {/* Asset Dropdown */}
                 {isAssetDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl z-50 max-h-80 overflow-y-auto">
+                  <div
+                    className="absolute top-full left-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl z-50 max-h-80 overflow-y-auto"
+                    style={assetDropdownStyles}
+                  >
                     {/* Search Input */}
                     <div className="p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
                       <div className="relative">
@@ -3097,13 +3168,13 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                                       }}
                                     />
                                     <div className="flex-1">
-                                      <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
+                                      <div className="text-[#111827] dark:text-[#ffffff] font-medium flex items-center gap-2">
                                         {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
                                         <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
                                           {getNetworkDisplayName(asset.network)}
                                         </span>
                                       </div>
-                                      <div className="text-[#35353e] dark:text-[#788099] text-sm">
+                                      <div className="text-[#475569] dark:text-[#788099] text-sm">
                                         {asset.name ||
                                           (asset.ticker || "").toUpperCase() ||
                                           (asset.symbol || "").toUpperCase() ||
@@ -3213,7 +3284,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                                 }}
                               />
                               <div className="flex-1">
-                                <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
+                                <div className="text-[#111827] dark:text-[#ffffff] font-medium flex items-center gap-2">
                                   {(
                                     asset.ticker ||
                                     asset.symbol ||
@@ -3224,7 +3295,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                                     {getNetworkDisplayName(asset.network)}
                                   </span>
                                 </div>
-                                <div className="text-[#35353e] dark:text-[#788099] text-sm">
+                                <div className="text-[#475569] dark:text-[#788099] text-sm">
                                   {asset.name ||
                                     (asset.ticker || "").toUpperCase() ||
                                     (asset.symbol || "").toUpperCase() ||
@@ -3286,10 +3357,14 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
 
         {/* Bottom Section - You Receive and Bank/Payment Method in one card */}
         <div className="relative mb-2 mt-4">
-          <div className="relative flex border border-[#23232F] dark:border-[#2F2F3A] bg-[#0F0F17] dark:bg-[#0F0F17] rounded-2xl p-4 overflow-visible">
+          <div
+            className={`relative flex rounded-2xl p-4 overflow-visible ${
+              isDark ? "border border-[#2F2F3A] bg-[#0F0F17]" : "border border-[#E2E8F0] bg-white shadow-sm"
+            }`}
+          >
             {/* You Receive Section */}
             <div className="flex-1 pr-4">
-              <label className="block text-[15px] text-[#9CA3AF] dark:text-[#9CA3AF] mb-2 font-semibold flex items-center gap-2">
+              <label className="block text-[15px] text-[#475569] dark:text-[#9CA3AF] mb-2 font-semibold flex items-center gap-2">
                 You Receive
                 {!isCalculatingFromPay &&
                   (isCalculating || isCalculatingReceive) && (
@@ -3448,7 +3523,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                       ? "Calculating..."
                       : "Enter amount"
                   }
-                  className={`w-full bg-transparent dark:bg-transparent text-[#35353e] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none ${
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none ${
                     (receiveAmountError &&
                       (receiveAmountError.includes("Rough estimate") ||
                         receiveAmountError.includes("Using estimated rate"))) ||
@@ -3469,11 +3544,13 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                         ? "border-red-500"
                         : isCalculating || isCalculatingReceive
                           ? "border-[#1D8751]"
-                          : "border-[#A2A4A9FF] dark:border-[#35353E]"
+                          : isDark
+                          ? "border-[#35353E] bg-transparent text-white"
+                          : "border-[#CBD5F5] bg-white text-[#111827]"
                   }`}
                 />
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                  <span className="text-[#35353e] dark:text-[#ffffff] text-sm font-medium">
+                  <span className={`${isDark ? "text-white" : "text-[#1F2937]"} text-sm font-medium`}>
                     USD
                   </span>
                 </div>
@@ -3568,7 +3645,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
 
             {/* Payment Method Section */}
             <div className="flex-1 pl-4">
-              <label className="block text-[15px] text-[#9CA3AF] dark:text-[#9CA3AF] mb-2 font-semibold">
+              <label className="block text-[15px] text-[#475569] dark:text-[#9CA3AF] mb-2 font-semibold">
                 Payment Method
               </label>
               <div className="relative">
@@ -3602,7 +3679,9 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                       className={`w-full ${
                         paymentMethodError ? "border-red-500 dark:border-red-500" : ""
                       }`}
-                      triggerClassName="bg-transparent dark:bg-transparent text-white border border-[#39394A] dark:border-[#39394A] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base"
+                      triggerClassName={`px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border rounded-xl ${
+                        isDark ? "bg-transparent text-white border-[#39394A]" : "bg-white text-[#1F2937] border-[#CBD5F5]"
+                      }`}
                       onChange={(value) => {
                         const selectedWallet = adminWalletListDisplay.displayData?.find(
                           (wallet: any) =>
@@ -3639,7 +3718,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
               {/* Registered Account Section */}
               {payBank && (
                 <div className="mt-3">
-                  <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+                  <label className="block text-[17px] text-[#475569] dark:text-[#9CA3AF] mb-2 font-semibold">
                     Registered Account
                   </label>
                   {enhancedFilteredUserPaymentDetails.length > 0 ? (
@@ -3710,6 +3789,9 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                           paymentMethodError 
                             ? "border-red-500 dark:border-red-500" 
                             : ""
+                        }`}
+                        triggerClassName={`px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border rounded-xl ${
+                          isDark ? "bg-transparent text-white border-[#39394A]" : "bg-white text-[#1F2937] border-[#CBD5F5]"
                         }`}
                       />
                     </div>
