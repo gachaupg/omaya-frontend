@@ -4,7 +4,7 @@ import PriceCards from "@/components/charts/PriceChart";
 import VolumeChart from "@/components/charts/VolumeChart";
 import LineCharts from "@/components/charts/LineCharts";
 import Transactions from "@/components/dashboard/ui/Transactions";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchTransactionSummary,
@@ -15,19 +15,26 @@ import { openKYCModal } from "@/features/auth/slices/authSlice";
 import { AppDispatch } from "@/store";
 import { emptyTransactionSummary } from "@/components/types";
 import { logger } from "@/lib/utils/logger";
+import { storage } from "@/features/auth/utils/storage";
 
 export default function DashboardPage() {
   const dispatch = useDispatch<AppDispatch>();
   const transactionSummary = useSelector(selectTransactionSummary);
+  // Read token once client-side; effects will no-op if missing
+  const accessToken = useMemo(() => (typeof window !== 'undefined' ? storage.getToken() : null), []);
 
   // KYC hook usage example
   const { isVerified, loading, checkStatus, error } = useKYC();
 
   useEffect(() => {
+    if (!accessToken) {
+      logger.warn("auth", "Skipping dashboard API calls: no access token yet");
+      return;
+    }
     dispatch(fetchTransactionSummary());
     // Check KYC status on dashboard load
     checkStatus();
-  }, [dispatch, checkStatus]);
+  }, [dispatch, checkStatus, accessToken]);
 
   // Log KYC status when it changes and show modal if not verified
   useEffect(() => {

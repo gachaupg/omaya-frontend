@@ -1,18 +1,9 @@
 "use client";
 
-import React from "react";
-import { toast } from "react-toastify";
-import { useDispatch, useSelector } from "react-redux";
-import { 
-  initiateGoogleOAuth, 
-  selectGoogleOAuthLoading,
-  selectGoogleOAuthError,
-  selectGoogleOAuthAuthenticated,
-  selectGoogleOAuthRedirecting,
-  clearError
-} from "../slices/googleOAuthSlice";
-import { logGoogleOAuthError } from "../../../utils/googleOAuthConfig";
-import { RootState } from "../../../store";
+import React, { useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'react-toastify';
+import { getGoogleOAuthUrl } from '@/utils/googleOAuthConfig';
 
 interface GoogleAuthButtonProps {
   onSuccess?: (userData: any) => void;
@@ -24,76 +15,65 @@ interface GoogleAuthButtonProps {
 const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
   onSuccess,
   onError,
-  className = "",
+  className = '',
   children,
 }) => {
-  const dispatch = useDispatch();
-  const isLoading = useSelector(selectGoogleOAuthLoading);
-  const isRedirecting = useSelector(selectGoogleOAuthRedirecting);
-  const error = useSelector(selectGoogleOAuthError);
-  const isAuthenticated = useSelector(selectGoogleOAuthAuthenticated);
+  const router = useRouter();
 
-  const handleGoogleLogin = async () => {
-    if (isLoading || isRedirecting) return;
-    
+  const handleGoogleLogin = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+
     try {
-      // Clear any previous errors
-      if (error) {
-        dispatch(clearError());
-      }
-      
-      // Log the initiation
-      console.log("🔐 Starting Google OAuth with Django Allauth...");
-      
-      // Initiate Google OAuth with Django Allauth
-      const result = await dispatch(initiateGoogleOAuth() as any);
-      
-      if (initiateGoogleOAuth.fulfilled.match(result)) {
-        console.log("✅ Google OAuth initiated, redirecting to Django Allauth...");
-        toast.info("Redirecting to Google...");
-        onSuccess?.({ redirecting: true });
-      } else {
-        console.error("❌ Failed to initiate Google OAuth");
-        const errorMessage = result.payload || "Failed to initiate Google OAuth";
-        toast.error(errorMessage);
-        onError?.({ message: errorMessage });
-      }
-    } catch (error) {
-      logGoogleOAuthError(error, "Google OAuth Initiation Error");
-      const errorMessage = "An error occurred while initiating Google OAuth";
-      toast.error(errorMessage);
-      onError?.({ message: errorMessage });
-    }
-  };
+      // Generate a random state parameter
+      const state = Math.random().toString(36).substring(2, 15) + 
+                   Math.random().toString(36).substring(2, 15);
 
-  const isButtonDisabled = isLoading || isRedirecting || isAuthenticated;
+      // Store the state in session storage for verification
+      sessionStorage.setItem('google_oauth_state', state);
+
+      // Store the current path for redirection after successful login
+      const currentPath = window.location.pathname;
+      if (currentPath !== '/auth/login' && currentPath !== '/auth/register') {
+        sessionStorage.setItem('auth_redirect', currentPath);
+      }
+
+      // Get the OAuth URL using our helper function
+      const authUrl = getGoogleOAuthUrl(state);
+      console.log('Redirecting to Google OAuth:', authUrl);
+
+      // Redirect to Google OAuth
+      window.location.href = authUrl;
+    } catch (error) {
+      console.error('Error during Google OAuth initialization:', error);
+      toast.error('Failed to initialize Google Sign-In. Please try again.');
+      onError?.(error);
+    }
+  }, [onError]);
 
   return (
     <button
       onClick={handleGoogleLogin}
-      disabled={isButtonDisabled}
-      className={`flex items-center justify-center py-3 px-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-[#1D1D23] hover:bg-gray-50 dark:hover:bg-[#2A2A30] transition-colors duration-300 w-full disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+      className={`flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${className}`}
+      type="button"
     >
-      {isLoading || isRedirecting ? (
-        <div className="flex items-center">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600 mr-2"></div>
-          <span className="text-gray-700 dark:text-gray-300 font-medium text-sm">
-            {isRedirecting ? "Redirecting..." : "Connecting..."}
-          </span>
-        </div>
-      ) : (
-        children || (
-          <>
-            <img
-              className="w-5 h-5 mr-3 object-cover"
-              src="https://res.cloudinary.com/pitz/image/upload/v1707291175/download-removebg-preview_rfrd5r.png"
-              alt="Google logo"
-            />
-            <span className="text-gray-700 dark:text-gray-300 font-medium text-sm">
-              {isAuthenticated ? "Authenticated" : "Continue with Google"}
-            </span>
-          </>
-        )
+      {children || (
+        <span className="flex items-center gap-2">
+          {/* Google logo (SVG) */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="18"
+            height="18"
+            viewBox="0 0 48 48"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C33.64 6.053 29.082 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.651-.389-3.917z"/>
+            <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.297 15.108 18.779 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C33.64 6.053 29.082 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
+            <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.197l-6.199-5.238C29.172 35.091 26.715 36 24 36c-5.202 0-9.62-3.317-11.281-7.957l-6.54 5.037C9.49 39.556 16.227 44 24 44z"/>
+            <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.793 2.24-2.231 4.166-4.092 5.565.001-.001 6.199 5.238 6.199 5.238C39.723 35.261 44 30.177 44 24c0-1.341-.138-2.651-.389-3.917z"/>
+          </svg>
+          <span>Continue with Google</span>
+        </span>
       )}
     </button>
   );

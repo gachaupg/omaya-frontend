@@ -684,7 +684,8 @@ export const updateProfile = async (data: FormData): Promise<P2PResponse> => {
 
 export const getP2PProfile = async (): Promise<P2PResponse> => {
   return withRetry(async () => {
-    const response = await get<P2PResponse>(API_CONFIG.P2P.UPDATE_PROFILE);
+    // Use the correct profile endpoint; UPDATE_PROFILE is a PATCH route
+    const response = await get<P2PResponse>(API_CONFIG.AUTH.PROFILE);
     return response.data;
   });
 };
