@@ -339,7 +339,7 @@ export default function MarketingPage() {
         <div className="absolute inset-0 overflow-hidden">
           {/* Bottom right heptagon */}
           <div
-            className="absolute bottom-[160px] right-[40px] w-[170px] h-[170px] 2xl:bottom-[220px] 2xl:right-[130px] opacity-20 bg-[#13B562]"
+            className="absolute bottom-[80px] right-[20px] w-[100px] h-[100px] sm:bottom-[120px] sm:right-[30px] sm:w-[130px] sm:h-[130px] md:bottom-[160px] md:right-[40px] md:w-[170px] md:h-[170px] 2xl:bottom-[220px] 2xl:right-[130px] opacity-20 bg-[#13B562] hidden sm:block"
             style={{
               clipPath:
                 "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
@@ -348,7 +348,7 @@ export default function MarketingPage() {
 
           {/* Top left heptagon */}
           <div
-            className="absolute top-[-20px] left-[30px] w-[90px] h-[90px] 2xl:left-[60px] opacity-20 bg-[#13B562]"
+            className="absolute top-[-20px] left-[20px] w-[70px] h-[70px] sm:left-[30px] sm:w-[90px] sm:h-[90px] 2xl:left-[60px] opacity-20 bg-[#13B562] hidden sm:block"
             style={{
               clipPath:
                 "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
@@ -357,7 +357,7 @@ export default function MarketingPage() {
 
           {/* Bottom left heptagon */}
           <div
-            className="absolute bottom-[-40px] left-[300px] w-[180px] h-[180px] opacity-20 bg-[#13B562]"
+            className="absolute bottom-[-40px] left-[150px] w-[120px] h-[120px] sm:left-[200px] sm:w-[150px] sm:h-[150px] md:left-[300px] md:w-[180px] md:h-[180px] opacity-20 bg-[#13B562] hidden sm:block"
             style={{
               clipPath:
                 "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
@@ -366,7 +366,7 @@ export default function MarketingPage() {
 
           {/* Top right heptagon */}
           <div
-            className="absolute top-[70px] left-[720px] w-[180px] h-[180px] 2xl:left-[1250px] opacity-20 bg-[#13B562]"
+            className="absolute top-[40px] left-[50%] translate-x-[-50%] w-[120px] h-[120px] sm:top-[60px] sm:left-[60%] sm:w-[150px] sm:h-[150px] md:top-[70px] md:left-[720px] md:w-[180px] md:h-[180px] 2xl:left-[1250px] opacity-20 bg-[#13B562] hidden md:block"
             style={{
               clipPath:
                 "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
@@ -375,9 +375,9 @@ export default function MarketingPage() {
         </div>
 
         <div className="container mx-auto px-4 sm:px-6 md:px-8 relative z-10 mt-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 items-start gap-y-12 lg:gap-y-0 lg:gap-x-12">
-            <div className="space-y-5 pl-0 lg:pl-4 xl:pl-6 text-center lg:text-left 2xl:col-span-2">
-              <h1 className="text-[2.4rem] md:text-[3rem] 2xl:text-[3.75rem] font-bold text-white tracking-tight md:tracking-normal leading-tight text-balance">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-3 items-start gap-y-8 md:gap-y-6 md:gap-x-8 lg:gap-x-12">
+            <div className="space-y-5 pl-0 md:pl-4 lg:pl-6 text-center md:text-left 2xl:col-span-2">
+              <h1 className="text-[1.875rem] sm:text-[2.25rem] md:text-[3rem] lg:text-[3.5rem] 2xl:text-[3.75rem] font-bold text-white tracking-tight sm:tracking-normal md:tracking-normal leading-tight sm:leading-snug text-balance">
                 <span className="inline-block w-full 2xl:text-[3.5rem]">
                   {t("marketing.hero.heading1", "Welcome to")}
                 </span>
@@ -385,26 +385,26 @@ export default function MarketingPage() {
                   {t("marketing.hero.heading2", "OMAYA Exchange")}
                 </span>
               </h1>
-              <p className="text-white/90 leading-relaxed tracking-[0.08em] md:tracking-[0.06em] max-w-3xl mx-auto lg:mx-0 text-sm md:text-base 2xl:text-lg text-balance">
+              <p className="text-white/90 leading-relaxed sm:leading-relaxed tracking-[0.02em] sm:tracking-[0.04em] md:tracking-[0.06em] max-w-full sm:max-w-2xl md:max-w-3xl mx-auto lg:mx-0 px-4 sm:px-0 text-sm sm:text-base md:text-base 2xl:text-lg text-balance">
                 {t(
                   "marketing.hero.subtitle",
                   "We are OMAYA EXCHANGE, Somalia's leading platform for exchanging cryptocurrencies and Forex. Founded by experts with over 15 years of IT experience, we bridge traditional finance with the digital economy in East Africa. Our secure and user-friendly platform is designed to meet the unique needs of our market, empowering users with seamless access to the world of digital assets. Committed to transparency, innovation, and education, we are shaping the future of finance in our region."
                 )}
               </p>
-              <div className="flex flex-wrap gap-4 justify-center md:justify-start">
+              <div className="flex flex-wrap gap-3 sm:gap-4 justify-center md:justify-start w-full sm:w-auto">
                 <a
                   href="#contact"
-                  className="rounded-md px-6 py-2 text-white bg-[#1D8751] 2xl:text-lg hover:bg-[#166b42] transition-colors"
+                  className="rounded-md px-5 sm:px-6 py-2.5 sm:py-2 text-white bg-[#1D8751] text-sm sm:text-base 2xl:text-lg hover:bg-[#166b42] transition-colors min-h-[44px] flex items-center justify-center"
                 >
                   {t("marketing.hero.cta.primary", "Contact Us")}
                 </a>
-                <button className="rounded-md text-white hover:bg-white/10 px-6 py-2 flex items-center gap-2 border border-[#1D8751] 2xl:text-lg">
+                <button className="rounded-md text-white hover:bg-white/10 px-5 sm:px-6 py-2.5 sm:py-2 flex items-center gap-2 border border-[#1D8751] text-sm sm:text-base 2xl:text-lg min-h-[44px]">
                   {t("marketing.hero.cta.secondary", "Watch Video")}
                   <Play size={16} className="ml-1 text-[#1D8751]" />
                 </button>
               </div>
             </div>
-            <div className="flex justify-center lg:justify-end w-full 2xl:col-span-1 mx-2">
+            <div className="flex justify-center md:justify-end lg:justify-end w-full 2xl:col-span-1 mx-2">
               {/* <div className="relative">
                 <Image
                   src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746561970/iPhone_13_Mockup_1_zzm7tt.png"
@@ -438,22 +438,22 @@ export default function MarketingPage() {
             </span>
           </h2>
           {/* Achievement Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
             {achievements.map((achievement, index) => (
               <div
                 key={index}
-                className="border border-[#13B562]/40 rounded-lg p-6 flex flex-col items-center justify-center darrk:bg-[#1D1D23]"
+                className="border border-[#13B562]/40 rounded-lg p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center dark:bg-[#1D1D23]"
               >
-                <div className="text-[#F79330] text-3xl md:text-4xl font-bold mb-2 flex items-center gap-2">
+                <div className="text-[#F79330] text-2xl sm:text-3xl md:text-4xl font-bold mb-2 flex items-center gap-2">
                   
                   <span>{achievement.value}</span>
                   <Plus
-                    size={24}
+                    size={20}
                     strokeWidth={2.5}
-                    className="text-[#F79330] drop-shadow-sm"
+                    className="text-[#F79330] drop-shadow-sm sm:w-6 sm:h-6 md:w-6 md:h-6"
                   />
                 </div>
-                <div className="darK:text-white text-xm text-center 2xl:text-sm">
+                <div className="dark:text-white text-xs sm:text-sm text-center 2xl:text-sm">
                   {t(achievement.label, achievement.label)}
                 </div>
               </div>
@@ -497,12 +497,13 @@ export default function MarketingPage() {
 
             {/* Right side - 3D illustration */}
             <div className="flex justify-center items-start">
-              <div className="relative h-64 w-64 md:h-80 md:w-80 2xl:h-110 2xl:w-110">
+              <div className="relative h-56 w-56 sm:h-64 sm:w-64 md:h-72 md:w-72 lg:h-80 lg:w-80 xl:h-96 xl:w-96 2xl:h-[440px] 2xl:w-[440px]">
                 <Image
                   src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746707948/Group_164015_izwpob.png"
                   alt="Cryptocurrency exchange 3D illustration"
                   fill
                   className="object-contain"
+                  sizes="(max-width: 640px) 224px, (max-width: 768px) 256px, (max-width: 1024px) 288px, (max-width: 1280px) 320px, 440px"
                 />
               </div>
             </div>
@@ -596,8 +597,8 @@ export default function MarketingPage() {
               </ul>
 
               {/* App Store Buttons */}
-              <div className="flex mt-8 space-x-2">
-                <div className="rounded px-4 py-2 flex items-center border border-gray-700">
+              <div className="flex flex-col sm:flex-row mt-6 sm:mt-8 gap-3 sm:gap-2 sm:space-x-2">
+                <div className="rounded px-4 py-3 sm:py-2 flex items-center justify-center sm:justify-start border border-gray-700 min-h-[56px] sm:min-h-[auto] hover:bg-gray-800/50 transition-colors cursor-pointer">
                   <Image
                     src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746786399/apple_f0yfel.png"
                     alt="Apple App Store"
@@ -606,15 +607,15 @@ export default function MarketingPage() {
                     className="mr-2"
                   />
                   <div>
-                    <p className="dark:text-white text-xs 2xl:text-sm">
+                    <p className="dark:text-white text-xs sm:text-xs 2xl:text-sm">
                       Download on the
                     </p>
-                    <span className="dark:text-white text-sm 2xl:text-lg">
+                    <span className="dark:text-white text-sm sm:text-sm 2xl:text-lg">
                       App Store
                     </span>
                   </div>
                 </div>
-                <div className="rounded px-4 py-2 flex items-center border border-gray-700">
+                <div className="rounded px-4 py-3 sm:py-2 flex items-center justify-center sm:justify-start border border-gray-700 min-h-[56px] sm:min-h-[auto] hover:bg-gray-800/50 transition-colors cursor-pointer">
                   <Image
                     src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746787514/Google_Play-Icon-Logo.wine_dqxxk7.svg"
                     alt="Google Play Store"
@@ -623,10 +624,10 @@ export default function MarketingPage() {
                     className="mr-2"
                   />
                   <div>
-                    <p className="dark:text-white text-xs 2xl:text-sm">
+                    <p className="dark:text-white text-xs sm:text-xs 2xl:text-sm">
                       Download on the
                     </p>
-                    <span className="dar:text-white text-sm 2xl:text-lg">
+                    <span className="dark:text-white text-sm sm:text-sm 2xl:text-lg">
                       Google Play
                     </span>
                   </div>
@@ -746,15 +747,15 @@ export default function MarketingPage() {
             {t("marketing.assets.title", "Supported Assets")}
           </h2>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3 sm:gap-4">
             {marketsLoading
               ? Array.from({ length: maxPreviewAssets }).map((_, index) => (
                   <div
                     key={`asset-skeleton-${index}`}
-                    className="dark:bg-[#1D1D23] bg-[#F5F5F5] rounded-lg py-6 px-4 flex flex-col items-center animate-pulse"
+                    className="dark:bg-[#1D1D23] bg-[#F5F5F5] rounded-lg py-4 sm:py-5 md:py-6 px-3 sm:px-4 flex flex-col items-center animate-pulse"
                   >
-                    <div className="w-16 h-16 mb-3 bg-gray-300 dark:bg-[#23232B] rounded" />
-                    <span className="darK:text-white text-sm 2xl:text-lg bg-gray-300 dark:bg-[#23232B] h-4 w-20 rounded" />
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mb-2 sm:mb-3 bg-gray-300 dark:bg-[#23232B] rounded" />
+                    <span className="dark:text-white text-xs sm:text-sm md:text-sm 2xl:text-lg bg-gray-300 dark:bg-[#23232B] h-4 w-16 sm:w-20 rounded" />
                   </div>
                 ))
               : (
@@ -762,19 +763,19 @@ export default function MarketingPage() {
                     {displayedAssets.map((asset) => (
                       <div
                         key={asset.id}
-                        className="dark:bg-[#1D1D23] bg-[#F5F5F5] rounded-lg py-6 px-4 flex flex-col items-center"
+                        className="dark:bg-[#1D1D23] bg-[#F5F5F5] rounded-lg py-4 sm:py-5 md:py-6 px-3 sm:px-4 flex flex-col items-center"
                       >
-                        <div className="w-16 h-16 mb-3">
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mb-2 sm:mb-3">
                           <Image
                             src={asset.image}
                             alt={asset.name}
                             width={64}
                             height={64}
-                            className="object-contain"
+                            className="object-contain w-full h-full"
                             unoptimized
                           />
                         </div>
-                        <span className="darK:text-white text-sm 2xl:text-lg text-center">
+                        <span className="dark:text-white text-xs sm:text-sm md:text-sm 2xl:text-lg text-center break-words">
                           {asset.name}
                         </span>
                         {asset.symbol && (
@@ -788,12 +789,12 @@ export default function MarketingPage() {
                       <button
                         type="button"
                         onClick={() => setShowAllAssets((prev) => !prev)}
-                        className="dark:bg-[#1D1D23] bg-[#F5F5F5] rounded-lg py-6 px-4 flex flex-col items-center justify-center border border-dashed border-[#1D8751] transition-colors hover:bg-[#E6F4EC] dark:hover:bg-[#23232B]"
+                        className="dark:bg-[#1D1D23] bg-[#F5F5F5] rounded-lg py-4 sm:py-5 md:py-6 px-3 sm:px-4 flex flex-col items-center justify-center border border-dashed border-[#1D8751] transition-colors hover:bg-[#E6F4EC] dark:hover:bg-[#23232B] min-h-[44px]"
                       >
-                        <div className="text-[#FFA500] font-semibold text-3xl mb-2">
+                        <div className="text-[#FFA500] font-semibold text-2xl sm:text-3xl mb-2">
                           {showAllAssets ? "−" : "+"}
                         </div>
-                        <span className="text-sm 2xl:text-lg text-[#1D8751]">
+                        <span className="text-xs sm:text-sm md:text-sm 2xl:text-lg text-[#1D8751] text-center">
                           {toggleLabel}
                         </span>
                       </button>
@@ -813,18 +814,18 @@ export default function MarketingPage() {
       </div>
 
       {/* Referral Section*/}
-      <div className="w-full bg-gradient-to-r from-[#197345] to-[#278D59] relative  md:py-0 lg:py-8">
-        <div className="container mx-auto md:pl-18 md:pr-0 px-6">
-          <div className="flex flex-col md:flex-row items-center">
+      <div className="w-full bg-gradient-to-r from-[#197345] to-[#278D59] relative py-8 md:py-0 lg:py-8">
+        <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:pl-18 lg:pr-0">
+          <div className="flex flex-col lg:flex-row items-center relative">
             {/* Text content */}
-            <div className="w-full md:w-1/2 mb-8 md:mb-0">
-              <p className="text-white text-lg 2xl:text-xl mb-2">
+            <div className="w-full lg:w-1/2 mb-8 lg:mb-0 z-10">
+              <p className="text-white text-base sm:text-lg 2xl:text-xl mb-2">
                 {t(
                   "marketing.referral.subtitle",
                   "Invite your friend, and earn commission"
                 )}
               </p>
-              <h2 className="text-white text-2xl md:text-2xl 2xl:text-3xl font-medium mb-6">
+              <h2 className="text-white text-xl sm:text-2xl md:text-2xl 2xl:text-3xl font-medium mb-4 sm:mb-6">
                 {t(
                   "marketing.referral.title",
                   "Refer and Invite your friends and earn commission on each transaction they make with us!"
@@ -832,14 +833,14 @@ export default function MarketingPage() {
               </h2>
               <a
                 href="#contact"
-                className="bg-white text-[#0A6E3A] px-6 py-2 rounded-full hover:bg-gray-100 transition duration-300 inline-block"
+                className="bg-white text-[#0A6E3A] px-5 sm:px-6 py-2.5 sm:py-2 rounded-full hover:bg-gray-100 transition duration-300 inline-block min-h-[44px] flex items-center justify-center text-sm sm:text-base"
               >
                 Contact Us
               </a>
             </div>
 
-            <div className="hidden md:flex w-1/2 justify-end md:mt-8 lg:mt-12 absolute right-0">
-              <div className="relative w-64 h-64">
+            <div className="w-full lg:w-1/2 flex justify-center lg:justify-end lg:absolute lg:right-0 lg:mt-8 xl:mt-12">
+              <div className="relative w-56 h-56 sm:w-64 sm:h-64 md:w-72 md:h-72 lg:w-64 lg:h-64">
                 <Image
                   src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746795074/phones_fmej07.png"
                   alt="Referral Program"
@@ -847,18 +848,6 @@ export default function MarketingPage() {
                   className="object-contain"
                 />
               </div>
-            </div>
-          </div>
-
-          {/* Mobile-only image that appears below text */}
-          <div className="flex md:hidden justify-center mt-8">
-            <div className="relative w-64 h-64">
-              <Image
-                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746795074/phones_fmej07.png"
-                alt="Referral Program"
-                fill
-                className="object-contain"
-              />
             </div>
           </div>
         </div>
@@ -877,7 +866,7 @@ export default function MarketingPage() {
             <div className="mt-6 inline-flex bg-white dark:bg-[#1D1D23] rounded-full">
               <button
                 onClick={() => setActiveCategory("News")}
-                className={`px-6 py-2 rounded-full text-sm font-medium flex 2xl:text-lg items-center gap-2 transition-colors ${
+                className={`px-5 sm:px-6 py-2.5 sm:py-2 rounded-full text-sm sm:text-sm md:text-base 2xl:text-lg font-medium flex items-center gap-2 transition-colors min-h-[44px] ${
                   activeCategory === "News"
                     ? "bg-[#1D8751] text-white"
                     : "text-[#788099]"
@@ -900,7 +889,7 @@ export default function MarketingPage() {
               </button>
               <button
                 onClick={() => setActiveCategory("Blog")}
-                className={`px-6 py-2 rounded-full text-sm 2xl:text-lg font-medium flex items-center gap-2 transition-colors ${
+                className={`px-5 sm:px-6 py-2.5 sm:py-2 rounded-full text-sm sm:text-sm md:text-base 2xl:text-lg font-medium flex items-center gap-2 transition-colors min-h-[44px] ${
                   activeCategory === "Blog"
                     ? "bg-[#1D8751] text-white"
                     : "text-[#788099]"
@@ -925,7 +914,7 @@ export default function MarketingPage() {
           </div>
 
           {/* Articles grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
             {loading ? (
               // Loading state
               Array.from({ length: 6 }).map((_, index) => (
@@ -971,7 +960,7 @@ export default function MarketingPage() {
                   key={article.id}
                   className="dark:bg-[#18181D] rounded-lg overflow-hidden flex flex-col h-full"
                 >
-                  <div className="relative h-48">
+                  <div className="relative h-40 sm:h-44 md:h-48">
                     <Image
                       src={article.image}
                       alt={article.title}

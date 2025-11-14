@@ -176,8 +176,8 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         aria-controls={dropdownId}
         role="combobox"
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
+        <div className="flex items-center justify-between min-w-0 w-full">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 overflow-hidden">
             {selectedLogo && !loading && (
               <img
                 src={selectedLogo}
@@ -188,7 +188,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                 }}
               />
             )}
-            <span className={`truncate ${!selectedOption ? "text-gray-500 dark:text-gray-400" : ""}`}>
+            <span className={`truncate block min-w-0 ${!selectedOption ? "text-gray-500 dark:text-gray-400" : ""}`}>
               {loading ? loadingText : displayValue}
             </span>
           </div>

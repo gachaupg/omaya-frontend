@@ -97,20 +97,83 @@ const SwapTransactions = () => {
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="w-full">
+      {/* Mobile Card Layout */}
+      <div className="block sm:hidden space-y-3">
+        {data.data.map((transaction: SwapTransaction) => (
+          <div
+            key={transaction.id}
+            className="bg-white dark:bg-[#23232B] border border-[#E8EFF5] dark:border-[#35353E] rounded-xl p-4 space-y-3"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <img
+                  src={transaction.from_currency_image}
+                  alt={transaction.from_currency}
+                  className="w-10 h-10 rounded-full flex-shrink-0"
+                  onError={(e) => {
+                    e.currentTarget.src = "/images/placeholder.svg";
+                  }}
+                />
+                <div>
+                  <div className="font-medium text-sm text-[#0D0D0D] dark:text-white">
+                    {transaction.from_currency.toUpperCase()} → {transaction.to_currency.toUpperCase()}
+                  </div>
+                  <div className="text-xs text-[#788099]">
+                    {transaction.from_network.toUpperCase()} → {transaction.to_network.toUpperCase()}
+                  </div>
+                </div>
+              </div>
+              <span
+                className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                  transaction.status
+                )}`}
+              >
+                {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <div className="text-xs text-[#788099] mb-1">From Amount</div>
+                <div className="text-[#0D0D0D] dark:text-white font-medium">
+                  {parseFloat(transaction.amount_expected_from).toFixed(6)} {transaction.from_currency.toUpperCase()}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-[#788099] mb-1">To Amount</div>
+                <div className="text-[#0D0D0D] dark:text-white font-medium">
+                  ≈ {parseFloat(transaction.amount_expected_to).toFixed(2)} {transaction.to_currency.toUpperCase()}
+                </div>
+              </div>
+              <div className="col-span-2">
+                <div className="text-xs text-[#788099] mb-1">Date</div>
+                <div className="text-sm text-[#788099]">
+                  {formatDistanceToNow(new Date(transaction.created_at), {
+                    addSuffix: true,
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Table Layout */}
+      <div className="hidden sm:block overflow-x-auto">
       <table className="w-full">
         <thead>
           <tr className="border-b border-[#E8EFF5] dark:border-[#35353E]">
-            <th className="text-left py-3 px-4 text-sm font-medium text-[#788099]">
+              <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-[#788099]">
               Transaction
             </th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-[#788099]">
+              <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-[#788099]">
               Amount
             </th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-[#788099]">
+              <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-[#788099]">
               Status
             </th>
-            <th className="text-left py-3 px-4 text-sm font-medium text-[#788099]">
+              <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-[#788099]">
               Date
             </th>
           </tr>
@@ -121,44 +184,44 @@ const SwapTransactions = () => {
               key={transaction.id}
               className="border-b border-[#E8EFF5] dark:border-[#35353E] hover:bg-[#F5F5F5] dark:hover:bg-[#23232B] transition-colors"
             >
-              <td className="py-4 px-4">
-                <div className="flex items-center gap-3">
+                <td className="py-3 sm:py-4 px-3 sm:px-4">
+                  <div className="flex items-center gap-2 sm:gap-3">
                   <img
                     src={transaction.from_currency_image}
                     alt={transaction.from_currency}
-                    className="w-8 h-8 rounded-full"
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex-shrink-0"
                     onError={(e) => {
                       e.currentTarget.src = "/images/placeholder.svg";
                     }}
                   />
-                  <div>
-                    <div className="font-medium text-[#0D0D0D] dark:text-white">
+                    <div className="min-w-0">
+                      <div className="font-medium text-xs sm:text-sm lg:text-base text-[#0D0D0D] dark:text-white truncate">
                       {transaction.from_currency.toUpperCase()} → {transaction.to_currency.toUpperCase()}
                     </div>
-                    <div className="text-xs text-[#788099]">
+                      <div className="text-xs text-[#788099] truncate">
                       {transaction.from_network.toUpperCase()} → {transaction.to_network.toUpperCase()}
                     </div>
                   </div>
                 </div>
               </td>
-              <td className="py-4 px-4">
-                <div className="text-[#0D0D0D] dark:text-white font-medium">
+                <td className="py-3 sm:py-4 px-3 sm:px-4">
+                  <div className="text-[#0D0D0D] dark:text-white font-medium text-xs sm:text-sm lg:text-base">
                   {parseFloat(transaction.amount_expected_from).toFixed(6)} {transaction.from_currency.toUpperCase()}
                 </div>
                 <div className="text-xs text-[#788099]">
                   ≈ {parseFloat(transaction.amount_expected_to).toFixed(2)} {transaction.to_currency.toUpperCase()}
                 </div>
               </td>
-              <td className="py-4 px-4">
+                <td className="py-3 sm:py-4 px-3 sm:px-4">
                 <span
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                    className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
                     transaction.status
                   )}`}
                 >
                   {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
                 </span>
               </td>
-              <td className="py-4 px-4 text-sm text-[#788099]">
+                <td className="py-3 sm:py-4 px-3 sm:px-4 text-xs sm:text-sm text-[#788099]">
                 {formatDistanceToNow(new Date(transaction.created_at), {
                   addSuffix: true,
                 })}
@@ -167,25 +230,26 @@ const SwapTransactions = () => {
           ))}
         </tbody>
       </table>
+      </div>
       
       {/* Pagination */}
       {data.pages > 1 && (
-        <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#E8EFF5] dark:border-[#35353E]">
-          <div className="text-sm text-[#788099]">
+        <div className="flex flex-col sm:flex-row items-center justify-between mt-4 pt-4 border-t border-[#E8EFF5] dark:border-[#35353E] gap-3 sm:gap-0">
+          <div className="text-xs sm:text-sm text-[#788099] text-center sm:text-left">
             Page {data.page} of {data.pages} ({data.total} total)
           </div>
           <div className="flex gap-2">
             <button
               onClick={() => setPage((prev) => Math.max(1, prev - 1))}
               disabled={page === 1}
-              className="px-4 py-2 rounded-lg border border-[#E8EFF5] dark:border-[#35353E] text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#F5F5F5] dark:hover:bg-[#23232B] transition-colors"
+              className="px-3 sm:px-4 py-2 rounded-lg border border-[#E8EFF5] dark:border-[#35353E] text-xs sm:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#F5F5F5] dark:hover:bg-[#23232B] transition-colors min-h-[44px] sm:min-h-0 lg:min-h-0"
             >
               Previous
             </button>
             <button
               onClick={() => setPage((prev) => Math.min(data.pages, prev + 1))}
               disabled={page === data.pages}
-              className="px-4 py-2 rounded-lg border border-[#E8EFF5] dark:border-[#35353E] text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#F5F5F5] dark:hover:bg-[#23232B] transition-colors"
+              className="px-3 sm:px-4 py-2 rounded-lg border border-[#E8EFF5] dark:border-[#35353E] text-xs sm:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#F5F5F5] dark:hover:bg-[#23232B] transition-colors min-h-[44px] sm:min-h-0 lg:min-h-0"
             >
               Next
             </button>

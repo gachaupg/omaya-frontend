@@ -109,8 +109,8 @@ function UserCard() {
       borderColor="border-[#E8EFF5] dark:border-[#35353E]"
       width="w-full"
       bgColor="bg-[#1D1D23]"
-      borderRadius="rounded-[20px]"
-      className="p-2 dark:bg-[#1D1D23] bg-white"
+      borderRadius="rounded-xl sm:rounded-xl lg:rounded-[20px]"
+      className="p-3 sm:p-3 lg:p-2 dark:bg-[#1D1D23] bg-white overflow-hidden"
     >
       {showHelpSupport ? (
         <div className="w-full mt-2">
@@ -123,10 +123,10 @@ function UserCard() {
           <HelpSupportForm />
         </div>
       ) : (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-3 sm:gap-4 md:gap-6">
-          <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-3 sm:gap-4 md:gap-6 min-w-0 overflow-hidden">
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto min-w-0 flex-shrink">
             {/* User Avatar with Edit Button */}
-            <div className="relative flex-shrink-0">
+            <div className="relative flex-shrink-0 z-10">
               <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full overflow-hidden relative">
                 {profileImage ? (
                   <Image
@@ -180,19 +180,20 @@ function UserCard() {
                 />
               </div>
               <div
-                className="absolute -top-1 -right-1 rounded-full p-1 bg-[#1D8751] cursor-pointer hover:bg-[#16663d] transition-colors"
+                className="absolute -top-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#1D8751] flex items-center justify-center cursor-pointer hover:bg-[#16663d] transition-colors min-h-[44px] sm:min-h-[36px] lg:min-h-0 flex-shrink-0 z-20 touch-manipulation"
                 onClick={handleImageClick}
+                aria-label="Edit profile picture"
               >
                 <svg
-                  width="16"
-                  height="16"
+                  width="12"
+                  height="12"
+                  className="sm:w-[14px] sm:h-[14px] lg:w-[16px] lg:h-[16px] stroke-[#FFFFFF]"
                   viewBox="0 0 24 24"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
                 >
                   <path
                     d="M16 3L21 8L8 21L3 21L3 16L16 3Z"
-                    className="stroke-[#FFFFFF]"
                     strokeWidth="2"
                   />
                 </svg>
@@ -200,16 +201,16 @@ function UserCard() {
             </div>
 
             {/* User Info */}
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm sm:text-base font-semibold dark:text-[#FFFFFF] text-[#0D0D0D] truncate">
+            <div className="min-w-0 flex-1 overflow-hidden">
+              <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+                <h2 className="text-sm sm:text-base lg:text-lg font-semibold dark:text-[#FFFFFF] text-[#0D0D0D] truncate min-w-0">
                   {t("userCard.hello", "Hello, {{name}}!", {
                     name: `${user?.first_name} ${user?.last_name}`,
                   })}
                 </h2>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="text-[#1D8751] text-xs sm:text-sm">
+              <div className="flex items-center gap-1 mt-0.5 sm:mt-1 flex-shrink-0">
+                <span className="text-[#1D8751] text-xs sm:text-sm lg:text-sm whitespace-nowrap flex-shrink-0">
                   {t("userCard.verifiedProfile", "Verified Profile")}
                 </span>
                 <div className="rounded-full p-0.5 flex-shrink-0">
@@ -221,38 +222,42 @@ function UserCard() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* User Details and Actions */}
+          <div className="flex flex-col sm:flex-row w-full sm:w-auto items-start sm:items-center gap-3 sm:gap-4 md:gap-6 text-xs sm:text-sm lg:text-sm min-w-0">
              {/* User ID */}
-             <div className="flex flex-col gap-2 ml-12">
-              <p className="text-xs text-[#788099]">
+            <div className="flex-shrink-0 min-w-0 max-w-full sm:max-w-none w-full sm:w-auto">
+              <p className="text-xs text-[#788099] mb-1">
                 {t("userCard.userId", "User ID")}
               </p>
-              <div className="flex items-center gap-2">
-                <p className="text-base dark:text-[#FFFFFF]">{user?.user_id}</p>
+              <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 max-w-full">
+                <p className="text-sm sm:text-base lg:text-base dark:text-[#FFFFFF] break-all sm:break-normal truncate min-w-0 max-w-[calc(100%-2.5rem)] sm:max-w-none">
+                  {user?.user_id}
+                </p>
+                <div className="flex-shrink-0 min-h-[44px] sm:min-h-[36px] lg:min-h-0 w-[44px] sm:w-auto sm:h-auto flex items-center justify-center">
                 <CopyButton
                   value={user?.user_id || ""}
-                  className="cursor-pointer transition-all duration-200 hover:opacity-80 hover:scale-110 text-[#F79330]"
+                    className="cursor-pointer transition-all duration-200 hover:opacity-80 hover:scale-110 text-[#F79330] touch-manipulation"
                   showIcon={true}
                 />
+                </div>
               </div>
             </div>
 
             {/* User Type */}
-            <div>
-              <p className="text-xs text-[#788099]">
+            <div className="flex-shrink-0 min-w-0 max-w-full sm:max-w-none w-full sm:w-auto">
+              <p className="text-xs text-[#788099] mb-1">
                 {t("userCard.userType", "User Type")}
               </p>
-              <p className="text-base dark:text-[#FFFFFF]">
-                {t("userCard.individual", "Individual")}
+              <p className="text-sm sm:text-base lg:text-base dark:text-[#FFFFFF] truncate">
+                {user?.user_type || t("userCard.individual", "Individual")}
               </p>
             </div>
-          </div>
-
-          {/* User Details and Actions */}
-          <div className="flex text-xs sm:text-sm flex-col w-full sm:w-auto sm:flex-row items-start sm:items-center gap-3 sm:gap-4 md:gap-6">
            
 
             {/* Action Buttons */}
-            <div className="flex flex-wrap gap-2 sm:gap-3">
+            <div className="flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto min-w-0">
               <Button
                 variant="ghost"
                 size="sm"

@@ -37,10 +37,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
-  // If user is on auth page and has valid token, redirect to dashboard
+  // If user is on auth page, do not auto-redirect to dashboard based on cookie alone.
+  // Let the client validate the token and redirect. This avoids loops with stale cookies.
   const isAuthPage = pathname.startsWith("/auth");
-  if (isAuthPage && token) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  if (isAuthPage) {
+    return NextResponse.next();
   }
 
   // All other routes are public

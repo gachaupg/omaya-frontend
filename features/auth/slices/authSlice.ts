@@ -329,6 +329,25 @@ const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
+    setCredentials: (state, action: PayloadAction<{
+      user: User | null;
+      tokens: { access: string; refresh: string } | null;
+      isAuthenticated: boolean;
+    }>) => {
+      const { user, tokens, isAuthenticated } = action.payload;
+      state.user = user;
+      state.tokens = tokens;
+      state.isAuthenticated = isAuthenticated;
+      
+      // Persist to storage if authenticated
+      if (isAuthenticated && user && tokens) {
+        storage.setProfile({
+          user,
+          tokens,
+          profile: state.profile || undefined
+        });
+      }
+    },
     logout(state) {
       state.user = null;
       state.tokens = null;
@@ -667,6 +686,7 @@ const authSlice = createSlice({
   },
 });
 
+// Export the action creators
 export const {
   logout,
   clearError,
@@ -675,5 +695,6 @@ export const {
   closeKYCModal,
   open2FAModal,
   close2FAModal,
+  setCredentials,
 } = authSlice.actions;
 export default authSlice.reducer;

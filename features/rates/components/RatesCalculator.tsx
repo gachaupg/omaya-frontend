@@ -1240,20 +1240,20 @@ const RatesCalculator = () => {
   }
 
   return (
-    <div className="bg-white dark:bg-[#18181D] p-6 rounded-2xl border border-gray-200 dark:border-[#35353E] shadow-md container mx-auto">
+    <div className="bg-white dark:bg-[#18181D] p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-xl lg:rounded-2xl border border-gray-200 dark:border-[#35353E] shadow-md container mx-auto">
       <div className="relative flex flex-col gap-2">
-        <div className="p-2 border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px]">
+        <div className="p-3 sm:p-2 lg:p-2 border border-[#E8EFF5] dark:border-[#35353E] rounded-xl sm:rounded-[18px] lg:rounded-[18px]">
           <p className="mb-2">{t("rates.youSend", "You send")}</p>
-          <div className="grid grid-cols-2 gap-2 mb-4 items-stretch">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-2 lg:gap-2 mb-4 items-stretch">
             {isDepositMode ? (
               // Deposit Mode: Asset + You Send
               <>
             <div className="relative" ref={dropdownRef}>
-              <label className="text-sm text-gray-600 dark:text-[#788099] mb-2 block">
+              <label className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099] mb-2 block">
                 {t("rates.asset", "Asset")}
               </label>
               <div
-                className="border border-[#E8EFF5] dark:border-[#35353E] p-3 rounded-[18px] flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors"
+                className="border border-[#E8EFF5] dark:border-[#35353E] p-2.5 sm:p-3 lg:p-3 rounded-xl sm:rounded-[18px] lg:rounded-[18px] flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors min-h-[44px] sm:min-h-[44px] lg:min-h-0"
                 onClick={() => setIsAssetDropdownOpen(!isAssetDropdownOpen)}
               >
                     <div className="flex items-center gap-3">
@@ -1320,7 +1320,7 @@ const RatesCalculator = () => {
 
               {/* Asset Dropdown */}
               {isAssetDropdownOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl z-50 max-h-80 overflow-hidden">
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-xl lg:rounded-2xl z-50 max-h-[60vh] sm:max-h-80 lg:max-h-80 overflow-hidden shadow-lg lg:shadow-none">
                       {/* Search Input */}
                       <div className="p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
                         <div className="relative">
@@ -1336,18 +1336,18 @@ const RatesCalculator = () => {
                       </div>
 
                       {/* Asset List */}
-                      <div className="max-h-60 overflow-y-auto">
+                      <div className="max-h-[50vh] sm:max-h-60 lg:max-h-60 overflow-y-auto">
                         {renderAssetDropdown()}
                       </div>
                     </div>
                   )}
                 </div>
                 <div>
-                  <label className="text-sm text-gray-600 dark:text-[#788099] mb-2 block">
+                  <label className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099] mb-2 block">
                     {t("rates.youSend", "You Send")}
                   </label>
-                  <div className="flex items-center border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px]">
-                    <span className="p-3 text-[#F79330]">$</span>
+                  <div className="flex items-center border border-[#E8EFF5] dark:border-[#35353E] rounded-xl sm:rounded-[18px] lg:rounded-[18px] relative">
+                    <span className="p-2.5 sm:p-3 lg:p-3 text-[#F79330] text-sm sm:text-base lg:text-base">$</span>
                     <input
                       type="text"
                       value={amount}
@@ -1403,10 +1403,10 @@ const RatesCalculator = () => {
                         }
                       }}
                       onFocus={() => setIsCalculatingFromPay(true)}
-                      className="bg-transparent p-3 w-full focus:outline-none text-gray-900 dark:text-white"
+                      className="bg-transparent p-2.5 sm:p-3 lg:p-3 w-full focus:outline-none text-gray-900 dark:text-white text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-[44px] lg:min-h-0"
                       placeholder="Enter amount"
                     />
-                    <div className="p-3 flex items-center text-gray-900 dark:text-white">
+                    <div className="p-2 sm:p-3 lg:p-3 flex items-center text-gray-900 dark:text-white text-xs sm:text-sm lg:text-sm">
                       <span>USD</span>
                       <FiChevronDown className="ml-1" />
                     </div>
@@ -1414,8 +1414,8 @@ const RatesCalculator = () => {
                     {/* Show loading spinner when calculating "I want to Receive" from "You Send" */}
                     {(isCalculating || isCalculatingReceive) &&
                       isCalculatingFromPay && (
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
+                        <div className="absolute right-2 sm:right-3 lg:right-3 top-1/2 transform -translate-y-1/2">
+                          <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 lg:h-5 lg:w-5 border-b-2 border-[#1D8751]"></div>
                     </div>
                   )}
                   </div>
@@ -1482,11 +1482,11 @@ const RatesCalculator = () => {
               // Withdrawal Mode: Payment Method + You Send
               <>
                 <div className="relative" ref={methodDropdownRef}>
-                  <label className="text-sm text-gray-600 dark:text-[#788099] mb-2 block">
+                  <label className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099] mb-2 block">
                     {t("rates.bankPaymentMethod", "Bank/Payment Method")}
                   </label>
                   <div
-                    className="border border-[#E8EFF5] dark:border-[#35353E] p-3 rounded-[18px] flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors"
+                    className="border border-[#E8EFF5] dark:border-[#35353E] p-2.5 sm:p-3 lg:p-3 rounded-xl sm:rounded-[18px] lg:rounded-[18px] flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors min-h-[44px] sm:min-h-[44px] lg:min-h-0"
                     onClick={() =>
                       setIsMethodDropdownOpen(!isMethodDropdownOpen)
                     }
@@ -1508,7 +1508,7 @@ const RatesCalculator = () => {
 
                   {/* Payment Method Dropdown */}
                   {isMethodDropdownOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1D1D23] rounded-[18px] border border-gray-200 dark:border-gray-700 z-10 max-h-60 overflow-y-auto shadow-lg">
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1D1D23] rounded-xl sm:rounded-[18px] lg:rounded-[18px] border border-gray-200 dark:border-gray-700 z-10 max-h-[60vh] sm:max-h-60 lg:max-h-60 overflow-y-auto shadow-lg lg:shadow-lg">
                       {(userDetailsLoading || publicMethodsLoading) ? (
                         <div className="p-3 text-center text-gray-600 dark:text-[#788099]">
                           {t(
@@ -1548,7 +1548,7 @@ const RatesCalculator = () => {
                 {/* User Payment Details Dropdown (for withdrawal mode) */}
                 {selectedPaymentMethod && (
                   <div className="mt-3">
-                    <label className="text-sm text-gray-600 dark:text-[#788099] mb-2 block">
+                    <label className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099] mb-2 block">
                       {t("rates.registeredAccount", "Registered Account")}
                     </label>
                     {enhancedFilteredUserPaymentDetails.length > 0 ? (
@@ -1556,7 +1556,7 @@ const RatesCalculator = () => {
                         <img
                           src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
                           alt="account icon"
-                          className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 pointer-events-none z-10"
+                          className="absolute left-2 sm:left-3 lg:left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 lg:w-5 lg:h-5 pointer-events-none z-10"
                         />
                         <select
                           value={selectedPaymentDetail?.id || ""}
@@ -1569,7 +1569,7 @@ const RatesCalculator = () => {
                               setSelectedPaymentDetail(selectedDetail);
                             }
                           }}
-                          className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#788099] rounded-2xl px-9 py-2 text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] appearance-none cursor-pointer relative"
+                          className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#788099] rounded-xl sm:rounded-2xl lg:rounded-2xl px-7 sm:px-9 lg:px-9 py-2 text-sm sm:text-lg lg:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] appearance-none cursor-pointer relative min-h-[44px] sm:min-h-[44px] lg:min-h-0"
                           style={{
                             backgroundImage:
                               'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22/%3E%3C/svg%3E")',
@@ -1606,11 +1606,11 @@ const RatesCalculator = () => {
                 )}
 
             <div>
-              <label className="text-sm text-gray-600 dark:text-[#788099] mb-2 block">
+              <label className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099] mb-2 block">
                     {t("rates.youSend", "You Send")}
               </label>
-              <div className="flex items-center border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px]">
-                    <span className="p-3 text-[#F79330]">$</span>
+              <div className="flex items-center border border-[#E8EFF5] dark:border-[#35353E] rounded-xl sm:rounded-[18px] lg:rounded-[18px] relative">
+                    <span className="p-2.5 sm:p-3 lg:p-3 text-[#F79330] text-sm sm:text-base lg:text-base">$</span>
                 <input
                   type="text"
                   value={amount}
@@ -1666,10 +1666,10 @@ const RatesCalculator = () => {
                         }
                       }}
                       onFocus={() => setIsCalculatingFromPay(true)}
-                  className="bg-transparent p-3 w-full focus:outline-none text-gray-900 dark:text-white"
+                  className="bg-transparent p-2.5 sm:p-3 lg:p-3 w-full focus:outline-none text-gray-900 dark:text-white text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-[44px] lg:min-h-0"
                       placeholder="Enter amount"
                 />
-                <div className="p-3 flex items-center text-gray-900 dark:text-white">
+                <div className="p-2 sm:p-3 lg:p-3 flex items-center text-gray-900 dark:text-white text-xs sm:text-sm lg:text-sm">
                   <span>USD</span>
                   <FiChevronDown className="ml-1" />
                 </div>
@@ -1677,8 +1677,8 @@ const RatesCalculator = () => {
                     {/* Show loading spinner when calculating "I want to Receive" from "You Send" */}
                     {(isCalculating || isCalculatingReceive) &&
                       isCalculatingFromPay && (
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
+                        <div className="absolute right-2 sm:right-3 lg:right-3 top-1/2 transform -translate-y-1/2">
+                          <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 lg:h-5 lg:w-5 border-b-2 border-[#1D8751]"></div>
               </div>
                       )}
             </div>
@@ -1746,15 +1746,16 @@ const RatesCalculator = () => {
         </div>
 
         {/* Centered Swap Icon */}
-        <div className="flex justify-center relative -my-5 z-10">
+        <div className="flex justify-center relative -my-3 sm:-my-5 lg:-my-5 z-10">
           <button
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-white dark:bg-[#18181D] border border-[#E8EFF5] dark:border-[#35353E] hover:bg-gray-50 dark:hover:bg-[#2a2a2a] transition-colors cursor-pointer"
+            className="w-12 h-12 sm:w-10 sm:h-10 lg:w-10 lg:h-10 flex items-center justify-center rounded-full bg-white dark:bg-[#18181D] border border-[#E8EFF5] dark:border-[#35353E] hover:bg-gray-50 dark:hover:bg-[#2a2a2a] transition-colors cursor-pointer shadow-md lg:shadow-none"
             onClick={handleModeSwitch}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
+              width="20"
+              height="20"
+              className="sm:w-6 sm:h-6 lg:w-6 lg:h-6"
               viewBox="0 0 24 24"
               fill="none"
               strokeWidth="2"
@@ -1771,18 +1772,18 @@ const RatesCalculator = () => {
           </button>
         </div>
 
-        <div className="p-2 border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px]">
+        <div className="p-3 sm:p-2 lg:p-2 border border-[#E8EFF5] dark:border-[#35353E] rounded-xl sm:rounded-[18px] lg:rounded-[18px]">
           <p className="mb-2">{t("rates.method", "Method")}</p>
-          <div className="grid grid-cols-2 gap-2 mb-4 items-stretch">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-2 lg:gap-2 mb-4 items-stretch">
             {isDepositMode ? (
               // Deposit Mode: Payment Method + I want to Receive
               <>
             <div className="relative" ref={methodDropdownRef}>
-              <label className="text-sm text-gray-600 dark:text-[#788099] mb-2 block">
+              <label className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099] mb-2 block">
                 {t("rates.bankPaymentMethod", "Bank/Payment Method")}
               </label>
               <div
-                className="border border-[#E8EFF5] dark:border-[#35353E] p-3 rounded-[18px] flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors"
+                className="border border-[#E8EFF5] dark:border-[#35353E] p-2.5 sm:p-3 lg:p-3 rounded-xl sm:rounded-[18px] lg:rounded-[18px] flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors min-h-[44px] sm:min-h-[44px] lg:min-h-0"
                     onClick={() =>
                       setIsMethodDropdownOpen(!isMethodDropdownOpen)
                     }
@@ -1816,7 +1817,7 @@ const RatesCalculator = () => {
 
               {/* Payment Method Dropdown */}
               {isMethodDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1D1D23] rounded-[18px] border border-gray-200 dark:border-gray-700 z-10 max-h-60 overflow-y-auto shadow-lg">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1D1D23] rounded-xl sm:rounded-[18px] lg:rounded-[18px] border border-gray-200 dark:border-gray-700 z-10 max-h-[60vh] sm:max-h-60 lg:max-h-60 overflow-y-auto shadow-lg lg:shadow-lg">
                   {(userDetailsLoading || publicMethodsLoading) ? (
                     <div className="p-3 text-center text-gray-600 dark:text-[#788099]">
                           {t(
@@ -1888,11 +1889,11 @@ const RatesCalculator = () => {
             </div>
 
                 <div>
-              <label className="text-sm text-gray-600 dark:text-[#788099] mb-2 block">
+              <label className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099] mb-2 block">
                     {t("rates.iWantToReceive", "I want to Receive")}
               </label>
-                  <div className="flex items-center border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px]">
-                    <span className="p-3 text-[#1D8751]">$</span>
+                  <div className="flex items-center border border-[#E8EFF5] dark:border-[#35353E] rounded-xl sm:rounded-[18px] lg:rounded-[18px] relative">
+                    <span className="p-2.5 sm:p-3 lg:p-3 text-[#1D8751] text-sm sm:text-base lg:text-base">$</span>
                     <input
                       type="text"
                       value={receiveAmount}
@@ -2058,11 +2059,11 @@ const RatesCalculator = () => {
               // Withdrawal Mode: Asset + I want to Receive
               <>
                 <div className="relative" ref={dropdownRef}>
-                  <label className="text-sm text-gray-600 dark:text-[#788099] mb-2 block">
+                  <label className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099] mb-2 block">
                     {t("rates.asset", "Asset")}
                   </label>
                   <div
-                    className="border border-[#E8EFF5] dark:border-[#35353E] p-3 rounded-[18px] flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors"
+                    className="border border-[#E8EFF5] dark:border-[#35353E] p-2.5 sm:p-3 lg:p-3 rounded-xl sm:rounded-[18px] lg:rounded-[18px] flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors min-h-[44px] sm:min-h-[44px] lg:min-h-0"
                     onClick={() => setIsAssetDropdownOpen(!isAssetDropdownOpen)}
                   >
                     <div className="flex items-center gap-3">
@@ -2129,7 +2130,7 @@ const RatesCalculator = () => {
 
                   {/* Asset Dropdown */}
                   {isAssetDropdownOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl z-50 max-h-80 overflow-hidden">
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-xl lg:rounded-2xl z-50 max-h-[60vh] sm:max-h-80 lg:max-h-80 overflow-hidden shadow-lg lg:shadow-none">
                       {/* Search Input */}
                       <div className="p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
                         <div className="relative">
@@ -2145,7 +2146,7 @@ const RatesCalculator = () => {
                       </div>
 
                       {/* Asset List */}
-                      <div className="max-h-60 overflow-y-auto">
+                      <div className="max-h-[50vh] sm:max-h-60 lg:max-h-60 overflow-y-auto">
                         {renderAssetDropdown()}
                       </div>
                     </div>
@@ -2153,11 +2154,11 @@ const RatesCalculator = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm text-gray-600 dark:text-[#788099] mb-2 block">
+                  <label className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099] mb-2 block">
                     {t("rates.iWantToReceive", "I want to Receive")}
                   </label>
-                  <div className="flex items-center border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px]">
-                    <span className="p-3 text-[#1D8751]">$</span>
+                  <div className="flex items-center border border-[#E8EFF5] dark:border-[#35353E] rounded-xl sm:rounded-[18px] lg:rounded-[18px] relative">
+                    <span className="p-2.5 sm:p-3 lg:p-3 text-[#1D8751] text-sm sm:text-base lg:text-base">$</span>
                     <input
                       type="text"
                       value={receiveAmount}
@@ -2209,10 +2210,10 @@ const RatesCalculator = () => {
                         }
                       }}
                       onFocus={() => setIsCalculatingFromPay(false)}
-                      className="bg-transparent p-3 w-full focus:outline-none text-gray-900 dark:text-white"
+                      className="bg-transparent p-2.5 sm:p-3 lg:p-3 w-full focus:outline-none text-gray-900 dark:text-white text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-[44px] lg:min-h-0"
                       placeholder="Enter amount"
                     />
-                    <div className="p-3 flex items-center text-gray-900 dark:text-white">
+                    <div className="p-2 sm:p-3 lg:p-3 flex items-center text-gray-900 dark:text-white text-xs sm:text-sm lg:text-sm">
                       <span>USD</span>
                       <FiChevronDown className="ml-1" />
                     </div>
@@ -2220,8 +2221,8 @@ const RatesCalculator = () => {
                     {/* Show loading spinner when calculating "You Send" from "I want to Receive" */}
                     {(isCalculating || isCalculatingReceive) &&
                       !isCalculatingFromPay && (
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
+                        <div className="absolute right-2 sm:right-3 lg:right-3 top-1/2 transform -translate-y-1/2">
+                          <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 lg:h-5 lg:w-5 border-b-2 border-[#1D8751]"></div>
                         </div>
                       )}
                   </div>
@@ -2325,7 +2326,7 @@ const RatesCalculator = () => {
       </div>
 
       {/* Info Row */}
-      <div className="flex items-start text-white text-sm mt-2 mb-4">
+      <div className="flex items-start text-white text-xs sm:text-sm lg:text-sm mt-2 mb-4">
         <AlertCircle className="w-4 h-4 text-[#E23D3A] mr-2 mt-0.5 flex-shrink-0" />
         <span>
           {t(

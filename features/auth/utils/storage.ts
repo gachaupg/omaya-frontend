@@ -47,5 +47,34 @@ export const storage = {
     if (typeof window === 'undefined') return;
     localStorage.removeItem(STORAGE_KEYS.PROFILE);
     localStorage.removeItem(STORAGE_KEYS.USER_EMAIL);
+  },
+
+  // Token management
+  getToken: (): string | null => {
+    const profile = storage.getProfile();
+    return profile?.tokens?.access || null;
+  },
+
+  getRefreshToken: (): string | null => {
+    const profile = storage.getProfile();
+    return profile?.tokens?.refresh || null;
+  },
+
+  setToken: (token: string): void => {
+    const profile = storage.getProfile();
+    if (profile) {
+      storage.setProfile({
+        ...profile,
+        tokens: {
+          ...profile.tokens,
+          access: token
+        }
+      });
+    }
+  },
+
+  clearAuth: (): void => {
+    storage.removeProfile();
+    storage.removeUserEmail();
   }
 }; 

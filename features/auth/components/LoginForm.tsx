@@ -8,6 +8,7 @@ import { loginUser } from "@/features/auth/slices/authSlice";
 import { AppDispatch, RootState } from "@/features/auth/store";
 import { useRouter } from "next/navigation";
 import GoogleAuthButton from "./GoogleAuthButton";
+import FacebookAuthButton from "@/features/auth/components/FacebookAuthButton";
 import { useI18n } from "@/lib/useI18n";
 
 import { logger } from '@/lib/utils/logger';
@@ -581,23 +582,7 @@ export default function LoginPage() {
                   onSuccess={handleGoogleSuccess}
                   onError={handleGoogleError}
                 />
-                <button
-                  type="button"
-                  className="flex items-center justify-center py-2 px-4 rounded-lg border dark:border-gray-700 border-gray-300 dark:bg-[#1D1D23] bg-white dark:text-white text-gray-900 dark:hover:bg-[#1a1a1a] hover:bg-gray-100 transition-colors duration-300"
-                >
-                  <svg
-                    className="w-6 h-6 mr-2"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <circle cx="12" cy="12" r="12" fill="#1877F2" />
-                    <path
-                      d="M15.117 8.667h-1.55c-.486 0-.867.381-.867.867v1.55h2.417l-.317 2.417h-2.1v6.05h-2.417v-6.05h-2.1v-2.417h2.1v-1.55c0-1.486 1.2-2.683 2.683-2.683h1.55v2.417z"
-                      fill="#FFFFFF"
-                    />
-                  </svg>
-                  <p className="text-[#788099]">Facebook</p>
-                </button>
+                <FacebookAuthButton />
               </div>
             </div>
           </form>

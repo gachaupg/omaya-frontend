@@ -216,7 +216,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
       <div>
         <label
           htmlFor="email"
-          className="block text-sm font-medium text-[#344054] dark:text-white mb-2"
+          className="block text-xs sm:text-sm lg:text-sm font-medium text-[#344054] dark:text-white mb-2"
         >
           {t("marketing.contact.emailLabel", "Email Address *")}
         </label>
@@ -232,7 +232,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
           )}
           required
           disabled={isSubmitting}
-          className="w-full px-4 py-3 border border-[#E8EFF5] dark:border-[#35353E] rounded-2xl focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full px-3 sm:px-4 lg:px-4 py-2.5 sm:py-3 lg:py-3 border border-[#E8EFF5] dark:border-[#35353E] rounded-xl sm:rounded-xl lg:rounded-2xl focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0"
         />
       </div>
 
@@ -240,7 +240,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
       <div>
         <label
           htmlFor="question"
-          className="block text-sm font-medium text-[#344054] dark:text-white mb-2"
+          className="block text-xs sm:text-sm lg:text-sm font-medium text-[#344054] dark:text-white mb-2"
         >
           {t("marketing.contact.questionLabel", "Your Question *")}
         </label>
@@ -256,16 +256,16 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
           rows={4}
           required
           disabled={isSubmitting}
-          className="w-full px-4 py-3 border border-[#E8EFF5] dark:border-[#35353E] rounded-2xl focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors resize-none disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full px-3 sm:px-4 lg:px-4 py-2.5 sm:py-3 lg:py-3 border border-[#E8EFF5] dark:border-[#35353E] rounded-xl sm:rounded-xl lg:rounded-2xl focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors resize-none disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base lg:text-base"
         />
       </div>
 
       {/* File Upload Field */}
       <div>
-        <label className="block text-sm font-medium text-[#344054] dark:text-white mb-2">
+        <label className="block text-xs sm:text-sm lg:text-sm font-medium text-[#344054] dark:text-white mb-2">
           {t("marketing.contact.supportingFilesLabel", "Supporting Files")}
         </label>
-        <p className="text-xs text-[#667085] dark:text-[#98A2B3] mb-3">
+        <p className="text-xs sm:text-xs lg:text-xs text-[#667085] dark:text-[#98A2B3] mb-3 leading-relaxed">
           {t("marketing.contact.supportingFilesDescription", "You can attach supporting documents, screenshots, or other files that might help us understand your issue better. Supported formats: PDF, DOC, DOCX, TXT, PNG, JPG, JPEG")}
         </p>
         
@@ -282,10 +282,10 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
             />
             <label
               htmlFor="supporting_file"
-              className={`flex flex-col items-center justify-center w-full px-4 py-6 border-2 border-dashed border-[#E8EFF5] dark:border-[#35353E] rounded-2xl cursor-pointer transition-colors hover:border-[#1D8751] dark:hover:border-[#1D8751] ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`flex flex-col items-center justify-center w-full px-3 sm:px-4 lg:px-4 py-4 sm:py-5 lg:py-6 border-2 border-dashed border-[#E8EFF5] dark:border-[#35353E] rounded-xl sm:rounded-xl lg:rounded-2xl cursor-pointer transition-colors hover:border-[#1D8751] dark:hover:border-[#1D8751] min-h-[120px] sm:min-h-[140px] lg:min-h-[160px] ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <svg
-                className="w-8 h-8 mb-2 text-[#667085] dark:text-[#98A2B3]"
+                className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 mb-2 text-[#667085] dark:text-[#98A2B3]"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -298,10 +298,10 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
                   d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                 />
               </svg>
-              <span className="text-sm text-[#344054] dark:text-white font-medium">
+              <span className="text-xs sm:text-sm lg:text-sm text-[#344054] dark:text-white font-medium text-center px-2">
                 {t("marketing.contact.clickToUpload", "Click to upload file")}
               </span>
-              <span className="text-xs text-[#667085] dark:text-[#98A2B3] mt-1">
+              <span className="text-xs text-[#667085] dark:text-[#98A2B3] mt-1 text-center px-2">
                 {t("marketing.contact.maxFileSize", "Maximum file size: 10MB")}
               </span>
             </label>
@@ -358,11 +358,11 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
       </div>
 
       {/* Submit Button */}
-      <div className="pt-4">
+      <div className="pt-2 sm:pt-3 lg:pt-4">
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-[#1D8751] text-white font-medium py-3 px-6 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#166b42]"
+          className="w-full bg-[#1D8751] text-white font-medium py-2.5 sm:py-3 lg:py-3 px-6 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#166b42] text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0"
         >
           {isSubmitting
             ? t("marketing.contact.submitting", "Submitting...")

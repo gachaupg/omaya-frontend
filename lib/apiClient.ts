@@ -61,27 +61,44 @@ const pendingRequests = new Map<string, Promise<any>>();
  * Generate a unique key for request deduplication
  */
 const generateRequestKey = (config: AxiosRequestConfig): string => {
-  const { method, url, params } = config;
+  const method = config.method || 'get';
+  const url = config.url || '';
+  const params = config.params || {};
   // Don't include data in key to avoid issues with large payloads
-  return `${method}-${url}-${JSON.stringify(params || {})}`;
+  return `${method}-${url}-${JSON.stringify(params)}`;
 };
 
-const createAxiosInstance = (
-  config: ApiClientConfig = DEFAULT_CONFIG
-): AxiosInstance => {
+// Helper to get CSRF token from cookies
+const getCsrfToken = (): string | null => {
+  if (typeof document === 'undefined') return null;
+  const cookies = document.cookie.split(';');
+  const csrfCookie = cookies.find(cookie => cookie.trim().startsWith('csrftoken='));
+  return csrfCookie ? csrfCookie.split('=')[1] : null;
+};
+
+const createAxiosInstance = (config: ApiClientConfig = DEFAULT_CONFIG): AxiosInstance => {
   const instance = axios.create({
     baseURL: API_BASE_URL,
     timeout: config.timeout,
     headers: {
       "Content-Type": "application/json",
-      Accept: "application/json",
+      "Accept": "application/json",
+      "X-Requested-With": "XMLHttpRequest",
+      "X-CSRFToken": getCsrfToken() || '',
     },
+    withCredentials: true, // Enable sending cookies with requests
   });
 
-  // Request interceptor with timeout override
+  // Request interceptor with timeout override and CSRF token
   instance.interceptors.request.use((requestConfig) => {
     const endpoint = requestConfig.url || "";
     const endpointConfig = ENDPOINT_SPECIFIC_CONFIG[endpoint];
+    
+    // Add CSRF token to all non-GET requests
+    if (requestConfig.method && requestConfig.method.toLowerCase() !== 'get') {
+      requestConfig.headers = requestConfig.headers || {};
+      requestConfig.headers['X-CSRFToken'] = getCsrfToken() || '';
+    }
 
     if (endpointConfig) {
       requestConfig.timeout = endpointConfig.timeout || config.timeout;

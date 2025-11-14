@@ -1,11 +1,18 @@
 // Google OAuth Configuration
 export const GOOGLE_OAUTH_CONFIG = {
-  clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "866830600136-atu6lg341gn9snr1pkbmjhssebh9luqb.apps.googleusercontent.com",
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET || "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", // This should be kept secure on the backend
-  redirectUri: typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
-  scope: "email profile",
-  uxMode: "popup" as const,
-  flow: "auth-code" as const,
+  clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
+  // Note: clientSecret should only be used server-side
+  redirectUri: typeof window !== 'undefined' 
+    ? `${window.location.origin}/auth/google/callback`
+    : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000') + '/auth/google/callback',
+  scope: [
+    'https://www.googleapis.com/auth/userinfo.email',
+    'https://www.googleapis.com/auth/userinfo.profile',
+    'openid',
+  ].join(' '),
+  accessType: 'offline',
+  prompt: 'consent',
+  includeGrantedScopes: true,
 };
 
 // Google OAuth API endpoints
