@@ -74,16 +74,16 @@ const ContactPage: React.FC<ContactPageProps> = ({ showFileUpload = true }) => {
   };
 
   return (
-    <div className="min-h-screen">
-      <div>
-        <h1 className="text-lg font-medium text-[#788099] mb-4">
+    <div className="w-full relative z-10">
+      <div className="w-full">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6 lg:mb-8">
           {t("contact.title", "Help & Support")}
         </h1>
 
         {/* Success Message */}
         {showSuccess && (
-          <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl">
-            <p className="text-green-800 dark:text-green-200 text-sm">
+          <div className="mb-4 sm:mb-6 lg:mb-6 p-3 sm:p-4 lg:p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl sm:rounded-xl lg:rounded-2xl">
+            <p className="text-green-800 dark:text-green-200 text-sm sm:text-sm lg:text-base">
               {t(
                 "contact.success",
                 "Thank you! Your message has been submitted successfully. We'll get back to you soon."
@@ -94,8 +94,8 @@ const ContactPage: React.FC<ContactPageProps> = ({ showFileUpload = true }) => {
 
         {/* Error Message */}
         {showError && (
-          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl">
-            <p className="text-red-800 dark:text-red-200 text-sm">
+          <div className="mb-4 sm:mb-6 lg:mb-6 p-3 sm:p-4 lg:p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl sm:rounded-xl lg:rounded-2xl">
+            <p className="text-red-800 dark:text-red-200 text-sm sm:text-sm lg:text-base">
               {errorMessage ||
                 t(
                   "contact.error.generic",
@@ -105,7 +105,7 @@ const ContactPage: React.FC<ContactPageProps> = ({ showFileUpload = true }) => {
           </div>
         )}
 
-        <div className="container mx-auto bg-white dark:bg-[#18181D] border border-[#E8EFF5] dark:border-[#35353E] rounded-2xl shadow-sm p-8 space-y-6">
+        <div className="bg-white dark:bg-[#18181D] border border-[#E8EFF5] dark:border-[#35353E] rounded-xl sm:rounded-xl lg:rounded-2xl shadow-sm p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-5 lg:space-y-6">
           {/* Contact Form */}
           <ContactForm
             onSuccess={handleContactSuccess}
@@ -113,10 +113,10 @@ const ContactPage: React.FC<ContactPageProps> = ({ showFileUpload = true }) => {
           />
 
           {/* Live Chat Button */}
-          <div className="border-t border-[#E8EFF5] dark:border-[#35353E] pt-6">
+          <div className="border-t border-[#E8EFF5] dark:border-[#35353E] pt-4 sm:pt-5 lg:pt-6">
             <button
               onClick={handleConnectLiveChat}
-              className="w-full bg-[#1D8751] text-white font-medium py-3 px-6 rounded-full transition-colors hover:bg-[#166b42]"
+              className="w-full bg-[#1D8751] text-white font-medium py-2.5 sm:py-3 lg:py-3 px-6 rounded-full transition-colors hover:bg-[#166b42] text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0"
             >
               {t("contact.liveChat", "Connect with Live Chat")}
             </button>

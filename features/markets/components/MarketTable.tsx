@@ -400,14 +400,14 @@ const MarketTable = () => {
   }
 
   return (
-    <div className="bg-[#EEF1F4] dark:bg-[#18181D] min-h-screen py-8 text-gray-900 dark:text-[#788099] font-sans">
+    <div className="bg-[#EEF1F4] dark:bg-[#18181D] min-h-screen py-4 sm:py-6 lg:py-8 text-gray-900 dark:text-[#788099] font-sans">
       {/* Top Section */}
-      <div className="container mx-auto mb-6 px-6">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-gray-900 dark:text-[#fff] text-2xl font-bold">
+      <div className="max-w-[1400px] mx-auto mb-4 sm:mb-6 lg:mb-6 px-3 sm:px-4 lg:px-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3 sm:gap-0">
+          <h1 className="text-xl sm:text-2xl lg:text-2xl font-bold text-gray-900 dark:text-[#fff]">
             Market Review
           </h1>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             {lastUpdated && (
               <span className="text-xs text-gray-600 dark:text-[#788099]">
                 Last updated: {new Date(lastUpdated).toLocaleTimeString()}
@@ -416,19 +416,19 @@ const MarketTable = () => {
             <button
               onClick={handleRefresh}
               disabled={loading}
-              className="px-3 py-1 bg-gray-100 dark:bg-[#1D1D23] text-gray-700 dark:text-[#788099] rounded border border-gray-300 dark:border-[#35353E] hover:bg-gray-200 dark:hover:bg-[#35353E] disabled:opacity-50"
+              className="px-3 py-1.5 sm:py-1 lg:py-1 bg-gray-100 dark:bg-[#1D1D23] text-gray-700 dark:text-[#788099] rounded border border-gray-300 dark:border-[#35353E] hover:bg-gray-200 dark:hover:bg-[#35353E] disabled:opacity-50 text-xs sm:text-sm lg:text-sm min-h-[44px] sm:min-h-0 lg:min-h-0"
             >
               {loading ? "Loading..." : "Refresh"}
             </button>
           </div>
         </div>
 
-        <div className="flex gap-2 mb-4">
+        <div className="flex flex-wrap gap-2 mb-4">
           {filterTags.map((tag) => (
             <span
               key={tag}
               onClick={() => handleFilterClick(tag)}
-              className={`bg-gray-100 dark:bg-[#1D1D23] text-gray-700 dark:text-[#788099] rounded-2xl px-4 py-1 text-sm font-medium border border-gray-300 dark:border-[#35353E] cursor-pointer transition-colors ${
+              className={`bg-gray-100 dark:bg-[#1D1D23] text-gray-700 dark:text-[#788099] rounded-xl sm:rounded-2xl lg:rounded-2xl px-3 sm:px-4 lg:px-4 py-1.5 sm:py-1 lg:py-1 text-xs sm:text-sm lg:text-sm font-medium border border-gray-300 dark:border-[#35353E] cursor-pointer transition-colors min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center justify-center ${
                 activeFilter === tag
                   ? "bg-gray-200 dark:bg-[#35353E] text-gray-900 dark:text-[#fff]"
                   : "hover:bg-gray-200 dark:hover:bg-[#35353E]"
@@ -439,23 +439,23 @@ const MarketTable = () => {
           ))}
         </div>
 
-        <div className="text-sm text-gray-600 dark:text-[#788099] mb-2">
+        <div className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099] mb-2 leading-relaxed">
           Gain a comprehensive overview of all cryptocurrencies through OMAYA
           Express. This webpage presents the most recent prices, 24-hour trade
           volumes, price fluctuations, and market capitalizations for every
           cryptocurrency available on global markets.
         </div>
-        <div className="text-sm text-gray-600 dark:text-[#788099] mb-6">
+        <div className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099] mb-4 sm:mb-6 lg:mb-6 leading-relaxed">
           Users can readily obtain crucial details about these digital assets
           and directly navigate to the trading platform from this point.
         </div>
 
         {/* Favourite Assets Header Row */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2 font-semibold text-gray-900 dark:text-[#fff] text-lg">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 gap-3 sm:gap-0">
+          <div className="flex items-center gap-2 font-semibold text-gray-900 dark:text-[#fff] text-base sm:text-lg lg:text-lg">
             Top Assets Favourite Assets
             <button
-              className="bg-none border-none text-[#1D8751] text-xl cursor-pointer p-0 ml-2"
+              className="bg-none border-none text-[#1D8751] text-lg sm:text-xl lg:text-xl cursor-pointer p-1 sm:p-0 lg:p-0 ml-1 sm:ml-2 lg:ml-2 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center justify-center"
               onClick={() => {
                 document
                   .getElementById("fav-scroll")
@@ -465,7 +465,7 @@ const MarketTable = () => {
               &lt;
             </button>
             <button
-              className="bg-none border-none text-[#1D8751] text-xl cursor-pointer p-0 ml-1"
+              className="bg-none border-none text-[#1D8751] text-lg sm:text-xl lg:text-xl cursor-pointer p-1 sm:p-0 lg:p-0 ml-1 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center justify-center"
               onClick={() => {
                 document
                   .getElementById("fav-scroll")
@@ -475,23 +475,23 @@ const MarketTable = () => {
               &gt;
             </button>
           </div>
-          <div className="relative">
+          <div className="relative w-full sm:w-auto">
             <button
-              className="flex items-center text-gray-900 dark:text-[#fff] font-medium text-base cursor-pointer gap-1"
+              className="flex items-center text-gray-900 dark:text-[#fff] font-medium text-sm sm:text-base lg:text-base cursor-pointer gap-1 min-h-[44px] sm:min-h-0 lg:min-h-0"
               onClick={toggleDropdown}
             >
               Add Asset
-              <Plus className="w-3 h-3 text-[#1D8751]" />
+              <Plus className="w-4 h-4 sm:w-3 sm:h-3 lg:w-3 lg:h-3 text-[#1D8751]" />
             </button>
             {/* Dropdown Content */}
             {showDropdown && (
-              <div className="absolute top-full right-0 mt-2 w-48 bg-white dark:bg-[#23242B] rounded-md shadow-lg z-10 max-h-64 overflow-y-auto">
+              <div className="absolute top-full right-0 mt-2 w-[calc(100vw-2rem)] sm:w-48 lg:w-48 bg-white dark:bg-[#23242B] rounded-lg sm:rounded-md lg:rounded-md shadow-lg z-10 max-h-[60vh] sm:max-h-64 lg:max-h-64 overflow-y-auto">
                 <div className="relative mt-2 item-center ml-2">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1D8751] w-4 h-4" />
                   <input
                     type="text"
                     placeholder="Search"
-                    className="bg-transparent border border-[#2D2E3A] rounded-full pl-10 pr-4 py-2.5 text-sm text-white placeholder-[#9CA3AF] focus:outline-none focus:border-[#10B981] w-44"
+                    className="bg-transparent border border-[#2D2E3A] rounded-full pl-10 pr-4 py-2.5 sm:py-2.5 lg:py-2.5 text-sm text-white placeholder-[#9CA3AF] focus:outline-none focus:border-[#10B981] w-full sm:w-44 lg:w-44 min-h-[44px] sm:min-h-0 lg:min-h-0"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -501,7 +501,7 @@ const MarketTable = () => {
                     filteredAvailableAssets?.map((asset: Asset) => (
                       <li
                         key={asset.asset_id}
-                        className="px-4 py-2 text-sm text-[#9CA3AF] hover:bg-[#35353E] cursor-pointer"
+                        className="px-3 sm:px-4 lg:px-4 py-2.5 sm:py-2 lg:py-2 text-sm min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center text-[#9CA3AF] hover:bg-[#35353E] cursor-pointer"
                         onClick={() => handleAddToFavorites(asset.asset_id)}
                       >
                         <span className="text-white mr-2">{asset.symbol}</span>
@@ -509,7 +509,7 @@ const MarketTable = () => {
                       </li>
                     ))
                   ) : (
-                    <li className="px-4 py-2 text-sm text-[#9CA3AF]">
+                    <li className="px-3 sm:px-4 lg:px-4 py-2.5 sm:py-2 lg:py-2 text-sm text-[#9CA3AF]">
                       No assets found
                     </li>
                   )}
@@ -523,7 +523,7 @@ const MarketTable = () => {
         <div
           id="fav-scroll"
           className="
-            flex gap-3 sm:gap-4 mb-6 sm:mb-8 w-full overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory pb-2
+            flex gap-2 sm:gap-3 lg:gap-4 mb-4 sm:mb-6 lg:mb-8 w-full overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory pb-2
           "
           style={{ WebkitOverflowScrolling: "touch" }}
         >
@@ -532,7 +532,7 @@ const MarketTable = () => {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#13B562]"></div>
             </div>
           ) : favoriteAssets?.length === 0 ? (
-            <div className="col-span-3 text-center text-gray-500">
+            <div className="col-span-3 text-center text-gray-500 text-sm sm:text-base lg:text-base">
               No favorite assets found. Add some to see them here.
             </div>
           ) : (
@@ -546,19 +546,19 @@ const MarketTable = () => {
               return (
                 <div
                   key={asset.favorite_asset_id}
-                  className="bg-white dark:bg-[#1D1D23] rounded-2xl p-4 flex items-center gap-3 border border-[#E8EFF5] dark:border-[#35353E] relative flex-shrink-0 w-[80%] sm:w-[45%] md:w-[30%]"
+                  className="bg-white dark:bg-[#1D1D23] rounded-xl sm:rounded-2xl lg:rounded-2xl p-3 sm:p-4 lg:p-4 flex items-center gap-2 sm:gap-3 lg:gap-3 border border-[#E8EFF5] dark:border-[#35353E] relative flex-shrink-0 w-[85%] sm:w-[45%] md:w-[30%] lg:w-[30%]"
                 >
                   <button
                     onClick={() => {
                       setPendingRemoveAsset(asset);
                       setShowConfirmModal(true);
                     }}
-                    className="absolute top-0 right-2 p-1 rounded-full hover:[#E8EFF5] dark:hover:bg-[#35353E] transition-colors"
+                    className="absolute top-1 sm:top-0 lg:top-0 right-1 sm:right-2 lg:right-2 p-1.5 sm:p-1 lg:p-1 rounded-full hover:[#E8EFF5] dark:hover:bg-[#35353E] transition-colors min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center justify-center"
                     title="Remove from favorites"
                   >
-                    <X className="w-3 h-3 text-[#9CA3AF] hover:text-white" />
+                    <X className="w-4 h-4 sm:w-3 sm:h-3 lg:w-3 lg:h-3 text-[#9CA3AF] hover:text-white" />
                   </button>
-                  <div className="w-8 h-8 rounded-full">
+                  <div className="w-8 h-8 sm:w-8 sm:h-8 lg:w-8 lg:h-8 rounded-full flex-shrink-0">
                     {asset.asset_image &&
                     typeof asset.asset_image === "string" &&
                     asset.asset_image.trim() !== "" ? (
@@ -580,7 +580,7 @@ const MarketTable = () => {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-[#051015] dark:text-white truncate">
+                    <div className="font-medium text-[#051015] dark:text-white truncate text-sm sm:text-base lg:text-base">
                       {dummyData.symbol}
                     </div>
                     <div className="text-xs text-[#788099] dark:text-[#788099] truncate">
@@ -588,7 +588,7 @@ const MarketTable = () => {
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <div className="font-bold text:[#051015] dark:text-white whitespace-nowrap">
+                    <div className="font-bold text:[#051015] dark:text-white whitespace-nowrap text-sm sm:text-base lg:text-base">
                       $
                       {dummyData.price.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
@@ -612,23 +612,136 @@ const MarketTable = () => {
         </div>
 
         {/* Table Section with rounded border */}
-        <div className="rounded-2xl border border-gray-200 dark:border-[#35353E] overflow-hidden bg-white dark:bg-[#18181D] shadow-lg container mx-auto">
+        <div className="rounded-xl sm:rounded-xl lg:rounded-2xl border border-gray-200 dark:border-[#35353E] overflow-hidden bg-white dark:bg-[#18181D] shadow-lg max-w-[1400px] mx-auto">
           {loading && markets.length === 0 ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex items-center justify-center py-8 sm:py-10 lg:py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#13B562]"></div>
-              <span className="ml-3 text-gray-900 dark:text-[#fff] text-sm sm:text-base">
+              <span className="ml-3 text-gray-900 dark:text-[#fff] text-xs sm:text-sm lg:text-base">
                 Loading market data...
               </span>
             </div>
           ) : (
-            <div className="overflow-x-auto scrollbar-thin scroll-smooth">
+            <>
+              {/* Mobile: Card-based layout */}
+              <div className="block sm:hidden space-y-3 p-2 sm:p-3">
+                {filteredMarkets.map((market, idx) => (
+                  <div
+                    key={market.id}
+                    onClick={() => handleRowClick(market.id)}
+                    className={`bg-white dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#35353E] cursor-pointer transition-colors ${
+                      selectedCoinId === market.id
+                        ? "border-l-4 border-[#13B562] bg-gray-50 dark:bg-[#23232a]"
+                        : ""
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <CoinIcon
+                          image={market.image}
+                          symbol={market.symbol}
+                          size={32}
+                        />
+                        <div>
+                          <div className="font-semibold text-gray-900 dark:text-white">
+                            {market.symbol.toUpperCase()}
+                          </div>
+                          <div className="text-xs text-gray-600 dark:text-[#788099]">
+                            {market.name}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="cursor-pointer">
+                          <ChartIcon />
+                        </span>
+                        <span className="cursor-pointer">
+                          <StarIcon />
+                        </span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <div className="text-xs text-gray-600 dark:text-[#788099] mb-1">Price</div>
+                        <div className="text-[#1D8751] font-medium">{formatPrice(market.current_price)}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-600 dark:text-[#788099] mb-1">24h Change</div>
+                        <div className={`font-medium ${
+                          market.price_change_percentage_24h !== null &&
+                          market.price_change_percentage_24h >= 0
+                            ? "text-[#13B562]"
+                            : "text-[#FF6B6B]"
+                        }`}>
+                          {formatPercentage(market.price_change_percentage_24h)}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-600 dark:text-[#788099] mb-1">24h Volume</div>
+                        <div className="text-gray-900 dark:text-white">{formatVolume(market.total_volume)}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-600 dark:text-[#788099] mb-1">Market Cap</div>
+                        <div className="text-gray-900 dark:text-white">{formatMarketCap(market.market_cap)}</div>
+                      </div>
+                    </div>
+                    {/* Expanded details for mobile */}
+                    {selectedCoinId === market.id && (
+                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-[#35353E]">
+                        {loadingDetails ? (
+                          <div className="flex items-center gap-2 text-[#13B562] text-sm">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#13B562]"></div>
+                            Loading details...
+                          </div>
+                        ) : coinDetails ? (
+                          <div className="flex flex-col gap-3">
+                            <Link
+                              href={{
+                                pathname: "/market/chart",
+                                query: { id: market.id },
+                              }}
+                              className="border border-[#1D8751] rounded-full p-2.5 px-4 text-[#1D8751] flex gap-2 items-center justify-center cursor-pointer hover:bg-[#1D8751]/10 min-h-[44px] text-sm"
+                            >
+                              <ChartIcon />
+                              <p>View Chart</p>
+                            </Link>
+                            <Link href="/dashboard/express-exchange" className="w-full">
+                              <Button className="w-full border border-[#1D8751] rounded-full p-2.5 px-4 text-[#1D8751] flex gap-2 items-center justify-center cursor-pointer min-h-[44px] text-sm">
+                                <ArrowLeftRight className="w-4 h-5" />
+                                <p>Exchange</p>
+                              </Button>
+                            </Link>
+                          </div>
+                        ) : (
+                          <div className="text-red-500 flex items-center gap-2 text-sm">
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 16 16"
+                              fill="none"
+                            >
+                              <path
+                                d="M8 1C4.13 1 1 4.13 1 8s3.13 7 7 7 7-3.13 7-7-3.13-7-7-7zm0 10.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"
+                                fill="currentColor"
+                              />
+                            </svg>
+                            Failed to load details. Please try again.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop: Table layout */}
+              <div className="hidden sm:block overflow-x-auto scrollbar-thin scroll-smooth">
               <table className="w-full border-separate border-spacing-0 min-w-[800px]">
                 <thead>
                   <tr>
                     {tableHeaders.map((header, idx) => (
                       <th
                         key={header}
-                        className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 sm:px-3 md:px-4 py-3 sm:py-4 text-left font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-xs sm:text-sm md:text-base"
+                          className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 text-left font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-xs sm:text-sm lg:text-base"
                       >
                         <div className="flex items-center gap-1">
                           {header}
@@ -654,8 +767,8 @@ const MarketTable = () => {
                               : "bg-white dark:bg-[#18181D]")
                         }
                       >
-                        <td className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-gray-900 dark:text-[#fff]">
-                          <span className="w-6 h-6 sm:w-7 sm:h-7 flex items-center flex-shrink-0">
+                          <td className="flex items-center gap-2 sm:gap-3 lg:gap-3 px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 text-gray-900 dark:text-[#fff]">
+                            <span className="w-6 h-6 sm:w-7 sm:h-7 lg:w-7 lg:h-7 flex items-center flex-shrink-0">
                             <CoinIcon
                               image={market.image}
                               symbol={market.symbol}
@@ -663,19 +776,19 @@ const MarketTable = () => {
                             />
                           </span>
                           <div className="min-w-0">
-                            <div className="font-semibold text-xs sm:text-sm md:text-base truncate">
+                              <div className="font-semibold text-xs sm:text-sm lg:text-base truncate">
                               {market.symbol.toUpperCase()}
                             </div>
-                            <div className="text-[10px] sm:text-xs text-gray-600 dark:text-[#788099] truncate">
+                              <div className="text-[10px] sm:text-xs lg:text-xs text-gray-600 dark:text-[#788099] truncate">
                               {market.name}
                             </div>
                           </div>
                         </td>
-                        <td className="text-[#1D8751] font-medium px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-xs sm:text-sm md:text-base whitespace-nowrap">
+                          <td className="text-[#1D8751] font-medium px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 text-xs sm:text-sm lg:text-base whitespace-nowrap">
                           {formatPrice(market.current_price)}
                         </td>
                         <td
-                          className={`font-medium px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-xs sm:text-sm md:text-base whitespace-nowrap ${
+                            className={`font-medium px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 text-xs sm:text-sm lg:text-base whitespace-nowrap ${
                             market.price_change_percentage_24h !== null &&
                             market.price_change_percentage_24h >= 0
                               ? "text-[#13B562]"
@@ -684,13 +797,13 @@ const MarketTable = () => {
                         >
                           {formatPercentage(market.price_change_percentage_24h)}
                         </td>
-                        <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-xs sm:text-sm md:text-base whitespace-nowrap">
+                          <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 text-xs sm:text-sm lg:text-base whitespace-nowrap">
                           {formatVolume(market.total_volume)}
                         </td>
-                        <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 text-xs sm:text-sm md:text-base whitespace-nowrap">
+                          <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 text-xs sm:text-sm lg:text-base whitespace-nowrap">
                           {formatMarketCap(market.market_cap)}
                         </td>
-                        <td className="px-2 sm:px-3 md:px-4 py-2 sm:py-3 flex items-center gap-2 sm:gap-3">
+                          <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 flex items-center gap-2 sm:gap-3 lg:gap-3">
                           <span className="cursor-pointer">
                             <ChartIcon />
                           </span>
@@ -704,7 +817,7 @@ const MarketTable = () => {
                         <tr>
                           <td
                             colSpan={tableHeaders.length}
-                            className="bg-gray-100 dark:bg-[#23232a] px-6 py-4 border-t border-gray-200 dark:border-[#35353E]"
+                              className="bg-gray-100 dark:bg-[#23232a] px-3 sm:px-4 lg:px-6 py-3 sm:py-4 lg:py-4 border-t border-gray-200 dark:border-[#35353E]"
                           >
                             {/* Coin details */}
                             {loadingDetails ? (
@@ -715,20 +828,20 @@ const MarketTable = () => {
                             ) : coinDetails ? (
                               <div className="">
                                 {/* Action Buttons */}
-                                <div className="flex justify-center gap-4">
+                                  <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 lg:gap-4">
                                   <Link
                                     href={{
                                       pathname: "/market/chart",
                                       query: { id: market.id },
                                     }}
-                                    className="border border-[#1D8751] rounded-full p-2 px-4 text-[#1D8751] flex gap-2 items-center cursor-pointer hover:bg-[#1D8751]/10"
+                                      className="border border-[#1D8751] rounded-full p-2.5 sm:p-2 lg:p-2 px-4 text-[#1D8751] flex gap-2 items-center justify-center cursor-pointer hover:bg-[#1D8751]/10 text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0"
                                   >
                                     <ChartIcon />
                                     <p>View Chart</p>
                                   </Link>
                                   <Link href="/dashboard/express-exchange">
-                                    <Button className="border border-[#1D8751] rounded-full p-2 px-4 text-[#1D8751] flex gap-2 items-center cursor-pointer">
-                                      <ArrowLeftRight className="w-4 h-5" />
+                                      <Button className="border border-[#1D8751] rounded-full p-2.5 sm:p-2 lg:p-2 px-4 text-[#1D8751] flex gap-2 items-center justify-center cursor-pointer text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0">
+                                        <ArrowLeftRight className="w-4 h-4 sm:w-4 sm:h-5 lg:w-4 lg:h-5" />
                                       <p>Exchange</p>
                                     </Button>
                                   </Link>
@@ -758,6 +871,7 @@ const MarketTable = () => {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </div>
       </div>
@@ -769,21 +883,21 @@ const MarketTable = () => {
             style={{ background: "rgba(0,0,0,0.6)" }}
           />
           {/* Modal */}
-          <div className="fixed inset-0 z-[1000] flex items-center justify-center">
-            <div className="bg-[#23242B] rounded-xl p-6 shadow-lg w-full max-w-sm">
-              <h2 className="text-lg font-semibold text-white mb-2">
+          <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+            <div className="bg-[#23242B] rounded-xl p-4 sm:p-6 lg:p-6 shadow-lg w-full max-w-sm">
+              <h2 className="text-base sm:text-lg lg:text-lg font-semibold text-white mb-2">
                 Remove Favorite
               </h2>
-              <p className="text-[#9CA3AF] mb-4">
+              <p className="text-sm sm:text-base lg:text-base text-[#9CA3AF] mb-4 leading-relaxed">
                 Are you sure you want to remove{" "}
                 <span className="font-bold text-white">
                   {pendingRemoveAsset.asset_symbol}
                 </span>{" "}
                 from your favorites?
               </p>
-              <div className="flex justify-end gap-3">
+              <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 lg:gap-3">
                 <button
-                  className="px-4 py-2 rounded bg-gray-700 text-white hover:bg-gray-600"
+                  className="px-4 py-2.5 sm:py-2 lg:py-2 rounded bg-gray-700 text-white hover:bg-gray-600 text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0"
                   onClick={() => {
                     setShowConfirmModal(false);
                     setPendingRemoveAsset(null);
@@ -792,7 +906,7 @@ const MarketTable = () => {
                   Cancel
                 </button>
                 <button
-                  className="px-4 py-2 rounded bg-[#1D8751] text-white hover:bg-[#166c3a]"
+                  className="px-4 py-2.5 sm:py-2 lg:py-2 rounded bg-[#1D8751] text-white hover:bg-[#166c3a] text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0"
                   onClick={() => {
                     const assetId = getAssetIdFromName(
                       pendingRemoveAsset.asset_symbol
