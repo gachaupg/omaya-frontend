@@ -1241,20 +1241,58 @@ export default function DepositForm({
       return null;
     }
 
+    const triggerRect = assetDropdownRef.current?.getBoundingClientRect();
+    const triggerWidth =
+      assetDropdownPosition.width || triggerRect?.width || 0;
+    let expandedWidth: number | undefined =
+      triggerWidth > 0 ? triggerWidth + 48 : undefined;
+
+    const viewportAllowance =
+      typeof window !== "undefined" ? window.innerWidth - 32 : undefined;
+
+    if (
+      expandedWidth !== undefined &&
+      viewportAllowance !== undefined &&
+      expandedWidth > viewportAllowance
+    ) {
+      expandedWidth = viewportAllowance;
+    }
+
+    const extraWidth =
+      expandedWidth !== undefined && triggerWidth > 0
+        ? expandedWidth - triggerWidth
+        : 0;
+
+    let computedLeft =
+      triggerRect && extraWidth
+        ? triggerRect.left - extraWidth / 2
+        : assetDropdownPosition.left;
+
+    if (
+      typeof window !== "undefined" &&
+      expandedWidth !== undefined &&
+      computedLeft !== undefined
+    ) {
+      const maxLeft = window.innerWidth - expandedWidth - 16;
+      computedLeft = Math.min(Math.max(16, computedLeft), Math.max(16, maxLeft));
+    }
+
+    const dropdownStyle: React.CSSProperties = {
+      position: "absolute",
+      top: assetDropdownPosition.top,
+      left: computedLeft ?? triggerRect?.left ?? assetDropdownPosition.left,
+      width:
+        expandedWidth ??
+        assetDropdownPosition.width ??
+        (triggerWidth > 0 ? triggerWidth : undefined),
+    };
+
     return createPortal(
       (
         <div
           ref={assetDropdownContentRef}
-          className="mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg z-[1200] max-h-80 overflow-y-auto"
-          style={{
-            position: "absolute",
-            top: assetDropdownPosition.top,
-            left: assetDropdownPosition.left,
-            width:
-              assetDropdownPosition.width ||
-              assetDropdownRef.current?.offsetWidth ||
-              undefined,
-          }}
+          className="mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg z-[1200] max-h-[70vh] sm:max-h-96 overflow-y-auto"
+          style={dropdownStyle}
         >
           {/* Search Input */}
           <div className="p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
@@ -1271,7 +1309,7 @@ export default function DepositForm({
           </div>
 
           {/* Asset List */}
-          <div className="max-h-60 overflow-y-auto">
+          <div className="max-h-[60vh] sm:max-h-72 overflow-y-auto">
             {sortedSwapAssets.length > 0 ? (
               <>
                 {/* Popular Section - First 3 assets only if no search */}
@@ -1314,13 +1352,21 @@ export default function DepositForm({
                             }}
                           />
                           <div className="flex-1">
-                            <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
+                            <div
+                              className={`font-medium flex items-center gap-2 ${
+                                isDark ? "text-white" : "text-[#111827]"
+                              }`}
+                            >
                               {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
                               <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
                                 {getNetworkDisplayName(getAssetNetwork(asset))}
                               </span>
                             </div>
-                            <div className="text-[#35353e] dark:text-[#788099] text-sm">
+                            <div
+                              className={`text-sm ${
+                                isDark ? "text-[#788099]" : "text-[#475569]"
+                              }`}
+                            >
                               {(() => {
                                 let displayName =
                                   asset.name || asset.ticker || asset.symbol || "Unknown Asset";
@@ -1393,13 +1439,21 @@ export default function DepositForm({
                       }}
                     />
                     <div className="flex-1">
-                      <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
+                      <div
+                        className={`font-medium flex items-center gap-2 ${
+                          isDark ? "text-white" : "text-[#111827]"
+                        }`}
+                      >
                         {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
                         <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
                           {getNetworkDisplayName(getAssetNetwork(asset))}
                         </span>
                       </div>
-                      <div className="text-[#35353e] dark:text-[#788099] text-sm">
+                      <div
+                        className={`text-sm ${
+                          isDark ? "text-[#788099]" : "text-[#475569]"
+                        }`}
+                      >
                         {(() => {
                           let displayName =
                             asset.name || asset.ticker || asset.symbol || "Unknown Asset";
@@ -2412,21 +2466,29 @@ export default function DepositForm({
       )}
       
       
-      <div className="w-full text-white">
+      <div className={`w-full ${isDark ? "text-white" : "text-[#1F2937]"}`}>
         {/* Top Section - Amount and Bank/Payment Method in one card */}
-        <div className="relative mb-4 overflow-hidden">
+        <div className="relative mb-4">
           {/* Top Card Container */}
-          <div className="relative flex flex-col sm:flex-row border border-[#23232F] dark:border-[#2F2F3A] bg-[#0F0F17] dark:bg-[#0F0F17] rounded-2xl p-3 sm:p-4 gap-4 sm:gap-0 min-w-0">
+          <div
+            className={`relative flex rounded-2xl p-4 overflow-visible ${
+              isDark ? "border border-[#2F2F3A] bg-[#0F0F17]" : "border border-[#E2E8F0] bg-white shadow-sm"
+            }`}
+          >
             {/* Amount Section */}
-            <div className="flex-1 sm:pr-4 w-full sm:w-auto min-w-0">
-              <label className="block text-[14px] sm:text-[15px] text-[#9CA3AF] dark:text-[#9CA3AF] mb-2 font-semibold flex items-center gap-2">
+            <div className="flex-1 pr-4">
+              <label
+                className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${
+                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                }`}
+              >
                 You Send
-                <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse flex-shrink-0"></div>
+                <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                 {/* {isCalculatingFromPay && (
                   <span className="text-xs text-[#1D8751] font-medium">(Active)</span>
                 )} */}
               </label>
-              <div className="relative min-w-0">
+              <div className="relative">
                 <input
                   type="text"
                   inputMode="decimal"
@@ -2501,8 +2563,15 @@ export default function DepositForm({
                     }
                   }}
                   placeholder="Enter amount"
-                  className={`w-full bg-transparent dark:bg-transparent text-[#35353e] dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 py-2 sm:py-2.5 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none border appearance-none min-w-0 ${
-                    (isCalculating || isCalculatingReceive) && isCalculatingFromPay && selectedAsset && !isForexAsset(selectedAsset) ? 'border-[#1D8751]' : 'border-[#A2A4A9FF] dark:border-[#35353E]'
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none ${
+                    (isCalculating || isCalculatingReceive) &&
+                    isCalculatingFromPay &&
+                    selectedAsset &&
+                    !isForexAsset(selectedAsset)
+                      ? "border-[#1D8751]"
+                      : isDark
+                      ? "border-[#35353E] bg-transparent text-white"
+                      : "border-[#CBD5F5] bg-white text-[#111827]"
                   }`}
                 />
 
@@ -2524,8 +2593,12 @@ export default function DepositForm({
             </div>
 
             {/* Bank/Payment Method Section */}
-            <div className="flex-1 sm:pl-4 w-full sm:w-auto min-w-0 border-t sm:border-t-0 sm:border-l border-[#23232F] dark:border-[#2F2F3A] pt-4 sm:pt-0 sm:border-none">
-              <label className="block text-[14px] sm:text-[15px] text-[#9CA3AF] dark:text-[#9CA3AF] mb-2 font-semibold">
+            <div className="flex-1 pl-4">
+              <label
+                className={`block text-[15px] mb-2 font-semibold ${
+                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                }`}
+              >
                 Bank/Payment Method
               </label>
               {/* <div>
@@ -2540,7 +2613,7 @@ export default function DepositForm({
                 }
               </div> */}
              
-              <div className="relative min-w-0">
+              <div className="relative">
                 <CustomSelect
                   options={(() => {
                     const mappedOptions = (finalPaymentMethods || []).map((payment: any, index: number) => {
@@ -2604,8 +2677,10 @@ export default function DepositForm({
                     return mappedOptions;
                   })()}
                   value={payBank}
-                  className="w-full min-w-0"
-                  triggerClassName="bg-transparent dark:bg-transparent text-white border border-[#39394A] dark:border-[#39394A] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base min-w-0"
+                  className="w-full"
+                  triggerClassName={`px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border rounded-xl ${
+                    isDark ? "bg-transparent text-white border-[#39394A]" : "bg-white text-[#1F2937] border-[#CBD5F5]"
+                  }`}
                   onChange={(value) => {
                     const selectedPayment = finalPaymentMethods?.find(
                       (payment: any) => payment.provider_name === value
@@ -2648,9 +2723,9 @@ export default function DepositForm({
           </div>
 
           {/* Swap Circle - positioned to touch both borders equally */}
-          <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/3 z-10 pointer-events-none">
+          <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/3 z-10">
             <button
-              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105 pointer-events-auto min-h-[44px] sm:min-h-0"
+              className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105"
               onClick={() => {
                 if (onModeChange) {
                   onModeChange(mode === "deposit" ? "withdrawal" : "deposit");
@@ -2661,31 +2736,39 @@ export default function DepositForm({
               <img
                 src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
                 alt="swap icon"
-                className="w-12 h-12 sm:w-14 sm:h-14 dark:hidden"
+                className="w-14 h-14 dark:hidden"
               />
               {/* Dark mode image */}
               <img
                 src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
                 alt="swap icon"
-                className="w-12 h-12 sm:w-14 sm:h-14 hidden dark:block"
+                className="w-14 h-14 hidden dark:block"
               />
             </button>
           </div>
         </div>
 
                 {/* Bottom Section - You Receive and Asset in one card */}
-        <div className="relative mb-3 overflow-hidden">
-          <div className="relative flex flex-col sm:flex-row border border-[#23232F] dark:border-[#2F2F3A] bg-[#0F0F17] dark:bg-[#0F0F17] rounded-2xl p-3 sm:p-4 gap-4 sm:gap-0 min-w-0">
+        <div className="relative mb-3">
+          <div
+            className={`relative flex rounded-2xl p-4 overflow-visible ${
+              isDark ? "border border-[#2F2F3A] bg-[#0F0F17]" : "border border-[#E2E8F0] bg-white shadow-sm"
+            }`}
+          >
             {/* You Receive Section */}
-            <div className="flex-1 sm:pr-4 w-full sm:w-auto min-w-0">
-              <label className="block text-[14px] sm:text-[15px] text-[#9CA3AF] dark:text-[#9CA3AF] mb-2 font-semibold flex items-center gap-2">
+            <div className="flex-1 pr-4">
+              <label
+                className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${
+                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                }`}
+              >
                 You Receive
-                <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse flex-shrink-0"></div>
+                <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                 {!isCalculatingFromPay && (
-                  <span className="text-xs text-[#1D8751] font-medium whitespace-nowrap">(Active)</span>
+                  <span className="text-xs text-[#1D8751] font-medium">(Active)</span>
                 )}
               </label>
-              <div className="relative min-w-0">
+              <div className="relative">
                 <input
                   type="text"
                   inputMode="decimal"
@@ -2752,10 +2835,20 @@ export default function DepositForm({
                     }
                   }}
                   placeholder="Enter amount"
-                  className={`w-full bg-transparent dark:bg-transparent text-[#35353e] dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 py-2 sm:py-2.5 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none border appearance-none min-w-0 ${
-                    receiveAmountError && (receiveAmountError.includes('Rough estimate') || receiveAmountError.includes('Using estimated rate')) ? 'border-[#F79330]' : 
-                    receiveAmountError ? 'border-red-500' :
-                    (isCalculating || isCalculatingReceive) && selectedAsset && !isForexAsset(selectedAsset) ? 'border-[#1D8751]' : 'border-[#A2A4A9FF] dark:border-[#35353E]'
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none ${
+                    receiveAmountError &&
+                    (receiveAmountError.includes("Rough estimate") ||
+                      receiveAmountError.includes("Using estimated rate"))
+                      ? "border-[#F79330]"
+                      : receiveAmountError
+                      ? "border-red-500"
+                      : (isCalculating || isCalculatingReceive) &&
+                        selectedAsset &&
+                        !isForexAsset(selectedAsset)
+                      ? "border-[#1D8751]"
+                      : isDark
+                      ? "border-[#35353E] bg-transparent text-white"
+                      : "border-[#CBD5F5] bg-white text-[#111827]"
                   }`}
                 />
                 {/* Show loading spinner when calculating "You Send" from "You Receive" */}
@@ -2811,13 +2904,19 @@ export default function DepositForm({
             </div>
 
             {/* Asset Section */}
-            <div className="flex-1 sm:pl-4 w-full sm:w-auto min-w-0 border-t sm:border-t-0 sm:border-l border-[#23232F] dark:border-[#2F2F3A] pt-4 sm:pt-0 sm:border-none">
-              <label className="block text-[14px] sm:text-[15px] text-[#9CA3AF] dark:text-[#9CA3AF] mb-2 font-semibold">
+            <div className="flex-1 pl-4">
+              <label
+                className={`block text-[15px] mb-2 font-semibold ${
+                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                }`}
+              >
                 Asset
               </label>
-              <div className="relative min-w-0" ref={assetDropdownRef}>
+              <div className="relative" ref={assetDropdownRef}>
                 <div
-                    className={`w-full bg-transparent dark:bg-transparent text-white rounded-2xl px-3 sm:px-4 py-2 sm:py-2.5 text-base sm:text-lg focus:outline-none border border-[#39394A] dark:border-[#39394A] flex items-center justify-between gap-3 cursor-pointer min-w-0`}
+                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer ${
+                    isDark ? "bg-transparent text-white border-[#39394A]" : "bg-white text-[#1F2937] border-[#CBD5F5]"
+                  }`}
                   onClick={() => {
                     if (!isAssetDropdownOpen) {
                       updateAssetDropdownPosition();
@@ -2825,7 +2924,7 @@ export default function DepositForm({
                     setIsAssetDropdownOpen(!isAssetDropdownOpen);
                   }}
                 >
-                   <div className="flex items-center gap-3 min-w-0 flex-1">
+                   <div className="flex items-center gap-3 min-w-0">
                     {selectedAsset ? (
                       <>
                         <img
@@ -2836,18 +2935,22 @@ export default function DepositForm({
                             "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                           }
                           alt={selectedAsset?.name || selectedAsset?.ticker || selectedAsset?.symbol || "Asset"}
-                          className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+                          className="w-6 h-6 rounded-full object-cover"
                           onError={(e) => {
                             e.currentTarget.src =
                               "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                           }}
                         />
-                        <div className="flex flex-col min-w-0 flex-1">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-white font-semibold truncate">
+                        <div className="flex flex-col">
+                        <div className="flex items-center gap-2">
+                            <span
+                              className={`font-semibold ${
+                                isDark ? "text-white" : "text-[#111827]"
+                              }`}
+                            >
                               {getAssetPrimaryLabel(selectedAsset).toUpperCase()}
                             </span>
-                            <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap">
+                            <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
                               {getNetworkDisplayName(getAssetNetwork(selectedAsset))}
                             </span>
                           </div>
@@ -2858,9 +2961,9 @@ export default function DepositForm({
                         <img
                           src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                           alt="asset icon"
-                          className="w-6 h-6 flex-shrink-0"
+                          className="w-6 h-6"
                         />
-                        <span className="text-[#7e7e8f] dark:text-[#788099] truncate">
+                        <span className={`${isDark ? "text-[#788099]" : "text-[#64748B]"}`}>
                           {assetsDisplay.isLoading
                             ? "Loading assets..."
                             : "Select Asset"}
@@ -2868,8 +2971,9 @@ export default function DepositForm({
                       </>
                     )}
                   </div>
-                  <svg
-                      className={`w-5 h-5 text-[#7e7e8f] transition-transform flex-shrink-0 ml-2 ${
+                  <div className="ml-4 flex-shrink-0">
+                    <svg
+                      className={`w-5 h-5 text-[#7e7e8f] transition-transform ${
                         isAssetDropdownOpen ? "rotate-180" : ""
                       }`}
                       fill="none"
@@ -2883,6 +2987,7 @@ export default function DepositForm({
                         d="M19 9l-7 7-7-7"
                       />
                     </svg>
+                  </div>
                 </div>
 
                 {/* Asset Dropdown */}
@@ -2924,7 +3029,7 @@ export default function DepositForm({
             <div className="mt-4 relative">
               <button
                 type="button"
-                className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
+                className={`w-full text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors text-white ${
                   isHomePage
                     ? "bg-[#1D8751] hover:bg-[#166b3e] cursor-pointer"
                     : isSubmitting ||
@@ -2998,10 +3103,14 @@ export default function DepositForm({
             <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
                   <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span> Payment Details
                 </h2>
-                <div className="flex-1 dark:bg-[#1D1D23] rounded-2xl border border-[#39394a] dark:border-[#35353E] flex flex-col justify-between p-5 relative min-h-[120px]">
+                <div
+                  className={`flex-1 rounded-2xl flex flex-col justify-between p-5 relative min-h-[120px] ${
+                    isDark ? "bg-[#1D1D23] border border-[#35353E]" : "bg-white border border-[#E2E8F0] shadow-sm"
+                  }`}
+                >
                   {/* Bank and logo */}
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-semibold">
+                    <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-base font-semibold`}>
                       Bank:
                     </span>
                     <div className="flex items-center gap-2">
@@ -3017,29 +3126,29 @@ export default function DepositForm({
                           e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
                         }}
                       />
-                      <span className="text-[#35353e] dark:text-[#788099] text-base font-semibold">
+                      <span className={`${isDark ? "text-[#D1D5DB]" : "text-[#1F2937]"} text-base font-semibold`}>
                         {selectedPaymentDetail.provider_name}
                       </span>
                     </div>
                   </div>
-                  <div className="border-t border-dashed border-[#39394a] mb-2"></div>
+                  <div className={`${isDark ? "border-[#39394A]" : "border-[#E2E8F0]"} border-t border-dashed mb-2`}></div>
                   {/* Account Name */}
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-medium">
+                    <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-base font-medium`}>
                       Account Name :
                     </span>
-                    <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
+                    <span className={`${isDark ? "text-[#D1D5DB]" : "text-[#1F2937]"} text-base font-medium`}>
                       {selectedPaymentDetail.account_name}
                     </span>
                   </div>
-                  <div className="border-t border-dashed border-[#39394a] mb-2"></div>
+                  <div className={`${isDark ? "border-[#39394A]" : "border-[#E2E8F0]"} border-t border-dashed mb-2`}></div>
                   {/* Account Number */}
                   <div className="flex items-center justify-between">
-                    <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-medium">
+                    <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-base font-medium`}>
                       Account Number :
                     </span>
                     <div className="flex items-center gap-2">
-                      <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
+                      <span className={`${isDark ? "text-[#D1D5DB]" : "text-[#1F2937]"} text-base font-medium`}>
                         {selectedPaymentDetail.account_number}
                       </span>
                       <button
@@ -3084,8 +3193,12 @@ export default function DepositForm({
             </h2>
             
             {/* Forex Account Number */}
-            <div className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg">
-              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+            <div
+              className={`flex flex-col rounded-2xl p-5 shadow-lg ${
+                isDark ? "bg-[#1D1D23] border-2 border-[#35353E]" : "bg-white border-2 border-[#E2E8F0]"
+              }`}
+            >
+              <label className={`block text-[17px] mb-2 font-semibold ${isDark ? "text-white" : "text-[#475569]"}`}>
                 Your Forex Account Number
               </label>
               <input
@@ -3093,20 +3206,28 @@ export default function DepositForm({
                 value={forexAccountNumber}
                 onChange={(e) => setForexAccountNumber(e.target.value)}
                 placeholder="Enter your forex account number (e.g., EUR9876543210)"
-                className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E]"
+                className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border ${
+                  isDark ? "bg-[#1D1D23] text-white border-[#35353E]" : "bg-white text-[#111827] border-[#CBD5F5]"
+                }`}
               />
             </div>
 
             {/* User Notes */}
-            <div className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg">
-              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+            <div
+              className={`flex flex-col rounded-2xl p-5 shadow-lg ${
+                isDark ? "bg-[#1D1D23] border-2 border-[#35353E]" : "bg-white border-2 border-[#E2E8F0]"
+              }`}
+            >
+              <label className={`block text-[17px] mb-2 font-semibold ${isDark ? "text-white" : "text-[#475569]"}`}>
                 Additional Notes (Optional)
               </label>
               <textarea
                 value={userNotes}
                 onChange={(e) => setUserNotes(e.target.value)}
                 placeholder="Add any special instructions or notes..."
-                className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] min-h-[100px] resize-none"
+                className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border min-h-[100px] resize-none ${
+                  isDark ? "bg-[#1D1D23] text-white border-[#35353E]" : "bg-white text-[#111827] border-[#CBD5F5]"
+                }`}
               />
             </div>
 
@@ -3189,10 +3310,14 @@ export default function DepositForm({
             ref={paymentDetailsRef}
             className="mt-1 mb-2 w-full flex flex-col gap-3 px-2 "
           >
-            <div className="flex-1  dark:bg-[#1D1D23] rounded-2xl border border-[#39394a] dark:border-[#35353E] flex flex-col justify-between p-5 relative min-h-[120px]">
+            <div
+              className={`flex-1 rounded-2xl flex flex-col justify-between p-5 relative min-h-[120px] ${
+                isDark ? "bg-[#1D1D23] border border-[#35353E]" : "bg-white border border-[#E2E8F0] shadow-sm"
+              }`}
+            >
               {/* Bank and logo */}
               <div className="flex items-center justify-between mb-4">
-                <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-semibold">
+                <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-base font-semibold`}>
                   Bank:
                 </span>
                 <div className="flex items-center gap-2">
@@ -3208,29 +3333,29 @@ export default function DepositForm({
                       e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
                     }}
                   />
-                  <span className="text-[#35353e] dark:text-[#788099] text-base font-semibold">
+                  <span className={`${isDark ? "text-[#D1D5DB]" : "text-[#1F2937]"} text-base font-semibold`}>
                     {selectedPaymentDetail.provider_name}
                   </span>
                 </div>
               </div>
-              <div className="border-t border-dashed border-[#39394a] mb-2"></div>
+              <div className={`${isDark ? "border-[#39394A]" : "border-[#E2E8F0]"} border-t border-dashed mb-2`}></div>
               {/* Account Name */}
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-medium">
+                <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-base font-medium`}>
                   Account Name :
                 </span>
-                <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
+                <span className={`${isDark ? "text-[#D1D5DB]" : "text-[#1F2937]"} text-base font-medium`}>
                   {selectedPaymentDetail.account_name}
                 </span>
               </div>
-              <div className="border-t border-dashed border-[#39394a] mb-2"></div>
+              <div className={`${isDark ? "border-[#39394A]" : "border-[#E2E8F0]"} border-t border-dashed mb-2`}></div>
               {/* Account Number */}
               <div className="flex items-center justify-between">
-                <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-medium">
+                <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-base font-medium`}>
                   Account Number :
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
+                  <span className={`${isDark ? "text-[#D1D5DB]" : "text-[#1F2937]"} text-base font-medium`}>
                     {selectedPaymentDetail.account_number}
                   </span>
                   <button
@@ -3276,7 +3401,11 @@ export default function DepositForm({
                 <span className="text-[#7e7e8f] dark:text-[#788099]">3-</span> Transaction Code
               </h2>
               <div className="mb-6 flex flex-col gap-3 w-full px-2">
-              <div className=" dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-4 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
+              <div
+                className={`border-2 rounded-2xl p-4 shadow-lg w-full ${
+                  isDark ? "bg-[#1D1D23] border-[#35353E] text-[#788099]" : "bg-white border-[#E2E8F0] text-[#1F2937]"
+                }`}
+              >
                 {/* Transaction Code Row */}
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-3">
                   {/* Display deposit code from API response - each character in its own box */}
@@ -3529,27 +3658,31 @@ export default function DepositForm({
                   <circle cx="12" cy="16" r="1" fill="#1D8751" />
                 </svg>
               </span>
-              <span className="text-base font-semibold text-[#7e7e8f] dark:text-[#788099]">
+              <span className={`text-base font-semibold ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
                 Terms and Conditions Summary
               </span>
             </div>
-            <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-4">
+            <div
+              className={`border border-[#1D8751] rounded-xl p-4 ${
+                isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"
+              }`}
+            >
               <ul className="list-none space-y-2">
                 <li className="flex items-start">
                   <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                  <span className="text-[#35353e] dark:text-[#788099] text-sm">
+                  <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
                     Please send the money from your own account Only
                   </span>
                 </li>
                 <li className="flex items-start">
                   <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                    <span className="text-[#35353e] dark:text-[#788099] text-sm">
+                    <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
                     Put transaction ID in the description field of the bank
                   </span>
                 </li>
                 <li className="flex items-start">
                   <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                  <span className="text-[#35353e] dark:text-[#788099] text-sm">
+                  <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
                     Please note, If you do not follow above conditions, we will
                     reject your transaction and send you back your money.
                   </span>
@@ -3563,7 +3696,11 @@ export default function DepositForm({
           {/* Validation Errors Display */}
           {validationErrors.length > 0 && (
             <div className="w-full px-2 mb-4">
-                <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-2xl p-4">
+                <div
+                  className={`border border-[#1D8751] rounded-2xl p-4 ${
+                    isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"
+                  }`}
+                >
                 <h3 className="text-[#1D8751] font-semibold mb-2">
                   Please fix the following errors:
                 </h3>
@@ -3579,7 +3716,7 @@ export default function DepositForm({
           {/* Button outside the card */}
           <div className="flex flex-col gap-3 w-full px-2">
             <button
-              className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
+              className={`w-full text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors text-white ${
                 isSubmitting
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"

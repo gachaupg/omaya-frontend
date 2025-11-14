@@ -189,6 +189,11 @@ export default function WithdrawalForm({
   const router = useRouter();
   const [transactionMode, setTransactionMode] = useState<"crypto" | "forex">("crypto");
   
+  // Declare all refs early to avoid initialization errors
+  const paymentDetailsRef = useRef<HTMLDivElement>(null);
+  const assetDropdownRef = useRef<HTMLDivElement>(null);
+  const assetDropdownContentRef = useRef<HTMLDivElement | null>(null);
+  
   // Helper function to check if asset is FXP (forex) - defined early to avoid hoisting issues
   const isForexAsset = (asset: any) => {
     if (!asset) return false;
@@ -478,12 +483,9 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
   // Forex-specific state for withdrawal
   const [userNotesForex, setUserNotesForex] = useState<string>("");
   const [showForexWithdrawalForm, setShowForexWithdrawalForm] = useState<boolean>(false);
-  const paymentDetailsRef = useRef<HTMLDivElement>(null);
   // Asset selection state for search functionality
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
   const [assetSearchTerm, setAssetSearchTerm] = useState("");
-  const assetDropdownRef = useRef<HTMLDivElement>(null);
-  const assetDropdownContentRef = useRef<HTMLDivElement | null>(null);
   const [assetDropdownPosition, setAssetDropdownPosition] = useState({
     top: 0,
     left: 0,
@@ -2705,20 +2707,59 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
       return null;
     }
 
+    // Safely get trigger rect - ensure ref is available
+    const triggerRect = assetDropdownRef.current?.getBoundingClientRect();
+    const triggerWidth =
+      assetDropdownPosition.width || triggerRect?.width || 0;
+    let expandedWidth: number | undefined =
+      triggerWidth > 0 ? triggerWidth + 48 : undefined;
+
+    const viewportAllowance =
+      typeof window !== "undefined" ? window.innerWidth - 32 : undefined;
+
+    if (
+      expandedWidth !== undefined &&
+      viewportAllowance !== undefined &&
+      expandedWidth > viewportAllowance
+    ) {
+      expandedWidth = viewportAllowance;
+    }
+
+    const extraWidth =
+      expandedWidth !== undefined && triggerWidth > 0
+        ? expandedWidth - triggerWidth
+        : 0;
+
+    let computedLeft =
+      triggerRect && extraWidth
+        ? triggerRect.left - extraWidth / 2
+        : assetDropdownPosition.left;
+
+    if (
+      typeof window !== "undefined" &&
+      expandedWidth !== undefined &&
+      computedLeft !== undefined
+    ) {
+      const maxLeft = window.innerWidth - expandedWidth - 16;
+      computedLeft = Math.min(Math.max(16, computedLeft), Math.max(16, maxLeft));
+    }
+
+    const dropdownStyle: React.CSSProperties = {
+      position: "absolute",
+      top: assetDropdownPosition.top,
+      left: computedLeft ?? triggerRect?.left ?? assetDropdownPosition.left,
+      width:
+        expandedWidth ??
+        assetDropdownPosition.width ??
+        (triggerWidth > 0 ? triggerWidth : undefined),
+    };
+
     return createPortal(
       (
         <div
           ref={assetDropdownContentRef}
-          className="mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl z-[1200] max-h-[70vh] sm:max-h-80 overflow-y-auto"
-          style={{
-            position: "absolute",
-            top: assetDropdownPosition.top,
-            left: assetDropdownPosition.left,
-            width:
-              assetDropdownPosition.width ||
-              assetDropdownRef.current?.offsetWidth ||
-              undefined,
-          }}
+          className="mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg z-[1200] max-h-[70vh] sm:max-h-96 overflow-y-auto"
+          style={dropdownStyle}
         >
           {/* Search Input */}
           <div className="p-2 sm:p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">

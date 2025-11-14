@@ -1018,7 +1018,7 @@ export default function ExchangeForm({
               placeholder="Search payment providers..."
               value={paymentSearchTerm}
               onChange={(e) => setPaymentSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-transparent text-[#35353e] dark:text-[#ffffff] placeholder-gray-400 focus:outline-none"
+              className="w-full pl-10 pr-4 py-2 bg-transparent text-[#1F2937] dark:text-[#ffffff] placeholder-gray-400 focus:outline-none"
             />
           </div>
         </div>
@@ -1088,7 +1088,7 @@ export default function ExchangeForm({
                         }}
                       />
                       <div className="flex-1 min-w-0">
-                        <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2 flex-wrap">
+                        <div className="text-[#1F2937] dark:text-[#ffffff] font-medium flex items-center gap-2 flex-wrap">
                           <span className="truncate">{provider.provider_name}</span>
                           {isSelected && (
                             <span className="text-[#1D8751] text-sm">✓</span>
@@ -1145,13 +1145,16 @@ export default function ExchangeForm({
     ].join(" ");
 
     const textColorClass = isActive
-      ? "text-white"
+      ? isDark
+        ? "text-white"
+        : "text-[#0B1418]"
       : isDark
       ? "text-[#7C8A97] group-hover:text-[#1D8751]"
       : "text-[#627180] group-hover:text-[#1D8751]";
 
-    const expressIconSrc =
-      "https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png";
+    const expressIconSrc = isDark
+      ? "https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+      : "https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png";
 
     const ariaLabel =
       variant === "express"
@@ -1257,7 +1260,7 @@ export default function ExchangeForm({
                   }}
                 />
                 <div className="flex-1 min-w-0">
-                  <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2 flex-wrap">
+                  <div className="text-[#111827] dark:text-[#ffffff] font-medium flex items-center gap-2 flex-wrap">
                     <span className="truncate">
                       {(
                         asset.ticker ||
@@ -1270,7 +1273,7 @@ export default function ExchangeForm({
                       {getNetworkDisplayName(getAssetNetwork(asset))}
                     </span>
                   </div>
-                  <div className="text-[#35353e] dark:text-[#788099] text-sm truncate">
+                  <div className="text-[#475569] dark:text-[#788099] text-sm truncate">
                     {(() => {
                       // Clean up asset name to remove redundant network information
                       let displayName =
