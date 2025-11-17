@@ -32,8 +32,6 @@ export const ThemeExample: React.FC = () => {
           </h3>
           <ThemeToggle showText={true} />
         </div>
-
-        {/* Method 2: Direct toggle function */}
         <div>
           <h3 className="text-lg font-semibold mb-2">
             Method 2: Direct Toggle
@@ -45,8 +43,6 @@ export const ThemeExample: React.FC = () => {
             Toggle Theme
           </button>
         </div>
-
-        {/* Method 3: Set specific theme */}
         <div>
           <h3 className="text-lg font-semibold mb-2">
             Method 3: Set Specific Theme
@@ -74,8 +70,6 @@ export const ThemeExample: React.FC = () => {
             </button>
           </div>
         </div>
-
-        {/* Conditional rendering example */}
         <div>
           <h3 className="text-lg font-semibold mb-2">
             Conditional Rendering Example
@@ -90,8 +84,6 @@ export const ThemeExample: React.FC = () => {
             </div>
           )}
         </div>
-
-        {/* Dynamic styling example */}
         <div>
           <h3 className="text-lg font-semibold mb-2">
             Dynamic Styling Example

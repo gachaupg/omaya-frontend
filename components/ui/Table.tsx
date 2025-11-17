@@ -10,9 +10,6 @@ type TableProps = {
   data?: TransactionType[];
   onExport?: () => void;
   onSearch?: (query: string) => void;
-  /**
-   * If true, the table will have a border. Default is false (no border).
-   */
   withBorder?: boolean;
 };
 
@@ -197,9 +194,7 @@ export const Table: React.FC<TableProps> = ({
               ? { border: `1px solid ${tokens.colors.dark.border}` }
               : {}),
           }}
-        >
-          {/* Table Header */}
-          {type === "transactions" ? (
+        >          {type === "transactions" ? (
             <div className="grid grid-cols-3 sm:grid-cols-5 py-3 px-4 border-b bg-[${tokens.colors.dark.card}] border-[${tokens.colors.dark.border}]">
               <div className="text-sm font-medium text-[${tokens.colors.dark.textTitle}]">
                 Asset
