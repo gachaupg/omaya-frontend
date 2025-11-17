@@ -39,10 +39,48 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
 
       // Get the OAuth URL using our helper function
       const authUrl = getGoogleOAuthUrl(state);
-      console.log('Redirecting to Google OAuth:', authUrl);
+      console.log('Opening Google OAuth popup:', authUrl);
 
-      // Redirect to Google OAuth
-      window.location.href = authUrl;
+      // Open Google OAuth in a popup window
+      const width = 500;
+      const height = 600;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+      
+      const popup = window.open(
+        authUrl,
+        'google-oauth-popup',
+        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`
+      );
+
+      // Check if popup was blocked
+      if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+        // If popup was blocked, fall back to redirect
+        console.warn('Popup was blocked, falling back to redirect');
+        window.location.href = authUrl;
+        return;
+      }
+
+      // Set up a message listener to handle the OAuth callback
+      const handleMessage = (event: MessageEvent) => {
+        // Verify the origin of the message for security
+        if (event.origin !== window.location.origin) return;
+        
+        if (event.data.type === 'OAUTH_SUCCESS') {
+          // Handle successful OAuth
+          onSuccess?.(event.data.user);
+          popup.close();
+          window.removeEventListener('message', handleMessage);
+        } else if (event.data.type === 'OAUTH_ERROR') {
+          // Handle OAuth error
+          onError?.(event.data.error);
+          popup.close();
+          window.removeEventListener('message', handleMessage);
+        }
+      };
+
+      window.addEventListener('message', handleMessage);
+      return;
     } catch (error) {
       console.error('Error during Google OAuth initialization:', error);
       toast.error('Failed to initialize Google Sign-In. Please try again.');
@@ -53,8 +91,9 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
   return (
     <button
       onClick={handleGoogleLogin}
-      className={`flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${className}`}
+      className={`flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${className} relative z-10 pointer-events-auto`}
       type="button"
+      style={{ position: 'relative', zIndex: 10 }}
     >
       {children || (
         <span className="flex items-center gap-2">
