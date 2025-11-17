@@ -31,18 +31,21 @@ const UserCard = () => {
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
-const audioRef = useRef<HTMLAudioElement | null>(null);
-const [audioEnabled, setAudioEnabled] = useState(false);
-const [prevMatchedCount, setPrevMatchedCount] = useState(0);
-const [lastUpdateSource, setLastUpdateSource] = useState<"websocket" | "http" | null>(null);
-const [showUpdateIndicator, setShowUpdateIndicator] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [audioEnabled, setAudioEnabled] = useState(false);
+  const [prevMatchedCount, setPrevMatchedCount] = useState(0);
+  const [lastUpdateSource, setLastUpdateSource] = useState<
+    "websocket" | "http" | null
+  >(null);
+  const [showUpdateIndicator, setShowUpdateIndicator] = useState(false);
 
   // Use WebSocket for real-time matched trades updates with HTTP polling fallback
-  const { isConnected: wsConnected, connectionError } = useMatchedTradesWebSocket({
-    enabled: isAuthenticated,
-    fallbackToPolling: true,
-    pollingInterval: 30000, // 30 seconds fallback polling
-  });
+  const { isConnected: wsConnected, connectionError } =
+    useMatchedTradesWebSocket({
+      enabled: isAuthenticated,
+      fallbackToPolling: true,
+      pollingInterval: 30000, // 30 seconds fallback polling
+    });
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -55,14 +58,13 @@ const [showUpdateIndicator, setShowUpdateIndicator] = useState(false);
             setProfileImage(response.profile.photo);
           }
         })
-        .catch((error) => {
-        });
+        .catch((error) => {});
     }
   }, [dispatch, isAuthenticated]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      audioRef.current = new Audio('/sounds/notification.mp3');
+    if (typeof window !== "undefined") {
+      audioRef.current = new Audio("/sounds/notification.mp3");
       audioRef.current.volume = 0.3;
     }
   }, []);
@@ -70,13 +72,13 @@ const [showUpdateIndicator, setShowUpdateIndicator] = useState(false);
   // Enable audio after first user interaction
   useEffect(() => {
     const enableAudio = () => setAudioEnabled(true);
-    window.addEventListener('click', enableAudio, { once: true });
-    return () => window.removeEventListener('click', enableAudio);
+    window.addEventListener("click", enableAudio, { once: true });
+    return () => window.removeEventListener("click", enableAudio);
   }, []);
 
   // Log WebSocket connection status changes (suppress React StrictMode noise)
   const hasLoggedStatus = useRef(false);
-  
+
   useEffect(() => {
     if (wsConnected && !hasLoggedStatus.current) {
       hasLoggedStatus.current = true;
@@ -86,36 +88,31 @@ const [showUpdateIndicator, setShowUpdateIndicator] = useState(false);
   // Monitor data updates and determine source
   useEffect(() => {
     if (!matchedTrades?.results) return;
-    
+
     const currentCount = matchedTrades.results.length;
-    
+
     // Detect if this is a new update
     if (currentCount !== prevMatchedCount && prevMatchedCount !== 0) {
       // Determine update source
       const updateSource = wsConnected ? "websocket" : "http";
       setLastUpdateSource(updateSource);
-      
-    
-      
+
       // Log the actual trade data for debugging
-      if (process.env.NODE_ENV === 'development') {
-       
+      if (process.env.NODE_ENV === "development") {
       }
-      
+
       // Show update indicator
       setShowUpdateIndicator(true);
       setTimeout(() => setShowUpdateIndicator(false), 2000);
-      
+
       // Play audio for new trades
       if (audioEnabled && audioRef.current && currentCount > prevMatchedCount) {
-        audioRef.current.play().catch(err => {
-        });
+        audioRef.current.play().catch((err) => {});
       }
     }
-    
+
     setPrevMatchedCount(currentCount);
   }, [matchedTrades, wsConnected, audioEnabled, prevMatchedCount]);
-
 
   const handleImageClick = () => {
     fileInputRef.current?.click();
@@ -163,8 +160,8 @@ const [showUpdateIndicator, setShowUpdateIndicator] = useState(false);
       borderColor="border-[#E8EFF5] dark:border-[#35353E]"
       width="w-full"
       bgColor="bg-[#18D181]"
-      borderRadius="rounded-[20px]"
-      className="p-2 dark:bg-[#18181D] bg-white"
+      borderRadius="rounded-xl sm:rounded-xl lg:rounded-[20px]"
+      className="p-3 sm:p-3 lg:p-2 dark:bg-[#18181D] bg-white overflow-hidden"
     >
       {showHelpSupport ? (
         <div className="w-full mt-4">

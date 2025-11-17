@@ -1971,14 +1971,14 @@ export default function DepositForm({
   }, [selectedPaymentDetail]);
 
   return (
-    <div className="w-full min-h-screen flex flex-col dark:bg-[#18181D]  ">
-      <h2 className="text-xl font-bold  mb-2 text-[#788099]">
+    <div className="w-full min-h-screen flex flex-col dark:bg-[#18181D]">
+      <h2 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3 text-[#788099]">
         <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Transaction Info
       </h2>
       
       {/* Network Status Indicator */}
       {estimateError && !estimateLoading && (
-        <div className="mb-4 p-3 bg-[#F79330] bg-opacity-10 border border-[#F79330] rounded-lg">
+        <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-[#F79330] bg-opacity-10 border border-[#F79330] rounded-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-[#F79330]">
               <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
@@ -2003,21 +2003,21 @@ export default function DepositForm({
       )}
       <div className="w-full mx-auto text-white">
           {/* Transaction Info Card with Asset and Network selects only */}
-        <div className="relative mb-4">
+        <div className="relative mb-3 sm:mb-4">
             {/* Transaction Info Card Container */}
-            <div className="border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-6">
+            <div className="border border-[#D1D2D4FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6">
               
               {/* Two Select Fields Row - Asset and Network only */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
                 
                 {/* Asset Select */}
                 <div>
-                  <label className="block text-[20px] text-[#7e7e8f] dark:text-[#ffffff] mb-3 font-semibold">
+                  <label className="block text-base sm:text-[17px] lg:text-[20px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 sm:mb-3 font-semibold">
                     Asset
                   </label>
                   <div className="relative" ref={assetDropdownRef}>
                     <div
-                      className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-6 py-3 text-base focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer"
+                      className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer min-h-[44px] sm:min-h-0"
                       onClick={() => setIsAssetDropdownOpen(!isAssetDropdownOpen)}
                     >
                       <div className="flex items-center gap-3">
@@ -2049,9 +2049,9 @@ export default function DepositForm({
                     
                     {/* Asset Dropdown */}
                     {isAssetDropdownOpen && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl z-50 max-h-80 overflow-hidden">
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl z-50 max-h-[60vh] sm:max-h-80 overflow-hidden">
                         {/* Search Input */}
-                        <div className="p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+                        <div className="p-2 sm:p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
                           <div className="relative">
                             <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
                             <input
@@ -2059,7 +2059,7 @@ export default function DepositForm({
                               placeholder="Search assets..."
                               value={assetSearchTerm}
                               onChange={(e) => setAssetSearchTerm(e.target.value)}
-                              className="w-full pl-10 pr-4 py-2 text-[#35353e] dark:bg-[#35353E] dark:text-[#ffffff] rounded-lg border border-[#A2A4A9FF] dark:border-[#35353E] focus:outline-none focus:border-[#1D8751]"
+                              className="w-full pl-10 pr-4 py-2.5 sm:py-2 text-sm sm:text-base text-[#35353e] dark:bg-[#35353E] dark:text-[#ffffff] rounded-lg border border-[#A2A4A9FF] dark:border-[#35353E] focus:outline-none focus:border-[#1D8751] min-h-[44px] sm:min-h-0"
                             />
                           </div>
                         </div>
@@ -2127,12 +2127,12 @@ export default function DepositForm({
 
                 {/* Network Select */}
                 <div>
-                  <label className="block text-[20px] text-[#7e7e8f] dark:text-[#ffffff] mb-3 font-semibold">
+                  <label className="block text-base sm:text-[17px] lg:text-[20px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 sm:mb-3 font-semibold">
                     Network
                   </label>
                   <div className="relative" ref={networkDropdownRef}>
                     <div 
-                      className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-6 py-3 text-base focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer hover:border-[#1D8751] dark:hover:border-[#1D8751] transition-colors"
+                      className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer hover:border-[#1D8751] dark:hover:border-[#1D8751] transition-colors min-h-[44px] sm:min-h-0"
                       onClick={() => setIsNetworkDropdownOpen(!isNetworkDropdownOpen)}
                     >
                       <div className="flex items-center gap-3">
@@ -2157,12 +2157,12 @@ export default function DepositForm({
 
                     {/* Network Dropdown */}
                     {isNetworkDropdownOpen && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg z-50 max-h-60 overflow-y-auto">
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl shadow-lg z-50 max-h-[60vh] sm:max-h-60 overflow-y-auto">
                         <div className="p-2">
                           {availableNetworks.map((network, index) => (
                             <div
                               key={`${network.network_id}-${index}`}
-                              className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer rounded-xl transition-colors ${
+                              className={`flex items-center gap-3 p-2 sm:p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer rounded-xl transition-colors min-h-[44px] sm:min-h-0 ${
                                 selectedNetwork?.network_id === network.network_id 
                                   ? 'bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751]/30' 
                                   : ''
@@ -2207,11 +2207,11 @@ export default function DepositForm({
 
           {/* Transaction Code Card - below Payment Details, before Wallet Address */}
           {apiResponse && apiResponse.deposit_code && (
-            <div className="mb-6 flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
-              <h2 className="text-xl font-bold mb-2 text-[#788099]">
+            <div className="mb-4 sm:mb-6 flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
+              <h2 className="text-lg sm:text-xl font-bold mb-2 text-[#788099]">
                 <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span> Transaction Code
               </h2>
-              <div className=" dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-4 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
+              <div className="dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
                 {/* Transaction Code Row */}
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-3">
                   {/* Display deposit code from API response - each character in its own box */}
@@ -2232,7 +2232,7 @@ export default function DepositForm({
                       navigator.clipboard.writeText(apiResponse.deposit_code);
                       showToast.success("Transaction code copied!");
                     }}
-                    className="flex items-center gap-2 bg-[#35353E] border border-[#1D8751] text-white rounded-full px-3 py-2 sm:px-4 font-semibold text-xs sm:text-sm hover:bg-[#1D8751] hover:text-white transition-colors"
+                    className="flex items-center gap-2 bg-[#35353E] border border-[#1D8751] text-white rounded-full px-3 py-2 sm:px-4 font-semibold text-xs sm:text-sm hover:bg-[#1D8751] hover:text-white transition-colors min-h-[44px] sm:min-h-0 touch-manipulation"
                   >
                     <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
                       <rect
@@ -2314,12 +2314,12 @@ export default function DepositForm({
           )}
 
           {/* Wallet Address Section */}
-          <h2 className="text-xl font-bold  mb-2 text-[#788099]">
+          <h2 className="text-lg sm:text-xl font-bold mb-2 text-[#788099]">
             <span className="text-[#7e7e8f]">3-</span> Wallet Address
           </h2>
-          <div className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full  mx-auto text-[#35353e] dark:text-[#788099] mb-6">
+          <div className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-5 shadow-lg w-full mx-auto text-[#35353e] dark:text-[#788099] mb-4 sm:mb-6">
             {/* Wallet/Account Address Label */}
-            <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+            <label className="block text-sm sm:text-[17px] text-[#7e7e8f] mb-2 font-semibold">
               Wallet/Account Address
             </label>
             
@@ -2336,10 +2336,10 @@ export default function DepositForm({
             )}
             
             {/* Input group */}
-            <div className="flex items-center dark:bg-[#1D1D23] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-4 py-2 mb-4">
+            <div className="flex items-center dark:bg-[#1D1D23] border border-[#39394a] dark:border-[#35353E] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 mb-3 sm:mb-4 min-h-[44px] sm:min-h-0">
               {/* Left icon */}
-              <span className="mr-2 text-[#1D8751]">
-                <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
+              <span className="mr-2 text-[#1D8751] flex-shrink-0">
+                <svg width="20" height="20" className="sm:w-[22px] sm:h-[22px]" fill="none" viewBox="0 0 24 24">
                   <path
                     d="M7 17v2a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"
                     stroke="#1D8751"
@@ -2387,7 +2387,7 @@ export default function DepositForm({
                   }
                 }}
                 placeholder="Paste here your Crypto address"
-                className={`flex-1 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-sm ${
+                className={`flex-1 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-sm sm:text-base min-w-0 ${
                   walletError
                     ? "border-red-500"
                     : walletAddress.trim() && !walletError
@@ -2396,7 +2396,7 @@ export default function DepositForm({
                 }`}
               />
               {/* Bookmark icon */}
-              <span className="mx-2 text-[#788099] cursor-pointer">
+              <span className="mx-1 sm:mx-2 text-[#788099] cursor-pointer flex-shrink-0">
                 <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                   <path
                     d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"
@@ -2413,7 +2413,7 @@ export default function DepositForm({
                   navigator.clipboard.writeText(walletAddress);
                   showToast.success("Address copied to clipboard!");
                 }}
-                className="flex items-center gap-1 dark:bg-[#1D1D23] border border-[#1D8751] text-[#1D8751] rounded-full px-4 py-1 ml-2 font-semibold text-base hover:bg-[#1D8751] hover:text-white transition-colors"
+                className="flex items-center gap-1 dark:bg-[#1D1D23] border border-[#1D8751] text-[#1D8751] rounded-full px-3 sm:px-4 py-2 sm:py-1 ml-1 sm:ml-2 font-semibold text-sm sm:text-base hover:bg-[#1D8751] hover:text-white transition-colors min-h-[44px] sm:min-h-0 touch-manipulation flex-shrink-0"
               >
                 <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
                   <rect
@@ -2460,16 +2460,16 @@ export default function DepositForm({
 
             {/* QR Code Display */}
             {qrCodeDataUrl && walletAddress && (
-              <div className="mt-4 p-4  rounded-xl">
+              <div className="mt-3 sm:mt-4 p-3 sm:p-4 rounded-xl">
                 <div className="flex flex-col items-center">
-                  <h3 className="text-sm font-semibold text-[#495057] dark:text-[#adb5bd] mb-3">
+                  <h3 className="text-xs sm:text-sm font-semibold text-[#495057] dark:text-[#adb5bd] mb-2 sm:mb-3">
                     Scan QR Code to Send
                   </h3>
-                  <div className="bg-white dark:bg-[#1a1a1a] p-3 rounded-lg border border-[#dee2e6] dark:border-[#404040]">
+                  <div className="bg-white dark:bg-[#1a1a1a] p-2 sm:p-3 rounded-lg border border-[#dee2e6] dark:border-[#404040]">
                     <img 
                       src={qrCodeDataUrl} 
                       alt="Deposit Address QR Code" 
-                      className="w-48 h-48"
+                      className="w-40 h-40 sm:w-48 sm:h-48 lg:w-64 lg:h-64"
                     />
                   </div>
                   <p className="text-xs text-[#6c757d] dark:text-[#6c757d] mt-2 text-center max-w-xs">
@@ -2545,9 +2545,9 @@ export default function DepositForm({
 
           {/* Validation Errors Display */}
           {validationErrors.length > 0 && (
-            <div className="max-w-4xl mx-auto w-full px-2 mb-4">
-                <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-2xl p-4">
-                <h3 className="text-[#1D8751] font-semibold mb-2">
+            <div className="max-w-4xl mx-auto w-full px-2 mb-3 sm:mb-4">
+                <div className="dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl sm:rounded-2xl p-3 sm:p-4">
+                <h3 className="text-[#1D8751] font-semibold mb-2 text-sm sm:text-base">
                   Please fix the following errors:
                 </h3>
                 <ul className="list-disc list-inside text-[#1D8751] space-y-1">
@@ -2564,9 +2564,9 @@ export default function DepositForm({
 
       {/* Deposit Address Display Section */}
       {isTransactionSubmitted && depositResponse && (
-        <div className="max-w-4xl mx-auto w-full px-2 mt-6">
-          <div className="bg-[#1D1D23] rounded-2xl border border-[#39394a] p-6">
-            <h3 className="text-white font-semibold mb-4 text-lg">Deposit Instructions</h3>
+        <div className="max-w-4xl mx-auto w-full px-2 mt-4 sm:mt-6">
+          <div className="bg-[#1D1D23] rounded-xl sm:rounded-2xl border border-[#39394a] p-3 sm:p-4 lg:p-6">
+            <h3 className="text-white font-semibold mb-3 sm:mb-4 text-base sm:text-lg">Deposit Instructions</h3>
             <div className="space-y-4">
               <div className="bg-[#2A2A2A] rounded-xl p-4">
                 <p className="text-[#788099] text-sm mb-2">Send this amount:</p>
@@ -2618,13 +2618,13 @@ export default function DepositForm({
                 </p>
               </div>
 
-              <div className="bg-[#2A2A2A] rounded-xl p-4">
-                <p className="text-[#788099] text-sm mb-2">Transaction ID:</p>
-                <p className="text-white font-mono text-sm">{depositResponse.transaction_id}</p>
+              <div className="bg-[#2A2A2A] rounded-xl p-3 sm:p-4">
+                <p className="text-[#788099] text-xs sm:text-sm mb-2">Transaction ID:</p>
+                <p className="text-white font-mono text-xs sm:text-sm break-all">{depositResponse.transaction_id}</p>
               </div>
 
-              <div className="bg-[#2A2A2A] rounded-xl p-4">
-                <p className="text-[#788099] text-sm mb-2">Status:</p>
+              <div className="bg-[#2A2A2A] rounded-xl p-3 sm:p-4">
+                <p className="text-[#788099] text-xs sm:text-sm mb-2">Status:</p>
                 <div className="flex items-center gap-2">
                   <div className={`w-3 h-3 rounded-full ${
                     transactionStatus === "completed" ? "bg-green-500" :
@@ -2705,9 +2705,9 @@ export default function DepositForm({
 
         {/* Submit Button for First Card */}
         {!isFirstCardSubmitted && (
-          <div className=" mx-auto w-full px-2 mt-6">
+          <div className="mx-auto w-full px-2 mt-4 sm:mt-6">
             <button
-              className={`w-full text-white text-base font-medium py-3 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
+              className={`w-full text-white text-sm sm:text-base font-medium py-3 sm:py-3 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${
                 isSubmitting
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
