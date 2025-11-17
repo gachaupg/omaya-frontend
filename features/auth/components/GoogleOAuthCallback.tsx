@@ -88,18 +88,6 @@ export default function GoogleOAuthCallback() {
     }
   }, []);
 
-  // Function to send message to parent window
-  const sendMessageToParent = useCallback((type: 'OAUTH_SUCCESS' | 'OAUTH_ERROR', data: any) => {
-    if (window.opener) {
-      window.opener.postMessage({
-        type,
-        ...data,
-      }, window.location.origin);
-      // Close the popup after a short delay to ensure the message is sent
-      setTimeout(() => window.close(), 500);
-    }
-  }, []);
-
   // Handle the OAuth callback
   useEffect(() => {
     const handleAuthCallback = async () => {
