@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-
+// @ts-ignore
 interface Option {
   value: string;
   label: string;
@@ -232,14 +232,14 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
           <div
             id={dropdownId}
             ref={dropdownContentRef}
-            className="z-[9999] bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl max-h-[300px] sm:max-h-[250px] overflow-hidden"
+            className="z-[9999] bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl max-h-[200px] sm:max-h-[180px] overflow-hidden min-w-[200px]"
             role="listbox"
             style={{
               position: "fixed",
               top: dropdownStyles.top,
               left: dropdownStyles.left,
-              width: dropdownStyles.width,
-              minWidth: dropdownStyles.width,
+              width: Math.max(dropdownStyles.width, 200),
+              minWidth: Math.max(dropdownStyles.width, 200),
             }}
           >
             {/* Search Input */}
@@ -257,7 +257,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
             )}
 
             {/* Options List */}
-            <div className="max-h-[250px] sm:max-h-[200px] overflow-y-auto p-1">
+            <div className="max-h-[180px] sm:max-h-[160px] overflow-y-auto p-1">
               {filteredOptions.length === 0 ? (
                 <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
                   {searchTerm ? "No matching options" : emptyText}
@@ -272,7 +272,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                     onClick={() => handleOptionClick(option.value)}
                     disabled={option.disabled}
                     className={`
-                    w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm transition-colors duration-150
+                    w-full text-left px-3 sm:px-4 py-1.5 sm:py-2 text-sm transition-colors duration-150
                     hover:bg-blue-50 dark:hover:bg-blue-900/20
                     focus:outline-none focus:bg-blue-50 dark:focus:bg-blue-900/20
                     ${isSelected
@@ -285,7 +285,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                     }
                     ${optionClassName}
                   `}
-                    style={{ minHeight: "40px", marginBottom: "2px" }}
+                    style={{ minHeight: "32px", marginBottom: "1px" }}
                     role="option"
                     aria-selected={value === option.value}
                   >

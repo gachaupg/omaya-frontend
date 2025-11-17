@@ -68,11 +68,11 @@ const Filters: React.FC<FiltersProps> = ({
   logger.debug("p2p", "Order Status Tabs:", orderStatusTabs);
 
   const filterCardBase =
-    "flex w-full items-center justify-between gap-3 rounded-[28px] border border-gray-300 dark:border-[#35353E] bg-white dark:bg-transparent px-3 py-2.5";
+    "flex w-full items-center justify-between gap-2 rounded-[28px] border bg-white dark:bg-transparent px-2.5 py-0.5";
   const triggerOverride =
-    "!bg-transparent !border-0 !shadow-none px-0 py-0 flex justify-end items-center min-w-[24px] [&>div>span]:text-transparent [&>div>svg]:text-gray-600 [&>div>svg]:dark:text-gray-400";
+    "!bg-transparent !border-0 !shadow-none px-0 py-0 !min-h-0 h-auto flex items-center w-auto [&>div>span]:text-sm [&>div>span]:text-gray-600 [&>div>span]:dark:text-[#9CA4C0] [&>div>svg]:text-gray-600 [&>div>svg]:dark:text-gray-400 [&>div>svg]:ml-1 [&>div]:py-0";
   const iconWrapper =
-    "flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 dark:bg-[#11141C] border border-gray-200 dark:border-[#1F2330]";
+    "flex h-5 w-5 items-center justify-center rounded-full flex-shrink-0";
   const labelStyle = "text-sm font-semibold text-gray-900 dark:text-white";
   const valueStyle = "text-sm font-medium text-gray-600 dark:text-[#9CA4C0]";
 
@@ -109,6 +109,12 @@ const Filters: React.FC<FiltersProps> = ({
   const statusValueDisplay =
     filters.status !== "all" ? statusOptionLabel : "";
   const dateValueDisplay = filters.date !== "all" ? dateOptionLabel : "";
+
+  // Check if filters are active (not "all")
+  const isCurrencyActive = filters.currency !== "all" && filters.currency !== "";
+  const isTypeActive = filters.type !== "all" && filters.type !== "";
+  const isStatusActive = filters.status !== "all" && filters.status !== "";
+  const isDateActive = filters.date !== "all" && filters.date !== "";
 
   return (
     <div className="w-full flex flex-col">
@@ -172,126 +178,99 @@ const Filters: React.FC<FiltersProps> = ({
       {/* ───────────────────────── Filter bar */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mt-4">
         {/* Coin selector */}
-        <div className={`${filterCardBase} ${loading ? "opacity-50" : ""}`}>
-          <div className="flex items-center gap-3">
+        <div className={`${filterCardBase} border-gray-300 dark:border-[#35353E] ${loading ? "opacity-50" : ""}`}>
+          <div className="flex items-center gap-2">
             <div className={iconWrapper}>
               <Image
                 src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
                 alt="Tether"
-                width={20}
-                height={20}
+                width={16}
+                height={16}
                 className="object-contain"
               />
             </div>
-            <span className={labelStyle}>{currencyInfo.name}</span>
           </div>
-          <div className="flex items-center gap-3">
-            <span className={valueStyle}>{currencyInfo.code}</span>
-            <CustomSelect
-              options={currencyOptions}
-              value={filters.currency}
-              onChange={handleCurrencyChange}
-              className="w-6"
-              triggerClassName={triggerOverride}
-              optionClassName="text-sm"
-              disabled={loading}
-              showSelectedCheck={false}
-              hideSelectedLabel
-            />
-          </div>
+          <CustomSelect
+            options={currencyOptions}
+            value={filters.currency}
+            onChange={handleCurrencyChange}
+            className="w-auto"
+            triggerClassName={triggerOverride}
+            optionClassName="text-sm"
+            disabled={loading}
+          />
         </div>
 
         {/* Type selector */}
-        <div className={`${filterCardBase} ${loading ? "opacity-50" : ""}`}>
-          <div className="flex items-center gap-3">
+        <div className={`${filterCardBase} ${isTypeActive ? "border-transparent" : "border-gray-300 dark:border-[#35353E]"} ${loading ? "opacity-50" : ""}`}>
+          <div className="flex items-center gap-2">
             <div className={iconWrapper}>
               <Image
                 src="https://res.cloudinary.com/pitz/image/upload/v1763388449/Icon_1_kiuery.png"
                 alt="Type icon"
-                width={18}
-                height={18}
+                width={16}
+                height={16}
                 className="object-contain"
               />
             </div>
-            <span className={labelStyle}>Type</span>
           </div>
-          <div className="flex items-center gap-3">
-            {typeValueDisplay && (
-              <span className={valueStyle}>{typeValueDisplay}</span>
-            )}
-            <CustomSelect
-              options={typeOptions}
-              value={filters.type}
-              onChange={handleTypeChange}
-              className="w-6"
-              triggerClassName={triggerOverride}
-              optionClassName="text-sm"
-              disabled={loading}
-              hideSelectedLabel
-            />
-          </div>
+          <CustomSelect
+            options={typeOptions}
+            value={filters.type}
+            onChange={handleTypeChange}
+            className="w-auto"
+            triggerClassName={triggerOverride}
+            optionClassName="text-sm"
+            disabled={loading}
+          />
         </div>
 
         {/* Status selector */}
-        <div className={`${filterCardBase} ${loading ? "opacity-50" : ""}`}>
-          <div className="flex items-center gap-3">
+        <div className={`${filterCardBase} ${isStatusActive ? "border-transparent" : "border-gray-300 dark:border-[#35353E]"} ${loading ? "opacity-50" : ""}`}>
+          <div className="flex items-center gap-2">
             <div className={iconWrapper}>
               <Image
                 src="https://res.cloudinary.com/pitz/image/upload/v1763388449/annotation-check_ergtxp.png"
                 alt="Status icon"
-                width={18}
-                height={18}
+                width={16}
+                height={16}
                 className="object-contain"
               />
             </div>
-            <span className={labelStyle}>Status</span>
           </div>
-          <div className="flex items-center gap-3">
-            {statusValueDisplay && (
-              <span className={valueStyle}>{statusValueDisplay}</span>
-            )}
-            <CustomSelect
-              options={statusOptions}
-              value={filters.status}
-              onChange={handleStatusChange}
-              className="w-6"
-              triggerClassName={triggerOverride}
-              optionClassName="text-sm"
-              disabled={loading}
-              hideSelectedLabel
-            />
-          </div>
+          <CustomSelect
+            options={statusOptions}
+            value={filters.status}
+            onChange={handleStatusChange}
+            className="w-auto"
+            triggerClassName={triggerOverride}
+            optionClassName="text-sm"
+            disabled={loading}
+          />
         </div>
 
         {/* Date selector */}
-        <div className={`${filterCardBase} ${loading ? "opacity-50" : ""}`}>
-          <div className="flex items-center gap-3">
+        <div className={`${filterCardBase} ${isDateActive ? "border-transparent" : "border-gray-300 dark:border-[#35353E]"} ${loading ? "opacity-50" : ""}`}>
+          <div className="flex items-center gap-2">
             <div className={iconWrapper}>
               <Image
                 src="https://res.cloudinary.com/pitz/image/upload/v1763388449/calendar-03_rnsmmq.png"
                 alt="Date icon"
-                width={18}
-                height={18}
+                width={16}
+                height={16}
                 className="object-contain"
               />
             </div>
-            <span className={labelStyle}>Date</span>
           </div>
-          <div className="flex items-center gap-3">
-            {dateValueDisplay && (
-              <span className={valueStyle}>{dateValueDisplay}</span>
-            )}
-            <CustomSelect
-              options={dateOptions}
-              value={filters.date}
-              onChange={handleDateChange}
-              className="w-6"
-              triggerClassName={triggerOverride}
-              optionClassName="text-sm"
-              disabled={loading}
-              hideSelectedLabel
-            />
-          </div>
+          <CustomSelect
+            options={dateOptions}
+            value={filters.date}
+            onChange={handleDateChange}
+            className="w-auto"
+            triggerClassName={triggerOverride}
+            optionClassName="text-sm"
+            disabled={loading}
+          />
         </div>
       </div>
     </div>
