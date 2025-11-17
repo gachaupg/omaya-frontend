@@ -9,6 +9,7 @@ WORKDIR /app
 # Copy package files
 COPY package.json package-lock.json* ./
 RUN npm ci
+COPY .env .env
 
 # Rebuild the source code only when needed
 FROM base AS builder
