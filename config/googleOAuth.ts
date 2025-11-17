@@ -2,9 +2,10 @@
 export const GOOGLE_OAUTH_CONFIG = {
   clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
   // Note: clientSecret should only be used server-side
-  redirectUri: typeof window !== 'undefined' 
-    ? `${window.location.origin}/auth/google/callback`
-    : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000') + '/auth/google/callback',
+  redirectUri: process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI || 
+    (typeof window !== 'undefined' 
+      ? `${window.location.origin}/auth/google/callback`
+      : process.env.NEXT_PUBLIC_APP_URL + '/auth/google/callback'),
   scope: [
     'https://www.googleapis.com/auth/userinfo.email',
     'https://www.googleapis.com/auth/userinfo.profile',

@@ -36,10 +36,11 @@ export interface AuthTokens {
 
 // Environment Configuration
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dev.backend.omaya.io';
-const FRONTEND_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+const FRONTEND_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://dev.omaya.io';
 
 // Base URL for OAuth callbacks
-const BASE_URL = typeof window !== 'undefined' ? window.location.origin : FRONTEND_URL;
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 
+  (typeof window !== 'undefined' ? window.location.origin : 'https://dev.omaya.io');
 
 // API Endpoints Configuration
 const ENDPOINTS = {
