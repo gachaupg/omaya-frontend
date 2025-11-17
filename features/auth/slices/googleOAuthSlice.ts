@@ -4,8 +4,9 @@ import { logger } from '@/lib/utils/logger';
 import { 
   GOOGLE_API_ENDPOINTS, 
   GOOGLE_OAUTH_CONFIG,
-  GoogleOAuthResponse,
-  AuthTokens,
+  type GoogleOAuthResponse,
+  type AuthTokens,
+  type UserData
 } from "@/utils/googleOAuthConfig";
 import { storage } from "@/features/auth/utils/storage";
 

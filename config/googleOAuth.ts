@@ -1,20 +1,13 @@
-// Google OAuth Configuration
-export const GOOGLE_OAUTH_CONFIG = {
-  clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
-  // Note: clientSecret should only be used server-side
-  redirectUri: process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI || 
-    (typeof window !== 'undefined' 
-      ? `${window.location.origin}/auth/google/callback`
-      : process.env.NEXT_PUBLIC_APP_URL + '/auth/google/callback'),
-  scope: [
-    'https://www.googleapis.com/auth/userinfo.email',
-    'https://www.googleapis.com/auth/userinfo.profile',
-    'openid',
-  ].join(' '),
-  accessType: 'offline',
-  prompt: 'consent',
-  includeGrantedScopes: true,
-};
+import { GOOGLE_OAUTH_CONFIG, GOOGLE_API_ENDPOINTS } from '../utils/googleOAuthConfig';
+
+// Re-export types and configuration from the main utility file
+export {
+  GOOGLE_OAUTH_CONFIG,
+  GOOGLE_API_ENDPOINTS,
+  type UserData,
+  type AuthTokens,
+  type GoogleOAuthResponse
+} from '../utils/googleOAuthConfig';
 
 // Google OAuth API endpoints
 export const GOOGLE_OAUTH_ENDPOINTS = {
@@ -46,8 +39,8 @@ export const getGoogleOAuthUrl = (state?: string) => {
     redirect_uri: GOOGLE_OAUTH_CONFIG.redirectUri,
     response_type: "code",
     scope: GOOGLE_OAUTH_CONFIG.scope,
-    access_type: "offline",
-    prompt: "consent",
+    access_type: GOOGLE_OAUTH_CONFIG.accessType,
+    prompt: GOOGLE_OAUTH_CONFIG.prompt,
   });
 
   if (state) {

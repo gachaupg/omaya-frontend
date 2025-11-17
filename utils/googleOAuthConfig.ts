@@ -1,49 +1,33 @@
 // Google OAuth Configuration Utility
 
 // Type Definitions
-export interface GoogleOAuthConfig {
-  clientId: string;
-  redirectUri: string;
-  backendAuthUrl: string;
-  scope: string;
-  apiUrl: string;
-  frontendUrl: string;
-}
-
-export interface GoogleOAuthResponse {
-  access: string;
-  refresh: string;
-  user: {
-    id: string;
-    email: string;
-    first_name: string;
-    last_name: string;
-    auth_provider: string;
-  };
+export interface UserData {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  is_active: boolean;
+  auth_provider?: string;
 }
 
 export interface AuthTokens {
   access: string;
   refresh: string;
-  user: {
-    id: string;
-    email: string;
-    first_name: string;
-    last_name: string;
-    auth_provider: string;
-  };
+  user: UserData;
+}
+
+export interface GoogleOAuthResponse {
+  access: string;
+  refresh: string;
+  user: UserData;
 }
 
 // Environment Configuration
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dev.backend.omaya.io';
 const FRONTEND_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://dev.omaya.io';
 
-// Base URL for OAuth callbacks
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 
-  (typeof window !== 'undefined' ? window.location.origin : 'https://dev.omaya.io');
-
 // API Endpoints Configuration
-const ENDPOINTS = {
+export const GOOGLE_API_ENDPOINTS = {
   // Google OAuth endpoints
   auth: "https://accounts.google.com/o/oauth2/v2/auth",
   token: "https://oauth2.googleapis.com/token",
@@ -56,7 +40,7 @@ const ENDPOINTS = {
   djangoLogout: `${API_URL}/accounts/logout/`,
   
   // Frontend routes
-  frontendCallback: `${BASE_URL}/auth/google/callback`,
+  frontendCallback: `${FRONTEND_URL}/auth/google/callback`,
   
   // API endpoints
   profile: `${API_URL}/api/auth/user/`,
@@ -64,22 +48,24 @@ const ENDPOINTS = {
   authStatus: `${API_URL}/api/auth/status/`,
 } as const;
 
-// Export the endpoints with proper typing
-export const GOOGLE_API_ENDPOINTS: Readonly<typeof ENDPOINTS> = ENDPOINTS;
-
 // Google OAuth Configuration
-export const GOOGLE_OAUTH_CONFIG: GoogleOAuthConfig = {
+export const GOOGLE_OAUTH_CONFIG = {
   clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
-  // IMPORTANT: Use the Next.js callback route as the redirect URI (no trailing slash)
-  redirectUri: `${BASE_URL}/auth/google/callback`,
-  backendAuthUrl: `${API_URL}/api/auth/google/`,
-  apiUrl: API_URL,
-  frontendUrl: FRONTEND_URL,
+  redirectUri: process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI || 
+    (typeof window !== 'undefined' 
+      ? `${window.location.origin}/auth/google/callback`
+      : `${FRONTEND_URL}/auth/google/callback`),
   scope: [
     'https://www.googleapis.com/auth/userinfo.email',
     'https://www.googleapis.com/auth/userinfo.profile',
     'openid'
-  ].join(' ')
+  ].join(' '),
+  accessType: 'offline',
+  prompt: 'consent',
+  includeGrantedScopes: true,
+  backendAuthUrl: `${API_URL}/api/auth/google/`,
+  apiUrl: API_URL,
+  frontendUrl: FRONTEND_URL
 };
 
 
@@ -116,6 +102,10 @@ export const GOOGLE_OAUTH_ERROR_MESSAGES: Record<GoogleOAuthErrorType, string> =
 // Helper function to get Google OAuth URL
 export const getGoogleOAuthUrl = (state?: string): string => {
   try {
+    if (!GOOGLE_OAUTH_CONFIG.clientId) {
+      throw new Error('Google OAuth client ID is not configured. Please check your environment variables.');
+    }
+
     // Create URL object to ensure proper encoding
     const authUrl = new URL(GOOGLE_API_ENDPOINTS.auth);
     
