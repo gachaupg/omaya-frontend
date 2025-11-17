@@ -98,8 +98,8 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
 
     const rect = triggerElement.getBoundingClientRect();
     setDropdownStyles({
-      top: rect.bottom + window.scrollY + 4,
-      left: rect.left + window.scrollX,
+      top: rect.bottom + 4,
+      left: rect.left,
       width: rect.width,
     });
   };
@@ -214,7 +214,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
           <svg
             className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-200 flex-shrink-0 ${
               isOpen ? "rotate-180" : ""
-            } ${disabled || loading ? "text-gray-400" : "text-gray-500"}`}
+            } ${disabled || loading ? "text-gray-400 dark:text-gray-500" : "text-gray-600 dark:text-gray-400"}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -237,10 +237,10 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
           <div
             id={dropdownId}
             ref={dropdownContentRef}
-            className="z-[1200] bg-white dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg max-h-[300px] sm:max-h-[250px] overflow-hidden"
+            className="z-[9999] bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl max-h-[300px] sm:max-h-[250px] overflow-hidden"
             role="listbox"
             style={{
-              position: "absolute",
+              position: "fixed",
               top: dropdownStyles.top,
               left: dropdownStyles.left,
               width: dropdownStyles.width,

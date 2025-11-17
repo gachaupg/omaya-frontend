@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
-import { FaExchangeAlt, FaExclamationCircle, FaWallet } from "react-icons/fa";
+import { FaExchangeAlt, FaExclamationCircle, FaWallet, FaInfoCircle } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { AppDispatch } from "@/store";
@@ -2712,6 +2712,40 @@ export default function WithdrawalForm({
                 The final price will be confirmed when we receive the funds.
               </span>
             </div>
+          </div>
+        </div>
+
+        {/* ----------------------------------------------------------------- */}
+        {/*                         TRANSFER DETAILS SECTION                    */}
+        {/* ----------------------------------------------------------------- */}
+        <div className="mb-6 mt-4 sm:mt-6">
+          <div className="flex items-center gap-2 mb-3">
+            <h3 className="text-sm sm:text-base font-medium text-[#7e7e8f] dark:text-[#ffffff]">
+              Transfer Details
+            </h3>
+            <FaInfoCircle className="w-4 h-4 text-[#7e7e8f] dark:text-[#788099]" />
+          </div>
+          <div className="bg-white dark:bg-[#1D1D23] border border-[#1D8751] rounded-lg sm:rounded-xl p-4">
+            <ul className="space-y-3">
+              <li className="flex items-start gap-3">
+                <div className="w-2 h-2 rounded-full bg-[#1D8751] mt-1.5 flex-shrink-0" />
+                <span className="text-sm text-[#35353e] dark:text-[#788099]">
+                  Please send the money from your own account Only
+                </span>
+              </li>
+              <li className="flex items-start gap-3">
+                <div className="w-2 h-2 rounded-full bg-[#1D8751] mt-1.5 flex-shrink-0" />
+                <span className="text-sm text-[#35353e] dark:text-[#788099]">
+                  Put transaction ID in the description field of the bank
+                </span>
+              </li>
+              <li className="flex items-start gap-3">
+                <div className="w-2 h-2 rounded-full bg-[#1D8751] mt-1.5 flex-shrink-0" />
+                <span className="text-sm text-[#35353e] dark:text-[#788099]">
+                  Please note, If you do not follow above conditions, we will reject your transaction and send you back your money.
+                </span>
+              </li>
+            </ul>
           </div>
         </div>
 

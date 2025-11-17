@@ -76,30 +76,48 @@ export const Table: React.FC<TableProps> = ({
   const getFilteredData = (data: TransactionType[], dateFilter: string) => {
     if (dateFilter === "ALL") return data;
 
-    const today = new Date();
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     today.setHours(0, 0, 0, 0);
 
     return data.filter((item) => {
-      const itemDate = new Date(item.date);
-      if (isNaN(itemDate.getTime())) return false;
+      if (!item.date) return false;
+
+      // Try to parse the date - handle various formats
+      let itemDate: Date;
+      try {
+        itemDate = new Date(item.date);
+        
+        // Check if the date is valid
+        if (isNaN(itemDate.getTime())) {
+          return false;
+        }
+      } catch (error) {
+        return false;
+      }
+
+      // Normalize item date to start of day for accurate comparison
+      const itemDay = new Date(itemDate.getFullYear(), itemDate.getMonth(), itemDate.getDate());
+      itemDay.setHours(0, 0, 0, 0);
 
       switch (dateFilter) {
         case "Today":
-          const itemDay = new Date(itemDate);
-          itemDay.setHours(0, 0, 0, 0);
           return itemDay.getTime() === today.getTime();
         case "Week":
           const weekAgo = new Date(today);
           weekAgo.setDate(today.getDate() - 7);
-          return itemDate >= weekAgo;
+          weekAgo.setHours(0, 0, 0, 0);
+          return itemDay >= weekAgo;
         case "Month":
           const monthAgo = new Date(today);
           monthAgo.setMonth(today.getMonth() - 1);
-          return itemDate >= monthAgo;
+          monthAgo.setHours(0, 0, 0, 0);
+          return itemDay >= monthAgo;
         case "Year":
           const yearAgo = new Date(today);
           yearAgo.setFullYear(today.getFullYear() - 1);
-          return itemDate >= yearAgo;
+          yearAgo.setHours(0, 0, 0, 0);
+          return itemDay >= yearAgo;
         default:
           return true;
       }
@@ -281,52 +299,6 @@ export const Table: React.FC<TableProps> = ({
     );
   }
 
-  if (filteredData.length === 0 && data.length > 0) {
-    return (
-      <div className="w-full text-center py-8">
-        <div className="flex flex-col items-center justify-center border border-gray-200 dark:border-[#35353E] rounded-[24px] p-8 bg-white dark:bg-[#23232B]">
-          <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-[#35353E] flex items-center justify-center">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="text-gray-500 dark:text-[#788099]"
-            >
-              <path
-                d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M12 8V12"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M12 16H12.01"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </div>
-          <h3 className="text-lg font-semibold text-gray-500 dark:text-[#788099] mb-2">
-            No Data Matches Filter
-          </h3>
-          <p className="text-sm text-gray-400 dark:text-[#8C8CA1] text-center max-w-md">
-            No records found for the selected date filter. Please try a different time period.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <>
@@ -342,45 +314,46 @@ export const Table: React.FC<TableProps> = ({
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
               {/* Date Filter */}
               <div className="relative min-w-[150px]" ref={dateDropdownRef}>
-                <button
-                  type="button"
-                  onClick={() => setIsDateDropdownOpen((prev) => !prev)}
-                  disabled={loading}
-                  className="w-full px-3 py-2 pr-10 rounded text-sm font-semibold dark:bg-[#18181D] bg-white border dark:border-[#35353E] border-gray-300 dark:text-white text-[#0D0D0D] flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
-                >
-                  <span className="truncate">{dateFilter}</span>
-                  <svg
-                    className={`w-4 h-4 transition-transform ${isDateDropdownOpen ? "rotate-180" : ""}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </button>
-                <span
-                  className={`pointer-events-none absolute inset-y-0 right-3 flex items-center ${
-                    dateFilter ? "text-[#1D8751]" : "text-gray-400"
-                  }`}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                </span>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsDateDropdownOpen((prev) => !prev)}
+                      disabled={loading}
+                      className="w-full px-3 py-2 pr-10 rounded text-sm font-semibold dark:bg-[#18181D] bg-white border dark:border-[#35353E] border-gray-300 dark:text-white text-[#0D0D0D] flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
+                    >
+                      <span className="truncate">{dateFilter}</span>
+                      <svg
+                        className={`w-4 h-4 transition-transform ${isDateDropdownOpen ? "rotate-180" : ""}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                  {dateFilter !== "ALL" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleDateFilterChange("ALL");
+                        setIsDateDropdownOpen(false);
+                      }}
+                      className="p-2 rounded text-sm text-gray-500 dark:text-[#8C8CA1] hover:text-[#1D8751] dark:hover:text-[#1D8751] hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors"
+                      title="Clear date filter"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
                 {isDateDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-2 rounded-xl border border-[#1D8751] bg-[#0F0F13] dark:bg-[#0F0F13] text-white shadow-lg z-20">
+                  <div className="absolute top-full left-0 mt-2 w-full min-w-[150px] rounded-xl border border-[#1D8751] bg-[#0F0F13] dark:bg-[#0F0F13] text-white shadow-lg z-20">
                     {dateFilterOptions.map((option) => {
                       const isSelected = dateFilter === option;
                       return (
@@ -391,28 +364,10 @@ export const Table: React.FC<TableProps> = ({
                             handleDateFilterChange(option);
                             setIsDateDropdownOpen(false);
                           }}
-                          className={`w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-[#1b1b22] ${
+                          className={`w-full flex items-center px-4 py-2 text-left hover:bg-[#1b1b22] ${
                             isSelected ? "text-white" : "text-[#C7CAD1]"
                           }`}
                         >
-                          <span
-                            className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                              isSelected ? "border-[#1D8751] bg-[#1D8751]" : "border-[#1D8751]"
-                            }`}
-                          >
-                            {isSelected && (
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-3 w-3 text-white"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="3"
-                              >
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                              </svg>
-                            )}
-                          </span>
                           <span className="text-sm font-semibold">{option}</span>
                         </button>
                       );
@@ -541,7 +496,70 @@ export const Table: React.FC<TableProps> = ({
 
             {/* Table Body */}
             <div>
-              {filteredData.map((row, idx) => (
+              {filteredData.length === 0 && data.length > 0 ? (
+                <div className="w-full text-center py-12 px-4">
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-[#35353E] flex items-center justify-center">
+                      <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="text-gray-500 dark:text-[#788099]"
+                      >
+                        <path
+                          d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M12 8V12"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M12 16H12.01"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-500 dark:text-[#788099] mb-2">
+                      No Data Matches Filter
+                    </h3>
+                    <p className="text-sm text-gray-400 dark:text-[#8C8CA1] text-center max-w-md mb-4">
+                      No records found for the selected date filter ({dateFilter}). Please try a different time period or reset to view all records.
+                    </p>
+                    <button
+                      onClick={() => handleDateFilterChange("ALL")}
+                      className="inline-flex items-center px-4 py-2 border dark:border-[#35353E] border-gray-300 rounded-md shadow-sm text-sm font-medium dark:text-white text-gray-900 dark:bg-[#18181D] bg-gray-100 dark:hover:bg-[#35353E] hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1D8751] transition-colors"
+                    >
+                      <svg
+                        className="w-4 h-4 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                      Reset to All Records
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                filteredData.map((row, idx) => (
                 <React.Fragment key={idx}>
                   {/* Desktop Grid View */}
                 <div
@@ -719,7 +737,8 @@ export const Table: React.FC<TableProps> = ({
                     </div>
                   </div>
                 </React.Fragment>
-              ))}
+                ))
+              )}
             </div>
             {/* Pagination */}
             {totalPages > 1 && (

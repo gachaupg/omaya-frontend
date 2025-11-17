@@ -334,7 +334,7 @@ const Withdraw: React.FC = () => {
             {/* Receive calculation */}
             <div className="flex-1 flex flex-col">
               <label className="flex items-center justify-between text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                You will receive
+                I will receive
                 {selectedNetwork && (
                   <span className="ml-4 text-[#F79330]">
                     Fee: {selectedNetwork.withdrawal_fee} USDT
@@ -369,7 +369,7 @@ const Withdraw: React.FC = () => {
                   border-gray-300 dark:border-[#1D8751] rounded-lg p-4 mt-1 shadow-lg z-30  right-2  top-12"
                   >
                   <p className="text-xs text-gray-600 dark:text-white">
-                    A network fee will be deducted from withdrawals, <br /> covering the cost of Blockchain transactions.
+                    A network fee will be deducted from withdrawals covering the cost of blockchain transaction.
                   </p>
                   </div>
                 )}

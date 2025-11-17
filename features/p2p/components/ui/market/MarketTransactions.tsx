@@ -814,10 +814,10 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                           return next;
                         });
                       }}
-                      className="flex items-center gap-3 text-left"
+                      className="flex items-center gap-3 text-left w-full"
                     >
                       <span
-                        className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
                           showMerchantOnly ? "border-[#4A4A56] bg-[#1D8751]" : "border-[#4A4A56]"
                         }`}
                       >
@@ -834,7 +834,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                           </svg>
                         )}
                       </span>
-                      <span className="text-sm font-semibold text-white">Show only Merchant ads</span>
+                      <span className="text-sm font-semibold text-white leading-tight">Show only Merchant ads</span>
                     </button>
                     <button
                       type="button"
@@ -845,10 +845,10 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                           return next;
                         });
                       }}
-                      className="flex items-center gap-3 text-left"
+                      className="flex items-center gap-3 text-left w-full"
                     >
                       <span
-                        className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
                           showMerchantBusinessOnly ? "border-[#4A4A56] bg-[#1D8751]" : "border-[#4A4A56]"
                         }`}
                       >
@@ -865,7 +865,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                           </svg>
                         )}
                       </span>
-                      <span className="text-sm font-semibold text-white">Show only Merchant Business ads</span>
+                      <span className="text-sm font-semibold text-white leading-tight">Show only Merchant Business ads</span>
                     </button>
                     <button
                       type="button"
@@ -875,10 +875,10 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                         setMinOrderLimit("");
                         setMaxOrderLimit("");
                       }}
-                      className="flex items-center gap-3 text-left"
+                      className="flex items-center gap-3 text-left w-full"
                     >
                       <span
-                        className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
                           !showMerchantOnly && !showMerchantBusinessOnly ? "border-[#4A4A56] bg-[#1D8751]" : "border-[#4A4A56]"
                         }`}
                       >
@@ -895,7 +895,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                           </svg>
                         )}
                       </span>
-                      <span className="text-sm font-semibold text-white">Show All</span>
+                      <span className="text-sm font-semibold text-white leading-tight">Show All</span>
                     </button>
                   </div>
                 </div>

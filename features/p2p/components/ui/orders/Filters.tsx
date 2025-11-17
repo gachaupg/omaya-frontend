@@ -68,13 +68,13 @@ const Filters: React.FC<FiltersProps> = ({
   logger.debug("p2p", "Order Status Tabs:", orderStatusTabs);
 
   const filterCardBase =
-    "flex w-full items-center justify-between gap-3 rounded-[28px] border border-[#35353E] bg-transparent px-3 py-2";
+    "flex w-full items-center justify-between gap-3 rounded-[28px] border border-gray-300 dark:border-[#35353E] bg-white dark:bg-transparent px-3 py-2.5";
   const triggerOverride =
-    "!bg-transparent !border-0 !shadow-none px-0 py-0 text-transparent flex justify-end items-center min-w-[24px]";
+    "!bg-transparent !border-0 !shadow-none px-0 py-0 flex justify-end items-center min-w-[24px] [&>div>span]:text-transparent [&>div>svg]:text-gray-600 [&>div>svg]:dark:text-gray-400";
   const iconWrapper =
-    "flex h-8 w-8 items-center justify-center rounded-full bg-[#11141C] border border-[#1F2330]";
-  const labelStyle = "text-sm font-semibold text-white";
-  const valueStyle = "text-sm font-semibold text-[#9CA4C0]";
+    "flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 dark:bg-[#11141C] border border-gray-200 dark:border-[#1F2330]";
+  const labelStyle = "text-sm font-semibold text-gray-900 dark:text-white";
+  const valueStyle = "text-sm font-medium text-gray-600 dark:text-[#9CA4C0]";
 
   const currencyMeta: Record<string, { name: string; code: string }> = {
     usdt: { name: "Tether", code: "USDT" },
@@ -114,7 +114,7 @@ const Filters: React.FC<FiltersProps> = ({
     <div className="w-full flex flex-col">
       {/* ───────────────────────── Tabs */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-0 bg-transparent rounded-[14px] border border-[#1D8751]/60 w-full sm:w-fit px-1.5 py-1.5 overflow-x-auto snap-x snap-mandatory scrollbar-none shadow-[0_6px_24px_rgba(4,10,7,0.35)]">
+        <div className="flex items-center gap-0 bg-white dark:bg-transparent rounded-[14px] border border-[#1D8751]/60 dark:border-[#1D8751]/60 w-full sm:w-fit px-1.5 py-1.5 overflow-x-auto snap-x snap-mandatory scrollbar-none shadow-[0_6px_24px_rgba(4,10,7,0.35)]">
           {orderStatusTabs.map((tab) => (
             <Button
               key={tab.id}
@@ -125,7 +125,7 @@ const Filters: React.FC<FiltersProps> = ({
               className={`px-4 py-2 font-semibold text-[13px] md:text-sm transition-all flex items-center gap-1 shadow-none border-none min-w-[120px] snap-start shrink-0 ${
                 filters.status === tab.id
                   ? "bg-[#1D8751] text-white"
-                  : "bg-transparent text-[#9AA3BC] hover:bg-[#1D8751]/10"
+                  : "bg-transparent text-gray-700 dark:text-[#9AA3BC] hover:bg-[#1D8751]/10"
               } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
               onClick={() => handleStatusChange(tab.id)}
             >
@@ -144,16 +144,16 @@ const Filters: React.FC<FiltersProps> = ({
           className={`w-full sm:w-auto rounded-[28px] flex items-center justify-center gap-2 border border-[#1D8751] text-[#1D8751] px-5 py-3 font-semibold text-sm hover:bg-[#1D8751]/10 transition-all relative ${
             showUnreadMessages
               ? "bg-[#1D8751] text-white shadow-[0_12px_26px_rgba(29,135,81,0.35)]"
-              : "bg-transparent"
+              : "bg-white dark:bg-transparent"
           } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
           disabled={loading}
           onClick={onUnreadMessagesClick}
         >
-          <svg width="28" height="19" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className="mr-1">
-            <rect width="100" height="100" fill="#1A1A1D"/>
+          <svg width="20" height="20" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
+            <rect width="100" height="100" fill="currentColor" className="text-gray-800 dark:text-[#1A1A1D]"/>
             <path d="M20 10 H80 V70 H35 L25 95 L25 70 H20 Z" fill="#F79330"/>
-            <rect x="35" y="25" width="40" height="10" fill="#1A1A1D"/>
-            <rect x="35" y="45" width="40" height="10" fill="#1A1A1D"/>
+            <rect x="35" y="25" width="40" height="10" fill="currentColor" className="text-gray-800 dark:text-[#1A1A1D]"/>
+            <rect x="35" y="45" width="40" height="10" fill="currentColor" className="text-gray-800 dark:text-[#1A1A1D]"/>
           </svg>
 
           <span className={`text-sm ${showUnreadMessages ? "text-white" : "text-[#1D8751]"}`}>
@@ -178,8 +178,9 @@ const Filters: React.FC<FiltersProps> = ({
               <Image
                 src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
                 alt="Tether"
-                width={22}
-                height={22}
+                width={20}
+                height={20}
+                className="object-contain"
               />
             </div>
             <span className={labelStyle}>{currencyInfo.name}</span>
@@ -209,6 +210,7 @@ const Filters: React.FC<FiltersProps> = ({
                 alt="Type icon"
                 width={18}
                 height={18}
+                className="object-contain"
               />
             </div>
             <span className={labelStyle}>Type</span>
@@ -239,6 +241,7 @@ const Filters: React.FC<FiltersProps> = ({
                 alt="Status icon"
                 width={18}
                 height={18}
+                className="object-contain"
               />
             </div>
             <span className={labelStyle}>Status</span>
@@ -269,6 +272,7 @@ const Filters: React.FC<FiltersProps> = ({
                 alt="Date icon"
                 width={18}
                 height={18}
+                className="object-contain"
               />
             </div>
             <span className={labelStyle}>Date</span>

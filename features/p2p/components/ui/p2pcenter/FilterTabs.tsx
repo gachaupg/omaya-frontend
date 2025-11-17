@@ -275,7 +275,7 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
           {adStatusIndicators.hasLiveAds && (
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-[#1D8751] rounded"></div>
-              <span className="text-white dark:text-white text-sm font-medium">Live Ads Exist</span>
+              <span className="text-gray-900 dark:text-white text-sm font-medium">Live Ads Exist</span>
             </div>
           )}
           
@@ -283,7 +283,7 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
           {adStatusIndicators.hasOfflineAds && (
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-[#E23D3A] rounded"></div>
-              <span className="text-white dark:text-white text-sm font-medium">Offline Ads Exist</span>
+              <span className="text-gray-900 dark:text-white text-sm font-medium">Offline Ads Exist</span>
             </div>
           )}
         </>
