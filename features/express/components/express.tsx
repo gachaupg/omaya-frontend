@@ -36,7 +36,7 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
   };
 
   return (
-    <div className="w-full mx-auto px-3 sm:px-4 pt-2">
+    <div className="w-full mx-auto px-3 sm:px-4 pt-20 md:pt-24">
       {!isHomePage && (
         <div className=" mb-1">
           <button

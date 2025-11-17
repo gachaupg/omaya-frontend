@@ -177,8 +177,9 @@ const [showUpdateIndicator, setShowUpdateIndicator] = useState(false);
           <HelpSupportForm />
         </div>
       ) : (
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between w-full gap-3 md:gap-0">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between w-full gap-4 md:gap-6">
+        {/* Left Section: Avatar and Greeting */}
+        <div className="flex items-center gap-3">
           {/* User Avatar with Edit Button */}
           <div className="relative">
             <div className="h-14 w-14 rounded-full overflow-hidden relative">
@@ -255,12 +256,12 @@ const [showUpdateIndicator, setShowUpdateIndicator] = useState(false);
           {/* User Info */}
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-lg text-[14px] font-semibold dark:text-[#FFFFFF] text-[#1D1D23]">
+              <h2 className="text-lg font-bold dark:text-[#FFFFFF] text-[#1D1D23]">
                 Hello, {user?.first_name} !
               </h2>
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-[#1D8751] text-[14px]">
+              <span className="text-[#1D8751] text-sm font-medium">
                 Verified Profile
               </span>
               <div className="rounded-full p-0.5 bg-[#1D8751]">
@@ -288,18 +289,16 @@ const [showUpdateIndicator, setShowUpdateIndicator] = useState(false);
                 </svg>
               </div>
             </div>
-            {/* Data source indicator (dev mode) */}
-           
           </div>
         </div>
 
-        {/* User Details and Actions */}
-        <div className="flex  text-[14px] flex-col w-full md:w-auto md:flex-row items-start md:items-center gap-4 md:gap-6 md:justify-between">
+        {/* Center Section: User ID and User Type */}
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6 flex-1 justify-center">
           {/* User ID */}
-          <div>
-            <p className="text-xs dark:text-[#788099] text-black">User ID</p>
-            <div className="flex items-center gap-2">
-              <p className="text-base dark:text-[#FFFFFF]">{user?.user_id}</p>
+          <div className="text-center md:text-left">
+            <p className="text-xs dark:text-[#788099] text-[#788099] mb-1">User ID</p>
+            <div className="flex items-center gap-2 justify-center md:justify-start">
+              <p className="text-base font-bold dark:text-[#FFFFFF] text-[#1D1D23]">{user?.user_id}</p>
               <button className="cursor-pointer">
                 <svg 
                 xmlns="http://www.w3.org/2000/svg" 
@@ -325,13 +324,14 @@ const [showUpdateIndicator, setShowUpdateIndicator] = useState(false);
           </div>
 
           {/* User Type */}
-          <div>
-            <p className="text-xs text-[#788099]">User Type</p>
-            <p className="text-base dark:text-[#FFFFFF]">{user?.user_type}</p>
+          <div className="text-center md:text-left">
+            <p className="text-xs text-[#788099] mb-1">User Type</p>
+            <p className="text-base font-bold dark:text-[#FFFFFF] text-[#1D1D23]">{user?.user_type}</p>
           </div>
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-wrap gap-2">
+        {/* Right Section: Action Buttons */}
+        <div className="flex flex-wrap gap-2 justify-center md:justify-end">
             <Button
               borderRadius={24}
               width={130}
@@ -440,10 +440,7 @@ const [showUpdateIndicator, setShowUpdateIndicator] = useState(false);
             />
           </div>
         </div>
-      </div>
       )}
-      
-      
     </Card>
   );
 };

@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
 import { AppDispatch } from "@/store";
 import { RootState } from "@/store/rootReducer";
 import {
-  fetchAdminPaymentMethods,
+  fetchPublicPaymentMethods,
   postUserPaymentDetail,
   clearPostStatus,
 } from "../../../../slices/paymentMethodsSlice";
 import { showToast } from "../../../../../../lib/utils/toast";
-import { AdminPaymentMethod } from "../../../../types/paymentMethods";
-
 import { logger } from '@/lib/utils/logger';
 
 type PaymentDetailPayload = {
@@ -34,15 +33,16 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   onAdd,
 }) => {
   const dispatch = useDispatch<AppDispatch>();
-  const { adminMethods, loading, error, postLoading, postError, postSuccess } =
+  const router = useRouter();
+  const { publicPaymentMethods, publicMethodsLoading, publicMethodsError, postLoading, postError, postSuccess } =
     useSelector((state: RootState) => state.paymentMethods);
   const { isAuthenticated, user } = useSelector(
     (state: RootState) => state.auth
   );
-  logger.debug('p2p', "adminMethods", adminMethods);
+  logger.debug('p2p', "publicPaymentMethods", publicPaymentMethods);
   logger.debug('p2p', "Redux state", {
-    loading,
-    error,
+    loading: publicMethodsLoading,
+    error: publicMethodsError,
     postLoading,
     postError,
     postSuccess,
@@ -73,14 +73,14 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
     };
   }, [open]);
 
-     // Fetch payment methods when modal opens
+     // Fetch public payment methods when modal opens
    useEffect(() => {
      if (open && isClient) {
-       // Try to fetch admin methods, but don't block the UI
+       // Try to fetch public payment methods, but don't block the UI
        try {
-         dispatch(fetchAdminPaymentMethods() as any);
+         dispatch(fetchPublicPaymentMethods() as any);
        } catch (error) {
-         logger.debug('p2p', "Error fetching admin methods:", error);
+         logger.debug('p2p', "Error fetching public payment methods:", error);
        }
        setMethod("");
        setProvider("");
@@ -95,16 +95,52 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
      }
    }, [open, dispatch, isClient, user]);
 
+  // Process public payment methods to extract method types and providers
+  const processedProviders = React.useMemo(() => {
+    if (!publicPaymentMethods) return [];
+    
+    // Handle new API structure: data.providers
+    const data = (publicPaymentMethods as any)?.data || publicPaymentMethods;
+    if (Array.isArray(data?.providers)) {
+      return data.providers.map((provider: any) => ({
+        provider_name: provider.provider_name, // For display in dropdown
+        provider: provider.provider || provider.provider_name, // Actual provider field for API
+        payment_method_type: provider.method?.method_name || provider.method?.method_display || '',
+        logo: provider.logo || provider.provider_logo,
+        wallet_address: provider.payment_details?.[0]?.wallet_address || null,
+      }));
+    }
+    // Handle old structure: data.payment_methods
+    if (Array.isArray(data?.payment_methods)) {
+      const flattened: any[] = [];
+      data.payment_methods.forEach((method: any) => {
+        if (Array.isArray(method.providers)) {
+          method.providers.forEach((provider: any) => {
+            flattened.push({
+              provider_name: provider.provider_name, // For display in dropdown
+              provider: provider.provider || provider.provider_name, // Actual provider field for API
+              payment_method_type: method.method_name || method.method_display || '',
+              logo: provider.logo || provider.provider_logo,
+              wallet_address: provider.payment_details?.[0]?.wallet_address || null,
+            });
+          });
+        }
+      });
+      return flattened;
+    }
+    return [];
+  }, [publicPaymentMethods]);
+
   const methodTypes = Array.from(
     new Set(
-      (adminMethods || [])
-        .map((m: AdminPaymentMethod) => m.payment_method_type)
+      processedProviders
+        .map((p: any) => p.payment_method_type)
         .filter(Boolean)
     )
   ) as string[];
 
-  const providers = (adminMethods || []).filter(
-    (m: AdminPaymentMethod) => m.payment_method_type === method
+  const providers = processedProviders.filter(
+    (p: any) => p.payment_method_type === method
   );
 
   const normalizedMethod = method.trim().toLowerCase();
@@ -112,7 +148,8 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   const isForexMethod = normalizedMethod.includes("forex");
   const shouldUseWalletAddressField = isCryptoMethod || isForexMethod;
 
-   logger.debug('p2p', "DEBUG: adminMethods:", adminMethods);
+   logger.debug('p2p', "DEBUG: publicPaymentMethods:", publicPaymentMethods);
+   logger.debug('p2p', "DEBUG: processedProviders:", processedProviders);
    logger.debug('p2p', "DEBUG: methodTypes:", methodTypes);
    logger.debug('p2p', "DEBUG: selected method:", method);
    logger.debug('p2p', "DEBUG: providers for method:", providers);
@@ -132,15 +169,19 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
      }
      
    const selectedProvider = providers.find(
-     (p: AdminPaymentMethod) => p.provider_name === provider
+     (p: any) => p.provider_name === provider
    );
     logger.debug('p2p', "Selected provider", selectedProvider);
+    
+    // Use the provider field (e.g., "Cooperative Bank") instead of provider_name (e.g., "Cooperative Bank - Bank")
+    const providerField = selectedProvider?.provider || provider;
+    
     const payload: PaymentDetailPayload = {
       account_name: name,
       account_number: account,
       payment_method_name: method,
-      payment_provider_name: provider,
-      provider_name: provider,
+      payment_provider_name: providerField, // Use provider field, not provider_name
+      provider_name: providerField, // Use provider field, not provider_name
       wallet_address: shouldUseWalletAddressField
         ? account
         : selectedProvider?.wallet_address || null,
@@ -232,7 +273,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                className="w-full p-2.5 sm:p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm sm:text-base"
                value={method}
                onChange={(e) => setMethod(e.target.value)}
-               disabled={loading || methodTypes.length === 0}
+               disabled={publicMethodsLoading || methodTypes.length === 0}
              >
                <option value="">Select Method</option>
                {methodTypes.map((type, index: number) => (
@@ -241,7 +282,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                  </option>
                ))}
              </select>
-            {!loading && methodTypes.length === 0 && (
+            {!publicMethodsLoading && methodTypes.length === 0 && (
               <p className="mt-2 text-sm text-gray-500 dark:text-[#788099]">
                 No payment methods available.
               </p>
@@ -259,10 +300,10 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                    className="w-full p-2.5 sm:p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] appearance-none pr-10 text-sm sm:text-base"
                    value={provider}
                    onChange={(e) => setProvider(e.target.value)}
-                  disabled={loading || providers.length === 0}
+                  disabled={publicMethodsLoading || providers.length === 0}
                  >
                    <option value="">Select Provider</option>
-                  {providers.map((p: AdminPaymentMethod, index: number) => (
+                  {providers.map((p: any, index: number) => (
                      <option
                        key={`${p.provider_name}-${index}`}
                        value={p.provider_name}
@@ -284,7 +325,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                    <div className="flex items-center gap-3">
                      {(() => {
                        const selectedProvider = providers.find(
-                         (p: AdminPaymentMethod) => p.provider_name === provider
+                         (p: any) => p.provider_name === provider
                        );
                        return (
                          <>
@@ -310,7 +351,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                    </div>
                  </div>
                )}
-              {!loading && method && providers.length === 0 && (
+              {!publicMethodsLoading && method && providers.length === 0 && (
                 <p className="mt-2 text-sm text-gray-500 dark:text-[#788099]">
                   No providers found for the selected method.
                 </p>
@@ -345,7 +386,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                }
                value={account}
                onChange={(e) => setAccount(e.target.value)}
-               disabled={loading}
+               disabled={publicMethodsLoading}
              />
            </div>
 
@@ -357,7 +398,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                 checked={allowAutoSend}
                 onChange={(e) => setAllowAutoSend(e.target.checked)}
                 className="w-4 h-4 text-[#1D8751] bg-gray-100 dark:bg-[#23232B] border-gray-300 dark:border-[#35353E] rounded focus:ring-2 focus:ring-[#1D8751] cursor-pointer"
-                disabled={loading}
+                disabled={publicMethodsLoading}
               />
               <label
                 htmlFor="allowAutoSend"
@@ -369,7 +410,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
           )}
            
           {/* Error/Loading */}
-          {error && <div className="text-red-500 text-sm">{error}</div>}
+          {publicMethodsError && <div className="text-red-500 text-sm">{publicMethodsError}</div>}
           {postError && <div className="text-red-500 text-sm">{postError}</div>}
           {postLoading && (
             <div className="text-blue-500 text-sm">
@@ -377,34 +418,58 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
             </div>
           )}
 
-                                           {/* Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 mt-4">
-                             <button
-                 className="flex-1 rounded-xl border border-gray-200 dark:border-[#35353E] bg-transparent text-gray-700 dark:text-white py-2.5 sm:py-3 font-medium hover:bg-gray-50 dark:hover:bg-[#23232B] transition-colors text-sm sm:text-base"
-                 onClick={(e) => {
-                   e.preventDefault();
-                   e.stopPropagation();
-                   onClose();
-                 }}
-                 type="button"
-                 disabled={loading || postLoading}
-               >
-                 Cancel
-               </button>
+          {/* Login Message for Unauthenticated Users */}
+          {!isAuthenticated && (
+            <div className="mt-4 p-3 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200 text-center">
+                Please log in to add a payment account
+              </p>
+            </div>
+          )}
+
+          {/* Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3 mt-4">
             <button
-              className="flex-1 rounded-xl bg-[#1D8751] text-white py-2.5 sm:py-3 font-medium hover:bg-[#17693f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-              type="submit"
-              disabled={
-                loading ||
-                postLoading ||
-                !method ||
-                !provider ||
-                !name ||
-                !account
-              }
+              className="flex-1 rounded-xl border border-gray-200 dark:border-[#35353E] bg-transparent text-gray-700 dark:text-white py-2.5 sm:py-3 font-medium hover:bg-gray-50 dark:hover:bg-[#23232B] transition-colors text-sm sm:text-base"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onClose();
+              }}
+              type="button"
+              disabled={publicMethodsLoading || postLoading}
             >
-              {postLoading ? "Adding..." : "Add"}
+              Cancel
             </button>
+            {isAuthenticated ? (
+              <button
+                className="flex-1 rounded-xl bg-[#1D8751] text-white py-2.5 sm:py-3 font-medium hover:bg-[#17693f] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+                type="submit"
+                disabled={
+                  publicMethodsLoading ||
+                  postLoading ||
+                  !method ||
+                  !provider ||
+                  !name ||
+                  !account
+                }
+              >
+                {postLoading ? "Adding..." : "Add"}
+              </button>
+            ) : (
+              <button
+                className="flex-1 rounded-xl bg-[#1D8751] text-white py-2.5 sm:py-3 font-medium hover:bg-[#17693f] transition-colors text-sm sm:text-base"
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onClose();
+                  router.push("/auth/login");
+                }}
+              >
+                Login to Add
+              </button>
+            )}
           </div>
         </form>
       </div>
