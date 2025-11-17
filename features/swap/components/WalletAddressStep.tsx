@@ -46,13 +46,13 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   };
 
   return (
-    <div className="w-full flex flex-col px-3 sm:px-4">
+    <div className="w-full flex flex-col px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
       <div className="mb-2 text-base sm:text-lg md:text-xl font-bold text-[#788099]">
         <span className="text-[#7e7e8f]">2-</span> Your Wallet Address
       </div>
       <div className="w-full mx-auto">
         {/* Combined Wallet Address and Terms Card */}
-        <div className="bg-white dark:bg-[#23232b] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl p-4 sm:p-5 shadow-lg w-full text-gray-900 dark:text-white">
+        <div className="bg-transparent dark:bg-transparent border border-gray-200 dark:border-[#35353E] rounded-2xl p-5 sm:p-6 lg:p-8 shadow-lg w-full text-gray-900 dark:text-white">
           <div className="flex flex-col gap-4 sm:gap-6">
             {/* Wallet Address Input Section */}
             <div className="flex flex-col gap-3 sm:gap-4">
@@ -154,7 +154,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
               </div>
 
               {/* Terms Box */}
-              <div className="bg-gray-50 dark:bg-[#23232b] border border-[#1D8751] dark:border-[#1D8751] rounded-xl p-3 sm:p-4">
+              <div className="bg-gray-50 dark:bg-[#23232b] border border-[#1D8751] dark:border-[#1D8751] rounded-xl p-4 sm:p-5">
                 <div className="space-y-2 sm:space-y-3">
                   {/* Term 1 */}
                   <div className="flex items-start gap-2 sm:gap-3">
@@ -184,7 +184,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
               </div>
 
               {/* Terms Acceptance Checkbox */}
-              <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex items-start gap-2 sm:gap-3">
                 <input
                   type="checkbox"
                   id="accept-terms"
@@ -195,9 +195,43 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                 />
                 <label
                   htmlFor="accept-terms"
-                  className="text-xs sm:text-sm text-gray-900 dark:text-white"
+                  className="text-xs sm:text-sm text-[#1D8751] leading-relaxed"
                 >
-                  I accept the terms and conditions
+                  <span className="text-gray-900 dark:text-white font-medium">
+                    I have read and agreed to Omaya Exchange{" "}
+                  </span>
+                  <a
+                    href="/legal/terms-of-service"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#1D8751] underline font-medium"
+                  >
+                    Terms of Use
+                  </a>{" "}
+                  (
+                  <a
+                    href="/legal/privacy-policy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#1D8751] underline font-medium"
+                  >
+                    Privacy Policy
+                  </a>
+                  ,{" "}
+                  <a
+                    href="/legal/payment-policy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#1D8751] underline font-medium"
+                  >
+                    Payment Policies
+                  </a>
+                  ,{" "}
+                  <span className="text-[#1D8751] font-medium">AML</span>,{" "}
+                  <span className="text-[#1D8751] font-medium">
+                    Risk Disclosure Statement
+                  </span>
+                  )
                 </label>
               </div>
             </div>
@@ -217,7 +251,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                 <span>Processing...</span>
               </>
             ) : (
-              "Continue"
+              "Submit"
             )}
           </button>
         </div>

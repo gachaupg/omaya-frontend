@@ -34,7 +34,6 @@ import { logger } from "@/lib/utils/logger";
 
 const SwapWidget = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const [skeletonTimeout, setSkeletonTimeout] = useState(false);
   const {
     fromAsset,
     toAsset,
@@ -455,49 +454,67 @@ const SwapWidget = () => {
     dispatch(clearEstimate());
   };
 
-  // Add timeout to prevent skeleton from getting stuck
+  const [skeletonTimeoutReached, setSkeletonTimeoutReached] = useState(false);
+
   useEffect(() => {
     if (loading && supportedAssets.length === 0) {
-      const timeout = setTimeout(() => {
-        setSkeletonTimeout(true);
-      }, 2000); // Reduced to 2 seconds for faster UX
-
-      return () => clearTimeout(timeout);
-    } else {
-      setSkeletonTimeout(false);
+      const timer = setTimeout(() => setSkeletonTimeoutReached(true), 10000);
+      return () => clearTimeout(timer);
     }
+    setSkeletonTimeoutReached(false);
   }, [loading, supportedAssets.length]);
 
-  // Force timeout after 5 seconds regardless of loading state
+  // Detect stale loading state (e.g., persisted loading flag) and force refresh
   useEffect(() => {
-    const forceTimeout = setTimeout(() => {
-      setSkeletonTimeout(true);
-    }, 5000);
+    if (!loading || supportedAssets.length > 0) {
+      return;
+    }
 
-    return () => clearTimeout(forceTimeout);
-  }, []);
+    const staleLoadingTimer = setTimeout(() => {
+      if (loading && supportedAssets.length === 0) {
+        logger.warn(
+          "swap",
+          "SwapWidget detected stale loading state. Forcing supported assets refresh."
+        );
+        dispatch(fetchSupportedAssets(true));
+      }
+    }, 8000); // fallback after 8s
+
+    return () => clearTimeout(staleLoadingTimer);
+  }, [loading, supportedAssets.length, dispatch]);
+
+  const handleSupportedAssetsRetry = useCallback(() => {
+    setSkeletonTimeoutReached(false);
+    dispatch(fetchSupportedAssets(true));
+  }, [dispatch]);
 
   // Show skeleton while loading initial data (supported assets)
-  // But not if timeout has been reached OR if we have some assets
-  if (loading && supportedAssets.length === 0 && !skeletonTimeout) {
-    return <SwapWidgetSkeleton />;
-  }
+  if (loading && supportedAssets.length === 0) {
+    if (!skeletonTimeoutReached) {
+      return <SwapWidgetSkeleton />;
+    }
 
-  // If timeout reached but still loading, show a fallback instead of skeleton
-  if (loading && supportedAssets.length === 0 && skeletonTimeout) {
     return (
       <div className="w-full max-w-lg mx-auto p-4 sm:p-6 bg-white dark:bg-[#1D1D23] rounded-lg border dark:border-[#35353E] border-gray-200 px-3 sm:px-4">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1D8751] mx-auto mb-4"></div>
+        <div className="flex flex-col items-center text-center gap-3">
+          <SwapWidgetSkeleton />
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-            Loading swap data...
+            This is taking longer than usual. Please refresh or try again.
           </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-3 px-3 sm:px-4 py-2 bg-[#1D8751] hover:bg-[#1a6b3f] text-white rounded-md text-xs sm:text-sm"
-          >
-            Refresh
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => window.location.reload()}
+              className="px-3 sm:px-4 py-2 bg-[#1D8751] hover:bg-[#1a6b3f] text-white rounded-md text-xs sm:text-sm"
+            >
+              Refresh
+            </button>
+            <button
+              onClick={handleSupportedAssetsRetry}
+              className="px-3 sm:px-4 py-2 border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751]/10 rounded-md text-xs sm:text-sm"
+            >
+              Try Again
+            </button>
+          </div>
         </div>
       </div>
     );

@@ -11,7 +11,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store/rootReducer";
 import { showToast } from "@/lib/utils/toast";
-import { Trash } from "lucide-react";
+import { Trash, ChevronDown } from "lucide-react";
 
 import { logger } from '@/lib/utils/logger';
 import { AdminPaymentMethod } from "@/features/p2p/types/paymentMethods";
@@ -141,6 +141,23 @@ const PaymentMethods = () => {
     dispatch(postUserPaymentDetail(payload));
   };
 
+  const getDefaultAccountName = () =>
+    user ? `${user.first_name || ""} ${user.last_name || ""}`.trim() : "";
+
+  const handleMethodSelection = (type: string) => {
+    setSelectedMethod(type);
+    setSelectedProvider("");
+    setAccountName(getDefaultAccountName());
+    setShowAddDropdown(false);
+  };
+
+  const handleCancelSelection = () => {
+    setSelectedMethod("");
+    setSelectedProvider("");
+    setAccountNumber("");
+    setAccountName(getDefaultAccountName());
+  };
+
   // Close dropdown on success
   useEffect(() => {
     if (postSuccess) {
@@ -160,26 +177,26 @@ const PaymentMethods = () => {
 
   /** Render helpers */
   const renderPaymentMethod = (method: PaymentMethod) => (
-    <div key={method.id} className="mb-4">
-      <div className="flex items-center mb-2">
+    <div key={method.id} className="mb-5">
+      <div className="flex items-center mb-3">
         <img
           src={
             method.provider_logo ||
             "/default-provider-logo.svg"
           }
           alt={`${method.payment_provider_name} Icon`}
-          className="w-8 h-8 sm:w-10 sm:h-10 rounded-full mr-2 object-cover"
+          className="w-10 h-10 sm:w-12 sm:h-12 rounded-full mr-3 object-cover"
           onError={(e) => {
             e.currentTarget.src = "/default-provider-logo.svg";
           }}
         />
-        <span className="text-gray-900 dark:text-white font-medium flex items-center text-base sm:text-lg">
+        <span className="text-gray-900 dark:text-white font-bold flex items-center text-lg sm:text-xl">
           {method.payment_provider_name}
           <svg
-            className="w-4 h-4 ml-1 text-gray-400"
+            className="w-5 h-5 ml-2 text-gray-400"
             fill="none"
             stroke="currentColor"
-            strokeWidth={2}
+            strokeWidth={2.5}
             viewBox="0 0 24 24"
           >
             <path
@@ -191,16 +208,16 @@ const PaymentMethods = () => {
         </span>
         <button
           disabled={deletingMethodId === method.id.toString()}
-          className="ml-auto text-[#1D8751] text-2xl flex items-center"
+          className="ml-auto text-[#1D8751] flex items-center hover:opacity-80 transition-opacity"
           title="Delete"
           onClick={() => handleDeleteMethod(method.id.toString())}
         >
           {deletingMethodId === method.id.toString() ? (
-            <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-[#1D8751]"></div>
+            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#1D8751]"></div>
           ) : (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="w-5 h-5 sm:w-6 sm:h-6 cursor-pointer"
+              className="w-6 h-6 sm:w-7 sm:h-7 cursor-pointer"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -208,7 +225,7 @@ const PaymentMethods = () => {
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={2}
+                strokeWidth={2.5}
                 d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
               />
             </svg>
@@ -261,10 +278,10 @@ const PaymentMethods = () => {
           />
         </svg>
       </div>
-      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+      <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
         No Payment Methods
       </h3>
-      <p className="text-gray-500 dark:text-gray-400 text-center mb-6 max-w-md">
+      <p className="text-base font-medium text-gray-500 dark:text-gray-400 text-center mb-6 max-w-md">
         You haven't added any payment methods yet. Add your first payment method
         to start accepting payments.
       </p>
@@ -336,12 +353,11 @@ const renderAddMethodDropdown = () => (
     `}
   >
     <div className="p-4">
-      {/* Payment Methods List */}
       <div className="mb-3">
         <label className="block text-gray-600 dark:text-[#788099] text-sm mb-2">
           Payment Method
         </label>
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 max-h-64 overflow-y-auto pr-1">
           {methodTypes.map((type, idx) => (
             <label
               key={type + idx}
@@ -349,17 +365,15 @@ const renderAddMethodDropdown = () => (
             >
               <div className="flex items-center gap-2">
                 <input
-                  type="checkbox"
+                  type="radio"
+                  name="payment-method-type"
                   value={type}
                   checked={selectedMethod === type}
-                  onChange={() => {
-                    setSelectedMethod(type);
-                    setSelectedProvider("");
-                  }}
+                  onChange={() => handleMethodSelection(type)}
                   disabled={adminLoading}
-                  className="accent-[#1D8751] w-5 h-5 rounded border-2 border-[#1D8751] focus:ring-0"
+                  className="accent-[#1D8751] w-4 h-4 border-2 border-[#1D8751] focus:ring-0"
                 />
-                <span className="text-gray-900 dark:text-white">{type}</span>
+                <span className="text-gray-900 dark:text-white text-sm">{type}</span>
               </div>
               <button
                 type="button"
@@ -372,38 +386,85 @@ const renderAddMethodDropdown = () => (
           ))}
         </div>
       </div>
+    </div>
+  </div>
+);
 
-      {/* Provider Dropdown */}
+
+  /** Render */
+  return (
+    <div className="w-full min-h-[600px] bg-white dark:bg-[#18181D] rounded-2xl p-4 text-gray-900 dark:text-white border-2 border-gray-200 dark:border-[#35353E] overflow-x-hidden">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4 ">
+        <span className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+          Payment Methods
+        </span>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
+          <Button
+            height={44}
+            borderRadius={24}
+            variant="outline"
+            className="border-2 border-[#1D8751] w-full text-gray-900 dark:text-white relative flex items-center justify-between"
+            size="md"
+            onClick={() => setShowAddDropdown(prev => !prev)}
+          >
+            <span className="flex items-center gap-2 text-base font-semibold">
+              {!selectedMethod && (
+                <span className="text-[#1D8751] text-xl font-bold">+</span>
+              )}
+              {selectedMethod || "Add Method"}
+            </span>
+            <ChevronDown className="w-4 h-4 text-[#1D8751]" />
+          </Button>
+          {renderAddMethodDropdown()}
+        </div>
+      </div>
+
+      {/* Selected Method Details */}
       {selectedMethod && (
-        <div className="mb-3">
-          <label className="block text-gray-600 dark:text-[#788099] text-sm mb-1">
-            Provider
-          </label>
-          <div className="relative">
-            <select
-              className="w-full bg-white dark:bg-black text-gray-900 dark:text-white appearance-none pr-10"
-              value={selectedProvider}
-              onChange={e => setSelectedProvider(e.target.value)}
-              disabled={adminLoading}
-            >
-              <option value="">Select Provider</option>
-              {providers.map((p: any, idx: number) => (
-                <option key={p.provider_name + idx} value={p.provider_name}>
-                  {p.provider_name}
-                </option>
-              ))}
-            </select>
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
+        <div className="w-full border border-gray-200 dark:border-[#35353E] rounded-2xl p-4 sm:p-5 mb-6 bg-gray-50 dark:bg-[#1F1F27]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div>
+              <p className="text-sm text-gray-500 dark:text-[#8C8CA1]">Selected Method</p>
+              <p className="text-lg font-semibold text-gray-900 dark:text-white">{selectedMethod}</p>
             </div>
+            <button
+              className="text-sm font-medium text-[#E23D3A] hover:opacity-80"
+              onClick={handleCancelSelection}
+            >
+              Cancel Selection
+            </button>
           </div>
-          
-          {/* Provider Preview with Logo */}
-          {selectedProvider && (
-            <div className="mt-2 p-3 rounded-lg bg-gray-50 dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E]">
-              <div className="flex items-center gap-3">
+
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label className="block text-gray-600 dark:text-[#788099] text-sm mb-1">
+                Provider
+              </label>
+              <div className="relative">
+                <select
+                  className="w-full bg-white dark:bg-[#1C1C24] text-gray-900 dark:text-white appearance-none pr-10 rounded-xl border border-gray-200 dark:border-[#35353E] h-12 px-4"
+                  value={selectedProvider}
+                  onChange={(e) => setSelectedProvider(e.target.value)}
+                  disabled={adminLoading}
+                >
+                  <option value="">Select Provider</option>
+                  {providers.map((p: any, idx: number) => (
+                    <option key={p.provider_name + idx} value={p.provider_name}>
+                      {p.provider_name}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {selectedProvider && (
+              <div className="p-3 rounded-xl bg-white dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E] flex items-center gap-3">
                 {(() => {
                   const selectedProviderObj = providers.find((p: any) => p.provider_name === selectedProvider);
                   return (
@@ -411,7 +472,7 @@ const renderAddMethodDropdown = () => (
                       <img
                         src={selectedProviderObj?.logo || "/default-provider-logo.svg"}
                         alt={`${selectedProvider} logo`}
-                        className="w-8 h-8 rounded-full object-cover"
+                        className="w-10 h-10 rounded-full object-cover"
                         onError={(e) => {
                           e.currentTarget.src = "/default-provider-logo.svg";
                         }}
@@ -428,83 +489,38 @@ const renderAddMethodDropdown = () => (
                   );
                 })()}
               </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Input
+                placeholder="Account Name"
+                value={accountName}
+                onChange={(e) => setAccountName(e.target.value)}
+                className="w-full"
+                disabled
+              />
+              <Input
+                placeholder="Account Number"
+                value={accountNumber}
+                onChange={(e) => setAccountNumber(e.target.value)}
+                className="w-full"
+              />
             </div>
-          )}
+
+            <Button
+              className="bg-[#1D8751] text-white w-full sm:w-auto px-8"
+              onClick={handleAdd}
+              disabled={
+                !selectedProvider || !accountName || !accountNumber || postLoading
+              }
+              height={44}
+              borderRadius={24}
+            >
+              {postLoading ? "Adding..." : "Add Payment Method"}
+            </Button>
+          </div>
         </div>
       )}
-
-      {/* Checkbox for confirming selection */}
-      {selectedProvider && (
-        <label
-          className="flex items-center gap-2 mb-3 p-2 rounded-lg border-2 border-[#1D8751] bg-white dark:bg-black"
-        >
-          <input
-            type="checkbox"
-            checked={!!selectedProvider}
-            readOnly
-            className="accent-[#1D8751] w-5 h-5 rounded border-2 border-[#1D8751] focus:ring-0"
-          />
-          <span className="text-gray-900 dark:text-white">
-            Add details for this method
-          </span>
-        </label>
-      )}
-
-      {/* Input fields */}
-      {selectedProvider && (
-        <div className="flex flex-col gap-3">
-          <Input
-            placeholder="Account Name"
-            value={accountName}
-            onChange={e => setAccountName(e.target.value)}
-            className="w-full"
-          />
-          <Input
-            placeholder="Account Number"
-            value={accountNumber}
-            onChange={e => setAccountNumber(e.target.value)}
-            className="w-full"
-          />
-          <Button
-            className="bg-[#1D8751] text-white w-full mt-2"
-            onClick={handleAdd}
-            disabled={!accountName || !accountNumber || postLoading}
-            height={40}
-            borderRadius={10}
-          >
-            {postLoading ? "Adding..." : "Add"}
-          </Button>
-        </div>
-      )}
-    </div>
-  </div>
-);
-
-
-  /** Render */
-  return (
-    <div className="w-full min-h-[600px] bg-white dark:bg-[#18181D] rounded-2xl p-4 text-gray-900 dark:text-white border-2 border-gray-200 dark:border-[#35353E] overflow-x-hidden">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4 ">
-        <span className="text-[18px] sm:text-[22px] font-semibold">
-          Payment Methods
-        </span>
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <Button
-            height={40}
-            borderRadius={10}
-            variant="outline"
-            className="border-1 border-[#1D8751] w-full text-gray-900 dark:text-white relative"
-            size="md"
-            onClick={() => setShowAddDropdown(prev => !prev)}
-          >
-            <p className="flex items-center gap-2">
-              <span className="text-[#1D8751] text-2xl">+</span> Add Method
-            </p>
-          </Button>
-          {renderAddMethodDropdown()}
-        </div>
-      </div>
 
       {/* Content */}
       {userPaymentDetailsLoading ? (
@@ -523,13 +539,13 @@ const renderAddMethodDropdown = () => (
       {/* Update Button */}
       <div className="mt-8 w-full">
         <Button
-          height={40}
+          height={44}
           borderRadius={24}
           variant="outline"
           className="border-2 border-[#1D8751] w-full text-gray-900 dark:text-white"
           size="md"
         >
-          <p>Update</p>
+          <p className="text-base font-semibold">Update</p>
         </Button>
       </div>
     </div>

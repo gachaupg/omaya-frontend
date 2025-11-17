@@ -354,13 +354,13 @@ const Overview = () => {
           className="p-3"
         >
           <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-medium text-sm dark:text-white text-[#0D0D0D]">
-                P2P Buy / Sell
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-medium text-base dark:text-white text-[#0D0D0D]">
+                P2P Buys
               </h3>
               <div className="relative">
                 <select
-                  className="px-2 py-1 rounded text-xs appearance-none pr-8 dark:bg-[#18181D] bg-white border dark:border-[#35353E] border-gray-300 dark:text-white text-[#0D0D0D]"
+                  className="px-3 py-1.5 rounded text-sm appearance-none pr-8 dark:bg-[#18181D] bg-white border dark:border-[#35353E] border-gray-300 dark:text-white text-[#0D0D0D]"
                   value={buyDateFilter}
                   onChange={(e) => setBuyDateFilter(e.target.value)}
                   disabled={loading}
@@ -373,7 +373,7 @@ const Overview = () => {
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                   <svg
-                    className="w-3 h-3 dark:text-white text-[#0D0D0D]"
+                    className="w-4 h-4 dark:text-white text-[#0D0D0D]"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -389,37 +389,36 @@ const Overview = () => {
               </div>
             </div>
             <div className="mb-3">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs dark:text-[#A0A0A0] text-[#788099]">
-                  Total
-                </span>
-                <span className="text-xs font-medium dark:text-white text-[#0D0D0D]">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-lg font-semibold dark:text-white text-[#0D0D0D]">
                   ${buyTotals.total.toLocaleString()}
                 </span>
               </div>
-              <div className="w-full bg-[#2D2D37] rounded-full h-2">
+              <div className="w-full bg-[#2D2D37] rounded-full h-2.5">
                 <div
-                  className="bg-[#1D8751] h-2 rounded-full transition-all duration-300"
+                  className="bg-[#1D8751] h-2.5 rounded-full transition-all duration-300"
                   style={{ width: `${Math.min(buyProgressPercentage, 100)}%` }}
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="text-center">
-                <div className="text-xs dark:text-[#A0A0A0] text-[#788099] mb-1">
-                  Completed
-                </div>
-                <div className="text-sm font-semibold text-[#1D8751]">
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block flex-shrink-0" />
+                <span className="text-xs dark:text-[#A0A0A0] text-[#788099]">
+                  Completed:
+                </span>
+                <span className="text-sm font-semibold text-[#1D8751]">
                   ${buyTotals.completed.toLocaleString()}
-                </div>
+                </span>
               </div>
-              <div className="text-center">
-                <div className="text-xs dark:text-[#A0A0A0] text-[#788099] mb-1">
-                  Pending
-                </div>
-                <div className="text-sm font-semibold text-[#FFD600]">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-[#FFD600] inline-block flex-shrink-0" />
+                <span className="text-xs dark:text-[#A0A0A0] text-[#788099]">
+                  Pending:
+                </span>
+                <span className="text-sm font-semibold text-[#FFD600]">
                   ${buyTotals.pending.toLocaleString()}
-                </div>
+                </span>
               </div>
             </div>
           </div>
@@ -434,13 +433,13 @@ const Overview = () => {
           className="p-3"
         >
           <div className="flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-medium text-sm dark:text-white text-[#0D0D0D]">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-medium text-base dark:text-white text-[#0D0D0D]">
                 P2P Sells
               </h3>
               <div className="relative">
                 <select
-                  className="px-2 py-1 rounded text-xs appearance-none pr-8 dark:bg-[#18181D] bg-white border dark:border-[#35353E] border-gray-300 dark:text-white text-[#0D0D0D]"
+                  className="px-3 py-1.5 rounded text-sm appearance-none pr-8 dark:bg-[#18181D] bg-white border dark:border-[#35353E] border-gray-300 dark:text-white text-[#0D0D0D]"
                   value={sellDateFilter}
                   onChange={(e) => setSellDateFilter(e.target.value)}
                   disabled={loading}
@@ -453,7 +452,7 @@ const Overview = () => {
                 </select>
                 <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                   <svg
-                    className="w-3 h-3 dark:text-white text-[#0D0D0D]"
+                    className="w-4 h-4 dark:text-white text-[#0D0D0D]"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -469,37 +468,36 @@ const Overview = () => {
               </div>
             </div>
             <div className="mb-3">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs dark:text-[#A0A0A0] text-[#788099]">
-                  Total
-                </span>
-                <span className="text-xs font-medium dark:text-white text-[#0D0D0D]">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-lg font-semibold dark:text-white text-[#0D0D0D]">
                   ${sellTotals.total.toLocaleString()}
                 </span>
               </div>
-              <div className="w-full bg-[#2D2D37] rounded-full h-2">
+              <div className="w-full bg-[#2D2D37] rounded-full h-2.5">
                 <div
-                  className="bg-[#E23D3A] h-2 rounded-full transition-all duration-300"
+                  className="bg-[#E23D3A] h-2.5 rounded-full transition-all duration-300"
                   style={{ width: `${Math.min(sellProgressPercentage, 100)}%` }}
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="text-center">
-                <div className="text-xs dark:text-[#A0A0A0] text-[#788099] mb-1">
-                  Completed
-                </div>
-                <div className="text-sm font-semibold text-[#1D8751]">
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block flex-shrink-0" />
+                <span className="text-xs dark:text-[#A0A0A0] text-[#788099]">
+                  Completed:
+                </span>
+                <span className="text-sm font-semibold text-[#1D8751]">
                   ${sellTotals.completed.toLocaleString()}
-                </div>
+                </span>
               </div>
-              <div className="text-center">
-                <div className="text-xs dark:text-[#A0A0A0] text-[#788099] mb-1">
-                  Pending
-                </div>
-                <div className="text-sm font-semibold text-[#FFD600]">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-[#FFD600] inline-block flex-shrink-0" />
+                <span className="text-xs dark:text-[#A0A0A0] text-[#788099]">
+                  Pending:
+                </span>
+                <span className="text-sm font-semibold text-[#FFD600]">
                   ${sellTotals.pending.toLocaleString()}
-                </div>
+                </span>
               </div>
             </div>
           </div>

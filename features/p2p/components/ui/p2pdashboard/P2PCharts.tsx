@@ -324,7 +324,7 @@ const P2PCharts = () => {
           <Table
             key={`p2p-table-${currentPage}-${dataKey}`}
             type="p2p"
-            title="P2P Orders"
+            title="P2P History"
             data={displayData}
             loading={loading}
             error={error}

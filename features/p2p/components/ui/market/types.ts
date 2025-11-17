@@ -16,7 +16,9 @@ export interface MarketRow {
   minAmount: number;
   maxAmount: number;
   currency: string;
-  paymentType: string;
+  paymentType: string[];
+  isMerchant?: boolean;
+  isMerchantBusiness?: boolean;
   timeLimit: string;
   avgRealiseTime: string;
   terms_and_conditions: string;

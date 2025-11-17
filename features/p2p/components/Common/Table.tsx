@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 import { tokens } from "@/styles/tokens";
 import { TransactionType } from "@/features/p2p/types";
 import Button from "./Button";
-import { MoreHorizontal, Download, Search, X, ArrowLeft, Pointer } from "lucide-react";
+import { MoreHorizontal, Download, Search, X, ArrowLeft, Pointer, Eye } from "lucide-react";
 import { formatDate, formatNumber } from "@/utils/formatters";
 import { TiArrowUnsorted } from "react-icons/ti";
 import html2canvas from "html2canvas";
@@ -21,6 +21,8 @@ type TableProps = {
   onExport?: (format: "csv" | "pdf") => void;
   onSearch?: (query: string) => void;
   onViewTransaction?: (tx: TransactionType) => void;
+  onDateFilterChange?: (filter: string) => void;
+  dateFilter?: string;
 };
 
 export const Table: React.FC<TableProps> = ({
@@ -35,6 +37,8 @@ export const Table: React.FC<TableProps> = ({
   onExport,
   onSearch,
   onViewTransaction,
+  onDateFilterChange,
+  dateFilter: externalDateFilter,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showExportOptions, setShowExportOptions] = useState(false);
@@ -42,7 +46,15 @@ export const Table: React.FC<TableProps> = ({
     useState<TransactionType | null>(null);
   const [tooltipId, setTooltipId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [internalDateFilter, setInternalDateFilter] = useState("ALL");
+  const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
   const modalContentRef = useRef<HTMLDivElement>(null);
+  const dateDropdownRef = useRef<HTMLDivElement>(null);
+
+  const dateFilterOptions = ["ALL", "Today", "Week", "Month", "Year"];
+  
+  // Use external date filter if provided, otherwise use internal state
+  const dateFilter = externalDateFilter !== undefined ? externalDateFilter : internalDateFilter;
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -51,6 +63,51 @@ export const Table: React.FC<TableProps> = ({
       onSearch(value);
     }
   };
+
+  const handleDateFilterChange = (filter: string) => {
+    if (onDateFilterChange) {
+      onDateFilterChange(filter);
+    } else {
+      setInternalDateFilter(filter);
+    }
+  };
+
+  // Filter data based on date filter
+  const getFilteredData = (data: TransactionType[], dateFilter: string) => {
+    if (dateFilter === "ALL") return data;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return data.filter((item) => {
+      const itemDate = new Date(item.date);
+      if (isNaN(itemDate.getTime())) return false;
+
+      switch (dateFilter) {
+        case "Today":
+          const itemDay = new Date(itemDate);
+          itemDay.setHours(0, 0, 0, 0);
+          return itemDay.getTime() === today.getTime();
+        case "Week":
+          const weekAgo = new Date(today);
+          weekAgo.setDate(today.getDate() - 7);
+          return itemDate >= weekAgo;
+        case "Month":
+          const monthAgo = new Date(today);
+          monthAgo.setMonth(today.getMonth() - 1);
+          return itemDate >= monthAgo;
+        case "Year":
+          const yearAgo = new Date(today);
+          yearAgo.setFullYear(today.getFullYear() - 1);
+          return itemDate >= yearAgo;
+        default:
+          return true;
+      }
+    });
+  };
+
+  // Apply date filter to data
+  const filteredData = getFilteredData(data, dateFilter);
 
   const handleExport = (format: "csv" | "pdf") => {
     if (onExport) {
@@ -100,6 +157,26 @@ export const Table: React.FC<TableProps> = ({
   React.useEffect(() => {
     logger.debug('p2p', "Selected transaction updated:", selectedTransaction);
   }, [selectedTransaction]);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isDateDropdownOpen &&
+        dateDropdownRef.current &&
+        !dateDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsDateDropdownOpen(false);
+      }
+    };
+
+    if (isDateDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isDateDropdownOpen]);
 
   if (loading) {
     return (
@@ -204,6 +281,53 @@ export const Table: React.FC<TableProps> = ({
     );
   }
 
+  if (filteredData.length === 0 && data.length > 0) {
+    return (
+      <div className="w-full text-center py-8">
+        <div className="flex flex-col items-center justify-center border border-gray-200 dark:border-[#35353E] rounded-[24px] p-8 bg-white dark:bg-[#23232B]">
+          <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-[#35353E] flex items-center justify-center">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="text-gray-500 dark:text-[#788099]"
+            >
+              <path
+                d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M12 8V12"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M12 16H12.01"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-500 dark:text-[#788099] mb-2">
+            No Data Matches Filter
+          </h3>
+          <p className="text-sm text-gray-400 dark:text-[#8C8CA1] text-center max-w-md">
+            No records found for the selected date filter. Please try a different time period.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="mt-8">
@@ -216,19 +340,113 @@ export const Table: React.FC<TableProps> = ({
 
           {type === "p2p" && (
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
+              {/* Date Filter */}
+              <div className="relative min-w-[150px]" ref={dateDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsDateDropdownOpen((prev) => !prev)}
+                  disabled={loading}
+                  className="w-full px-3 py-2 pr-10 rounded text-sm font-semibold dark:bg-[#18181D] bg-white border dark:border-[#35353E] border-gray-300 dark:text-white text-[#0D0D0D] flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
+                >
+                  <span className="truncate">{dateFilter}</span>
+                  <svg
+                    className={`w-4 h-4 transition-transform ${isDateDropdownOpen ? "rotate-180" : ""}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+                <span
+                  className={`pointer-events-none absolute inset-y-0 right-3 flex items-center ${
+                    dateFilter ? "text-[#1D8751]" : "text-gray-400"
+                  }`}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </span>
+                {isDateDropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-2 rounded-xl border border-[#1D8751] bg-[#0F0F13] dark:bg-[#0F0F13] text-white shadow-lg z-20">
+                    {dateFilterOptions.map((option) => {
+                      const isSelected = dateFilter === option;
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => {
+                            handleDateFilterChange(option);
+                            setIsDateDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-[#1b1b22] ${
+                            isSelected ? "text-white" : "text-[#C7CAD1]"
+                          }`}
+                        >
+                          <span
+                            className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                              isSelected ? "border-[#1D8751] bg-[#1D8751]" : "border-[#1D8751]"
+                            }`}
+                          >
+                            {isSelected && (
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-3 w-3 text-white"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="3"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </span>
+                          <span className="text-sm font-semibold">{option}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
               <div className="relative w-full sm:w-60">
                 <input
                   type="text"
-                  placeholder="Search transactions..."
+                  placeholder="Search"
                   value={searchQuery}
                   onChange={handleSearch}
-                  className={`py-2 pl-9 pr-4 rounded-[24px] text-sm w-full border focus:outline-none bg-white dark:bg-[${tokens.colors.dark.card}] text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] border-gray-200 dark:border-[${tokens.colors.dark.border}]`}
+                  className={`py-2 pl-9 pr-10 rounded-[24px] text-sm w-full border focus:outline-none bg-gray-100 dark:bg-[#35353E] text-gray-900 dark:text-gray-300 placeholder:text-gray-400 dark:placeholder:text-gray-500 border-gray-200 dark:border-[${tokens.colors.dark.border}]`}
                 />
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                   <Search
                     size={16}
-                    className={`text-gray-400 dark:text-[${tokens.colors.dark.textBody}]`}
+                    className="text-[#1D8751]"
                   />
+                </div>
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="text-[#1D8751]"
+                  >
+                    <rect x="2" y="3" width="12" height="1.5" rx="0.75" fill="currentColor" />
+                    <rect x="2" y="7.25" width="9" height="1.5" rx="0.75" fill="currentColor" />
+                    <rect x="2" y="11.5" width="6" height="1.5" rx="0.75" fill="currentColor" />
+                  </svg>
                 </div>
               </div>
 
@@ -237,9 +455,9 @@ export const Table: React.FC<TableProps> = ({
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowExportOptions(!showExportOptions)}
-                  className="text-sm"
+                  className="text-base font-semibold"
                 >
-                  <p className="text-[#1D8751]">Export Transactions</p>
+                  <p className="text-[14px] text-[#1D8751]">Export Transactions</p>
                 </Button>
 
                 {showExportOptions && (
@@ -323,7 +541,7 @@ export const Table: React.FC<TableProps> = ({
 
             {/* Table Body */}
             <div>
-              {data.map((row, idx) => (
+              {filteredData.map((row, idx) => (
                 <React.Fragment key={idx}>
                   {/* Desktop Grid View */}
                 <div
@@ -408,7 +626,7 @@ export const Table: React.FC<TableProps> = ({
                       className="text-[#1D8751]"
                       onClick={() => handleViewTransaction(row)}
                     >
-                      View
+                      <Eye size={18} />
                     </Button>
                   </div>
                 </div>
@@ -495,6 +713,7 @@ export const Table: React.FC<TableProps> = ({
                         className="w-full text-[#1D8751] justify-center"
                         onClick={() => handleViewTransaction(row)}
                       >
+                        <Eye size={18} className="mr-2" />
                         View Receipt
                       </Button>
                     </div>
@@ -891,3 +1110,4 @@ export const Table: React.FC<TableProps> = ({
     </>
   );
 };
+

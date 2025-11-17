@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo, memo, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Input from "../../Common/Input";
-import Select from "../../Common/Select";
 import Button from "../../Common/Button";
 import { FaFilter, FaSyncAlt } from "react-icons/fa";
 import Image from "next/image";
 import { tokens } from "@/styles/tokens";
 import MarketTable from "./Table";
+import { MarketRow } from "./types";
 import {
   fetchAllP2PBuyandSell,
   setCurrentPage,
@@ -175,38 +175,18 @@ const getPaymentMethodOptions = (orders: any): Option[] => {
   return [...predefinedPaymentMethods, ...additionalMethods];
 };
 
-interface MarketRow {
-  id: string;
-  advertiser: string;
-  advertiserInitials: string;
-  orders: number;
-  advertiser_photo: string;
-  completion: string;
-  exchange_rate: string;
-  completion_time: string;
-  online: boolean;
-  commission: string;
-  available: string;
-  availableAmount: number;
-  limit: string;
-  payment: string[];
-  minAmount: number;
-  maxAmount: number;
-  currency: string;
-  paymentType: string;
-  timeLimit: string;
-  avgRealiseTime: string;
-  terms_and_conditions: string;
-  autoReply?: string;
-  payment_details?: Array<{
-    id: number;
-    provider: string;
-    payment_method: string;
-    account_name: string;
-    account_number: string;
-    provider_logo: string;
-  }>;
-}
+const formatSelectionSummary = (
+  selected: string[],
+  options: Option[],
+  fallbackLabel: string
+) => {
+  if (!selected.length) return fallbackLabel;
+  const labels = options
+    .filter((opt) => selected.includes(opt.value))
+    .map((opt) => opt.label);
+  if (labels.length <= 2) return labels.join(", ");
+  return `${labels.length} selected`;
+};
 
 const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
   const dispatch = useDispatch();
@@ -226,10 +206,18 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
   const hasInitializedRef = useRef(false);
   const [amount, setAmount] = useState("");
   const currency = "USDT"; // Fixed to USDT
-  const [paymentType, setPaymentType] = useState("");
-  const [provider, setProvider] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showSearch, setShowSearch] = useState(false);
+  const [paymentTypes, setPaymentTypes] = useState<string[]>([]);
+  const [providers, setProviders] = useState<string[]>([]);
+  const [isPaymentDropdownOpen, setIsPaymentDropdownOpen] = useState(false);
+  const [isProviderDropdownOpen, setIsProviderDropdownOpen] = useState(false);
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+  const paymentDropdownRef = useRef<HTMLDivElement>(null);
+  const providerDropdownRef = useRef<HTMLDivElement>(null);
+  const filterDropdownRef = useRef<HTMLDivElement>(null);
+  const [showMerchantOnly, setShowMerchantOnly] = useState(false);
+  const [showMerchantBusinessOnly, setShowMerchantBusinessOnly] = useState(false);
+  const [minOrderLimit, setMinOrderLimit] = useState("");
+  const [maxOrderLimit, setMaxOrderLimit] = useState("");
 
   const { isConnected: wsConnected, connectionError: wsError } =
     useP2POrdersWebSocket({
@@ -277,6 +265,51 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
     () => getPaymentMethodOptions(orders),
     [orders]
   );
+  const paymentSummary = useMemo(
+    () => formatSelectionSummary(paymentTypes, paymentMethodOptions, "Payment Method"),
+    [paymentTypes, paymentMethodOptions]
+  );
+  const providerSummary = useMemo(
+    () => formatSelectionSummary(providers, providerOptions, "Select Provider"),
+    [providers, providerOptions]
+  );
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isPaymentDropdownOpen &&
+        paymentDropdownRef.current &&
+        !paymentDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsPaymentDropdownOpen(false);
+      }
+      if (
+        isProviderDropdownOpen &&
+        providerDropdownRef.current &&
+        !providerDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsProviderDropdownOpen(false);
+      }
+      if (
+        isFilterDropdownOpen &&
+        filterDropdownRef.current &&
+        !filterDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsFilterDropdownOpen(false);
+      }
+    };
+
+    if (
+      isPaymentDropdownOpen ||
+      isProviderDropdownOpen ||
+      isFilterDropdownOpen
+    ) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isPaymentDropdownOpen, isProviderDropdownOpen, isFilterDropdownOpen]);
 
  
 
@@ -325,6 +358,9 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
     if (!getActiveOrders || getActiveOrders.length === 0) {
       return [];
     }
+
+    const minLimitValue = parseFloat(minOrderLimit);
+    const maxLimitValue = parseFloat(maxOrderLimit);
 
     const data = getActiveOrders
       .map((order: any, index: number) => {
@@ -378,6 +414,8 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
             order.payment_details?.map(
               (detail: any) => detail.payment_method
             ) || [],
+          isMerchant: Boolean(order.is_merchant),
+          isMerchantBusiness: Boolean(order.is_merchant_business),
           minAmount: parseFloat(order.min_order_amount || 0),
           maxAmount: parseFloat(order.max_order_amount || 0),
           currency: order.currency,
@@ -393,60 +431,76 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
       .filter((row: MarketRow) => {
         if (currency && row.currency !== currency) return false;
 
-        // Filter by payment method - check if any payment detail has the selected payment method
-        if (paymentType && paymentType !== "") {
+        if (showMerchantOnly && !row.isMerchant) {
+          return false;
+        }
+
+        if (showMerchantBusinessOnly && !row.isMerchantBusiness) {
+          return false;
+        }
+
+        if (!isNaN(minLimitValue) && row.minAmount < minLimitValue) {
+          return false;
+        }
+
+        if (!isNaN(maxLimitValue) && row.maxAmount > maxLimitValue) {
+          return false;
+        }
+
+        // Filter by payment method - check if any payment detail has the selected payment method(s)
+        if (paymentTypes.length > 0) {
           const hasPaymentMethod = row.payment_details?.some((detail: any) => {
-            // Handle predefined payment method mappings
+            return paymentTypes.some((method) => {
             if (
-              paymentType === "bank_transfer" &&
+                method === "bank_transfer" &&
               (detail.payment_method?.toLowerCase().includes("bank") ||
                 detail.payment_method?.toLowerCase().includes("transfer"))
             ) {
               return true;
             }
             if (
-              paymentType === "mobile_money" &&
+                method === "mobile_money" &&
               (detail.payment_method?.toLowerCase().includes("mobile") ||
                 detail.payment_method?.toLowerCase().includes("money"))
             ) {
               return true;
             }
-            // Direct match
-            return detail.payment_method === paymentType;
+              return detail.payment_method === method;
+            });
           });
           if (!hasPaymentMethod) return false;
         }
 
-        // Filter by provider - check if any payment detail has the selected provider
-        if (provider && provider !== "") {
+        // Filter by provider - check if any payment detail has the selected provider(s)
+        if (providers.length > 0) {
           const hasProvider = row.payment_details?.some((detail: any) => {
-            // Handle predefined provider mappings
+            return providers.some((selectedProvider) => {
             if (
-              provider === "salaam_bank" &&
+                selectedProvider === "salaam_bank" &&
               detail.provider?.toLowerCase().includes("salaam")
             ) {
               return true;
             }
             if (
-              provider === "evc_plus" &&
+                selectedProvider === "evc_plus" &&
               detail.provider?.toLowerCase().includes("evc")
             ) {
               return true;
             }
             if (
-              provider === "equity_premier_bank" &&
+                selectedProvider === "equity_premier_bank" &&
               detail.provider?.toLowerCase().includes("equity")
             ) {
               return true;
             }
             if (
-              provider === "premier_bank" &&
+                selectedProvider === "premier_bank" &&
               detail.provider?.toLowerCase().includes("premier")
             ) {
               return true;
             }
-            // Direct match
-            return detail.provider === provider;
+              return detail.provider === selectedProvider;
+            });
           });
           if (!hasProvider) return false;
         }
@@ -456,10 +510,6 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
           if (amountValue < row.minAmount || amountValue > row.maxAmount)
             return false;
         }
-        if (searchQuery) {
-          const query = searchQuery.toLowerCase();
-          if (!row.advertiser.toLowerCase().includes(query)) return false;
-        }
         return true;
       });
 
@@ -468,10 +518,13 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
   }, [
     getActiveOrders,
     currency,
-    provider,
-    paymentType,
+    providers,
+    paymentTypes,
     amount,
-    searchQuery,
+    showMerchantOnly,
+    showMerchantBusinessOnly,
+    minOrderLimit,
+    maxOrderLimit,
     activeTab,
     buy_orders,
     sell_orders,
@@ -510,6 +563,31 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
   const handleRefresh = () => {
     // Always fetch fresh data on manual refresh, even if WebSocket is connected
     dispatch(fetchAllP2PBuyandSell(currentPage) as any);
+  };
+
+  const toggleSelection = (
+    value: string,
+    setter: React.Dispatch<React.SetStateAction<string[]>>
+  ) => {
+    setter((prev) =>
+      prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]
+    );
+  };
+
+  const handlePaymentSelection = (value: string) => {
+    if (value === "") {
+      setPaymentTypes([]);
+      return;
+    }
+    toggleSelection(value, setPaymentTypes);
+  };
+
+  const handleProviderSelection = (value: string) => {
+    if (value === "") {
+      setProviders([]);
+      return;
+    }
+    toggleSelection(value, setProviders);
   };
 
   const totalPages = useMemo(() => {
@@ -561,7 +639,10 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-2 bg-gray-100 dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] rounded-lg px-3 py-2">
+          <div
+            className="flex items-center gap-2 bg-transparent border border-gray-300 dark:border-[#35353E] rounded-lg px-3 py-2 w-full sm:w-auto"
+            ref={paymentDropdownRef}
+          >
             <Image
               src="https://res.cloudinary.com/pitz/image/upload/v1746710370/coins-rotate_d278mb.png"
               alt="Payment Method"
@@ -569,18 +650,71 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
               height={18}
               className="text-[#1D8751]"
             />
-            <Select
-              bgColor="transparent"
-              borderColor="transparent"
-              value={paymentType}
-              onChange={(e) => setPaymentType(e.target.value)}
-              options={paymentMethodOptions}
-              placeholder="Payment Method"
-              className="text-gray-900 dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] dark:text-white w-full sm:w-44 bg-transparent border-none focus:ring-0 text-sm"
-            />
+            <div className="relative w-full min-w-[220px] sm:min-w-[260px]">
+              <button
+                type="button"
+                onClick={() => setIsPaymentDropdownOpen((prev) => !prev)}
+                className="w-full rounded-lg bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-[#1D8751] py-1.5 pr-10 text-sm font-semibold text-gray-900 dark:text-white text-left flex items-center justify-between gap-2"
+              >
+                <span className="truncate">{paymentSummary}</span>
+                <svg
+                  className={`w-4 h-4 text-gray-500 dark:text-[#788099] transition-transform ${
+                    isPaymentDropdownOpen ? "rotate-180" : ""
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {isPaymentDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 mt-3 rounded-2xl border border-gray-300 dark:border-[#35353E] bg-[#0F0F13] text-white shadow-2xl z-30 max-h-72 overflow-y-auto">
+                  {paymentMethodOptions.map((option) => {
+                    const isSelected =
+                      option.value === ""
+                        ? paymentTypes.length === 0
+                        : paymentTypes.includes(option.value);
+                    return (
+                      <button
+                        key={option.value || option.label}
+                        type="button"
+                        onClick={() => handlePaymentSelection(option.value)}
+                        className={`w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-[#1b1b22] ${
+                          isSelected ? "text-white" : "text-[#C7CAD1]"
+                        }`}
+                      >
+                        <span
+                          className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                            isSelected ? "border-[#4A4A56] bg-[#1D8751]" : "border-[#4A4A56]"
+                          }`}
+                        >
+                          {isSelected && (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-3 w-3 text-white"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </span>
+                        <span className="text-sm font-semibold">{option.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 bg-gray-100 dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] rounded-lg px-3 py-2">
+          <div
+            className="flex items-center gap-2 bg-transparent border border-gray-300 dark:border-[#35353E] rounded-lg px-3 py-2 w-full sm:w-auto"
+            ref={providerDropdownRef}
+          >
             <Image
               src="https://res.cloudinary.com/pitz/image/upload/v1746710370/coins-rotate_d278mb.png"
               alt="Bank Provider"
@@ -588,34 +722,195 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
               height={18}
               className="text-[#1D8751]"
             />
-            <Select
-              bgColor="transparent"
-              borderColor="transparent"
-              value={provider}
-              onChange={(e) => setProvider(e.target.value)}
-              options={providerOptions}
-              placeholder="Select Bank/Provider"
-              className="bg-transparent border-none dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] focus:ring-0 text-gray-900 dark:text-white w-full sm:w-44 text-sm"
-            />
+            <div className="relative w-full min-w-[220px] sm:min-w-[260px]">
+              <button
+                type="button"
+                onClick={() => setIsProviderDropdownOpen((prev) => !prev)}
+                className="w-full rounded-lg bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-[#1D8751] py-1.5 pr-10 text-sm font-semibold text-gray-900 dark:text-white text-left flex items-center justify-between gap-2"
+              >
+                <span className="truncate">{providerSummary}</span>
+                <svg
+                  className={`w-4 h-4 text-gray-500 dark:text-[#788099] transition-transform ${
+                    isProviderDropdownOpen ? "rotate-180" : ""
+                  }`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {isProviderDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 mt-3 rounded-2xl border border-gray-300 dark:border-[#35353E] bg-[#0F0F13] text-white shadow-2xl z-30 max-h-72 overflow-y-auto">
+                  {providerOptions.map((option) => {
+                    const isSelected =
+                      option.value === ""
+                        ? providers.length === 0
+                        : providers.includes(option.value);
+                    return (
+                      <button
+                        key={option.value || option.label}
+                        type="button"
+                        onClick={() => handleProviderSelection(option.value)}
+                        className={`w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-[#1b1b22] ${
+                          isSelected ? "text-white" : "text-[#C7CAD1]"
+                        }`}
+                      >
+                        <span
+                          className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                            isSelected ? "border-[#4A4A56] bg-[#1D8751]" : "border-[#4A4A56]"
+                          }`}
+                        >
+                          {isSelected && (
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-3 w-3 text-white"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </span>
+                        <span className="text-sm font-semibold">{option.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
-          <button
-            className="w-11 h-10 bg-gray-100 dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] rounded-lg flex items-center justify-center"
-            onClick={() => setShowSearch((prev) => !prev)}
-            type="button"
-          >
-            <FaFilter className="text-[#1D8751]" size={22} />
-          </button>
-          {showSearch && (
-            <Input
-              bgColor="transparent"
-              borderColor="transparent"
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search advertiser"
-              className="bg-transparent h-[8px] border-none focus:ring-0 text-gray-900 dark:text-white w-full sm:w-36"
-            />
-          )}
+          <div className="relative w-full sm:w-auto" ref={filterDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
+              className="w-11 h-10 bg-gray-100 dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] rounded-lg flex items-center justify-center text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
+            >
+              <FaFilter className="text-[#1D8751]" size={18} />
+            </button>
+            {isFilterDropdownOpen && (
+              <div className="absolute top-full right-0 mt-3 border border-gray-300 dark:border-[#35353E] rounded-xl bg-[#0F0F13] text-white shadow-2xl z-40 min-w-[240px] p-3 space-y-3">
+                <div className="space-y-1">
+                  <span className="text-xs uppercase tracking-wide text-[#7B7F92]">Visibility</span>
+                  <div className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowMerchantOnly((prev) => {
+                          const next = !prev;
+                          if (next) setShowMerchantBusinessOnly(false);
+                          return next;
+                        });
+                      }}
+                      className="flex items-center gap-3 text-left"
+                    >
+                      <span
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                          showMerchantOnly ? "border-[#4A4A56] bg-[#1D8751]" : "border-[#4A4A56]"
+                        }`}
+                      >
+                        {showMerchantOnly && (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-3 w-3 text-white"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </span>
+                      <span className="text-sm font-semibold text-white">Show only Merchant ads</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowMerchantBusinessOnly((prev) => {
+                          const next = !prev;
+                          if (next) setShowMerchantOnly(false);
+                          return next;
+                        });
+                      }}
+                      className="flex items-center gap-3 text-left"
+                    >
+                      <span
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                          showMerchantBusinessOnly ? "border-[#4A4A56] bg-[#1D8751]" : "border-[#4A4A56]"
+                        }`}
+                      >
+                        {showMerchantBusinessOnly && (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-3 w-3 text-white"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </span>
+                      <span className="text-sm font-semibold text-white">Show only Merchant Business ads</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowMerchantOnly(false);
+                        setShowMerchantBusinessOnly(false);
+                        setMinOrderLimit("");
+                        setMaxOrderLimit("");
+                      }}
+                      className="flex items-center gap-3 text-left"
+                    >
+                      <span
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                          !showMerchantOnly && !showMerchantBusinessOnly ? "border-[#4A4A56] bg-[#1D8751]" : "border-[#4A4A56]"
+                        }`}
+                      >
+                        {!showMerchantOnly && !showMerchantBusinessOnly && (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-3 w-3 text-white"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </span>
+                      <span className="text-sm font-semibold text-white">Show All</span>
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <span className="text-xs uppercase tracking-wide text-[#7B7F92]">Order Limit</span>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="number"
+                      value={minOrderLimit}
+                      onChange={(e) => setMinOrderLimit(e.target.value)}
+                      placeholder="Min"
+                      className="w-full rounded-xl bg-[#14141B] border border-[#35353E] px-3 py-2 text-sm text-white placeholder:text-[#6E7081] focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
+                    />
+                    <input
+                      type="number"
+                      value={maxOrderLimit}
+                      onChange={(e) => setMaxOrderLimit(e.target.value)}
+                      placeholder="Max"
+                      className="w-full rounded-xl bg-[#14141B] border border-[#35353E] px-3 py-2 text-sm text-white placeholder:text-[#6E7081] focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
