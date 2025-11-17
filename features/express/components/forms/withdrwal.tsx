@@ -3125,7 +3125,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
               </label>
               <div className="relative" ref={assetDropdownRef}>
                 <div
-                  className={`w-full bg-transparent dark:bg-transparent text-white rounded-2xl px-4 py-2 text-lg focus:outline-none border border-[#39394A] dark:border-[#39394A] flex items-center justify-between cursor-pointer`}
+                  className={`w-full bg-transparent dark:bg-transparent text-[#35353e] dark:text-white rounded-2xl px-4 py-2 text-lg focus:outline-none border border-[#39394A] dark:border-[#39394A] flex items-center justify-between cursor-pointer`}
                   onClick={() => {
                     if (!isAssetDropdownOpen) {
                       updateAssetDropdownPosition();
@@ -3161,7 +3161,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                         />
                         <div className="flex flex-col">
                           <div className="flex items-center gap-2">
-                            <span className="text-white font-medium">
+                            <span className="text-[#35353e] dark:text-white font-medium">
                           {(
                             selectedAsset.ticker ||
                             selectedAsset.symbol ||
@@ -3813,7 +3813,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                 </div>
               ) : (
                 <span className="flex items-center justify-center">
-                  <span className="text-base font-bold dark:text-white text-white">E</span>
+                  <span className="text-base font-bold dark:text-white text-white">Express</span>
                   <img
                     className="mt-2"
                     src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
@@ -4130,7 +4130,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                 </div>
               ) : (
                 <span className="flex items-center justify-center">
-                  <span className="text-base font-bold dark:text-white text-white">E</span>
+                  <span className="text-base font-bold dark:text-white text-white">Express</span>
                   <img
                     className="mt-2"
                     src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"

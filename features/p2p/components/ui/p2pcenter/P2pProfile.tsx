@@ -172,18 +172,18 @@ const P2pProfile = ({
       </div>
       {/* Right Section */}
       <div className="flex flex-col items-start sm:items-end gap-2 w-full sm:w-auto">
-        <span className="text-[#1D8751] text-sm sm:text-base font-semibold">
+        <span className="text-[#1D8751] text-base sm:text-lg font-semibold">
           P2P Balance
         </span>
         <div className="flex items-baseline gap-2">
-          <span className="text-gray-900 dark:text-white text-sm sm:text-base font-medium">
+          <span className="text-gray-900 dark:text-white text-base sm:text-lg font-medium">
             {formatCurrency(balance ?? 0, "USDT")}
           </span>
-          <span className="text-gray-500 dark:text-[#7B8191] text-sm sm:text-base font-medium">
+          <span className="text-gray-500 dark:text-[#7B8191] text-base sm:text-lg font-medium">
             ≈ {formatCurrency(balance ?? 0, "USD")}
           </span>
         </div>
-        <span className="text-gray-500 dark:text-[#7B8191] text-xs font-medium">
+        <span className="text-gray-500 dark:text-[#7B8191] text-sm sm:text-base font-medium">
           In escrow:{" "}
           <span className="text-gray-900 dark:text-white font-medium">
             {formatCurrency(summary?.total_volume || 0, "USD")}

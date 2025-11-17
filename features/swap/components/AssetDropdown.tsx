@@ -124,7 +124,7 @@ const AssetDropdown: React.FC<AssetDropdownProps> = ({
                   }}
                   role="option"
                   tabIndex={0}
-                  className="flex items-center px-3 py-2 text-xs sm:text-sm hover:bg-[#35353E] cursor-pointer"
+                  className="flex items-center px-3 py-2 text-xs sm:text-sm dark:hover:bg-[#35353E] hover:bg-gray-100 cursor-pointer"
                 >
                   <img
                     src={asset.image_url || asset.asset_image || undefined}

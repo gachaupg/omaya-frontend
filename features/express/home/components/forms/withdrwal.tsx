@@ -3112,7 +3112,9 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                         />
                         <div className="flex flex-col">
                           <div className="flex items-center gap-2">
-                            <span className="text-white font-semibold">
+                            <span className={`font-semibold ${
+                              isDark ? "text-white" : "text-[#111827]"
+                            }`}>
                               {(
                                 selectedAsset.ticker ||
                                 selectedAsset.symbol ||

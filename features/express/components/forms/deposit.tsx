@@ -3085,7 +3085,7 @@ export default function DepositForm({
                         />
                         <div className="flex flex-col">
                           <div className="flex items-center gap-2">
-                            <span className="text-white font-medium">
+                            <span className="text-[#35353e] dark:text-white font-medium">
                               {(
                                 selectedAsset.ticker ||
                                 selectedAsset.symbol ||
@@ -3269,7 +3269,7 @@ export default function DepositForm({
               ) : (
                 <span className="flex items-center justify-center">
                   <span className="text-base font-medium dark:text-white text-white">
-                    E
+                    Express
                   </span>
                   <img
                     className="mt-2"
@@ -3925,7 +3925,7 @@ export default function DepositForm({
               ) : (
                 <span className="flex items-center justify-center">
                   <span className="text-base font-bold dark:text-white text-white">
-                    E
+                    Express
                   </span>
                   <img
                     className="mt-2"

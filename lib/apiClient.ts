@@ -137,26 +137,86 @@ const addRefreshTokenInterceptor = (instance: AxiosInstance): AxiosInstance => {
       const originalRequest = error.config;
       const profile = storage.getProfile();
 
+      // Skip refresh logic for the refresh token endpoint itself
+      if (originalRequest?.url?.includes('/api/token/refresh/')) {
+        return Promise.reject(error);
+      }
+
+      // Only attempt refresh if:
+      // 1. We got a 401 error
+      // 2. We have a refresh token
+      // 3. We have a valid request config
+      // 4. We haven't already retried this request (prevent infinite loops)
+      // 5. This is not the refresh token endpoint itself
       if (
         error.response?.status === 401 &&
         profile?.tokens?.refresh &&
         originalRequest &&
-        !(originalRequest as any)._retry
+        !(originalRequest as any)._retry &&
+        !originalRequest?.url?.includes('/api/token/refresh/')
       ) {
         (originalRequest as any)._retry = true;
         try {
+          logger.info("api", "401 Unauthorized detected, attempting token refresh", {
+            url: originalRequest.url,
+          });
+
           // Use mutex-protected refresh from tokenRefresh utility
           // This ensures only one refresh happens even with concurrent 401s
           const { refreshAccessToken } = await import("./utils/tokenRefresh");
           const newAccessToken = await refreshAccessToken();
 
           if (!newAccessToken) {
+            logger.error("api", "Token refresh returned null, redirecting to login");
             throw new Error("Token refresh returned null");
           }
 
-          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          // Verify the token was actually updated in storage
+          // Double-check and force update if needed
+          let updatedProfile = storage.getProfile();
+          if (!updatedProfile?.tokens?.access || updatedProfile.tokens.access !== newAccessToken) {
+            logger.warn("api", "Token not properly updated in storage, forcing update now");
+            storage.setProfile({
+              ...(updatedProfile || profile),
+              tokens: {
+                access: newAccessToken,
+                refresh: updatedProfile?.tokens?.refresh || profile.tokens.refresh,
+              },
+            });
+            // Re-read to verify
+            updatedProfile = storage.getProfile();
+          }
+
+          // Ensure headers object exists
+          if (!originalRequest.headers) {
+            originalRequest.headers = {} as any;
+          }
+
+          // Use the new token directly (we know it's valid since refreshAccessToken returned it)
+          // Also verify it's in storage
+          const finalToken = updatedProfile?.tokens?.access || newAccessToken;
+          if (!finalToken) {
+            logger.error("api", "No token available after refresh, cannot retry");
+            throw new Error("No token available after refresh");
+          }
+
+          // Set the authorization header explicitly
+          originalRequest.headers.Authorization = `Bearer ${finalToken}`;
+
+          // Also ensure the request config is clean for retry
+          delete (originalRequest as any).__retryCount;
+
+          logger.info("api", "Token refreshed successfully, retrying original request", {
+            url: originalRequest.url,
+            hasToken: !!finalToken,
+            tokenLength: finalToken.length,
+          });
+
+          // Retry the original request with the new token
+          // The request interceptor will run and add the token from storage (which should match)
           return instance(originalRequest);
         } catch (refreshError) {
+          logger.error("api", "Token refresh failed", refreshError);
           // Mutex already handled cleanup (storage.removeProfile, redirect)
           // Just reject to stop the request
           return Promise.reject(refreshError);
