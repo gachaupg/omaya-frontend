@@ -32,7 +32,7 @@ interface TransactionInfoStepProps {
 }
 
 const baseCard =
-  "rounded-[26px] border border-[#2A2A36] bg-transparent text-white";
+  "rounded-[26px] border border-[#2E2E3A] bg-transparent text-white";
 const labelCopy = "text-[12px] uppercase tracking-wide text-[#7d7f95]";
 const inputBase =
   "rounded-2xl bg-[#1B1B23] border border-[#2E2E3A] text-white px-4 py-3 w-full min-h-[52px] placeholder:text-[#5f6070] focus:outline-none";
@@ -229,9 +229,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
           value={value}
           onChange={onChange}
           placeholder="Enter amount"
-          className={`${inputBase} ${
-            isActive ? "border-[#1D8751] ring-2 ring-[#1D8751]/25" : ""
-          }`}
+          className={inputBase}
         />
         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-white/80">
           {asset?.ticker?.toUpperCase() ||
@@ -256,13 +254,15 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
 
       {/* You Send */}
       <div className="relative mb-4">
-        <div className={`${baseCard} p-4 sm:p-6 space-y-4`}>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-            <div>
+        <div className={`${baseCard} p-1 sm:p-6 space-y-4`}>
+          <div className="flex flex-col sm:flex-row sm:items-end gap-1 sm:gap-4">
+            <div className="space-y-1 sm:flex-1">
               <p className="text-sm sm:text-base font-semibold">You Send</p>
               <p className={labelCopy}>Asset</p>
             </div>
-            <p className="text-xs text-[#7d7f95]">I want to Receive</p>
+            <p className="text-xs text-[#7d7f95] pb-1 ml-2 sm:ml-0 sm:flex-1 sm:pl-10 lg:pl-10">
+              I want to Send
+            </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-5">
             {renderAssetSelector(
@@ -305,12 +305,14 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
       {/* You Receive */}
       <div className="mb-4">
         <div className={`${baseCard} p-4 sm:p-6 space-y-4`}>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-            <div>
+          <div className="flex flex-col sm:flex-row sm:items-end gap-1 sm:gap-4">
+            <div className="space-y-1 sm:flex-1">
               <p className="text-sm sm:text-base font-semibold">You Receive</p>
               <p className={labelCopy}>Asset</p>
             </div>
-            <p className="text-xs text-[#7d7f95]">I want to Receive</p>
+            <p className="text-xs text-[#7d7f95] pb-1 ml-4 sm:ml-0 sm:flex-1 sm:pl-10 lg:pl-16">
+              I want to Receive
+            </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-5">
             {renderAssetSelector(

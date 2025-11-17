@@ -235,7 +235,7 @@ export const Table: React.FC<TableProps> = ({
 
   if (data.length === 0) {
     return (
-      <div className="w-full text-center py-8">
+      <div className="w-full text-center py-2">
         <div className="flex flex-col items-center justify-center border border-gray-200 dark:border-[#35353E] rounded-[24px] p-8 bg-white dark:bg-[#23232B]">
           <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-[#35353E] flex items-center justify-center">
             <svg
@@ -330,8 +330,8 @@ export const Table: React.FC<TableProps> = ({
 
   return (
     <>
-      <div className="mt-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3">
+      <div className="mt-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-3 gap-3">
           <h3
             className={`font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
           >
@@ -489,7 +489,7 @@ export const Table: React.FC<TableProps> = ({
           >
             {/* Desktop Table Header - Hidden on mobile */}
             <div
-              className={`hidden md:grid grid-cols-6 ${type === "p2p" ? "md:grid-cols-7" : ""} py-3 px-4 border-b bg-gray-50 dark:bg-[#35353E] border-gray-200 dark:border-[${tokens.colors.dark.border}] rounded-t-[24px]`}
+              className={`hidden md:grid grid-cols-6 ${type === "p2p" ? "md:grid-cols-7" : ""} py-2.5 px-4 border-b bg-gray-50 dark:bg-[#35353E] border-gray-200 dark:border-[${tokens.colors.dark.border}] rounded-t-[24px]`}
             >
               <div
                 className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
@@ -545,7 +545,7 @@ export const Table: React.FC<TableProps> = ({
                 <React.Fragment key={idx}>
                   {/* Desktop Grid View */}
                 <div
-                    className={`hidden md:grid w-full grid-cols-6 ${type === "p2p" ? "md:grid-cols-7" : ""} py-4 px-4 border-b last:border-b-0 items-center hover:bg-gray-50 dark:hover:bg-[#2A2A35] transition-colors duration-200 border-gray-200 dark:border-[${tokens.colors.dark.border}] bg-white dark:bg-[${tokens.colors.dark.background}]`}
+                    className={`hidden md:grid w-full grid-cols-6 ${type === "p2p" ? "md:grid-cols-7" : ""} py-3 px-4 border-b last:border-b-0 items-center hover:bg-gray-50 dark:hover:bg-[#2A2A35] transition-colors duration-200 border-gray-200 dark:border-[${tokens.colors.dark.border}] bg-white dark:bg-[${tokens.colors.dark.background}]`}
                 >
                   <div className="flex items-center gap-2">
                     <img

@@ -23,6 +23,15 @@ interface CustomSelectProps {
   loading?: boolean;
   loadingText?: string;
   emptyText?: string;
+  /**
+   * Shows the brand tick-mark indicator alongside the selected option
+   */
+  showSelectedCheck?: boolean;
+  /**
+   * Hides the currently selected label inside the trigger button.
+   * Useful when the label is rendered elsewhere.
+   */
+  hideSelectedLabel?: boolean;
 }
 
 const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -38,6 +47,8 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   loading = false,
   loadingText = "Loading...",
   emptyText = "No options available",
+  showSelectedCheck = true,
+  hideSelectedLabel = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -177,7 +188,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         role="combobox"
         title={selectedOption ? displayValue : undefined}
       >
-        <div className="flex items-center justify-between min-w-0 w-full">
+          <div className="flex items-center justify-between min-w-0 w-full">
           <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
             {selectedLogo && !loading && (
               <img
@@ -189,9 +200,16 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                 }}
               />
             )}
-            <span className={`truncate min-w-0 ${!selectedOption ? "text-gray-500 dark:text-gray-400" : ""}`} title={selectedOption ? displayValue : undefined}>
-              {loading ? loadingText : displayValue}
-            </span>
+            {!hideSelectedLabel && (
+              <span
+                className={`truncate min-w-0 ${
+                  !selectedOption ? "text-gray-500 dark:text-gray-400" : ""
+                }`}
+                title={selectedOption ? displayValue : undefined}
+              >
+                {loading ? loadingText : displayValue}
+              </span>
+            )}
           </div>
           <svg
             className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-200 flex-shrink-0 ${
@@ -250,7 +268,9 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                   {searchTerm ? "No matching options" : emptyText}
                 </div>
               ) : (
-                filteredOptions.map((option) => (
+                filteredOptions.map((option) => {
+                  const isSelected = value === option.value;
+                  return (
                   <button
                     key={option.value}
                     type="button"
@@ -260,7 +280,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                     w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm transition-colors duration-150
                     hover:bg-blue-50 dark:hover:bg-blue-900/20
                     focus:outline-none focus:bg-blue-50 dark:focus:bg-blue-900/20
-                    ${value === option.value
+                    ${isSelected
                       ? "bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100 font-medium"
                       : "text-gray-900 dark:text-white"
                     }
@@ -287,8 +307,34 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                       )}
                       <span className="truncate min-w-0 flex-1 text-left">{option.label}</span>
                     </div>
+                    {showSelectedCheck && (
+                      <span
+                        aria-hidden="true"
+                        className={`flex h-4 w-4 items-center justify-center rounded-[4px] border text-white ${
+                          isSelected
+                            ? "border-[#1D8751] bg-[#1D8751]"
+                            : "border-[#373A43] bg-transparent"
+                        }`}
+                      >
+                        {isSelected && (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-3 w-3"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth={3}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M5 12l4 4L19 6" />
+                          </svg>
+                        )}
+                      </span>
+                    )}
                   </button>
-                ))
+                  );
+                })
               )}
             </div>
           </div>,

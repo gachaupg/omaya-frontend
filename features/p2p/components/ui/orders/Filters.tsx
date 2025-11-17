@@ -1,6 +1,5 @@
 import React from "react";
 import Button from "@/features/p2p/components/Common/Button";
-import Select from "@/features/p2p/components/Common/Select";
 import {
   orderStatusTabs,
   currencyOptions,
@@ -9,7 +8,7 @@ import {
   dateOptions,
 } from "@/features/p2p/data";
 import Image from "next/image";
-import { GrStatusGood } from "react-icons/gr";
+import CustomSelect from "@/components/ui/CustomSelect";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -66,12 +65,56 @@ const Filters: React.FC<FiltersProps> = ({
     onFilterChange({ ...filters, currency: value });
   };
 
-  logger.debug('p2p', "Order Status Tabs:", orderStatusTabs);
+  logger.debug("p2p", "Order Status Tabs:", orderStatusTabs);
+
+  const filterCardBase =
+    "flex w-full items-center justify-between gap-3 rounded-[28px] border border-[#35353E] bg-transparent px-3 py-2";
+  const triggerOverride =
+    "!bg-transparent !border-0 !shadow-none px-0 py-0 text-transparent flex justify-end items-center min-w-[24px]";
+  const iconWrapper =
+    "flex h-8 w-8 items-center justify-center rounded-full bg-[#11141C] border border-[#1F2330]";
+  const labelStyle = "text-sm font-semibold text-white";
+  const valueStyle = "text-sm font-semibold text-[#9CA4C0]";
+
+  const currencyMeta: Record<string, { name: string; code: string }> = {
+    usdt: { name: "Tether", code: "USDT" },
+  };
+
+  const selectedCurrencyKey = filters.currency?.toLowerCase() || "usdt";
+  const selectedCurrencyOption = currencyOptions.find(
+    (option) => option.value === filters.currency
+  );
+
+  const currencyInfo =
+    currencyMeta[selectedCurrencyKey] || {
+      name:
+        selectedCurrencyOption?.label ||
+        selectedCurrencyKey.toUpperCase(),
+      code:
+        selectedCurrencyOption?.label ||
+        selectedCurrencyKey.toUpperCase(),
+    };
+
+  const typeOptionLabel =
+    typeOptions.find((option) => option.value === filters.type)?.label ||
+    "Type";
+  const statusOptionLabel =
+    statusOptions.find((option) => option.value === filters.status)?.label ||
+    "Status";
+  const dateOptionLabel =
+    dateOptions.find((option) => option.value === filters.date)?.label ||
+    "Date";
+
+  const typeValueDisplay = filters.type !== "all" ? typeOptionLabel : "";
+  const statusValueDisplay =
+    filters.status !== "all" ? statusOptionLabel : "";
+  const dateValueDisplay = filters.date !== "all" ? dateOptionLabel : "";
+
   return (
     <div className="w-full flex flex-col">
       {/* ───────────────────────── Tabs */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-0 bg-transparent rounded-[10px] border border-[#1D8751] w-full sm:w-fit px-1 py-1 overflow-x-auto snap-x snap-mandatory scrollbar-none">
+        <div className="flex items-center gap-0 bg-transparent rounded-[14px] border border-[#1D8751]/60 w-full sm:w-fit px-1.5 py-1.5 overflow-x-auto snap-x snap-mandatory scrollbar-none shadow-[0_6px_24px_rgba(4,10,7,0.35)]">
           {orderStatusTabs.map((tab) => (
             <Button
               key={tab.id}
@@ -79,16 +122,16 @@ const Filters: React.FC<FiltersProps> = ({
               size="md"
               borderRadius={10}
               disabled={loading}
-              className={`px-4 py-2 font-medium text-sm transition-all flex items-center gap-1 shadow-none border-none min-w-[100px] snap-start shrink-0 ${
+              className={`px-4 py-2 font-semibold text-[13px] md:text-sm transition-all flex items-center gap-1 shadow-none border-none min-w-[120px] snap-start shrink-0 ${
                 filters.status === tab.id
                   ? "bg-[#1D8751] text-white"
-                  : "bg-transparent text-[#788099] hover:bg-[#788099]/10"
+                  : "bg-transparent text-[#9AA3BC] hover:bg-[#1D8751]/10"
               } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
               onClick={() => handleStatusChange(tab.id)}
             >
               {tab.label}
               {tab.count && (
-                <span className="ml-1 text-xs text-[#F79330] px-2 py-0.5 rounded-full">
+                <span className="ml-1 text-[11px] font-semibold text-[#F79330] px-2 py-0.5 rounded-full bg-[#F79330]/10">
                   ({tab.count})
                 </span>
               )}
@@ -98,11 +141,11 @@ const Filters: React.FC<FiltersProps> = ({
 
         {/* unread button */}
         <button
-          className={`w-full sm:w-auto rounded-[24px] flex items-center justify-center gap-2 border border-[#1D8751] text-[#1D8751] px-4 py-2 font-medium text-sm hover:bg-[#1D8751]/10 transition-all relative ${
-            showUnreadMessages ? "bg-[#1D8751] text-white" : "bg-transparent"
-          } ${
-            loading ? "opacity-50 cursor-not-allowed" : ""
-          }`}
+          className={`w-full sm:w-auto rounded-[28px] flex items-center justify-center gap-2 border border-[#1D8751] text-[#1D8751] px-5 py-3 font-semibold text-sm hover:bg-[#1D8751]/10 transition-all relative ${
+            showUnreadMessages
+              ? "bg-[#1D8751] text-white shadow-[0_12px_26px_rgba(29,135,81,0.35)]"
+              : "bg-transparent"
+          } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
           disabled={loading}
           onClick={onUnreadMessagesClick}
         >
@@ -113,7 +156,9 @@ const Filters: React.FC<FiltersProps> = ({
             <rect x="35" y="45" width="40" height="10" fill="#1A1A1D"/>
           </svg>
 
-          <span className={showUnreadMessages ? "text-white" : "text-[#1D8751]"}>Unread Message(s)</span>
+          <span className={`text-sm ${showUnreadMessages ? "text-white" : "text-[#1D8751]"}`}>
+            Unread Message(s)
+          </span>
           
           {/* Unread count badge */}
           {totalUnreadCount > 0 && (
@@ -125,113 +170,124 @@ const Filters: React.FC<FiltersProps> = ({
       </div>
 
       {/* ───────────────────────── Filter bar */}
-      <div className="flex w-full flex-wrap gap-3 sm:gap-4 items-stretch sm:items-center justify-between bg-transparent mt-4">
-        {/* token selector */}
-        <div
-          className={`flex items-center gap-2 bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#444454] p-1 rounded-[24px] w-full sm:w-auto min-w-[200px] ${
-            loading ? "opacity-50" : ""
-          }`}
-        >
-          <Image
-            src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
-            alt="Tether"
-            width={20}
-            height={20}
-          />
-          <span className="text-gray-900 dark:text-white font-medium text-sm">
-            Tether
-          </span>
-          <Select
-            options={currencyOptions}
-            value={filters.currency}
-            onChange={(e) => handleCurrencyChange(e.target.value)}
-            className="bg-transparent w-full border-none text-gray-900 dark:text-white text-sm focus:ring-0 focus:outline-none rounded-[24px]"
-            borderColor="#444454"
-            bgColor="#35353e"
-            disabled={loading}
-          />
-        </div>
-
-        {/* type selector */}
-        <div
-          className={`flex items-center gap-2 bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#444454] p-1 rounded-[24px] w-full sm:w-auto min-w-[200px] ${
-            loading ? "opacity-50" : ""
-          }`}
-        >
-          <Image
-            src="https://res.cloudinary.com/pitz/image/upload/v1746710370/coins-rotate_d278mb.png"
-            alt="Filter"
-            width={20}
-            height={20}
-            className="text-[#1D8751]"
-          />
-          <Select
-            options={typeOptions}
-            value={filters.type}
-            onChange={(e) => handleTypeChange(e.target.value)}
-            className="bg-transparent w-full border-none text-gray-900 dark:text-white text-sm focus:ring-0 focus:outline-none rounded-[24px]"
-            borderColor="#444454"
-            bgColor="#35353e"
-            disabled={loading}
-          />
-        </div>
-
-        {/* status selector */}
-        <div
-          className={`flex items-center gap-2 bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#444454] p-1 rounded-[24px] w-full sm:w-auto min-w-[200px] ${
-            loading ? "opacity-50" : ""
-          }`}
-        >
-          <GrStatusGood className="text-[#1D8751]" />
-          <Select
-            options={statusOptions}
-            value={filters.status}
-            onChange={(e) => handleStatusChange(e.target.value)}
-            className="bg-transparent w-full border-none text-gray-900 dark:text-[#788099] text-sm focus:ring-0 focus:outline-none rounded-[24px]"
-            borderColor="#444454"
-            bgColor="#35353e"
-            disabled={loading}
-          />
-        </div>
-
-        {/* date selector */}
-        <div
-          className={`flex items-center gap-2 bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#444454] p-1 rounded-[24px] w-full sm:w-auto min-w-[200px] ${
-            loading ? "opacity-50" : ""
-          }`}
-        >
-          <svg
-            width="20"
-            height="20"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="#1D8751"
-          >
-            <rect
-              x="3"
-              y="4"
-              width="18"
-              height="18"
-              rx="2"
-              stroke="#1D8751"
-              strokeWidth="2"
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mt-4">
+        {/* Coin selector */}
+        <div className={`${filterCardBase} ${loading ? "opacity-50" : ""}`}>
+          <div className="flex items-center gap-3">
+            <div className={iconWrapper}>
+              <Image
+                src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
+                alt="Tether"
+                width={22}
+                height={22}
+              />
+            </div>
+            <span className={labelStyle}>{currencyInfo.name}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className={valueStyle}>{currencyInfo.code}</span>
+            <CustomSelect
+              options={currencyOptions}
+              value={filters.currency}
+              onChange={handleCurrencyChange}
+              className="w-6"
+              triggerClassName={triggerOverride}
+              optionClassName="text-sm"
+              disabled={loading}
+              showSelectedCheck={false}
+              hideSelectedLabel
             />
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M16 2v4M8 2v4M3 10h18"
+          </div>
+        </div>
+
+        {/* Type selector */}
+        <div className={`${filterCardBase} ${loading ? "opacity-50" : ""}`}>
+          <div className="flex items-center gap-3">
+            <div className={iconWrapper}>
+              <Image
+                src="https://res.cloudinary.com/pitz/image/upload/v1763388449/Icon_1_kiuery.png"
+                alt="Type icon"
+                width={18}
+                height={18}
+              />
+            </div>
+            <span className={labelStyle}>Type</span>
+          </div>
+          <div className="flex items-center gap-3">
+            {typeValueDisplay && (
+              <span className={valueStyle}>{typeValueDisplay}</span>
+            )}
+            <CustomSelect
+              options={typeOptions}
+              value={filters.type}
+              onChange={handleTypeChange}
+              className="w-6"
+              triggerClassName={triggerOverride}
+              optionClassName="text-sm"
+              disabled={loading}
+              hideSelectedLabel
             />
-          </svg>
-          <Select
-            options={dateOptions}
-            value={filters.date}
-            onChange={(e) => handleDateChange(e.target.value)}
-            className="bg-transparent border-none text-gray-900 dark:text-[#788099] text-sm w-full focus:ring-0 focus:outline-none rounded-[24px]"
-            borderColor="#444454"
-            bgColor="#35353e"
-            disabled={loading}
-          />
+          </div>
+        </div>
+
+        {/* Status selector */}
+        <div className={`${filterCardBase} ${loading ? "opacity-50" : ""}`}>
+          <div className="flex items-center gap-3">
+            <div className={iconWrapper}>
+              <Image
+                src="https://res.cloudinary.com/pitz/image/upload/v1763388449/annotation-check_ergtxp.png"
+                alt="Status icon"
+                width={18}
+                height={18}
+              />
+            </div>
+            <span className={labelStyle}>Status</span>
+          </div>
+          <div className="flex items-center gap-3">
+            {statusValueDisplay && (
+              <span className={valueStyle}>{statusValueDisplay}</span>
+            )}
+            <CustomSelect
+              options={statusOptions}
+              value={filters.status}
+              onChange={handleStatusChange}
+              className="w-6"
+              triggerClassName={triggerOverride}
+              optionClassName="text-sm"
+              disabled={loading}
+              hideSelectedLabel
+            />
+          </div>
+        </div>
+
+        {/* Date selector */}
+        <div className={`${filterCardBase} ${loading ? "opacity-50" : ""}`}>
+          <div className="flex items-center gap-3">
+            <div className={iconWrapper}>
+              <Image
+                src="https://res.cloudinary.com/pitz/image/upload/v1763388449/calendar-03_rnsmmq.png"
+                alt="Date icon"
+                width={18}
+                height={18}
+              />
+            </div>
+            <span className={labelStyle}>Date</span>
+          </div>
+          <div className="flex items-center gap-3">
+            {dateValueDisplay && (
+              <span className={valueStyle}>{dateValueDisplay}</span>
+            )}
+            <CustomSelect
+              options={dateOptions}
+              value={filters.date}
+              onChange={handleDateChange}
+              className="w-6"
+              triggerClassName={triggerOverride}
+              optionClassName="text-sm"
+              disabled={loading}
+              hideSelectedLabel
+            />
+          </div>
         </div>
       </div>
     </div>

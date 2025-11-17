@@ -273,6 +273,8 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
     () => formatSelectionSummary(providers, providerOptions, "Select Provider"),
     [providers, providerOptions]
   );
+  const isPaymentSummaryDefault = paymentTypes.length === 0;
+  const isProviderSummaryDefault = providers.length === 0;
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -640,7 +642,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
             </div>
           </div>
           <div
-            className="flex items-center gap-2 bg-transparent border border-gray-300 dark:border-[#35353E] rounded-lg px-3 py-2 w-full sm:w-auto"
+            className="flex items-center gap-2 bg-transparent border border-gray-300 dark:border-[#35353E] rounded-lg px-3 py-2 w-full sm:w-auto sm:mr-2"
             ref={paymentDropdownRef}
           >
             <Image
@@ -654,7 +656,11 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
               <button
                 type="button"
                 onClick={() => setIsPaymentDropdownOpen((prev) => !prev)}
-                className="w-full rounded-lg bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-[#1D8751] py-1.5 pr-10 text-sm font-semibold text-gray-900 dark:text-white text-left flex items-center justify-between gap-2"
+                className={`w-full rounded-lg bg-transparent border-none focus:outline-none py-1.5 pr-10 text-sm font-semibold text-left flex items-center justify-between gap-2 ${
+                  isPaymentSummaryDefault
+                    ? "text-[#7B7F92] dark:text-[#9CA3AF]"
+                    : "text-gray-900 dark:text-white"
+                }`}
               >
                 <span className="truncate">{paymentSummary}</span>
                 <svg
@@ -712,7 +718,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
           </div>
 
           <div
-            className="flex items-center gap-2 bg-transparent border border-gray-300 dark:border-[#35353E] rounded-lg px-3 py-2 w-full sm:w-auto"
+            className="flex items-center gap-2 bg-transparent border border-gray-300 dark:border-[#35353E] rounded-lg px-3 py-2 w-full sm:w-auto sm:mr-3"
             ref={providerDropdownRef}
           >
             <Image
@@ -726,7 +732,11 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
               <button
                 type="button"
                 onClick={() => setIsProviderDropdownOpen((prev) => !prev)}
-                className="w-full rounded-lg bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-[#1D8751] py-1.5 pr-10 text-sm font-semibold text-gray-900 dark:text-white text-left flex items-center justify-between gap-2"
+                className={`w-full rounded-lg bg-transparent border-none focus:outline-none py-1.5 pr-10 text-sm font-semibold text-left flex items-center justify-between gap-2 ${
+                  isProviderSummaryDefault
+                    ? "text-[#7B7F92] dark:text-[#9CA3AF]"
+                    : "text-gray-900 dark:text-white"
+                }`}
               >
                 <span className="truncate">{providerSummary}</span>
                 <svg
@@ -786,12 +796,12 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
             <button
               type="button"
               onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
-              className="w-11 h-10 bg-gray-100 dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] rounded-lg flex items-center justify-center text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
+              className="w-10 h-10 bg-gray-100 dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] rounded-lg flex items-center justify-center text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
             >
               <FaFilter className="text-[#1D8751]" size={18} />
             </button>
             {isFilterDropdownOpen && (
-              <div className="absolute top-full right-0 mt-3 border border-gray-300 dark:border-[#35353E] rounded-xl bg-[#0F0F13] text-white shadow-2xl z-40 min-w-[240px] p-3 space-y-3">
+              <div className="absolute top-full right-0 mt-3 border border-gray-300 dark:border-[#35353E] rounded-xl bg-[#0F0F13] text-white shadow-2xl z-40 min-w-[210px] p-3 space-y-3">
                 <div className="space-y-1">
                   <span className="text-xs uppercase tracking-wide text-[#7B7F92]">Visibility</span>
                   <div className="space-y-2">
