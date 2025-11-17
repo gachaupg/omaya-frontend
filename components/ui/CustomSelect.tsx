@@ -24,10 +24,6 @@ interface CustomSelectProps {
   loadingText?: string;
   emptyText?: string;
   /**
-   * Shows the brand tick-mark indicator alongside the selected option
-   */
-  showSelectedCheck?: boolean;
-  /**
    * Hides the currently selected label inside the trigger button.
    * Useful when the label is rendered elsewhere.
    */
@@ -47,7 +43,6 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   loading = false,
   loadingText = "Loading...",
   emptyText = "No options available",
-  showSelectedCheck = true,
   hideSelectedLabel = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -307,31 +302,6 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                       )}
                       <span className="truncate min-w-0 flex-1 text-left">{option.label}</span>
                     </div>
-                    {showSelectedCheck && (
-                      <span
-                        aria-hidden="true"
-                        className={`flex h-4 w-4 items-center justify-center rounded-[4px] border text-white ${
-                          isSelected
-                            ? "border-[#1D8751] bg-[#1D8751]"
-                            : "border-[#373A43] bg-transparent"
-                        }`}
-                      >
-                        {isSelected && (
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-3 w-3"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={3}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M5 12l4 4L19 6" />
-                          </svg>
-                        )}
-                      </span>
-                    )}
                   </button>
                   );
                 })
