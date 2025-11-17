@@ -61,9 +61,10 @@ export const GOOGLE_OAUTH_CONFIG = {
     'openid'
   ].join(' '),
   accessType: 'offline',
-  prompt: 'consent',
+  prompt: 'consent select_account',
   includeGrantedScopes: true,
-  backendAuthUrl: `${API_URL}/api/auth/google/`,
+  backendAuthUrl: `${API_URL}/accounts/google/login/`,
+  tokenUrl: `${API_URL}/accounts/google/login/callback/`,
   apiUrl: API_URL,
   frontendUrl: FRONTEND_URL
 };
@@ -71,12 +72,7 @@ export const GOOGLE_OAUTH_CONFIG = {
 
 // Log the OAuth configuration for debugging (only in development)
 if (process.env.NODE_ENV === 'development') {
-  console.log('🔧 Google OAuth Config:', {
-    clientId: GOOGLE_OAUTH_CONFIG.clientId ? '***' + GOOGLE_OAUTH_CONFIG.clientId.slice(-4) : 'not set',
-    redirectUri: GOOGLE_OAUTH_CONFIG.redirectUri,
-    backendAuthUrl: GOOGLE_OAUTH_CONFIG.backendAuthUrl,
-    scope: GOOGLE_OAUTH_CONFIG.scope
-  });
+  // Moved to getGoogleOAuthUrl for more accurate logging
 }
 
 // Error types
@@ -102,41 +98,53 @@ export const GOOGLE_OAUTH_ERROR_MESSAGES: Record<GoogleOAuthErrorType, string> =
 // Helper function to get Google OAuth URL
 export const getGoogleOAuthUrl = (state?: string): string => {
   try {
+    // Get the current redirect URI (prefer window.location.origin if available)
+    const redirectUri = typeof window !== 'undefined' 
+      ? `${window.location.origin}/auth/google/callback`
+      : GOOGLE_OAUTH_CONFIG.redirectUri;
+
     if (!GOOGLE_OAUTH_CONFIG.clientId) {
+      console.error('Google OAuth client ID is not configured');
       throw new Error('Google OAuth client ID is not configured. Please check your environment variables.');
     }
 
     // Create URL object to ensure proper encoding
-    const authUrl = new URL(GOOGLE_API_ENDPOINTS.auth);
+    const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
     
     // Set required parameters
     const params = new URLSearchParams({
       client_id: GOOGLE_OAUTH_CONFIG.clientId,
-      redirect_uri: GOOGLE_OAUTH_CONFIG.redirectUri,
+      redirect_uri: redirectUri,
       response_type: 'code',
       scope: GOOGLE_OAUTH_CONFIG.scope,
       access_type: 'offline',
       prompt: 'select_account consent',
       include_granted_scopes: 'true',
-      nonce: Math.random().toString(36).substring(2), // Add nonce for security
-      ...(state && { state }) // Add state if provided
+      ...(state && { state })
     });
 
     // Add parameters to URL
     authUrl.search = params.toString();
     
-    // Log the generated URL (without sensitive parameters)
-    const debugUrl = new URL(authUrl.toString());
-    if (debugUrl.searchParams.has('client_id')) {
-      const clientId = debugUrl.searchParams.get('client_id') || '';
-      debugUrl.searchParams.set('client_id', '***' + clientId.slice(-4));
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔧 Google OAuth Configuration:', {
+        clientId: GOOGLE_OAUTH_CONFIG.clientId ? '***' + GOOGLE_OAUTH_CONFIG.clientId.slice(-4) : 'not set',
+        redirectUri: redirectUri,
+        scope: GOOGLE_OAUTH_CONFIG.scope
+      });
+      
+      const debugUrl = new URL(authUrl.toString());
+      if (debugUrl.searchParams.has('client_id')) {
+        const clientId = debugUrl.searchParams.get('client_id') || '';
+        debugUrl.searchParams.set('client_id', '***' + clientId.slice(-4));
+      }
+      console.log('🔗 Generated Google OAuth URL:', debugUrl.toString());
     }
-    console.log('🔗 Generated Google OAuth URL:', debugUrl.toString());
     
     return authUrl.toString();
   } catch (error) {
-    console.error('Error generating Google OAuth URL:', error);
-    throw new Error('Failed to generate Google OAuth URL');
+    console.error('❌ Error generating Google OAuth URL:', error);
+    throw new Error(`Failed to generate Google OAuth URL: ${error instanceof Error ? error.message : String(error)}`);
   }
 };
 
