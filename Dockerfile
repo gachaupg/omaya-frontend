@@ -9,7 +9,6 @@ WORKDIR /app
 # Copy package files
 COPY package.json package-lock.json* ./
 RUN npm ci
-COPY .env .env
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -62,14 +61,9 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-COPY .env .env
-
 USER nextjs
 
 # Expose the port the app runs on
 EXPOSE 3000
-
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
 
 CMD ["node", "server.js"]

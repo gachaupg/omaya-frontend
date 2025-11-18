@@ -4,6 +4,7 @@ import React, { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
 import { getGoogleOAuthUrl } from '@/utils/googleOAuthConfig';
+import { loadRuntimeConfig } from '@/lib/runtimeConfig';
 
 interface GoogleAuthButtonProps {
   onSuccess?: (userData: any) => void;
@@ -20,10 +21,13 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
 }) => {
   const router = useRouter();
 
-  const handleGoogleLogin = useCallback((e: React.MouseEvent) => {
+  const handleGoogleLogin = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
 
     try {
+      // Ensure runtime config is loaded (clientId, redirectUri)
+      await loadRuntimeConfig();
+
       // Generate a random state parameter
       const state = Math.random().toString(36).substring(2, 15) + 
                    Math.random().toString(36).substring(2, 15);

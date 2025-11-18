@@ -10,9 +10,10 @@ if (process.env.NODE_ENV === 'production') {
   ];
   const missing = requiredEnv.filter((k) => !process.env[k] || process.env[k] === '');
   if (missing.length) {
-    throw new Error(
-      `Missing required environment variables for production build: ${missing.join(', ')}. ` +
-      `Ensure your CI/CD or Docker build args provide these values.`
+    // Do not throw; warn instead to allow runtime-provided env via container .env
+    // eslint-disable-next-line no-console
+    console.warn(
+      `Warning: missing env at build time: ${missing.join(', ')}. Will rely on runtime configuration.`
     );
   }
 }
