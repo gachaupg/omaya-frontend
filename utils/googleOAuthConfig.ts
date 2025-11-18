@@ -111,8 +111,7 @@ export const getGoogleOAuthUrl = (state?: string): string => {
         : GOOGLE_OAUTH_CONFIG.redirectUri);
 
     if (!clientId) {
-      console.error('Google OAuth client ID is not configured');
-      throw new Error('Google OAuth client ID is not configured. Please check your environment variables.');
+      console.warn('Google OAuth client ID is not configured; proceeding to Google which will show an error.');
     }
 
     // Create URL object to ensure proper encoding

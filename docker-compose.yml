@@ -24,7 +24,12 @@ services:
     
     ports:
       - "3000:3000"
-    
+
+    # Load runtime environment from a local .env file (if present)
+    # This ensures NEXT_PUBLIC_* vars are available at runtime without baking into the image
+    env_file:
+      - .env
+
     environment:
       # Node.js configuration
       - NODE_ENV=production
