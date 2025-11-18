@@ -1,10 +1,9 @@
 // features/auth/components/GoogleOAuthCallback.tsx
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'react-toastify';
-import { storage } from '../utils/storage';
 
 interface UserData {
   id: string;
@@ -28,7 +27,17 @@ export default function GoogleOAuthCallback() {
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const processedRef = useRef(false);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://dev.backend.omaya.io';
+
+  // Check if we're in a popup
+  const isInPopup = useCallback(() => {
+    try {
+      return window.opener && window.opener !== window;
+    } catch (e) {
+      return false;
+    }
+  }, []);
 
   // Function to get CSRF token from cookies
   const getCsrfToken = (): string => {
@@ -41,6 +50,8 @@ export default function GoogleOAuthCallback() {
   const exchangeCodeForTokens = async (code: string) => {
     try {
       const csrfToken = getCsrfToken();
+      const redirectUri = `${window.location.origin}/auth/google/callback`;
+      
       const response = await fetch(`${apiUrl}/api/auth/google/`, {
         method: 'POST',
         headers: {
@@ -50,14 +61,15 @@ export default function GoogleOAuthCallback() {
         credentials: 'include',
         body: JSON.stringify({
           code,
-          // The backend determines redirect_uri consistently; avoid sending a possibly mismatched value here.
+          redirect_uri: redirectUri,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.detail || 'Failed to authenticate with Google');
+        const errorMsg = data.detail || data.error?.message || 'Failed to authenticate with Google';
+        throw new Error(errorMsg);
       }
 
       return data;
@@ -67,121 +79,153 @@ export default function GoogleOAuthCallback() {
     }
   };
 
+  // Function to send message to parent window
+  const sendMessageToParent = useCallback((type: 'OAUTH_SUCCESS' | 'OAUTH_ERROR', data: any) => {
+    if (window.opener) {
+      window.opener.postMessage({
+        type,
+        ...data,
+      }, window.location.origin);
+      // Close the popup after a short delay to ensure the message is sent
+      setTimeout(() => window.close(), 500);
+    }
+  }, []);
+
   // Handle the OAuth callback
   useEffect(() => {
-    // Guard to ensure we only process the callback once (React Strict Mode runs effects twice in dev)
-    const processedRef = (window as any).__google_oauth_processed as { done?: boolean } | undefined;
-    const setProcessed = (val: boolean) => {
-      (window as any).__google_oauth_processed = { done: val };
-    };
     const handleAuthCallback = async () => {
-      // Return early if searchParams is not available
-      if (!searchParams) {
-        setError('Failed to parse URL parameters');
-        setIsLoading(false);
+      // Return early if searchParams is not available or already processed
+      if (!searchParams || processedRef.current) {
         return;
       }
-      // If we've already processed this callback (likely due to Strict Mode), skip
-      if ((window as any).__google_oauth_processed?.done) {
-        return;
-      }
+      
+      // Mark as processed to prevent duplicate processing
+      processedRef.current = true;
+      setIsLoading(true);
+      
       try {
-        setIsLoading(true);
-        setError(null);
-
-        // Extract code and state from URL
+        // Extract code, state, and error from URL
         const code = searchParams.get('code');
         const state = searchParams.get('state');
         const error = searchParams.get('error');
+        const isPopup = isInPopup();
 
         // Check for OAuth error
         if (error) {
-          throw new Error(`OAuth error: ${error}`);
+          const errorMsg = `OAuth error: ${error}`;
+          if (isPopup) {
+            sendMessageToParent('OAUTH_ERROR', { error: errorMsg });
+            return;
+          }
+          throw new Error(errorMsg);
         }
 
-        // Verify we have a code
+        // Check for missing code
         if (!code) {
-          throw new Error('No authorization code found in the URL');
+          const errorMsg = 'No authorization code found in the URL';
+          if (isPopup) {
+            sendMessageToParent('OAUTH_ERROR', { error: errorMsg });
+            return;
+          }
+          throw new Error(errorMsg);
         }
 
         // Verify state parameter to prevent CSRF
-        // Support both keys: 'google_oauth_state' (sessionStorage) and 'oauth_state' (localStorage)
-        const storedState =
-          sessionStorage.getItem('google_oauth_state') ||
-          (typeof window !== 'undefined' ? localStorage.getItem('oauth_state') : null);
-        if (state !== storedState) {
-          throw new Error('Invalid state parameter');
+        const savedState = sessionStorage.getItem('google_oauth_state');
+        if (state !== savedState) {
+          const errorMsg = 'Invalid or expired authentication session. Please try logging in again.';
+          if (isPopup) {
+            sendMessageToParent('OAUTH_ERROR', { error: errorMsg });
+            return;
+          }
+          // If not in popup, redirect to login with error
+          router.push(`/auth/login?error=${encodeURIComponent(errorMsg)}`);
+          return;
         }
-
+        
+        // Clear the state from storage
+        sessionStorage.removeItem('google_oauth_state');
+        
         // Exchange code for tokens
-        setProcessed(true);
         const data = await exchangeCodeForTokens(code);
+        
+        // Store tokens
+        localStorage.setItem('access_token', data.access);
+        localStorage.setItem('refresh_token', data.refresh);
+        localStorage.setItem('user', JSON.stringify(data.user));
 
-        // Store tokens and user data
-        if (data.access && data.user) {
-          // Persist using shared storage so apiClient adds Authorization header
-          storage.setProfile({
-            user: data.user,
-            tokens: {
-              access: data.access,
-              refresh: data.refresh || '',
+        // Immediately notify app state so Providers can hydrate Redux and set cookie
+        try {
+          const evt = new CustomEvent('auth-state-changed', {
+            detail: {
+              isAuthenticated: true,
+              user: data.user,
+              tokens: { access: data.access, refresh: data.refresh },
             },
           });
-
-          // Also keep backwards-compat localStorage keys if used elsewhere
-          localStorage.setItem('access_token', data.access);
-          if (data.refresh) {
-            localStorage.setItem('refresh_token', data.refresh);
-          }
-
-          // Set a same-origin cookie for middleware checks (expires in 1 hour)
-          const maxAge = 60 * 60; // 1 hour
-          document.cookie = `access_token=${data.access}; Max-Age=${maxAge}; Path=/; SameSite=Lax`;
-          
-          // Add a small delay to ensure state is updated before redirecting
-          setTimeout(() => {
-            // Check if we have a redirect URL in session storage
-            const redirectTo = sessionStorage.getItem('auth_redirect') || '/dashboard';
-            // Clear the redirect URL from session storage
-            sessionStorage.removeItem('auth_redirect');
-            
-            // Use window.location.href for a full page reload to ensure auth state is properly set
-            window.location.href = redirectTo;
-          }, 100);
-        } else {
-          throw new Error('Invalid response from server');
+          window.dispatchEvent(evt);
+        } catch (e) {
+          // non-fatal
+          console.warn('Could not dispatch auth-state-changed event:', e);
         }
+        
+        // If in popup, send success message to parent and close
+        if (isPopup) {
+          sendMessageToParent('OAUTH_SUCCESS', {
+            user: data.user,
+            accessToken: data.access,
+            refreshToken: data.refresh
+          });
+          return;
+        }
+        
+        // If not in popup, redirect to dashboard or previous page
+        const redirectPath = sessionStorage.getItem('auth_redirect') || '/dashboard';
+        sessionStorage.removeItem('auth_redirect');
+        try {
+          router.replace(redirectPath);
+        } catch {
+          // Fallback in case router is not ready
+          window.location.href = redirectPath;
+        }
+        
       } catch (err) {
         console.error('Authentication error:', err);
-        setError(err instanceof Error ? err.message : 'An unknown error occurred');
-        toast.error('Failed to authenticate with Google');
-        router.push('/auth/login');
+        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+        
+        if (isInPopup()) {
+          sendMessageToParent('OAUTH_ERROR', { error: errorMessage });
+          return;
+        }
+        
+        // Redirect to login with error message
+        router.push(`/auth/login?error=${encodeURIComponent(errorMessage)}`);
       } finally {
         setIsLoading(false);
-        // Clean up
-        sessionStorage.removeItem('google_oauth_state');
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('oauth_state');
-        }
       }
     };
 
-    handleAuthCallback();
-  }, [router, searchParams]);
+    // Add a small delay to ensure the component is mounted
+    const timer = setTimeout(() => {
+      handleAuthCallback();
+    }, 100);
 
-  // Render loading state
+    // Cleanup function
+    return () => clearTimeout(timer);
+  }, [searchParams, router, isInPopup, sendMessageToParent]);
+
+  // Render loading or error state
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Authenticating with Google...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p>Completing authentication...</p>
         </div>
       </div>
     );
   }
 
-  // Render error state
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-screen">

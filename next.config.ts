@@ -1,10 +1,48 @@
 // next.config.ts
 import type { NextConfig } from "next";
 
+// Validate critical env vars at build time (production only)
+if (process.env.NODE_ENV === 'production') {
+  const requiredEnv = [
+    'NEXT_PUBLIC_GOOGLE_CLIENT_ID',
+    'NEXT_PUBLIC_API_URL',
+    'NEXT_PUBLIC_APP_URL',
+  ];
+  const missing = requiredEnv.filter((k) => !process.env[k] || process.env[k] === '');
+  if (missing.length) {
+    // Do not throw; warn instead to allow runtime-provided env via container .env
+    // eslint-disable-next-line no-console
+    console.warn(
+      `Warning: missing env at build time: ${missing.join(', ')}. Will rely on runtime configuration.`
+    );
+  }
+}
+
 const nextConfig: NextConfig = {
   output: 'standalone',
   trailingSlash: true,
   reactStrictMode: true,
+  
+  // Explicitly expose environment variables to the browser
+  env: {
+    // Google OAuth
+    NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+    NEXT_PUBLIC_GOOGLE_REDIRECT_URI: process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI,
+    
+    // API Configuration
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    
+    // Facebook OAuth
+    NEXT_PUBLIC_FACEBOOK_APP_ID: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID,
+    NEXT_PUBLIC_FACEBOOK_REDIRECT_URI: process.env.NEXT_PUBLIC_FACEBOOK_REDIRECT_URI,
+    
+    // Sanity Configuration
+    NEXT_PUBLIC_SANITY_PROJECT_ID: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
+    NEXT_PUBLIC_SANITY_DATASET: process.env.NEXT_PUBLIC_SANITY_DATASET || 'production',
+    NEXT_PUBLIC_SANITY_API_VERSION: process.env.NEXT_PUBLIC_SANITY_API_VERSION || '2023-05-03',
+    NEXT_PUBLIC_SANITY_READ_TOKEN: process.env.NEXT_PUBLIC_SANITY_READ_TOKEN,
+  },
   images: {
     remotePatterns: [
       {

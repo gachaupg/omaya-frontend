@@ -5,30 +5,83 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # OAuth Configuration
+        - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
+        - NEXT_PUBLIC_GOOGLE_REDIRECT_URI=${NEXT_PUBLIC_GOOGLE_REDIRECT_URI:-}
+        - NEXT_PUBLIC_FACEBOOK_APP_ID=${NEXT_PUBLIC_FACEBOOK_APP_ID:-}
+        - NEXT_PUBLIC_FACEBOOK_REDIRECT_URI=${NEXT_PUBLIC_FACEBOOK_REDIRECT_URI:-}
+        
+        # API Configuration
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://dev.backend.omaya.io}
+        - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://dev.omaya.io}
+        
+        # Sanity Configuration
+        - NEXT_PUBLIC_SANITY_PROJECT_ID=${NEXT_PUBLIC_SANITY_PROJECT_ID:-}
+        - NEXT_PUBLIC_SANITY_DATASET=${NEXT_PUBLIC_SANITY_DATASET:-production}
+        - NEXT_PUBLIC_SANITY_API_VERSION=${NEXT_PUBLIC_SANITY_API_VERSION:-2023-05-03}
+        - NEXT_PUBLIC_SANITY_READ_TOKEN=${NEXT_PUBLIC_SANITY_READ_TOKEN:-}
+    
     ports:
       - "3000:3000"
+
+    # Load runtime environment from a local .env file (if present)
+    # This ensures NEXT_PUBLIC_* vars are available at runtime without baking into the image
+    env_file:
+      - .env
+
     environment:
+      # Node.js configuration
       - NODE_ENV=production
       - PORT=3000
       - HOSTNAME=0.0.0.0
-      # Add your environment variables here
+      
+      # OAuth Configuration
+      - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
+      - NEXT_PUBLIC_GOOGLE_REDIRECT_URI=${NEXT_PUBLIC_GOOGLE_REDIRECT_URI:-}
+      - NEXT_PUBLIC_FACEBOOK_APP_ID=${NEXT_PUBLIC_FACEBOOK_APP_ID:-}
+      - NEXT_PUBLIC_FACEBOOK_REDIRECT_URI=${NEXT_PUBLIC_FACEBOOK_REDIRECT_URI:-}
+      
+      # API Configuration
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://dev.backend.omaya.io}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://dev.omaya.io}
+      
+      # Sanity Configuration
       - NEXT_PUBLIC_SANITY_PROJECT_ID=${NEXT_PUBLIC_SANITY_PROJECT_ID:-}
       - NEXT_PUBLIC_SANITY_DATASET=${NEXT_PUBLIC_SANITY_DATASET:-production}
-      - NEXT_PUBLIC_SANITY_API_VERSION=${NEXT_PUBLIC_SANITY_API_VERSION:-2024-01-01}
+      - NEXT_PUBLIC_SANITY_API_VERSION=${NEXT_PUBLIC_SANITY_API_VERSION:-2023-05-03}
       - NEXT_PUBLIC_SANITY_READ_TOKEN=${NEXT_PUBLIC_SANITY_READ_TOKEN:-}
-    restart: unless-stopped
+    
+    # Resource constraints
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 2G
+        reservations:
+          memory: 1G
+    
+    # Health check configuration
     healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "-O",
-          "-",
-          "http://localhost:3000/api/health/",
-        ]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "-O", "-", "http://localhost:3000/api/health"]
       interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
       timeout: 10s
       retries: 3
       start_period: 40s

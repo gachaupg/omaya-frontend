@@ -4,6 +4,8 @@ import React, { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
 import { getGoogleOAuthUrl } from '@/utils/googleOAuthConfig';
+import { loadRuntimeConfig } from '@/lib/runtimeConfig';
+import { getRuntimeConfigSync } from '@/lib/runtimeConfig';
 
 interface GoogleAuthButtonProps {
   onSuccess?: (userData: any) => void;
@@ -20,10 +22,17 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
 }) => {
   const router = useRouter();
 
-  const handleGoogleLogin = useCallback((e: React.MouseEvent) => {
+  const handleGoogleLogin = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
 
     try {
+      // Ensure runtime config is loaded (clientId, redirectUri)
+      await loadRuntimeConfig();
+      const cfg = getRuntimeConfigSync();
+      if (!cfg.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+        toast.warn('Google Sign-In is not fully configured; attempting redirect so Google can show the error.');
+      }
+
       // Generate a random state parameter
       const state = Math.random().toString(36).substring(2, 15) + 
                    Math.random().toString(36).substring(2, 15);
@@ -39,9 +48,9 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
 
       // Get the OAuth URL using our helper function
       const authUrl = getGoogleOAuthUrl(state);
-      console.log('Redirecting to Google OAuth:', authUrl);
+      console.log('Opening Google OAuth popup:', authUrl);
 
-      // Redirect to Google OAuth
+      // Redirect to Google OAuth in the same window
       window.location.href = authUrl;
     } catch (error) {
       console.error('Error during Google OAuth initialization:', error);
@@ -53,8 +62,9 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
   return (
     <button
       onClick={handleGoogleLogin}
-      className={`flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${className}`}
+      className={`flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${className} relative z-10 pointer-events-auto`}
       type="button"
+      style={{ position: 'relative', zIndex: 10 }}
     >
       {children || (
         <span className="flex items-center gap-2">
