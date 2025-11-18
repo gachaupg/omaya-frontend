@@ -9,16 +9,33 @@ export type PublicRuntimeConfig = {
 
 let cachedConfig: PublicRuntimeConfig | null = null;
 
+// Hardcoded safe public defaults (non-secret). Used only if env vars are missing.
+const DEFAULTS: PublicRuntimeConfig = {
+  NEXT_PUBLIC_GOOGLE_CLIENT_ID:
+    '419397388040-pho892dc9oj407o844h8af1leh9cnvpq.apps.googleusercontent.com',
+  NEXT_PUBLIC_GOOGLE_REDIRECT_URI: 'https://dev.omaya.io/auth/google/callback',
+  NEXT_PUBLIC_API_URL: 'https://dev.backend.omaya.io',
+  NEXT_PUBLIC_APP_URL: 'https://dev.omaya.io',
+  NEXT_PUBLIC_FACEBOOK_APP_ID: '1780672032637984',
+  NEXT_PUBLIC_FACEBOOK_REDIRECT_URI: 'https://dev.omaya.io/auth/facebook/callback',
+};
+
 export async function loadRuntimeConfig(): Promise<PublicRuntimeConfig> {
   if (typeof window === 'undefined') {
     // Server side: read directly from env
     return {
-      NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '',
-      NEXT_PUBLIC_GOOGLE_REDIRECT_URI: process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI || '',
-      NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://dev.backend.omaya.io',
-      NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'https://dev.omaya.io',
-      NEXT_PUBLIC_FACEBOOK_APP_ID: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '',
-      NEXT_PUBLIC_FACEBOOK_REDIRECT_URI: process.env.NEXT_PUBLIC_FACEBOOK_REDIRECT_URI || '',
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID:
+        process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || DEFAULTS.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+      NEXT_PUBLIC_GOOGLE_REDIRECT_URI:
+        process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI || DEFAULTS.NEXT_PUBLIC_GOOGLE_REDIRECT_URI,
+      NEXT_PUBLIC_API_URL:
+        process.env.NEXT_PUBLIC_API_URL || DEFAULTS.NEXT_PUBLIC_API_URL,
+      NEXT_PUBLIC_APP_URL:
+        process.env.NEXT_PUBLIC_APP_URL || DEFAULTS.NEXT_PUBLIC_APP_URL,
+      NEXT_PUBLIC_FACEBOOK_APP_ID:
+        process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || DEFAULTS.NEXT_PUBLIC_FACEBOOK_APP_ID,
+      NEXT_PUBLIC_FACEBOOK_REDIRECT_URI:
+        process.env.NEXT_PUBLIC_FACEBOOK_REDIRECT_URI || DEFAULTS.NEXT_PUBLIC_FACEBOOK_REDIRECT_URI,
     };
   }
 
@@ -27,14 +44,7 @@ export async function loadRuntimeConfig(): Promise<PublicRuntimeConfig> {
   const res = await fetch('/api/runtime-config', { cache: 'no-store' });
   if (!res.ok) {
     // Fallback to defaults if API route fails
-    cachedConfig = {
-      NEXT_PUBLIC_GOOGLE_CLIENT_ID: '',
-      NEXT_PUBLIC_GOOGLE_REDIRECT_URI: '',
-      NEXT_PUBLIC_API_URL: 'https://dev.backend.omaya.io',
-      NEXT_PUBLIC_APP_URL: 'https://dev.omaya.io',
-      NEXT_PUBLIC_FACEBOOK_APP_ID: '',
-      NEXT_PUBLIC_FACEBOOK_REDIRECT_URI: '',
-    };
+    cachedConfig = { ...DEFAULTS };
     return cachedConfig;
   }
   cachedConfig = (await res.json()) as PublicRuntimeConfig;
@@ -48,23 +58,24 @@ export async function loadRuntimeConfig(): Promise<PublicRuntimeConfig> {
 export function getRuntimeConfigSync(): PublicRuntimeConfig {
   if (typeof window === 'undefined') {
     return {
-      NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '',
-      NEXT_PUBLIC_GOOGLE_REDIRECT_URI: process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI || '',
-      NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://dev.backend.omaya.io',
-      NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'https://dev.omaya.io',
-      NEXT_PUBLIC_FACEBOOK_APP_ID: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '',
-      NEXT_PUBLIC_FACEBOOK_REDIRECT_URI: process.env.NEXT_PUBLIC_FACEBOOK_REDIRECT_URI || '',
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID:
+        process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || DEFAULTS.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+      NEXT_PUBLIC_GOOGLE_REDIRECT_URI:
+        process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI || DEFAULTS.NEXT_PUBLIC_GOOGLE_REDIRECT_URI,
+      NEXT_PUBLIC_API_URL:
+        process.env.NEXT_PUBLIC_API_URL || DEFAULTS.NEXT_PUBLIC_API_URL,
+      NEXT_PUBLIC_APP_URL:
+        process.env.NEXT_PUBLIC_APP_URL || DEFAULTS.NEXT_PUBLIC_APP_URL,
+      NEXT_PUBLIC_FACEBOOK_APP_ID:
+        process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || DEFAULTS.NEXT_PUBLIC_FACEBOOK_APP_ID,
+      NEXT_PUBLIC_FACEBOOK_REDIRECT_URI:
+        process.env.NEXT_PUBLIC_FACEBOOK_REDIRECT_URI || DEFAULTS.NEXT_PUBLIC_FACEBOOK_REDIRECT_URI,
     };
   }
   return (
     cachedConfig ||
     (typeof window !== 'undefined' && (window as any).__RUNTIME_CONFIG__) || {
-      NEXT_PUBLIC_GOOGLE_CLIENT_ID: '',
-      NEXT_PUBLIC_GOOGLE_REDIRECT_URI: '',
-      NEXT_PUBLIC_API_URL: 'https://dev.backend.omaya.io',
-      NEXT_PUBLIC_APP_URL: 'https://dev.omaya.io',
-      NEXT_PUBLIC_FACEBOOK_APP_ID: '',
-      NEXT_PUBLIC_FACEBOOK_REDIRECT_URI: '',
+      ...DEFAULTS,
     }
   );
 }
