@@ -161,16 +161,19 @@ export const useGlobalSessionCreation = () => {
 
       console.log("Creating new global device session with payload:", payload);
 
-      // Use a timeout to prevent blocking
+      // Use a timeout to prevent blocking. If timeout occurs, log and exit silently.
       const sessionPromise = dispatch(createDeviceSession(payload)).unwrap();
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(
-          () => reject(new Error("Global session creation timeout")),
-          10000
-        )
+      const TIMEOUT_MS = 15000; // 15s window aligned with API client endpoint config
+      const timeoutSymbol = Symbol("timeout");
+      const timeoutPromise = new Promise((resolve) =>
+        setTimeout(() => resolve(timeoutSymbol), TIMEOUT_MS)
       );
 
-      await Promise.race([sessionPromise, timeoutPromise]);
+      const result = await Promise.race([sessionPromise, timeoutPromise]);
+      if (result === timeoutSymbol) {
+        console.warn("Global session creation timed out after", TIMEOUT_MS, "ms. Skipping without error.");
+        return;
+      }
       console.log("Global session created successfully");
     } catch (error) {
       console.error("Failed to create global device session:", error);

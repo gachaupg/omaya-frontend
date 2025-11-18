@@ -48,6 +48,9 @@ const ENDPOINT_SPECIFIC_CONFIG: Record<string, Partial<ApiClientConfig>> = {
   "/api/auth/register/": { timeout: 10000, retries: 1 }, // Faster registration
   "/api/kyc/status/": { timeout: 15000, retries: 2 }, // KYC status check
   "/api/kyc/verify/": { timeout: 30000, retries: 1 }, // KYC verification
+  // Device session endpoints – keep under 15s overall to align with GlobalSession creation window
+  "/api/devices/create/": { timeout: 12000, retries: 0 },
+  "/api/device-sessions/": { timeout: 12000, retries: 0 },
 };
 
 const generateRequestId = (): string => {

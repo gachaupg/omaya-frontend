@@ -56,17 +56,20 @@ export const initiateGoogleOAuth = createAsyncThunk(
     try {
       logger.debug('auth', '🔐 Initiating Google OAuth...');
       
+      // Store the current URL to redirect back after successful login
+      const redirectPath = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/dashboard';
+      sessionStorage.setItem('auth_redirect', redirectPath);
+      
       // Add state parameter to prevent CSRF
       const state = Math.random().toString(36).substring(2);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('oauth_state', state);
-      }
+      sessionStorage.setItem('google_oauth_state', state);
       
       // Build the OAuth URL
       const authUrl = new URL(GOOGLE_API_ENDPOINTS.auth);
-      authUrl.searchParams.append('client_id', process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '');
-      // Use the frontend callback route as the redirect URI
-      authUrl.searchParams.append('redirect_uri', GOOGLE_OAUTH_CONFIG.redirectUri);
+      const redirectUri = `${window.location.origin}/auth/google/callback`;
+      
+      authUrl.searchParams.append('client_id', GOOGLE_OAUTH_CONFIG.clientId || '');
+      authUrl.searchParams.append('redirect_uri', redirectUri);
       authUrl.searchParams.append('response_type', 'code');
       authUrl.searchParams.append('scope', [
         'https://www.googleapis.com/auth/userinfo.email',

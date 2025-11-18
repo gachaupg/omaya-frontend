@@ -50,6 +50,8 @@ export default function GoogleOAuthCallback() {
   const exchangeCodeForTokens = async (code: string) => {
     try {
       const csrfToken = getCsrfToken();
+      const redirectUri = `${window.location.origin}/auth/google/callback`;
+      
       const response = await fetch(`${apiUrl}/api/auth/google/`, {
         method: 'POST',
         headers: {
@@ -59,14 +61,15 @@ export default function GoogleOAuthCallback() {
         credentials: 'include',
         body: JSON.stringify({
           code,
-          redirect_uri: window.location.origin + '/auth/google/callback',
+          redirect_uri: redirectUri,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.detail || 'Failed to authenticate with Google');
+        const errorMsg = data.detail || data.error?.message || 'Failed to authenticate with Google';
+        throw new Error(errorMsg);
       }
 
       return data;
@@ -130,16 +133,19 @@ export default function GoogleOAuthCallback() {
         // Verify state parameter to prevent CSRF
         const savedState = sessionStorage.getItem('google_oauth_state');
         if (state !== savedState) {
-          const errorMsg = 'Invalid state parameter';
+          const errorMsg = 'Invalid or expired authentication session. Please try logging in again.';
           if (isPopup) {
             sendMessageToParent('OAUTH_ERROR', { error: errorMsg });
             return;
           }
-          throw new Error(errorMsg);
+          // If not in popup, redirect to login with error
+          router.push(`/auth/login?error=${encodeURIComponent(errorMsg)}`);
+          return;
         }
         
         // Clear the state from storage
         sessionStorage.removeItem('google_oauth_state');
+        
         // Exchange code for tokens
         const data = await exchangeCodeForTokens(code);
         
@@ -147,9 +153,9 @@ export default function GoogleOAuthCallback() {
         localStorage.setItem('access_token', data.access);
         localStorage.setItem('refresh_token', data.refresh);
         localStorage.setItem('user', JSON.stringify(data.user));
-
+        
         // If in popup, send success message to parent and close
-        if (isInPopup()) {
+        if (isPopup) {
           sendMessageToParent('OAUTH_SUCCESS', {
             user: data.user,
             accessToken: data.access,
@@ -172,8 +178,8 @@ export default function GoogleOAuthCallback() {
           return;
         }
         
-        setError(errorMessage);
-        toast.error('Failed to authenticate with Google');
+        // Redirect to login with error message
+        router.push(`/auth/login?error=${encodeURIComponent(errorMessage)}`);
       } finally {
         setIsLoading(false);
       }
