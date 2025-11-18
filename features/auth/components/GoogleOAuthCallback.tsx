@@ -153,6 +153,21 @@ export default function GoogleOAuthCallback() {
         localStorage.setItem('access_token', data.access);
         localStorage.setItem('refresh_token', data.refresh);
         localStorage.setItem('user', JSON.stringify(data.user));
+
+        // Immediately notify app state so Providers can hydrate Redux and set cookie
+        try {
+          const evt = new CustomEvent('auth-state-changed', {
+            detail: {
+              isAuthenticated: true,
+              user: data.user,
+              tokens: { access: data.access, refresh: data.refresh },
+            },
+          });
+          window.dispatchEvent(evt);
+        } catch (e) {
+          // non-fatal
+          console.warn('Could not dispatch auth-state-changed event:', e);
+        }
         
         // If in popup, send success message to parent and close
         if (isPopup) {
@@ -167,7 +182,12 @@ export default function GoogleOAuthCallback() {
         // If not in popup, redirect to dashboard or previous page
         const redirectPath = sessionStorage.getItem('auth_redirect') || '/dashboard';
         sessionStorage.removeItem('auth_redirect');
-        router.push(redirectPath);
+        try {
+          router.replace(redirectPath);
+        } catch {
+          // Fallback in case router is not ready
+          window.location.href = redirectPath;
+        }
         
       } catch (err) {
         console.error('Authentication error:', err);
