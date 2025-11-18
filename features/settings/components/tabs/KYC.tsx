@@ -42,49 +42,47 @@ const KYC = () => {
     }
   };
 
+  const fullName =
+    user?.first_name || user?.last_name
+      ? `${user?.first_name ?? ""} ${user?.last_name ?? ""}`.trim()
+      : "Peter Gachau";
+
   return (
-    <div className="p-3 sm:p-4 dark:text-white text-[#0D0D0D] flex flex-col gap-2">
-      <p className="text-base sm:text-lg font-semibold">KYC Verification</p>
-      <div className="flex flex-col dark:bg-[#1D1D23] bg-gray-50 dark:border-[#35353E] border-gray-300 border-2 rounded-xl p-3 sm:p-4 gap-3">
-        <div className="flex flex-col border dark:bg-[#18181D] bg-[#F5F5F5] dark:border-[#35353E] border-gray-300 rounded-xl p-3 sm:p-4 gap-3">
-          {/* Avatar, Name, and Status */}
-          {/* KYC Info */}
-          <p className="text-xs sm:text-sm dark:text-[#808080] text-gray-600">
-            Complete your KYC verification to unlock all platform features and enhance your account security. 
-            This process helps us verify your identity and comply with regulatory requirements, ensuring a 
-            safe and compliant trading environment for all users.
-          </p>
+    <div className="p-3 sm:p-4 dark:text-white text-[#0D0D0D]">
+      <section className="rounded-[32px] p-4 sm:p-6 flex flex-col gap-4 shadow-lg dark:bg-[#111018] bg-white dark:border-[#2B2B3A] border-[#E2E8F0]">
+        <p className="text-sm sm:text-base leading-relaxed dark:text-[#B8BAC7] text-[#4A5568]">
+          Your account is fully verified. Keep your personal information up to date so we can continue protecting access to trading,
+          payments, and P2P settlements. If you ever need to refresh your documents, you can upload new files directly from this page.
+        </p>
+
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 rounded-3xl p-4 dark:bg-[#15131F] bg-[#F8FAFC] dark:border-[#2F2C3C] border-[#E2E8F0]">
           <div className="flex items-center gap-3">
             <div
-              className="relative"
+              className="relative cursor-pointer"
               onClick={handleImageClick}
-              style={{ cursor: "pointer" }}
             >
               {!profileImage || profileImage === DEFAULT_AVATAR ? (
-                // Simple SVG avatar icon
                 <svg
-                  width="44"
-                  height="44"
-                  viewBox="0 0 48 48"
+                  width="56"
+                  height="56"
+                  viewBox="0 0 56 56"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
-                  className="rounded-full dark:bg-[#35353E] bg-gray-300"
+                  className="rounded-full dark:bg-[#2B2B3A] bg-[#E2E8F0]"
                 >
-                  <circle cx="24" cy="24" r="24" fill="#35353E" />
-                  <circle cx="24" cy="20" r="8" fill="#808080" />
-                  <ellipse cx="24" cy="36" rx="12" ry="8" fill="#808080" />
+                  <circle cx="28" cy="28" r="28" fill="#35353E" />
+                  <circle cx="28" cy="22" r="10" fill="#B8BAC7" />
+                  <ellipse cx="28" cy="40" rx="16" ry="10" fill="#B8BAC7" />
                 </svg>
               ) : (
                 <Image
                   src={profileImage}
                   alt="User avatar"
-                  width={44}
-                  height={44}
+                  width={56}
+                  height={56}
                   className="object-cover rounded-full aspect-square"
-                  unoptimized={true}
-                  onError={(
-                    e: React.SyntheticEvent<HTMLImageElement, Event>
-                  ) => {
+                  unoptimized
+                  onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                     const target = e.currentTarget;
                     target.onerror = null;
                     target.src = DEFAULT_AVATAR;
@@ -99,32 +97,36 @@ const KYC = () => {
                 className="hidden"
               />
             </div>
-            <div>
-              <div className="text-sm sm:text-base font-semibold">
-                {user?.first_name} {user?.last_name}
-              </div>
-              <div className="flex items-center gap-2 text-[#1D8751] text-xs sm:text-sm">
+
+            <div className="flex flex-col gap-1">
+              <p className="text-base sm:text-lg font-semibold dark:text-white text-[#0D0D0D]">
+                {fullName}
+              </p>
+              <div className="flex items-center gap-2 text-sm font-medium dark:text-[#1D8751] text-[#15803D]">
                 Verified Profile
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="#1D8751"
-                    strokeWidth="2"
-                  />
                   <path
                     d="M9 12l2 2 4-4"
-                    stroke="#1D8751"
+                    stroke="currentColor"
                     strokeWidth="2"
                     fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                   />
                 </svg>
               </div>
             </div>
           </div>
         </div>
-      </div>
+
+        <button
+          type="button"
+          disabled
+          className="w-full rounded-[40px] text-sm sm:text-base py-3 sm:py-4 font-semibold cursor-default dark:bg-[#1E1C2A] bg-[#EDF2F7] dark:border-[#2F2C3C] border-[#E2E8F0] dark:text-[#A1A1B3] text-[#475569]"
+        >
+          Verified
+        </button>
+      </section>
     </div>
   );
 };

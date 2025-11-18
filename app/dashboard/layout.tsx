@@ -21,7 +21,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen ml-0 md:ml-4 lg:ml-6 mt-10 w-full overflow-x-hidden">
+    <div className="min-h-screen mt-8 w-full overflow-x-hidden md:flex">
       {/* Mobile Sidebar */}
       <motion.div
         initial={{ y: -20, opacity: 0 }}
@@ -33,17 +33,19 @@ export default function DashboardLayout({
       </motion.div>
 
       {/* Desktop Sidebar */}
-      <motion.div
-        initial={{ x: -20, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 0.3 }}
-        className="hidden md:mb-28 md:block fixed top-28 left-0 w-48 lg:w-56 xl:w-[222.28px] h-[calc(100vh-7rem)] overflow-y-auto"
-      >
-        <Sidebar />
-      </motion.div>
+      <div className="hidden md:block md:w-48 lg:w-56 xl:w-[222.28px]" aria-hidden>
+        <motion.div
+          initial={{ x: -20, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="fixed top-28 left-0 z-30 h-[calc(100vh-7rem)] overflow-y-auto overflow-x-hidden md:w-48 lg:w-56 xl:w-[222.28px] pr-2"
+        >
+          <Sidebar />
+        </motion.div>
+      </div>
 
       {/* Main Content */}
-      <div className="w-full h-full max-w-full overflow-x-hidden">
+      <div className="flex-1 w-full h-full max-w-full overflow-x-hidden">
         <AnimatePresence mode="wait">
           <motion.div
             key={pathname} // Use pathname for proper React reconciliation (fixes performance issue)
@@ -51,7 +53,7 @@ export default function DashboardLayout({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.15 }} // Reduced from 0.3s to 0.15s for snappier feel
-            className="max-md:mt-28 md:mt-20 md:pl-48 lg:pl-56 xl:pl-[222.28px] px-3 sm:px-4 md:px-4 lg:px-6 w-full max-w-full"
+            className="page-shell max-md:mt-[6.75rem] md:mt-20 w-full max-w-full"
           >
             {children}
           </motion.div>

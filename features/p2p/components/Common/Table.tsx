@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 import { tokens } from "@/styles/tokens";
 import { TransactionType } from "@/features/p2p/types";
 import Button from "./Button";
-import { MoreHorizontal, Download, Search, X, ArrowLeft, Pointer, Eye } from "lucide-react";
+import { Download, Search, X, ArrowLeft, Pointer, Eye } from "lucide-react";
 import { formatDate, formatNumber } from "@/utils/formatters";
 import { TiArrowUnsorted } from "react-icons/ti";
 import html2canvas from "html2canvas";
@@ -23,6 +23,7 @@ type TableProps = {
   onViewTransaction?: (tx: TransactionType) => void;
   onDateFilterChange?: (filter: string) => void;
   dateFilter?: string;
+  showExportButton?: boolean;
 };
 
 export const Table: React.FC<TableProps> = ({
@@ -39,6 +40,7 @@ export const Table: React.FC<TableProps> = ({
   onViewTransaction,
   onDateFilterChange,
   dateFilter: externalDateFilter,
+  showExportButton = true,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showExportOptions, setShowExportOptions] = useState(false);
@@ -126,6 +128,33 @@ export const Table: React.FC<TableProps> = ({
 
   // Apply date filter to data
   const filteredData = getFilteredData(data, dateFilter);
+  const isAllFilterSelected = dateFilter === "ALL";
+  const desktopGridCols = type === "p2p" ? "md:grid-cols-7" : "md:grid-cols-6";
+
+  const formatTypeLabel = (value?: string | React.ReactNode | null): React.ReactNode => {
+    if (value === null || value === undefined) return "--";
+    if (typeof value === "string") {
+      const normalized = value.trim();
+      if (type !== "p2p") return normalized;
+      return `P2P${normalized.charAt(0).toUpperCase()}${normalized.slice(1)}`;
+    }
+    if (typeof value === "number") {
+      const normalized = value.toString();
+      if (type !== "p2p") return normalized;
+      return `P2P${normalized}`;
+    }
+    return value;
+  };
+
+  const formatP2PDate = (value?: string | Date | null) => {
+    if (!value) return "--";
+    const parsedDate = new Date(value);
+    if (isNaN(parsedDate.getTime())) return "--";
+    const day = parsedDate.getDate().toString().padStart(2, "0");
+    const month = parsedDate.toLocaleString("en-US", { month: "short" });
+    const year = parsedDate.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
 
   const handleExport = (format: "csv" | "pdf") => {
     if (onExport) {
@@ -140,6 +169,11 @@ export const Table: React.FC<TableProps> = ({
     if (type.toLowerCase() === "buy") return "text-[#1D8751]";
     if (type.toLowerCase() === "sell") return "text-[#FF4D4D]";
     return `text-gray-500 dark:text-[${tokens.colors.dark.textBody}]`;
+  };
+
+  const getAssetLabel = (asset?: string | null) => {
+    if (!asset) return "";
+    return /tron/i.test(asset) ? "" : asset;
   };
 
   const getStatusColor = (status: string | undefined | null) => {
@@ -302,8 +336,8 @@ export const Table: React.FC<TableProps> = ({
 
   return (
     <>
-      <div className="mt-4">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-3 gap-3">
+      <div className="mt-2">
+        <div className="flex flex-col gap-0.5 md:flex-row md:flex-wrap md:items-center md:gap-1 md:justify-between mb-2">
           <h3
             className={`font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
           >
@@ -311,8 +345,7 @@ export const Table: React.FC<TableProps> = ({
           </h3>
 
           {type === "p2p" && (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
-              {/* Date Filter */}
+            <>
               <div className="relative min-w-[150px]" ref={dateDropdownRef}>
                 <div className="flex items-center gap-2">
                   <div className="relative flex-1">
@@ -320,7 +353,13 @@ export const Table: React.FC<TableProps> = ({
                       type="button"
                       onClick={() => setIsDateDropdownOpen((prev) => !prev)}
                       disabled={loading}
-                      className="w-full px-3 py-2 pr-10 rounded text-sm font-semibold dark:bg-[#18181D] bg-white border dark:border-[#35353E] border-gray-300 dark:text-white text-[#0D0D0D] flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
+                      className={`w-full px-4 py-2 pr-10 rounded-full text-sm font-semibold bg-[#E6E7EC] dark:bg-[#18181D] flex items-center justify-between focus:outline-none ${
+                        !isAllFilterSelected ? "focus:ring-0" : "focus:ring-2 focus:ring-[#1D8751]/60"
+                      } ${
+                        isAllFilterSelected
+                          ? "text-[#8E939E] dark:text-[#8C8CA1]"
+                          : "text-[#1F1F23] dark:text-white"
+                      }`}
                     >
                       <span className="truncate">{dateFilter}</span>
                       <svg
@@ -345,7 +384,7 @@ export const Table: React.FC<TableProps> = ({
                         handleDateFilterChange("ALL");
                         setIsDateDropdownOpen(false);
                       }}
-                      className="p-2 rounded text-sm text-gray-500 dark:text-[#8C8CA1] hover:text-[#1D8751] dark:hover:text-[#1D8751] hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors"
+                      className="p-2 rounded-full text-sm text-gray-500 dark:text-[#8C8CA1] hover:text-[#1D8751] dark:hover:text-[#1D8751] hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors"
                       title="Clear date filter"
                     >
                       <X size={16} />
@@ -353,7 +392,7 @@ export const Table: React.FC<TableProps> = ({
                   )}
                 </div>
                 {isDateDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-full min-w-[150px] rounded-xl border border-[#1D8751] bg-[#0F0F13] dark:bg-[#0F0F13] text-white shadow-lg z-20">
+                  <div className="absolute top-full left-0 mt-2 w-full min-w-[150px] rounded-xl bg-[#0F0F13] dark:bg-[#0F0F13] text-white shadow-lg z-20">
                     {dateFilterOptions.map((option) => {
                       const isSelected = dateFilter === option;
                       return (
@@ -365,7 +404,11 @@ export const Table: React.FC<TableProps> = ({
                             setIsDateDropdownOpen(false);
                           }}
                           className={`w-full flex items-center px-4 py-2 text-left hover:bg-[#1b1b22] ${
-                            isSelected ? "text-white" : "text-[#C7CAD1]"
+                            isSelected
+                              ? option === "ALL"
+                                ? "text-[#8E939E]"
+                                : "text-white"
+                              : "text-[#C7CAD1]"
                           }`}
                         >
                           <span className="text-sm font-semibold">{option}</span>
@@ -375,7 +418,8 @@ export const Table: React.FC<TableProps> = ({
                   </div>
                 )}
               </div>
-              <div className="relative w-full sm:w-60">
+
+              <div className="relative w-full sm:w-60 md:w-56 lg:w-64">
                 <input
                   type="text"
                   placeholder="Search"
@@ -404,47 +448,49 @@ export const Table: React.FC<TableProps> = ({
                   </svg>
                 </div>
               </div>
+            </>
+          )}
 
-              <div className="relative">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowExportOptions(!showExportOptions)}
-                  className="text-base font-semibold"
-                >
-                  <p className="text-[14px] text-[#1D8751]">Export Transactions</p>
-                </Button>
+          {showExportButton && type !== "orders" && (
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowExportOptions(!showExportOptions)}
+                className="text-base font-semibold"
+              >
+                <p className="text-[14px] text-[#1D8751]">Export Transactions</p>
+              </Button>
 
-                {showExportOptions && (
-                  <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E] z-10">
-                    <div className="py-1">
-                      <button
-                        onClick={() => handleExport("csv")}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-400 dark:text-[#8C8CA1] hover:bg-gray-100 dark:hover:bg-[#35353E]"
-                      >
-                        Export as CSV
-                      </button>
-                      <button
-                        onClick={() => handleExport("pdf")}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-400 dark:text-[#8C8CA1] hover:bg-gray-100 dark:hover:bg-[#35353E]"
-                      >
-                        Export as PDF
-                      </button>
-                    </div>
+              {showExportOptions && (
+                <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E] z-10">
+                  <div className="py-1">
+                    <button
+                      onClick={() => handleExport("csv")}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-400 dark:text-[#8C8CA1] hover:bg-gray-100 dark:hover:bg-[#35353E]"
+                    >
+                      Export as CSV
+                    </button>
+                    <button
+                      onClick={() => handleExport("pdf")}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-400 dark:text-[#8C8CA1] hover:bg-gray-100 dark:hover:bg-[#35353E]"
+                    >
+                      Export as PDF
+                    </button>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="mt-3 overflow-x-auto">
           <div
             className={`w-full border-2 bg-white dark:bg-[${tokens.colors.dark.card}] border-gray-200 dark:border-[${tokens.colors.dark.border}] shadow-lg rounded-[24px]`}
           >
             {/* Desktop Table Header - Hidden on mobile */}
             <div
-              className={`hidden md:grid grid-cols-6 ${type === "p2p" ? "md:grid-cols-7" : ""} py-2.5 px-4 border-b bg-gray-50 dark:bg-[#35353E] border-gray-200 dark:border-[${tokens.colors.dark.border}] rounded-t-[24px]`}
+              className={`hidden md:grid grid-cols-6 ${desktopGridCols} py-2 px-4 border-b bg-gray-50 dark:bg-[#35353E] border-gray-200 dark:border-[${tokens.colors.dark.border}] rounded-t-[24px]`}
             >
               <div
                 className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
@@ -453,31 +499,28 @@ export const Table: React.FC<TableProps> = ({
               </div>
               {type === "p2p" && (
                 <div
-                  className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] flex items-center`}
+                  className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] flex items-center justify-start -ml-4 pl-0`}
                 >
-                  ID
+                  <span>ID</span>
                   <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
                 </div>
               )}
-              <div>
-                <div
-                  className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] flex items-center`}
-                >
-                  Type
-                  <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
-                </div>
+              <div
+                className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] flex items-center`}
+              >
+                Type
+                <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
+              </div>
+              <div
+                className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] flex items-center`}
+              >
+                Date
+                <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
               </div>
               <div
                 className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] flex items-center`}
               >
                 Amount
-                <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
-              </div>
-
-              <div
-                className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] flex items-center`}
-              >
-                Date
                 <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
               </div>
               <div
@@ -559,22 +602,29 @@ export const Table: React.FC<TableProps> = ({
                   </div>
                 </div>
               ) : (
-                filteredData.map((row, idx) => (
+                filteredData.map((row, idx) => {
+                const isLastRow = idx === filteredData.length - 1;
+                return (
                 <React.Fragment key={idx}>
                   {/* Desktop Grid View */}
                 <div
-                    className={`hidden md:grid w-full grid-cols-6 ${type === "p2p" ? "md:grid-cols-7" : ""} py-3 px-4 border-b last:border-b-0 items-center hover:bg-gray-50 dark:hover:bg-[#2A2A35] transition-colors duration-200 border-gray-200 dark:border-[${tokens.colors.dark.border}] bg-white dark:bg-[${tokens.colors.dark.background}]`}
+                    className={`hidden md:grid ${desktopGridCols} mx-2 py-2 px-2 items-center hover:bg-gray-50 dark:hover:bg-[#2A2A35] transition-colors duration-200 bg-white dark:bg-[#18181D] relative`}
                 >
                   <div className="flex items-center gap-2">
                     <img
                       src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
-                      alt={row.asset}
+                      alt={row.asset || "Asset"}
                       className="w-6 h-6"
                     />
+                    {getAssetLabel(row.asset) && (
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {getAssetLabel(row.asset)}
+                      </span>
+                    )}
                   </div>
                   {type === "p2p" && (
                     <div
-                      className={`text-sm text-gray-500 dark:text-[${tokens.colors.dark.textBody}] cursor-pointer relative`}
+                      className={`text-sm text-left text-gray-500 dark:text-[${tokens.colors.dark.textBody}] cursor-pointer relative -ml-4 pl-0`}
                       onMouseEnter={() => setTooltipId(row.id || "")}
                       onMouseLeave={() => setTooltipId(null)}
                       onClick={() => {
@@ -586,9 +636,7 @@ export const Table: React.FC<TableProps> = ({
                       }}
                       title={`Click to copy full ID: ${row.id || ""}`}
                     >
-                      {row.id
-                        ? `${row.id.slice(0, 3)}...${row.id.slice(-3)}`
-                        : ""}
+                      {row.id ? `${row.id.slice(0, 3)}...${row.id.slice(-3)}` : "--"}
                       {tooltipId === row.id && row.id && (
                         <div className="absolute z-50 px-3 py-2 text-xs text-white bg-gray-900 rounded-lg shadow-xl whitespace-nowrap -top-10 left-1/2 transform -translate-x-1/2 border border-gray-700">
                           <div className="flex items-center gap-2">
@@ -613,24 +661,16 @@ export const Table: React.FC<TableProps> = ({
                       )}
                     </div>
                   )}
-                  <div>
-                    <div
-                      className={`text-sm ${getAmountColor(String(row.type))}`}
-                    >
-                      {row.type}
-                    </div>
-                  </div>
-                  <div>
-                    <div
-                      className={`text-sm ${getAmountColor(String(row.type))}`}
-                    >
-                      {formatNumber(Number(row.amount)).toString()}
-                    </div>
+                  <div className={`text-sm ${getAmountColor(String(row.type))}`}>
+                    {formatTypeLabel(row.type)}
                   </div>
                   <div
                     className={`text-sm text-gray-500 dark:text-[${tokens.colors.dark.textBody}]`}
                   >
-                    {formatDate(row.date)}
+                    {formatP2PDate(row.date)}
+                  </div>
+                  <div className={`text-sm font-semibold ${getAmountColor(String(row.type))}`}>
+                    {formatNumber(Number(row.amount)).toString()} USD
                   </div>
                   <div
                     className={`text-sm ${getStatusColor(String(row.status))}`}
@@ -647,39 +687,46 @@ export const Table: React.FC<TableProps> = ({
                       <Eye size={18} />
                     </Button>
                   </div>
+                  {!isLastRow && (
+                    <div
+                      className={`absolute bottom-0 left-4 right-4 h-px bg-gray-200 dark:bg-[${tokens.colors.dark.border}]`}
+                    />
+                  )}
                 </div>
 
                   {/* Mobile Card View */}
                   <div
-                    className={`md:hidden flex flex-col gap-3 p-4 border-b last:border-b-0 hover:bg-gray-50 dark:hover:bg-[#2A2A35] transition-colors duration-200 border-gray-200 dark:border-[${tokens.colors.dark.border}] bg-white dark:bg-[${tokens.colors.dark.background}]`}
+                    className={`md:hidden flex flex-col gap-2 p-3 mx-4 relative hover:bg-gray-50 dark:hover:bg-[#2A2A35] transition-colors duration-200 bg-white dark:bg-[${tokens.colors.dark.background}]`}
                   >
                     {/* Top Row: Asset and Type */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <img
                           src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
-                          alt={row.asset}
+                          alt={row.asset || "Asset"}
                           className="w-6 h-6"
                         />
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">
-                          {row.asset}
-                        </span>
+                        {getAssetLabel(row.asset) && (
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            {getAssetLabel(row.asset)}
+                          </span>
+                        )}
                       </div>
                       <div
                         className={`text-sm font-semibold ${getAmountColor(String(row.type))}`}
                       >
-                        {row.type}
+                        {formatTypeLabel(row.type)}
                       </div>
                     </div>
 
                     {/* Amount Row */}
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-gray-500 dark:text-[#788099]">Amount</span>
-                      <div
+                      <span
                         className={`text-sm font-semibold ${getAmountColor(String(row.type))}`}
                       >
-                        {formatNumber(Number(row.amount)).toString()}
-                      </div>
+                        {formatNumber(Number(row.amount)).toString()} USD
+                      </span>
                     </div>
 
                     {/* Date and Status Row */}
@@ -687,7 +734,7 @@ export const Table: React.FC<TableProps> = ({
                       <div className="flex flex-col">
                         <span className="text-xs text-gray-500 dark:text-[#788099]">Date</span>
                         <span className={`text-sm text-gray-500 dark:text-[${tokens.colors.dark.textBody}]`}>
-                          {formatDate(row.date)}
+                          {formatP2PDate(row.date)}
                         </span>
                       </div>
                       <div className="flex flex-col items-end">
@@ -735,9 +782,15 @@ export const Table: React.FC<TableProps> = ({
                         View Receipt
                       </Button>
                     </div>
+                    {!isLastRow && (
+                      <div
+                        className={`absolute bottom-0 left-4 right-4 h-px bg-gray-200 dark:bg-[${tokens.colors.dark.border}]`}
+                      />
+                    )}
                   </div>
                 </React.Fragment>
-                ))
+                );
+                })
               )}
             </div>
             {/* Pagination */}

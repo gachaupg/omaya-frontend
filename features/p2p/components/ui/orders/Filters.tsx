@@ -68,16 +68,29 @@ const Filters: React.FC<FiltersProps> = ({
   logger.debug("p2p", "Order Status Tabs:", orderStatusTabs);
 
   const filterCardBase =
-    "flex w-full items-center justify-between gap-2 rounded-[28px] border bg-white dark:bg-transparent px-2.5 py-0.5";
-  const triggerOverride =
-    "!bg-transparent !border-0 !shadow-none px-0 py-0 !min-h-0 h-auto flex items-center w-auto [&>div>span]:text-sm [&>div>span]:text-gray-600 [&>div>span]:dark:text-[#9CA4C0] [&>div>svg]:text-gray-600 [&>div>svg]:dark:text-gray-400 [&>div>svg]:ml-1 [&>div]:py-0";
+    "flex w-full min-h-[42px] items-center rounded-[22px] border px-2.5 py-1.5 transition-all duration-200 bg-transparent";
+  const activeCardClasses =
+    "border-gray-200 dark:border-[#272B3F] bg-[#1D8751]/10 shadow-[0_12px_30px_rgba(29,135,81,0.12)]";
+  const inactiveCardClasses =
+    "bg-transparent border-gray-200 dark:border-[#272B3F] group-hover:border-[#1D8751]/60";
   const iconWrapper =
-    "flex h-5 w-5 items-center justify-center rounded-full flex-shrink-0";
-  const labelStyle = "text-sm font-semibold text-gray-900 dark:text-white";
-  const valueStyle = "text-sm font-medium text-gray-600 dark:text-[#9CA4C0]";
+    "flex h-8 w-8 items-center justify-center rounded-full border bg-[#F5F7FB]/80 border-gray-200 dark:bg-[#1B1E2B]/80 dark:border-white/10 flex-shrink-0";
+  const valueStyleActive =
+    "text-[15px] font-semibold text-gray-900 dark:text-white";
+  const valueStyleInactive =
+    "text-[15px] font-medium text-gray-500 dark:text-[#7F889F]";
+  const selectOverlayTrigger =
+    "!p-0 !m-0 !border-0 !shadow-none !bg-transparent !min-h-0 !h-full !w-full opacity-0 focus-visible:ring-0 rounded-[32px]";
 
-  const currencyMeta: Record<string, { name: string; code: string }> = {
-    usdt: { name: "Tether", code: "USDT" },
+  const currencyMeta: Record<
+    string,
+    { name: string; code: string; logo: string }
+  > = {
+    usdt: {
+      name: "Tether",
+      code: "USDT",
+      logo: "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png",
+    },
   };
 
   const selectedCurrencyKey = filters.currency?.toLowerCase() || "usdt";
@@ -93,6 +106,12 @@ const Filters: React.FC<FiltersProps> = ({
       code:
         selectedCurrencyOption?.label ||
         selectedCurrencyKey.toUpperCase(),
+      logo:
+        selectedCurrencyOption && "logo" in selectedCurrencyOption
+          ? // @ts-ignore (upstream data gradually adopting logos)
+            (selectedCurrencyOption as { logo?: string }).logo ||
+            currencyMeta.usdt.logo
+          : currencyMeta.usdt.logo,
     };
 
   const typeOptionLabel =
@@ -119,7 +138,7 @@ const Filters: React.FC<FiltersProps> = ({
   return (
     <div className="w-full flex flex-col">
       {/* ───────────────────────── Tabs */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <div className="flex items-center gap-0 bg-white dark:bg-transparent rounded-[14px] border border-[#1D8751]/60 dark:border-[#1D8751]/60 w-full sm:w-fit px-1.5 py-1.5 overflow-x-auto snap-x snap-mandatory scrollbar-none shadow-[0_6px_24px_rgba(4,10,7,0.35)]">
           {orderStatusTabs.map((tab) => (
             <Button
@@ -176,101 +195,232 @@ const Filters: React.FC<FiltersProps> = ({
       </div>
 
       {/* ───────────────────────── Filter bar */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mt-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-3 mt-3">
         {/* Coin selector */}
-        <div className={`${filterCardBase} border-gray-300 dark:border-[#35353E] ${loading ? "opacity-50" : ""}`}>
-          <div className="flex items-center gap-2">
-            <div className={iconWrapper}>
-              <Image
-                src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
-                alt="Tether"
-                width={16}
-                height={16}
-                className="object-contain"
-              />
+        <div className="relative group">
+          <div
+            className={`${filterCardBase} ${
+              isCurrencyActive ? activeCardClasses : inactiveCardClasses
+            } ${loading ? "opacity-60" : ""} pointer-events-none`}
+          >
+            <div className="flex items-center gap-4 w-full">
+              <div className={iconWrapper}>
+                <Image
+                  src={currencyInfo.logo}
+                  alt={currencyInfo.name}
+                  width={26}
+                  height={26}
+                  className="object-contain"
+                />
+              </div>
+              <div className="flex flex-col min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <span className={valueStyleActive}>
+                    {currencyInfo.name} · {currencyInfo.code}
+                  </span>
+                  <svg
+                    className="h-4 w-4 text-gray-400 dark:text-[#6F768D]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
-          <CustomSelect
-            options={currencyOptions}
-            value={filters.currency}
-            onChange={handleCurrencyChange}
-            className="w-auto"
-            triggerClassName={triggerOverride}
-            optionClassName="text-sm"
-            disabled={loading}
-          />
+
+          <div className="absolute inset-0 z-10">
+            <CustomSelect
+              options={currencyOptions}
+              value={filters.currency}
+              onChange={handleCurrencyChange}
+              className="w-full h-full"
+              triggerClassName={`${selectOverlayTrigger} ${
+                loading ? "cursor-not-allowed" : "cursor-pointer"
+              }`}
+              optionClassName="text-sm"
+              disabled={loading}
+            />
+          </div>
         </div>
 
         {/* Type selector */}
-        <div className={`${filterCardBase} ${isTypeActive ? "border-transparent" : "border-gray-300 dark:border-[#35353E]"} ${loading ? "opacity-50" : ""}`}>
-          <div className="flex items-center gap-2">
-            <div className={iconWrapper}>
-              <Image
-                src="https://res.cloudinary.com/pitz/image/upload/v1763388449/Icon_1_kiuery.png"
-                alt="Type icon"
-                width={16}
-                height={16}
-                className="object-contain"
-              />
+        <div className="relative group">
+          <div
+            className={`${filterCardBase} ${
+              isTypeActive ? activeCardClasses : inactiveCardClasses
+            } ${loading ? "opacity-60" : ""} pointer-events-none`}
+          >
+            <div className="flex items-center gap-4 w-full">
+              <div className={iconWrapper}>
+                <Image
+                  src="https://res.cloudinary.com/pitz/image/upload/v1763388449/Icon_1_kiuery.png"
+                  alt="Type icon"
+                  width={24}
+                  height={24}
+                  className="object-contain"
+                />
+              </div>
+              <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                <span
+                  className={`truncate ${
+                    isTypeActive ? valueStyleActive : valueStyleInactive
+                  }`}
+                >
+                  {typeValueDisplay || typeOptionLabel}
+                </span>
+                <svg
+                  className="h-4 w-4 text-gray-400 dark:text-[#6F768D]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </div>
             </div>
           </div>
-          <CustomSelect
-            options={typeOptions}
-            value={filters.type}
-            onChange={handleTypeChange}
-            className="w-auto"
-            triggerClassName={triggerOverride}
-            optionClassName="text-sm"
-            disabled={loading}
-          />
+          <div className="absolute inset-0 z-10">
+            <CustomSelect
+              options={typeOptions}
+              value={filters.type}
+              onChange={handleTypeChange}
+              className="w-full h-full"
+              triggerClassName={`${selectOverlayTrigger} ${
+                loading ? "cursor-not-allowed" : "cursor-pointer"
+              }`}
+              optionClassName="text-sm"
+              disabled={loading}
+            />
+          </div>
         </div>
 
         {/* Status selector */}
-        <div className={`${filterCardBase} ${isStatusActive ? "border-transparent" : "border-gray-300 dark:border-[#35353E]"} ${loading ? "opacity-50" : ""}`}>
-          <div className="flex items-center gap-2">
-            <div className={iconWrapper}>
-              <Image
-                src="https://res.cloudinary.com/pitz/image/upload/v1763388449/annotation-check_ergtxp.png"
-                alt="Status icon"
-                width={16}
-                height={16}
-                className="object-contain"
-              />
+        <div className="relative group">
+          <div
+            className={`${filterCardBase} ${
+              isStatusActive ? activeCardClasses : inactiveCardClasses
+            } ${loading ? "opacity-60" : ""} pointer-events-none`}
+          >
+            <div className="flex items-center gap-4 w-full">
+              <div className={iconWrapper}>
+                <Image
+                  src="https://res.cloudinary.com/pitz/image/upload/v1763388449/annotation-check_ergtxp.png"
+                  alt="Status icon"
+                  width={24}
+                  height={24}
+                  className="object-contain"
+                />
+              </div>
+              <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                <span
+                  className={`truncate ${
+                    isStatusActive ? valueStyleActive : valueStyleInactive
+                  }`}
+                >
+                  {statusValueDisplay || statusOptionLabel}
+                </span>
+                <svg
+                  className="h-4 w-4 text-gray-400 dark:text-[#6F768D]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </div>
             </div>
           </div>
-          <CustomSelect
-            options={statusOptions}
-            value={filters.status}
-            onChange={handleStatusChange}
-            className="w-auto"
-            triggerClassName={triggerOverride}
-            optionClassName="text-sm"
-            disabled={loading}
-          />
+          <div className="absolute inset-0 z-10">
+            <CustomSelect
+              options={statusOptions}
+              value={filters.status}
+              onChange={handleStatusChange}
+              className="w-full h-full"
+              triggerClassName={`${selectOverlayTrigger} ${
+                loading ? "cursor-not-allowed" : "cursor-pointer"
+              }`}
+              optionClassName="text-sm"
+              disabled={loading}
+            />
+          </div>
         </div>
 
         {/* Date selector */}
-        <div className={`${filterCardBase} ${isDateActive ? "border-transparent" : "border-gray-300 dark:border-[#35353E]"} ${loading ? "opacity-50" : ""}`}>
-          <div className="flex items-center gap-2">
-            <div className={iconWrapper}>
-              <Image
-                src="https://res.cloudinary.com/pitz/image/upload/v1763388449/calendar-03_rnsmmq.png"
-                alt="Date icon"
-                width={16}
-                height={16}
-                className="object-contain"
-              />
+        <div className="relative group">
+          <div
+            className={`${filterCardBase} ${
+              isDateActive ? activeCardClasses : inactiveCardClasses
+            } ${loading ? "opacity-60" : ""} pointer-events-none`}
+          >
+            <div className="flex items-center gap-4 w-full">
+              <div className={iconWrapper}>
+                <Image
+                  src="https://res.cloudinary.com/pitz/image/upload/v1763388449/calendar-03_rnsmmq.png"
+                  alt="Date icon"
+                  width={24}
+                  height={24}
+                  className="object-contain"
+                />
+              </div>
+              <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                <span
+                  className={`truncate ${
+                    isDateActive ? valueStyleActive : valueStyleInactive
+                  }`}
+                >
+                  {dateValueDisplay || dateOptionLabel}
+                </span>
+                <svg
+                  className="h-4 w-4 text-gray-400 dark:text-[#6F768D]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </div>
             </div>
           </div>
-          <CustomSelect
-            options={dateOptions}
-            value={filters.date}
-            onChange={handleDateChange}
-            className="w-auto"
-            triggerClassName={triggerOverride}
-            optionClassName="text-sm"
-            disabled={loading}
-          />
+          <div className="absolute inset-0 z-10">
+            <CustomSelect
+              options={dateOptions}
+              value={filters.date}
+              onChange={handleDateChange}
+              className="w-full h-full"
+              triggerClassName={`${selectOverlayTrigger} ${
+                loading ? "cursor-not-allowed" : "cursor-pointer"
+              }`}
+              optionClassName="text-sm"
+              disabled={loading}
+            />
+          </div>
         </div>
       </div>
     </div>

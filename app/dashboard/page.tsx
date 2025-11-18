@@ -32,13 +32,10 @@ export default function DashboardPage() {
       return;
     }
     dispatch(fetchTransactionSummary());
-    // Check KYC status on dashboard load
     checkStatus();
   }, [dispatch, checkStatus, accessToken]);
 
-  // Log KYC status when it changes and show modal if not verified
   useEffect(() => {
-    // Only show KYC modal if we have a definitive false response and not loading
     if (isVerified === false && !loading && !error) {
       dispatch(openKYCModal());
     } else if (isVerified === true) {
@@ -46,10 +43,9 @@ export default function DashboardPage() {
   }, [isVerified, loading, error, dispatch]);
 
   return (
-    <div className="pt-0 mb-4 flex flex-col gap-4 xl:max-w-[1000px] mx-auto rounded-lg w-full">
+    <div className="pt-0 mb-4 flex flex-col gap-4 rounded-lg w-full">
       <UserCard />
       <PriceCards />
-
       <VolumeChart
         transactionSummary={transactionSummary || emptyTransactionSummary}
       />

@@ -189,18 +189,7 @@ const Overview = () => {
 
   return (
     <div>
-      {error && (
-        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm flex items-center justify-between">
-          <span>{error}</span>
-          <button
-            onClick={fetchOrderData}
-            disabled={loading}
-            className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 rounded text-xs transition-colors disabled:opacity-50"
-          >
-            Retry
-          </button>
-        </div>
-      )}
+     
       <h3 className="dark:text-white text-[#0D0D0D] mb-2 text-sm">
         Overview Total
       </h3>
@@ -316,28 +305,28 @@ const Overview = () => {
           <div className="flex items-center gap-2">
             <span className="w-4 h-4 rounded-full bg-[#1D8751] inline-block" />
             <span className="dark:text-white text-[#0D0D0D]">Deposits</span>
-            <span className="ml-auto dark:text-white text-[#0D0D0D]">
+            <span className="ml-auto text-white/80 dark:text-white/80">
               {deposits.toLocaleString()} USD
             </span>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-4 h-4 rounded-full bg-[#E23D3A] inline-block" />
             <span className="dark:text-white text-[#0D0D0D]">Withdrawals</span>
-            <span className="ml-auto dark:text-white text-[#0D0D0D]">
+            <span className="ml-auto text-white/80 dark:text-white/80">
               {withdrawals.toLocaleString()} USD
             </span>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-4 h-4 rounded-full bg-[#FFD600] inline-block" />
             <span className="dark:text-white text-[#0D0D0D]">In Progress</span>
-            <span className="ml-auto dark:text-white text-[#0D0D0D]">
+            <span className="ml-auto text-white/80 dark:text-white/80">
               {inProgress.toLocaleString()} USD
             </span>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-4 h-4 rounded-full bg-[#386AB5] inline-block" />
             <span className="dark:text-white text-[#0D0D0D]">P2P</span>
-            <span className="ml-auto dark:text-white text-[#0D0D0D]">
+            <span className="ml-auto text-white/80 dark:text-white/80">
               {p2p.toLocaleString()} USD
             </span>
           </div>
@@ -390,8 +379,11 @@ const Overview = () => {
             </div>
             <div className="mb-3">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-lg font-semibold dark:text-white text-[#0D0D0D]">
-                  ${buyTotals.total.toLocaleString()}
+                <span className="text-xs dark:text-[#A0A0A0] text-[#788099]">
+                  P2P Trading amount
+                </span>
+                <span className="text-lg font-semibold text-white/90 dark:text-white/90">
+                  {buyTotals.total.toLocaleString()} USD
                 </span>
               </div>
               <div className="w-full bg-[#2D2D37] rounded-full h-2.5">
@@ -402,22 +394,26 @@ const Overview = () => {
               </div>
             </div>
             <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block flex-shrink-0" />
-                <span className="text-xs dark:text-[#A0A0A0] text-[#788099]">
-                  Completed:
-                </span>
-                <span className="text-sm font-semibold text-[#1D8751]">
-                  ${buyTotals.completed.toLocaleString()}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block flex-shrink-0" />
+                  <span className="text-xs dark:text-[#A0A0A0] text-[#788099]">
+                    Completed:
+                  </span>
+                </div>
+                <span className="text-sm font-semibold text-white/80 dark:text-white/80">
+                  {buyTotals.completed.toLocaleString()} USD
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-[#FFD600] inline-block flex-shrink-0" />
-                <span className="text-xs dark:text-[#A0A0A0] text-[#788099]">
-                  Pending:
-                </span>
-                <span className="text-sm font-semibold text-[#FFD600]">
-                  ${buyTotals.pending.toLocaleString()}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-[#FFD600] inline-block flex-shrink-0" />
+                  <span className="text-xs dark:text-[#A0A0A0] text-[#788099]">
+                    Pending:
+                  </span>
+                </div>
+                <span className="text-sm font-semibold text-white/80 dark:text-white/80">
+                  {buyTotals.pending.toLocaleString()} USD
                 </span>
               </div>
             </div>
@@ -469,8 +465,11 @@ const Overview = () => {
             </div>
             <div className="mb-3">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-lg font-semibold dark:text-white text-[#0D0D0D]">
-                  ${sellTotals.total.toLocaleString()}
+                <span className="text-xs dark:text-[#A0A0A0] text-[#788099]">
+                  P2P Trading amount
+                </span>
+                <span className="text-lg font-semibold text-white/90 dark:text-white/90">
+                  {sellTotals.total.toLocaleString()} USD
                 </span>
               </div>
               <div className="w-full bg-[#2D2D37] rounded-full h-2.5">
@@ -481,22 +480,26 @@ const Overview = () => {
               </div>
             </div>
             <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block flex-shrink-0" />
-                <span className="text-xs dark:text-[#A0A0A0] text-[#788099]">
-                  Completed:
-                </span>
-                <span className="text-sm font-semibold text-[#1D8751]">
-                  ${sellTotals.completed.toLocaleString()}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block flex-shrink-0" />
+                  <span className="text-xs dark:text-[#A0A0A0] text-[#788099]">
+                    Completed:
+                  </span>
+                </div>
+                <span className="text-sm font-semibold text-white/80 dark:text-white/80">
+                  {sellTotals.completed.toLocaleString()} USD
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-[#FFD600] inline-block flex-shrink-0" />
-                <span className="text-xs dark:text-[#A0A0A0] text-[#788099]">
-                  Pending:
-                </span>
-                <span className="text-sm font-semibold text-[#FFD600]">
-                  ${sellTotals.pending.toLocaleString()}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-[#FFD600] inline-block flex-shrink-0" />
+                  <span className="text-xs dark:text-[#A0A0A0] text-[#788099]">
+                    Pending:
+                  </span>
+                </div>
+                <span className="text-sm font-semibold text-white/80 dark:text-white/80">
+                  {sellTotals.pending.toLocaleString()} USD
                 </span>
               </div>
             </div>

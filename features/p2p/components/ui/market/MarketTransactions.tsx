@@ -801,7 +801,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
               <FaFilter className="text-[#1D8751]" size={18} />
             </button>
             {isFilterDropdownOpen && (
-              <div className="absolute top-full right-0 mt-3 border border-gray-300 dark:border-[#35353E] rounded-xl bg-[#0F0F13] text-white shadow-2xl z-40 min-w-[210px] p-3 space-y-3">
+              <div className="absolute top-full right-0 mt-3 border border-gray-300 dark:border-[#35353E] rounded-xl bg-[#0F0F13] text-white shadow-2xl z-40 min-w-[280px] p-3 space-y-3">
                 <div className="space-y-1">
                   <span className="text-xs uppercase tracking-wide text-[#7B7F92]">Visibility</span>
                   <div className="space-y-2">

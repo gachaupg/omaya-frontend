@@ -106,10 +106,11 @@ export default function LoginPage() {
           return;
         }
 
-        // Immediately navigate to dashboard without waiting for additional API calls
-        router.push("/dashboard");
-        // Force a hard navigation to ensure the redirect happens immediately
-        router.refresh();
+        // Use hard navigation to ensure middleware sees cookie and auth state is properly initialized
+        // Small delay to ensure all state is persisted
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 100);
       } else {
         if (result.payload) {
           const errorData = result.payload as any;

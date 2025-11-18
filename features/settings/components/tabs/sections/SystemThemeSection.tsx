@@ -2,15 +2,8 @@ import React from "react";
 import { useThemeToggle } from "../../../hooks/useThemeToggle";
 
 const SystemThemeSection: React.FC = () => {
-  const {
-    theme,
-    currentTheme,
-    isDark,
-    isLight,
-    isSystem,
-    updating,
-    toggleTheme,
-  } = useThemeToggle();
+  const { theme, currentTheme, isDark, isLight, updating, toggleTheme } =
+    useThemeToggle();
 
   const handleThemeChange = (mode: "light" | "dark" | "system") => {
     toggleTheme(mode);
@@ -21,10 +14,10 @@ const SystemThemeSection: React.FC = () => {
       <div className="text-base font-semibold dark:text-[#788099] text-gray-600 mb-0">
         System Theme
       </div>
-      <section className="dark:bg-[#1D1D23] bg-gray-50 rounded-xl dark:border-[#35353E] border-gray-300 border-2 p-4 shadow-lg">
+      <section className="dark:bg-[#1D1D23] bg-gray-50 rounded-2xl dark:border-[#35353E] border-gray-300 border-2 p-4 shadow-lg">
         <div className="flex gap-3 mb-3">
           <button
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-semibold text-sm transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-2xl font-semibold text-sm transition-all ${
               isLight
                 ? "bg-[#1D8751] text-white"
                 : "bg-[#23232B] text-[#788099] hover:bg-[#2A2A32]"
@@ -49,7 +42,7 @@ const SystemThemeSection: React.FC = () => {
             Light
           </button>
           <button
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-semibold text-sm transition-all ${
+            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-2xl font-semibold text-sm transition-all ${
               isDark
                 ? "bg-[#1D8751] text-white"
                 : "border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white"
@@ -72,30 +65,6 @@ const SystemThemeSection: React.FC = () => {
             </svg>
             Dark
           </button>
-          <button
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg font-semibold text-sm transition-all ${
-              isSystem
-                ? "bg-[#1D8751] text-white"
-                : "border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white"
-            }`}
-            onClick={() => handleThemeChange("system")}
-            aria-pressed={isSystem}
-            disabled={updating}
-          >
-            <svg
-              width="18"
-              height="18"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 6.34l-1.41 1.41M19.07 19.07l-1.41 1.41"
-                strokeWidth="2"
-              />
-            </svg>
-            System
-          </button>
         </div>
         {updating && (
           <div className="text-center py-2">
@@ -105,10 +74,7 @@ const SystemThemeSection: React.FC = () => {
             </span>
           </div>
         )}
-        <div className="text-xs dark:text-[#808080] text-gray-500 mt-2">
-          Current theme: {theme.mode}
-          {isSystem && " (system)"}
-        </div>
+       
       </section>
     </>
   );

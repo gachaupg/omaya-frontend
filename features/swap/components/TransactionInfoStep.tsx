@@ -287,7 +287,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
           <button
             type="button"
             onClick={onSwapAssets}
-            className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border dark:border-[#2E2E3A] border-gray-300 dark:bg-[#1B1B23] bg-white flex items-center justify-center shadow-xl dark:hover:bg-[#23232b] hover:bg-gray-100"
+            className="flex items-center justify-center p-0 bg-transparent border-none shadow-none"
           >
             <img
               src={
@@ -296,7 +296,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                   : "https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
               }
               alt="swap"
-              className="w-6 h-6"
+              className="w-11 h-11"
             />
           </button>
         </div>

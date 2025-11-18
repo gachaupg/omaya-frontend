@@ -39,6 +39,43 @@ const getAssetName = (symbol: string) => {
 
 const ASSET_ICON_URL =
   "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png";
+const DEFAULT_PROVIDER_LOGO = "/default-provider-logo.svg";
+
+const extractPaymentInfo = (tx: any) => {
+  const paymentDetails = Array.isArray(tx?.payment_details)
+    ? tx.payment_details
+    : [];
+
+  const detailWithLogo =
+    paymentDetails.find(
+      (detail: any) => detail?.provider_logo || detail?.logo
+    ) || paymentDetails[0];
+
+  const providerLogo =
+    detailWithLogo?.provider_logo ||
+    detailWithLogo?.logo ||
+    tx?.payment_provider_logo ||
+    tx?.provider_logo ||
+    null;
+
+  const providerName =
+    detailWithLogo?.provider_name ||
+    detailWithLogo?.provider ||
+    tx?.payment_provider ||
+    null;
+
+  const methodLabel =
+    tx?.payment_method ||
+    detailWithLogo?.payment_method_name ||
+    detailWithLogo?.method ||
+    null;
+
+  return {
+    providerLogo,
+    providerName,
+    methodLabel,
+  };
+};
 
 const P2PTransactions = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -202,7 +239,10 @@ const P2PTransactions = () => {
     <div className="w-full">
       {/* Mobile Card Layout */}
       <div className="block sm:hidden space-y-3">
-        {filteredResults.map((tx: any, index: number) => (
+        {filteredResults.map((tx: any, index: number) => {
+          const paymentInfo = extractPaymentInfo(tx);
+
+          return (
           <div
             key={tx.transaction_id || `tx-${index}`}
             className="bg-white dark:bg-[#23232A] border border-[#E8EFF5] dark:border-[#35353E] rounded-xl p-4 space-y-3"
@@ -260,15 +300,33 @@ const P2PTransactions = () => {
                 </div>
               </div>
               <div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Payment</div>
-                <div className="font-medium text-gray-900 dark:text-white">
-                  {tx.payment_method || t("transactions.notAvailable", "N/A")}
+                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  Payment
                 </div>
-                {tx.payment_provider && (
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    {tx.payment_provider}
+                <div className="flex items-center gap-3">
+                  {paymentInfo.providerLogo && (
+                    <img
+                      src={paymentInfo.providerLogo}
+                      alt={paymentInfo.providerName || "Provider logo"}
+                      className="w-8 h-8 rounded-full border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[#1D1D23]"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = DEFAULT_PROVIDER_LOGO;
+                      }}
+                    />
+                  )}
+                  <div className="flex flex-col min-w-0">
+                    <div className="font-medium text-gray-900 dark:text-white text-sm">
+                      {paymentInfo.methodLabel ||
+                        t("transactions.notAvailable", "N/A")}
+                    </div>
+                    {paymentInfo.providerName && (
+                      <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        {paymentInfo.providerName}
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
               <div>
                 <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">When</div>
@@ -280,7 +338,8 @@ const P2PTransactions = () => {
               </div>
             </div>
           </div>
-        ))}
+        );
+        })}
       </div>
 
       {/* Desktop Table Layout */}
@@ -307,7 +366,10 @@ const P2PTransactions = () => {
         </thead>
 
         <tbody className="divide-y divide-[#d1d5db] dark:divide-[#35353E]">
-          {filteredResults.map((tx: any, index: number) => (
+          {filteredResults.map((tx: any, index: number) => {
+            const paymentInfo = extractPaymentInfo(tx);
+
+            return (
             <tr
               key={tx.transaction_id || `tx-${index}`}
               className="hover:bg-gray-100 dark:hover:bg-[#23232A] transition-colors"
@@ -348,16 +410,30 @@ const P2PTransactions = () => {
               </td>
 
               {/* Payment Method */}
-                <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap">
+              <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap">
+                <div className="flex items-center gap-3 min-w-0">
+                  {paymentInfo.providerLogo && (
+                    <img
+                      src={paymentInfo.providerLogo}
+                      alt={paymentInfo.providerName || "Provider logo"}
+                      className="w-8 h-8 rounded-full border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[#1D1D23] flex-shrink-0"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = DEFAULT_PROVIDER_LOGO;
+                      }}
+                    />
+                  )}
                   <div className="flex flex-col min-w-0">
                     <span className="font-medium text-xs sm:text-sm lg:text-base text-gray-700 dark:text-gray-200 truncate">
-                    {tx.payment_method || t("transactions.notAvailable", "N/A")}
-                  </span>
-                  {tx.payment_provider && (
-                      <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                      {tx.payment_provider}
+                      {paymentInfo.methodLabel ||
+                        t("transactions.notAvailable", "N/A")}
                     </span>
-                  )}
+                    {paymentInfo.providerName && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        {paymentInfo.providerName}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </td>
 
@@ -387,7 +463,8 @@ const P2PTransactions = () => {
                 })}
               </td>
             </tr>
-          ))}
+          );
+          })}
         </tbody>
       </table>
       </div>
