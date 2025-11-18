@@ -154,6 +154,15 @@ export default function GoogleOAuthCallback() {
         localStorage.setItem('refresh_token', data.refresh);
         localStorage.setItem('user', JSON.stringify(data.user));
 
+        // Set same-origin cookie immediately so middleware sees it on next request
+        try {
+          const maxAge = 60 * 60; // 1 hour
+          const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+          document.cookie = `access_token=${data.access}; Max-Age=${maxAge}; Path=/; SameSite=Lax${isHttps ? '; Secure' : ''}`;
+        } catch (e) {
+          console.warn('Could not set auth cookie in callback:', e);
+        }
+
         // Immediately notify app state so Providers can hydrate Redux and set cookie
         try {
           const evt = new CustomEvent('auth-state-changed', {
@@ -180,7 +189,7 @@ export default function GoogleOAuthCallback() {
         }
         
         // If not in popup, redirect to dashboard or previous page
-        const redirectPath = sessionStorage.getItem('auth_redirect') || '/dashboard';
+        const redirectPath = sessionStorage.getItem('auth_redirect') || '/dashboard/';
         sessionStorage.removeItem('auth_redirect');
         try {
           router.replace(redirectPath);
