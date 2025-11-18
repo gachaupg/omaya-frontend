@@ -9,7 +9,7 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
-/.env
+# /.env  # temporarily allow committing .env for testing
 /.env.local
 
 # testing
@@ -34,7 +34,7 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-/.env*
+# /.env*  # temporarily disabled to allow .env
 
 # vercel
 .vercel
@@ -48,7 +48,7 @@ next-env.d.ts
 
 # Docker
 docker-compose.override.yml
-.dockerignore
+dockerignore
 
 # Environment files (keep .env.example in git)
 # .env
