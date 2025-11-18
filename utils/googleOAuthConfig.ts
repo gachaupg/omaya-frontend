@@ -1,5 +1,7 @@
 // Google OAuth Configuration Utility
 
+import { getRuntimeConfigSync } from '@/lib/runtimeConfig';
+
 // Type Definitions
 export interface UserData {
   id: string;
@@ -22,9 +24,8 @@ export interface GoogleOAuthResponse {
   user: UserData;
 }
 
-// Environment Configuration
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dev.backend.omaya.io';
-const FRONTEND_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://dev.omaya.io';
+// Environment Configuration (runtime-aware)
+const { NEXT_PUBLIC_API_URL: API_URL, NEXT_PUBLIC_APP_URL: FRONTEND_URL } = getRuntimeConfigSync();
 
 // API Endpoints Configuration
 export const GOOGLE_API_ENDPOINTS = {
@@ -48,11 +49,13 @@ export const GOOGLE_API_ENDPOINTS = {
   authStatus: `${API_URL}/api/auth/status/`,
 } as const;
 
-// Google OAuth Configuration
+// Google OAuth Configuration (runtime-aware)
 export const GOOGLE_OAUTH_CONFIG = {
-  clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
-  redirectUri: process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI || 
-    (typeof window !== 'undefined' 
+  // Note: values here are defaults at module eval time; getGoogleOAuthUrl reads runtime config on each call
+  clientId: getRuntimeConfigSync().NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
+  redirectUri:
+    getRuntimeConfigSync().NEXT_PUBLIC_GOOGLE_REDIRECT_URI ||
+    (typeof window !== 'undefined'
       ? `${window.location.origin}/auth/google/callback`
       : `${FRONTEND_URL}/auth/google/callback`),
   scope: [
@@ -98,12 +101,16 @@ export const GOOGLE_OAUTH_ERROR_MESSAGES: Record<GoogleOAuthErrorType, string> =
 // Helper function to get Google OAuth URL
 export const getGoogleOAuthUrl = (state?: string): string => {
   try {
-    // Get the current redirect URI (prefer window.location.origin if available)
-    const redirectUri = typeof window !== 'undefined' 
-      ? `${window.location.origin}/auth/google/callback`
-      : GOOGLE_OAUTH_CONFIG.redirectUri;
+    // Prefer runtime config values if available
+    const runtimeCfg = getRuntimeConfigSync();
+    const clientId = runtimeCfg.NEXT_PUBLIC_GOOGLE_CLIENT_ID || GOOGLE_OAUTH_CONFIG.clientId;
+    const redirectUri =
+      runtimeCfg.NEXT_PUBLIC_GOOGLE_REDIRECT_URI ||
+      (typeof window !== 'undefined'
+        ? `${window.location.origin}/auth/google/callback`
+        : GOOGLE_OAUTH_CONFIG.redirectUri);
 
-    if (!GOOGLE_OAUTH_CONFIG.clientId) {
+    if (!clientId) {
       console.error('Google OAuth client ID is not configured');
       throw new Error('Google OAuth client ID is not configured. Please check your environment variables.');
     }
@@ -113,7 +120,7 @@ export const getGoogleOAuthUrl = (state?: string): string => {
     
     // Set required parameters
     const params = new URLSearchParams({
-      client_id: GOOGLE_OAUTH_CONFIG.clientId,
+      client_id: clientId,
       redirect_uri: redirectUri,
       response_type: 'code',
       scope: GOOGLE_OAUTH_CONFIG.scope,

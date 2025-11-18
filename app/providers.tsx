@@ -8,11 +8,12 @@ import { ThemeProvider } from "@/context/theme";
 import { LanguageProvider } from "@/context/language";
 import { setAuthCallback } from "@/lib/utils/errorHandler";
 import { logout, setCredentials } from "@/features/auth/slices/authSlice";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { initializeCrossTabSync } from "@/lib/utils/crossTabSync";
 import { Spinner } from "@/components/ui/Skeletons";
 import { storage } from "@/features/auth/utils/storage";
+import { loadRuntimeConfig } from "@/lib/runtimeConfig";
 
 declare global {
   interface Window {
@@ -22,8 +23,25 @@ declare global {
 }
 
 export default function Providers({ children }: { children: React.ReactNode }) {
+  const [googleClientId, setGoogleClientId] = useState<string | null>(null);
+
   // Handle auth state changes (for Google OAuth and other external auth)
   useEffect(() => {
+    // Load runtime config for client-only values
+    loadRuntimeConfig()
+      .then(cfg => {
+        setGoogleClientId(
+          cfg.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+          "419397388040-pho892dc9oj407o844h8af1leh9cnvpq.apps.googleusercontent.com"
+        );
+      })
+      .catch(() => {
+        setGoogleClientId(
+          process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+          "419397388040-pho892dc9oj407o844h8af1leh9cnvpq.apps.googleusercontent.com"
+        );
+      });
+
     const handleAuthStateChange = (event: CustomEvent) => {
       const { isAuthenticated, user, tokens } = event.detail;
       
@@ -199,14 +217,16 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       >
           <ThemeProvider>
             <LanguageProvider>
-              <GoogleOAuthProvider
-                clientId={
-                  process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
-                  "419397388040-pho892dc9oj407o844h8af1leh9cnvpq.apps.googleusercontent.com"
-                }
-              >
-                {children}
-            </GoogleOAuthProvider>
+              {googleClientId ? (
+                <GoogleOAuthProvider clientId={googleClientId}>
+                  {children}
+                </GoogleOAuthProvider>
+              ) : (
+                // Fallback skeleton while loading runtime config
+                <div className="min-h-screen flex items-center justify-center">
+                  <Spinner size="lg" />
+                </div>
+              )}
             </LanguageProvider>
           </ThemeProvider>
       </PersistGate>
