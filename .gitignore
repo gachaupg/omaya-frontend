@@ -51,7 +51,7 @@ docker-compose.override.yml
 .dockerignore
 
 # Environment files (keep .env.example in git)
-.env
+# .env
 .env.local
 .env.development.local
 .env.test.local

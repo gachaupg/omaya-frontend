@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
 import { getGoogleOAuthUrl } from '@/utils/googleOAuthConfig';
 import { loadRuntimeConfig } from '@/lib/runtimeConfig';
+import { getRuntimeConfigSync } from '@/lib/runtimeConfig';
 
 interface GoogleAuthButtonProps {
   onSuccess?: (userData: any) => void;
@@ -27,6 +28,10 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
     try {
       // Ensure runtime config is loaded (clientId, redirectUri)
       await loadRuntimeConfig();
+      const cfg = getRuntimeConfigSync();
+      if (!cfg.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+        toast.warn('Google Sign-In is not fully configured; attempting redirect so Google can show the error.');
+      }
 
       // Generate a random state parameter
       const state = Math.random().toString(36).substring(2, 15) + 
