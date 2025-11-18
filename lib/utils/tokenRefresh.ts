@@ -96,13 +96,21 @@ export const refreshAccessToken = async (): Promise<string | null> => {
     } catch (error: any) {
       logger.error("auth", "Token refresh failed", error);
 
+      // Check if it's a 401 (refresh token expired) or other error
+      if (error?.response?.status === 401) {
+        logger.warn("auth", "Refresh token expired or invalid, user needs to login again");
+      }
+
       // Clear invalid tokens
       storage.removeProfile();
       cookieUtils.removeCookie("access_token");
 
-      // Redirect to login
-      if (typeof window !== "undefined") {
-        window.location.href = "/auth/login";
+      // Only redirect if we're in the browser and not already on login page
+      if (typeof window !== "undefined" && !window.location.pathname.includes("/auth/login")) {
+        // Small delay to ensure cleanup happens first
+        setTimeout(() => {
+          window.location.href = "/auth/login";
+        }, 100);
       }
 
       return null;

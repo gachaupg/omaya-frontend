@@ -62,14 +62,14 @@ const P2pProfile = ({
   
 
   return (
-    <div className="w-full h-[130px] rounded-[24px] border-2 bg-white dark:bg-[#18181D] border-gray-200 dark:border-[#35353E] flex flex-col sm:flex-row justify-between items-start sm:items-center p-2 sm:p-4 box-border gap-4 sm:gap-0">
+    <div className="w-full min-h-[110px] rounded-[24px] border-2 bg-white dark:bg-[#18181D] border-gray-200 dark:border-[#35353E] flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 sm:p-5 box-border gap-4 sm:gap-0">
       {/* Left Section */}
       <div className="flex items-center gap-4 sm:gap-6">
         {/* User Info */}
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           <div className="flex items-center gap-3 sm:gap-4">
             {/* User Avatar */}
-            <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden bg-[#1D8751] dark:bg-[#1D8751] flex items-center justify-center">
               {userProfile?.photo ? (
                 <img  
                   src={userProfile.photo}
@@ -82,36 +82,48 @@ const P2pProfile = ({
                     const parent = target.parentElement;
                     if (parent && !parent.querySelector('.fallback-initials')) {
                       const initials = document.createElement('div');
-                      initials.className = 'fallback-initials text-gray-600 dark:text-gray-300 text-lg font-semibold';
+                      initials.className = 'fallback-initials text-white text-xl sm:text-2xl font-bold';
                       initials.textContent = user?.first_name?.charAt(0)?.toUpperCase() || 'U';
                       parent.appendChild(initials);
                     }
                   }}
                 />
               ) : (
-                <div className="text-gray-600 dark:text-gray-300 text-lg font-semibold">
+                <div className="text-white text-lg sm:text-xl font-semibold">
                   {user?.first_name?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-gray-900 dark:text-white text-base sm:text-lg font-medium">
-                {user?.first_name}
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-900 dark:text-white text-base sm:text-lg font-semibold">
+                {user?.first_name || 'User Name'}
               </span>
-              {/* Edit Icon (simple pencil SVG) */}
-              
+              {/* Edit Icon */}
+              <svg
+                className="w-4 h-4 sm:w-5 sm:h-5 text-[#1D8751] cursor-pointer"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                />
+              </svg>
             </div>
 
           </div>
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {/* Show Verified Merchant badge only if approved */}
             {merchantStatus?.is_merchant && merchantStatus?.status === 'approved' && (
-              <span className="flex items-center text-xs text-[#1D8751] bg-[#E0F2E8] dark:bg-[#384B41] rounded-full px-3 py-1">
+              <span className="flex items-center text-xs sm:text-sm font-medium text-[#1D8751] bg-[#E0F2E8] dark:bg-[#384B41] border border-[#1D8751] rounded-full px-3 py-1">
                 <svg
-                  className="w-3 h-3 mr-1"
+                  className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth="2"
+                  strokeWidth="2.5"
                   viewBox="0 0 24 24"
                 >
                   <path
@@ -128,12 +140,12 @@ const P2pProfile = ({
             
             {/* Show Pending badge if application is pending */}
             {merchantStatus?.status === 'pending' && (
-              <span className="flex items-center text-xs text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30 rounded-full px-3 py-1">
+              <span className="flex items-center text-xs sm:text-sm font-medium text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30 rounded-full px-3 py-1">
                 <svg
-                  className="w-3 h-3 mr-1"
+                  className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth="2"
+                  strokeWidth="2.5"
                   viewBox="0 0 24 24"
                 >
                   <path
@@ -150,7 +162,7 @@ const P2pProfile = ({
             {(!merchantStatus || (merchantStatus.status !== 'approved' && merchantStatus.status !== 'pending')) && (
               <button 
                 onClick={() => router.push("/p2p/merchant")}
-                className="bg-[#1D8751] text-white text-xs font-semibold rounded-full px-4 sm:px-5 py-2"
+                className="bg-[#1D8751] text-white text-xs sm:text-sm font-semibold rounded-full px-4 sm:px-5 py-2 hover:bg-[#176e43] transition-colors"
               >
                 {merchantStatus?.status === 'rejected' ? 'Reapply as Merchant' : 'Become Merchant PRO'}
               </button>
@@ -160,19 +172,19 @@ const P2pProfile = ({
       </div>
       {/* Right Section */}
       <div className="flex flex-col items-start sm:items-end gap-2 w-full sm:w-auto">
-        <span className="text-[#1D8751] text-base sm:text-lg font-medium">
+        <span className="text-[#1D8751] text-base sm:text-lg font-semibold">
           P2P Balance
         </span>
-        <div className="flex items-end gap-2">
-          <span className="text-gray-900 dark:text-white text-lg sm:text-xl font-semibold">
+        <div className="flex items-baseline gap-2">
+          <span className="text-gray-900 dark:text-white text-base sm:text-lg font-medium">
             {formatCurrency(balance ?? 0, "USDT")}
           </span>
-          <span className="text-gray-500 dark:text-[#7B8191] text-base sm:text-lg">
+          <span className="text-gray-500 dark:text-[#7B8191] text-base sm:text-lg font-medium">
             ≈ {formatCurrency(balance ?? 0, "USD")}
           </span>
         </div>
-        <span className="text-gray-500 dark:text-[#7B8191] text-sm">
-          Total Volume:{" "}
+        <span className="text-gray-500 dark:text-[#7B8191] text-sm sm:text-base font-medium">
+          In escrow:{" "}
           <span className="text-gray-900 dark:text-white font-medium">
             {formatCurrency(summary?.total_volume || 0, "USD")}
           </span>

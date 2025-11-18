@@ -143,6 +143,7 @@ export default function DepositForm({
   const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [confirmPayment, setConfirmPayment] = useState(false);
   
   
   // Add deposit response state
@@ -2701,7 +2702,29 @@ export default function DepositForm({
 
         
 
+        
 
+        {/* Confirmation Checkbox */}
+        {!isFirstCardSubmitted && (
+          <div className="mx-auto w-full px-2 mt-4 sm:mt-4 mb-2 sm:mb-3">
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="confirmPayment"
+                checked={confirmPayment}
+                onChange={(e) => setConfirmPayment(e.target.checked)}
+                className={`w-5 h-5 border-2 rounded cursor-pointer transition-colors ${
+                  confirmPayment
+                    ? "bg-[#1D8751] border-[#1D8751]"
+                    : "bg-transparent border-[#1D8751] dark:border-[#1D8751]"
+                }`}
+              />
+              <label htmlFor="confirmPayment" className="text-sm sm:text-base text-[#35353e] dark:text-[#ffffff] select-none cursor-pointer">
+                I confirm I sent the payment
+              </label>
+            </div>
+          </div>
+        )}
 
         {/* Submit Button for First Card */}
         {!isFirstCardSubmitted && (
@@ -2713,7 +2736,7 @@ export default function DepositForm({
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
               }`}
               onClick={handleSubmit}
-              disabled={isSubmitting || !selectedAsset || !selectedNetwork}
+              disabled={isSubmitting || !selectedAsset || !selectedNetwork || !confirmPayment}
             >
               {isSubmitting ? (
                 <div className="flex items-center gap-2">

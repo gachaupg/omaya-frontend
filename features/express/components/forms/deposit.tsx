@@ -2494,8 +2494,8 @@ export default function DepositForm({
   }, [selectedPaymentDetail]);
 
   return (
-    <div className="w-full flex flex-col dark:bg-[#18181D]">
-      <h2 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3 text-[#788099] inline-flex items-center gap-2">
+    <div className="w-full flex flex-col dark:bg-[#18181D]  ">
+      <h2 className="text-xl font-bold mb-2 text-[#35353e] dark:text-[#ffffff] inline-flex items-center gap-2">
         <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span>{" "}
         Transaction Info
       </h2>
@@ -3085,7 +3085,7 @@ export default function DepositForm({
                         />
                         <div className="flex flex-col">
                           <div className="flex items-center gap-2">
-                            <span className="text-white font-medium">
+                            <span className="text-[#35353e] dark:text-white font-medium">
                               {(
                                 selectedAsset.ticker ||
                                 selectedAsset.symbol ||
@@ -3269,7 +3269,7 @@ export default function DepositForm({
               ) : (
                 <span className="flex items-center justify-center">
                   <span className="text-base font-medium dark:text-white text-white">
-                    E
+                    Express
                   </span>
                   <img
                     className="mt-2"
@@ -3288,7 +3288,7 @@ export default function DepositForm({
             {/* Payment Method Details */}
             {selectedPaymentDetail && (
               <>
-                <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
+                <h2 className="text-xl font-bold mb-2 text-[#35353e] dark:text-[#ffffff] inline-flex items-center gap-2">
                   <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>{" "}
                   Payment Details
                 </h2>
@@ -3379,7 +3379,7 @@ export default function DepositForm({
               </>
             )}
 
-            <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
+            <h2 className="text-xl font-bold mb-2 text-[#35353e] dark:text-[#ffffff] inline-flex items-center gap-2">
               <span className="text-[#7e7e8f] dark:text-[#788099]">3-</span>{" "}
               Forex Account Details
             </h2>
@@ -3497,7 +3497,7 @@ export default function DepositForm({
       {selectedPaymentDetail && isFirstCardSubmitted && (
         <>
           {/* Payment Details Card */}
-          <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
+          <h2 className="text-xl font-bold mb-2 text-[#35353e] dark:text-[#ffffff] inline-flex items-center gap-2">
             <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>{" "}
             Payment Details
           </h2>
@@ -3589,7 +3589,7 @@ export default function DepositForm({
           {/* Transaction Code Card - below Payment Details, before Wallet Address */}
           {apiResponse && apiResponse.deposit_code && (
             <>
-              <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
+              <h2 className="text-xl font-bold mb-2 text-[#35353e] dark:text-[#ffffff] inline-flex items-center gap-2">
                 <span className="text-[#7e7e8f] dark:text-[#788099]">3-</span>{" "}
                 Transaction Code
               </h2>
@@ -3705,7 +3705,7 @@ export default function DepositForm({
           )}
 
           {/* Wallet Address Section */}
-          <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
+          <h2 className="text-xl font-bold mb-2 text-[#35353e] dark:text-[#ffffff] inline-flex items-center gap-2">
             <span className="text-[#7e7e8f] dark:text-[#788099]">4-</span>{" "}
             Wallet Address
           </h2>
@@ -3925,7 +3925,7 @@ export default function DepositForm({
               ) : (
                 <span className="flex items-center justify-center">
                   <span className="text-base font-bold dark:text-white text-white">
-                    E
+                    Express
                   </span>
                   <img
                     className="mt-2"

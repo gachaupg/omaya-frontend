@@ -13,14 +13,14 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep }) => {
           className={`flex items-center flex-shrink-0 ${
             currentStep === "transaction-info"
               ? "text-[#1D8751]"
-              : "text-[#8C8CA1]"
+              : "dark:text-[#8C8CA1] text-gray-500"
           }`}
         >
           <div
             className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-semibold ${
               currentStep === "transaction-info"
                 ? "bg-[#1D8751] text-white"
-                : "bg-[#35353E] text-[#8C8CA1]"
+                : "dark:bg-[#35353E] bg-gray-300 dark:text-[#8C8CA1] text-gray-600"
             }`}
           >
             1
@@ -31,19 +31,19 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep }) => {
           className={`w-4 sm:w-8 h-1 flex-shrink-0 ${
             currentStep === "copy-address" || currentStep === "status"
               ? "bg-[#1D8751]"
-              : "bg-[#35353E]"
+              : "dark:bg-[#35353E] bg-gray-300"
           }`}
         ></div>
         <div
           className={`flex items-center flex-shrink-0 ${
-            currentStep === "copy-address" ? "text-[#1D8751]" : "text-[#8C8CA1]"
+            currentStep === "copy-address" ? "text-[#1D8751]" : "dark:text-[#8C8CA1] text-gray-500"
           }`}
         >
           <div
             className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-semibold ${
               currentStep === "copy-address"
                 ? "bg-[#1D8751] text-white"
-                : "bg-[#35353E] text-[#8C8CA1]"
+                : "dark:bg-[#35353E] bg-gray-300 dark:text-[#8C8CA1] text-gray-600"
             }`}
           >
             2
@@ -52,12 +52,12 @@ const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep }) => {
         </div>
         <div
           className={`w-4 sm:w-8 h-1 flex-shrink-0 ${
-            currentStep === "status" ? "bg-[#1D8751]" : "bg-[#35353E]"
+            currentStep === "status" ? "bg-[#1D8751]" : "dark:bg-[#35353E] bg-gray-300"
           }`}
         ></div>
         <div
           className={`flex items-center flex-shrink-0 ${
-            currentStep === "status" ? "text-[#1D8751]" : "text-[#8C8CA1]"
+            currentStep === "status" ? "text-[#1D8751]" : "dark:text-[#8C8CA1] text-gray-500"
           }`}
         >
           <div

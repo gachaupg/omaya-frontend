@@ -157,7 +157,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
               {columns.map((col) => (
                 <th
                   key={col}
-                  className="px-4 py-3 text-sm font-medium text-gray-500 dark:text-[#8C8CA1] whitespace-nowrap"
+                  className="px-4 py-4 text-base font-bold text-gray-900 dark:text-white whitespace-nowrap"
                 >
                   {col}
                 </th>
@@ -171,57 +171,65 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                 className="border-b border-gray-200 dark:border-[#35353E] hover:bg-gray-100 dark:hover:bg-[#23232B] transition-colors relative"
               >
                 {/* Asset */}
-                <td className="px-4 py-3 flex items-center gap-2">
+                <td className="px-4 py-4 flex items-center gap-2">
                   <img
                     src={
                       trade.asset_image ||
                       "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
                     }
                     alt={trade.asset || "Asset"}
-                    className="w-6 h-6"
+                    className="w-7 h-7"
                   />
-                  <span>{trade.asset}</span>
+                  <span className="text-base font-semibold text-gray-900 dark:text-white">{trade.asset}</span>
                 </td>
                 {/* Type */}
-                <td className="px-4 py-3">
+                <td className="px-4 py-4">
                   <span
-                    className={
+                    className={`text-base font-semibold ${
                       trade.order_type === "buy"
                         ? "text-[#1D8751]"
                         : "text-[#FF4D4D]"
-                    }
+                    }`}
                   >
                     {trade.order_type}
                   </span>
                 </td>
                 {/* Limit */}
-                <td className="px-4 py-3">
-                  {formatNumber(trade.min_order_amount)} -{" "}
-                  {formatNumber(trade.max_order_amount)}
+                <td className="px-4 py-4">
+                  <span className="text-base font-medium text-gray-900 dark:text-white">
+                    {formatNumber(trade.min_order_amount)} -{" "}
+                    {formatNumber(trade.max_order_amount)}
+                  </span>
                 </td>
                 {/* Price */}
-                <td className="px-4 py-3">{trade.amount}</td>
+                <td className="px-4 py-4">
+                  <span className="text-base font-semibold text-gray-900 dark:text-white">{trade.amount}</span>
+                </td>
                 {/* Commission */}
-                <td className="px-4 py-3">{trade.commission_rate}%</td>
+                <td className="px-4 py-4">
+                  <span className="text-base font-semibold text-gray-900 dark:text-white">{trade.commission_rate}%</span>
+                </td>
                 {/* Payment */}
-                <td className="px-4 py-3 min-width-[150px]">
+                <td className="px-4 py-4 min-width-[150px]">
                   {Array.isArray(trade.payment_details)
                     ? trade.payment_details.map((p: any, i: number) => (
                       <div key={i} className="flex items-center gap-2">
                         <div>
-                           <img src={p.provider_logo || "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png"} alt=""  className="w-4 h-4 rounded"/>
+                           <img src={p.provider_logo || "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png"} alt=""  className="w-5 h-5 rounded"/>
                         </div>
-                          <div className="text-sm">{p.provider}</div>
+                          <div className="text-base font-medium text-gray-900 dark:text-white">{p.provider}</div>
                       </div>
                       ))
-                    : trade.payment_details?.[0]?.provider}
+                    : <span className="text-base font-medium text-gray-900 dark:text-white">{trade.payment_details?.[0]?.provider}</span>}
                 </td>
                 {/* Last update */}
-                <td className="px-4 py-3">{formatDate(trade.created_on)}</td>
+                <td className="px-4 py-4">
+                  <span className="text-base font-medium text-gray-900 dark:text-white">{formatDate(trade.created_on)}</span>
+                </td>
                 {/* Status */}
-                <td className="px-4 py-3">
+                <td className="px-4 py-4">
                   <span
-                  className={
+                  className={`text-base font-semibold ${
                     trade.status === "published"
                     ? "text-[#1D8751]": 
                     trade.status === "pending"
@@ -229,18 +237,18 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                     trade.status === "completed"
                     ? "text-[#1D8751]"
                     : "text-[#FF4D4D]"
-                  }
+                  }`}
                   >
                   {trade.status}
                   </span>
                 </td>
                 {/* Action */}
-                <td className="px-4 py-3 relative">
+                <td className="px-4 py-4 relative">
                   <button
-                  className="bg-[#1D8751] p-2 text-xs rounded-full"
+                  className="bg-[#1D8751] p-2.5 rounded-full hover:bg-[#176e43] transition-colors"
                   onClick={() => handleMenuToggle(idx)}
                   >
-                  <MoreVertical className="w-4 h-4 text-white" />
+                  <MoreVertical className="w-5 h-5 text-white" />
                   </button>
                   {openMenuIdx === idx && (
                   <div
@@ -251,20 +259,20 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                     {getActionOptions(trade).map((option) => (
                         <li
                         key={option}
-                        className="px-4 py-2 text-sm text-gray-500 dark:text-[#8C8CA1] hover:bg-gray-100 dark:hover:bg-[#35353E] cursor-pointer flex items-center gap-2"
+                        className="px-4 py-2.5 text-base font-medium text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-[#35353E] cursor-pointer flex items-center gap-2.5"
                         onClick={() => handleMenuAction(option, trade)}
                         >
                         {(option === "Put Offline" || option === "Publish") && (
-                          <ArrowUpCircle size={18} className="text-[#1D8751]" />
+                          <ArrowUpCircle size={20} className="text-[#1D8751]" />
                         )}
                         {option === "Edit" && (
-                          <Pencil size={18} className="text-[#1D8751]" />
+                          <Pencil size={20} className="text-[#1D8751]" />
                         )}
                         {option === "Delete" && (
-                          <XCircle size={18} className="text-[#1D8751]" />
+                          <XCircle size={20} className="text-[#1D8751]" />
                         )}
                         {option === "Duplicate" && (
-                          <Upload size={18} className="text-[#1D8751] rotate-90" />
+                          <Upload size={20} className="text-[#1D8751] rotate-90" />
                         )}
                         {option}
                         </li>
@@ -295,25 +303,25 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                     "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
                   }
                   alt={trade.asset || "Asset"}
-                  className="w-6 h-6"
+                  className="w-7 h-7"
                 />
-                <span className="font-medium text-sm">{trade.asset}</span>
+                <span className="font-bold text-base text-gray-900 dark:text-white">{trade.asset}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span
-                  className={
+                  className={`font-bold text-base ${
                     trade.order_type === "buy"
-                      ? "text-[#1D8751] font-semibold text-sm"
-                      : "text-[#FF4D4D] font-semibold text-sm"
-                  }
+                      ? "text-[#1D8751]"
+                      : "text-[#FF4D4D]"
+                  }`}
                 >
                   {trade.order_type}
                 </span>
                 <button
-                  className="bg-[#1D8751] p-1.5 rounded-full"
+                  className="bg-[#1D8751] p-2 rounded-full hover:bg-[#176e43] transition-colors"
                   onClick={() => handleMenuToggle(idx)}
                 >
-                  <MoreVertical className="w-4 h-4 text-white" />
+                  <MoreVertical className="w-5 h-5 text-white" />
                 </button>
                 {openMenuIdx === idx && (
                   <div
@@ -324,20 +332,20 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                       {getActionOptions(trade).map((option) => (
                         <li
                           key={option}
-                          className="px-4 py-2 text-sm text-gray-500 dark:text-[#8C8CA1] hover:bg-gray-100 dark:hover:bg-[#35353E] cursor-pointer flex items-center gap-2"
+                          className="px-4 py-2.5 text-base font-medium text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-[#35353E] cursor-pointer flex items-center gap-2.5"
                           onClick={() => handleMenuAction(option, trade)}
                         >
                           {(option === "Put Offline" || option === "Publish") && (
-                            <ArrowUpCircle size={18} className="text-[#1D8751]" />
+                            <ArrowUpCircle size={20} className="text-[#1D8751]" />
                           )}
                           {option === "Edit" && (
-                            <Pencil size={18} className="text-[#1D8751]" />
+                            <Pencil size={20} className="text-[#1D8751]" />
                           )}
                           {option === "Delete" && (
-                            <XCircle size={18} className="text-[#1D8751]" />
+                            <XCircle size={20} className="text-[#1D8751]" />
                           )}
                           {option === "Duplicate" && (
-                            <Upload size={18} className="text-[#1D8751] rotate-90" />
+                            <Upload size={20} className="text-[#1D8751] rotate-90" />
                           )}
                           {option}
                         </li>
@@ -351,39 +359,39 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
             {/* Price and Commission Row */}
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
-                <span className="text-xs text-gray-500 dark:text-[#8C8CA1]">Price</span>
-                <span className="text-sm font-semibold">{trade.amount}</span>
+                <span className="text-sm font-medium text-gray-500 dark:text-[#8C8CA1] mb-1">Price</span>
+                <span className="text-base font-bold text-gray-900 dark:text-white">{trade.amount}</span>
               </div>
               <div className="flex flex-col items-end">
-                <span className="text-xs text-gray-500 dark:text-[#8C8CA1]">Commission</span>
-                <span className="text-sm font-semibold">{trade.commission_rate}%</span>
+                <span className="text-sm font-medium text-gray-500 dark:text-[#8C8CA1] mb-1">Commission</span>
+                <span className="text-base font-bold text-gray-900 dark:text-white">{trade.commission_rate}%</span>
               </div>
             </div>
 
             {/* Limit Row */}
             <div className="flex flex-col pt-2 border-t border-gray-200 dark:border-[#35353E]">
-              <span className="text-xs text-gray-500 dark:text-[#8C8CA1] mb-1">Order Limit</span>
-              <span className="text-sm">
+              <span className="text-sm font-medium text-gray-500 dark:text-[#8C8CA1] mb-1">Order Limit</span>
+              <span className="text-base font-semibold text-gray-900 dark:text-white">
                 {formatNumber(trade.min_order_amount)} - {formatNumber(trade.max_order_amount)}
               </span>
             </div>
 
             {/* Payment Methods */}
             <div className="flex flex-col gap-2 pt-2 border-t border-gray-200 dark:border-[#35353E]">
-              <span className="text-xs text-gray-500 dark:text-[#8C8CA1]">Payment Methods</span>
+              <span className="text-sm font-medium text-gray-500 dark:text-[#8C8CA1]">Payment Methods</span>
               <div className="flex flex-wrap gap-2">
                 {Array.isArray(trade.payment_details) && trade.payment_details.slice(0, 2).map((p: any, i: number) => (
-                  <div key={i} className="flex items-center gap-1">
+                  <div key={i} className="flex items-center gap-1.5">
                     <img 
                       src={p.provider_logo || "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png"} 
                       alt="" 
-                      className="w-3 h-3 rounded"
+                      className="w-5 h-5 rounded"
                     />
-                    <span className="text-xs">{p.provider}</span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{p.provider}</span>
                   </div>
                 ))}
                 {Array.isArray(trade.payment_details) && trade.payment_details.length > 2 && (
-                  <span className="text-xs text-gray-500 dark:text-[#8C8CA1]">
+                  <span className="text-sm font-medium text-gray-500 dark:text-[#8C8CA1]">
                     +{trade.payment_details.length - 2} more
                   </span>
                 )}
@@ -393,24 +401,24 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
             {/* Status and Last Update Row */}
             <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-[#35353E]">
               <div className="flex flex-col">
-                <span className="text-xs text-gray-500 dark:text-[#8C8CA1]">Status</span>
+                <span className="text-sm font-medium text-gray-500 dark:text-[#8C8CA1] mb-1">Status</span>
                 <span
-                  className={
+                  className={`text-base font-bold ${
                     trade.status === "published"
-                      ? "text-[#1D8751] text-sm font-semibold"
+                      ? "text-[#1D8751]"
                       : trade.status === "pending"
-                      ? "text-[#FFB800] text-sm font-semibold"
+                      ? "text-[#FFB800]"
                       : trade.status === "completed"
-                      ? "text-[#1D8751] text-sm font-semibold"
-                      : "text-[#FF4D4D] text-sm font-semibold"
-                  }
+                      ? "text-[#1D8751]"
+                      : "text-[#FF4D4D]"
+                  }`}
                 >
                   {trade.status}
                 </span>
               </div>
               <div className="flex flex-col items-end">
-                <span className="text-xs text-gray-500 dark:text-[#8C8CA1]">Last Update</span>
-                <span className="text-xs">{formatDate(trade.created_on)}</span>
+                <span className="text-sm font-medium text-gray-500 dark:text-[#8C8CA1] mb-1">Last Update</span>
+                <span className="text-sm font-semibold text-gray-900 dark:text-white">{formatDate(trade.created_on)}</span>
               </div>
             </div>
           </div>
@@ -423,7 +431,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
           <button
             onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
             disabled={currentPage === 1}
-            className="px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] bg-gray-100 dark:bg-[#23232B] text-gray-500 dark:text-[#8C8CA1] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 rounded-md text-base font-semibold border border-gray-200 dark:border-[#35353E] bg-gray-100 dark:bg-[#23232B] text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors"
           >
             &lt;
           </button>
@@ -431,11 +439,11 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
             <button
               key={i}
               onClick={() => setCurrentPage(i + 1)}
-              className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
+              className={`px-4 py-2 rounded-md text-base font-semibold border border-gray-200 dark:border-[#35353E] ${
                 currentPage === i + 1
                   ? "bg-[#1D8751] text-white"
-                  : "bg-gray-100 dark:bg-[#23232B] text-gray-500 dark:text-[#8C8CA1] hover:bg-gray-200 dark:hover:bg-[#35353E]"
-              }`}
+                  : "bg-gray-100 dark:bg-[#23232B] text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-[#35353E]"
+              } transition-colors`}
             >
               {i + 1}
             </button>
@@ -443,7 +451,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
           <button
             onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
             disabled={currentPage === totalPages}
-            className="px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] bg-gray-100 dark:bg-[#23232B] text-gray-500 dark:text-[#8C8CA1] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 rounded-md text-base font-semibold border border-gray-200 dark:border-[#35353E] bg-gray-100 dark:bg-[#23232B] text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors"
           >
             &gt;
           </button>

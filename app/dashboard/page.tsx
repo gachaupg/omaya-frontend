@@ -46,7 +46,7 @@ export default function DashboardPage() {
   }, [isVerified, loading, error, dispatch]);
 
   return (
-    <div className="pt-0 mb-4 flex flex-col gap-4 rounded-lg w-full">
+    <div className="pt-0 mb-4 flex flex-col gap-4 xl:max-w-[1000px] mx-auto rounded-lg w-full">
       <UserCard />
       <PriceCards />
 

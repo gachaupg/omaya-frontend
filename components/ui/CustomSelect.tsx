@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-
+// @ts-ignore
 interface Option {
   value: string;
   label: string;
@@ -23,6 +23,11 @@ interface CustomSelectProps {
   loading?: boolean;
   loadingText?: string;
   emptyText?: string;
+  /**
+   * Hides the currently selected label inside the trigger button.
+   * Useful when the label is rendered elsewhere.
+   */
+  hideSelectedLabel?: boolean;
 }
 
 const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -38,6 +43,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   loading = false,
   loadingText = "Loading...",
   emptyText = "No options available",
+  hideSelectedLabel = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -87,8 +93,8 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
 
     const rect = triggerElement.getBoundingClientRect();
     setDropdownStyles({
-      top: rect.bottom + window.scrollY + 4,
-      left: rect.left + window.scrollX,
+      top: rect.bottom + 4,
+      left: rect.left,
       width: rect.width,
     });
   };
@@ -164,7 +170,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         className={`
           w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 rounded-2xl border text-sm sm:text-base
           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
-          transition-colors duration-200
+          transition-colors duration-200 min-w-0
           ${disabled || loading
             ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed border-gray-300 dark:border-gray-600"
             : "bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff] border-[#A2A4A9FF] dark:border-[#35353E] hover:border-blue-400 dark:hover:border-blue-400 cursor-pointer"
@@ -175,9 +181,10 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         aria-haspopup="listbox"
         aria-controls={dropdownId}
         role="combobox"
+        title={selectedOption ? displayValue : undefined}
       >
-        <div className="flex items-center justify-between min-w-0 w-full">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 overflow-hidden">
+          <div className="flex items-center justify-between min-w-0 w-full">
+          <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
             {selectedLogo && !loading && (
               <img
                 src={selectedLogo}
@@ -188,14 +195,21 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                 }}
               />
             )}
-            <span className={`truncate block min-w-0 ${!selectedOption ? "text-gray-500 dark:text-gray-400" : ""}`}>
-              {loading ? loadingText : displayValue}
-            </span>
+            {!hideSelectedLabel && (
+              <span
+                className={`truncate min-w-0 ${
+                  !selectedOption ? "text-gray-500 dark:text-gray-400" : ""
+                }`}
+                title={selectedOption ? displayValue : undefined}
+              >
+                {loading ? loadingText : displayValue}
+              </span>
+            )}
           </div>
           <svg
-            className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-200 ${
+            className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-200 flex-shrink-0 ${
               isOpen ? "rotate-180" : ""
-            } ${disabled || loading ? "text-gray-400" : "text-gray-500"}`}
+            } ${disabled || loading ? "text-gray-400 dark:text-gray-500" : "text-gray-600 dark:text-gray-400"}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -218,14 +232,14 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
           <div
             id={dropdownId}
             ref={dropdownContentRef}
-            className="z-[1200] bg-white dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg max-h-[70vh] sm:max-h-60 overflow-hidden"
+            className="z-[9999] bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl max-h-[200px] sm:max-h-[180px] overflow-hidden min-w-[200px]"
             role="listbox"
             style={{
-              position: "absolute",
+              position: "fixed",
               top: dropdownStyles.top,
               left: dropdownStyles.left,
-              width: dropdownStyles.width,
-              minWidth: dropdownStyles.width,
+              width: Math.max(dropdownStyles.width, 200),
+              minWidth: Math.max(dropdownStyles.width, 200),
             }}
           >
             {/* Search Input */}
@@ -243,23 +257,25 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
             )}
 
             {/* Options List */}
-            <div className="max-h-[50vh] sm:max-h-48 overflow-y-auto p-1">
+            <div className="max-h-[180px] sm:max-h-[160px] overflow-y-auto p-1">
               {filteredOptions.length === 0 ? (
                 <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
                   {searchTerm ? "No matching options" : emptyText}
                 </div>
               ) : (
-                filteredOptions.map((option) => (
+                filteredOptions.map((option) => {
+                  const isSelected = value === option.value;
+                  return (
                   <button
                     key={option.value}
                     type="button"
                     onClick={() => handleOptionClick(option.value)}
                     disabled={option.disabled}
                     className={`
-                    w-full text-left px-3 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm transition-colors duration-150
+                    w-full text-left px-3 sm:px-4 py-1.5 sm:py-2 text-sm transition-colors duration-150
                     hover:bg-blue-50 dark:hover:bg-blue-900/20
                     focus:outline-none focus:bg-blue-50 dark:focus:bg-blue-900/20
-                    ${value === option.value
+                    ${isSelected
                       ? "bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100 font-medium"
                       : "text-gray-900 dark:text-white"
                     }
@@ -269,7 +285,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                     }
                     ${optionClassName}
                   `}
-                    style={{ minHeight: "40px", marginBottom: "2px" }}
+                    style={{ minHeight: "32px", marginBottom: "1px" }}
                     role="option"
                     aria-selected={value === option.value}
                   >
@@ -287,7 +303,8 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                       <span className="truncate min-w-0 flex-1 text-left">{option.label}</span>
                     </div>
                   </button>
-                ))
+                  );
+                })
               )}
             </div>
           </div>,

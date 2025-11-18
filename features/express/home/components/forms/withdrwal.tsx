@@ -252,37 +252,45 @@ export default function WithdrawalForm({
     swapAssetsErrorState
   );
 
-  // Add user payment details state
+  // Add user payment details state - check both slices
   const { userPaymentDetails, loading: userPaymentLoading } = useSelector(
     (state: any) => state.payment
   );
+  
+  // Also check paymentMethods slice (some components use this)
+  const { userPaymentDetails: userPaymentDetailsFromP2P, userDetailsLoading: userDetailsLoadingP2P } = useSelector(
+    (state: any) => state.paymentMethods || {}
+  );
+  
+  // Use whichever has data, prefer payment slice
+  const effectiveUserPaymentDetailsFromRedux = userPaymentDetails?.length > 0 
+    ? userPaymentDetails 
+    : (userPaymentDetailsFromP2P?.length > 0 ? userPaymentDetailsFromP2P : []);
 
-  // Process payment methods data based on API structure - same logic as ExchangeForm
+  // Process payment methods data based on API structure - prioritize public payment methods
   const processedPaymentMethods = useMemo(() => {
-    if (isHomePage) {
-      // Handle new API structure for public payment methods
-      // First check for providers array (new structure)
-      if (Array.isArray(publicPaymentMethods?.data?.providers)) {
-        return publicPaymentMethods.data.providers;
-      }
-      // Check for payment_methods array (older structure)
-      if (Array.isArray(publicPaymentMethods?.data?.payment_methods)) {
-        return publicPaymentMethods.data.payment_methods;
-      }
-      // Check if publicPaymentMethods itself is an array (fallback)
-      if (Array.isArray(publicPaymentMethods)) {
-        return publicPaymentMethods;
-      }
-      return []; // Return empty array if no valid data
+    // Always try to use public payment methods first (they have logos)
+    // Handle new API structure for public payment methods
+    if (Array.isArray(publicPaymentMethods?.data?.providers)) {
+      return publicPaymentMethods.data.providers;
     }
-    // For authenticated users, use admin payment details
+    // Check for payment_methods array (older structure)
+    if (Array.isArray(publicPaymentMethods?.data?.payment_methods)) {
+      return publicPaymentMethods.data.payment_methods;
+    }
+    // Check if publicPaymentMethods itself is an array (fallback)
+    if (Array.isArray(publicPaymentMethods)) {
+      return publicPaymentMethods;
+    }
+    
+    // Fallback to admin payment details if public methods not available
     const adminArray = Array.isArray(adminPaymentDetails)
       ? adminPaymentDetails
       : Array.isArray(adminPaymentDetails?.data)
         ? adminPaymentDetails.data
         : [];
     return adminArray;
-  }, [isHomePage, publicPaymentMethods, adminPaymentDetails]);
+  }, [publicPaymentMethods, adminPaymentDetails]);
 
   // Extract payment method names based on the API structure - same as ExchangeForm
   const getPaymentMethodName = (item: any) => {
@@ -301,10 +309,61 @@ export default function WithdrawalForm({
     return null;
   };
 
+  // Normalize payment method names to handle mismatches between user details and API
+  const normalizePaymentMethodName = (methodName: string | null | undefined): string | null => {
+    if (!methodName || typeof methodName !== 'string') return null;
+    
+    // Map variations to standard method names
+    const methodMap: Record<string, string> = {
+      'Money_Transfer': 'Money_Transfer', // Keep as is, will be filtered if not in API
+      'money_transfer': 'Money_Transfer',
+      'Money Transfer': 'Money_Transfer',
+      'money transfer': 'Money_Transfer',
+    };
+    
+    const normalized = methodMap[methodName] || methodName;
+    return normalized;
+  };
+
   // Get unique payment methods from processed data
   const uniquePaymentMethods = Array.from(
     new Set((processedPaymentMethods || []).map(getPaymentMethodName).filter(Boolean))
   ).filter(method => method && typeof method === 'string' && method.trim().length > 0) as string[];
+
+  // Get available payment method names from API (for comparison with user payment details)
+  const availablePaymentMethodNames = useMemo(() => {
+    const methods = new Set<string>();
+    
+    // Extract from public payment methods API response
+    if (Array.isArray(publicPaymentMethods?.data?.providers)) {
+      publicPaymentMethods.data.providers.forEach((provider: any) => {
+        const methodName = getPaymentMethodName(provider);
+        if (methodName) {
+          methods.add(methodName);
+        }
+      });
+    }
+    
+    // Also include from processed payment methods
+    uniquePaymentMethods.forEach(method => {
+      if (method) methods.add(method);
+    });
+    
+    const methodList: string[] = Array.from(methods);
+    
+    // Debug: Log comparison between user payment details and API methods
+    if (userPaymentDetails && Array.isArray(userPaymentDetails) && userPaymentDetails.length > 0) {
+      const userMethodNames = new Set<string>(
+        userPaymentDetails
+          .map((detail: any) => normalizePaymentMethodName(detail?.payment_method_name))
+          .filter((m): m is string => m !== null && typeof m === 'string')
+      );
+      
+      const userMethodsArray: string[] = Array.from(userMethodNames);
+    }
+    
+    return methodList;
+  }, [publicPaymentMethods, uniquePaymentMethods, userPaymentDetails]);
 
   // Add "Bank" as a default option if not already present
   const validPaymentMethods = uniquePaymentMethods.filter(method => 
@@ -352,31 +411,23 @@ export default function WithdrawalForm({
     }
   }, [adminPaymentDetails]);
 
+  // Get full Redux payment state at component level (not in useEffect)
+  const fullPaymentState = useSelector((state: any) => state.payment);
+  
   useEffect(() => {
     if (userPaymentDetails && userPaymentDetails.length > 0) {
       userPaymentMethodsRef.current = userPaymentDetails;
     }
-  }, [userPaymentDetails]);
+  }, [userPaymentDetails, userPaymentLoading, fullPaymentState]);
   
   // Always use ref data - completely stable, never changes unless ref is updated
   const effectivePaymentMethods = paymentMethodsRef.current;
   const effectiveUserPaymentMethods = userPaymentMethodsRef.current;
 
-  // Fetch public payment methods when on home page
+  // Fetch public payment methods for withdrawal (always fetch, not just for home page)
   useEffect(() => {
-    if (isHomePage) {
-      console.log("🚀 WithdrawalForm: Fetching public payment methods for home page");
-      dispatch(fetchPublicPaymentMethods())
-        .unwrap()
-        .then((result) => {
-          console.log("✅ WithdrawalForm: Public payment methods fetched successfully:", result);
-        })
-        .catch((error) => {
-          console.error("❌ WithdrawalForm: Failed to fetch public payment methods:", error);
-        });
-      return;
-    }
-  }, [dispatch, isHomePage]);
+    dispatch(fetchPublicPaymentMethods());
+  }, [dispatch]);
 
   // Initialize refs with cached data IMMEDIATELY on mount (runs only once)
   useEffect(() => {
@@ -476,6 +527,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
 
   const [payAmount, setPayAmount] = useState(100);
   const [payBank, setPayBank] = useState("");
+  const [selectedProviderData, setSelectedProviderData] = useState<any>(null); // Store the full provider data
   const [getAmount, setGetAmount] = useState(0);
   const [payAmountInput, setPayAmountInput] = useState("100");
   const [getAmountInput, setGetAmountInput] = useState("0");
@@ -631,13 +683,6 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
   const filteredUserPaymentDetails = payBank
     ? (userPaymentMethodsDisplay.displayData || effectiveUserPaymentMethods || []).filter(
         (detail: any) => {
-          // Debug logging
-          console.log("Filtering user payment details:");
-          console.log("Selected provider (payBank):", payBank);
-          console.log("User detail:", detail);
-          console.log("User payment_provider_name:", detail.payment_provider_name);
-          console.log("Match result:", detail.payment_provider_name === payBank);
-          
           // Match user payment provider name with selected admin provider name
           return detail.payment_provider_name === payBank;
         }
@@ -650,33 +695,79 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
       return [];
     }
     
-    const sourceData = userPaymentMethodsDisplay.displayData || effectiveUserPaymentMethods || [];
+    // Try multiple sources for user payment details
+    // Handle different data structures (array, object with data property, etc.)
+    // Use effectiveUserPaymentDetailsFromRedux which checks both slices
+    let rawUserDetails = effectiveUserPaymentDetailsFromRedux.length > 0 
+      ? effectiveUserPaymentDetailsFromRedux 
+      : userPaymentDetails;
+      
+    if (rawUserDetails && typeof rawUserDetails === 'object' && !Array.isArray(rawUserDetails)) {
+      // Check if data is nested in a data property
+      rawUserDetails = (rawUserDetails as any)?.data || (rawUserDetails as any)?.payment_details || rawUserDetails;
+    }
     
-    console.log("Enhanced filtering debug:");
-    console.log("Selected provider (payBank):", payBank);
-    console.log("Source data length:", sourceData.length);
+    const sourceData = userPaymentMethodsDisplay.displayData || 
+                      effectiveUserPaymentMethods || 
+                      (Array.isArray(rawUserDetails) ? rawUserDetails : []) ||
+                      [];
     
     const filtered = sourceData.filter((detail: any) => {
         // Match user payment provider name with selected admin provider name
-        const matchesProvider = detail.payment_provider_name === payBank;
+        // Try multiple matching strategies to ensure we catch all cases
+        // Also handle format differences (e.g., "Equity Bank" vs "Equity Bank - Bank")
+        const normalizeProviderName = (name: string | null | undefined): string => {
+          if (!name) return "";
+          // Remove " - Method" suffix if present
+          return name.includes(" - ") ? name.split(" - ")[0].trim() : name.trim();
+        };
         
-        console.log("User detail:", detail);
-        console.log("User payment_provider_name:", detail.payment_provider_name);
-        console.log("Selected payBank:", payBank);
-        console.log("Match result:", matchesProvider);
+        // Get the provider field from selected provider (e.g., "Equity Bank" from API)
+        // This is the key field to compare with user payment_provider_name
+        const selectedProviderField = selectedProviderData?.provider || 
+                                      normalizeProviderName(payBank);
+        
+        const normalizedPayBank = normalizeProviderName(payBank);
+        const normalizedDetailProvider = normalizeProviderName(detail.payment_provider_name);
+        const normalizedDetailName = normalizeProviderName(detail.provider_name);
+        const normalizedDetailPaymentProvider = normalizeProviderName(detail.payment_provider);
+        const normalizedSelectedProvider = normalizeProviderName(selectedProviderField);
+        
+        // Primary comparison: API provider.provider field with user payment_provider_name
+        const providerMatch1 = detail.payment_provider_name === selectedProviderField ||
+                               normalizedDetailProvider === normalizedSelectedProvider ||
+                               normalizedDetailProvider === normalizedPayBank ||
+                               detail.payment_provider_name === payBank;
+        
+        // Secondary comparisons
+        const providerMatch2 = normalizedDetailName === normalizedSelectedProvider ||
+                               normalizedDetailName === normalizedPayBank ||
+                               detail.provider_name === payBank;
+        
+        const providerMatch3 = normalizedDetailPaymentProvider === normalizedSelectedProvider ||
+                               normalizedDetailPaymentProvider === normalizedPayBank ||
+          detail.payment_provider === payBank;
+        
+        const matchesProvider = providerMatch1 || providerMatch2 || providerMatch3;
+        
+        // Compare payment_method_name from user details with available methods from API
+        const userPaymentMethodName = normalizePaymentMethodName(detail.payment_method_name);
+        const hasValidPaymentMethod = userPaymentMethodName 
+          ? availablePaymentMethodNames.includes(userPaymentMethodName)
+          : false;
       
       // If FXP is selected, only show approved payment methods
       if (selectedAsset && isForexAsset(selectedAsset)) {
         const isApproved = detail.status?.toLowerCase() === 'approved';
-        return matchesProvider && isApproved;
+        return matchesProvider && isApproved && hasValidPaymentMethod;
       }
       
-      return matchesProvider;
+      // Only return payment details that match provider AND have a valid payment method name
+      return matchesProvider && hasValidPaymentMethod;
     });
     
-    console.log("Filtered results:", filtered);
     return filtered;
-  }, [payBank, userPaymentMethodsDisplay.displayData, effectiveUserPaymentMethods, selectedAsset]);
+  }, [payBank, userPaymentMethodsDisplay.displayData, effectiveUserPaymentMethods, selectedAsset, availablePaymentMethodNames, userPaymentDetails, selectedProviderData]);
 
   // Auto-select first account when accounts are available for selected payment type
   useEffect(() => {
@@ -873,8 +964,8 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
 
   // Fetch user payment details
   useEffect(() => {
-    // Skip API calls on home page
-    if (isHomePage) {
+    // Only fetch if user is authenticated (needed for both home page and regular page)
+    if (!isAuthenticated) {
       return;
     }
     
@@ -886,9 +977,20 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
         if (data && data.length > 0) {
           userPaymentMethodsRef.current = data;
         }
+        
         // If no payment methods in cache, force refresh
         if (!data || (Array.isArray(data) && data.length === 0)) {
-          return dispatch(fetchUserPaymentDetails(true)).unwrap();
+          return dispatch(fetchUserPaymentDetails(true))
+            .unwrap()
+            .then((freshData) => {
+              if (freshData && freshData.length > 0) {
+                userPaymentMethodsRef.current = freshData;
+              }
+              return freshData;
+            })
+            .catch((freshError: unknown) => {
+              throw freshError;
+            });
         }
         return data;
       })
@@ -904,11 +1006,11 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
             return data;
           })
           .catch((refreshError: unknown) => {
-            console.error('❌ Force refresh also failed:', refreshError);
             // Don't show toast error - the UI will handle the loading/error state gracefully
+            throw refreshError;
           });
       });
-  }, [dispatch, isHomePage]);
+  }, [dispatch, isHomePage, isAuthenticated]);
 
   // Fetch swap assets
   useEffect(() => {
@@ -3010,7 +3112,9 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                         />
                         <div className="flex flex-col">
                           <div className="flex items-center gap-2">
-                            <span className="text-white font-semibold">
+                            <span className={`font-semibold ${
+                              isDark ? "text-white" : "text-[#111827]"
+                            }`}>
                               {(
                                 selectedAsset.ticker ||
                                 selectedAsset.symbol ||
@@ -3644,37 +3748,59 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
             </div>
 
             {/* Payment Method Section */}
-            <div className="flex-1 pl-4">
+            <div className="flex-1 pl-4 relative z-0">
               <label className="block text-[15px] text-[#475569] dark:text-[#9CA3AF] mb-2 font-semibold">
                 Payment Method
               </label>
-              <div className="relative">
+              <div className="relative z-0">
                 {(() => {
-                  const providerNames = Array.from(
-                    new Set(
-                      (adminWalletListDisplay.displayData || []).map(
-                        (wallet: any) => wallet?.admin_payment_detail?.provider_name
+                  // Use public payment methods if available (they have logos)
+                  let paymentMethodOptions: Array<{ value: string; label: string; logo?: string }> = [];
+                  
+                  if (Array.isArray(publicPaymentMethods?.data?.providers) && publicPaymentMethods.data.providers.length > 0) {
+                    // Use public payment methods with logos
+                    paymentMethodOptions = publicPaymentMethods.data.providers.map((provider: any) => ({
+                      value: provider.provider_name || provider.payment_provider_name || "",
+                      label: provider.provider_name || provider.payment_provider_name || "Unknown",
+                      logo: provider.logo || provider.provider_logo || undefined,
+                    })).filter((opt: any) => opt.value && opt.value.trim());
+                  } else {
+                    // Fallback to admin wallet list
+                    const providerNames = Array.from(
+                      new Set(
+                        (adminWalletListDisplay.displayData || []).map(
+                          (wallet: any) => wallet?.admin_payment_detail?.provider_name
+                        )
                       )
-                    )
-                  ).filter((type) => Boolean(type && type.trim())) as string[];
+                    ).filter((type) => Boolean(type && type.trim())) as string[];
 
-                  const optionProviders =
-                    providerNames.length > 0 ? providerNames : fallbackProviderNames;
+                    paymentMethodOptions = providerNames.map((paymentType: string) => {
+                      const adminDetail = adminWalletListDisplay.displayData?.find(
+                        (wallet: any) =>
+                          wallet.admin_payment_detail?.provider_name === paymentType
+                      )?.admin_payment_detail;
+
+                      return {
+                        value: paymentType,
+                        label: adminDetail?.provider_name || paymentType,
+                        logo: adminDetail?.provider_logo || undefined,
+                      };
+                    });
+                  }
+
+                  // Use fallback if no options available
+                  if (paymentMethodOptions.length === 0) {
+                    paymentMethodOptions = fallbackProviderNames.map((name: string) => ({
+                      value: name,
+                      label: name,
+                    }));
+                  }
+
+                  const isLoading = publicMethodsLoading || adminWalletListDisplay.isLoading;
 
                   return (
                     <CustomSelect
-                      options={optionProviders.map((paymentType: string) => {
-                        const adminDetail = adminWalletListDisplay.displayData?.find(
-                          (wallet: any) =>
-                            wallet.admin_payment_detail?.provider_name === paymentType
-                        )?.admin_payment_detail;
-
-                        return {
-                          value: paymentType,
-                          label: adminDetail?.provider_name || paymentType,
-                          logo: adminDetail?.provider_logo || undefined,
-                        };
-                      })}
+                      options={paymentMethodOptions}
                       value={payBank}
                       className={`w-full ${
                         paymentMethodError ? "border-red-500 dark:border-red-500" : ""
@@ -3683,28 +3809,45 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                         isDark ? "bg-transparent text-white border-[#39394A]" : "bg-white text-[#1F2937] border-[#CBD5F5]"
                       }`}
                       onChange={(value) => {
-                        const selectedWallet = adminWalletListDisplay.displayData?.find(
-                          (wallet: any) =>
-                            wallet.admin_payment_detail?.provider_name === value
-                        );
+                        // Find the selected provider from public payment methods or admin wallet list
+                        let selectedWallet = null;
+                        let selectedProvider = null;
 
-                        setPayBank(value);
+                        // First try to find in public payment methods
+                        if (Array.isArray(publicPaymentMethods?.data?.providers)) {
+                          selectedProvider = publicPaymentMethods.data.providers.find(
+                            (provider: any) => 
+                              (provider.provider_name || provider.payment_provider_name) === value
+                          );
+                        }
+
+                        // If not found in public methods, try admin wallet list
+                        if (!selectedProvider) {
+                          selectedWallet = adminWalletListDisplay.displayData?.find(
+                            (wallet: any) =>
+                              wallet.admin_payment_detail?.provider_name === value
+                          );
+                        }
+
+                        // Keep the full value for dropdown matching, but store provider data for filtering
+                        setPayBank(value); // Keep full value for dropdown to work
+                        setSelectedProviderData(selectedProvider); // Store full provider data for comparison
                         setSelectedPaymentDetail(
-                          selectedWallet?.admin_payment_detail || null
+                          selectedWallet?.admin_payment_detail || selectedProvider || null
                         );
 
                         setSelectedPaymentDetails([]);
                         setPaymentMethodError(null);
                       }}
                       placeholder={
-                        adminWalletListDisplay.isLoading
+                        isLoading
                           ? "Loading payment methods..."
-                          : providerNames.length === 0
-                          ? "No payment methods available"
+                          : paymentMethodOptions.length === 0
+                          ? "Select Payment Method"
                           : "Select Payment Method"
                       }
-                      disabled={adminWalletListDisplay.isLoading}
-                      loading={adminWalletListDisplay.isLoading}
+                      disabled={isLoading}
+                      loading={isLoading}
                       loadingText="Loading payment methods..."
                       emptyText="No payment methods available"
                       searchable={true}
@@ -3717,95 +3860,150 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
 
               {/* Registered Account Section */}
               {payBank && (
-                <div className="mt-3">
+                <div className="mt-3 w-full relative z-10">
                   <label className="block text-[17px] text-[#475569] dark:text-[#9CA3AF] mb-2 font-semibold">
                     Registered Account
                   </label>
-                  {enhancedFilteredUserPaymentDetails.length > 0 ? (
-                    <div className="relative">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          {enhancedFilteredUserPaymentDetails.length} account(s) found
-                        </span>
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            try {
-                              await dispatch(fetchUserPaymentDetails(true)).unwrap();
-                              showToast.success("Payment details refreshed!");
-                            } catch (error) {
-                              showToast.error("Failed to refresh payment details");
-                            }
-                          }}
-                          className="text-xs text-[#1D8751] hover:text-[#166b3e] underline"
-                        >
-                          Refresh
-                        </button>
-                      </div>
-                      <CustomSelect
-                        options={(enhancedFilteredUserPaymentDetails || []).map(
-                          (detail: UserPaymentDetail) => {
-                           
-                            const adminDetail = adminWalletListDisplay.displayData?.find(
-                              (wallet: any) => wallet.admin_payment_detail?.provider_name === detail.payment_provider_name
-                            )?.admin_payment_detail;
-                            
-                            return {
-                              value: detail.id.toString(),
-                              label: `${adminDetail?.provider_name || detail.payment_provider_name || "Unknown Provider"} - ${detail.account_name || detail.account_number} (${detail.account_number || detail.wallet_address || 'No Account'})`,
-                              logo: detail.provider_logo || undefined, // Only use user's logo, not admin logo
-                            };
-                          }
-                        )}
-                        value={
-                          selectedPaymentDetails.length > 0
-                            ? selectedPaymentDetails[0].id.toString()
-                            : ""
-                        }
-                        onChange={(value) => {
-                          const selectedId = Number(value);
-                          const selectedDetail =
-                            enhancedFilteredUserPaymentDetails.find(
-                              (detail: UserPaymentDetail) =>
-                                detail.id === selectedId
-                            );
-                          if (selectedDetail) {
-                            setSelectedPaymentDetails([selectedDetail]);
-                            // Clear payment method error when selecting an account
-                            setPaymentMethodError(null);
-                          }
-                        }}
-                        placeholder={
-                          userPaymentMethodsDisplay.isLoading
-                            ? "Loading accounts..."
-                            : "Select Registered Account"
-                        }
-                        disabled={userPaymentMethodsDisplay.isLoading}
-                        loading={userPaymentMethodsDisplay.isLoading}
-                        loadingText="Loading accounts..."
-                        emptyText="No registered accounts available"
-                        searchable={true}
-                        className={`w-full ${
-                          paymentMethodError 
-                            ? "border-red-500 dark:border-red-500" 
-                            : ""
-                        }`}
-                        triggerClassName={`px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border rounded-xl ${
-                          isDark ? "bg-transparent text-white border-[#39394A]" : "bg-white text-[#1F2937] border-[#CBD5F5]"
-                        }`}
-                      />
-                    </div>
-                  ) : (
-                    <p className="text-[#F79330] text-sm">
-                      <button
-                        type="button"
-                        onClick={() => setIsPaymentModalOpen(true)}
-                        className="hover:underline cursor-pointer"
-                      >
-                        Don't have an account? Register Now
-                      </button>
-                    </p>
-                  )}
+                  {(() => {
+                    // Check if user has ANY accounts at all (not just filtered ones)
+                    const allUserAccounts = userPaymentMethodsDisplay.displayData || effectiveUserPaymentMethods || [];
+                    const hasAnyAccounts = allUserAccounts.length > 0;
+                    const hasFilteredAccounts = enhancedFilteredUserPaymentDetails.length > 0;
+
+                    if (hasFilteredAccounts) {
+                      return (
+                        <div className="relative w-full z-10">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">
+                              {enhancedFilteredUserPaymentDetails.length} account(s) found
+                            </span>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  await dispatch(fetchUserPaymentDetails(true)).unwrap();
+                                  showToast.success("Payment details refreshed!");
+                                } catch (error) {
+                                  showToast.error("Failed to refresh payment details");
+                                }
+                              }}
+                              className="text-xs text-[#1D8751] hover:text-[#166b3e] underline"
+                            >
+                              Refresh
+                            </button>
+                          </div>
+                          <div className="w-full min-w-0 relative z-[100] isolate">
+                            <CustomSelect
+                              options={(enhancedFilteredUserPaymentDetails || []).map(
+                                (detail: UserPaymentDetail) => {
+                                  // Try to get provider info from public payment methods first
+                                  let providerName = detail.payment_provider_name || detail.provider_name || "Unknown Provider";
+                                  let providerLogo = detail.provider_logo;
+                                  
+                                  if (Array.isArray(publicPaymentMethods?.data?.providers)) {
+                                    const publicProvider = publicPaymentMethods.data.providers.find(
+                                      (provider: any) => 
+                                        (provider.provider_name || provider.payment_provider_name) === detail.payment_provider_name ||
+                                        (provider.provider_name || provider.payment_provider_name) === detail.provider_name
+                                    );
+                                    if (publicProvider) {
+                                      providerName = publicProvider.provider_name || publicProvider.payment_provider_name || providerName;
+                                      providerLogo = publicProvider.logo || publicProvider.provider_logo || providerLogo;
+                                    }
+                                  }
+                                  
+                                  // Fallback to admin detail if not found in public methods
+                                  if (!providerLogo) {
+                                    const adminDetail = adminWalletListDisplay.displayData?.find(
+                                      (wallet: any) => wallet.admin_payment_detail?.provider_name === detail.payment_provider_name
+                                    )?.admin_payment_detail;
+                                    if (adminDetail) {
+                                      providerName = adminDetail.provider_name || providerName;
+                                      providerLogo = adminDetail.provider_logo || providerLogo;
+                                    }
+                                  }
+                                  
+                                  // Display only account name and account number
+                                  const accountName = detail.account_name || 'No Name';
+                                  const accountNumber = detail.account_number || detail.wallet_address || 'No Account';
+                                  const displayLabel = `${accountName} (${accountNumber})`;
+                                  
+                                  return {
+                                    value: detail.id.toString(),
+                                    label: displayLabel,
+                                    logo: providerLogo || undefined,
+                                  };
+                                }
+                              )}
+                              value={
+                                selectedPaymentDetails.length > 0
+                                  ? selectedPaymentDetails[0].id.toString()
+                                  : ""
+                              }
+                              onChange={(value) => {
+                                const selectedId = Number(value);
+                                const selectedDetail =
+                                  enhancedFilteredUserPaymentDetails.find(
+                                    (detail: UserPaymentDetail) =>
+                                      detail.id === selectedId
+                                  );
+                                if (selectedDetail) {
+                                  setSelectedPaymentDetails([selectedDetail]);
+                                  // Clear payment method error when selecting an account
+                                  setPaymentMethodError(null);
+                                }
+                              }}
+                              placeholder={
+                                userPaymentMethodsDisplay.isLoading
+                                  ? "Loading accounts..."
+                                  : "Select Registered Account"
+                              }
+                              disabled={userPaymentMethodsDisplay.isLoading}
+                              loading={userPaymentMethodsDisplay.isLoading}
+                              loadingText="Loading accounts..."
+                              emptyText="No registered accounts available"
+                              searchable={true}
+                              className={`w-full min-w-0 ${
+                                paymentMethodError 
+                                  ? "border-red-500 dark:border-red-500" 
+                                  : ""
+                              }`}
+                              triggerClassName={`px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border rounded-xl w-full min-w-0 ${
+                                isDark ? "bg-transparent text-white border-[#39394A]" : "bg-white text-[#1F2937] border-[#CBD5F5]"
+                              }`}
+                            />
+                          </div>
+                        </div>
+                      );
+                    } else if (hasAnyAccounts) {
+                      // User has accounts but not for this payment method
+                      return (
+                        <p className="text-[#F79330] text-sm">
+                          No account found for this payment method.{" "}
+                          <button
+                            type="button"
+                            onClick={() => setIsPaymentModalOpen(true)}
+                            className="hover:underline cursor-pointer font-medium"
+                          >
+                            Add Account
+                          </button>
+                        </p>
+                      );
+                    } else {
+                      // User has no accounts at all
+                      return (
+                        <p className="text-[#F79330] text-sm">
+                          <button
+                            type="button"
+                            onClick={() => setIsPaymentModalOpen(true)}
+                            className="hover:underline cursor-pointer"
+                          >
+                            Don't have an account? Register Now
+                          </button>
+                        </p>
+                      );
+                    }
+                  })()}
                 </div>
               )}
             </div>

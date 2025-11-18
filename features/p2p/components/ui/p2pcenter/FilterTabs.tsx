@@ -50,20 +50,35 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
     return { total, positive, negative, positivePercentage, negativePercentage };
   }, [feedbackData]);
 
+  // Calculate ad status indicators
+  const adStatusIndicators = useMemo(() => {
+    const liveAds = myOrders.filter((order: any) => 
+      order.status === 'published' || order.status === 'pending'
+    );
+    const offlineAds = myOrders.filter((order: any) => 
+      order.status === 'offline'
+    );
+    
+    return {
+      hasLiveAds: liveAds.length > 0,
+      hasOfflineAds: offlineAds.length > 0,
+    };
+  }, [myOrders]);
+
   /** Tabs */
   const tabList = [
     { label: "Payment Methods" },
     { 
       label: (
         <>
-          Feedback <span className="text-[#F79330]">({feedbackStats.total})</span>
+          Feedback <span className="text-[#F79330] font-bold">({feedbackStats.total})</span>
         </>
       )
     },
     {
       label: "My Ads",
       extra: (
-        <span className="text-[#E23D3A]">({myOrders.length})</span>
+        <span className="text-[#E23D3A] font-bold">({myOrders.length})</span>
       ),
     },
     { label: "+ Post New Ad" },
@@ -140,18 +155,18 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
 
   /** My-Ads filter bar */
   const MyAdsFilterBar = () => (
-    <div className="flex flex-col mb-5 sm:flex-row gap-4 items-start sm:items-center justify-between w-full">
+    <div className="flex flex-col mb-6 sm:flex-row gap-4 items-start sm:items-center justify-between w-full">
       {/* Token */}
-      <div className="flex items-center bg-gray-100 dark:bg-[#23242A] rounded-full px-4 py-2 w-full sm:w-auto">
+      <div className="flex items-center bg-gray-100 dark:bg-[#23242A] rounded-full px-5 py-2.5 w-full sm:w-auto">
         <img
           src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
           alt="Tether"
-          className="w-6 h-6 mr-2"
+          className="w-7 h-7 mr-2.5"
         />
-        <span className="text-gray-900 dark:text-white mr-2">Tether</span>
-        <span className="text-[#788099]">USDT</span>
+        <span className="text-gray-900 dark:text-white mr-2 text-base font-semibold">Tether</span>
+        <span className="text-[#788099] text-base font-medium">USDT</span>
         <select
-          className="bg-transparent text-gray-900 dark:text-white ml-2 outline-none w-full sm:w-auto"
+          className="bg-transparent text-gray-900 dark:text-white ml-2 outline-none w-full sm:w-auto text-base font-medium"
           value={filters.token}
           onChange={(e) => setFilters((p) => ({ ...p, token: e.target.value }))}
         >
@@ -160,7 +175,7 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
       </div>
       {/* Type */}
       <select
-        className="bg-gray-100 dark:bg-[#23242A] rounded-full px-4 py-2 text-gray-900 dark:text-white outline-none w-full sm:w-auto"
+        className="bg-gray-100 dark:bg-[#23242A] rounded-full px-5 py-2.5 text-gray-900 dark:text-white outline-none w-full sm:w-auto text-base font-semibold"
         value={filters.type}
         onChange={(e) => setFilters((p) => ({ ...p, type: e.target.value }))}
       >
@@ -170,7 +185,7 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
       </select>
       {/* Status */}
       <select
-        className="bg-gray-100 dark:bg-[#23242A] rounded-full px-4 py-2 text-gray-900 dark:text-white outline-none w-full sm:w-auto"
+        className="bg-gray-100 dark:bg-[#23242A] rounded-full px-5 py-2.5 text-gray-900 dark:text-white outline-none w-full sm:w-auto text-base font-semibold"
         value={filters.status}
         onChange={(e) => setFilters((p) => ({ ...p, status: e.target.value }))}
       >
@@ -180,7 +195,7 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
       </select>
       {/* Date */}
       <select
-        className="bg-gray-100 dark:bg-[#23242A] rounded-full px-4 py-2 text-gray-900 dark:text-white outline-none w-full sm:w-auto"
+        className="bg-gray-100 dark:bg-[#23242A] rounded-full px-5 py-2.5 text-gray-900 dark:text-white outline-none w-full sm:w-auto text-base font-semibold"
         value={filters.date}
         onChange={(e) => setFilters((p) => ({ ...p, date: e.target.value }))}
       >
@@ -228,29 +243,51 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
           ))}
         </div>
     <div className="flex flex-col gap-3 w-full sm:w-auto">
-      {/* Positive Feedback Status */}
-      <div className="flex items-center gap-3">
-        <ThumbsUp className="w-4 h-4 text-[#1D8751]" />
-        <div className="flex-1 bg-gray-700 dark:bg-gray-700 bg-gray-200 rounded-full h-2 min-w-[120px]">
-          <div 
-            className="bg-[#1D8751] h-2 rounded-full transition-all duration-300" 
-            style={{ width: `${feedbackStats.positivePercentage}%` }}
-          ></div>
-        </div>
-        <span className="text-[#1D8751] text-sm font-medium">({feedbackStats.positive})</span>
-      </div>
-      
-      {/* Negative Feedback Status */}
-      <div className="flex items-center gap-3">
-        <ThumbsDown className="w-4 h-4 text-[#FA615F]" />
-        <div className="flex-1 bg-gray-700 dark:bg-gray-700 bg-gray-200 rounded-full h-2 min-w-[120px]">
-          <div 
-            className="bg-[#FA615F] h-2 rounded-full transition-all duration-300" 
-            style={{ width: `${feedbackStats.negativePercentage}%` }}
-          ></div>
-        </div>
-        <span className="text-[#FA615F] text-sm font-medium">({feedbackStats.negative})</span>
-      </div>
+      {activeTab === 1 ? (
+        <>
+          {/* Positive Feedback Status - Only show when Feedback tab is active */}
+          <div className="flex items-center gap-3">
+            <ThumbsUp className="w-5 h-5 text-[#1D8751]" />
+            <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 min-w-[120px]">
+              <div 
+                className="bg-[#1D8751] h-2.5 rounded-full transition-all duration-300" 
+                style={{ width: `${feedbackStats.positivePercentage}%` }}
+              ></div>
+            </div>
+            <span className="text-[#1D8751] text-base font-bold">({feedbackStats.positive})</span>
+          </div>
+          
+          {/* Negative Feedback Status - Only show when Feedback tab is active */}
+          <div className="flex items-center gap-3">
+            <ThumbsDown className="w-5 h-5 text-[#FA615F]" />
+            <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 min-w-[120px]">
+              <div 
+                className="bg-[#FA615F] h-2.5 rounded-full transition-all duration-300" 
+                style={{ width: `${feedbackStats.negativePercentage}%` }}
+              ></div>
+            </div>
+            <span className="text-[#FA615F] text-base font-bold">({feedbackStats.negative})</span>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Live Ads Exist Legend - Show when other tabs are active */}
+          {adStatusIndicators.hasLiveAds && (
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-[#1D8751] rounded"></div>
+              <span className="text-gray-900 dark:text-white text-sm font-medium">Live Ads Exist</span>
+            </div>
+          )}
+          
+          {/* Offline Ads Exist Legend - Show when other tabs are active */}
+          {adStatusIndicators.hasOfflineAds && (
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-[#E23D3A] rounded"></div>
+              <span className="text-gray-900 dark:text-white text-sm font-medium">Offline Ads Exist</span>
+            </div>
+          )}
+        </>
+      )}
     </div>
       </div>
 

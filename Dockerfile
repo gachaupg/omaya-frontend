@@ -9,6 +9,7 @@ WORKDIR /app
 # Copy package files
 COPY package.json package-lock.json* ./
 RUN npm ci
+COPY .env .env
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -61,17 +62,14 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-# These will be overridden by docker-compose environment section if provided
-ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
-ENV NEXT_PUBLIC_GOOGLE_REDIRECT_URI=${NEXT_PUBLIC_GOOGLE_REDIRECT_URI:-}
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://dev.backend.omaya.io}
-ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://dev.omaya.io}
-ENV NEXT_PUBLIC_FACEBOOK_APP_ID=${NEXT_PUBLIC_FACEBOOK_APP_ID:-}
-ENV NEXT_PUBLIC_FACEBOOK_REDIRECT_URI=${NEXT_PUBLIC_FACEBOOK_REDIRECT_URI:-}
+COPY .env .env
+
+USER nextjs
 
 # Expose the port the app runs on
 EXPOSE 3000
 
-# Set the command to run the app
-USER nextjs
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
 CMD ["node", "server.js"]

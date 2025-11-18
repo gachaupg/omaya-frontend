@@ -35,10 +35,10 @@ const Available = () => {
             <div className="text-xs sm:text-sm dark:text-[#788099] text-[#788099] font-medium">
               Asset
             </div>
-            <div className="text-xs sm:text-sm text-right dark:text-[#788099] text-[#788099] font-medium">
+            <div className="text-xs sm:text-sm text-center dark:text-[#788099] text-[#788099] font-medium">
               Available
             </div>
-            <div className="text-xs sm:text-sm text-right dark:text-[#788099] text-[#788099] font-medium whitespace-normal leading-tight">
+            <div className="text-xs sm:text-sm text-center dark:text-[#788099] text-[#788099] font-medium whitespace-normal leading-tight">
               In Escrow / Locked
             </div>
           </div>
@@ -64,11 +64,11 @@ const Available = () => {
               </div>
             </div>
             {/* Available */}
-            <div className="text-right self-center text-sm sm:text-base dark:text-white text-[#0D0D0D] font-medium">
+            <div className="text-center self-center text-sm sm:text-base dark:text-white text-[#0D0D0D] font-medium">
               {formatNumber(availableBalance)}
             </div>
             {/* Locked */}
-            <div className="text-right self-center text-sm sm:text-base dark:text-white text-[#0D0D0D] font-medium">
+            <div className="text-center self-center text-sm sm:text-base dark:text-white text-[#0D0D0D] font-medium">
               {formatNumber(totalLocked)}
             </div>
           </div>

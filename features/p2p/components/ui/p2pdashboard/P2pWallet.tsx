@@ -65,9 +65,9 @@ const P2pWallet = memo(
     return (
       <div>
         <p
-          className={`text-sm font-medium dark:text-[${tokens.colors.dark.textTitle}] text-black mb-1`}
+          className={`text-xl font-bold dark:text-white text-black mb-1`}
         >
-          P2P Balance
+          P2P Wallet
         </p>
         <Card
           borderColor={`border-[#E8EFF5] dark:border-[${tokens.colors.dark.border}]`}
