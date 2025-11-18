@@ -66,6 +66,7 @@ interface DepositFormProps {
   onModeChange?: (mode: "deposit" | "withdrawal") => void;
   balance?: number;
   skipAmountValidation?: boolean; // New prop to skip amount validation when posting ads
+  onCancel?: () => void;
 }
 
 export default function DepositForm({
@@ -74,6 +75,7 @@ export default function DepositForm({
   onModeChange,
   balance,
   skipAmountValidation = false,
+  onCancel,
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -2729,24 +2731,36 @@ export default function DepositForm({
         {/* Submit Button for First Card */}
         {!isFirstCardSubmitted && (
           <div className="mx-auto w-full px-2 mt-4 sm:mt-6">
-            <button
-              className={`w-full text-white text-sm sm:text-base font-medium py-3 sm:py-3 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${
-                isSubmitting
-                  ? "bg-gray-500 cursor-not-allowed"
-                  : "bg-[#1D8751] hover:bg-[#166b3e]"
-              }`}
-              onClick={handleSubmit}
-              disabled={isSubmitting || !selectedAsset || !selectedNetwork || !confirmPayment}
-            >
-              {isSubmitting ? (
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  <span>Processing...</span>
-                </div>
-              ) : (
-                <span>Deposit</span>
+            <div className="flex flex-col sm:flex-row gap-3">
+              {onCancel && (
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  className="w-full text-sm sm:text-base font-medium py-3 sm:py-3 rounded-xl sm:rounded-2xl border border-[#35353e] dark:border-[#35353e] text-[#35353e] dark:text-white flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 hover:bg-[#f3f4f6] dark:hover:bg-[#2a2a34]"
+                >
+                  Cancel
+                </button>
               )}
-            </button>
+              <button
+                type="button"
+                className={`w-full text-white text-sm sm:text-base font-medium py-3 sm:py-3 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${
+                  isSubmitting
+                    ? "bg-gray-500 cursor-not-allowed"
+                    : "bg-[#1D8751] hover:bg-[#166b3e]"
+                }`}
+                onClick={handleSubmit}
+                disabled={isSubmitting || !selectedAsset || !selectedNetwork || !confirmPayment}
+              >
+                {isSubmitting ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <span>Processing...</span>
+                  </div>
+                ) : (
+                  <span>Deposit</span>
+                )}
+              </button>
+            </div>
           </div>
         )}
         

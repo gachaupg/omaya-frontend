@@ -122,6 +122,16 @@ const UserPaymentSelector = ({
   onRemove: (detail: UserPaymentDetail) => void;
   selectedDetails: UserPaymentDetail[];
 }) => {
+  useEffect(() => {
+    if (
+      userPaymentDetails &&
+      userPaymentDetails.length > 0 &&
+      selectedDetails.length === 0
+    ) {
+      onSelect(userPaymentDetails[0]);
+    }
+  }, [userPaymentDetails, selectedDetails.length, onSelect]);
+
   return (
     <div className="bg-[#1D1D23] rounded-2xl border border-[#39394a] p-4">
       <h3 className="text-white font-semibold mb-3">Select Payment Methods</h3>
@@ -208,6 +218,7 @@ interface DepositFormProps {
   onModeChange?: (mode: "deposit" | "withdrawal") => void;
   balance?: number;
   isHomePage?: boolean;
+  onCancel?: () => void;
 }
 
 export default function WithdrawalForm({
@@ -216,6 +227,7 @@ export default function WithdrawalForm({
   onModeChange,
   balance,
   isHomePage = false,
+  onCancel,
 }: DepositFormProps) {
   // Debug logging for balance
   logger.debug('p2p', "WithdrawalForm - Received balance:", balance);
@@ -2754,52 +2766,64 @@ export default function WithdrawalForm({
           {isTransactionSubmitted ? (
             ""
           ) : (
-            <button
-              className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${
-                isSubmitting ||
-                isTransactionSubmitted ||
-                isInfoModalOpen ||
-                getAmount > 15000 ||
-                !!balanceError
-                  ? "bg-gray-500 cursor-not-allowed"
-                  : "bg-[#1D8751] hover:bg-[#166b3e]"
-              }`}
-              onClick={handleFirstCardSubmit}
-              disabled={
-                isSubmitting ||
-                isTransactionSubmitted ||
-                isInfoModalOpen ||
-                getAmount > 15000 ||
-                !!balanceError
-              }
-            >
-              {isSubmitting ? (
-                <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  <span className="text-white">
-                    Getting Withdrawal Addresses...
-                  </span>
-                </div>
-              ) : isTransactionSubmitted ? (
-                <div className="flex items-center gap-2">
-                  <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                    <path
-                      d="M9 12l2 2 4-4"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="text-white"
-                    />
-                  </svg>
-                  <span className="text-white">
-                    Withdrawal Addresses Generated
-                  </span>
-                </div>
-              ) : (
-                <span className="text-white">Withdrawal</span>
+            <div className="flex flex-col sm:flex-row gap-3">
+              {onCancel && (
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  className="w-full text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl border border-[#35353e] dark:border-[#35353e] text-[#35353e] dark:text-white flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 hover:bg-[#f3f4f6] dark:hover:bg-[#2a2a34]"
+                >
+                  Cancel
+                </button>
               )}
-            </button>
+              <button
+                type="button"
+                className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${
+                  isSubmitting ||
+                  isTransactionSubmitted ||
+                  isInfoModalOpen ||
+                  getAmount > 15000 ||
+                  !!balanceError
+                    ? "bg-gray-500 cursor-not-allowed"
+                    : "bg-[#1D8751] hover:bg-[#166b3e]"
+                }`}
+                onClick={handleFirstCardSubmit}
+                disabled={
+                  isSubmitting ||
+                  isTransactionSubmitted ||
+                  isInfoModalOpen ||
+                  getAmount > 15000 ||
+                  !!balanceError
+                }
+              >
+                {isSubmitting ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <span className="text-white">
+                      Getting Withdrawal Addresses...
+                    </span>
+                  </div>
+                ) : isTransactionSubmitted ? (
+                  <div className="flex items-center gap-2">
+                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                      <path
+                        d="M9 12l2 2 4-4"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="text-white"
+                      />
+                    </svg>
+                    <span className="text-white">
+                      Withdrawal Addresses Generated
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-white">Withdrawal</span>
+                )}
+              </button>
+            </div>
           )}
         </div>
       </div>

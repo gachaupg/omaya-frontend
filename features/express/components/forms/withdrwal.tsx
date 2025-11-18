@@ -400,27 +400,6 @@ export default function WithdrawalForm({
     initializePaymentMethods();
   }, []); // Empty deps - runs only once on mount
 
-  // Update wallet list ref whenever we get new data
-  useEffect(() => {
-    if (adminWalletList && adminWalletList.length > 0) {
-      const displayData = adminWalletList.filter((wallet: any) => {
-        const paymentDetail = wallet?.admin_payment_detail;
-        if (!paymentDetail) return false;
-        
-        if (paymentDetail.is_active === undefined || paymentDetail.is_active === null) return true;
-        
-        return paymentDetail.is_active === true || 
-               paymentDetail.is_active === 'true' || 
-               paymentDetail.is_active === 1 ||
-               paymentDetail.is_active === '1';
-      });
-      
-      if (displayData.length > 0) {
-        walletListRef.current = displayData;
-      }
-    }
-  }, [adminWalletList]);
-  
   // Always use ref data - completely stable
   const adminWalletListDisplay = {
     displayData: walletListRef.current,
@@ -545,6 +524,39 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
   );
   const [previousValidAmount, setPreviousValidAmount] = useState<string>("");
   const [isUserModifiedAmount, setIsUserModifiedAmount] = useState(false);
+
+  // Update wallet list ref whenever we get new data (needs payBank state defined)
+  useEffect(() => {
+    if (adminWalletList && adminWalletList.length > 0) {
+      const displayData = adminWalletList.filter((wallet: any) => {
+        const paymentDetail = wallet?.admin_payment_detail;
+        if (!paymentDetail) return false;
+        
+        if (paymentDetail.is_active === undefined || paymentDetail.is_active === null) return true;
+        
+        return (
+          paymentDetail.is_active === true ||
+          paymentDetail.is_active === "true" ||
+          paymentDetail.is_active === 1 ||
+          paymentDetail.is_active === "1"
+        );
+      });
+
+      if (displayData.length > 0) {
+        walletListRef.current = displayData;
+
+        if (!payBank) {
+          const firstPaymentDetail = displayData[0]?.admin_payment_detail;
+          const providerName = firstPaymentDetail?.provider_name;
+
+          if (providerName) {
+            setPayBank(providerName);
+            setSelectedPaymentDetail(firstPaymentDetail || null);
+          }
+        }
+      }
+    }
+  }, [adminWalletList, payBank]);
 
 
   // Add caching for API responses with timestamp

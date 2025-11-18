@@ -7,18 +7,24 @@ import { PersistGate } from "redux-persist/integration/react";
 import { ThemeProvider } from "@/context/theme";
 import { LanguageProvider } from "@/context/language";
 import { setAuthCallback } from "@/lib/utils/errorHandler";
-import { logout, setCredentials } from "@/features/auth/slices/authSlice";
+import { logout, setCredentials, updateTokens } from "@/features/auth/slices/authSlice";
 import { useEffect } from "react";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { initializeCrossTabSync } from "@/lib/utils/crossTabSync";
 import { Spinner } from "@/components/ui/Skeletons";
 import { storage } from "@/features/auth/utils/storage";
+import { initializeTokenRefresh } from "@/lib/utils/tokenRefresh";
 
 declare global {
   interface Window {
     addEventListener(type: 'auth-state-changed', listener: (event: CustomEvent) => void): void;
     removeEventListener(type: 'auth-state-changed', listener: (event: CustomEvent) => void): void;
   }
+}
+
+if (typeof window !== "undefined") {
+  initializeCrossTabSync();
+  initializeTokenRefresh(store.dispatch, updateTokens);
 }
 
 export default function Providers({ children }: { children: React.ReactNode }) {
@@ -82,17 +88,64 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     };
 
     // Check for valid session on app load
+    // Only run once on initial mount, not on every render
+    let hasCheckedAuth = false;
     const checkAuth = async () => {
-      if (typeof window === 'undefined') return;
+      if (typeof window === 'undefined' || hasCheckedAuth) return;
+      hasCheckedAuth = true;
+
+      // Small delay to ensure login state is fully persisted
+      await new Promise(resolve => setTimeout(resolve, 200));
 
       const accessToken = localStorage.getItem('access_token');
       const refreshToken = localStorage.getItem('refresh_token');
       const userData = localStorage.getItem('user');
+      const profileData = storage.getProfile();
       
       const currentPath = window.location.pathname;
       const isAuthPage = currentPath.startsWith('/auth/');
 
-      // Case 1: We already have tokens and user in localStorage → hydrate store/storage and proceed
+      // Case 1: Check storage.getProfile() first (most reliable)
+      if (profileData && profileData.tokens?.access && profileData.user) {
+        try {
+          // Dispatch to update Redux store
+          store.dispatch(setCredentials({
+            user: profileData.user,
+            tokens: {
+              access: profileData.tokens.access,
+              refresh: profileData.tokens.refresh || refreshToken || ''
+            },
+            isAuthenticated: true
+          }));
+
+          // Ensure all localStorage keys are set
+          if (typeof window !== 'undefined') {
+            if (profileData.tokens.access) {
+              localStorage.setItem('access_token', profileData.tokens.access);
+            }
+            if (profileData.tokens.refresh) {
+              localStorage.setItem('refresh_token', profileData.tokens.refresh);
+            }
+            if (profileData.user) {
+              localStorage.setItem('user', JSON.stringify(profileData.user));
+            }
+          }
+
+          // Ensure middleware can see auth (1 hour cookie)
+          const maxAge = 60 * 60;
+          document.cookie = `access_token=${profileData.tokens.access}; Max-Age=${maxAge}; Path=/; SameSite=Lax`;
+          
+          // If we're on an auth page but already logged in, redirect to dashboard
+          if (isAuthPage) {
+            window.location.href = '/dashboard';
+          }
+        } catch (e) {
+          console.error(' Error setting credentials from profile:', e);
+        }
+        return;
+      }
+
+      // Case 2: We have tokens and user in localStorage → hydrate store/storage and proceed
       if (accessToken && userData) {
         try {
           const user = JSON.parse(userData);
@@ -125,14 +178,12 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           }
         } catch (e) {
           console.error(' Error parsing user data:', e);
-          localStorage.clear();
-          document.cookie = 'access_token=; Max-Age=0; Path=/; SameSite=Lax';
-          // Do not force redirect here; middleware protects /dashboard
+          // Don't clear everything on parse error, just log it
         }
         return;
       }
 
-      // Case 2: No localStorage session, but middleware cookie exists → hydrate from cookie
+      // Case 3: No localStorage session, but middleware cookie exists → hydrate from cookie
       const cookieToken = getCookie('access_token');
       if (cookieToken) {
         try {
@@ -174,10 +225,13 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Case 3: No session anywhere → clear and stay; middleware will guard protected routes
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('user');
+      // Case 4: No session anywhere → only clear if we're not on auth page
+      // Don't clear on auth pages as user might be logging in
+      if (!isAuthPage) {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
+      }
     };
     checkAuth();
     

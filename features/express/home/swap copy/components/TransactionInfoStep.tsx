@@ -578,31 +578,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
           </div>
         </div>
 
-        {/* Disclaimer Banner */}
-        <div className={`flex items-center rounded-2xl px-4 py-3 mb-4 ${
-          isDark ? "dark:bg-[#1D1D23]" : ""
-        }`}>
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 bg-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0">
-              <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                <path
-                  d="M12 8v4m0 4h.01"
-                  stroke="white"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" />
-              </svg>
-            </div>
-            <span className={`text-sm font-medium ${
-              isDark ? "text-[#788099]" : "text-[#35353e]"
-            }`}>
-              This is only an estimated price based on current market rates. The
-              final price will be confirmed when we receive the funds.
-            </span>
-          </div>
-        </div>
+      
         {/* Submit Button */}
         {!hideContinueButton && (
           <div className="mt-4">

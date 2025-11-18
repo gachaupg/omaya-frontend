@@ -34,11 +34,11 @@ export const initializeCrossTabSync = () => {
           "auth",
           "[CrossTabSync] Profile updated in another tab, syncing..."
         );
-        store.dispatch(initializeAuth());
+        setTimeout(() => store.dispatch(initializeAuth()), 0);
       } else if (event.oldValue && !event.newValue) {
         // Profile cleared in another tab (logout)
         logger.info("auth", "[CrossTabSync] Logout detected in another tab");
-        store.dispatch(logout());
+        setTimeout(() => store.dispatch(logout()), 0);
       }
     }
   });
@@ -52,13 +52,13 @@ export const initializeCrossTabSync = () => {
     });
 
     // Refresh our Redux state with the new tokens
-    store.dispatch(initializeAuth());
+    setTimeout(() => store.dispatch(initializeAuth()), 0);
   }) as EventListener);
 
   // Listen for custom logout events
   window.addEventListener("logoutTriggered", (() => {
     logger.info("auth", "[CrossTabSync] Logout triggered in another tab");
-    store.dispatch(logout());
+    setTimeout(() => store.dispatch(logout()), 0);
   }) as EventListener);
 
   logger.info("auth", "Cross-tab synchronization initialized successfully");

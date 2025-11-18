@@ -3,6 +3,7 @@
 :root {
   --background: #EEF1F4;
   --foreground: #171717;
+  --layout-gutter: clamp(2rem, 6vw, 2rem);
 }
 
 .dark {
@@ -146,6 +147,10 @@ textarea:active {
 
 .dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background-color: #6b7280;
+}
+
+.page-shell {
+  padding-inline: var(--layout-gutter);
 }
 
 /* Line clamp utility for text truncation */

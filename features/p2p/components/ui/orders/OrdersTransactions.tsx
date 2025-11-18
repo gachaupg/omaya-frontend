@@ -73,6 +73,7 @@ const OrdersTransactions = ({
         totalPages={Math.ceil(trades.count / 10)}
         onPageChange={handlePageChange}
         onViewTransaction={handleViewTransaction}
+        showExportButton={false}
       />
     </div>
   );

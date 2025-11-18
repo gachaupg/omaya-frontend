@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 import React, { useEffect, memo } from "react";
 import { tokens } from "@/styles/tokens";
 import Card from "../../Common/Card";
@@ -64,9 +65,7 @@ const P2pWallet = memo(
     const usdValue = balance;
     return (
       <div>
-        <p
-          className={`text-xl font-bold dark:text-white text-black mb-1`}
-        >
+        <p className={`text-xl font-bold dark:text-white text-black mb-1`}>
           P2P Wallet
         </p>
         <Card
@@ -104,12 +103,12 @@ const P2pWallet = memo(
                 <Button
                   onClick={() => setIsOpenForm("deposit")}
                   width={120}
-                  height={35}
+                  height={40}
                   borderRadius={24}
                   variant={isOpenForm === "deposit" ? "primary" : "outline"}
                   borderColor={tokens.colors.brand.primary}
                   size="md"
-                  className={`transition-all duration-150 flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm min-h-[44px] sm:min-h-[35px] px-3 sm:px-4 flex-1 sm:flex-initial justify-center ${
+                  className={`transition-all duration-150 flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm min-h-[44px] sm:min-h-[40px] px-3 sm:px-4 flex-1 sm:flex-initial justify-center ${
                     isOpenForm === "deposit"
                       ? "bg-[" + tokens.colors.brand.primary + "] text-white"
                       : "bg-transparent text-[" +

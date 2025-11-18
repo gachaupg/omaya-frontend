@@ -50,8 +50,21 @@ const P2PDashboard = () => {
         {(isOpenForm === "deposit" || isOpenForm === "withdraw") ? (
           <div className="w-full">
             <P2pWallet isOpenForm={isOpenForm} setIsOpenForm={setIsOpenForm} />
-            {isOpenForm === "deposit" && <Express mode="deposit" balance={balance} skipAmountValidation={true} />}
-            {isOpenForm === "withdraw" && <Express balance={balance} mode="withdrawal" />}
+            {isOpenForm === "deposit" && (
+              <Express
+                mode="deposit"
+                balance={balance}
+                skipAmountValidation={true}
+                onCancel={() => setIsOpenForm("")}
+              />
+            )}
+            {isOpenForm === "withdraw" && (
+              <Express
+                balance={balance}
+                mode="withdrawal"
+                onCancel={() => setIsOpenForm("")}
+              />
+            )}
           </div>
         ) : (
           <>

@@ -381,6 +381,19 @@ const PrivacySecurity = () => {
     return "Unknown Browser";
   };
 
+  const formatRelativeTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const diffMs = Date.now() - date.getTime();
+    const diffSeconds = Math.floor(diffMs / 1000);
+    if (diffSeconds < 60) return "Less than a minute ago";
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    if (diffMinutes < 60) return `${diffMinutes} minute${diffMinutes > 1 ? "s" : ""} ago`;
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
+  };
+
   // Filter out any invalid sessions and ensure type safety
   const validDeviceSessions = (deviceSessions || []).filter(
     (session: any): session is DeviceSession => {
@@ -729,13 +742,11 @@ const PrivacySecurity = () => {
                 } active)`
               : "No active sessions to sign out from"}
           </button>
-        </div>
-
-        {/* Active Device Sessions */}
-        <div className="w-full dark:border-[#35353E] border-gray-300 border-2 rounded-2xl p-4 max-w-none mx-auto dark:bg-[#1D1D23] bg-gray-50">
+           {/* Active Browser Sessions */}
+        <div className="w-full  max-w-none mx-auto dark:bg-[#1D1D23] bg-white">
           <div className="flex items-center justify-between mb-2">
             <div className="text-base font-semibold">
-              Active Device Sessions
+              Active Browser Session
             </div>
             <div className="flex gap-2">
               <button
@@ -765,15 +776,12 @@ const PrivacySecurity = () => {
             </div>
           </div>
           <div className="dark:text-[#808080] text-gray-600 text-sm mb-3">
-             These Devices Are Currently Signed In To Your Account
-             <div className="text-[#1D8751] text-xs mt-1">
-               💡 Duplicate sessions from the same IP address are automatically prevented
-             </div>
-             {isCreatingSession && (
-               <div className="text-[#FACC15] text-xs mt-1">
-               🔄 Creating new session...
-             </div>
-             )}
+            Review every browser that currently has access to your account. If something looks unfamiliar, disconnect the session right away.
+            {isCreatingSession && (
+              <div className="text-[#FACC15] text-xs mt-1">
+                🔄 Creating new session...
+              </div>
+            )}
             {/* <div className="text-[#1D8751] text-xs mt-1">
             Total Sessions: {allSessions.length}
           </div> */}
@@ -863,67 +871,31 @@ const PrivacySecurity = () => {
                )}
             </div>
           ) : (
-            <>
-              <div className="grid grid-cols-3 sm:grid-cols-6 dark:text-[#808080] text-gray-600 text-xs font-medium dark:border-[#35353E] border-gray-300 border-b pb-2 mb-2">
-                <div>Session ID</div>
+            <div className="-mx-4 border-t dark:border-[#35353E] border-gray-200">
+              <div className="px-4 py-3 text-xs font-semibold uppercase tracking-wide dark:text-[#8C8CA1] text-gray-500 space-y-1">
                 <div>Signed In</div>
-                <div className="hidden sm:block">Location</div>
-                <div className="hidden sm:block">IP Address</div>
-                <div className="hidden sm:block">Browser</div>
-                <div>Status</div>
+                <div>Location</div>
+                <div>IP Address</div>
+                <div>Browser</div>
               </div>
-              <div className="flex flex-col gap-3">
+              <div className="divide-y dark:divide-[#2F2C3C] divide-gray-200 dark:text-white text-gray-200">
                 {paginatedSessions.map((session: DeviceSession) => (
-                  <div
-                    key={session.session_id}
-                    className="grid grid-cols-3 sm:grid-cols-6 text-sm dark:text-white text-gray-900 dark:border-[#35353E] border-gray-300 border-b pb-2 relative group"
-                  >
-                    <div className="text-xs dark:text-[#808080] text-gray-600 font-mono break-all">
-                      {session.session_id.substring(0, 8)}...
-                    </div>
-                    <div className="truncate">{formatDate(session.sign_in_time)}</div>
-                    <div className="hidden sm:block truncate">{session.location}</div>
-                    <div className="hidden sm:block font-mono text-xs break-all">
-                      {session.ip_address}
-                    </div>
-                    <div className="hidden sm:block truncate">{session.browser}</div>
-                    <div className="flex items-center justify-between">
-                      <span
-                        className={
-                          session.is_active
-                            ? "text-[#1D8751]"
-                            : "dark:text-[#808080] text-gray-600"
-                        }
-                      >
-                        {session.is_active ? "Active" : "Inactive"}
-                      </span>
-                      {session.is_active && (
-                        <button
-                          onClick={() => handleRemoveSession(session)}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity text-[#E23D3A] hover:text-red-400 text-xs"
-                          title="Remove session"
-                        >
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                          >
-                            <path
-                              d="M6 18L18 6M6 6l12 12"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
+                  <div key={session.session_id} className="px-4 py-4 text-sm space-y-2">
+                    <p className="font-semibold">
+                      {formatRelativeTime(session.sign_in_time)}
+                    </p>
+                    <p>{session.location || "Unknown location"}</p>
+                    <p className="font-mono break-all">
+                      {session.ip_address || "Unknown IP"}
+                    </p>
+                    <p>
+                      {session.browser || "Unknown browser"}
+                      {session.device_type && ` (${session.device_type})`}
+                    </p>
                   </div>
                 ))}
               </div>
-            </>
+            </div>
           )}
           {totalPages > 1 && (
             <div className="flex justify-center items-center gap-2 mt-4">
@@ -959,6 +931,9 @@ const PrivacySecurity = () => {
             </div>
           )}
         </div>
+        </div>
+
+       
       </div>
     </>
   );

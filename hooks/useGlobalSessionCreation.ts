@@ -15,6 +15,7 @@ import {
   getLocationFromIP,
 } from "../features/settings/utils/sessionUtils";
 import { showToast } from "../lib/utils/toast";
+import { useTokenRefresh } from "@/hooks/useTokenRefresh";
 
 // Helper functions for device info
 const getDeviceType = (): string => {
@@ -38,6 +39,7 @@ const getBrowserInfo = (userAgent: string): string => {
 export const useGlobalSessionCreation = () => {
   const dispatch = useDispatch<AppDispatch>();
   const pathname = usePathname();
+  const { ensureTokenFresh } = useTokenRefresh();
 
   // Get authentication state
   const { isAuthenticated } = useSelector((state: any) => state.auth);
@@ -101,6 +103,15 @@ export const useGlobalSessionCreation = () => {
     sessionCreationAttempts.current += 1;
 
     try {
+      // Ensure token is fresh before making authenticated API calls
+      const hasValidToken = await ensureTokenFresh();
+      if (!hasValidToken) {
+        console.warn(
+          "Skipping global session creation because token refresh failed or user is unauthenticated."
+        );
+        return;
+      }
+
       // Get IP address and location
       const ipAddress = await getCurrentIPAddress();
       const location = await getLocationFromIP(ipAddress);

@@ -8,7 +8,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
   return (
     <>
       <div className="text-base sm:text-lg font-semibold dark:text-[#788099] text-gray-600 mb-1">
-        2-Basic Info
+        Basic Info
       </div>
       <section className="dark:bg-[#18181D] bg-white rounded-xl border dark:border-[#35353E] border-[#E8EFF5] p-3 sm:p-4 lg:p-6 shadow-lg">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 mb-2">
@@ -34,16 +34,6 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
           </div>
           <div>
             <label className="block text-xs dark:text-[#fff] text-[#0D0D0D] mb-1">
-              Email*
-            </label>
-            <input
-              className="dark:bg-[#23232B] bg-white border dark:border-[#35353E] border-[#E8EFF5] rounded-[18px] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base dark:text-white text-[#0D0D0D] w-full"
-              value={user?.email || ""}
-              readOnly
-            />
-          </div>
-          <div>
-            <label className="block text-xs dark:text-[#fff] text-[#0D0D0D] mb-1">
               Phone*
             </label>
             <input
@@ -52,6 +42,17 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
               readOnly
             />
           </div>
+          <div>
+            <label className="block text-xs dark:text-[#fff] text-[#0D0D0D] mb-1">
+              Email*
+            </label>
+            <input
+              className="dark:bg-[#23232B] bg-white border dark:border-[#35353E] border-[#E8EFF5] rounded-[18px] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base dark:text-white text-[#0D0D0D] w-full"
+              value={user?.email || ""}
+              readOnly
+            />
+          </div>
+         
         </div>
       </section>
     </>

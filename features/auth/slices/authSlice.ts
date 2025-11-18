@@ -346,6 +346,61 @@ const authSlice = createSlice({
           tokens,
           profile: state.profile || undefined
         });
+        
+        if (typeof window !== "undefined") {
+          if (tokens.access) {
+            localStorage.setItem("access_token", tokens.access);
+          }
+          if (tokens.refresh) {
+            localStorage.setItem("refresh_token", tokens.refresh);
+          }
+        }
+        
+        cookieUtils.setCookie("access_token", tokens.access, {
+          maxAge: 86400,
+          secure: true,
+          sameSite: "strict",
+        });
+      }
+    },
+    updateTokens: (
+      state,
+      action: PayloadAction<{ access?: string; refresh?: string }>
+    ) => {
+      if (!state.tokens && !state.user) {
+        return;
+      }
+
+      const nextTokens: AuthTokens = {
+        access: action.payload.access || state.tokens?.access || "",
+        refresh: action.payload.refresh || state.tokens?.refresh || "",
+      };
+
+      state.tokens = nextTokens;
+
+      if (state.user) {
+        storage.setProfile({
+          user: state.user,
+          tokens: nextTokens,
+          profile: state.profile || undefined,
+        });
+      }
+
+      if (typeof window !== "undefined") {
+        if (action.payload.access) {
+          localStorage.setItem("access_token", action.payload.access);
+        }
+        if (action.payload.refresh) {
+          localStorage.setItem("refresh_token", action.payload.refresh);
+        }
+      }
+
+      if (action.payload.access) {
+        cookieUtils.setCookie("access_token", action.payload.access, {
+          maxAge: 86400,
+          secure: true,
+          sameSite: "strict",
+        });
       }
     },
     logout(state) {
@@ -358,6 +413,12 @@ const authSlice = createSlice({
       storage.removeProfile();
       // Clear access token cookie
       cookieUtils.removeCookie("access_token");
+
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        localStorage.removeItem("user");
+      }
 
       // Broadcast logout to other tabs
       if (typeof window !== "undefined") {
@@ -387,34 +448,83 @@ const authSlice = createSlice({
           if (!storedToken) {
             localStorage.setItem('access_token', authData.tokens.access);
           }
+          if (authData.tokens.refresh) {
+            const storedRefresh = localStorage.getItem('refresh_token');
+            if (!storedRefresh) {
+              localStorage.setItem('refresh_token', authData.tokens.refresh);
+            }
+          }
+          // Ensure user is in localStorage
+          const storedUser = localStorage.getItem('user');
+          if (!storedUser && authData.user) {
+            localStorage.setItem('user', JSON.stringify(authData.user));
+          }
         }
       } else {
-        // Invalid/incomplete profile - trigger automatic logout
-        state.user = null;
-        state.tokens = null;
-        state.isAuthenticated = false;
-        state.profile = null;
-        state.loading = false; // Explicitly set loading to false
-        
-        // Clear ALL localStorage and cookies
+        // Check if we have tokens in localStorage as fallback (might be in transition)
         if (typeof window !== 'undefined') {
-          localStorage.clear();
-          cookieUtils.removeCookie("access_token");
+          const accessToken = localStorage.getItem('access_token');
+          const refreshToken = localStorage.getItem('refresh_token');
+          const userData = localStorage.getItem('user');
           
-          // Only redirect if not already on auth/public pages
-          const currentPath = window.location.pathname;
-          const isPublicPage = currentPath === '/' || 
-                                currentPath.startsWith('/auth/') ||
-                                currentPath.includes('/about') ||
-                                currentPath.includes('/contact');
+          // If we have all three, try to restore the profile
+          if (accessToken && userData) {
+            try {
+              const user = JSON.parse(userData);
+              const tokens = {
+                access: accessToken,
+                refresh: refreshToken || '',
+              };
+              
+              // Restore profile
+              storage.setProfile({ user, tokens });
+              
+              // Update state
+              state.user = user;
+              state.tokens = tokens;
+              state.isAuthenticated = true;
+              state.profile = null;
+              return;
+            } catch (e) {
+              console.error('Error restoring auth from localStorage:', e);
+            }
+          }
+        }
+        
+        // Only clear if we're not on an auth page (user might be logging in)
+        const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+        const isAuthPage = currentPath.startsWith('/auth/') || 
+                          currentPath === '/' ||
+                          currentPath.includes('/about') ||
+                          currentPath.includes('/contact');
+        
+        if (!isAuthPage) {
+          // Invalid/incomplete profile - trigger automatic logout
+          state.user = null;
+          state.tokens = null;
+          state.isAuthenticated = false;
+          state.profile = null;
+          state.loading = false;
           
-          if (!isPublicPage) {
+          // Clear ALL localStorage and cookies
+          if (typeof window !== 'undefined') {
+            localStorage.clear();
+            cookieUtils.removeCookie("access_token");
+            
             console.log('🔒 Invalid or incomplete profile found, redirecting to login...');
             // Use setTimeout to ensure state is updated before redirect
             setTimeout(() => {
               window.location.href = '/auth/login';
             }, 100);
           }
+        } else {
+          // On auth pages, just clear state but don't clear localStorage
+          // (user might be in the process of logging in)
+          state.user = null;
+          state.tokens = null;
+          state.isAuthenticated = false;
+          state.profile = null;
+          state.loading = false;
         }
       }
     },
@@ -490,9 +600,11 @@ const authSlice = createSlice({
           profile: action.payload.profile,
         });
 
-        // Store access_token separately for WebSocket and easy access
+        // Store tokens separately for WebSocket and easy access
         if (typeof window !== 'undefined') {
           localStorage.setItem('access_token', action.payload.access);
+          localStorage.setItem('refresh_token', action.payload.refresh);
+          localStorage.setItem('user', JSON.stringify(action.payload.user));
         }
 
         // Set access token as cookie
@@ -666,9 +778,11 @@ const authSlice = createSlice({
           profile: action.payload.profile,
         });
 
-        // Store access_token separately for easy access
+        // Store tokens separately for easy access
         if (typeof window !== 'undefined') {
           localStorage.setItem('access_token', action.payload.access);
+          localStorage.setItem('refresh_token', action.payload.refresh);
+          localStorage.setItem('user', JSON.stringify(action.payload.user));
         }
 
         // Set access token as cookie
@@ -696,5 +810,6 @@ export const {
   open2FAModal,
   close2FAModal,
   setCredentials,
+  updateTokens,
 } = authSlice.actions;
 export default authSlice.reducer;
