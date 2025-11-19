@@ -190,7 +190,7 @@ const PaymentMethods = () => {
             e.currentTarget.src = "/default-provider-logo.svg";
           }}
         />
-        <span className="text-gray-900 dark:text-white font-bold flex items-center text-lg sm:text-xl">
+        <span className="text-gray-900 dark:text-white font-semibold flex items-center text-base sm:text-lg">
           {method.payment_provider_name}
           <svg
             className="w-5 h-5 ml-2 text-gray-400"
@@ -237,7 +237,7 @@ const PaymentMethods = () => {
         <Input
           placeholder="Accounthhhh Name"
           value={method.account_name}
-          className="w-full sm:flex-1 h-[52px] rounded-3xl border border-gray-300 dark:border-[#353535] bg-white dark:bg-[#353535] text-gray-900 dark:text-white px-[14px] py-[10px] text-base"
+          className="w-full sm:flex-1 h-[52px] rounded-3xl border border-gray-300 dark:border-[#353535] bg-white dark:bg-[#353535] text-gray-900 dark:text-white px-[14px] py-[10px] text-sm sm:text-base"
           bgColor="#ffffff"
           borderColor="#d1d5db"
           disabled={!method.editable}
@@ -249,7 +249,7 @@ const PaymentMethods = () => {
         <Input
           placeholder="Account Number"
           value={method.account_number}
-          className="w-full sm:flex-1 h-[52px] rounded-3xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#18181D] text-gray-900 dark:text-white px-[14px] py-[10px] text-base"
+          className="w-full sm:flex-1 h-[52px] rounded-3xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#18181D] text-gray-900 dark:text-white px-[14px] py-[10px] text-sm sm:text-base"
           bgColor="#ffffff"
           borderColor="#d1d5db"
           disabled={!method.editable}
@@ -396,7 +396,7 @@ const renderAddMethodDropdown = () => (
     <div className="w-full min-h-[600px] bg-white dark:bg-[#18181D] rounded-2xl p-4 text-gray-900 dark:text-white border-2 border-gray-200 dark:border-[#35353E] overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4 ">
-        <span className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+        <span className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
           Payment Methods
         </span>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
@@ -408,7 +408,7 @@ const renderAddMethodDropdown = () => (
             size="md"
             onClick={() => setShowAddDropdown(prev => !prev)}
           >
-            <span className="flex items-center gap-2 text-base font-semibold">
+            <span className="flex items-center gap-2 text-sm sm:text-base font-semibold">
               {!selectedMethod && (
                 <span className="text-[#1D8751] text-xl font-bold">+</span>
               )}
@@ -425,11 +425,11 @@ const renderAddMethodDropdown = () => (
         <div className="w-full border border-gray-200 dark:border-[#35353E] rounded-2xl p-4 sm:p-5 mb-6 bg-gray-50 dark:bg-[#1F1F27]">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div>
-              <p className="text-sm text-gray-500 dark:text-[#8C8CA1]">Selected Method</p>
-              <p className="text-lg font-semibold text-gray-900 dark:text-white">{selectedMethod}</p>
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-[#8C8CA1]">Selected Method</p>
+              <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">{selectedMethod}</p>
             </div>
             <button
-              className="text-sm font-medium text-[#E23D3A] hover:opacity-80"
+              className="text-xs sm:text-sm font-medium text-[#E23D3A] hover:opacity-80"
               onClick={handleCancelSelection}
             >
               Cancel Selection
@@ -438,12 +438,12 @@ const renderAddMethodDropdown = () => (
 
           <div className="grid grid-cols-1 gap-4">
             <div>
-              <label className="block text-gray-600 dark:text-[#788099] text-sm mb-1">
+              <label className="block text-gray-600 dark:text-[#788099] text-xs sm:text-sm mb-1">
                 Provider
               </label>
               <div className="relative">
                 <select
-                  className="w-full bg-white dark:bg-[#1C1C24] text-gray-900 dark:text-white appearance-none pr-10 rounded-xl border border-gray-200 dark:border-[#35353E] h-12 px-4"
+                  className="w-full bg-white dark:bg-[#1C1C24] text-gray-900 dark:text-white appearance-none pr-10 rounded-xl border border-gray-200 dark:border-[#35353E] h-12 px-4 text-sm"
                   value={selectedProvider}
                   onChange={(e) => setSelectedProvider(e.target.value)}
                   disabled={adminLoading}
@@ -478,7 +478,7 @@ const renderAddMethodDropdown = () => (
                         }}
                       />
                       <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
+                        <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
                           {selectedProvider}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-[#788099]">
@@ -491,19 +491,19 @@ const renderAddMethodDropdown = () => (
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 text-sm">
               <Input
                 placeholder="Account Name"
                 value={accountName}
                 onChange={(e) => setAccountName(e.target.value)}
-                className="w-full"
+                className="w-full text-sm"
                 disabled
               />
               <Input
                 placeholder="Account Number"
                 value={accountNumber}
                 onChange={(e) => setAccountNumber(e.target.value)}
-                className="w-full"
+                className="w-full text-sm"
               />
             </div>
 
@@ -545,7 +545,7 @@ const renderAddMethodDropdown = () => (
           className="border-2 border-[#1D8751] w-full text-gray-900 dark:text-white"
           size="md"
         >
-          <p className="text-base font-semibold">Update</p>
+          <p className="text-sm sm:text-base font-semibold">Update</p>
         </Button>
       </div>
     </div>

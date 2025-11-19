@@ -201,7 +201,7 @@ const P2PTransactions = () => {
       <div className="hidden sm:block overflow-x-auto">
         <table className="min-w-full text-sm text-left bg-transparent">
           <thead>
-            <tr className="text-[#A0A3BC] border-b border-[#35353E]">
+            <tr className="text-gray-600 dark:text-[#A0A3BC] border-b border-gray-200 dark:border-[#35353E]">
               <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm">Asset</th>
               <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm">Transaction Type</th>
               <th className="px-3 sm:px-4 lg:px-4 py-3 font-medium text-xs sm:text-sm">Amount</th>
@@ -232,7 +232,7 @@ const P2PTransactions = () => {
               transformedData.map((transaction) => (
                 <tr
                   key={transaction.id}
-                  className="border-b border-[#35353E] hover:bg-[#28293d]"
+                  className="border-b border-gray-200 dark:border-[#35353E] hover:bg-gray-50 dark:hover:bg-[#28293d] transition-colors"
                 >
                   {/* Asset */}
                   <td className="px-3 sm:px-4 lg:px-4 py-3">

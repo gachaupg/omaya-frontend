@@ -168,7 +168,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         disabled={disabled || loading}
         ref={triggerRef}
         className={`
-          w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 rounded-2xl border text-sm sm:text-base
+          w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 rounded-2xl border text-base sm:text-lg
           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
           transition-colors duration-200 min-w-0
           ${disabled || loading
@@ -189,7 +189,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
               <img
                 src={selectedLogo}
                 alt=""
-                className="w-4 h-4 sm:w-5 sm:h-5 rounded object-cover flex-shrink-0"
+                className="w-6 h-6 sm:w-8 sm:h-8 rounded object-cover flex-shrink-0"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none';
                 }}
@@ -197,7 +197,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
             )}
             {!hideSelectedLabel && (
               <span
-                className={`truncate min-w-0 ${
+                className={`truncate min-w-0 text-base sm:text-lg ${
                   !selectedOption ? "text-gray-500 dark:text-gray-400" : ""
                 }`}
                 title={selectedOption ? displayValue : undefined}
@@ -272,7 +272,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                     onClick={() => handleOptionClick(option.value)}
                     disabled={option.disabled}
                     className={`
-                    w-full text-left px-3 sm:px-4 py-1.5 sm:py-2 text-sm transition-colors duration-150
+                    w-full text-left px-3 sm:px-4 py-2 sm:py-2.5 text-base sm:text-lg transition-colors duration-150
                     hover:bg-blue-50 dark:hover:bg-blue-900/20
                     focus:outline-none focus:bg-blue-50 dark:focus:bg-blue-900/20
                     ${isSelected
@@ -294,13 +294,13 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                         <img
                           src={option.logo}
                           alt=""
-                          className="w-4 h-4 sm:w-5 sm:h-5 rounded object-cover flex-shrink-0"
+                          className="w-6 h-6 sm:w-8 sm:h-8 rounded object-cover flex-shrink-0"
                           onError={(e) => {
                             (e.target as HTMLImageElement).style.display = "none";
                           }}
                         />
                       )}
-                      <span className="truncate min-w-0 flex-1 text-left">{option.label}</span>
+                      <span className="truncate min-w-0 flex-1 text-left text-base sm:text-lg">{option.label}</span>
                     </div>
                   </button>
                   );

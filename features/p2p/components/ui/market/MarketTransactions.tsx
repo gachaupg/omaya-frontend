@@ -24,6 +24,11 @@ interface Option {
   value: string;
 }
 
+const formatCurrencyLabel = (currency?: string | null) => {
+  if (!currency) return "USD";
+  return currency.toUpperCase() === "USDT" ? "USD" : currency;
+};
+
 const formatLimitDuration = (duration: string): string => {
   if (!duration) return "10 Minutes";
 
@@ -56,13 +61,14 @@ const formatLimitDuration = (duration: string): string => {
 };
 
 const getCurrencyOptions = (orders: any): Option[] => {
-  if (!orders?.buy_orders?.results) return [{ label: "USDT", value: "USDT" }];
+  if (!orders?.buy_orders?.results)
+    return [{ label: "USD", value: "USDT" }];
 
   const currencies = new Set(
     orders.buy_orders.results.map((order: any) => order.currency)
   );
   return Array.from(currencies).map((currency) => ({
-    label: currency as string,
+    label: formatCurrencyLabel(currency as string),
     value: currency as string,
   }));
 };
@@ -205,14 +211,16 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
   const [mounted, setMounted] = useState(false);
   const hasInitializedRef = useRef(false);
   const [amount, setAmount] = useState("");
-  const currency = "USDT"; // Fixed to USDT
+  const [selectedCurrency, setSelectedCurrency] = useState("USDT");
   const [paymentTypes, setPaymentTypes] = useState<string[]>([]);
   const [providers, setProviders] = useState<string[]>([]);
   const [isPaymentDropdownOpen, setIsPaymentDropdownOpen] = useState(false);
   const [isProviderDropdownOpen, setIsProviderDropdownOpen] = useState(false);
+  const [isCurrencyDropdownOpen, setIsCurrencyDropdownOpen] = useState(false);
   const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
   const paymentDropdownRef = useRef<HTMLDivElement>(null);
   const providerDropdownRef = useRef<HTMLDivElement>(null);
+  const currencyDropdownRef = useRef<HTMLDivElement>(null);
   const filterDropdownRef = useRef<HTMLDivElement>(null);
   const [showMerchantOnly, setShowMerchantOnly] = useState(false);
   const [showMerchantBusinessOnly, setShowMerchantBusinessOnly] = useState(false);
@@ -265,6 +273,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
     () => getPaymentMethodOptions(orders),
     [orders]
   );
+  const currencyOptions = useMemo(() => getCurrencyOptions(orders), [orders]);
   const paymentSummary = useMemo(
     () => formatSelectionSummary(paymentTypes, paymentMethodOptions, "Payment Method"),
     [paymentTypes, paymentMethodOptions]
@@ -275,6 +284,15 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
   );
   const isPaymentSummaryDefault = paymentTypes.length === 0;
   const isProviderSummaryDefault = providers.length === 0;
+  useEffect(() => {
+    if (
+      currencyOptions.length > 0 &&
+      !currencyOptions.some((opt) => opt.value === selectedCurrency)
+    ) {
+      setSelectedCurrency(currencyOptions[0].value);
+    }
+  }, [currencyOptions, selectedCurrency]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -292,6 +310,13 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
         setIsProviderDropdownOpen(false);
       }
       if (
+        isCurrencyDropdownOpen &&
+        currencyDropdownRef.current &&
+        !currencyDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsCurrencyDropdownOpen(false);
+      }
+      if (
         isFilterDropdownOpen &&
         filterDropdownRef.current &&
         !filterDropdownRef.current.contains(event.target as Node)
@@ -303,6 +328,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
     if (
       isPaymentDropdownOpen ||
       isProviderDropdownOpen ||
+      isCurrencyDropdownOpen ||
       isFilterDropdownOpen
     ) {
       document.addEventListener("mousedown", handleClickOutside);
@@ -311,7 +337,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [isPaymentDropdownOpen, isProviderDropdownOpen, isFilterDropdownOpen]);
+  }, [isPaymentDropdownOpen, isProviderDropdownOpen, isCurrencyDropdownOpen, isFilterDropdownOpen]);
 
  
 
@@ -431,7 +457,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
         };
       })
       .filter((row: MarketRow) => {
-        if (currency && row.currency !== currency) return false;
+        if (selectedCurrency && row.currency !== selectedCurrency) return false;
 
         if (showMerchantOnly && !row.isMerchant) {
           return false;
@@ -519,7 +545,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
     return data;
   }, [
     getActiveOrders,
-    currency,
+    selectedCurrency,
     providers,
     paymentTypes,
     amount,
@@ -623,7 +649,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
           <div className="flex items-center w-full sm:w-auto bg-gray-100 dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] rounded-lg px-3 py-2 gap-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full">
               <Input
                 bgColor="transparent"
                 borderColor="transparent"
@@ -631,18 +657,49 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="Enter amount"
-                className="bg-transparent border-none focus:ring-0 text-gray-900 dark:text-white w-full sm:w-36 text-sm"
+                className="bg-transparent border-none focus:ring-0 text-gray-900 dark:text-white w-full text-sm"
               />
-              <span className="text-gray-500 dark:text-gray-400 text-sm font-medium">
-                |
-              </span>
-              <span className="text-gray-900 dark:text-white text-sm font-semibold px-1">
-                USDT
-              </span>
+              <span className="w-px h-6 bg-gray-300 dark:bg-[#35353E]" />
+              <div className="relative" ref={currencyDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setIsCurrencyDropdownOpen((prev) => !prev)}
+                  className="flex items-center gap-1 text-gray-900 dark:text-white text-sm font-semibold"
+                >
+                  {formatCurrencyLabel(selectedCurrency)}
+                  <svg
+                    className="w-4 h-4 text-gray-500 dark:text-[#788099]"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {isCurrencyDropdownOpen && (
+                  <div className="absolute right-0 mt-3 rounded-2xl border border-gray-300 dark:border-[#35353E] bg-[#0F0F13] text-white shadow-2xl z-30 min-w-[140px]">
+                    {currencyOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCurrency(option.value);
+                          setIsCurrencyDropdownOpen(false);
+                        }}
+                        className={`w-full text-left px-4 py-2 text-sm font-semibold hover:bg-[#1b1b22] ${
+                          option.value === selectedCurrency ? "text-white" : "text-[#C7CAD1]"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           <div
-            className="flex items-center gap-2 bg-transparent border border-gray-300 dark:border-[#35353E] rounded-lg px-3 py-2 w-full sm:w-auto sm:mr-2"
+            className="flex items-center gap-2 bg-transparent border border-gray-300 dark:border-[#35353E] rounded-lg px-3 py-2 w-full sm:w-[240px] sm:mr-2"
             ref={paymentDropdownRef}
           >
             <Image
@@ -652,7 +709,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
               height={18}
               className="text-[#1D8751]"
             />
-            <div className="relative w-full min-w-[220px] sm:min-w-[260px]">
+            <div className="relative w-full min-w-[180px] sm:min-w-[210px]">
               <button
                 type="button"
                 onClick={() => setIsPaymentDropdownOpen((prev) => !prev)}
@@ -664,9 +721,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
               >
                 <span className="truncate">{paymentSummary}</span>
                 <svg
-                  className={`w-4 h-4 text-gray-500 dark:text-[#788099] transition-transform ${
-                    isPaymentDropdownOpen ? "rotate-180" : ""
-                  }`}
+                  className="w-4 h-4 text-gray-500 dark:text-[#788099]"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -718,17 +773,17 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
           </div>
 
           <div
-            className="flex items-center gap-2 bg-transparent border border-gray-300 dark:border-[#35353E] rounded-lg px-3 py-2 w-full sm:w-auto sm:mr-3"
+            className="flex items-center gap-2 bg-transparent border border-gray-300 dark:border-[#35353E] rounded-lg px-3 py-2 w-full sm:w-[240px] sm:mr-3"
             ref={providerDropdownRef}
           >
             <Image
-              src="https://res.cloudinary.com/pitz/image/upload/v1746710370/coins-rotate_d278mb.png"
+              src="https://res.cloudinary.com/pitz/image/upload/v1763535952/tdesign_undertake-transaction_s00yks.png"
               alt="Bank Provider"
               width={18}
               height={18}
               className="text-[#1D8751]"
             />
-            <div className="relative w-full min-w-[220px] sm:min-w-[260px]">
+            <div className="relative w-full min-w-[180px] sm:min-w-[210px]">
               <button
                 type="button"
                 onClick={() => setIsProviderDropdownOpen((prev) => !prev)}
@@ -740,9 +795,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
               >
                 <span className="truncate">{providerSummary}</span>
                 <svg
-                  className={`w-4 h-4 text-gray-500 dark:text-[#788099] transition-transform ${
-                    isProviderDropdownOpen ? "rotate-180" : ""
-                  }`}
+                  className="w-4 h-4 text-gray-500 dark:text-[#788099]"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"

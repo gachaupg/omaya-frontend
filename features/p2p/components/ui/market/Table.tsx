@@ -10,19 +10,17 @@ import Image from "next/image";
 
 import { logger } from '@/lib/utils/logger';
 
-// Bank icons mapping
-const BANK_ICONS: Record<string, string> = {
-  "Salam Bank":
-    "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png",
-  "Premier Bank":
-    "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png",
-  "Dahabshiil Bank":
-    "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png",
-  "Salaam Bank":
-    "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png",
-  Bank: "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png",
-  "Bank Transfer":
-    "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png",
+const DUMMY_PAYMENT_LOGO = "/default-provider-logo.svg";
+
+const PAYMENT_LOGOS: Record<string, string> = {
+  "salam bank": "/images/salam.svg",
+  "salaam bank": "/images/salam.svg",
+};
+
+const getPaymentLogo = (provider?: string | null) => {
+  if (!provider) return DUMMY_PAYMENT_LOGO;
+  const normalized = provider.trim().toLowerCase();
+  return PAYMENT_LOGOS[normalized] || DUMMY_PAYMENT_LOGO;
 };
 
 const MarketTable: React.FC<MarketTableProps> = ({
@@ -213,10 +211,12 @@ const MarketTable: React.FC<MarketTableProps> = ({
                   </div>
                   {/* Payment */}
                   <div className="flex flex-wrap gap-2 min-w-[200px]">
-                    {row.payment_details?.map((method, i) => {
-                      const fallbackUrl = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
-                      const imageUrl = method.provider_logo || fallbackUrl;
-                      
+                    {row.payment_details?.map((method, i) => {                      
+                      const imageUrl =
+                        (typeof method.provider_logo === "string" &&
+                          method.provider_logo.trim()) ||
+                        getPaymentLogo(method.provider);
+
                       return (
                         <span
                           key={i}
@@ -233,8 +233,8 @@ const MarketTable: React.FC<MarketTableProps> = ({
                             }}
                             loading="lazy"
                             onError={(e) => {
-                              if (e.currentTarget.src !== fallbackUrl) {
-                                e.currentTarget.src = fallbackUrl;
+                              if (e.currentTarget.src !== DUMMY_PAYMENT_LOGO) {
+                                e.currentTarget.src = DUMMY_PAYMENT_LOGO;
                               }
                             }}
                           />
@@ -252,7 +252,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                       borderRadius={10}
                       variant={activeTab === "sell" ? "secondary" : "primary"}
                       size="sm"
-                      className="min-w-[90px] font-semibold"
+                      className="min-w-[90px] font-semibold mr-2"
                       onClick={() => handleTradeClick(idx)}
                     >
                       {activeTab === "sell" ? "SELL USDT" : "BUY USDT"}
@@ -329,9 +329,11 @@ const MarketTable: React.FC<MarketTableProps> = ({
                     <span className="text-xs text-gray-500 dark:text-[#8C8CA1]">Payment Methods</span>
                     <div className="flex flex-wrap gap-2">
                       {row.payment_details?.slice(0, 2).map((method, i) => {
-                        const fallbackUrl = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
-                        const imageUrl = method.provider_logo || fallbackUrl;
-                        
+                        const imageUrl =
+                          (typeof method.provider_logo === "string" &&
+                            method.provider_logo.trim()) ||
+                          getPaymentLogo(method.provider);
+
                         return (
                           <span
                             key={i}
@@ -343,8 +345,8 @@ const MarketTable: React.FC<MarketTableProps> = ({
                               className="w-3 h-3 rounded object-contain"
                               loading="lazy"
                               onError={(e) => {
-                                if (e.currentTarget.src !== fallbackUrl) {
-                                  e.currentTarget.src = fallbackUrl;
+                                if (e.currentTarget.src !== DUMMY_PAYMENT_LOGO) {
+                                  e.currentTarget.src = DUMMY_PAYMENT_LOGO;
                                 }
                               }}
                             />
