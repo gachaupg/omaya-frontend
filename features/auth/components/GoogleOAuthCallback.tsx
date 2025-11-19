@@ -188,7 +188,18 @@ export default function GoogleOAuthCallback() {
           return;
         }
         
-        // If not in popup, redirect to dashboard or previous page
+        // If phone number is required (first-time user), redirect to phone capture
+        if (data.phone_required) {
+          const fallback = '/auth/phone';
+          try {
+            router.replace(fallback);
+          } catch {
+            window.location.href = fallback;
+          }
+          return;
+        }
+
+        // If not in popup and phone not required, redirect to dashboard or previous page
         const redirectPath = sessionStorage.getItem('auth_redirect') || '/dashboard/';
         sessionStorage.removeItem('auth_redirect');
         try {
