@@ -2802,7 +2802,7 @@ export default function DepositForm({
           <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/3 z-10">
             {!isHomePage && (
               <button
-                className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105 min-h-[44px] sm:min-h-0 touch-manipulation"
+                className="w-10 h-10 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105 sm:min-h-0 touch-manipulation"
                 onClick={() => {
                   // Switch between deposit and withdrawal modes
                   if (onModeChange) {
@@ -2814,13 +2814,13 @@ export default function DepositForm({
                 <img
                   src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
                   alt="swap icon"
-                  className="w-12 h-12 sm:w-16 sm:h-16 dark:hidden"
+                  className="w-10 h-10 sm:w-10 sm:h-10 dark:hidden"
                 />
                 {/* Dark mode image */}
                 <img
                   src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
                   alt="swap icon"
-                  className="w-12 h-12 sm:w-16 sm:h-16 hidden dark:block"
+                  className="w-10 h-10 sm:w-10 sm:h-10 hidden dark:block"
                 />
               </button>
             )}

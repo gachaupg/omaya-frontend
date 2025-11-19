@@ -424,7 +424,7 @@ export default function MarketingPage() {
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
           {/* Section Title */}
         <h2 className="text-center text-2xl md:text-3xl 2xl:text-4xl font-medium mb-12">
-            <span className="text-white dark:text-white">
+            <span className="dark:text-white">
               {t(
                 "marketing.achievements.title.leading",
                 "Celebrating Success:"

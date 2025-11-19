@@ -3805,7 +3805,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                       className={`w-full ${
                         paymentMethodError ? "border-red-500 dark:border-red-500" : ""
                       }`}
-                      triggerClassName={`px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border rounded-xl ${
+                      triggerClassName={`px-3 sm:px-4 py-2 sm:py-2.5 text-base sm:text-lg border rounded-xl ${
                         isDark ? "bg-transparent text-white border-[#39394A]" : "bg-white text-[#1F2937] border-[#CBD5F5]"
                       }`}
                       onChange={(value) => {

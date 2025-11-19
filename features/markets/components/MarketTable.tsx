@@ -710,6 +710,12 @@ const MarketTable = () => {
                                 <p>Exchange</p>
                               </Button>
                             </Link>
+                            <Link href="/dashboard/p2p" className="w-full">
+                              <Button className="w-full border border-[#1D8751] rounded-full p-2.5 px-4 text-[#1D8751] flex gap-2 items-center justify-center cursor-pointer min-h-[44px] text-sm">
+                                <Users className="w-4 h-4" />
+                                <p>P2P</p>
+                              </Button>
+                            </Link>
                           </div>
                         ) : (
                           <div className="text-red-500 flex items-center gap-2 text-sm">
@@ -843,6 +849,12 @@ const MarketTable = () => {
                                       <Button className="border border-[#1D8751] rounded-full p-2.5 sm:p-2 lg:p-2 px-4 text-[#1D8751] flex gap-2 items-center justify-center cursor-pointer text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0">
                                         <ArrowLeftRight className="w-4 h-4 sm:w-4 sm:h-5 lg:w-4 lg:h-5" />
                                       <p>Exchange</p>
+                                    </Button>
+                                  </Link>
+                                  <Link href="/dashboard/p2p">
+                                    <Button className="border border-[#1D8751] rounded-full p-2.5 sm:p-2 lg:p-2 px-4 text-[#1D8751] flex gap-2 items-center justify-center cursor-pointer text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0">
+                                      <Users className="w-4 h-4 sm:w-5 sm:h-5 lg:w-5 lg:h-5" />
+                                      <p>P2P</p>
                                     </Button>
                                   </Link>
                                 </div>

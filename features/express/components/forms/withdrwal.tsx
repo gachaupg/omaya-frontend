@@ -67,8 +67,8 @@ const UserPaymentSelector = ({
   adminWalletListDisplay: any;
 }) => {
   return (
-    <div className="bg-[#1D1D23] rounded-2xl border border-[#39394a] p-4">
-      <h3 className="text-white font-semibold mb-3">Select Payment Methods</h3>
+    <div className="bg-white dark:bg-[#1D1D23] rounded-2xl border border-gray-200 dark:border-[#39394a] p-4">
+      <h3 className="text-gray-900 dark:text-white font-semibold mb-3 text-lg sm:text-xl">Select Payment Methods</h3>
       <div className="space-y-2">
         {userPaymentDetails && userPaymentDetails.length > 0 ? (
           userPaymentDetails.map((detail) => {
@@ -79,12 +79,12 @@ const UserPaymentSelector = ({
                 key={detail.id}
                 className={`flex items-center justify-between p-3 rounded-xl border ${
                   isSelected
-                    ? "border-[#1D8751] bg-[#1D8751]/10"
-                    : "border-[#A2A4A9FF] bg-[#A2A4A9FF]"
+                    ? "border-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/10"
+                    : "border-gray-300 dark:border-[#A2A4A9FF] bg-gray-50 dark:bg-[#A2A4A9FF]"
                 }`}
               >
                 <div className="flex-1">
-                  <div className="text-white font-medium">
+                  <div className="text-gray-900 dark:text-white font-medium text-base sm:text-lg">
                     {(() => {
                       // Get the admin provider name for this payment method
                       const adminDetail = adminWalletListDisplay.displayData?.find(
@@ -94,7 +94,7 @@ const UserPaymentSelector = ({
                       return adminDetail?.provider_name || detail.payment_provider_name || detail.provider_name || "Unknown Provider";
                     })()} - {detail.account_name || detail.account_number}
                   </div>
-                  <div className="text-[#788099] text-sm">
+                  <div className="text-gray-600 dark:text-[#788099] text-sm sm:text-base">
                     {detail.account_name} ({detail.account_number})
                   </div>
                 </div>
@@ -106,7 +106,7 @@ const UserPaymentSelector = ({
                       onSelect(detail);
                     }
                   }}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-4 py-2 rounded-lg text-base sm:text-lg font-medium transition-colors ${
                     isSelected
                       ? "bg-red-500 text-white hover:bg-red-600"
                       : "bg-[#1D8751] text-white hover:bg-[#166b3e]"
@@ -118,7 +118,7 @@ const UserPaymentSelector = ({
             );
           })
         ) : (
-          <div className="text-center text-[#788099] py-4">
+          <div className="text-center text-gray-600 dark:text-[#788099] py-4 text-base">
             No payment details available
           </div>
         )}
@@ -3232,7 +3232,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
           {/* Swap Circle - positioned to touch both borders equally */}
           <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/3 z-10">
             <button
-              className="w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105"
+              className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105"
               onClick={() => {
                 // Switch between deposit and withdrawal modes
                 if (onModeChange) {
@@ -3244,13 +3244,13 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
               <img
                 src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
                 alt="swap icon"
-                className="w-16 h-16 dark:hidden"
+                className="w-10 h-10 dark:hidden"
               />
               {/* Dark mode image */}
               <img
                 src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
                 alt="swap icon"
-                className="w-16 h-16 hidden dark:block"
+                className="w-10 h-10 hidden dark:block"
               />
             </button>
           </div>
@@ -3574,7 +3574,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                       className={`w-full ${
                         paymentMethodError ? "border-red-500 dark:border-red-500" : ""
                       }`}
-                      triggerClassName="bg-transparent dark:bg-transparent text-white border border-[#39394A] dark:border-[#39394A] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base"
+                      triggerClassName="bg-transparent dark:bg-transparent text-[#35353e] dark:text-white border border-gray-300 dark:border-[#39394A] px-3 sm:px-4 py-2 sm:py-2.5 text-base sm:text-lg"
                       onChange={(value) => {
                         const selectedWallet = adminWalletListDisplay.displayData?.find(
                           (wallet: any) =>

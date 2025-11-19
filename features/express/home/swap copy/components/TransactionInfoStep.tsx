@@ -310,20 +310,20 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
           {/* Swap Circle - positioned to touch both borders equally */}
           <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/3 z-10">
             <button
-              className="w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105"
+              className=" flex items-center justify-center transition-all duration-200  hover:scale-105"
               onClick={onSwapAssets}
             >
               {/* Light mode image */}
               <img
                 src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
                 alt="swap icon"
-                className="w-16 h-16 dark:hidden"
+                className="w-12 h-12 dark:hidden"
               />
               {/* Dark mode image */}
               <img
                 src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
                 alt="swap icon"
-                className="w-16 h-16 hidden dark:block"
+                className="w-12 h-12 hidden dark:block"
               />
             </button>
           </div>

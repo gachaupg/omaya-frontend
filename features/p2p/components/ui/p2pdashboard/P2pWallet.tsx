@@ -118,22 +118,17 @@ const P2pWallet = memo(
                   icon={
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
+                      width="20"
+                      height="20"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke={isOpenForm === "deposit" ? "white" : "#1D8751"}
-                      strokeWidth="2"
+                      strokeWidth="2.5"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      className="text-white"
                     >
-                      <path d="M12 18H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5" />
-                      <path d="m16 19 3 3 3-3" />
-                      <path d="M18 12h.01" />
-                      <path d="M19 16v6" />
-                      <path d="M6 12h.01" />
-                      <circle cx="12" cy="12" r="2" />
+                      <path d="M7 17L17 7" />
+                      <path d="M7 7h10v10" />
                     </svg>
                   }
                 >
@@ -166,22 +161,17 @@ const P2pWallet = memo(
                   icon={
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
+                      width="20"
+                      height="20"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke={isOpenForm === "withdraw" ? "white" : "#E23D3A"}
-                      strokeWidth="2"
+                      strokeWidth="2.5"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      className="text-white"
                     >
-                      <path d="M12 18H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5" />
-                      <path d="M18 12h.01" />
-                      <path d="M19 22v-6" />
-                      <path d="m22 19-3-3-3 3" />
-                      <path d="M6 12h.01" />
-                      <circle cx="12" cy="12" r="2" />
+                      <path d="M17 7L7 17" />
+                      <path d="M17 17H7V7" />
                     </svg>
                   }
                 >

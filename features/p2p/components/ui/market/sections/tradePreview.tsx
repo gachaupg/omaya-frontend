@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { MarketRow } from "../types";
 import { validateBalance } from "@/utils/balanceValidator";
 import { useDispatch, useSelector } from "react-redux";
@@ -44,13 +44,9 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sendAmount, setSendAmount] = useState("");
   const [receiveAmount, setReceiveAmount] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<string[]>([]);
-  const [isPaymentDropdownOpen, setIsPaymentDropdownOpen] = useState(false);
   const [isAmountValid, setIsAmountValid] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [numericAmount, setNumericAmount] = useState(0);
-
-  const paymentDropdownRef = useRef<HTMLDivElement>(null);
 
   const commissionRate = parseFloat(advertiserData.commission);
   const minAmount = advertiserData.minAmount;
@@ -75,43 +71,9 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     }
   }, [dispatch, isAuthenticated]);
 
-  // Create payment options from row payment details
-  const paymentOptions = React.useMemo(() => {
-    if (!paymentDetails || !Array.isArray(paymentDetails)) return [];
-    
-    // Create options for each payment method from the row
-    return paymentDetails.map((detail: any, index: number) => ({
-      id: detail.id || index,
-      value: detail.provider,
-      label: detail.provider,
-    }));
-  }, [paymentDetails]);
-
-  const selectedPaymentSummary = React.useMemo(() => {
-    if (paymentMethod.length === 0) return "Select payment methods";
-    if (paymentMethod.length <= 2) return paymentMethod.join(", ");
-    return `${paymentMethod.length} methods selected`;
-  }, [paymentMethod]);
-
-  // Close payment dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        paymentDropdownRef.current &&
-        !paymentDropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsPaymentDropdownOpen(false);
-      }
-    };
-
-    if (isPaymentDropdownOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isPaymentDropdownOpen]);
+  const sendCurrency = React.useMemo(() => {
+    return tradeType === "buy" ? "USD" : "USDT";
+  }, [tradeType]);
 
 
   // Get USDT wallet balance from the wallet response structure
@@ -273,7 +235,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   };
 
   const isFormValid = () => {
-    if (!sendAmount || paymentMethod.length === 0) {
+    if (!sendAmount) {
       return false;
     }
     return isAmountValid;
@@ -284,9 +246,6 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       if (!sendAmount) {
         setErrorMessage("Please enter an amount");
         showToast.error("Validation Error", "Please enter an amount");
-      } else if (paymentMethod.length === 0) {
-        setErrorMessage("Please select at least one payment method");
-        showToast.error("Validation Error", "Please select at least one payment method");
       }
       return;
     }
@@ -396,7 +355,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                 </div>
               </div>
             </div>
-            <div className="rounded-xl p-3 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[#23242A]">
+            <div className="rounded-xl p-3 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[#23242A] min-h-[220px]">
               <div className="flex items-start sm:items-center gap-2 mb-1 flex-wrap">
                 <svg 
                  xmlns="http://www.w3.org/2000/svg" 
@@ -421,8 +380,8 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                   (Please read carefully)
                 </span>
               </div>
-              <div className="text-xs sm:text-sm text-gray-600 dark:text-[#788099] leading-relaxed">
-                {advertiserData.terms_and_conditions}
+              <div className="text-xs sm:text-sm text-gray-600 dark:text-[#788099] leading-relaxed min-h-[140px]">
+                {advertiserData.terms_and_conditions || "No terms provided by this advertiser."}
               </div>
             </div>
           </div>
@@ -459,26 +418,14 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                       !isAmountValid && sendAmount ? "border border-red-500" : ""
                     }`}
                   />
-                  <div className="relative w-full sm:w-auto">
+                  <div className="relative w-full sm:w-auto min-w-[120px]">
                     <select
-                      className="rounded px-3 py-2 pr-10 text-sm sm:text-base font-semibold min-w-[90px] sm:min-w-[100px] w-full bg-white dark:bg-[#23242A] text-gray-900 dark:text-white border border-gray-300 dark:border-[#35353E]"
-                      value="USDT"
+                      className="w-full rounded px-4 py-2 text-base font-semibold bg-white dark:bg-[#23242A] text-gray-900 dark:text-white border border-gray-300 dark:border-[#35353E] text-center"
+                      value={sendCurrency}
                       disabled
                     >
-                      <option>{tradeType === "buy" ? "USD" : "USDT"}</option>
+                      <option value={sendCurrency}>{sendCurrency}</option>
                     </select>
-                    <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[#1D8751]">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    </span>
                   </div>
                 </div>
                 {!isAmountValid && sendAmount && (
@@ -515,107 +462,6 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                 {!isAmountValid && receiveAmount && (
                   <div className="text-sm text-red-500 pl-0 sm:pl-2 font-semibold">
                     {errorMessage}
-                  </div>
-                )}
-              </div>
-            </div>
-            {/* Payment Method Select */}
-            <div className="flex flex-col gap-2" ref={paymentDropdownRef}>
-              <label className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
-                Payment Method
-              </label>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsPaymentDropdownOpen((prev) => !prev)}
-                  className="w-full rounded-xl px-3 sm:px-4 py-2.5 pr-12 text-sm sm:text-base font-semibold border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#23242A] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] flex items-center justify-between"
-                >
-                  <span className="truncate text-left">
-                    {selectedPaymentSummary}
-                  </span>
-                  <svg
-                    className={`w-4 h-4 text-gray-500 dark:text-[#788099] transition-transform ${
-                      isPaymentDropdownOpen ? "rotate-180" : ""
-                    }`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </button>
-                <span
-                  className={`pointer-events-none absolute inset-y-0 right-4 flex items-center text-[#1D8751] ${
-                    paymentMethod.length > 0 ? "opacity-100" : "opacity-40"
-                  }`}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                </span>
-                {isPaymentDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-2 rounded-xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#23242A] shadow-lg z-20 max-h-60 overflow-y-auto">
-                    {paymentOptions.length === 0 ? (
-                      <div className="px-4 py-3 text-sm text-gray-500 dark:text-[#788099]">
-                        No payment methods available
-                      </div>
-                    ) : (
-                      paymentOptions.map((opt) => {
-                        const isSelected = paymentMethod.includes(opt.value);
-                        return (
-                          <button
-                            key={opt.id}
-                            type="button"
-                            onClick={() => {
-                              setPaymentMethod((prev) =>
-                                prev.includes(opt.value)
-                                  ? prev.filter((m) => m !== opt.value)
-                                  : [...prev, opt.value]
-                              );
-                            }}
-                            className={`w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-[#35353E] ${
-                              isSelected
-                                ? "text-gray-900 dark:text-white"
-                                : "text-gray-700 dark:text-[#C7CAD1]"
-                            }`}
-                          >
-                            <span
-                              className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                                isSelected
-                                  ? "border-[#1D8751] bg-[#1D8751]"
-                                  : "border-[#1D8751] bg-transparent"
-                              }`}
-                            >
-                              {isSelected && (
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  className="h-3 w-3 text-white"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="3"
-                                >
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                              )}
-                            </span>
-                            <span className="text-sm sm:text-base font-semibold">{opt.label}</span>
-                          </button>
-                        );
-                      })
-                    )}
                   </div>
                 )}
               </div>
