@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'react-toastify';
+import { API_BASE_URL } from '@/config/api';
 
 interface UserData {
   id: string;
@@ -28,7 +29,8 @@ export default function GoogleOAuthCallback() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const processedRef = useRef(false);
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://dev.backend.omaya.io';
+  // Use centralized API base to avoid mixing environments (e.g., dev vs localhost)
+  const apiUrl = API_BASE_URL;
 
   // Check if we're in a popup
   const isInPopup = useCallback(() => {
