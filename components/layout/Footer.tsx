@@ -71,7 +71,7 @@ export default function Footer() {
   const { textTitle, textBody, background, card } = tokens.colors.dark;
 
   return (
-    <footer className="pt-10 pb-4 bg-[#18181D] text-[#788099]">
+    <footer className="relative z-40 pt-10 pb-4 bg-[#18181D] text-[#788099]">
       <div className="container mx-auto px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 pb-8 border-b border-gray-700">
           {/* Logo and Social Media Column */}
@@ -423,7 +423,14 @@ export default function Footer() {
         <div className="pt-6 text-center">
           <p className="text-sm text-white">Copyright © 2024, OMAYA.io</p>
           <div className="flex justify-center items-center mt-2">
-            <span className="text-xs text-white">Powered by Omaya Technologies</span>
+            <span className="text-xs text-white flex items-center gap-2">Powered by 
+               <span className="flex flex-col items-center gap-2">
+              <img src="https://res.cloudinary.com/dmoqammol/image/upload/v1763650633/Group_34253_ysx2s5.png" alt="" />
+             <h3 className="text-xs text-white font-bold">TECHNOLOGIES</h3>
+              </span> 
+              
+              
+              </span>
           </div>
         </div>
       </div>

@@ -1,5 +1,12 @@
 "use client";
-import React, { useEffect, useState, useRef, useMemo } from "react";
+import React, {
+  useEffect,
+  useState,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { FaExchangeAlt, FaExclamationCircle } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
@@ -36,6 +43,10 @@ import { useChangeNowAssets } from "../../hooks/useChangeNowAssets";
 import CustomSelect from "@/components/ui/CustomSelect";
 import ForexWithdrawal from "./ForexWithdrawal";
 import { useTheme } from "@/context/theme";
+import {
+  buildExpressRedirectPath,
+  setAuthRedirectPath,
+} from "@/lib/utils/authRedirect";
 
 // Add UserPaymentDetail interface
 interface UserPaymentDetail {
@@ -159,6 +170,12 @@ interface DepositFormProps {
   mode: "deposit" | "withdrawal";
   onModeChange?: (mode: "deposit" | "withdrawal") => void;
   isHomePage?: boolean;
+  initialState?: {
+    amountValue?: number;
+    amountInput?: string;
+    asset?: any;
+    paymentDetails?: UserPaymentDetail[];
+  };
 }
 
 // Network mapping function
@@ -187,6 +204,7 @@ export default function WithdrawalForm({
   mode,
   onModeChange,
   isHomePage = false,
+  initialState,
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -525,13 +543,22 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     }
   };
 
-  const [payAmount, setPayAmount] = useState(100);
-  const [payBank, setPayBank] = useState("");
-  const [selectedProviderData, setSelectedProviderData] = useState<any>(null); // Store the full provider data
-  const [getAmount, setGetAmount] = useState(0);
-  const [payAmountInput, setPayAmountInput] = useState("100");
-  const [getAmountInput, setGetAmountInput] = useState("0");
-  const [selectedAsset, setSelectedAsset] = useState<any>(null);
+  const [payAmount, setPayAmount] = useState(initialState?.amountValue ?? 100);
+  const [payBank, setPayBank] = useState(
+    initialState?.paymentDetails?.[0]?.payment_provider_name || ""
+  );
+  const [selectedProviderData, setSelectedProviderData] =
+    useState<any>(initialState?.paymentDetails?.[0] || null);
+  const [getAmount, setGetAmount] = useState(initialState?.amountValue ?? 0);
+  const [payAmountInput, setPayAmountInput] = useState(
+    initialState?.amountInput ?? "100"
+  );
+  const [getAmountInput, setGetAmountInput] = useState(
+    initialState?.amountInput ?? "0"
+  );
+  const [selectedAsset, setSelectedAsset] = useState<any>(
+    initialState?.asset || null
+  );
   const [selectedNetwork, setSelectedNetwork] = useState<any>(null);
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
   const [walletAddress, setWalletAddress] = useState("");
@@ -563,57 +590,55 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     top: 0,
     left: 0,
     width: 0,
+    cardLeft: 0,
+    cardTop: 0,
+    cardWidth: 0,
   });
   const [isComponentMounted, setIsComponentMounted] = useState(false);
 
-  // Calculate dropdown styles safely using useMemo
-  const assetDropdownStyles = useMemo(() => {
-    if (!isAssetDropdownOpen || !assetDropdownRef.current) {
-      return {};
+  const updateAssetDropdownPosition = useCallback(() => {
+    if (!assetDropdownRef.current) {
+      return;
+    }
+    const rect = assetDropdownRef.current.getBoundingClientRect();
+    const cardElement = assetDropdownRef.current.closest(
+      "[data-asset-card='true']"
+    ) as HTMLElement | null;
+    const cardRect = cardElement?.getBoundingClientRect();
+    setAssetDropdownPosition({
+      top: rect.bottom + window.scrollY,
+      left: rect.left + window.scrollX,
+      width: rect.width,
+      cardLeft: cardRect
+        ? cardRect.left + window.scrollX
+        : rect.left + window.scrollX,
+      cardTop: cardRect
+        ? cardRect.top + window.scrollY
+        : rect.top + window.scrollY,
+      cardWidth: cardRect ? cardRect.width : rect.width,
+    });
+  }, []);
+
+  useEffect(() => {
+    setIsComponentMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isAssetDropdownOpen) {
+      return;
     }
 
-    const triggerRect = assetDropdownRef.current.getBoundingClientRect();
-    const triggerWidth = triggerRect?.width ?? 0;
-    let expandedWidth: number | undefined =
-      triggerWidth > 0 ? triggerWidth + 48 : undefined;
-    const viewportAllowance =
-      typeof window !== "undefined" ? window.innerWidth - 32 : undefined;
+    updateAssetDropdownPosition();
+    const handleReposition = () => updateAssetDropdownPosition();
 
-    if (
-      expandedWidth !== undefined &&
-      viewportAllowance !== undefined &&
-      expandedWidth > viewportAllowance
-    ) {
-      expandedWidth = viewportAllowance;
-    }
+    window.addEventListener("resize", handleReposition);
+    window.addEventListener("scroll", handleReposition, true);
 
-    let leftShift = 0;
-    if (
-      expandedWidth !== undefined &&
-      triggerWidth > 0 &&
-      triggerRect &&
-      typeof window !== "undefined"
-    ) {
-      leftShift = -(expandedWidth - triggerWidth) / 2;
-      let absoluteLeft = triggerRect.left + leftShift;
-      if (absoluteLeft < 16) {
-        leftShift += 16 - absoluteLeft;
-        absoluteLeft = 16;
-      }
-      const absoluteRight = absoluteLeft + expandedWidth;
-      const maxRight = window.innerWidth - 16;
-      if (absoluteRight > maxRight) {
-        leftShift -= absoluteRight - maxRight;
-      }
-    }
-
-    return {
-      width: expandedWidth ?? (triggerWidth > 0 ? triggerWidth : undefined),
-      left: expandedWidth !== undefined && triggerWidth > 0 ? `${leftShift}px` : undefined,
-      maxWidth: viewportAllowance !== undefined ? `${viewportAllowance}px` : undefined,
-      minWidth: triggerWidth > 0 ? `${triggerWidth}px` : undefined,
+    return () => {
+      window.removeEventListener("resize", handleReposition);
+      window.removeEventListener("scroll", handleReposition, true);
     };
-  }, [isAssetDropdownOpen]);
+  }, [isAssetDropdownOpen, updateAssetDropdownPosition]);
 
   // Estimate calculation state
   const [estimate, setEstimate] = useState<any>(null);
@@ -1232,7 +1257,9 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     const handleClickOutside = (event: MouseEvent) => {
       if (
         assetDropdownRef.current &&
-        !assetDropdownRef.current.contains(event.target as Node)
+        !assetDropdownRef.current.contains(event.target as Node) &&
+        (!assetDropdownContentRef.current ||
+          !assetDropdownContentRef.current.contains(event.target as Node))
       ) {
         setIsAssetDropdownOpen(false);
       }
@@ -2081,6 +2108,389 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     return 0;
   });
 
+  const renderAssetDropdown = () => {
+    if (!isComponentMounted || !isAssetDropdownOpen) {
+      return null;
+    }
+
+    const triggerRect = assetDropdownRef.current?.getBoundingClientRect();
+    const triggerWidth =
+      assetDropdownPosition.width || triggerRect?.width || 0;
+    let expandedWidth =
+      triggerWidth > 0 ? triggerWidth + 48 : undefined;
+    const viewportAllowance =
+      typeof window !== "undefined" ? window.innerWidth - 32 : undefined;
+
+    if (
+      expandedWidth !== undefined &&
+      viewportAllowance !== undefined &&
+      expandedWidth > viewportAllowance
+    ) {
+      expandedWidth = viewportAllowance;
+    }
+
+    const extraWidth =
+      expandedWidth !== undefined && triggerWidth > 0
+        ? expandedWidth - triggerWidth
+        : 0;
+
+    let computedLeft =
+      triggerRect && extraWidth
+        ? triggerRect.left - extraWidth / 2
+        : assetDropdownPosition.left;
+
+    if (
+      typeof window !== "undefined" &&
+      expandedWidth !== undefined &&
+      computedLeft !== undefined
+    ) {
+      const maxLeft = window.innerWidth - expandedWidth - 16;
+      computedLeft = Math.min(
+        Math.max(16, computedLeft),
+        Math.max(16, maxLeft)
+      );
+    }
+
+    const inputHeight = triggerRect?.height || 0;
+    const adjustedTop = Math.max(
+      window.scrollY + 16,
+      assetDropdownPosition.top - inputHeight - 12
+    );
+
+    const hasCardMetrics =
+      (assetDropdownPosition.cardWidth || 0) > 0;
+
+    const viewportWidth =
+      typeof window !== "undefined" ? window.innerWidth : undefined;
+    const minMargin = 16;
+    const minWidth = 320;
+
+    const baseWidth =
+      (hasCardMetrics ? assetDropdownPosition.cardWidth : undefined) ||
+      expandedWidth ||
+      assetDropdownPosition.width ||
+      (triggerWidth > 0 ? triggerWidth : undefined);
+
+    let desiredWidth: number | undefined = baseWidth;
+    if (baseWidth) {
+      const cardWidth = hasCardMetrics
+        ? assetDropdownPosition.cardWidth ?? baseWidth
+        : baseWidth;
+      const reducedBase = Math.max(
+        minWidth,
+        Math.min(cardWidth * 0.4, baseWidth * 0.4)
+      );
+
+      desiredWidth = Math.max(minWidth, Math.min(reducedBase, baseWidth * 0.85));
+
+      if (viewportWidth) {
+        const maxViewportWidth = Math.max(
+          minWidth,
+          Math.min(viewportWidth * 0.3, viewportWidth - minMargin * 2)
+        );
+        desiredWidth = Math.min(desiredWidth, maxViewportWidth);
+      }
+    }
+
+    let baseLeft =
+      (hasCardMetrics && desiredWidth !== undefined
+        ? (assetDropdownPosition.cardLeft ?? 0) +
+          ((assetDropdownPosition.cardWidth ?? desiredWidth) - desiredWidth)
+        : undefined) ??
+      computedLeft ??
+      triggerRect?.left ??
+      assetDropdownPosition.left;
+
+    if (viewportWidth && desiredWidth !== undefined) {
+      const maxLeft = viewportWidth - desiredWidth - minMargin;
+      baseLeft = Math.min(
+        Math.max(minMargin, baseLeft ?? minMargin),
+        Math.max(minMargin, maxLeft)
+      );
+    }
+
+    const topOffset = Math.max(
+      0,
+      (assetDropdownPosition.cardTop || 0) - 64
+    );
+
+    const dropdownStyle: React.CSSProperties = {
+      position: "absolute",
+      top: hasCardMetrics
+        ? topOffset
+        : adjustedTop,
+      left: baseLeft,
+      width: desiredWidth,
+    };
+
+    return createPortal(
+      (
+        <div
+          ref={assetDropdownContentRef}
+          className="mt-1 bg-white dark:bg-[#050505] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg z-[1200] max-h-[70vh] sm:max-h-96 overflow-y-auto"
+          style={dropdownStyle}
+        >
+          <div className="p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+            <div className="relative">
+              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search assets..."
+                className="w-full text-gray-900 dark:text-white dark:bg-[#050505] bg-white rounded-xl px-10 py-2 text-sm focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400"
+                value={assetSearchTerm}
+                onChange={(e) => setAssetSearchTerm(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="max-h-[60vh] sm:max-h-72 overflow-y-auto">
+            {sortedSwapAssets.length > 0 ? (
+              <>
+                {!assetSearchTerm && sortedSwapAssets.length > 3 && (
+                  <>
+                    <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+                      <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
+                        Popular
+                      </span>
+                    </div>
+                    {sortedSwapAssets
+                      .slice(0, 3)
+                      .map((asset: SupportedAsset, index: number) => {
+                        const handleAssetClick = () => {
+                          if (calculationTimeout) {
+                            clearTimeout(calculationTimeout);
+                          }
+                          if (estimateTimeout) {
+                            clearTimeout(estimateTimeout);
+                          }
+
+                          setEstimate(null);
+                          setEstimateError(null);
+                          setEstimateLoading(false);
+                          setCalculationError(null);
+                          setReceiveAmountError(null);
+                          setApiValidationError(null);
+                          setApiValidationError(null);
+
+                          setSelectedAsset(asset);
+                          setIsAssetDropdownOpen(false);
+                          setAssetSearchTerm("");
+
+                          if (isSimpleCalculationAsset(asset)) {
+                            setIsCalculatingFromPay(true);
+                            if (!isUserModifiedAmount) {
+                              const defaultAmount = getDefaultAmount(asset);
+                              setPayAmount(defaultAmount);
+                              setPayAmountInput(defaultAmount.toString());
+                              calculateAmounts(defaultAmount, true);
+                            } else {
+                              calculateAmounts(payAmount, true);
+                            }
+                          } else if (isForexAsset(asset)) {
+                            setIsCalculatingFromPay(true);
+                            if (!isUserModifiedAmount) {
+                              const defaultAmount = 1000;
+                              setPayAmount(defaultAmount);
+                              setPayAmountInput(defaultAmount.toString());
+                              calculateAmounts(defaultAmount, true);
+                            } else {
+                              calculateAmounts(payAmount, true);
+                            }
+                          } else {
+                            setIsCalculatingFromPay(true);
+                            setIsCalculating(true);
+                            setIsCalculatingReceive(true);
+                            setEstimateLoading(true);
+                            if (!isUserModifiedAmount) {
+                              const defaultAmount = getDefaultAmount(asset);
+                              setPayAmount(defaultAmount);
+                              setPayAmountInput(defaultAmount.toString());
+                            }
+                          }
+                        };
+
+                        return (
+                          <div
+                            key={`popular-${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
+                            className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E]"
+                            onClick={handleAssetClick}
+                          >
+                            <img
+                              src={
+                                asset?.image_url ||
+                                asset?.asset_image ||
+                                (asset as any)?.image ||
+                                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                              }
+                              alt={
+                                asset?.name ||
+                                asset?.ticker ||
+                                asset?.symbol ||
+                                "Asset"
+                              }
+                              className="w-6 h-6 rounded-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src =
+                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                              }}
+                            />
+                            <div className="flex-1">
+                              <div className="text-[#111827] dark:text-[#ffffff] font-medium flex items-center gap-2">
+                                {(asset.ticker ||
+                                  asset.symbol ||
+                                  asset.name ||
+                                  "Unknown"
+                                ).toUpperCase()}
+                                <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                                  {getNetworkDisplayName(asset.network)}
+                                </span>
+                              </div>
+                              <div className="text-[#475569] dark:text-[#788099] text-sm">
+                                {asset.name ||
+                                  (asset.ticker || "").toUpperCase() ||
+                                  (asset.symbol || "").toUpperCase() ||
+                                  "Unknown Asset"}
+                                {asset.legacy_ticker && (
+                                  <span className="text-xs text-[#f7c624] dark:text-[#f7c624] bg-[#f7c6241a] px-1 py-0.5 rounded-full">
+                                    {asset.legacy_ticker}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            {selectedAsset?.asset_id === asset.asset_id && (
+                              <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                    <div className="border-t-2 border-[#D1D2D4FF] dark:border-[#35353E]"></div>
+
+                    <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+                      <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
+                        All Assets
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                {(assetSearchTerm
+                  ? sortedSwapAssets
+                  : sortedSwapAssets.slice(3)
+                ).map((asset: SupportedAsset, index: number) => (
+                  <div
+                    key={`${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
+                    className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
+                    onClick={() => {
+                      if (calculationTimeout) {
+                        clearTimeout(calculationTimeout);
+                      }
+                      if (estimateTimeout) {
+                        clearTimeout(estimateTimeout);
+                      }
+
+                      setEstimate(null);
+                      setEstimateError(null);
+                      setEstimateLoading(false);
+                      setCalculationError(null);
+                      setReceiveAmountError(null);
+                      setApiValidationError(null);
+                      setApiValidationError(null);
+
+                      setSelectedAsset(asset);
+                      setIsAssetDropdownOpen(false);
+                      setAssetSearchTerm("");
+
+                      if (isSimpleCalculationAsset(asset)) {
+                        setIsCalculatingFromPay(true);
+                        if (!isUserModifiedAmount) {
+                          const defaultAmount = getDefaultAmount(asset);
+                          setPayAmount(defaultAmount);
+                          setPayAmountInput(defaultAmount.toString());
+                          calculateAmounts(defaultAmount, true);
+                        } else {
+                          calculateAmounts(payAmount, true);
+                        }
+                      } else if (isForexAsset(asset)) {
+                        setIsCalculatingFromPay(true);
+                        if (!isUserModifiedAmount) {
+                          const defaultAmount = 1000;
+                          setPayAmount(defaultAmount);
+                          setPayAmountInput(defaultAmount.toString());
+                          calculateAmounts(defaultAmount, true);
+                        } else {
+                          calculateAmounts(payAmount, true);
+                        }
+                      } else {
+                        setIsCalculatingFromPay(true);
+                        setIsCalculating(true);
+                        setIsCalculatingReceive(true);
+                        setEstimateLoading(true);
+                        if (!isUserModifiedAmount) {
+                          const defaultAmount = getDefaultAmount(asset);
+                          setPayAmount(defaultAmount);
+                          setPayAmountInput(defaultAmount.toString());
+                        }
+                      }
+                    }}
+                  >
+                    <img
+                      src={
+                        asset?.image_url ||
+                        asset?.asset_image ||
+                        (asset as any)?.image ||
+                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                      }
+                      alt={
+                        asset?.name || asset?.ticker || asset?.symbol || "Asset"
+                      }
+                      className="w-6 h-6 rounded-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src =
+                          "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                      }}
+                    />
+                    <div className="flex-1">
+                      <div className="text-[#111827] dark:text-[#ffffff] font-medium flex items-center gap-2">
+                        {(asset.ticker ||
+                          asset.symbol ||
+                          asset.name ||
+                          "Unknown"
+                        ).toUpperCase()}
+                        <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                          {getNetworkDisplayName(asset.network)}
+                        </span>
+                      </div>
+                      <div className="text-[#475569] dark:text-[#788099] text-sm">
+                        {asset.name ||
+                          (asset.ticker || "").toUpperCase() ||
+                          (asset.symbol || "").toUpperCase() ||
+                          "Unknown Asset"}
+                        {asset.legacy_ticker && (
+                          <span className="text-xs text-[#f7c624] dark:text-[#f7c624] bg-[#f7c6241a] px-1 py-0.5 rounded-full">
+                            {asset.legacy_ticker}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {selectedAsset?.asset_id === asset.asset_id && (
+                      <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                    )}
+                  </div>
+                ))}
+              </>
+            ) : (
+              <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
+                {assetSearchTerm ? "No assets found" : "No assets available"}
+              </div>
+            )}
+          </div>
+        </div>
+      ),
+      document.body
+    );
+  };
+
   // Calculate fees and amounts - Network fee is always 0 for BEP20
   const networkFee = 0;
 
@@ -2860,6 +3270,8 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
         <div className="relative mb-2">
           {/* Top Card Container */}
         <div
+          data-asset-card="true"
+          data-select-card="true"
           className={`relative flex rounded-2xl p-4 overflow-visible ${
             isDark ? "border border-[#2F2F3A] bg-[#0F0F17]" : "border border-[#E2E8F0] bg-white shadow-sm"
           }`}
@@ -3081,6 +3493,9 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                     isDark ? "bg-transparent text-white border-[#39394A]" : "bg-white text-[#1F2937] border-[#CBD5F5]"
                   }`}
                   onClick={() => {
+                    if (!isAssetDropdownOpen) {
+                      updateAssetDropdownPosition();
+                    }
                     setIsAssetDropdownOpen(!isAssetDropdownOpen);
                   }}
                 >
@@ -3160,274 +3575,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                   </svg>
                 </div>
 
-                {/* Asset Dropdown */}
-                {isAssetDropdownOpen && (
-                  <div
-                    className="absolute top-full left-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl z-50 max-h-80 overflow-y-auto"
-                    style={assetDropdownStyles}
-                  >
-                    {/* Search Input */}
-                    <div className="p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
-                      <div className="relative">
-                        <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
-                        <input
-                          type="text"
-                          placeholder="Search assets..."
-                          className="w-full text-gray-900 dark:text-white dark:bg-[#1D1D23] bg-white rounded-xl px-10 py-2 text-sm focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400"
-                          value={assetSearchTerm}
-                          onChange={(e) => setAssetSearchTerm(e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Asset List */}
-                    <div className="max-h-60 overflow-y-auto">
-                      {sortedSwapAssets.length > 0 ? (
-                        <>
-                          {/* Popular Section - First 3 assets only if no search */}
-                          {!assetSearchTerm && sortedSwapAssets.length > 3 && (
-                            <>
-                              <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
-                                <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
-                                  Popular
-                                </span>
-                              </div>
-                              {sortedSwapAssets.slice(0, 3).map((asset: SupportedAsset, index: number) => {
-                                const handleAssetClick = () => {
-                                  // First, stop any ongoing calculations and clear previous states
-                                  if (calculationTimeout) {
-                                    clearTimeout(calculationTimeout);
-                                  }
-                                  if (estimateTimeout) {
-                                    clearTimeout(estimateTimeout);
-                                  }
-
-                                  // Clear all previous calculation states
-                                  setEstimate(null);
-                                  setEstimateError(null);
-                                  setEstimateLoading(false);
-                                  setCalculationError(null);
-                                  setReceiveAmountError(null);
-                                  setApiValidationError(null);
-                                  setApiValidationError(null);
-
-                                  // Set the new asset
-                                  setSelectedAsset(asset);
-                                  setIsAssetDropdownOpen(false);
-                                  setAssetSearchTerm("");
-
-                                  // Check asset type first and handle accordingly
-                                  if (isSimpleCalculationAsset(asset)) {
-                                    setIsCalculatingFromPay(true);
-                                    if (!isUserModifiedAmount) {
-                                      const defaultAmount = getDefaultAmount(asset);
-                                      setPayAmount(defaultAmount);
-                                      setPayAmountInput(defaultAmount.toString());
-                                      calculateAmounts(defaultAmount, true);
-                                    } else {
-                                      calculateAmounts(payAmount, true);
-                                    }
-                                  } else if (isForexAsset(asset)) {
-                                    // For FXP, calculate immediately without API
-                                    setIsCalculatingFromPay(true);
-                                    if (!isUserModifiedAmount) {
-                                      const defaultAmount = 1000; // Default FXP amount
-                                      setPayAmount(defaultAmount);
-                                      setPayAmountInput(defaultAmount.toString());
-                                      calculateAmounts(defaultAmount, true);
-                                    } else {
-                                      calculateAmounts(payAmount, true);
-                                    }
-                                  } else {
-                                    setIsCalculatingFromPay(true);
-                                    setIsCalculating(true);
-                                    setIsCalculatingReceive(true);
-                                    setEstimateLoading(true);
-                                    if (!isUserModifiedAmount) {
-                                      const defaultAmount = getDefaultAmount(asset);
-                                      setPayAmount(defaultAmount);
-                                      setPayAmountInput(defaultAmount.toString());
-                                    }
-                                  }
-                                };
-                                
-                                return (
-                                  <div
-                                    key={`popular-${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
-                                    className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E]"
-                                    onClick={handleAssetClick}
-                                  >
-                                    <img
-                                      src={
-                                        asset?.image_url ||
-                                        asset?.asset_image ||
-                                        (asset as any)?.image ||
-                                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                                      }
-                                      alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
-                                      className="w-6 h-6 rounded-full object-cover"
-                                      onError={(e) => {
-                                        e.currentTarget.src =
-                                          "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
-                                      }}
-                                    />
-                                    <div className="flex-1">
-                                      <div className="text-[#111827] dark:text-[#ffffff] font-medium flex items-center gap-2">
-                                        {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
-                                        <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                                          {getNetworkDisplayName(asset.network)}
-                                        </span>
-                                      </div>
-                                      <div className="text-[#475569] dark:text-[#788099] text-sm">
-                                        {asset.name ||
-                                          (asset.ticker || "").toUpperCase() ||
-                                          (asset.symbol || "").toUpperCase() ||
-                                          "Unknown Asset"}
-                                        {asset.legacy_ticker && (
-                                          <span className="text-xs text-[#f7c624] dark:text-[#f7c624] bg-[#f7c6241a] px-1 py-0.5 rounded-full">
-                                            {asset.legacy_ticker}
-                                          </span>
-                                        )}
-                                      </div>
-                                    </div>
-                                    {selectedAsset?.asset_id === asset.asset_id && (
-                                      <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                              
-                              {/* Separator Line */}
-                              <div className="border-t-2 border-[#D1D2D4FF] dark:border-[#35353E]"></div>
-                              
-                              {/* All Assets Header */}
-                              <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
-                                <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
-                                  All Assets
-                                </span>
-                              </div>
-                            </>
-                          )}
-                          
-                          {/* Rest of the assets or all assets if searching */}
-                          {(assetSearchTerm ? sortedSwapAssets : sortedSwapAssets.slice(3)).map(
-                          (asset: SupportedAsset, index: number) => (
-                            <div
-                              key={`${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
-                              className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
-                              onClick={() => {
-                                // First, stop any ongoing calculations and clear previous states
-                                if (calculationTimeout) {
-                                  clearTimeout(calculationTimeout);
-                                }
-                                if (estimateTimeout) {
-                                  clearTimeout(estimateTimeout);
-                                }
-
-                                // Clear all previous calculation states
-                                setEstimate(null);
-                                setEstimateError(null);
-                                setEstimateLoading(false);
-                                setCalculationError(null);
-                                setReceiveAmountError(null);
-                                setApiValidationError(null);
-                                setApiValidationError(null);
-
-                                // Set the new asset
-                                setSelectedAsset(asset);
-                                setIsAssetDropdownOpen(false);
-                                setAssetSearchTerm("");
-
-                                // Check asset type first and handle accordingly
-                                if (isSimpleCalculationAsset(asset)) {
-                                  setIsCalculatingFromPay(true);
-                                  if (!isUserModifiedAmount) {
-                                      const defaultAmount = getDefaultAmount(asset);
-                                    setPayAmount(defaultAmount);
-                                    setPayAmountInput(defaultAmount.toString());
-                                    calculateAmounts(defaultAmount, true);
-                                  } else {
-                                    calculateAmounts(payAmount, true);
-                                  }
-                                } else if (isForexAsset(asset)) {
-                                  // For FXP, calculate immediately without API
-                                  setIsCalculatingFromPay(true);
-                                  if (!isUserModifiedAmount) {
-                                      const defaultAmount = 1000; // Default FXP amount
-                                    setPayAmount(defaultAmount);
-                                    setPayAmountInput(defaultAmount.toString());
-                                    calculateAmounts(defaultAmount, true);
-                                  } else {
-                                    calculateAmounts(payAmount, true);
-                                  }
-                                } else {
-                                  setIsCalculatingFromPay(true);
-                                  setIsCalculating(true);
-                                  setIsCalculatingReceive(true);
-                                  setEstimateLoading(true);
-                                  if (!isUserModifiedAmount) {
-                                      const defaultAmount = getDefaultAmount(asset);
-                                    setPayAmount(defaultAmount);
-                                    setPayAmountInput(defaultAmount.toString());
-                                  }
-                                }
-                              }}
-                            >
-                              <img
-                                src={
-                                  asset?.image_url ||
-                                  asset?.asset_image ||
-                                  (asset as any)?.image ||
-                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                                }
-                                alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
-                                className="w-6 h-6 rounded-full object-cover"
-                                onError={(e) => {
-                                  e.currentTarget.src =
-                                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
-                                }}
-                              />
-                              <div className="flex-1">
-                                <div className="text-[#111827] dark:text-[#ffffff] font-medium flex items-center gap-2">
-                                  {(
-                                    asset.ticker ||
-                                    asset.symbol ||
-                                    asset.name ||
-                                    "Unknown"
-                                  ).toUpperCase()}
-                                  <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                                    {getNetworkDisplayName(asset.network)}
-                                  </span>
-                                </div>
-                                <div className="text-[#475569] dark:text-[#788099] text-sm">
-                                  {asset.name ||
-                                    (asset.ticker || "").toUpperCase() ||
-                                    (asset.symbol || "").toUpperCase() ||
-                                    "Unknown Asset"}
-                                  {asset.legacy_ticker && (
-                                    <span className="text-xs text-[#f7c624] dark:text-[#f7c624] bg-[#f7c6241a] px-1 py-0.5 rounded-full">
-                                      {asset.legacy_ticker}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              {selectedAsset?.asset_id === asset.asset_id && (
-                                <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                              )}
-                            </div>
-                          )
-                          )}
-                        </>
-                      ) : (
-                        <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
-                          {assetSearchTerm
-                            ? "No assets found"
-                            : "No assets available"}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
+                {renderAssetDropdown()}
               </div>
             </div>
           </div>
@@ -3447,21 +3595,22 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
               <img
                 src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
                 alt="swap icon"
-                className="w-14 h-14 dark:hidden"
+                className="w-10 h-10 dark:hidden"
               />
               {/* Dark mode image */}
               <img
                 src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
                 alt="swap icon"
-                className="w-14 h-14 hidden dark:block"
+                className="w-10 h-10 hidden dark:block"
               />
             </button>
           </div>
         </div>
 
-        {/* Bottom Section - You Receive and Bank/Payment Method in one card */}
+        {/* Bottom Section - You Receive and Payment Method in one card */}
         <div className="relative mb-2 mt-4">
           <div
+            data-select-card="true"
             className={`relative flex rounded-2xl p-4 overflow-visible ${
               isDark ? "border border-[#2F2F3A] bg-[#0F0F17]" : "border border-[#E2E8F0] bg-white shadow-sm"
             }`}
@@ -3749,7 +3898,9 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
 
             {/* Payment Method Section */}
             <div className="flex-1 pl-4 relative z-0">
-              <label className="block text-[15px] text-[#475569] dark:text-[#9CA3AF] mb-2 font-semibold">
+              <label className={`block text-[15px] mb-2 font-semibold ${
+                isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+              }`}>
                 Payment Method
               </label>
               <div className="relative z-0">
@@ -3808,6 +3959,8 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                       triggerClassName={`px-3 sm:px-4 py-2 sm:py-2.5 text-base sm:text-lg border rounded-xl ${
                         isDark ? "bg-transparent text-white border-[#39394A]" : "bg-white text-[#1F2937] border-[#CBD5F5]"
                       }`}
+                      placeholderClassName="text-white dark:text-white"
+                      sizeMode="wide"
                       onChange={(value) => {
                         // Find the selected provider from public payment methods or admin wallet list
                         let selectedWallet = null;
@@ -3842,9 +3995,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                       placeholder={
                         isLoading
                           ? "Loading payment methods..."
-                          : paymentMethodOptions.length === 0
-                          ? "Select Payment Method"
-                          : "Select Payment Method"
+                          : "Payment Method"
                       }
                       disabled={isLoading}
                       loading={isLoading}
@@ -4054,6 +4205,24 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
               }`}
               onClick={() => {
                 if (requiresLoginRedirect) {
+                  const state = {
+                    mode,
+                    // Send amounts (You Send)
+                    amountInput: payAmountInput,
+                    amountValue: payAmount,
+                    // Receive amounts (You Receive)
+                    receiveAmountInput: getAmountInput,
+                    receiveAmountValue: getAmount,
+                    // Asset - save FULL object
+                    asset: selectedAsset ? { ...selectedAsset } : null,
+                    // Payment details - save FULL objects
+                    paymentDetails: selectedPaymentDetails.map((detail: UserPaymentDetail) => ({ ...detail })),
+                    // Keep currently selected provider/bank (even if user hasn't selected an account yet)
+                    payBank,
+                  };
+                  setAuthRedirectPath(
+                    buildExpressRedirectPath(mode, state)
+                  );
                   router.push("/auth/login");
                   return;
                 }

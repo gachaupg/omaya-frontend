@@ -26,6 +26,11 @@ const PaymentMethods = () => {
   const [deletingMethodId, setDeletingMethodId] = useState<string | null>(null);
   const [activeButton, setActiveButton] = useState("Approved");
 
+  const filteredPayments = userPaymentDetails.filter(
+    (payment: UserPaymentDetail) =>
+      payment.status?.toLowerCase() === activeButton.toLowerCase()
+  );
+
   useEffect(() => {
     if (isAuthenticated) {
       dispatch(fetchUserPaymentDetails() as any);
@@ -70,86 +75,115 @@ const PaymentMethods = () => {
       </div>
       <div className="flex w-full flex-col gap-3">
         <p className="text-sm sm:text-base font-semibold dark:text-white text-gray-900">
-          {" "}
           Payment Methods
         </p>
-        {userPaymentDetails
-          .filter((payment: UserPaymentDetail) => 
-            payment.status?.toLowerCase() === activeButton.toLowerCase()
-          )
-          .map((payment: UserPaymentDetail) => (
-          <div
-            key={payment.id}
-            className="flex flex-col sm:flex-row dark:bg-[#1D1D23] bg-gray-50 dark:border-[#35353E] border-gray-300 border-2 rounded-xl p-3 sm:p-4 justify-between gap-3 sm:gap-4 items-start sm:items-center"
-          >
-            <div className="min-w-0">
-              <p className="text-sm sm:text-base dark:text-white text-gray-900 truncate">
-                {payment?.payment_method_name}
-              </p>
-              <p className="text-xs dark:text-[#808080] text-gray-600 mt-1 flex items-center min-w-0">
-                <img
-                  src={payment?.provider_logo || "/default-provider-logo.svg"}
-                  alt={payment?.payment_provider_name}
-                  width={20}
-                  height={20}
-                  className="inline-block mr-2 rounded-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.src = "/default-provider-logo.svg";
-                  }}
-                />
-                <span className="truncate">{payment?.payment_provider_name}</span>
-              </p>
+        <div className="rounded-[32px] border border-[#20202A] dark:border-[#1E1E27] bg-white dark:bg-[#0D0D12] p-3 sm:p-4 space-y-3">
+          {filteredPayments.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-[#E3E6F0] dark:border-[#2A2A35] py-10 text-center text-sm text-gray-500 dark:text-[#7B819C]">
+              No payment methods in {activeButton.toLowerCase()} state yet.
             </div>
-            <div className="min-w-0">
-              <p className="text-sm sm:text-base dark:text-white text-gray-900 break-all">
-                {payment?.account_number}
-              </p>
-              <p className="text-xs dark:text-[#808080] text-gray-600 mt-1 truncate">
-                {payment?.account_name}
-              </p>
-            </div>
-            <button
-              className="sm:ml-2 text-[#1D8751] hover:text-red-500 self-stretch sm:self-auto"
-              title="Delete"
-              disabled={deletingMethodId === payment.id.toString()}
-              onClick={() => handleDeleteMethod(payment.id.toString())}
-            >
-              {deletingMethodId === payment.id.toString() ? (
-                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="#1D8751"
-                    strokeWidth="4"
-                    fill="none"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="#1D8751"
-                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                  />
-                </svg>
-              ) : (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-4 h-4 cursor-pointer"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
-                  />
-                </svg>
-              )}
-            </button>
-          </div>
-        ))}
+          )}
+          {filteredPayments.map((payment: UserPaymentDetail) => {
+            const isPending = payment.status?.toLowerCase() === "pending";
+            const isBankMethod =
+              payment?.payment_method_name
+                ?.toLowerCase()
+                .includes("bank") ||
+              payment?.payment_provider_name?.toLowerCase().includes("bank");
+            const inputLabel = isBankMethod ? "Bank Account" : "Wallet Address";
+            const placeholderText = isBankMethod
+              ? "Type in here your bank account number"
+              : "Type in here your wallet address";
+            return (
+              <div
+                key={payment.id}
+                className="flex flex-col gap-3 rounded-[28px] border border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50 dark:bg-[#13131A] px-4 py-4"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="relative">
+                    <div className="w-12 h-12 rounded-full bg-white dark:bg-[#171723] flex items-center justify-center overflow-hidden border border-[#E3E6F0] dark:border-[#2C2C35]">
+                      <img
+                        src={payment?.provider_logo || "/default-provider-logo.svg"}
+                        alt={payment?.payment_provider_name || payment?.payment_method_name}
+                        className="w-8 h-8 object-contain"
+                        onError={(e) => {
+                          e.currentTarget.src = "/default-provider-logo.svg";
+                        }}
+                      />
+                    </div>
+                    {isPending && (
+                      <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#FF4D55] border-2 border-white dark:border-[#13131A]" />
+                    )}
+                  </div>
+                  <div className="flex-1 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+                        {payment?.payment_method_name}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-[#8B90A5] mt-0.5">
+                        {payment?.payment_provider_name}
+                      </p>
+                    </div>
+                    <button
+                      className="text-[#1D8751] hover:text-red-500 transition-colors"
+                      title="Delete"
+                      disabled={deletingMethodId === payment.id.toString()}
+                      onClick={() => handleDeleteMethod(payment.id.toString())}
+                    >
+                      {deletingMethodId === payment.id.toString() ? (
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="#1D8751"
+                            strokeWidth="4"
+                            fill="none"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="#1D8751"
+                            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="w-4 h-4 cursor-pointer"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500 dark:text-[#8B90A5] mb-2 block">
+                    {inputLabel}
+                  </label>
+                  <div className="rounded-full border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[#0D0D12] px-4 py-2 flex items-center text-sm text-gray-500 dark:text-[#8890A6]">
+                    <input
+                      type="text"
+                      readOnly
+                      value={payment?.account_number || ""}
+                      placeholder={placeholderText}
+                      className="w-full bg-transparent focus:outline-none placeholder:text-gray-400 dark:placeholder:text-[#5C6175] text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
       <PaymentMethodsModal
         open={showPaymentModal}

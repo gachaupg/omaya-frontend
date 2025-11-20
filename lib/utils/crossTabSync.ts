@@ -12,11 +12,31 @@ import { store } from "@/store";
 import { initializeAuth, logout } from "@/features/auth/slices/authSlice";
 import { logger } from "./logger";
 
+const CROSS_TAB_LOGOUT_FLAG = "__omayaCrossTabLogout";
+
+const setLogoutFlag = (value: boolean) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+  if (value) {
+    (window as typeof window & Record<string, any>)[CROSS_TAB_LOGOUT_FLAG] = true;
+  } else {
+    delete (window as typeof window & Record<string, any>)[CROSS_TAB_LOGOUT_FLAG];
+  }
+};
+
+let isCrossTabSyncInitialized = false;
+
 /**
  * Initialize cross-tab synchronization listeners
  * Call this once during app initialization
  */
 export const initializeCrossTabSync = () => {
+  if (isCrossTabSyncInitialized) {
+    logger.warn("auth", "Cross-tab sync already initialized, skipping");
+    return;
+  }
+
   if (typeof window === "undefined") {
     logger.warn("auth", "Cross-tab sync: Not in browser environment, skipping");
     return;
@@ -58,10 +78,15 @@ export const initializeCrossTabSync = () => {
   // Listen for custom logout events
   window.addEventListener("logoutTriggered", (() => {
     logger.info("auth", "[CrossTabSync] Logout triggered in another tab");
-    setTimeout(() => store.dispatch(logout()), 0);
+    setLogoutFlag(true);
+    setTimeout(() => {
+      store.dispatch(logout());
+      setLogoutFlag(false);
+    }, 0);
   }) as EventListener);
 
   logger.info("auth", "Cross-tab synchronization initialized successfully");
+  isCrossTabSyncInitialized = true;
 };
 
 /**

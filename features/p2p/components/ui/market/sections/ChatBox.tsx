@@ -236,8 +236,8 @@ const ChatBox: React.FC<{
       const convertedMessages: TradeMessage[] = supportMessages.map((msg) => ({
         id: msg.id,
         trade: parseInt(tradeId) || 0,
-        sender: msg.sender_id,
-        sender_name: msg.sender_name,
+        sender: msg.sender_id ?? 0,
+        sender_name: msg.sender_name || '',
         message: msg.content,
         images: Array.isArray(msg.images) ? msg.images.map((img: any) => 
           typeof img === 'string' ? img : img.image_url || img.image

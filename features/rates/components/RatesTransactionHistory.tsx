@@ -1,19 +1,29 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store/rootReducer";
 import { fetchTransactions } from "../slices/transactionSlice";
+import { Transaction } from "../types";
 import {
   formatTransactionType,
   formatAmount,
   formatTimeAgo,
-  getCurrencyIcon,
   getStatusColor,
 } from "../utils/transactionUtils";
+
+const ASSET_ICON_URL =
+  "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png";
+const PAYMENT_ICON_URL =
+  "https://omayabucket.s3.amazonaws.com/bank_logo/image_7.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAW7TPBKP2YLA7Y4X4%2F20251120%2Feu-north-1%2Fs3%2Faws4_request&X-Amz-Date=20251120T095244Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=94995a0a57bd651c7cc6790b124d9ad7cf04d84f03ac1c1a369d0048de0d7594";
 
 const RatesTransactionHistory = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { transactions, loading, error } = useSelector(
     (state: RootState) => state.transaction
+  );
+
+  const getAmountColor = useMemo(
+    () => (type: string) => (type === "withdrawal" ? "text-red-500" : "text-[#1D8751]"),
+    []
   );
 
   useEffect(() => {
@@ -42,13 +52,15 @@ const RatesTransactionHistory = () => {
     <div className="bg-white dark:bg-[#1D1D23] p-3 sm:p-4 lg:p-6 rounded-lg">
       {/* Mobile: Card-based layout */}
       <div className="block sm:hidden space-y-4">
-        {transactions.map((tx) => (
+        {transactions.map((tx: Transaction) => (
           <div key={tx.transaction_id} className="border border-gray-200 dark:border-[#35353E] rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center">
-                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center mr-3 text-white text-xs font-bold">
-                  {getCurrencyIcon(tx.currency)}
-                </div>
+                <img
+                  src={ASSET_ICON_URL}
+                  alt={`${tx.currency} network`}
+                  className="w-10 h-10 object-contain mr-3"
+                />
                 <div>
                   <div className="text-gray-900 dark:text-white font-medium">{tx.currency}</div>
                   <div className="text-xs text-gray-600 dark:text-[#788099]">{tx.source}</div>
@@ -65,7 +77,20 @@ const RatesTransactionHistory = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-[#788099]">Amount:</span>
-                <span className={getStatusColor(tx.status)}>{formatAmount(tx.total_amount_due, tx.currency)}</span>
+                <span className={getAmountColor(tx.transaction_type)}>
+                  {formatAmount(tx.total_amount_due, tx.currency)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-[#788099]">Payment Method:</span>
+                <div className="flex items-center space-x-1">
+                  <img
+                    src={PAYMENT_ICON_URL}
+                    alt="Payment method"
+                    className="w-6 h-6 object-contain"
+                  />
+                  <span className="text-gray-900 dark:text-white">Salam Bank</span>
+                </div>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-[#788099]">When:</span>
@@ -84,20 +109,23 @@ const RatesTransactionHistory = () => {
             <th className="p-2 sm:p-3 lg:p-4 font-normal text-xs sm:text-sm lg:text-base">Asset</th>
             <th className="p-2 sm:p-3 lg:p-4 font-normal text-xs sm:text-sm lg:text-base">Transaction Type</th>
             <th className="p-2 sm:p-3 lg:p-4 font-normal text-xs sm:text-sm lg:text-base">Amount</th>
-            <th className="p-2 sm:p-3 lg:p-4 font-normal text-xs sm:text-sm lg:text-base">Status</th>
+            <th className="p-2 sm:p-3 lg:p-4 font-normal text-xs sm:text-sm lg:text-base">Payment Method</th>
+            <th className="p-2 sm:p-3 lg:p-4 font-normal text-xs sm:text-sm lg:text-base min-w-[120px]">Status</th>
             <th className="p-2 sm:p-3 lg:p-4 font-normal text-xs sm:text-sm lg:text-base">When</th>
           </tr>
         </thead>
         <tbody>
-          {transactions.map((tx, index) => (
+          {transactions.map((tx: Transaction, index: number) => (
             <tr
               key={tx.transaction_id}
               className="border-b border-gray-200 dark:border-[#35353E] last:border-b-0"
             >
               <td className="p-2 sm:p-3 lg:p-4 flex items-center text-xs sm:text-sm lg:text-base">
-                <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center mr-3 text-white text-xs font-bold">
-                  {getCurrencyIcon(tx.currency)}
-                </div>
+                <img
+                  src={ASSET_ICON_URL}
+                  alt={`${tx.currency} network`}
+                  className="w-8 h-8 object-contain mr-3"
+                />
                 <div>
                   <div className="text-gray-900 dark:text-white">
                     {tx.currency}
@@ -110,10 +138,20 @@ const RatesTransactionHistory = () => {
               <td className="p-2 sm:p-3 lg:p-4 text-gray-900 dark:text-white text-xs sm:text-sm lg:text-base">
                 {formatTransactionType(tx.transaction_type)}
               </td>
-              <td className={`p-2 sm:p-3 lg:p-4 text-xs sm:text-sm lg:text-base ${getStatusColor(tx.status)}`}>
+              <td className={`p-2 sm:p-3 lg:p-4 text-xs sm:text-sm lg:text-base ${getAmountColor(tx.transaction_type)}`}>
                 {formatAmount(tx.total_amount_due, tx.currency)}
               </td>
               <td className="p-2 sm:p-3 lg:p-4">
+                <div className="flex items-center space-x-2 text-xs sm:text-sm lg:text-base text-gray-900 dark:text-white">
+                  <img
+                    src={PAYMENT_ICON_URL}
+                    alt="Payment method"
+                    className="w-6 h-6 object-contain"
+                  />
+                  <span>Salam Bank</span>
+                </div>
+              </td>
+              <td className="p-2 sm:p-3 lg:p-4 min-w-[120px]">
                 <span
                   className={`px-2 py-1 rounded-full text-xs ${getStatusColor(
                     tx.status

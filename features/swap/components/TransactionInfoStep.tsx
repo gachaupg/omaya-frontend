@@ -31,11 +31,13 @@ interface TransactionInfoStepProps {
   activeInputField?: "from" | "to";
 }
 
+const strongBorder =
+  "border-[1.5px] border-gray-200 dark:border-white/10 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]";
 const baseCard =
-  "rounded-[26px] border dark:border-[#2E2E3A] border-gray-300 bg-transparent dark:text-white text-gray-900";
+  `rounded-[26px] ${strongBorder} bg-transparent dark:text-white text-gray-900`;
 const labelCopy = "text-[12px] uppercase tracking-wide dark:text-[#7d7f95] text-gray-600";
 const inputBase =
-  "rounded-2xl dark:bg-[#1B1B23] bg-white dark:border-[#2E2E3A] border-gray-300 dark:text-white text-gray-900 px-4 py-3 w-full min-h-[52px] dark:placeholder:text-[#5f6070] placeholder:text-gray-400 focus:outline-none";
+  `rounded-2xl dark:bg-[#1B1B23] bg-white ${strongBorder} dark:text-white text-gray-900 px-4 py-3 w-full min-h-[52px] dark:placeholder:text-[#5f6070] placeholder:text-gray-400 focus:outline-none`;
 
 const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
   const { isDark } = useTheme();
@@ -80,7 +82,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
       <button
         type="button"
         onClick={toggle}
-        className="flex items-center justify-between w-full rounded-2xl border dark:border-[#2E2E3A] border-gray-300 dark:bg-[#1B1B23] bg-white px-4 py-3 min-h-[52px]"
+        className={`flex items-center justify-between w-full rounded-2xl ${strongBorder} dark:bg-[#1B1B23] bg-white px-4 py-3 min-h-[52px]`}
       >
           <div className="flex items-center gap-3 text-left">
           <img
@@ -125,8 +127,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 right-0 mt-2 rounded-2xl border dark:border-[#2E2E3A] border-gray-300 dark:bg-[#14141C] bg-white shadow-2xl z-50 max-h-[60vh] overflow-hidden">
-          <div className="p-3 border-b dark:border-[#2E2E3A] border-gray-300">
+        <div className={`absolute left-0 right-0 mt-2 rounded-2xl ${strongBorder} dark:bg-[#14141C] bg-white shadow-2xl z-50 max-h-[60vh] overflow-hidden`}>
+          <div className={`p-3 border-b ${strongBorder}`}>
             <div className="relative">
               <svg
                 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 dark:text-[#7d7f95] text-gray-500"
@@ -141,7 +143,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                 value={searchValue}
                 onChange={(e) => onSearchChange(e.target.value)}
                 placeholder="Search assets..."
-                className="w-full rounded-xl border dark:border-[#2E2E3A] border-gray-300 dark:bg-[#1F1F27] bg-gray-50 pl-9 pr-3 py-2 text-sm dark:text-white text-gray-900 dark:placeholder:text-[#6c6d82] placeholder:text-gray-400"
+                className={`w-full rounded-xl ${strongBorder} dark:bg-[#1F1F27] bg-gray-50 pl-9 pr-3 py-2 text-sm dark:text-white text-gray-900 dark:placeholder:text-[#6c6d82] placeholder:text-gray-400`}
               />
             </div>
           </div>
@@ -169,7 +171,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                 <button
                   key={`${option.ticker}-${option.network}-${idx}`}
                   type="button"
-                  className="w-full flex items-center gap-3 p-3 text-left border-b dark:border-[#2E2E3A] border-gray-200 last:border-b-0 dark:hover:bg-[#1F1F27] hover:bg-gray-100"
+                  className="w-full flex items-center gap-3 p-3 text-left border-b border-white/5 dark:border-white/5 last:border-b-0 dark:hover:bg-[#1F1F27] hover:bg-gray-100"
                   onClick={() => {
                     onSelect(option);
                     toggle();
@@ -246,7 +248,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
   );
 
   return (
-    <div className="w-full flex flex-col px-3 sm:px-4 dark:text-white text-gray-900">
+    <div className="w-full flex flex-col   dark:text-white text-gray-900">
       <h2 className="text-base sm:text-lg md:text-xl font-semibold mb-4 dark:text-[#9ba3c5] text-gray-700">
         <span className="dark:text-[#7e7e8f] text-gray-500 mr-1">1-</span>
         Transaction Info
@@ -358,7 +360,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
             estimateLoading ||
             swapLoading
           }
-          className={`w-full text-white text-sm sm:text-base font-medium py-3 sm:py-2.5 rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[48px] mb-2 ${
+          className={`w-full text-white text-sm sm:text-base font-medium py-3 sm:py-2.5 rounded-3xl flex items-center justify-center gap-2 transition-colors min-h-[48px] mb-2 ${
             !fromAsset ||
             !toAsset ||
             !fromAmount ||

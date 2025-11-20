@@ -4,6 +4,10 @@ import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 
 import { useTheme } from "@/context/theme";
+import {
+  buildExpressRedirectPath,
+  setAuthRedirectPath,
+} from "@/lib/utils/authRedirect";
 import Exchanging from "../components/exchnaging";
 import ExpressExchangeForm from "../components/ExpressExchangeForm";
 
@@ -29,6 +33,8 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
   const handleModeToggle = () => {
     // If on home page and not authenticated, navigate to login
     if (isHomePage && !isAuthenticated) {
+      const nextMode = currentMode === "deposit" ? "withdrawal" : "deposit";
+      setAuthRedirectPath(buildExpressRedirectPath(nextMode));
       router.push("/auth/login");
       return;
     }

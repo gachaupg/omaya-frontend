@@ -841,8 +841,9 @@ export interface GroupedMessage {
   content: string;
   timestamp: string;
   images: GroupedMessageImage[] | string[];
-  sender_id: number;
-  sender_name: string;
+  sender_id: number | null;
+  sender_name: string | null;
+  sender_photo?: string | null;
   is_admin?: boolean;
   sender_role?: string;
   sender_type?: string;
@@ -854,11 +855,13 @@ export interface GroupedUser {
   sender_id: number;
   sender_name: string;
   sender_email: string;
+  sender_photo?: string | null;
   entity_id: string;
   message_type: string;
   peer_id?: number;
   peer_name?: string;
   peer_email?: string;
+  peer_photo?: string | null;
 }
 
 export interface GroupedMessagesResponse {

@@ -43,6 +43,7 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
   isHomePage = false,
 }) => {
   const [mode, setMode] = useState<"deposit" | "withdrawal">(initialMode);
+  const [prefillState, setPrefillState] = useState<any>(null);
 
   const handleModeChange = (newMode: "deposit" | "withdrawal") => {
     setMode(newMode);
@@ -51,6 +52,19 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
   // Update mode when initialMode prop changes
   useEffect(() => {
     setMode(initialMode);
+  }, [initialMode]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const prefill = params.get("prefill");
+    if (prefill) {
+      try {
+        const parsed = JSON.parse(decodeURIComponent(prefill));
+        setPrefillState(parsed);
+      } catch (error) {
+        console.warn("Failed to parse prefill state", error);
+      }
+    }
   }, [initialMode]);
 
   return (
@@ -65,6 +79,7 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
           mode={mode}
           onModeChange={handleModeChange}
           isHomePage={isHomePage}
+          initialState={prefillState}
         />
       ) : (
         <WithdrawalForm
@@ -72,6 +87,7 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
           mode={mode}
           onModeChange={handleModeChange}
           isHomePage={isHomePage}
+          initialState={prefillState}
         />
       )}
     </div>

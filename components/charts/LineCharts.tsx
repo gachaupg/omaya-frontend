@@ -429,18 +429,21 @@ function DonutChartWithCenter({
         y={center - 2}
         textAnchor="middle"
         fill="currentColor"
-        fontSize="13"
-        fontWeight="bold"
+        fontSize="14"
+        fontWeight="600"
         className="dark:fill-white fill-black"
+        style={{ textRendering: "geometricPrecision" }}
       >
-        {allZero ? "00" : `${formatLargeNumber(displayTotal)} USD`}
+        {allZero ? "0 USD" : `${formatLargeNumber(displayTotal)} USD`}
       </text>
       <text
         x={center}
-        y={center + 24}
+        y={center + 26}
         textAnchor="middle"
-        fill="#A3A3A3"
+        fill="#B0B4C9"
         fontSize="12"
+        fontWeight="500"
+        style={{ textRendering: "optimizeLegibility" }}
       >
         {label}
       </text>
@@ -504,32 +507,27 @@ const Card = ({
 };
 
 const Legend = ({ data }: { data: DonutChartData[] }) => (
-  <div className="flex flex-col gap-3 sm:gap-4 justify-center min-w-0 sm:min-w-[200px] w-full sm:w-auto">
+  <div className="flex flex-col gap-3 sm:gap-4 justify-center min-w-0 sm:min-w-[210px] w-full sm:w-auto">
     {data.map((d) => (
       <div
         key={d.label}
-        className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm md:text-base"
+        className="flex items-center gap-2.5 sm:gap-3 text-[13px] sm:text-sm md:text-base"
+        style={{ textRendering: "optimizeLegibility" }}
       >
         <span
           style={{
             background: d.color,
-            minWidth: 12,
-            minHeight: 12,
             width: 12,
             height: 12,
-            display: "inline-block",
-            borderRadius: "20%",
+            borderRadius: "9999px",
             flexShrink: 0,
           }}
         ></span>
-        <span className="dark:text-[#D1D5DB] text-[#23232B] font-semibold flex-1 truncate">
+        <span className="dark:text-[#D4D7E9] text-[#1C2537] font-medium flex-1 truncate">
           {d.label}
         </span>
-        <span className="dark:text-white text-[#051015] font-semibold ml-auto min-w-[70px] sm:min-w-[90px] text-right">
-          {d.value.toLocaleString(undefined, {
-            maximumFractionDigits: 2,
-          })}{" "}
-          USD
+        <span className="dark:text-white text-[#051015] font-medium ml-auto min-w-[72px] sm:min-w-[95px] text-right tracking-tight">
+          {formatLargeNumber(d.value)} USD
         </span>
       </div>
     ))}

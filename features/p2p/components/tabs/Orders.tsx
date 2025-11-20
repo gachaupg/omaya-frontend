@@ -105,12 +105,12 @@ const Orders = memo(() => {
         return false;
       }
 
-      // Status filter - map UI "processing" to API "pending"/"matched"
+      // Status filter - map UI "processing" to API "pending"/"matched"/"half-matched"
       if (filters.status !== "all") {
         const tradeStatus = trade.status.toLowerCase();
         if (filters.status === "processing") {
-          // Processing includes both pending and matched statuses
-          if (tradeStatus !== "pending" && tradeStatus !== "matched") {
+          // Processing includes pending, matched, and half-matched statuses
+          if (tradeStatus !== "pending" && tradeStatus !== "matched" && tradeStatus !== "half-matched") {
             return false;
           }
         } else if (tradeStatus !== filters.status.toLowerCase()) {

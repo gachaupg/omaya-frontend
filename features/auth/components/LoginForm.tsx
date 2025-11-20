@@ -14,6 +14,7 @@ import { useI18n } from "@/lib/useI18n";
 import { logger } from '@/lib/utils/logger';
 import DragFitCaptcha from "./capture";
 import { useTheme } from "@/context/theme";
+import { consumeAuthRedirectPath } from "@/lib/utils/authRedirect";
 
 export default function LoginPage() {
   const { t } = useI18n("auth");
@@ -42,10 +43,13 @@ export default function LoginPage() {
   // Watch for successful authentication (including 2FA)
   useEffect(() => {
     if (isAuthenticated) {
-      router.push("/dashboard");
-      router.refresh();
+      const redirectPath = consumeAuthRedirectPath() || "/dashboard";
+      // Use hard navigation to ensure cookies/middleware run
+      setTimeout(() => {
+        window.location.href = redirectPath;
+      }, 100);
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated]);
 
   const handleGoogleSuccess = (userData: any) => {
     logger.debug('auth', "Google authentication successful:", userData);
@@ -108,9 +112,7 @@ export default function LoginPage() {
 
         // Use hard navigation to ensure middleware sees cookie and auth state is properly initialized
         // Small delay to ensure all state is persisted
-        setTimeout(() => {
-          window.location.href = "/dashboard";
-        }, 100);
+        // Subsequent redirect handled by auth effect
       } else {
         if (result.payload) {
           const errorData = result.payload as any;

@@ -28,6 +28,8 @@ interface CustomSelectProps {
    * Useful when the label is rendered elsewhere.
    */
   hideSelectedLabel?: boolean;
+  placeholderClassName?: string;
+  sizeMode?: "compact" | "wide" | "card";
 }
 
 const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -44,6 +46,8 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   loadingText = "Loading...",
   emptyText = "No options available",
   hideSelectedLabel = false,
+  placeholderClassName = "",
+  sizeMode = "compact",
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -92,10 +96,109 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     if (!triggerElement) return;
 
     const rect = triggerElement.getBoundingClientRect();
+    const viewportWidth = window.innerWidth || 0;
+    const viewportHeight = window.innerHeight || 0;
+    const minMargin = 12;
+    const minWidth = 200;
+    const baseWidth = rect.width;
+
+    const cardElement = triggerElement.closest("[data-select-card='true']");
+    const cardRect = cardElement?.getBoundingClientRect();
+
+    if (sizeMode === "wide" && cardRect) {
+      let desiredWidth = cardRect.width * 0.75;
+      desiredWidth = Math.min(desiredWidth, viewportWidth - minMargin * 2);
+      desiredWidth = Math.max(desiredWidth, Math.max(cardRect.width * 0.6, minWidth));
+
+      const left = Math.min(
+        Math.max(minMargin, cardRect.right - desiredWidth),
+        Math.max(minMargin, viewportWidth - desiredWidth - minMargin)
+      );
+
+      const topOffset = Math.max(
+        minMargin,
+        cardRect.top - 64
+      );
+      const top = Math.min(
+        topOffset,
+        Math.max(minMargin, viewportHeight - minMargin)
+      );
+
+      setDropdownStyles({
+        top,
+        left,
+        width: desiredWidth,
+      });
+      return;
+    }
+
+    if (sizeMode === "card") {
+      // For card mode, match the trigger width exactly to ensure full width coverage
+      const triggerWidth = rect.width;
+      
+      // Use the card width if available and it's wider, otherwise use trigger width
+      let dropdownWidth = cardRect && cardRect.width > triggerWidth 
+        ? cardRect.width 
+        : triggerWidth;
+      
+      // Ensure the dropdown doesn't exceed viewport width
+      if (viewportWidth) {
+        const maxWidth = viewportWidth - minMargin * 2;
+        dropdownWidth = Math.min(dropdownWidth, maxWidth);
+      }
+      
+      // Calculate left position to align with trigger
+      let leftPosition = rect.left;
+      
+      // If we have a card and it's being used for width, align with card
+      if (cardRect && cardRect.width > triggerWidth) {
+        leftPosition = cardRect.left;
+      }
+      
+      // Ensure dropdown doesn't go off screen
+      if (viewportWidth) {
+        if (leftPosition + dropdownWidth > viewportWidth - minMargin) {
+          leftPosition = Math.max(minMargin, viewportWidth - dropdownWidth - minMargin);
+        }
+        if (leftPosition < minMargin) {
+          leftPosition = minMargin;
+          dropdownWidth = Math.min(dropdownWidth, viewportWidth - minMargin * 2);
+        }
+      }
+
+      setDropdownStyles({
+        top: rect.bottom + 4,
+        left: leftPosition,
+        width: Math.max(dropdownWidth, triggerWidth), // Ensure it's at least as wide as the trigger
+      });
+      return;
+    }
+
+    let desiredWidth = baseWidth * 0.55;
+    desiredWidth = Math.max(desiredWidth, minWidth);
+    desiredWidth = Math.min(desiredWidth, baseWidth - 12);
+
+    if (viewportWidth) {
+      const viewportLimit = Math.max(
+        minWidth,
+        Math.min(viewportWidth * 0.3, viewportWidth - minMargin * 2)
+      );
+      desiredWidth = Math.min(desiredWidth, viewportLimit);
+    }
+
+    if (desiredWidth <= 0 || Number.isNaN(desiredWidth)) {
+      desiredWidth = Math.max(baseWidth - 12, minWidth);
+    }
+
+    const left = Math.min(
+      Math.max(minMargin, rect.right - desiredWidth),
+      Math.max(minMargin, viewportWidth - desiredWidth - minMargin)
+    );
+
     setDropdownStyles({
       top: rect.bottom + 4,
-      left: rect.left,
-      width: rect.width,
+      left,
+      width: desiredWidth,
     });
   };
 
@@ -198,7 +301,9 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
             {!hideSelectedLabel && (
               <span
                 className={`truncate min-w-0 text-base sm:text-lg ${
-                  !selectedOption ? "text-gray-500 dark:text-gray-400" : ""
+                  !selectedOption && !loading
+                    ? placeholderClassName || "text-gray-500 dark:text-gray-400"
+                    : ""
                 }`}
                 title={selectedOption ? displayValue : undefined}
               >
@@ -232,14 +337,14 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
           <div
             id={dropdownId}
             ref={dropdownContentRef}
-            className="z-[9999] bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl max-h-[200px] sm:max-h-[180px] overflow-hidden min-w-[200px]"
+            className="z-[9999] bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl max-h-[200px] sm:max-h-[180px] overflow-hidden"
             role="listbox"
             style={{
               position: "fixed",
               top: dropdownStyles.top,
               left: dropdownStyles.left,
-              width: Math.max(dropdownStyles.width, 200),
-              minWidth: Math.max(dropdownStyles.width, 200),
+              width: `${dropdownStyles.width || 200}px`,
+              minWidth: `${dropdownStyles.width || 200}px`,
             }}
           >
             {/* Search Input */}

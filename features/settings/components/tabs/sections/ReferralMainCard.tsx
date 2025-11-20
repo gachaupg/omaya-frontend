@@ -46,145 +46,115 @@ const ReferralMainCard: React.FC<Props> = ({
   return (
     <>
       <div
-        className="w-full rounded-2xl p-3 mb-4 flex flex-col lg:flex-row gap-4
-                    shadow-lg bg-white border-gray-200
-                    dark:bg-transparent dark:border-[#35353E]"
+        className="w-full bg-transparent text-[#0B0F23]
+                    flex flex-col gap-8 lg:flex-row lg:items-stretch
+ dark:text-white"
       >
         {/* ───────── left column ───────── */}
-        <div className="flex-1 flex flex-col justify-between gap-4">
-          {/* copy blurb */}
-          <div>
-            <p className="text-sm leading-relaxed text-gray-600 dark:text-[#A3A3A3] mb-2">
-              Earn commissions by referring friends to our platform. Share your unique referral code and start earning rewards.
+        <div className="flex-1 flex flex-col justify-between gap-6">
+          <div className="space-y-4 text-sm leading-6 text-[#4C526A] dark:text-[#A3AED0]">
+            <p>
+              Earn lifetime commissions whenever traders you invite close a deal. Share your code, let them complete their first order, and the platform automatically adds your percentage to this wallet.
             </p>
-            <p className="text-sm leading-relaxed text-gray-600 dark:text-[#A3A3A3] mb-2">
-              You'll receive a percentage of trading fees from users who sign up using your referral code.
-            </p>
-            <p className="text-sm leading-relaxed text-gray-600 dark:text-[#A3A3A3]">
-              Track your earnings and withdraw your commissions anytime.
+            <p>
+              Withdraw whenever you’re ready—no need to track spreadsheets or manual payouts. Everything syncs in real time so you can focus on growing your network.
             </p>
           </div>
 
-          {/* withdraw btn */}
           <Button
             variant="primary"
             size="lg"
             onClick={() => setShowWithdrawPage(true)}
-            className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl py-2 flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-10 h-[56px] bg-[#FF5E5B] hover:bg-[#ff4946]
+                       rounded-[999px] shadow-[0_18px_40px_rgba(255,94,91,0.4)]
+                       text-white font-semibold tracking-wide flex items-center justify-center gap-2"
           >
             <svg
-              width="20"
-              height="20"
+              width="22"
+              height="22"
               fill="none"
               stroke="currentColor"
-              strokeWidth="2"
+              strokeWidth="1.8"
+              className="flex-shrink-0"
             >
-              <rect x="3" y="3" width="18" height="18" rx="4" />
-              <path d="M8 12h8M12 8v8" />
+              <rect x="2.5" y="2.5" width="17" height="17" rx="5" />
+              <path d="M8.5 12h7m-3.5-3.5V16" />
             </svg>
             Withdraw
           </Button>
         </div>
 
-        {/* ───────── right column ───────── */}
-        <div className="flex-1 flex items-center justify-center">
+        <div className="flex-1 flex items-stretch">
           <div
-            className="w-full max-w-[370px] rounded-2xl px-4 sm:px-6 py-4
-                        border bg-gray-50 border-gray-200
-                        dark:bg-transparent dark:border-[#35353F]"
+            className="w-full rounded-[26px] border border-[#E2E8F0] bg-transparent
+                       px-6 py-6 flex flex-col dark:border-[#1E2437]"
           >
+
             {walletError && (
-              <p className="text-center text-red-500">
-                Failed to load wallet data
-              </p>
+              <p className="text-center text-red-400">Failed to load wallet data</p>
             )}
 
             {walletLoading && !walletError && (
-              <p className="text-center text-gray-500 dark:text-[#A3A3A3]">
-                Loading…
-              </p>
+              <p className="text-center text-[#8C92B2]">Loading…</p>
             )}
 
             {!walletLoading && !walletError && (
               <>
-                {/* donut */}
-                <div className="flex flex-col items-center mb-4">
+                <div className="flex flex-col items-center gap-4 mb-4">
                   <DonutChartWithCenter
                     data={chartData}
                     total={total}
                     label="Commissions"
                     centerValue={balance}
                   />
-
-                  {/* legend */}
-                  <div className="flex flex-col gap-2 mt-4 w-full">
-                    {chartData.map(({ label, value, color }) => (
-                      <div
-                        key={label}
-                        className="flex items-center justify-between w-full"
-                      >
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <span
-                            className="w-4 h-4 rounded inline-block flex-shrink-0"
-                            style={{ background: color }}
-                          />
-                          <span className="text-xs sm:text-sm truncate text-gray-600 dark:text-[#A3A3A3]">
-                            {label}
-                          </span>
-                        </div>
+                </div>
+                <div className="flex flex-col gap-3 mt-2">
+                  {chartData.map(({ label, value, color }) => (
+                    <div
+                      key={label}
+                      className="flex items-center justify-between gap-4"
+                    >
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
                         <span
-                          className={`${
-                            value ? "text-white" : "text-gray-500"
-                          } font-semibold text-sm sm:text-base ml-2`}
-                        >
-                          {formatCurrency(value)}
+                          className="w-3.5 h-3.5 rounded-full inline-flex flex-shrink-0"
+                          style={{ background: color }}
+                        />
+                        <span className="text-sm text-[#4C526A] dark:text-[#E2E6FF] truncate">
+                          {label}
                         </span>
                       </div>
-                    ))}
-                  </div>
+                      <span className="text-sm font-semibold text-[#0B0F23] dark:text-white">
+                        {formatCurrency(value)}
+                      </span>
+                    </div>
+                  ))}
                 </div>
 
-                {/* stats */}
-                <div className="space-y-1">
-                  <StatRow label="Total Earned" value={deposits} />
-                  <StatRow label="Total Withdrawals" value={withdrawals} />
-                  <StatRow
-                    label="Available Balance"
-                    value={balance}
-                    highlight
-                  />
-                </div>
               </>
             )}
           </div>
         </div>
       </div>
 
-      <div className="mb-4">
-        <div className="text-sm font-medium text-[#1D8751] mb-1">
-          Your Referral Code
+      <div className="mb-4 mt-10">
+        <div className="text-xs uppercase tracking-[0.3em] text-[#8C92B2] mb-3">
+          Your referral code
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 flex-wrap">
           <div
-            className="flex items-center gap-2 w-full justify-between rounded-[24px] border px-3 py-2
-                    border-[#1D8751] overflow-hidden"
+            className="flex items-center gap-3 rounded-[28px] border border-[#1D8751]
+                       bg-[#08141E] px-4 py-3 min-w-[260px] flex-1 w-full"
           >
-            <div className="flex items-center justify-between gap-2 w-full">
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <p className="w-3 h-3 rounded-full bg-[#1D8751] flex-shrink-0" > </p>
-                <span className="font-mono text-sm tracking-widest text-[#1D8751] truncate">
-                  {user?.referral_code}
-                </span>
-              </div>
-              <div>
-                 <QrCode size={18} className="text-[#1D8751] flex-shrink-0" />
-              </div>
-            </div>
+            <span className="w-3 h-3 rounded-full bg-[#1D8751] flex-shrink-0" />
+            <span className="font-mono text-sm sm:text-base tracking-[0.4em] text-[#1D8751] uppercase truncate">
+              {user?.referral_code}
+            </span>
+            <QrCode size={18} className="text-[#1D8751]" />
           </div>
           <CopyButton
             value={user?.referral_code ?? ""}
-            className="bg-[#E8EFF5] dark:bg-[#35353E] border-[#1D8751] text-[#1D8751] hover:text-white
-                   hover:bg-[#1D8751] rounded-full px-3 py-2 text-sm"
+            className="bg-[#1D8751]/15 border border-[#1D8751] text-[#1D8751]
+                       hover:bg-[#1D8751] hover:text-white rounded-[999px] px-5 py-3 text-sm font-semibold"
             showIcon={true}
           >
             Copy
@@ -194,25 +164,5 @@ const ReferralMainCard: React.FC<Props> = ({
     </>
   );
 };
-
-/* small sub-component for clarity */
-const StatRow: React.FC<{
-  label: string;
-  value: number;
-  highlight?: boolean;
-}> = ({ label, value, highlight = false }) => (
-  <div className="flex justify-between items-center py-1">
-    <span className="text-sm sm:text-base text-gray-600 dark:text-[#A3A3A3]">
-      {label}
-    </span>
-    <span
-      className={`font-semibold text-sm sm:text-lg ${
-        highlight ? "text-[#1D8751]" : "text-gray-900 dark:text-white"
-      }`}
-    >
-      {formatCurrency(value)}
-    </span>
-  </div>
-);
 
 export default ReferralMainCard;

@@ -303,6 +303,7 @@ export interface P2POrder {
   buy_order: string;
   seller_photo?: string;
   buyer_photo?: string;
+  advertiser_photo?: string;
 }
 
 export interface P2POrderList {

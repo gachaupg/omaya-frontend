@@ -8,6 +8,7 @@ interface ReferredUser {
   id: number;
   user_id: number;
   user_type: string;
+  created_at?: string;
   company_name: string | null;
   first_name: string;
   country: string | null;
@@ -52,6 +53,19 @@ const ReferralUsersList: React.FC<Props> = ({ referredUsers, loading }) => {
 
   const getFullName = (firstName: string, lastName: string) => {
     return `${firstName} ${lastName}`.trim();
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "—";
+    try {
+      return new Intl.DateTimeFormat("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      }).format(new Date(dateString));
+    } catch (error) {
+      return "—";
+    }
   };
 
   const getStatus = (otpVerified: boolean, isMerchant: boolean) => {
@@ -128,18 +142,19 @@ const ReferralUsersList: React.FC<Props> = ({ referredUsers, loading }) => {
               >
                 {/* OA Avatar */}
                 <div
-                  className="w-12 h-12 flex items-center justify-center rounded-lg
-                            bg-[#35353F] text-[#1D8751] text-lg font-bold"
+                  className="w-14 h-14 flex items-center justify-center rounded-2xl
+                            bg-[#35353F] text-white dark:text-[#1D8751]
+                            text-xl font-semibold tracking-tight"
                 >
                   OA
                 </div>
 
                 {/* User Info */}
                 <div className="flex flex-col min-w-0 flex-1">
-                  <span className="font-medium text-gray-800 dark:text-white truncate">
+                  <span className="text-base font-semibold text-gray-900 dark:text-white truncate">
                     {maskEmail(u.email)}
                   </span>
-                  <span className="text-sm font-medium text-[#1D8751]">
+                  <span className="text-sm font-semibold text-[#1D8751]">
                     Profile status: {getStatus(u.otp_verified, u.is_merchant)}
                   </span>
                 </div>
@@ -161,65 +176,43 @@ const ReferralUsersList: React.FC<Props> = ({ referredUsers, loading }) => {
 
               {/* Expanded Details */}
               {expandedUser === u.id && (
-                <div className="px-6 py-4 bg-gray-50 dark:bg-[#18181B] border-b border-gray-200 dark:border-[#35353F]">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center py-2">
-                      <span className="text-[#1D8751] font-medium">
-                        Client Email:
-                      </span>
-                      <span className="text-gray-800 dark:text-white">
-                        {maskEmail(u.email)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center py-2">
-                      <span className="text-[#1D8751] font-medium">
-                        Client Name:
-                      </span>
-                      <span className="text-gray-800 dark:text-white">
-                        {maskName(u.first_name, u.last_name)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center py-2">
-                      <span className="text-[#1D8751] font-medium">
-                        Client ID:
-                      </span>
-                      <span className="text-gray-800 dark:text-white">
-                        {u.user_id}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center py-2">
-                      <span className="text-[#1D8751] font-medium">
-                        Phone Number:
-                      </span>
-                      <span className="text-gray-800 dark:text-white">
-                        {u.phone_number}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center py-2">
-                      <span className="text-[#1D8751] font-medium">
-                        User Type:
-                      </span>
-                      <span className="text-gray-800 dark:text-white capitalize">
-                        {u.user_type}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center py-2">
-                      <span className="text-[#1D8751] font-medium">
-                        Referral Code:
-                      </span>
-                      <span className="text-gray-800 dark:text-white">
-                        {u.referral_code}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center py-2">
-                      <span className="text-[#1D8751] font-medium">
-                        Profile Status:
-                      </span>
-                      <span className="text-gray-800 dark:text-white">
-                        {getStatus(u.otp_verified, u.is_merchant)}
-                      </span>
-                    </div>
-                  </div>
+                <div className="px-6 py-6 bg-transparent dark:bg-transparent border-t border-[#DDE3EE] dark:border-[#35353F] rounded-b-[18px]">
+                  <dl className="divide-y divide-[#DDE3EE] dark:divide-[#35353F]">
+                    {[
+                      {
+                        label: "Client Email",
+                        value: maskEmail(u.email),
+                      },
+                      {
+                        label: "Client Name",
+                        value: maskName(u.first_name, u.last_name),
+                      },
+                      {
+                        label: "Client ID",
+                        value: u.user_id,
+                      },
+                      {
+                        label: "Date Joined",
+                        value: formatDate(u.created_at),
+                      },
+                      {
+                        label: "Profile Status",
+                        value: getStatus(u.otp_verified, u.is_merchant),
+                      },
+                    ].map((field) => (
+                      <div
+                        key={field.label}
+                        className="flex justify-between items-center py-3 first:pt-0 last:pb-0"
+                      >
+                        <dt className="text-sm font-semibold text-[#1D8751] tracking-tight">
+                          {field.label}
+                        </dt>
+                        <dd className="text-sm font-medium text-gray-900 dark:text-[#B8C1D1] text-right">
+                          {field.value}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
                 </div>
               )}
             </div>

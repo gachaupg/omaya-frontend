@@ -1,7 +1,7 @@
 /**
  * orderSlice.ts – auto‑generated placeholder
  */
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, Draft } from "@reduxjs/toolkit";
 import {
   getAllP2POrders,
   getAllP2PBuyandSell,
@@ -28,7 +28,7 @@ import {
   Profile,
   P2PResponse,
   WithdrawalAddressesResponse,
-
+  PaymentDetail,
 } from "../types";
 import { handleP2PErrorSafe } from "../../../lib/utils/errorHandler";
 import { fetchWallets } from "./walletSlice";
@@ -37,6 +37,7 @@ import { logger } from "@/lib/logger";
 interface P2PState {
   p2pBuyOrders: P2POrderList;
   p2pSellOrders: P2POrderList;
+  paymentLogoCache: Record<string, string | null>;
   loading: boolean;
   error: string | null;
   currentPage: number;
@@ -79,6 +80,116 @@ interface P2PState {
   getWithdrawalAddressesSuccess?: boolean;
   getWithdrawalAddresses?: WithdrawalAddressesResponse | null;
 }
+
+const resolvePaymentDetails = (
+  state: Draft<P2PState>,
+  paymentDetails?: PaymentDetail[]
+): PaymentDetail[] => {
+  // Ensure paymentDetails is a valid array
+  if (!Array.isArray(paymentDetails) || paymentDetails.length === 0) {
+    return [];
+  }
+
+  // Filter out any undefined/null elements and ensure they're PaymentDetail objects
+  const validPaymentDetails = paymentDetails.filter(
+    (detail): detail is PaymentDetail => 
+      detail != null && 
+      typeof detail.id === 'number' &&
+      typeof detail.provider === 'string' &&
+      typeof detail.payment_method === 'string' &&
+      typeof detail.account_name === 'string' &&
+      typeof detail.account_number === 'string'
+  );
+
+  // If no valid details after filtering, return empty array
+  if (validPaymentDetails.length === 0) {
+    return [];
+  }
+
+  // Ensure state exists
+  if (!state) {
+    // If state is not available, return payment details without caching, ensuring provider_logo is a string
+    return validPaymentDetails.map((detail) => ({
+      ...detail,
+      provider_logo: (typeof detail?.provider_logo === "string" && detail.provider_logo.trim()
+        ? detail.provider_logo.trim()
+        : '') as string,
+    }));
+  }
+
+  // Ensure paymentLogoCache exists - use safe assignment
+  try {
+    if (!state.paymentLogoCache || typeof state.paymentLogoCache !== 'object') {
+      state.paymentLogoCache = {};
+    }
+  } catch (error) {
+    // If we can't set the cache, continue without caching
+    console.warn('Failed to initialize paymentLogoCache:', error);
+  }
+
+  // Get a safe reference to the cache
+  const cache = state.paymentLogoCache || {};
+
+  return validPaymentDetails.map((detail) => {
+    const detailId =
+      detail?.id !== undefined && detail?.id !== null
+        ? String(detail.id)
+        : undefined;
+    const rawLogo =
+      typeof detail?.provider_logo === "string" && detail.provider_logo.trim()
+        ? detail.provider_logo.trim()
+        : null;
+    const cachedLogo = detailId ? (cache[detailId] || null) : null;
+    const resolvedLogo = rawLogo || cachedLogo || null;
+
+    // Try to update cache if possible
+    if (detailId && resolvedLogo) {
+      try {
+        if (state.paymentLogoCache) {
+          state.paymentLogoCache[detailId] = resolvedLogo;
+        }
+      } catch (error) {
+        // Silently fail if cache update fails
+        console.warn('Failed to update paymentLogoCache:', error);
+      }
+    }
+
+    return {
+      ...detail,
+      provider_logo: resolvedLogo || '',
+    } as PaymentDetail;
+  }) as PaymentDetail[];
+};
+
+const resolveOrder = (
+  state: Draft<P2PState>,
+  order?: P2POrder | null
+) => {
+  if (!order) return order;
+  return {
+    ...order,
+    payment_details: resolvePaymentDetails(state, order.payment_details),
+  };
+};
+
+const resolveOrderList = (
+  state: Draft<P2PState>,
+  orderList?: P2POrderList | null
+): P2POrderList => {
+  if (!orderList) {
+    return {
+      next: null,
+      previous: null,
+      total_orders_count: 0,
+      results: [],
+    };
+  }
+
+  return {
+    ...orderList,
+    results: orderList.results?.map((order) => resolveOrder(state, order)).filter((order): order is P2POrder => order != null) || [],
+  };
+};
 
 export const fetchAllP2POrders = createAsyncThunk(
   "p2pMarket/fetchAllP2POrders",
@@ -332,6 +443,7 @@ const p2pMarketSlice = createSlice({
       total_orders_count: 0,
       results: [],
     },
+    paymentLogoCache: {},
     loading: false,
     error: null,
     currentPage: 1,
@@ -410,7 +522,7 @@ const p2pMarketSlice = createSlice({
       console.log('✅ [Redux] Applying WebSocket update - user on page 1');
       
       // Helper function to merge payment_details preserving provider_logo
-      const mergePaymentDetails = (existing: any[], incoming: any[]) => {
+      const mergePaymentDetails = (existing: PaymentDetail[], incoming: PaymentDetail[]): PaymentDetail[] => {
         if (!incoming || incoming.length === 0) {
           return existing || [];
         }
@@ -428,8 +540,8 @@ const p2pMarketSlice = createSlice({
             // If incoming has null/missing provider_logo, preserve existing one
             return {
               ...incomingPd,
-              provider_logo: incomingPd.provider_logo || existingPd.provider_logo || null,
-            };
+              provider_logo: incomingPd.provider_logo || existingPd.provider_logo || '',
+            } as PaymentDetail;
           }
           return incomingPd;
         });
@@ -438,7 +550,7 @@ const p2pMarketSlice = createSlice({
       // Helper function to merge orders intelligently
       const mergeOrders = (existingOrders: P2POrder[], newOrders: P2POrder[]) => {
         if (!existingOrders || existingOrders.length === 0) {
-          return newOrders;
+          return newOrders.map((order) => resolveOrder(state, order)).filter((order): order is P2POrder => order != null);
         }
         
         const orderMap = new Map(existingOrders.map(order => [order.id, order]));
@@ -448,16 +560,35 @@ const p2pMarketSlice = createSlice({
           const existingOrder = orderMap.get(newOrder.id);
           if (existingOrder) {
             // Merge order, preserving payment_details with provider_logo
-            orderMap.set(newOrder.id, {
+            const mergedOrder: P2POrder = {
+              ...existingOrder,
               ...newOrder,
               payment_details: mergePaymentDetails(
-                existingOrder.payment_details,
-                newOrder.payment_details
+                existingOrder.payment_details as PaymentDetail[],
+                newOrder.payment_details as PaymentDetail[]
               ),
-            });
+            };
+
+            // Preserve existing advertiser photo if websocket payload omits it
+            if (
+              (newOrder.advertiser_photo === undefined ||
+                newOrder.advertiser_photo === null ||
+                newOrder.advertiser_photo === "") &&
+              existingOrder.advertiser_photo
+            ) {
+              mergedOrder.advertiser_photo = existingOrder.advertiser_photo;
+            }
+
+            const resolved = resolveOrder(state, mergedOrder);
+            if (resolved) {
+              orderMap.set(newOrder.id, resolved);
+            }
           } else {
             // New order, add as-is
-            orderMap.set(newOrder.id, newOrder);
+            const resolved = resolveOrder(state, newOrder);
+            if (resolved) {
+              orderMap.set(newOrder.id, resolved);
+            }
           }
         });
         
@@ -472,7 +603,7 @@ const p2pMarketSlice = createSlice({
             next: null,
             previous: null,
             total_orders_count: pagination?.total_buy_orders || buy_orders.length,
-            results: buy_orders,
+            results: buy_orders.map((order: P2POrder) => resolveOrder(state, order)).filter((order: P2POrder | null | undefined): order is P2POrder => order != null),
           };
         } else {
           // Incremental update - merge new/updated orders
@@ -492,7 +623,7 @@ const p2pMarketSlice = createSlice({
             next: null,
             previous: null,
             total_orders_count: pagination?.total_sell_orders || sell_orders.length,
-            results: sell_orders,
+            results: sell_orders.map((order: P2POrder) => resolveOrder(state, order)).filter((order: P2POrder | null | undefined): order is P2POrder => order != null),
           };
         } else {
           // Incremental update - merge new/updated orders
@@ -544,8 +675,8 @@ const p2pMarketSlice = createSlice({
       .addCase(fetchAllP2POrders.fulfilled, (state, action) => {
         state.loading = false;
         const { buy_orders, sell_orders } = action.payload as any;
-        state.p2pBuyOrders = buy_orders;
-        state.p2pSellOrders = sell_orders;
+        state.p2pBuyOrders = resolveOrderList(state, buy_orders);
+        state.p2pSellOrders = resolveOrderList(state, sell_orders);
       })
       .addCase(fetchAllP2POrders.rejected, (state, action) => {
         state.loading = false;
@@ -594,8 +725,8 @@ const p2pMarketSlice = createSlice({
         console.log('📦 [Redux] First buy order ID:', firstBuyOrderId, 'First sell order ID:', firstSellOrderId);
         
         // IMPORTANT: Update orders data
-        state.p2pBuyOrders = buyOrders;
-        state.p2pSellOrders = sellOrders;
+        state.p2pBuyOrders = resolveOrderList(state, buyOrders);
+        state.p2pSellOrders = resolveOrderList(state, sellOrders);
         
         console.log('✅ [Redux] Updated orders, currentPage AFTER update:', state.currentPage);
       })

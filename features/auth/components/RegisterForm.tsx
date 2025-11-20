@@ -340,6 +340,10 @@ export default function RegistrationPage() {
   const { t } = useI18n("auth");
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  const termsAgreementError = t(
+    "auth.register.mustAgree",
+    "You must agree to the terms and conditions"
+  );
 
   // Form state
 const [firstName, setFirstName] = useState("");
@@ -359,8 +363,10 @@ const [selectedCountry, setSelectedCountry] = useState("SO"); // Default to Soma
 const [showCountryDropdown, setShowCountryDropdown] = useState(false);
 const [countrySearchTerm, setCountrySearchTerm] = useState("");
 const [showReferralTooltip, setShowReferralTooltip] = useState(false);
+const [formErrors, setFormErrors] = useState<string[]>([]);
 const referralTooltipRef = React.useRef<HTMLDivElement | null>(null);
 const referralTooltipButtonRef = React.useRef<HTMLButtonElement | null>(null);
+const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
 
   // Facebook login state
   const [profile, setProfile] = useState<any>(null);
@@ -398,6 +404,18 @@ const referralTooltipButtonRef = React.useRef<HTMLButtonElement | null>(null);
     if (!showReferralTooltip) {
       return;
     }
+  React.useEffect(() => {
+    if (formErrors.length === 0 || typeof document === "undefined") {
+      return;
+    }
+
+    if (errorBannerRef.current) {
+      errorBannerRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, [formErrors]);
 
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -437,7 +455,78 @@ const referralTooltipButtonRef = React.useRef<HTMLButtonElement | null>(null);
     phone: "",
     password: "",
     confirmPassword: "",
+    terms: "",
   });
+
+  const parseApiErrors = (errorData: unknown): string[] => {
+    if (
+      errorData &&
+      typeof errorData === "object" &&
+      !(errorData instanceof Error) &&
+      !Array.isArray(errorData)
+    ) {
+      const fieldErrors: Record<string, string> = {};
+      const generalMessages: string[] = [];
+      const errorObj = errorData as Record<string, unknown>;
+      const fieldMap: Record<string, keyof typeof errors> = {
+        first_name: "firstName",
+        last_name: "lastName",
+        email: "email",
+        phone_number: "phone",
+        password: "password",
+        confirm_password: "confirmPassword",
+      };
+
+      Object.entries(errorObj).forEach(([key, value]) => {
+        const messages: string[] = Array.isArray(value)
+          ? (value.filter((msg): msg is string => typeof msg === "string"))
+          : typeof value === "string"
+            ? [value]
+            : [];
+
+        if (messages.length === 0) {
+          return;
+        }
+
+        const mappedField = fieldMap[key];
+        if (mappedField) {
+          fieldErrors[mappedField] = messages[0];
+        } else if (key === "terms" || key === "agreement") {
+          fieldErrors.terms = messages[0];
+        } else {
+          generalMessages.push(...messages);
+        }
+      });
+
+      if (Object.keys(fieldErrors).length > 0) {
+        setErrors((prev) => ({
+          ...prev,
+          ...fieldErrors,
+        }));
+      }
+
+      const combinedMessages = [
+        ...Object.values(fieldErrors),
+        ...generalMessages,
+      ].filter(Boolean);
+
+      return combinedMessages.length > 0
+        ? combinedMessages
+        : ["Registration failed. Please check your inputs."];
+    }
+
+    if (typeof errorData === "string") {
+      const normalizedMessages = errorData
+        .split("\n")
+        .map((msg) => msg.trim())
+        .filter((msg) => msg.length > 0);
+      if (normalizedMessages.length > 0) {
+        return normalizedMessages;
+      }
+    }
+
+    return ["Registration failed. Please check your inputs."];
+  };
 
   // Password validation states
   const hasMinChars = password.length >= 8;
@@ -454,53 +543,73 @@ const referralTooltipButtonRef = React.useRef<HTMLButtonElement | null>(null);
       phone: "",
       password: "",
       confirmPassword: "",
+      terms: "",
     };
+    const validationMessages: string[] = [];
 
     // First name validation
     if (!firstName.trim()) {
-      newErrors.firstName = "First name is required";
+      const message = "First name is required";
+      newErrors.firstName = message;
+      validationMessages.push(message);
       isValid = false;
     }
 
     // Last name validation
     if (!lastName.trim()) {
-      newErrors.lastName = "Last name is required";
+      const message = "Last name is required";
+      newErrors.lastName = message;
+      validationMessages.push(message);
       isValid = false;
     }
 
     // Email validation
     if (!email.trim()) {
-      newErrors.email = "Email is required";
+      const message = "Email is required";
+      newErrors.email = message;
+      validationMessages.push(message);
       isValid = false;
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = "Email is invalid";
+      const message = "Email is invalid";
+      newErrors.email = message;
+      validationMessages.push(message);
       isValid = false;
     }
 
     // Phone validation
     if (!phone.trim()) {
-      newErrors.phone = "Phone number is required";
+      const message = "Phone number is required";
+      newErrors.phone = message;
+      validationMessages.push(message);
       isValid = false;
     }
 
     // Password validation
     if (!password) {
-      newErrors.password = "Password is required";
+      const message = "Password is required";
+      newErrors.password = message;
+      validationMessages.push(message);
       isValid = false;
     } else if (!hasMinChars || !hasNumber || !hasSymbol || !hasMixedCase) {
-      newErrors.password = "Password doesn't meet requirements";
+      const message = "Password doesn't meet requirements";
+      newErrors.password = message;
+      validationMessages.push(message);
       isValid = false;
     }
 
     // Confirm password validation
     if (password !== confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
+      const message = "Passwords do not match";
+      newErrors.confirmPassword = message;
+      validationMessages.push(message);
       isValid = false;
     }
 
     // Terms agreement validation
     if (!agreeToTerms) {
+      newErrors.terms = termsAgreementError;
       isValid = false;
+      validationMessages.push(termsAgreementError);
       if (typeof document !== "undefined") {
         document.getElementById("terms-container")?.scrollIntoView({
           behavior: "smooth",
@@ -510,6 +619,11 @@ const referralTooltipButtonRef = React.useRef<HTMLButtonElement | null>(null);
     }
 
     setErrors(newErrors);
+    if (isValid) {
+      setFormErrors([]);
+    } else {
+      setFormErrors(validationMessages);
+    }
     return isValid;
   };
 
@@ -521,6 +635,7 @@ const referralTooltipButtonRef = React.useRef<HTMLButtonElement | null>(null);
       return;
     }
 
+    setFormErrors([]);
     setIsSubmitting(true);
 
     try {
@@ -544,19 +659,27 @@ const referralTooltipButtonRef = React.useRef<HTMLButtonElement | null>(null);
 
       if (registerUser.fulfilled.match(result)) {
         setShowVerificationModal(true);
-      } else {
-        // Handle API errors
-        if (result.payload) {
-          if (result.payload) {
-            showToast.error(result.payload as string); // <-- Show all errors in a toast
-          }
-        }
+        setFormErrors([]);
+      } else if (result.payload) {
+        const errorData = result.payload;
+        setFormErrors(parseApiErrors(errorData));
+      } else if (result.error && result.error.message) {
+        setFormErrors([
+          result.error.message === "Rejected"
+            ? "Registration failed. Please check your inputs."
+            : result.error.message,
+        ]);
       }
-    } catch (error) {
+    } catch (error: any) {
+      // Handle unexpected errors
+      console.error("Registration error:", error);
+      const errorMessage = error?.message || "An error occurred during registration";
+      
       setErrors((prev) => ({
         ...prev,
-        email: "An error occurred during registration",
+        email: typeof errorMessage === "string" ? errorMessage : "An error occurred during registration",
       }));
+      setFormErrors([errorMessage]);
     } finally {
       setIsSubmitting(false);
     }
@@ -697,6 +820,26 @@ const referralTooltipButtonRef = React.useRef<HTMLButtonElement | null>(null);
                   "Please Register with correct Information"
                 )}
               </p>
+              {formErrors.length > 0 && (
+                <div
+                  ref={formErrors.length > 0 ? errorBannerRef : null}
+                  role="alert"
+                  aria-live="assertive"
+                  className="mt-4 rounded-xl border border-[#F04438] bg-[#FDECEC] px-4 py-3 text-left"
+                >
+                  <p className="text-[#B42318] text-sm font-semibold mb-2">
+                    {t(
+                      "auth.register.fixIssues",
+                      "Please resolve the following:"
+                    )}
+                  </p>
+                  <ul className="list-disc space-y-1 pl-5 text-[#B42318] text-sm">
+                    {formErrors.map((message, index) => (
+                      <li key={`summary-${message}-${index}`}>{message}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
@@ -1497,7 +1640,7 @@ const referralTooltipButtonRef = React.useRef<HTMLButtonElement | null>(null);
               {/* Terms and Conditions Checkbox */}
               <div
                 id="terms-container"
-                className={`mt-4 ${!agreeToTerms && errors.firstName ? "ring-2 ring-[#F04438] rounded-lg p-2" : ""}`}
+                className={`mt-4 ${!agreeToTerms && (submitAttempted || errors.terms) ? "ring-2 ring-[#F04438] rounded-lg p-2" : ""}`}
               >
                 <div className="flex items-start gap-2">
                   <div className="relative flex items-start pt-0.5">
@@ -1505,11 +1648,22 @@ const referralTooltipButtonRef = React.useRef<HTMLButtonElement | null>(null);
                       type="checkbox"
                       id="terms"
                       checked={agreeToTerms}
-                      onChange={() => setAgreeToTerms(!agreeToTerms)}
+                      onChange={() => {
+                        const nextValue = !agreeToTerms;
+                        setAgreeToTerms(nextValue);
+                        if (errors.terms) {
+                          setErrors((prev) => ({ ...prev, terms: "" }));
+                        }
+                        if (nextValue) {
+                          setFormErrors((prev) =>
+                            prev.filter((message) => message !== termsAgreementError)
+                          );
+                        }
+                      }}
                       className="opacity-0 absolute h-5 w-5 sm:h-4 sm:w-4 cursor-pointer"
                     />
                     <div
-                      className={`border border-[#871D1DFF] rounded h-5 w-5 sm:h-4 sm:w-4 flex flex-shrink-0 justify-center items-center ${agreeToTerms ? "bg-[#1D8751]" : "bg-transparent"}`}
+                      className={`border ${!agreeToTerms && (submitAttempted || errors.terms) ? "border-[#F04438]" : "border-[#871D1DFF]"} rounded h-5 w-5 sm:h-4 sm:w-4 flex flex-shrink-0 justify-center items-center ${agreeToTerms ? "bg-[#1D8751]" : "bg-transparent"}`}
                     >
                       {agreeToTerms && (
                         <svg
@@ -1531,15 +1685,33 @@ const referralTooltipButtonRef = React.useRef<HTMLButtonElement | null>(null);
                     )}
                   </label>
                 </div>
-                {!agreeToTerms && errors.firstName && (
+                {errors.terms && (
                   <p className="mt-1 text-xs text-[#F04438]">
-                    {t(
-                      "auth.register.mustAgree",
-                      "You must agree to the terms and conditions"
-                    )}
+                    {errors.terms}
                   </p>
                 )}
               </div>
+
+              {/* Global form errors */}
+              {formErrors.length > 0 && (
+                <div
+                  role="alert"
+                  aria-live="assertive"
+                  className="mt-4 rounded-xl border border-[#F04438] bg-[#FDECEC] px-4 py-3 text-left"
+                >
+                  <p className="text-[#B42318] text-sm font-semibold mb-2">
+                    {t(
+                      "auth.register.fixIssues",
+                      "Please resolve the following:"
+                    )}
+                  </p>
+                  <ul className="list-disc space-y-1 pl-5 text-[#B42318] text-sm">
+                    {formErrors.map((message, index) => (
+                      <li key={`button-${message}-${index}`}>{message}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               {/* Register Button */}
               <button

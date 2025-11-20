@@ -5,7 +5,7 @@ export default function SwapPage() {
   return (
     <SwapDataProvider>
       <div className="w-full flex justify-center px-4">
-        <div className="w-full max-w-4xl">
+        <div className="w-full mr-20">
           <SwapWidget />
         </div>
       </div>

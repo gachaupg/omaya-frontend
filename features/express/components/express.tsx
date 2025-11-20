@@ -1,11 +1,15 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import ExpressExchangeForm from "./ExpressExchangeForm";
 import Exchanging from "./exchnaging";
 import SuccessPage from "./success";
 import { useTheme } from "@/context/theme";
+import {
+  buildExpressRedirectPath,
+  setAuthRedirectPath,
+} from "@/lib/utils/authRedirect";
 
 interface ExpressProps {
   isHomePage?: boolean;
@@ -20,15 +24,26 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
   const [mounted, setMounted] = useState(false);
   const { isDark } = useTheme();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isAuthenticated } = useSelector((state: any) => state.auth);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (!searchParams) return;
+    const modeParam = searchParams.get("mode");
+    if (modeParam === "deposit" || modeParam === "withdrawal") {
+      setCurrentMode(modeParam);
+    }
+  }, [searchParams]);
+
   const handleModeToggle = () => {
     // If on home page and not authenticated, navigate to login
     if (isHomePage && !isAuthenticated) {
+      const nextMode = currentMode === "deposit" ? "withdrawal" : "deposit";
+      setAuthRedirectPath(buildExpressRedirectPath(nextMode));
       router.push("/auth/login");
       return;
     }

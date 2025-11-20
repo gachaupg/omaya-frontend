@@ -30,6 +30,8 @@ import { post, get, AxiosError } from "../../../lib/apiClient";
 import { storage } from "../utils/storage";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 
+const CROSS_TAB_LOGOUT_FLAG = "__omayaCrossTabLogout";
+
 const initialState: AuthState = {
   user: null,
   tokens: null,
@@ -83,6 +85,22 @@ export const registerUser = createAsyncThunk<RegisterResponse, RegisterPayload>(
       );
       return response.data;
     } catch (error) {
+      // Check if error has field-specific validation errors
+      if (error instanceof AxiosError && error.response?.data) {
+        const data = error.response.data;
+        // Check if it's a validation error object with field-specific errors
+        if (typeof data === "object" && data !== null && !Array.isArray(data)) {
+          // Check if any key has an array of error messages (field validation format)
+          const hasFieldErrors = Object.values(data).some(
+            (value) => Array.isArray(value) && value.length > 0
+          );
+          // If it has field errors, preserve the structure
+          if (hasFieldErrors) {
+            return rejectWithValue(data);
+          }
+        }
+      }
+      // Otherwise, use the string format
       return rejectWithValue(handleApiError(error));
     }
   }
@@ -420,9 +438,19 @@ const authSlice = createSlice({
         localStorage.removeItem("user");
       }
 
-      // Broadcast logout to other tabs
+      // Broadcast logout to other tabs unless we're already handling a cross-tab logout
       if (typeof window !== "undefined") {
-        window.dispatchEvent(new CustomEvent("logoutTriggered"));
+        const shouldBroadcast = !(window as typeof window & Record<string, any>)[
+          CROSS_TAB_LOGOUT_FLAG
+        ];
+
+        if (shouldBroadcast) {
+          window.dispatchEvent(new CustomEvent("logoutTriggered"));
+        } else {
+          delete (window as typeof window & Record<string, any>)[
+            CROSS_TAB_LOGOUT_FLAG
+          ];
+        }
       }
     },
     clearError(state) {

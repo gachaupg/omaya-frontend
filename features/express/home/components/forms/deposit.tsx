@@ -33,6 +33,10 @@ import {
 import { useChangeNowAssets } from "../../hooks/useChangeNowAssets";
 import CustomSelect from "@/components/ui/CustomSelect";
 import Select from "@/features/p2p/components/Common/Select";
+import {
+  buildExpressRedirectPath,
+  setAuthRedirectPath,
+} from "@/lib/utils/authRedirect";
 
 interface DepositFormProps {
   onExchange?: (transactionData: {
@@ -540,16 +544,30 @@ export default function DepositForm({
     top: 0,
     left: 0,
     width: 0,
+    cardLeft: 0,
+    cardTop: 0,
+    cardWidth: 0,
   });
   const [isComponentMounted, setIsComponentMounted] = useState(false);
 
   const updateAssetDropdownPosition = useCallback(() => {
     if (!assetDropdownRef.current) return;
     const rect = assetDropdownRef.current.getBoundingClientRect();
+    const cardElement = assetDropdownRef.current.closest(
+      "[data-asset-card='true']"
+    ) as HTMLElement | null;
+    const cardRect = cardElement?.getBoundingClientRect();
     setAssetDropdownPosition({
       top: rect.bottom + window.scrollY,
       left: rect.left + window.scrollX,
       width: rect.width,
+      cardLeft: cardRect
+        ? cardRect.left + window.scrollX
+        : rect.left + window.scrollX,
+      cardTop: cardRect
+        ? cardRect.top + window.scrollY
+        : rect.top + window.scrollY,
+      cardWidth: cardRect ? cardRect.width : rect.width,
     });
   }, []);
 
@@ -1277,21 +1295,83 @@ export default function DepositForm({
       computedLeft = Math.min(Math.max(16, computedLeft), Math.max(16, maxLeft));
     }
 
+    const inputHeight = triggerRect?.height || 0;
+    const adjustedTop = Math.max(
+      window.scrollY + 16,
+      assetDropdownPosition.top - inputHeight - 12
+    );
+
+    const hasCardMetrics =
+      (assetDropdownPosition.cardWidth || 0) > 0;
+
+    const viewportWidth =
+      typeof window !== "undefined" ? window.innerWidth : undefined;
+    const minMargin = 16;
+    const minWidth = 320;
+
+    const baseWidth =
+      (hasCardMetrics ? assetDropdownPosition.cardWidth : undefined) ||
+      expandedWidth ||
+      assetDropdownPosition.width ||
+      (triggerWidth > 0 ? triggerWidth : undefined);
+
+    let desiredWidth: number | undefined = baseWidth;
+    if (baseWidth) {
+      const cardWidth = hasCardMetrics
+        ? assetDropdownPosition.cardWidth ?? baseWidth
+        : baseWidth;
+      const reducedBase = Math.max(
+        minWidth,
+        Math.min(cardWidth * 0.4, baseWidth * 0.4)
+      );
+
+      desiredWidth = Math.max(minWidth, Math.min(reducedBase, baseWidth * 0.85));
+
+      if (viewportWidth) {
+        const maxViewportWidth = Math.max(
+          minWidth,
+          Math.min(viewportWidth * 0.3, viewportWidth - minMargin * 2)
+        );
+        desiredWidth = Math.min(desiredWidth, maxViewportWidth);
+      }
+    }
+
+    let baseLeft =
+      (hasCardMetrics && desiredWidth !== undefined
+        ? (assetDropdownPosition.cardLeft ?? 0) +
+          ((assetDropdownPosition.cardWidth ?? desiredWidth) - desiredWidth)
+        : undefined) ??
+      computedLeft ??
+      triggerRect?.left ??
+      assetDropdownPosition.left;
+
+    if (viewportWidth && desiredWidth !== undefined) {
+      const maxLeft = viewportWidth - desiredWidth - minMargin;
+      baseLeft = Math.min(
+        Math.max(minMargin, baseLeft ?? minMargin),
+        Math.max(minMargin, maxLeft)
+      );
+    }
+
+    const topOffset = Math.max(
+      0,
+      (assetDropdownPosition.cardTop || 0) - 64
+    );
+
     const dropdownStyle: React.CSSProperties = {
       position: "absolute",
-      top: assetDropdownPosition.top,
-      left: computedLeft ?? triggerRect?.left ?? assetDropdownPosition.left,
-      width:
-        expandedWidth ??
-        assetDropdownPosition.width ??
-        (triggerWidth > 0 ? triggerWidth : undefined),
+      top: hasCardMetrics
+        ? topOffset
+        : adjustedTop,
+      left: baseLeft,
+      width: desiredWidth,
     };
 
     return createPortal(
       (
         <div
           ref={assetDropdownContentRef}
-          className="mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg z-[1200] max-h-[70vh] sm:max-h-96 overflow-y-auto"
+          className="mt-1 bg-white dark:bg-[#050505] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg z-[1200] max-h-[70vh] sm:max-h-96 overflow-y-auto"
           style={dropdownStyle}
         >
           {/* Search Input */}
@@ -1303,7 +1383,7 @@ export default function DepositForm({
                 placeholder="Search assets..."
                 value={assetSearchTerm}
                 onChange={(e) => setAssetSearchTerm(e.target.value)}
-                className="w-full text-gray-900 dark:text-white dark:bg-[#1D1D23] bg-white rounded-xl px-10 py-2 text-sm focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400"
+                className="w-full text-gray-900 dark:text-white dark:bg-[#050505] bg-white rounded-xl px-10 py-2 text-sm focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400"
               />
             </div>
           </div>
@@ -2471,6 +2551,8 @@ export default function DepositForm({
         <div className="relative mb-4">
           {/* Top Card Container */}
           <div
+            data-asset-card="true"
+            data-select-card="true"
             className={`relative flex rounded-2xl p-4 overflow-visible ${
               isDark ? "border border-[#2F2F3A] bg-[#0F0F17]" : "border border-[#E2E8F0] bg-white shadow-sm"
             }`}
@@ -2599,7 +2681,7 @@ export default function DepositForm({
                   isDark ? "text-[#9CA3AF]" : "text-[#475569]"
                 }`}
               >
-                Bank/Payment Method
+                Payment Method
               </label>
               {/* <div>
                 hello
@@ -2678,6 +2760,8 @@ export default function DepositForm({
                   })()}
                   value={payBank}
                   className="w-full"
+                  placeholderClassName="text-white dark:text-white"
+                  sizeMode="wide"
                   triggerClassName={`px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border rounded-xl ${
                     isDark ? "bg-transparent text-white border-[#39394A]" : "bg-white text-[#1F2937] border-[#CBD5F5]"
                   }`}
@@ -2707,9 +2791,7 @@ export default function DepositForm({
                   placeholder={
                     paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0
                       ? "Loading payment methods..."
-                      : finalPaymentMethods && finalPaymentMethods.length > 0
-                        ? "Select Payment Method"
-                        : "No payment methods available"
+                      : "Payment Method"
                   }
                   disabled={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
                   loading={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
@@ -2736,13 +2818,13 @@ export default function DepositForm({
               <img
                 src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
                 alt="swap icon"
-                className="w-14 h-14 dark:hidden"
+                className="w-10 h-10 dark:hidden"
               />
               {/* Dark mode image */}
               <img
                 src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
                 alt="swap icon"
-                className="w-14 h-14 hidden dark:block"
+                className="w-10 h-10 hidden dark:block"
               />
             </button>
           </div>
@@ -2751,6 +2833,7 @@ export default function DepositForm({
                 {/* Bottom Section - You Receive and Asset in one card */}
         <div className="relative mb-3">
           <div
+            data-asset-card="true"
             className={`relative flex rounded-2xl p-4 overflow-visible ${
               isDark ? "border border-[#2F2F3A] bg-[#0F0F17]" : "border border-[#E2E8F0] bg-white shadow-sm"
             }`}
@@ -3042,26 +3125,45 @@ export default function DepositForm({
                       ? "bg-gray-500 cursor-not-allowed"
                       : "bg-[#1D8751] hover:bg-[#166b3e]"
                 }`}
-                onClick={() => {
-                  if (requiresLoginRedirect) {
-                    router.push("/auth/login");
+              onClick={() => {
+                if (requiresLoginRedirect) {
+                  const state = {
+                    mode,
+                    // Send amounts (You Send)
+                    amountInput: payAmountInput,
+                    amountValue: payAmount,
+                    // Receive amounts (You Receive)
+                    receiveAmountInput: getAmountInput,
+                    receiveAmountValue: getAmount,
+                    // Asset - save FULL object
+                    asset: selectedAsset ? { ...selectedAsset } : null,
+                    // Payment method - save FULL object
+                    payment: selectedPaymentDetail ? { ...selectedPaymentDetail } : null,
+                    // Also save payBank separately for easier access
+                    payBank: payBank,
+                    walletAddress,
+                  };
+                  setAuthRedirectPath(
+                    buildExpressRedirectPath(mode, state)
+                  );
+                  router.push("/auth/login");
+                  return;
+                }
+
+                if (selectedAsset && isForexAsset(selectedAsset)) {
+                  if (!payAmount || payAmount <= 0) {
+                    showToast.error("Please enter a valid amount");
                     return;
                   }
-
-                  if (selectedAsset && isForexAsset(selectedAsset)) {
-                    if (!payAmount || payAmount <= 0) {
-                      showToast.error("Please enter a valid amount");
-                      return;
-                    }
-                    if (!selectedPaymentDetail) {
-                      showToast.error("Please select a payment method");
-                      return;
-                    }
-                    setShowForexForm(true);
-                  } else {
-                    handleFirstCardSubmit();
+                  if (!selectedPaymentDetail) {
+                    showToast.error("Please select a payment method");
+                    return;
                   }
-                }}
+                  setShowForexForm(true);
+                } else {
+                  handleFirstCardSubmit();
+                }
+              }}
                 disabled={
                   requiresLoginRedirect
                     ? false

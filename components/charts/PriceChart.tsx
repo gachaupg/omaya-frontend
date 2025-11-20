@@ -166,11 +166,14 @@ const CryptoCard = ({
         24h
       </span>
     </div>
-    <div className="dark:text-white text-black flex flex-row justify-between items-end gap-1 sm:gap-1.5 text-[11px] sm:text-[13px] font-bold text-sm sm:text-base md:text-lg mb-1">
+    <div className="w-full h-8 mb-1">
+      <MiniChart color={chart} bg={chartBg} bgTrans={chartBgTrans} />
+    </div>
+    <div className="dark:text-white text-black flex flex-row justify-between items-end gap-1 sm:gap-1.5 text-[11px] sm:text-[13px] font-bold text-sm sm:text-base md:text-lg">
       <div className="flex flex-col gap-0.5 min-w-0 flex-1">
         {transactionCount !== undefined ? (
           <>
-            <p className="text-[10px] sm:text-xs text-gray-500 truncate"> Omaya Transactions</p>
+            <p className="text-[10px] sm:text-xs text-gray-500 truncate">Omaya Transactions</p>
             <p className="text-base sm:text-lg">{transactionCount}</p>
           </>
         ) : (
@@ -180,9 +183,6 @@ const CryptoCard = ({
       <div className="h-4 sm:h-5 px-1.5 sm:px-2 rounded-md flex flex-row gap-1 items-center justify-center bg-[#48CC544D] flex-shrink-0">
         <p className="text-[10px] sm:text-xs text-[#48CC54] font-semibold whitespace-nowrap">{rate}</p>
       </div>
-    </div>
-    <div className="w-full h-8">
-      <MiniChart color={chart} bg={chartBg} bgTrans={chartBgTrans} />
     </div>
   </div>
 );
