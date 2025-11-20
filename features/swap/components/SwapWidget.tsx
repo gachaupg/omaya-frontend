@@ -4,6 +4,7 @@
 "use client";
 import React, { useEffect, useCallback, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useSearchParams } from "next/navigation";
 import {
   setFromAsset,
   setToAsset,
@@ -34,6 +35,7 @@ import { logger } from "@/lib/utils/logger";
 
 const SwapWidget = () => {
   const dispatch = useDispatch<AppDispatch>();
+  const searchParams = useSearchParams();
   const {
     fromAsset,
     toAsset,
@@ -69,6 +71,7 @@ const SwapWidget = () => {
   const [currentStep, setCurrentStep] =
     React.useState<SwapStep>("transaction-info");
   const [showWalletAddress, setShowWalletAddress] = React.useState(false);
+  const [hasRestoredState, setHasRestoredState] = React.useState(false);
 
   // Simple debounce implementation
   const [debouncedFromAmount, setDebouncedFromAmount] =
@@ -100,6 +103,179 @@ const SwapWidget = () => {
     //   handleApiError(error);
     // });
   }, [dispatch]);
+
+  // Restore state from URL prefill parameter (after login redirect)
+  useEffect(() => {
+    if (hasRestoredState || !supportedAssets || supportedAssets.length === 0 || loading) {
+      return;
+    }
+
+    const prefill = searchParams?.get("prefill");
+    if (!prefill) {
+      setHasRestoredState(true);
+      return;
+    }
+
+    try {
+      const initialState = JSON.parse(decodeURIComponent(prefill));
+      
+      // Restore wallet address
+      if (initialState.walletAddress) {
+        setWalletAddress(initialState.walletAddress);
+      }
+
+      // Restore amounts
+      if (initialState.fromAmount) {
+        dispatch(setFromAmount(initialState.fromAmount));
+      }
+      if (initialState.toAmount) {
+        dispatch(setToAmount(initialState.toAmount));
+      }
+
+      // Restore fromAsset
+      if (initialState.fromAsset && supportedAssets.length > 0) {
+        const matchingFromAsset = supportedAssets.find((asset: SupportedAsset) => {
+          const initialStateTicker = (initialState.fromAsset.ticker || "").toLowerCase().trim();
+          const initialStateSymbol = (initialState.fromAsset.symbol || "").toLowerCase().trim();
+          const initialStateNetwork = (initialState.fromAsset.network || "").toLowerCase().trim();
+          
+          const assetTicker = (asset.ticker || "").toLowerCase().trim();
+          const assetSymbol = (asset.symbol || "").toLowerCase().trim();
+          const assetNetwork = (asset.network || "").toLowerCase().trim();
+
+          // Match by ticker + network (most specific)
+          if (initialStateTicker && assetTicker && initialStateNetwork && assetNetwork) {
+            if (initialStateTicker === assetTicker && initialStateNetwork === assetNetwork) {
+              return true;
+            }
+          }
+
+          // Match by symbol + network
+          if (initialStateSymbol && assetSymbol && initialStateNetwork && assetNetwork) {
+            if (initialStateSymbol === assetSymbol && initialStateNetwork === assetNetwork) {
+              return true;
+            }
+          }
+
+          // Fallback: ticker only (if no network specified)
+          if (initialStateTicker && assetTicker && !initialStateNetwork) {
+            if (initialStateTicker === assetTicker) {
+              return true;
+            }
+          }
+
+          return false;
+        });
+
+        if (matchingFromAsset) {
+          dispatch(setFromAsset(matchingFromAsset));
+        }
+      }
+
+      // Restore toAsset
+      if (initialState.toAsset && supportedAssets.length > 0) {
+        const matchingToAsset = supportedAssets.find((asset: SupportedAsset) => {
+          const initialStateTicker = (initialState.toAsset.ticker || "").toLowerCase().trim();
+          const initialStateSymbol = (initialState.toAsset.symbol || "").toLowerCase().trim();
+          const initialStateNetwork = (initialState.toAsset.network || "").toLowerCase().trim();
+          
+          const assetTicker = (asset.ticker || "").toLowerCase().trim();
+          const assetSymbol = (asset.symbol || "").toLowerCase().trim();
+          const assetNetwork = (asset.network || "").toLowerCase().trim();
+
+          // Match by ticker + network (most specific)
+          if (initialStateTicker && assetTicker && initialStateNetwork && assetNetwork) {
+            if (initialStateTicker === assetTicker && initialStateNetwork === assetNetwork) {
+              return true;
+            }
+          }
+
+          // Match by symbol + network
+          if (initialStateSymbol && assetSymbol && initialStateNetwork && assetNetwork) {
+            if (initialStateSymbol === assetSymbol && initialStateNetwork === assetNetwork) {
+              return true;
+            }
+          }
+
+          // Fallback: ticker only (if no network specified)
+          if (initialStateTicker && assetTicker && !initialStateNetwork) {
+            if (initialStateTicker === assetTicker) {
+              return true;
+            }
+          }
+
+          return false;
+        });
+
+        if (matchingToAsset) {
+          dispatch(setToAsset(matchingToAsset));
+        }
+      }
+
+      setHasRestoredState(true);
+
+      // Set activeInputField to "from" to trigger estimate fetch
+      if (initialState.fromAmount) {
+        setActiveInputField("from");
+      }
+
+      // Auto-advance to wallet address step if wallet address is already provided
+      if (initialState.walletAddress && initialState.fromAsset && initialState.toAsset && initialState.fromAmount) {
+        // Small delay to ensure state is set
+        setTimeout(() => {
+          setShowWalletAddress(true);
+        }, 500);
+      }
+    } catch (error) {
+      console.warn("Failed to parse prefill state", error);
+      setHasRestoredState(true);
+    }
+  }, [supportedAssets, loading, searchParams, dispatch, hasRestoredState]);
+
+  // Auto-expand swap form when state is restored (show wallet address step)
+  const [hasAutoExpanded, setHasAutoExpanded] = React.useState(false);
+  
+  useEffect(() => {
+    // Only auto-expand if we have restored state from URL (prefill parameter exists)
+    const prefill = searchParams?.get("prefill");
+    if (!prefill || !hasRestoredState || hasAutoExpanded) {
+      return;
+    }
+
+    // Wait for all required data to be available
+    if (!fromAsset || !toAsset || !fromAmount || parseFloat(fromAmount) <= 0) {
+      return;
+    }
+
+    // Wait for estimate to be available
+    if (estimateLoading) {
+      return;
+    }
+
+    if (!estimate) {
+      return;
+    }
+
+    // Auto-expand: show wallet address step (same as clicking submit in TransactionInfoStep)
+    const timer = setTimeout(() => {
+      if (!hasAutoExpanded && fromAsset && toAsset && fromAmount && estimate) {
+        console.log("🚀 AUTO-EXPANDING SWAP FORM:", { fromAsset: fromAsset.ticker, toAsset: toAsset.ticker, fromAmount });
+        setShowWalletAddress(true);
+        setHasAutoExpanded(true);
+      }
+    }, 3000); // Increased delay to ensure everything is ready
+
+    return () => clearTimeout(timer);
+  }, [
+    hasRestoredState,
+    fromAsset,
+    toAsset,
+    fromAmount,
+    estimate,
+    estimateLoading,
+    searchParams,
+    hasAutoExpanded,
+  ]);
 
   // Fetch swap estimate when assets or amount changes
   useEffect(() => {
@@ -540,7 +716,7 @@ const SwapWidget = () => {
   }
 
   return (
-    <div className="mx-auto dark:text-white text-gray-900 px-3 sm:px-4">
+    <div className="mx-auto dark:text-white text-gray-900 px-3 sm:px-3">
       <h2 className="text-base sm:text-lg font-semibold mb-4 sm:mb-6 text-gray-900 dark:text-white">
         Swap Crypto
       </h2>

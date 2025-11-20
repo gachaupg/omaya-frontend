@@ -108,7 +108,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
   });
 
   return (
-    <div className="w-full">
+    <div className="w-full mt-4">
       <div className="overflow-x-auto rounded-2xl">
         <div className="min-w-0 md:min-w-[800px] w-full overflow-hidden border bg-white border-gray-200 rounded-2xl dark:bg-[#1D1D23] dark:border-[#35353E]">
           {/* ---------------- Desktop header row ---------------- */}

@@ -657,7 +657,7 @@ const PrivacySecurity = () => {
 
       <div className="p-3 dark:text-white text-gray-900 flex flex-col gap-4 w-full">
         {/* 2 Factor Authentication */}
-        <div className="w-full dark:border-[#35353E] border-gray-300 border-2 rounded-2xl p-4 flex flex-col gap-4 max-w-none mx-auto dark:bg-[#1D1D23] bg-gray-50">
+        <div className="w-full rounded-2xl p-5 flex flex-col gap-4 max-w-none mx-auto bg-white dark:bg-[#1D1D23] border border-[#E4E6F0] dark:border-[#35353E] shadow-sm">
           <div className="text-base font-semibold mb-2 dark:text-white text-gray-900">
             2 Factor Authentication
           </div>
@@ -742,8 +742,8 @@ const PrivacySecurity = () => {
                 } active)`
               : "No active sessions to sign out from"}
           </button>
-           {/* Active Browser Sessions */}
-        <div className="w-full  max-w-none mx-auto dark:bg-[#1D1D23] bg-white">
+         {/* Active Browser Sessions */}
+        <div className="w-full max-w-none mx-auto rounded-2xl border border-[#E4E6F0] dark:border-[#35353E] bg-white dark:bg-[#1D1D23] shadow-sm p-5 space-y-4">
           <div className="flex items-center justify-between mb-2">
             <div className="text-base font-semibold">
               Active Browser Session
@@ -871,14 +871,14 @@ const PrivacySecurity = () => {
                )}
             </div>
           ) : (
-            <div className="-mx-4 border-t dark:border-[#35353E] border-gray-200">
-              <div className="px-4 py-3 text-xs font-semibold uppercase tracking-wide dark:text-[#8C8CA1] text-gray-500 space-y-1">
+            <div className="border-t dark:border-[#35353E] border-gray-200 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 text-xs font-semibold uppercase tracking-wide dark:text-[#8C8CA1] text-gray-500 space-y-1 bg-gray-50 dark:bg-transparent">
                 <div>Signed In</div>
                 <div>Location</div>
                 <div>IP Address</div>
                 <div>Browser</div>
               </div>
-              <div className="divide-y dark:divide-[#2F2C3C] divide-gray-200 dark:text-white text-gray-200">
+              <div className="divide-y dark:divide-[#2F2C3C] divide-gray-200 dark:text-white text-gray-800 bg-white dark:bg-transparent">
                 {paginatedSessions.map((session: DeviceSession) => (
                   <div key={session.session_id} className="px-4 py-4 text-sm space-y-2">
                     <p className="font-semibold">

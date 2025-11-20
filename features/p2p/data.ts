@@ -240,7 +240,7 @@ export const marketTableData = [
 export const orderStatusTabs: Array<{ id: string; label: string; count?: number }> = [
   { id: "all", label: "All Orders" },
   { id: "completed", label: "Completed" },
-  { id: "processing", label: "Processing" },
+  { id: "matched", label: "Processing" },
   { id: "canceled", label: "Canceled" },
 ];
 
@@ -249,7 +249,6 @@ export const tokenOptions = [
   { value: "usdt", label: "Tether", icon: "tether" },
   // Add more tokens as needed
 ];
-
 // Currency options for Filters
 export const currencyOptions = [
   { value: "usdt", label: "USDT" },

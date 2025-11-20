@@ -12,6 +12,9 @@ interface WalletAddressStepProps {
   isLoading?: boolean;
 }
 
+const strongBorder =
+  "border-[1.5px] border-gray-200 dark:border-white/10 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]";
+
 const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   walletAddress,
   onWalletAddressChange,
@@ -46,25 +49,25 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   };
 
   return (
-    <div className="w-full flex flex-col px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+    <div className="w-full flex flex-col    gap-4">
       <div className="mb-2 text-base sm:text-lg md:text-xl font-bold text-[#788099]">
         <span className="text-[#7e7e8f]">2-</span> Your Wallet Address
       </div>
-      <div className="w-full mx-auto">
+      <div className="w-full">
         {/* Combined Wallet Address and Terms Card */}
-        <div className="bg-transparent dark:bg-transparent border border-gray-200 dark:border-[#35353E] rounded-2xl p-5 sm:p-6 lg:p-8 shadow-lg w-full text-gray-900 dark:text-white">
+        <div className={`bg-white dark:bg-[#1B1B23] ${strongBorder} rounded-2xl p-5 sm:p-6 lg:p-8 w-full text-gray-900 dark:text-white`}>
           <div className="flex flex-col gap-4 sm:gap-6">
             {/* Wallet Address Input Section */}
             <div className="flex flex-col gap-3 sm:gap-4">
               {/* Wallet/Account Address Label */}
-              <div className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
+              <div className="text-xs sm:text-sm font-medium text-[#788099]  dark:text-[#788099]">
                 Wallet/Account Address
               </div>
 
               {/* Input Field with Paste Button */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
                 <div className="flex-1 relative">
-                  <div className="flex items-center bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#39394a] rounded-2xl px-3 sm:px-4 py-3 min-h-[48px]">
+                  <div className={`flex items-center bg-white dark:bg-[#1D1D23] ${strongBorder} rounded-2xl px-3 sm:px-4 py-3 min-h-[48px]`}>
                     {/* Wallet Icon */}
                     <svg
                       className="w-5 h-5 text-[#1D8751] mr-3"
@@ -148,13 +151,13 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                     d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                <h3 className="text-gray-900 dark:text-white font-medium text-sm sm:text-base">
+                <h3 className="text-gray-900 dark:text-[#788099] font-medium text-sm sm:text-base">
                   Terms and Conditions Summary
                 </h3>
               </div>
 
               {/* Terms Box */}
-              <div className="bg-gray-50 dark:bg-[#23232b] border border-[#1D8751] dark:border-[#1D8751] rounded-xl p-4 sm:p-5">
+              <div className={`bg-gray-50 dark:bg-[#23232b] ${strongBorder} rounded-xl p-4 sm:p-5`}>
                 <div className="space-y-2 sm:space-y-3">
                   {/* Term 1 */}
                   <div className="flex items-start gap-2 sm:gap-3">
@@ -208,7 +211,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                   >
                     Terms of Use
                   </a>{" "}
-                  (
+                  
                   <a
                     href="/legal/privacy-policy"
                     target="_blank"
@@ -231,7 +234,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                   <span className="text-[#1D8751] font-medium">
                     Risk Disclosure Statement
                   </span>
-                  )
+                  
                 </label>
               </div>
             </div>
@@ -243,7 +246,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
           <button
             onClick={handleNext}
             disabled={!hasAcceptedTerms || !walletAddress.trim() || isLoading}
-            className="flex-1 bg-[#1D8751] hover:bg-[#166b3e] disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-4 sm:px-6 py-3 sm:py-3 rounded-2xl font-semibold text-sm sm:text-base transition-colors flex items-center justify-center gap-2 min-h-[48px]"
+            className="flex-1 bg-[#1D8751] hover:bg-[#166b3e] disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-4 sm:px-6 py-3 sm:py-3 rounded-3xl font-semibold text-sm sm:text-base transition-colors flex items-center justify-center gap-2 min-h-[48px]"
           >
             {isLoading ? (
               <>

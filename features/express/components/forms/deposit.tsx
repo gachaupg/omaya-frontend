@@ -32,6 +32,10 @@ import {
 } from "../../hooks/useDataDisplay";
 import CustomSelect from "@/components/ui/CustomSelect";
 import Select from "@/features/p2p/components/Common/Select";
+import {
+  buildExpressRedirectPath,
+  setAuthRedirectPath,
+} from "@/lib/utils/authRedirect";
 
 interface DepositFormProps {
   onExchange?: (transactionData: {
@@ -53,6 +57,7 @@ interface DepositFormProps {
   mode: "deposit" | "withdrawal";
   onModeChange?: (mode: "deposit" | "withdrawal") => void;
   isHomePage?: boolean;
+  initialState?: any;
 }
 
 // Network mapping function
@@ -96,6 +101,7 @@ export default function DepositForm({
   mode,
   onModeChange,
   isHomePage = false,
+  initialState,
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -435,49 +441,105 @@ export default function DepositForm({
         : null,
   });
 
-  const [payAmount, setPayAmount] = useState(100); // Set default amount to $100
-  const [payAmountInput, setPayAmountInput] = useState("100"); // String value for input display
-  const [payBank, setPayBank] = useState("");
-  const [getAmount, setGetAmount] = useState(98); // Default amount after 2% commission (100 - 2 = 98)
-  const [getAmountInput, setGetAmountInput] = useState("98"); // String value for input display
+  const [payAmount, setPayAmount] = useState(
+    initialState?.amountValue ?? 100
+  );
+  const [payAmountInput, setPayAmountInput] = useState(
+    initialState?.amountInput ?? "100"
+  );
+  const [payBank, setPayBank] = useState(
+    initialState?.payBank || 
+    initialState?.payment?.provider_name || 
+    initialState?.payment?.payment_provider_name || 
+    ""
+  );
+  // Restore both send and receive amounts from initialState
+  const [getAmount, setGetAmount] = useState(() => {
+    if (initialState?.receiveAmountValue !== undefined) {
+      return initialState.receiveAmountValue;
+    }
+    if (initialState?.amountValue) {
+      return Math.max(0, initialState.amountValue - 2);
+    }
+    return 98;
+  });
+  const [getAmountInput, setGetAmountInput] = useState(() => {
+    if (initialState?.receiveAmountInput) {
+      return initialState.receiveAmountInput;
+    }
+    if (initialState?.receiveAmountValue !== undefined) {
+      return initialState.receiveAmountValue.toString();
+    }
+    if (initialState?.amountValue) {
+      return Math.max(0, initialState.amountValue - 2).toString();
+    }
+    return "98";
+  });
+  // Don't set asset directly from initialState - let matching logic handle it
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const [selectedNetwork, setSelectedNetwork] = useState<any>(null);
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
-  const [walletAddress, setWalletAddress] = useState("");
+  const [walletAddress, setWalletAddress] = useState(
+    initialState?.walletAddress || ""
+  );
   const [walletError, setWalletError] = useState<string | null>(null);
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false);
   const [forceUpdate, setForceUpdate] = useState(0);
-  const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(null);
+  // Initialize selectedPaymentDetail from initialState if available (immediate, no waiting)
+  const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(() => {
+    // If we have initialState with payment, use it immediately
+    if (initialState?.payment) {
+      return initialState.payment;
+    }
+    return null;
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [hasAutoExpanded, setHasAutoExpanded] = useState(false);
+  const [isRestoringFromInitialState, setIsRestoringFromInitialState] = useState(false);
 
   useEffect(() => {
-    if (!finalPaymentMethods || finalPaymentMethods.length === 0) {
-      return;
-    }
-
-    const matchingSelection = finalPaymentMethods.find(
-      (method: any) => method?.provider_name === payBank
-    );
-
-    if (matchingSelection) {
-      if (
-        !selectedPaymentDetail ||
-        selectedPaymentDetail?.provider_name !== matchingSelection.provider_name
-      ) {
-        setSelectedPaymentDetail(matchingSelection);
+    // If we have initialState with payment (full object from home page), ensure it's set and payBank is correct
+    if (initialState?.payment) {
+      const initialStatePayment = initialState.payment;
+      
+      // Use the payment object directly from initialState (exact object from home page) - NO CHECKS, NO MATCHING
+      if (!selectedPaymentDetail || selectedPaymentDetail !== initialStatePayment) {
+        setSelectedPaymentDetail(initialStatePayment);
       }
-      return;
+      // Ensure payBank is set correctly
+      const correctPayBank = initialStatePayment.provider_name || initialStatePayment.payment_provider_name || initialState.payBank || "";
+      if (payBank !== correctPayBank) {
+        setPayBank(correctPayBank);
+      }
+      return; // Don't proceed to defaults
     }
 
-    const firstMethod = finalPaymentMethods[0];
-    if (!firstMethod?.provider_name) {
-      return;
-    }
+    // Only apply defaults if we don't have initialState payment
+    if (!initialState?.payment && finalPaymentMethods && finalPaymentMethods.length > 0) {
+      const matchingSelection = finalPaymentMethods.find(
+        (method: any) => method?.provider_name === payBank
+      );
 
-    setPayBank(firstMethod.provider_name);
-    setSelectedPaymentDetail(firstMethod);
-  }, [finalPaymentMethods, payBank, selectedPaymentDetail]);
+      if (matchingSelection) {
+        if (
+          !selectedPaymentDetail ||
+          selectedPaymentDetail?.provider_name !== matchingSelection.provider_name
+        ) {
+          setSelectedPaymentDetail(matchingSelection);
+        }
+        return;
+      }
+
+      const firstMethod = finalPaymentMethods[0];
+      if (!firstMethod?.provider_name) {
+        return;
+      }
+
+      setPayBank(firstMethod.provider_name);
+      setSelectedPaymentDetail(firstMethod);
+    }
+  }, [finalPaymentMethods, payBank, selectedPaymentDetail, initialState]);
 
   // Add transaction code state
   const [transactionCode, setTransactionCode] = useState<string>("");
@@ -709,13 +771,55 @@ export default function DepositForm({
       });
   }, [dispatch]);
 
-  // Auto-select first asset when assets are loaded
+  // Restore asset from initialState when assets are loaded
   useEffect(() => {
-    if (
-      assetsDisplay.shouldShowData &&
-      assetsDisplay.displayData.length > 0 &&
-      !selectedAsset
-    ) {
+    if (!assetsDisplay.shouldShowData || assetsDisplay.displayData.length === 0) {
+      return;
+    }
+
+    // If we have initialState with asset, use it directly (full object from home page)
+    if (initialState?.asset && !selectedAsset) {
+      const initialStateAsset = initialState.asset;
+      
+      // Try to find the exact asset in available assets by asset_id
+      const matchingAsset = assetsDisplay.displayData.find((asset: any) => {
+        if (initialStateAsset.asset_id && asset.asset_id) {
+          return String(initialStateAsset.asset_id).toLowerCase().trim() === String(asset.asset_id).toLowerCase().trim();
+        }
+        return false;
+      });
+
+      // Use matched asset if found, otherwise use initialState asset directly
+      const assetToUse = matchingAsset || initialStateAsset;
+      
+      setIsRestoringFromInitialState(true);
+      setSelectedAsset(assetToUse);
+      const networkValue = getAssetNetwork(assetToUse);
+      setSelectedNetwork({
+        network_id: networkValue,
+        network_type: networkValue,
+      });
+      // Restore exact amounts from initialState
+      if (initialState.amountValue !== undefined) {
+        setPayAmount(initialState.amountValue);
+        setPayAmountInput(initialState.amountInput || initialState.amountValue.toString());
+      }
+      // Restore receive amount if available
+      if (initialState.receiveAmountValue !== undefined) {
+        setGetAmount(initialState.receiveAmountValue);
+        setGetAmountInput(initialState.receiveAmountInput || initialState.receiveAmountValue.toString());
+      } else if (initialState.amountValue) {
+        // If no receive amount, calculate it
+        setTimeout(() => {
+          calculateAmounts(initialState.amountValue, true);
+        }, 100);
+      }
+      setIsRestoringFromInitialState(false);
+      return; // Don't proceed to auto-select
+    }
+
+    // Auto-select first asset only if no asset is selected and no initialState
+    if (!selectedAsset && !initialState?.asset) {
       // Use the sorted assets to get the first one (USDT on BSC first, USDC on BSC second)
       const sortedAssets = [...assetsDisplay.displayData].sort((a, b) => {
         const tickerA = (a?.ticker || a?.symbol || a?.name || "")
@@ -770,7 +874,7 @@ export default function DepositForm({
         network_type: networkValue,
       });
     }
-  }, [assetsDisplay.displayData, selectedAsset]);
+  }, [assetsDisplay.displayData, selectedAsset, initialState]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -1635,16 +1739,16 @@ export default function DepositForm({
     setCalculationTimeout(timeout);
   };
 
-  // Recalculate when asset changes
+  // Recalculate when asset changes (but not when restoring from initialState)
   useEffect(() => {
-    if (selectedAsset && payAmount > 0 && isCalculatingFromPay) {
+    if (selectedAsset && payAmount > 0 && isCalculatingFromPay && !isRestoringFromInitialState) {
       // Clear any existing estimate when asset changes
       setEstimate(null);
       setEstimateError(null);
       // Trigger calculation with new asset
       calculateAmounts(payAmount, true);
     }
-  }, [selectedAsset]);
+  }, [selectedAsset, isRestoringFromInitialState]);
 
   // Forward calculations are now handled directly in the input handlers
   // This useEffect was causing duplicate calculations and loading state conflicts
@@ -1942,6 +2046,59 @@ export default function DepositForm({
       }
     }
   };
+
+  // Auto-expand and auto-submit when initialState is provided
+  useEffect(() => {
+    // Only run on dashboard (not home page) and if we have initialState
+    if (isHomePage || !initialState || hasAutoExpanded) {
+      return;
+    }
+
+    // Wait for required data to be loaded
+    if (
+      !selectedAsset ||
+      !selectedPaymentDetail ||
+      !finalPaymentMethods ||
+      finalPaymentMethods.length === 0
+    ) {
+      return;
+    }
+
+    // Check if we have all required data
+    const hasRequiredData =
+      initialState.amountValue &&
+      initialState.asset &&
+      initialState.payment;
+
+    if (!hasRequiredData) {
+      return;
+    }
+
+    // Auto-expand: If it's a forex asset, show forex form; otherwise, submit first card
+    if (selectedAsset && isForexAsset(selectedAsset)) {
+      setShowForexForm(true);
+      setHasAutoExpanded(true);
+    } else if (selectedAsset && selectedPaymentDetail && !isFirstCardSubmitted && !isSubmitting) {
+      // Auto-submit the first card
+      const timer = setTimeout(() => {
+        if (!isFirstCardSubmitted && !isSubmitting) {
+          handleFirstCardSubmit();
+          setHasAutoExpanded(true);
+        }
+      }, 1000); // Delay to ensure everything is ready
+
+      return () => clearTimeout(timer);
+    }
+  }, [
+    initialState,
+    selectedAsset,
+    selectedPaymentDetail,
+    finalPaymentMethods,
+    isHomePage,
+    hasAutoExpanded,
+    isFirstCardSubmitted,
+    isSubmitting,
+  ]);
 
   // Validate form data
   const validateForm = () => {
@@ -2648,7 +2805,10 @@ export default function DepositForm({
             </div>
 
             {/* Bank/Payment Method Section */}
-            <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#D1D2D4FF] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none">
+            <div
+              data-select-card="true"
+              className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#D1D2D4FF] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none"
+            >
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                 Bank/Payment Method
               </label>
@@ -2667,7 +2827,21 @@ export default function DepositForm({
               <div className="relative">
                 <CustomSelect
                   options={(() => {
-                    const mappedOptions = (finalPaymentMethods || []).map(
+                    // Include initialState payment in options if it exists and isn't already in finalPaymentMethods
+                    let optionsToMap = [...(finalPaymentMethods || [])];
+                    if (initialState?.payment && selectedPaymentDetail) {
+                      const initialStatePayment = initialState.payment;
+                      const isAlreadyInOptions = finalPaymentMethods?.some(
+                        (method: any) => 
+                          method.provider_name === initialStatePayment.provider_name ||
+                          (method.id && initialStatePayment.id && String(method.id) === String(initialStatePayment.id))
+                      );
+                      if (!isAlreadyInOptions) {
+                        optionsToMap = [initialStatePayment, ...optionsToMap];
+                      }
+                    }
+                    
+                    const mappedOptions = optionsToMap.map(
                       (payment: any, index: number) => {
                         // Get logo URL - check both fields and ensure it's a valid string
                         let logoUrl: string | undefined = undefined;
@@ -2744,6 +2918,7 @@ export default function DepositForm({
                     return mappedOptions;
                   })()}
                   value={payBank}
+                  sizeMode="card"
                   onChange={(value) => {
                     const selectedPayment = finalPaymentMethods?.find(
                       (payment: any) => payment.provider_name === value
@@ -3200,17 +3375,7 @@ export default function DepositForm({
 
         {/* Submit Button for First Card */}
         {!isFirstCardSubmitted && !showForexForm && (
-          <div
-            className="mt-4 relative"
-            onClick={(e) => {
-              // On home page, redirect to login on any click
-              if (isHomePage) {
-                e.preventDefault();
-                e.stopPropagation();
-                router.push("/auth/login");
-              }
-            }}
-          >
+          <div className="mt-4 relative">
             <button
               className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${
                 isHomePage
@@ -3225,13 +3390,24 @@ export default function DepositForm({
                     ? "bg-gray-500 cursor-not-allowed"
                     : "bg-[#1D8751] hover:bg-[#166b3e]"
               }`}
-              onClick={
-                isHomePage
-                  ? undefined
-                  : () => {
-                      // Check if it's FXP - expand forex form instead of submitting
+              onClick={() => {
+                if (isHomePage) {
+                  const state = {
+                    mode,
+                    amountInput: payAmountInput,
+                    amountValue: payAmount,
+                    asset: selectedAsset,
+                    payment: selectedPaymentDetail,
+                    walletAddress,
+                  };
+                  setAuthRedirectPath(
+                    buildExpressRedirectPath(mode, state)
+                  );
+                  router.push("/auth/login");
+                  return;
+                }
+
                       if (selectedAsset && isForexAsset(selectedAsset)) {
-                        // Validate basic fields first
                         if (!payAmount || payAmount <= 0) {
                           showToast.error("Please enter a valid amount");
                           return;
@@ -3240,14 +3416,11 @@ export default function DepositForm({
                           showToast.error("Please select a payment method");
                           return;
                         }
-                        // Expand forex form
                         setShowForexForm(true);
                       } else {
-                        // Regular crypto deposit
                         handleFirstCardSubmit();
                       }
-                    }
-              }
+              }}
               disabled={
                 isHomePage
                   ? false

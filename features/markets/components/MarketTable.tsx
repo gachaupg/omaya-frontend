@@ -18,18 +18,23 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Button } from "@headlessui/react";
-import { ArrowLeftRight, Plus, Repeat, Search, Users, X } from "lucide-react";
+import {
+  ArrowDownRight,
+  ArrowLeftRight,
+  ArrowUpRight,
+  Repeat,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { TiArrowUnsorted } from "react-icons/ti";
 import {
   fetchAssets,
-  addFavoriteAsset,
   removeFavoriteAsset,
   getFavoriteAssets,
 } from "../../exchange/slices/exchangeSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
-import { toast } from "sonner";
+import toast from "react-hot-toast";
 import { Asset, FavoriteAsset } from "../../exchange/types";
 
 import { logger } from "@/lib/utils/logger";
@@ -175,7 +180,7 @@ const StarIcon = () => (
 const tableHeaders = [
   "Name",
   "Price",
-  "24h Change",
+  "24h Change", // Will be split into "24h" and "Change"
   "24 Volume",
   "Market Cap",
   "More",
@@ -183,7 +188,11 @@ const tableHeaders = [
 
 const filterTags = ["Hot", "Gainers", "Losers", "New", "Market Cap"];
 
-const MarketTable = () => {
+interface MarketTableProps {
+  showFullLayout?: boolean;
+}
+
+const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const {
     assets: allAvailableAssets,
@@ -197,11 +206,13 @@ const MarketTable = () => {
   const [selectedCoinId, setSelectedCoinId] = useState<string | null>(null);
   const [coinDetails, setCoinDetails] = useState<any>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingRemoveAsset, setPendingRemoveAsset] =
     useState<FavoriteAsset | null>(null);
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: "asc" | "desc" | null;
+  } | null>(null);
 
   useEffect(() => {
     if (!allAvailableAssets) {
@@ -236,61 +247,113 @@ const MarketTable = () => {
     }
   }, []);
 
-  // Filter markets based on active filter - memoized to prevent unnecessary recalculations
+  // Handle sorting
+  const handleSort = (key: string) => {
+    setSortConfig((prev) => {
+      if (prev?.key === key) {
+        // Cycle through: asc -> desc -> null
+        if (prev.direction === "asc") {
+          return { key, direction: "desc" };
+        } else if (prev.direction === "desc") {
+          return null;
+        }
+      }
+      return { key, direction: "asc" };
+    });
+  };
+
+  // Get sort icon
+  const getSortIcon = (key: string) => {
+    if (sortConfig?.key !== key) {
+      return <TiArrowUnsorted className="w-3 h-3 text-gray-400" />;
+    }
+    if (sortConfig.direction === "asc") {
+      return <ArrowUpRight className="w-3 h-3 text-gray-600 dark:text-gray-300" />;
+    } else if (sortConfig.direction === "desc") {
+      return <ArrowDownRight className="w-3 h-3 text-gray-600 dark:text-gray-300" />;
+    }
+    return <TiArrowUnsorted className="w-3 h-3 text-gray-400" />;
+  };
+
+  // Filter and sort markets - memoized to prevent unnecessary recalculations
   const filteredMarkets = useMemo(() => {
     if (!markets.length) return [];
 
+    let result: typeof markets = [];
+
+    // Apply filters first
     switch (activeFilter) {
       case "Gainers":
-        return markets.filter(
+        result = markets.filter(
           (market) =>
             market.price_change_percentage_24h !== null &&
             market.price_change_percentage_24h > 0
         );
+        break;
       case "Losers":
-        return markets.filter(
+        result = markets.filter(
           (market) =>
             market.price_change_percentage_24h !== null &&
             market.price_change_percentage_24h < 0
         );
+        break;
       case "New":
         // Filter for coins with recent activity (you can customize this logic)
-        return markets.slice(0, 10);
+        result = markets.slice(0, 10);
+        break;
       case "Market Cap":
-        return [...markets].sort((a, b) => {
+        result = [...markets].sort((a, b) => {
           const aCap = a.market_cap || 0;
           const bCap = b.market_cap || 0;
           return bCap - aCap;
         });
+        break;
       default:
-        return markets;
+        result = [...markets];
     }
-  }, [markets, activeFilter]);
+
+    // Apply sorting if configured
+    if (sortConfig && sortConfig.direction) {
+      result = [...result].sort((a, b) => {
+        let aValue: number = 0;
+        let bValue: number = 0;
+
+        switch (sortConfig.key) {
+          case "24h_volume":
+            aValue = a.total_volume || 0;
+            bValue = b.total_volume || 0;
+            break;
+          case "change":
+            aValue = a.price_change_percentage_24h || 0;
+            bValue = b.price_change_percentage_24h || 0;
+            break;
+          case "price":
+            aValue = a.current_price || 0;
+            bValue = b.current_price || 0;
+            break;
+          case "market_cap":
+            aValue = a.market_cap || 0;
+            bValue = b.market_cap || 0;
+            break;
+          default:
+            return 0;
+        }
+
+        if (sortConfig.direction === "asc") {
+          return aValue - bValue;
+        } else {
+          return bValue - aValue;
+        }
+      });
+    }
+
+    return result;
+  }, [markets, activeFilter, sortConfig]);
 
   // Get top 3 markets for favorite assets - memoized
   // const favoriteAssets = useMemo(() => {
   //   return markets.slice(0, 3);
   // }, [markets]);
-
-  const toggleDropdown = () => {
-    setShowDropdown(!showDropdown);
-    setSearchTerm("");
-  };
-
-  const handleAddToFavorites = async (assetId: string) => {
-    try {
-      await dispatch(addFavoriteAsset({ asset_id: assetId })).unwrap();
-      toast.success("Asset added to favorites!");
-      setShowDropdown(false);
-      dispatch(fetchAssets());
-    } catch (error: any) {
-      toast.error(
-        `Failed to add asset to favorites: ${
-          error || "Unknown error" || "unexpected error occured"
-        }`
-      );
-    }
-  };
 
   const handleRemoveFromFavorites = async (assetId: string) => {
     try {
@@ -314,11 +377,6 @@ const MarketTable = () => {
     return asset?.asset_id || null;
   };
 
-  const filteredAvailableAssets =
-    allAvailableAssets?.assets?.filter((asset: Asset) =>
-      asset.symbol.toLowerCase().includes(searchTerm.toLowerCase())
-    ) || [];
-
   // Dummy data for missing fields
   const DUMMY_ASSET_DATA: Record<
     string,
@@ -335,6 +393,11 @@ const MarketTable = () => {
   const handleRefresh = useCallback(() => {
     refetch();
   }, [refetch]);
+
+  const handleReloadFavorites = useCallback(() => {
+    dispatch(fetchAssets());
+    dispatch(getFavoriteAssets());
+  }, [dispatch]);
 
   // Handle row click to fetch and show details
   const handleRowClick = async (id: string) => {
@@ -399,220 +462,193 @@ const MarketTable = () => {
     );
   }
 
-  return (
-    <div className="bg-[#EEF1F4] dark:bg-[#18181D] min-h-screen py-4 sm:py-6 lg:py-8 text-gray-900 dark:text-[#788099] font-sans">
-      {/* Top Section */}
-      <div className="max-w-[1400px] mx-auto mb-4 sm:mb-6 lg:mb-6 px-3 sm:px-4 lg:px-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3 sm:gap-0">
-          <h1 className="text-xl sm:text-2xl lg:text-2xl font-bold text-gray-900 dark:text-[#fff]">
-            Market Review
-          </h1>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            {lastUpdated && (
-              <span className="text-xs text-gray-600 dark:text-[#788099]">
-                Last updated: {new Date(lastUpdated).toLocaleTimeString()}
-              </span>
-            )}
-            <button
-              onClick={handleRefresh}
-              disabled={loading}
-              className="px-3 py-1.5 sm:py-1 lg:py-1 bg-gray-100 dark:bg-[#1D1D23] text-gray-700 dark:text-[#788099] rounded border border-gray-300 dark:border-[#35353E] hover:bg-gray-200 dark:hover:bg-[#35353E] disabled:opacity-50 text-xs sm:text-sm lg:text-sm min-h-[44px] sm:min-h-0 lg:min-h-0"
-            >
-              {loading ? "Loading..." : "Refresh"}
-            </button>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2 mb-4">
-          {filterTags.map((tag) => (
-            <span
-              key={tag}
-              onClick={() => handleFilterClick(tag)}
-              className={`bg-gray-100 dark:bg-[#1D1D23] text-gray-700 dark:text-[#788099] rounded-xl sm:rounded-2xl lg:rounded-2xl px-3 sm:px-4 lg:px-4 py-1.5 sm:py-1 lg:py-1 text-xs sm:text-sm lg:text-sm font-medium border border-gray-300 dark:border-[#35353E] cursor-pointer transition-colors min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center justify-center ${
-                activeFilter === tag
-                  ? "bg-gray-200 dark:bg-[#35353E] text-gray-900 dark:text-[#fff]"
-                  : "hover:bg-gray-200 dark:hover:bg-[#35353E]"
-              }`}
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-
-        <div className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099] mb-2 leading-relaxed">
-          Gain a comprehensive overview of all cryptocurrencies through OMAYA
-          Express. This webpage presents the most recent prices, 24-hour trade
-          volumes, price fluctuations, and market capitalizations for every
-          cryptocurrency available on global markets.
-        </div>
-        <div className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099] mb-4 sm:mb-6 lg:mb-6 leading-relaxed">
-          Users can readily obtain crucial details about these digital assets
-          and directly navigate to the trading platform from this point.
-        </div>
-
-        {/* Favourite Assets Header Row */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 gap-3 sm:gap-0">
-          <div className="flex items-center gap-2 font-semibold text-gray-900 dark:text-[#fff] text-base sm:text-lg lg:text-lg">
-            Top Assets Favourite Assets
-            <button
-              className="bg-none border-none text-[#1D8751] text-lg sm:text-xl lg:text-xl cursor-pointer p-1 sm:p-0 lg:p-0 ml-1 sm:ml-2 lg:ml-2 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center justify-center"
-              onClick={() => {
-                document
-                  .getElementById("fav-scroll")
-                  ?.scrollBy({ left: -300, behavior: "smooth" });
-              }}
-            >
-              &lt;
-            </button>
-            <button
-              className="bg-none border-none text-[#1D8751] text-lg sm:text-xl lg:text-xl cursor-pointer p-1 sm:p-0 lg:p-0 ml-1 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center justify-center"
-              onClick={() => {
-                document
-                  .getElementById("fav-scroll")
-                  ?.scrollBy({ left: 300, behavior: "smooth" });
-              }}
-            >
-              &gt;
-            </button>
-          </div>
-          <div className="relative w-full sm:w-auto">
-            <button
-              className="flex items-center text-gray-900 dark:text-[#fff] font-medium text-sm sm:text-base lg:text-base cursor-pointer gap-1 min-h-[44px] sm:min-h-0 lg:min-h-0"
-              onClick={toggleDropdown}
-            >
-              Add Asset
-              <Plus className="w-4 h-4 sm:w-3 sm:h-3 lg:w-3 lg:h-3 text-[#1D8751]" />
-            </button>
-            {/* Dropdown Content */}
-            {showDropdown && (
-              <div className="absolute top-full right-0 mt-2 w-[calc(100vw-2rem)] sm:w-48 lg:w-48 bg-white dark:bg-[#23242B] rounded-lg sm:rounded-md lg:rounded-md shadow-lg z-10 max-h-[60vh] sm:max-h-64 lg:max-h-64 overflow-y-auto">
-                <div className="relative mt-2 item-center ml-2">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#1D8751] w-4 h-4" />
-                  <input
-                    type="text"
-                    placeholder="Search"
-                    className="bg-transparent border border-[#2D2E3A] rounded-full pl-10 pr-4 py-2.5 sm:py-2.5 lg:py-2.5 text-sm text-white placeholder-[#9CA3AF] focus:outline-none focus:border-[#10B981] w-full sm:w-44 lg:w-44 min-h-[44px] sm:min-h-0 lg:min-h-0"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-                <ul className="py-1">
-                  {filteredAvailableAssets?.length > 0 ? (
-                    filteredAvailableAssets?.map((asset: Asset) => (
-                      <li
-                        key={asset.asset_id}
-                        className="px-3 sm:px-4 lg:px-4 py-2.5 sm:py-2 lg:py-2 text-sm min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center text-[#9CA3AF] hover:bg-[#35353E] cursor-pointer"
-                        onClick={() => handleAddToFavorites(asset.asset_id)}
-                      >
-                        <span className="text-white mr-2">{asset.symbol}</span>
-                        {asset.name}
-                      </li>
-                    ))
-                  ) : (
-                    <li className="px-3 sm:px-4 lg:px-4 py-2.5 sm:py-2 lg:py-2 text-sm text-[#9CA3AF]">
-                      No assets found
-                    </li>
-                  )}
-                </ul>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Favourite Assets Cards Row */}
-        <div
-          id="fav-scroll"
-          className="
-            flex gap-2 sm:gap-3 lg:gap-4 mb-4 sm:mb-6 lg:mb-8 w-full overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory pb-2
-          "
-          style={{ WebkitOverflowScrolling: "touch" }}
+  const renderFilterTags = (className = "") => (
+    <div className={`flex flex-wrap gap-2 ${className}`}>
+      {filterTags.map((tag) => (
+        <span
+          key={tag}
+          onClick={() => handleFilterClick(tag)}
+          className={`bg-gray-100 dark:bg-[#1D1D23] text-gray-700 dark:text-[#788099] rounded-xl sm:rounded-2xl lg:rounded-2xl px-3 sm:px-4 lg:px-4 py-1.5 sm:py-1 lg:py-1 text-xs sm:text-sm lg:text-sm font-medium border border-gray-300 dark:border-[#35353E] cursor-pointer transition-colors min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center justify-center ${
+            activeFilter === tag
+              ? "bg-gray-200 dark:bg-[#35353E] text-gray-900 dark:text-[#fff]"
+              : "hover:bg-gray-200 dark:hover:bg-[#35353E]"
+          }`}
         >
-          {loadingAssets ? (
-            <div className="flex items-center justify-center min-w-[250px]">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#13B562]"></div>
-            </div>
-          ) : favoriteAssets?.length === 0 ? (
-            <div className="col-span-3 text-center text-gray-500 text-sm sm:text-base lg:text-base">
-              No favorite assets found. Add some to see them here.
-            </div>
-          ) : (
-            favoriteAssets?.map((asset: FavoriteAsset) => {
-              const dummyData = DUMMY_ASSET_DATA[asset.asset_symbol] || {
-                symbol: (asset.asset_symbol ?? "").split(" ")[0],
-                price: 0,
-                change: "+0.00%",
-              };
+          {tag}
+        </span>
+      ))}
+    </div>
+  );
 
-              return (
-                <div
-                  key={asset.favorite_asset_id}
-                  className="bg-white dark:bg-[#1D1D23] rounded-xl sm:rounded-2xl lg:rounded-2xl p-3 sm:p-4 lg:p-4 flex items-center gap-2 sm:gap-3 lg:gap-3 border border-[#E8EFF5] dark:border-[#35353E] relative flex-shrink-0 w-[85%] sm:w-[45%] md:w-[30%] lg:w-[30%]"
+  return (
+    <div
+      className={`text-gray-900 dark:text-[#788099] font-sans ${
+        showFullLayout ? "bg-[#EEF1F4] dark:bg-[#18181D] min-h-screen py-4 sm:py-6 lg:py-8" : ""
+      }`}
+    >
+      <div className={showFullLayout ? "max-w-[1400px] mx-auto px-3 sm:px-4 lg:px-6" : ""}>
+        {showFullLayout ? (
+          <>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3 sm:gap-0">
+              <h1 className="text-xl sm:text-2xl lg:text-2xl font-bold text-gray-900 dark:text-[#fff]">
+                Market Review
+              </h1>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                {lastUpdated && (
+                  <span className="text-xs text-gray-600 dark:text-[#788099]">
+                    Last updated: {new Date(lastUpdated).toLocaleTimeString()}
+                  </span>
+                )}
+                <button
+                  onClick={handleRefresh}
+                  disabled={loading}
+                  className="px-3 py-1.5 sm:py-1 lg:py-1 bg-gray-100 dark:bg-[#1D1D23] text-gray-700 dark:text-[#788099] rounded border border-gray-300 dark:border-[#35353E] hover:bg-gray-200 dark:hover:bg-[#35353E] disabled:opacity-50 text-xs sm:text-sm lg:text-sm min-h-[44px] sm:min-h-0 lg:min-h-0"
                 >
-                  <button
-                    onClick={() => {
-                      setPendingRemoveAsset(asset);
-                      setShowConfirmModal(true);
-                    }}
-                    className="absolute top-1 sm:top-0 lg:top-0 right-1 sm:right-2 lg:right-2 p-1.5 sm:p-1 lg:p-1 rounded-full hover:[#E8EFF5] dark:hover:bg-[#35353E] transition-colors min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center justify-center"
-                    title="Remove from favorites"
-                  >
-                    <X className="w-4 h-4 sm:w-3 sm:h-3 lg:w-3 lg:h-3 text-[#9CA3AF] hover:text-white" />
-                  </button>
-                  <div className="w-8 h-8 sm:w-8 sm:h-8 lg:w-8 lg:h-8 rounded-full flex-shrink-0">
-                    {asset.asset_image &&
-                    typeof asset.asset_image === "string" &&
-                    asset.asset_image.trim() !== "" ? (
-                      <img
-                        src={asset.asset_image}
-                        alt={asset.asset_symbol}
-                        className="object-cover w-8 h-8 rounded-full"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).style.display =
-                            "none";
-                        }}
-                      />
-                    ) : (
-                      <CoinIcon
-                        image={null}
-                        symbol={asset.asset_symbol || ""}
-                        size={32}
-                      />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-[#051015] dark:text-white truncate text-sm sm:text-base lg:text-base">
-                      {dummyData.symbol}
-                    </div>
-                    <div className="text-xs text-[#788099] dark:text-[#788099] truncate">
-                      {asset.asset_symbol}
-                    </div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <div className="font-bold text:[#051015] dark:text-white whitespace-nowrap text-sm sm:text-base lg:text-base">
-                      $
-                      {dummyData.price.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 8,
-                      })}
-                    </div>
-                    <div
-                      className={`text-xs whitespace-nowrap ${
-                        dummyData.change.startsWith("+")
-                          ? "text-[#1D8751]"
-                          : "text-[#1D8751]"
-                      }`}
-                    >
-                      {dummyData.change}
-                    </div>
-                  </div>
+                  {loading ? "Loading..." : "Refresh"}
+                </button>
+              </div>
+            </div>
+
+            {renderFilterTags("mb-4")}
+
+            <div className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099] mb-2 leading-relaxed">
+              Gain a comprehensive overview of all cryptocurrencies through OMAYA
+              Express. This webpage presents the most recent prices, 24-hour trade
+              volumes, price fluctuations, and market capitalizations for every
+              cryptocurrency available on global markets.
+            </div>
+            <div className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099] mb-4 sm:mb-6 lg:mb-6 leading-relaxed">
+              Users can readily obtain crucial details about these digital assets
+              and directly navigate to the trading platform from this point.
+            </div>
+
+            {/* Favourite Assets Header Row */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 gap-3 sm:gap-0">
+              <div className="flex items-center gap-2 font-semibold text-gray-900 dark:text-[#fff] text-base sm:text-lg lg:text-lg">
+                Favourite Assets
+                <button
+                  className="bg-none border-none text-[#1D8751] text-xl sm:text-2xl lg:text-2xl font-semibold leading-none cursor-pointer px-1 sm:px-2 lg:px-2 ml-1 sm:ml-2 lg:ml-2 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center justify-center"
+                  onClick={() => {
+                    document
+                      .getElementById("fav-scroll")
+                      ?.scrollBy({ left: -300, behavior: "smooth" });
+                  }}
+                >
+                  &lt;
+                </button>
+                <button
+                  className="bg-none border-none text-[#1D8751] text-xl sm:text-2xl lg:text-2xl font-semibold leading-none cursor-pointer px-1 sm:px-2 lg:px-2 ml-1 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center justify-center"
+                  onClick={() => {
+                    document
+                      .getElementById("fav-scroll")
+                      ?.scrollBy({ left: 300, behavior: "smooth" });
+                  }}
+                >
+                  &gt;
+                </button>
+              </div>
+              <button
+                className="flex items-center text-gray-900 dark:text-[#fff] font-medium text-sm sm:text-base lg:text-base cursor-pointer gap-2 min-h-[44px] sm:min-h-0 lg:min-h-0"
+                onClick={handleReloadFavorites}
+                disabled={loadingAssets}
+              >
+                Reload
+                <Repeat className="w-4 h-4 text-[#1D8751]" />
+              </button>
+            </div>
+
+            {/* Favourite Assets Cards Row */}
+            <div
+              id="fav-scroll"
+              className="
+                flex gap-2 sm:gap-3 lg:gap-4 mb-4 sm:mb-6 lg:mb-8 w-full overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory pb-2
+              "
+              style={{ WebkitOverflowScrolling: "touch" }}
+            >
+              {loadingAssets ? (
+                <div className="flex items-center justify-center min-w-[250px]">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#13B562]"></div>
                 </div>
-              );
-            })
-          )}
-        </div>
+              ) : favoriteAssets?.length === 0 ? (
+                <div className="col-span-3 text-center text-gray-500 text-sm sm:text-base lg:text-base">
+                  No favorite assets found. Add some to see them here.
+                </div>
+              ) : (
+                favoriteAssets?.map((asset: FavoriteAsset) => {
+                  const dummyData = DUMMY_ASSET_DATA[asset.asset_symbol] || {
+                    symbol: (asset.asset_symbol ?? "").split(" ")[0],
+                    price: 0,
+                    change: "+0.00%",
+                  };
+
+                  return (
+                    <div
+                      key={asset.favorite_asset_id}
+                      className="bg-white dark:bg-[#1D1D23] rounded-xl sm:rounded-2xl lg:rounded-2xl p-3 sm:p-4 lg:p-4 flex items-center gap-2 sm:gap-3 lg:gap-3 border border-[#E8EFF5] dark:border-[#35353E] relative flex-shrink-0 w-[85%] sm:w-[45%] md:w-[30%] lg:w-[30%]"
+                    >
+                      <div className="w-8 h-8 sm:w-8 sm:h-8 lg:w-8 lg:h-8 rounded-full flex-shrink-0">
+                        {asset.asset_image &&
+                        typeof asset.asset_image === "string" &&
+                        asset.asset_image.trim() !== "" ? (
+                          <img
+                            src={asset.asset_image}
+                            alt={asset.asset_symbol}
+                            className="object-cover w-8 h-8 rounded-full"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).style.display =
+                                "none";
+                            }}
+                          />
+                        ) : (
+                          <CoinIcon
+                            image={null}
+                            symbol={asset.asset_symbol || ""}
+                            size={32}
+                          />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-[#051015] dark:text-white truncate text-sm sm:text-base lg:text-base">
+                          {dummyData.symbol}
+                        </div>
+                        <div className="text-xs text-[#788099] dark:text-[#788099] truncate">
+                          {asset.asset_symbol}
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <div className="font-bold text:[#051015] dark:text-white whitespace-nowrap text-sm sm:text-base lg:text-base">
+                          $
+                          {dummyData.price.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 8,
+                          })}
+                        </div>
+                        <div
+                          className={`text-xs whitespace-nowrap ${
+                            dummyData.change.startsWith("+")
+                              ? "text-[#1D8751]"
+                              : "text-[#1D8751]"
+                          }`}
+                        >
+                          {dummyData.change}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="mb-4">{renderFilterTags()}</div>
+        )}
 
         {/* Table Section with rounded border */}
-        <div className="rounded-xl sm:rounded-xl lg:rounded-2xl border border-gray-200 dark:border-[#35353E] overflow-hidden bg-white dark:bg-[#18181D] shadow-lg max-w-[1400px] mx-auto">
+        <div
+          className={`rounded-xl sm:rounded-xl lg:rounded-2xl border border-gray-200 dark:border-[#35353E] overflow-hidden bg-white dark:bg-[#18181D] shadow-lg ${
+            showFullLayout ? "max-w-[1400px] mx-auto" : ""
+          }`}
+        >
           {loading && markets.length === 0 ? (
             <div className="flex items-center justify-center py-8 sm:py-10 lg:py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#13B562]"></div>
@@ -741,26 +777,54 @@ const MarketTable = () => {
 
               {/* Desktop: Table layout */}
               <div className="hidden sm:block overflow-x-auto scrollbar-thin scroll-smooth">
-              <table className="w-full border-separate border-spacing-0 min-w-[800px]">
+              <table className="w-full border-collapse min-w-[800px] table-fixed">
                 <thead>
                   <tr>
-                    {tableHeaders.map((header, idx) => (
-                      <th
-                        key={header}
-                          className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 text-left font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-xs sm:text-sm lg:text-base"
-                      >
-                        <div className="flex items-center gap-1">
-                          {header}
-                          {idx !== 0 && idx !== tableHeaders.length - 1 && (
-                            <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
-                          )}
+                    <th className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 text-left font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-xs sm:text-sm lg:text-base">
+                      Name
+                    </th>
+                    <th className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 text-left font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-xs sm:text-sm lg:text-base">
+                      <div className="flex items-center gap-1 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300" onClick={() => handleSort("price")}>
+                        Price
+                        {getSortIcon("price")}
+                      </div>
+                    </th>
+                    <th className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 text-left font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-xs sm:text-sm lg:text-base">
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300" onClick={() => handleSort("24h_volume")}>
+                          24h
+                          {getSortIcon("24h_volume")}
                         </div>
-                      </th>
-                    ))}
+                        <div className="flex items-center gap-1 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300" onClick={() => handleSort("change")}>
+                          Change
+                          {getSortIcon("change")}
+                        </div>
+                      </div>
+                    </th>
+                    <th className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 text-left font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-xs sm:text-sm lg:text-base">
+                      <div className="flex items-center gap-1 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300" onClick={() => handleSort("24h_volume")}>
+                        24 Volume
+                        {getSortIcon("24h_volume")}
+                      </div>
+                    </th>
+                    <th className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 text-left font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-xs sm:text-sm lg:text-base">
+                      <div className="flex items-center gap-1 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300" onClick={() => handleSort("market_cap")}>
+                        Market Cap
+                        {getSortIcon("market_cap")}
+                      </div>
+                    </th>
+                    <th className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 text-left font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-xs sm:text-sm lg:text-base">
+                      More
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredMarkets.map((market, idx) => (
+                  {filteredMarkets.map((market, idx) => {
+                    const priceChange = market.price_change_percentage_24h;
+                    const isPositiveChange =
+                      priceChange !== null && priceChange >= 0;
+
+                    return (
                     <React.Fragment key={market.id}>
                       <tr
                         onClick={() => handleRowClick(market.id)}
@@ -773,35 +837,46 @@ const MarketTable = () => {
                               : "bg-white dark:bg-[#18181D]")
                         }
                       >
-                          <td className="flex items-center gap-2 sm:gap-3 lg:gap-3 px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 text-gray-900 dark:text-[#fff]">
-                            <span className="w-6 h-6 sm:w-7 sm:h-7 lg:w-7 lg:h-7 flex items-center flex-shrink-0">
-                            <CoinIcon
-                              image={market.image}
-                              symbol={market.symbol}
-                              size={28}
-                            />
-                          </span>
-                          <div className="min-w-0">
-                              <div className="font-semibold text-xs sm:text-sm lg:text-base truncate">
-                              {market.symbol.toUpperCase()}
+                          <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 text-gray-900 dark:text-[#fff] align-middle">
+                            <div className="flex items-center gap-2 sm:gap-3 lg:gap-3">
+                              <span className="w-6 h-6 sm:w-7 sm:h-7 lg:w-7 lg:h-7 flex items-center flex-shrink-0">
+                                <CoinIcon
+                                  image={market.image}
+                                  symbol={market.symbol}
+                                  size={28}
+                                />
+                              </span>
+                              <div className="min-w-0">
+                                <div className="font-semibold flex flex-row text-xs sm:text-sm lg:text-base items-center gap-1">
+                                  <div>
+                                  {market.symbol.toUpperCase()}
+                                  </div>
+                                  <div className="text-[10px] sm:text-xs lg:text-xs text-gray-600 dark:text-[#788099] ">
+                                  {market.name}
+                                </div>
+                                </div>
+                                
+                              </div>
                             </div>
-                              <div className="text-[10px] sm:text-xs lg:text-xs text-gray-600 dark:text-[#788099] truncate">
-                              {market.name}
-                            </div>
-                          </div>
-                        </td>
-                          <td className="text-[#1D8751] font-medium px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 text-xs sm:text-sm lg:text-base whitespace-nowrap">
+                          </td>
+                          <td className="w-[16%] text-right text-[#1D8751] font-medium px-1 sm:px-2 lg:px-3 py-2 sm:py-3 lg:py-3 text-xs sm:text-sm lg:text-base whitespace-nowrap">
                           {formatPrice(market.current_price)}
                         </td>
                         <td
-                            className={`font-medium px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 text-xs sm:text-sm lg:text-base whitespace-nowrap ${
-                            market.price_change_percentage_24h !== null &&
-                            market.price_change_percentage_24h >= 0
-                              ? "text-[#13B562]"
-                              : "text-[#FF6B6B]"
+                            className={`font-medium px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 text-xs sm:text-sm lg:text-base whitespace-nowrap text-right ${
+                            isPositiveChange ? "text-[#13B562]" : "text-[#FF6B6B]"
                           }`}
                         >
-                          {formatPercentage(market.price_change_percentage_24h)}
+                            <div className="flex items-center justify-end gap-1">
+                              {priceChange !== null && (
+                                isPositiveChange ? (
+                                  <ArrowUpRight className="w-4 h-4" />
+                                ) : (
+                                  <ArrowDownRight className="w-4 h-4" />
+                                )
+                              )}
+                              {formatPercentage(priceChange)}
+                            </div>
                         </td>
                           <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 text-xs sm:text-sm lg:text-base whitespace-nowrap">
                           {formatVolume(market.total_volume)}
@@ -879,7 +954,8 @@ const MarketTable = () => {
                         </tr>
                       )}
                     </React.Fragment>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

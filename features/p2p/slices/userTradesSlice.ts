@@ -80,10 +80,10 @@ export const fetchUserTrades = createAsyncThunk(
         url += `&order_type=${type}`;
       }
 
-      if (status && status !== "all") {
-        // Map "processing" to "pending" for API
-        const apiStatus = status === "processing" ? "pending" : status;
-        url += `&status=${apiStatus}`;
+      if (status && status !== "all" && status !== "processing") {
+        // Don't send status filter for "processing" - let client-side filtering handle it
+        // Processing includes pending, matched, and half-matched which need client-side filtering
+        url += `&status=${status}`;
       }
 
       if (date && date !== "all") {

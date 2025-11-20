@@ -160,7 +160,8 @@ export const selectUserTradesByStatus = createSelector(
     const processing = trades.filter(
       (trade) =>
         trade.status.toLowerCase() === "pending" ||
-        trade.status.toLowerCase() === "matched"
+        trade.status.toLowerCase() === "matched" ||
+        trade.status.toLowerCase() === "half-matched"
     );
 
     const completed = trades.filter(

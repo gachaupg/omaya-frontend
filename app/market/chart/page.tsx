@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import {
   LineChart,
   Line,
@@ -13,6 +14,19 @@ import { fetchCoinDetailsPublic, fetchCoinMarketChartPublic } from "../../../fea
 import Link from "next/link";
 import { ArrowLeft, ArrowLeftRight, Repeat, Users } from "lucide-react";
 import { Button } from "@headlessui/react";
+import RatesTransactionHistory from "@/features/rates/components/RatesTransactionHistory";
+
+const MarketTable = dynamic(
+  () => import("../../../features/markets/components/MarketTable"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full rounded-xl border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[#1D1D23] p-6 text-center text-sm sm:text-base lg:text-base text-[#788099]">
+        Loading Omaya transactions...
+      </div>
+    ),
+  }
+);
 
 // Utility functions for formatting
 const formatPrice = (price: number): string => {
@@ -300,6 +314,17 @@ const MarketChartContent = () => {
               </Button>
             </Link>
           </div>
+        </div>
+
+        <div className="mt-8 sm:mt-10 lg:mt-12">
+          <div className="flex flex-col gap-2 mb-4 sm:mb-6 lg:mb-8">
+            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#051015] dark:text-white">
+              Omaya Transactions
+            </h2>
+            
+          </div>
+          <RatesTransactionHistory/>
+          {/* <MarketTable showFullLayout={false} /> */}
         </div>
       </div>
     </div>

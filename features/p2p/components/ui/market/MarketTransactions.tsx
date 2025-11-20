@@ -645,9 +645,9 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
   }
 
   return (
-    <div className="flex flex-col gap-4 w-full">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
+    <div className="flex flex-col gap-1 w-full">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-1">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 w-full md:w-auto">
           <div className="flex items-center w-full sm:w-auto bg-gray-100 dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] rounded-lg px-3 py-2 gap-2">
             <div className="flex items-center gap-2 w-full">
               <Input
@@ -699,7 +699,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
             </div>
           </div>
           <div
-            className="flex items-center gap-2 bg-transparent border border-gray-300 dark:border-[#35353E] rounded-lg px-3 py-2 w-full sm:w-[240px] sm:mr-2"
+            className="flex items-center gap-2 bg-transparent border border-gray-300 dark:border-[#35353E] rounded-lg px-3 py-2 w-full sm:w-[240px]"
             ref={paymentDropdownRef}
           >
             <Image
@@ -773,7 +773,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
           </div>
 
           <div
-            className="flex items-center gap-2 bg-transparent border border-gray-300 dark:border-[#35353E] rounded-lg px-3 py-2 w-full sm:w-[240px] sm:mr-3"
+            className="flex items-center gap-2 bg-transparent border border-gray-300 dark:border-[#35353E] rounded-lg px-3 py-2 w-full sm:w-[240px]"
             ref={providerDropdownRef}
           >
             <Image

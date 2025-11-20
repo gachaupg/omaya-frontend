@@ -32,6 +32,10 @@ import { SwapWidgetSkeleton } from "@/components/ui/Skeletons";
 import { useChangeNowAssets } from "../../hooks/useChangeNowAssets";
 import { useRouter } from "next/navigation";
 import { logger } from "@/lib/utils/logger";
+import {
+  buildSwapRedirectPath,
+  setAuthRedirectPath,
+} from "@/lib/utils/authRedirect";
 
 interface SwapWidgetProps {
   usePublicApi?: boolean;
@@ -314,6 +318,25 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
   // Handle next step validation
   const handleNextStep = () => {
     if (!isAuthenticated) {
+      // Save current swap state before redirecting
+      const swapState = {
+        fromAsset: fromAsset ? {
+          ticker: fromAsset.ticker,
+          symbol: fromAsset.symbol,
+          name: fromAsset.name,
+          network: fromAsset.network,
+        } : null,
+        toAsset: toAsset ? {
+          ticker: toAsset.ticker,
+          symbol: toAsset.symbol,
+          name: toAsset.name,
+          network: toAsset.network,
+        } : null,
+        fromAmount: fromAmount,
+        toAmount: toAmount,
+        walletAddress: walletAddress,
+      };
+      setAuthRedirectPath(buildSwapRedirectPath(swapState));
       router.push("/auth/login");
       return;
     }
@@ -345,6 +368,25 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
 
   const handleWalletAddressNext = () => {
     if (!isAuthenticated) {
+      // Save current swap state before redirecting
+      const swapState = {
+        fromAsset: fromAsset ? {
+          ticker: fromAsset.ticker,
+          symbol: fromAsset.symbol,
+          name: fromAsset.name,
+          network: fromAsset.network,
+        } : null,
+        toAsset: toAsset ? {
+          ticker: toAsset.ticker,
+          symbol: toAsset.symbol,
+          name: toAsset.name,
+          network: toAsset.network,
+        } : null,
+        fromAmount: fromAmount,
+        toAmount: toAmount,
+        walletAddress: walletAddress,
+      };
+      setAuthRedirectPath(buildSwapRedirectPath(swapState));
       router.push("/auth/login");
       return;
     }
@@ -406,6 +448,25 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
 
   const handleSubmit = async () => {
     if (!isAuthenticated) {
+      // Save current swap state before redirecting
+      const swapState = {
+        fromAsset: fromAsset ? {
+          ticker: fromAsset.ticker,
+          symbol: fromAsset.symbol,
+          name: fromAsset.name,
+          network: fromAsset.network,
+        } : null,
+        toAsset: toAsset ? {
+          ticker: toAsset.ticker,
+          symbol: toAsset.symbol,
+          name: toAsset.name,
+          network: toAsset.network,
+        } : null,
+        fromAmount: fromAmount,
+        toAmount: toAmount,
+        walletAddress: walletAddress,
+      };
+      setAuthRedirectPath(buildSwapRedirectPath(swapState));
       router.push("/auth/login");
       return;
     }

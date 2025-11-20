@@ -33,6 +33,10 @@ import { debugAssetFetching } from "../../../../lib/utils/debugAssets";
 import { useAssetsDisplay, usePaymentMethodsDisplay } from "../../hooks/useDataDisplay";
 import CustomSelect from "@/components/ui/CustomSelect";
 import ForexWithdrawal from "./ForexWithdrawal";
+import {
+  buildExpressRedirectPath,
+  setAuthRedirectPath,
+} from "@/lib/utils/authRedirect";
 
 // Add UserPaymentDetail interface
 interface UserPaymentDetail {
@@ -128,6 +132,7 @@ const UserPaymentSelector = ({
 };
 
 interface DepositFormProps {
+  initialState?: any;
   onExchange?: (transactionData: {
     type: "deposit" | "withdrawal";
     amount: number;
@@ -180,6 +185,7 @@ const getNetworkDisplayName = (network: string) => {
 };
 
 export default function WithdrawalForm({
+  initialState,
   onExchange,
   mode,
   onModeChange,
@@ -432,11 +438,63 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     }
   };
 
-  const [payAmount, setPayAmount] = useState(100);
-  const [payBank, setPayBank] = useState("");
-  const [getAmount, setGetAmount] = useState(0);
-  const [payAmountInput, setPayAmountInput] = useState("100");
-  const [getAmountInput, setGetAmountInput] = useState("0");
+  // Restore both send and receive amounts from initialState
+  const [payAmount, setPayAmount] = useState(() => {
+    if (initialState?.amountValue !== undefined) {
+      return initialState.amountValue;
+    }
+    return 100;
+  });
+  const extractProviderDisplayName = (value?: string | null) => {
+    if (!value) return "";
+    return value.split(" - ")[0].trim();
+  };
+
+  const normalizeProviderName = (value?: string | null) =>
+    extractProviderDisplayName(value).toLowerCase();
+
+  const [payBank, setPayBank] = useState(() => {
+    // Set payBank from initialState paymentDetails immediately
+    if (
+      initialState?.paymentDetails &&
+      Array.isArray(initialState.paymentDetails) &&
+      initialState.paymentDetails.length > 0
+    ) {
+      const firstDetail = initialState.paymentDetails[0];
+      return extractProviderDisplayName(
+        firstDetail.payment_provider_name ||
+          firstDetail.provider_name ||
+          firstDetail.payment_provider
+      );
+    }
+    // Also check if initialState has payBank directly
+    if (initialState?.payBank) {
+      return extractProviderDisplayName(initialState.payBank);
+    }
+    return "";
+  });
+  const [getAmount, setGetAmount] = useState(() => {
+    if (initialState?.receiveAmountValue !== undefined) {
+      return initialState.receiveAmountValue;
+    }
+    if (initialState?.amountValue !== undefined) {
+      return initialState.amountValue;
+    }
+    return 0;
+  });
+  const [payAmountInput, setPayAmountInput] = useState(
+    initialState?.amountInput ?? "100"
+  );
+  const [getAmountInput, setGetAmountInput] = useState(() => {
+    if (initialState?.receiveAmountInput) {
+      return initialState.receiveAmountInput;
+    }
+    if (initialState?.receiveAmountValue !== undefined) {
+      return initialState.receiveAmountValue.toString();
+    }
+    return "0";
+  });
+  // Don't set asset directly from initialState - let matching logic handle it
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const [selectedNetwork, setSelectedNetwork] = useState<any>(null);
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
@@ -509,10 +567,18 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
   // Add loading state for "You Receive" calculation
   const [isCalculatingReceive, setIsCalculatingReceive] = useState(false);
 
-  // Add payment selection state
+  // Add payment selection state - Initialize from initialState immediately (exact objects from home page)
   const [selectedPaymentDetails, setSelectedPaymentDetails] = useState<
     UserPaymentDetail[]
-  >([]);
+  >(() => {
+    // If we have initialState with paymentDetails, use them immediately
+    if (initialState?.paymentDetails && initialState.paymentDetails.length > 0) {
+      return initialState.paymentDetails as UserPaymentDetail[];
+    }
+    return [];
+  });
+  const [hasAutoExpanded, setHasAutoExpanded] = useState(false);
+  const [isRestoringFromInitialState, setIsRestoringFromInitialState] = useState(false);
 
   // Add calculation stability state
   const [isCalculating, setIsCalculating] = useState(false);
@@ -545,18 +611,19 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
       if (displayData.length > 0) {
         walletListRef.current = displayData;
 
-        if (!payBank) {
+        // Auto-select first payment method if no initialState and payBank is not set
+        if (!payBank && (!initialState || !initialState.paymentDetails || (Array.isArray(initialState.paymentDetails) && initialState.paymentDetails.length === 0))) {
           const firstPaymentDetail = displayData[0]?.admin_payment_detail;
           const providerName = firstPaymentDetail?.provider_name;
 
           if (providerName) {
-            setPayBank(providerName);
+            setPayBank(extractProviderDisplayName(providerName));
             setSelectedPaymentDetail(firstPaymentDetail || null);
           }
         }
       }
     }
-  }, [adminWalletList, payBank]);
+  }, [adminWalletList, payBank, initialState]);
 
 
   // Add caching for API responses with timestamp
@@ -596,25 +663,64 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
 
   // Filter user payment details based on selected provider
   // Match payment_provider_name from user payment details with provider_name from admin
-  const filteredUserPaymentDetails = payBank
-    ? (userPaymentMethodsDisplay.displayData || effectiveUserPaymentMethods || []).filter(
+  useEffect(() => {
+    if (initialState?.payBank) {
+      const normalized = extractProviderDisplayName(initialState.payBank);
+      if (normalized && normalized !== payBank) {
+        setPayBank(normalized);
+      }
+    }
+  }, [initialState?.payBank]);
+
+  const filteredUserPaymentDetails = useMemo(() => {
+    // If we have initialState payment details, use them directly (exact objects from home page)
+    if (
+      initialState?.paymentDetails &&
+      Array.isArray(initialState.paymentDetails) &&
+      initialState.paymentDetails.length > 0
+    ) {
+      return initialState.paymentDetails as UserPaymentDetail[];
+    }
+
+    const normalizedPayBank = normalizeProviderName(payBank);
+    if (!normalizedPayBank) {
+      return [];
+    }
+
+    return (userPaymentMethodsDisplay.displayData || effectiveUserPaymentMethods || []).filter(
         (detail: any) => {
           // Debug logging
           console.log("Filtering user payment details:");
           console.log("Selected provider (payBank):", payBank);
           console.log("User detail:", detail);
           console.log("User payment_provider_name:", detail.payment_provider_name);
-          console.log("Match result:", detail.payment_provider_name === payBank);
+        console.log(
+          "Match result:",
+          normalizeProviderName(detail.payment_provider_name || detail.provider_name) === normalizedPayBank
+        );
           
           // Match user payment provider name with selected admin provider name
-          return detail.payment_provider_name === payBank;
+        return (
+          normalizeProviderName(detail.payment_provider_name || detail.provider_name) ===
+          normalizedPayBank
+        );
         }
-      )
-    : [];
+    );
+  }, [initialState?.paymentDetails, payBank, userPaymentMethodsDisplay.displayData, effectiveUserPaymentMethods]);
 
   // Enhanced filtering with fallback options
   const enhancedFilteredUserPaymentDetails = useMemo(() => {
-    if (!payBank) {
+    // If we have initialState payment details, use them directly
+    if (
+      initialState?.paymentDetails &&
+      Array.isArray(initialState.paymentDetails) &&
+      initialState.paymentDetails.length > 0
+    ) {
+      return initialState.paymentDetails as UserPaymentDetail[];
+    }
+
+    const normalizedPayBank = normalizeProviderName(payBank);
+    if (!normalizedPayBank) {
       return [];
     }
     
@@ -626,7 +732,9 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     
     const filtered = sourceData.filter((detail: any) => {
         // Match user payment provider name with selected admin provider name
-        const matchesProvider = detail.payment_provider_name === payBank;
+        const matchesProvider =
+          normalizeProviderName(detail.payment_provider_name || detail.provider_name) ===
+          normalizedPayBank;
         
         console.log("User detail:", detail);
         console.log("User payment_provider_name:", detail.payment_provider_name);
@@ -644,20 +752,53 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     
     console.log("Filtered results:", filtered);
     return filtered;
-  }, [payBank, userPaymentMethodsDisplay.displayData, effectiveUserPaymentMethods, selectedAsset]);
+  }, [initialState?.paymentDetails, payBank, userPaymentMethodsDisplay.displayData, effectiveUserPaymentMethods, selectedAsset]);
 
   // Auto-select first account when accounts are available for selected payment type
   useEffect(() => {
-    if (
-      payBank &&
-      enhancedFilteredUserPaymentDetails.length > 0 &&
-      selectedPaymentDetails.length === 0
-    ) {
-    
-      const firstAccount = enhancedFilteredUserPaymentDetails[0];
-      setSelectedPaymentDetails([firstAccount]);
+    // PRIORITY: If we have initialState with paymentDetails, ALWAYS use them EXACTLY as they are - NO MATCHING, NO COMPARISONS
+    if (initialState?.paymentDetails && Array.isArray(initialState.paymentDetails) && initialState.paymentDetails.length > 0) {
+      // Always use exact objects from initialState - full objects from home page
+      setSelectedPaymentDetails(initialState.paymentDetails as UserPaymentDetail[]);
+      
+      // Set payBank from the first payment detail
+      const firstDetail = initialState.paymentDetails[0];
+      const providerName =
+        firstDetail.payment_provider_name || firstDetail.provider_name || firstDetail.payment_provider;
+      if (providerName) {
+        setPayBank(extractProviderDisplayName(providerName));
+      }
+      return; // Don't proceed to defaults
     }
-  }, [payBank, enhancedFilteredUserPaymentDetails, selectedPaymentDetails]);
+
+    // Only apply defaults if we don't have initialState or paymentDetails is empty
+    if (!initialState?.paymentDetails || !Array.isArray(initialState.paymentDetails) || initialState.paymentDetails.length === 0) {
+      // First, try to auto-select based on payBank if it's set
+      if (payBank && enhancedFilteredUserPaymentDetails.length > 0 && selectedPaymentDetails.length === 0) {
+        // Auto-select first account that matches the selected payment method
+        const firstAccount = enhancedFilteredUserPaymentDetails[0];
+        setSelectedPaymentDetails([firstAccount]);
+        return;
+      }
+      
+      // If no payBank is set yet, get all available user payment details
+      const allUserPaymentDetails = effectiveUserPaymentMethods || 
+                                   userPaymentMethodsDisplay.displayData || 
+                                   [];
+      
+      // Auto-select first available payment detail if we have any and no payment details are selected
+      if (allUserPaymentDetails.length > 0 && selectedPaymentDetails.length === 0) {
+        const firstAccount = allUserPaymentDetails[0];
+        setSelectedPaymentDetails([firstAccount]);
+        // Set payBank from the selected payment detail if not already set
+        const providerName =
+          firstAccount.payment_provider_name || firstAccount.provider_name || firstAccount.payment_provider;
+        if (providerName && !payBank) {
+          setPayBank(extractProviderDisplayName(providerName));
+        }
+      }
+    }
+  }, [initialState, payBank, enhancedFilteredUserPaymentDetails, selectedPaymentDetails, effectiveUserPaymentMethods, userPaymentMethodsDisplay.displayData]);
 
   // Reset form if user changes asset or payment method after submission
   useEffect(() => {
@@ -980,9 +1121,51 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
       });
   }, [dispatch, isHomePage, hasFetchedSwapAssets, swapAssetsRetryCount]);
 
-  // Auto-select first asset and calculate received amount when assets are loaded
+  // Restore asset from initialState when assets are loaded
   useEffect(() => {
-    if (assetsDisplay.shouldShowData && assetsDisplay.displayData.length > 0 && !selectedAsset) {
+    if (!assetsDisplay.shouldShowData || assetsDisplay.displayData.length === 0) {
+      return;
+    }
+
+    // If we have initialState with asset, try to match it first (priority over defaults)
+    if (initialState?.asset) {
+      const initialStateAsset = initialState.asset;
+      
+      // Use asset directly from initialState (full object from home page)
+      // Try to find it in available assets by asset_id, otherwise use initialState asset directly
+      const matchingAsset = assetsDisplay.displayData.find((asset: any) => {
+        if (initialStateAsset.asset_id && asset.asset_id) {
+          return String(initialStateAsset.asset_id).toLowerCase().trim() === String(asset.asset_id).toLowerCase().trim();
+        }
+        return false;
+      });
+
+      // Use matched asset if found, otherwise use initialState asset directly
+      const assetToUse = matchingAsset || initialStateAsset;
+      
+      setIsRestoringFromInitialState(true);
+      setSelectedAsset(assetToUse);
+      // Restore exact amounts from initialState
+      if (initialState.amountValue !== undefined) {
+        setPayAmount(initialState.amountValue);
+        setPayAmountInput(initialState.amountInput || initialState.amountValue.toString());
+      }
+      // Restore receive amount if available
+      if (initialState.receiveAmountValue !== undefined) {
+        setGetAmount(initialState.receiveAmountValue);
+        setGetAmountInput(initialState.receiveAmountInput || initialState.receiveAmountValue.toString());
+      } else if (initialState.amountValue !== undefined) {
+        // If no receive amount, calculate it
+        setTimeout(() => {
+          calculateAmounts(initialState.amountValue, true);
+        }, 100);
+      }
+      setIsRestoringFromInitialState(false);
+      return; // Don't proceed to auto-select
+    }
+
+    // Auto-select first asset only if no asset is selected and no initialState
+    if (!selectedAsset && !initialState?.asset) {
       // Sort assets to get USDT on BSC, USDC on BSC, fxprimus, then others
       const sortedAssets = [...assetsDisplay.displayData].sort((a, b) => {
         const tickerA = (a?.ticker || a?.symbol || a?.name || "")
@@ -1055,9 +1238,9 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     }
   }, [assetsDisplay.displayData, selectedAsset, isUserModifiedAmount]);
 
-  // Recalculate when asset changes
+  // Recalculate when asset changes (but not when restoring from initialState)
   useEffect(() => {
-    if (selectedAsset && payAmount > 0 && isCalculatingFromPay) {
+    if (selectedAsset && payAmount > 0 && isCalculatingFromPay && !isRestoringFromInitialState) {
       // Clear any existing estimate when asset changes
       setEstimate(null);
       setEstimateError(null);
@@ -1081,7 +1264,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
         setEstimateLoading(true);
       }
     }
-  }, [selectedAsset]);
+  }, [selectedAsset, isRestoringFromInitialState]);
 
   // Simplified estimate handler - UI updates now happen immediately in API response handlers
   // This just acts as a safety net to clear loading states if they get stuck
@@ -2400,6 +2583,85 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     }
   };
 
+  // Auto-submit when initialState is provided (redirected from home page)
+  useEffect(() => {
+    // Only run on dashboard (not home page) and if we have initialState
+    if (isHomePage || !initialState || hasAutoExpanded) {
+      return;
+    }
+
+    // Check if we have required data from initialState
+    if (!initialState.amountValue || !initialState.asset) {
+      return;
+    }
+
+    // Wait for asset to be loaded and matched
+    if (!selectedAsset) {
+      return;
+    }
+
+    // Don't run if already submitted or submitting
+    if (isTransactionSubmitted || isSubmitting) {
+      return;
+    }
+
+    // Check if we have user payment methods available
+    const allUserPaymentDetails = effectiveUserPaymentMethods || 
+                                 userPaymentMethodsDisplay.displayData || 
+                                 [];
+    
+    // If no payment details selected and we have available payment methods, wait a bit for auto-selection
+    if (selectedPaymentDetails.length === 0 && allUserPaymentDetails.length > 0) {
+      // Give it a moment for the auto-selection useEffect to run
+      return;
+    }
+
+    // If still no payment details after waiting, and we have payment methods, trigger auto-selection
+    if (selectedPaymentDetails.length === 0 && allUserPaymentDetails.length > 0) {
+      const firstAccount = allUserPaymentDetails[0];
+      setSelectedPaymentDetails([firstAccount]);
+      const providerName =
+        firstAccount.payment_provider_name || firstAccount.provider_name;
+      if (providerName && !payBank) {
+        setPayBank(extractProviderDisplayName(providerName));
+      }
+      // Return and let the effect re-run after selection
+      return;
+    }
+
+    // Auto-expand: If it's a forex asset, show forex form; otherwise, auto-submit first card
+    if (selectedAsset && isForexAsset(selectedAsset)) {
+      setShowForexWithdrawalForm(true);
+      setHasAutoExpanded(true);
+    } else if (selectedAsset && selectedPaymentDetails.length > 0) {
+      // Auto-submit the first card (same as clicking the submit button)
+      const timer = setTimeout(() => {
+        if (!isTransactionSubmitted && !isSubmitting && selectedPaymentDetails.length > 0) {
+          console.log("🚀 AUTO-SUBMITTING WITHDRAWAL:", { 
+            selectedAsset: selectedAsset.ticker, 
+            selectedPaymentDetails: selectedPaymentDetails.length,
+            payBank 
+          });
+          handleFirstCardSubmit();
+          setHasAutoExpanded(true);
+        }
+      }, 2000); // Delay to ensure everything is ready
+
+      return () => clearTimeout(timer);
+    }
+  }, [
+    initialState,
+    selectedAsset,
+    selectedPaymentDetails,
+    effectiveUserPaymentMethods,
+    userPaymentMethodsDisplay.displayData,
+    payBank,
+    isHomePage,
+    hasAutoExpanded,
+    isTransactionSubmitted,
+    isSubmitting,
+  ]);
+
   // Validate form data
   const validateForm = () => {
     const errors: string[] = [];
@@ -3131,7 +3393,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
             </div>
 
             {/* You Get Section */}
-            <div className="flex-1 sm:pl-4">
+            <div className="flex-1 sm:pl-4" data-select-card="true">
               <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                 Asset
               </label>
@@ -3545,6 +3807,40 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
               </label>
               <div className="relative">
                 {(() => {
+                  // PRIORITY: If we have initialState paymentDetails, use EXACT payment method from there - NO MATCHING
+                  if (initialState?.paymentDetails && Array.isArray(initialState.paymentDetails) && initialState.paymentDetails.length > 0) {
+                    const firstDetail = initialState.paymentDetails[0];
+                    // Use EXACT provider name from the payment detail object from home page
+                    const providerName = firstDetail.payment_provider_name || firstDetail.provider_name || firstDetail.payment_provider || "";
+                    const providerLogo = firstDetail.provider_logo || firstDetail.logo || firstDetail.provider_logo_url;
+                    
+                    if (providerName && providerName.trim() !== "") {
+                      return (
+                        <CustomSelect
+                          options={[{
+                            value: providerName,
+                            label: providerName,
+                            logo: providerLogo,
+                          }]}
+                          value={providerName}
+                          sizeMode="card"
+                          className={`w-full ${
+                            paymentMethodError ? "border-red-500 dark:border-red-500" : ""
+                          }`}
+                          triggerClassName="bg-transparent dark:bg-transparent text-[#35353e] dark:text-white border border-gray-300 dark:border-[#39394A] px-3 sm:px-4 py-2 sm:py-2.5 text-base sm:text-lg"
+                          onChange={(value) => {
+                            // Don't allow changing if using initialState
+                            setPaymentMethodError(null);
+                          }}
+                          placeholder={providerName}
+                          disabled={true}
+                          searchable={false}
+                        />
+                      );
+                    }
+                  }
+
+                  // Otherwise, use normal dropdown with all options
                   const providerNames = Array.from(
                     new Set(
                       (adminWalletListDisplay.displayData || []).map(
@@ -3571,6 +3867,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                         };
                       })}
                       value={payBank}
+                      sizeMode="card"
                       className={`w-full ${
                         paymentMethodError ? "border-red-500 dark:border-red-500" : ""
                       }`}
@@ -3581,13 +3878,18 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                             wallet.admin_payment_detail?.provider_name === value
                         );
 
-                        setPayBank(value);
+                        setPayBank(extractProviderDisplayName(value));
                         setSelectedPaymentDetail(
                           selectedWallet?.admin_payment_detail || null
                         );
-
+                        
+                        // Auto-select first registered account for the selected payment method
+                        // Clear first, then let the auto-selection useEffect handle it
                         setSelectedPaymentDetails([]);
                         setPaymentMethodError(null);
+                        
+                        // The auto-selection useEffect will handle selecting the first account
+                        // after enhancedFilteredUserPaymentDetails updates
                       }}
                       placeholder={
                         adminWalletListDisplay.isLoading
@@ -3614,7 +3916,86 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                   <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
                     Registered Account
                   </label>
-                  {enhancedFilteredUserPaymentDetails.length > 0 ? (
+                  {/* If we have selectedPaymentDetails from initialState, show ONLY those - EXACT objects from home page */}
+                  {initialState?.paymentDetails && Array.isArray(initialState.paymentDetails) && initialState.paymentDetails.length > 0 ? (
+                    <div className="relative">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          {initialState.paymentDetails.length} account(s) found
+                        </span>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              await dispatch(fetchUserPaymentDetails(true)).unwrap();
+                              showToast.success("Payment details refreshed!");
+                            } catch (error) {
+                              showToast.error("Failed to refresh payment details");
+                            }
+                          }}
+                          className="text-xs text-[#1D8751] hover:text-[#166b3e] underline"
+                        >
+                          Refresh
+                        </button>
+                      </div>
+                      <div className="space-y-2">
+                        {initialState.paymentDetails.map((detail: any, index: number) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between p-3 rounded-xl border border-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/10"
+                          >
+                            <div className="flex-1">
+                              <div className="text-gray-900 dark:text-white font-medium text-base sm:text-lg">
+                                {detail.payment_provider_name || detail.provider_name || "Unknown Provider"} - {detail.account_name || detail.account_number}
+                              </div>
+                              <div className="text-gray-600 dark:text-[#788099] text-sm sm:text-base">
+                                {detail.account_name} ({detail.account_number})
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : selectedPaymentDetails.length > 0 ? (
+                    <div className="relative">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          {selectedPaymentDetails.length} account(s) selected
+                        </span>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              await dispatch(fetchUserPaymentDetails(true)).unwrap();
+                              showToast.success("Payment details refreshed!");
+                            } catch (error) {
+                              showToast.error("Failed to refresh payment details");
+                            }
+                          }}
+                          className="text-xs text-[#1D8751] hover:text-[#166b3e] underline"
+                        >
+                          Refresh
+                        </button>
+                      </div>
+                      <div className="space-y-2">
+                        {selectedPaymentDetails.map((detail: UserPaymentDetail, index: number) => (
+                          <div
+                            key={detail.id || detail.user_payment_detail_id || index}
+                            className="flex items-center justify-between p-3 rounded-xl border border-[#1D8751] bg-[#1D8751]/10 dark:bg-[#1D8751]/10"
+                          >
+                            <div className="flex-1">
+                              <div className="text-gray-900 dark:text-white font-medium text-base sm:text-lg">
+                                {detail.payment_provider_name || detail.provider_name || "Unknown Provider"} - {detail.account_name || detail.account_number}
+                              </div>
+                              <div className="text-gray-600 dark:text-[#788099] text-sm sm:text-base">
+                                {detail.account_name || "N/A"} ({detail.account_number || detail.wallet_address || "N/A"})
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : enhancedFilteredUserPaymentDetails.length > 0 ? (
                     <div className="relative">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -3638,46 +4019,50 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                       <CustomSelect
                         options={(enhancedFilteredUserPaymentDetails || []).map(
                           (detail: UserPaymentDetail) => {
-                           
                             const adminDetail = adminWalletListDisplay.displayData?.find(
-                              (wallet: any) => wallet.admin_payment_detail?.provider_name === detail.payment_provider_name
+                              (wallet: any) => {
+                                const walletProviderName = wallet.admin_payment_detail?.provider_name;
+                                const detailProviderName = detail.payment_provider_name || detail.provider_name;
+                                return normalizeProviderName(walletProviderName) === normalizeProviderName(detailProviderName);
+                              }
                             )?.admin_payment_detail;
                             
                             return {
-                              value: detail.id.toString(),
-                              label: `${adminDetail?.provider_name || detail.payment_provider_name || "Unknown Provider"} - ${detail.account_name || detail.account_number} (${detail.account_number || detail.wallet_address || 'No Account'})`,
-                              logo: detail.provider_logo || undefined, // Only use user's logo, not admin logo
+                              value: detail.id?.toString() || detail.user_payment_detail_id || "",
+                              label: `${adminDetail?.provider_name || detail.payment_provider_name || detail.provider_name || "Unknown Provider"} - ${detail.account_name || detail.account_number || "N/A"} (${detail.account_number || detail.wallet_address || 'No Account'})`,
+                              logo: detail.provider_logo || adminDetail?.provider_logo || undefined,
                             };
                           }
                         )}
                         value={
                           selectedPaymentDetails.length > 0
-                            ? selectedPaymentDetails[0].id.toString()
+                            ? (selectedPaymentDetails[0].id?.toString() || selectedPaymentDetails[0].user_payment_detail_id || "")
                             : ""
                         }
                         onChange={(value) => {
-                          const selectedId = Number(value);
                           const selectedDetail =
                             enhancedFilteredUserPaymentDetails.find(
                               (detail: UserPaymentDetail) =>
-                                detail.id === selectedId
+                                (detail.id?.toString() === value) || (detail.user_payment_detail_id === value)
                             );
                           if (selectedDetail) {
                             setSelectedPaymentDetails([selectedDetail]);
-                            // Clear payment method error when selecting an account
                             setPaymentMethodError(null);
                           }
                         }}
                         placeholder={
                           userPaymentMethodsDisplay.isLoading
                             ? "Loading accounts..."
-                            : "Select Registered Account"
+                            : enhancedFilteredUserPaymentDetails.length > 0
+                            ? "Select Registered Account"
+                            : "No registered accounts available"
                         }
                         disabled={userPaymentMethodsDisplay.isLoading}
                         loading={userPaymentMethodsDisplay.isLoading}
                         loadingText="Loading accounts..."
                         emptyText="No registered accounts available"
                         searchable={true}
+                        sizeMode="card"
                         className={`w-full ${
                           paymentMethodError 
                             ? "border-red-500 dark:border-red-500" 
@@ -3751,17 +4136,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
 
         {/* Submit Button for First Card */}
           {!isTransactionSubmitted && !showForexWithdrawalForm && (
-        <div 
-          className="mt-4"
-          onClick={(e) => {
-            // On home page, redirect to login on any click
-            if (isHomePage) {
-              e.preventDefault();
-              e.stopPropagation();
-              router.push("/auth/login");
-            }
-          }}
-        >
+        <div className="mt-4">
           {(() => {
             const isDisabled =
               isHomePage
@@ -3780,13 +4155,21 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
               }`}
-              onClick={
-                isHomePage 
-                  ? undefined 
-                  : () => {
-                      // Check if it's FXP - show forex form instead of submitting
+              onClick={() => {
+                if (isHomePage) {
+                  const state = {
+                    mode,
+                    amountInput: getAmountInput,
+                    amountValue: getAmount,
+                    asset: selectedAsset,
+                    paymentDetails: selectedPaymentDetails,
+                  };
+                  setAuthRedirectPath(buildExpressRedirectPath(mode, state));
+                  router.push("/auth/login");
+                  return;
+                }
+
                       if (selectedAsset && isForexAsset(selectedAsset)) {
-                        // Validate basic fields first
                         if (!payAmount || payAmount <= 0) {
                           showToast.error("Please enter a valid amount");
                           return;
@@ -3795,14 +4178,11 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                           showToast.error("Please select a payment method");
                           return;
                         }
-                        // Show forex withdrawal form
                         setShowForexWithdrawalForm(true);
                       } else {
-                        // Regular crypto withdrawal
                         handleFirstCardSubmit();
                       }
-                    }
-              }
+              }}
               disabled={isDisabled}
             >
               {isSubmitting ? (

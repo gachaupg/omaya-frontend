@@ -183,6 +183,22 @@ const Stats = ({ onSupportClick }: StatsProps) => {
             </span>
             <span className="flex items-center gap-1 text-[#1D8751] text-[11px] sm:text-xs font-medium">
               Verified Profile
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="shrink-0"
+              >
+                <path
+                  d="M20 6L9 17L4 12"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </span>
           </div>
         </div>
@@ -238,7 +254,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
         <div className="dark:text-[#788099] text-gray-600 text-xs sm:text-sm font-medium">
           Total Transactions
         </div>
-        <div className="text-sm sm:text-[15px] font-semibold mt-1 mb-2">
+        <div className="text-sm sm:text-[15px] font-semibold mt-1 mb-2 text-gray-500 dark:text-[#A0AEC0]">
           {formatCurrency(
             (summary?.total_approved_p2p_combined || 0) +
             (summary?.total_p2p_orders || 0),
@@ -301,7 +317,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
               )}
             </div>
           </div>
-          <div className="dark:text-white text-gray-900 font-medium mb-2">
+          <div className="text-gray-500 dark:text-[#A0AEC0] font-medium mb-2">
             {formatCurrency(
               getFilteredAmount(
                 summary?.total_approved_p2p_deposits || 0,
@@ -380,7 +396,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
               )}
             </div>
           </div>
-          <div className="dark:text-white text-gray-900 font-medium mb-2">
+          <div className="text-gray-500 dark:text-[#A0AEC0] font-medium mb-2">
             {formatCurrency(
               getFilteredAmount(
                 summary?.total_approved_p2p_withdrawals || 0,
@@ -430,7 +446,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
               <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block" />
               Deposits
             </span>
-            <span className="font-medium">
+            <span className="font-medium text-gray-500 dark:text-[#A0AEC0]">
               {formatCurrency(referralWallet?.total_earned || 0)}
             </span>
           </div>
@@ -439,7 +455,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
               <span className="w-3 h-3 rounded-full bg-[#E23D3A] inline-block" />
               Withdrawals
             </span>
-            <span className="font-medium">
+            <span className="font-medium text-gray-500 dark:text-[#A0AEC0]">
               {formatCurrency(referralWallet?.total_withdrawn || 0)}
             </span>
           </div>
@@ -448,7 +464,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
               <span className="w-3 h-3 rounded-full bg-[#3B82F6] inline-block" />
               Total
             </span>
-            <span className="font-medium">
+            <span className="font-medium text-gray-500 dark:text-[#A0AEC0]">
               {formatCurrency((referralWallet?.total_earned || 0) + (referralWallet?.total_withdrawn || 0))}
             </span>
           </div>
