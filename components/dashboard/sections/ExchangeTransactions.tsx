@@ -37,10 +37,6 @@ const getAssetName = (symbol: string) => {
   }
 };
 
-const ASSET_ICON_URL =
-  "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png";
-const DEFAULT_PROVIDER_LOGO = "/default-provider-logo.svg";
-
 const extractPaymentInfo = (tx: any) => {
   const paymentDetails = Array.isArray(tx?.payment_details)
     ? tx.payment_details
@@ -51,27 +47,26 @@ const extractPaymentInfo = (tx: any) => {
       (detail: any) => detail?.provider_logo || detail?.logo
     ) || paymentDetails[0];
 
-  const providerLogo =
-    detailWithLogo?.provider_logo ||
-    detailWithLogo?.logo ||
-    tx?.payment_provider_logo ||
-    tx?.provider_logo ||
-    null;
+  // Use asset_image if available, otherwise use provider_logo from transaction or payment_details
+  const providerLogoFromDetails = detailWithLogo?.provider_logo || detailWithLogo?.logo || null;
+  const displayImage = tx?.asset_image || tx?.provider_logo || providerLogoFromDetails || null;
 
   const providerName =
     detailWithLogo?.provider_name ||
     detailWithLogo?.provider ||
     tx?.payment_provider ||
+    tx?.payment_provider_display ||
     null;
 
   const methodLabel =
     tx?.payment_method ||
+    tx?.payment_method_display ||
     detailWithLogo?.payment_method_name ||
     detailWithLogo?.method ||
     null;
 
   return {
-    providerLogo,
+    displayImage,
     providerName,
     methodLabel,
   };
@@ -249,11 +244,16 @@ const P2PTransactions = () => {
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <img
-                  src={ASSET_ICON_URL}
-                  alt={tx.currency || "Asset"}
-                  className="w-10 h-10 rounded-full shadow-sm flex-shrink-0"
-                />
+                {tx.asset_image && (
+                  <img
+                    src={tx.asset_image}
+                    alt={tx.currency || "Asset"}
+                    className="w-10 h-10 rounded-full shadow-sm flex-shrink-0"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                )}
                 <div>
                   <div className="font-semibold text-sm uppercase tracking-wide text-gray-900 dark:text-white">
                     {tx.currency || "USDT"}
@@ -304,14 +304,13 @@ const P2PTransactions = () => {
                   Payment
                 </div>
                 <div className="flex items-center gap-3">
-                  {paymentInfo.providerLogo && (
+                  {paymentInfo.displayImage && (
                     <img
-                      src={paymentInfo.providerLogo}
-                      alt={paymentInfo.providerName || "Provider logo"}
+                      src={paymentInfo.displayImage}
+                      alt={paymentInfo.providerName || "Payment method"}
                       className="w-8 h-8 rounded-full border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[#1D1D23]"
                       onError={(e) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src = DEFAULT_PROVIDER_LOGO;
+                        e.currentTarget.style.display = 'none';
                       }}
                     />
                   )}
@@ -377,11 +376,16 @@ const P2PTransactions = () => {
               {/* Asset */}
                 <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap">
                   <div className="flex items-center gap-2 sm:gap-3">
-                <img
-                  src={ASSET_ICON_URL}
-                  alt={tx.currency || "Asset"}
-                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full shadow-sm flex-shrink-0"
-                />
+                {tx.asset_image && (
+                  <img
+                    src={tx.asset_image}
+                    alt={tx.currency || "Asset"}
+                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full shadow-sm flex-shrink-0"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                )}
                     <div className="flex flex-col min-w-0">
                       <span className="font-semibold uppercase tracking-wide text-xs sm:text-sm text-gray-700 dark:text-gray-200 truncate">
                     {tx.currency || "USDT"}
@@ -412,14 +416,13 @@ const P2PTransactions = () => {
               {/* Payment Method */}
               <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4 whitespace-nowrap">
                 <div className="flex items-center gap-3 min-w-0">
-                  {paymentInfo.providerLogo && (
+                  {paymentInfo.displayImage && (
                     <img
-                      src={paymentInfo.providerLogo}
-                      alt={paymentInfo.providerName || "Provider logo"}
+                      src={paymentInfo.displayImage}
+                      alt={paymentInfo.providerName || "Payment method"}
                       className="w-8 h-8 rounded-full border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[#1D1D23] flex-shrink-0"
                       onError={(e) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src = DEFAULT_PROVIDER_LOGO;
+                        e.currentTarget.style.display = 'none';
                       }}
                     />
                   )}

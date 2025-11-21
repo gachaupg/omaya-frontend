@@ -13,7 +13,7 @@ import {
 const ASSET_ICON_URL =
   "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png";
 const PAYMENT_ICON_URL =
-  "https://omayabucket.s3.amazonaws.com/bank_logo/image_7.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAW7TPBKP2YLA7Y4X4%2F20251120%2Feu-north-1%2Fs3%2Faws4_request&X-Amz-Date=20251120T095244Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=94995a0a57bd651c7cc6790b124d9ad7cf04d84f03ac1c1a369d0048de0d7594";
+  "https://omayabucket.s3.amazonaws.com/bank_logo/image_7.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAW7TPBKP2YLA7Y4X4%2F20251121%2Feu-north-1%2Fs3%2Faws4_request&X-Amz-Date=20251121T133202Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=474a681f2adfba893a6ec733d8736c4ccd1b2ccbc6c6ef2e2091f22d64e2151f";
 
 const RatesTransactionHistory = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -126,13 +126,13 @@ const RatesTransactionHistory = () => {
                   alt={`${tx.currency} network`}
                   className="w-8 h-8 object-contain mr-3"
                 />
-                <div>
-                  <div className="text-gray-900 dark:text-white">
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-900 dark:text-white text-xs sm:text-sm lg:text-base">
                     {tx.currency}
-                  </div>
-                  <div className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099]">
+                  </span>
+                  <span className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099]">
                     {tx.source}
-                  </div>
+                  </span>
                 </div>
               </td>
               <td className="p-2 sm:p-3 lg:p-4 text-gray-900 dark:text-white text-xs sm:text-sm lg:text-base">

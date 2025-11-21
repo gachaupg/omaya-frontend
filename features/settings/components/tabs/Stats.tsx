@@ -20,7 +20,31 @@ import { formatNumber } from "@/utils/formatters";
 import { formatCurrency, formatAmount } from "@/lib/globalFormatter";
 import { useRouter } from "next/navigation";
 
-import { logger } from '@/lib/utils/logger';
+import { logger } from "@/lib/utils/logger";
+
+const DefaultProfileIcon = () => (
+  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center bg-[#e5e7eb] border-2 border-white">
+    <svg
+      width="56"
+      height="56"
+      viewBox="0 0 200 200"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <circle
+        cx="100"
+        cy="100"
+        r="100"
+        fill="#e5e7eb"
+        stroke="#d1d5db"
+        strokeWidth="4"
+      />
+      <g fill="#9ca3af">
+        <circle cx="100" cy="75" r="25" />
+        <path d="M100 110 C85 110, 60 120, 60 140 L60 160 C60 170, 65 175, 75 175 L125 175 C135 175, 140 170, 140 160 L140 140 C140 120, 115 110, 100 110 Z" />
+      </g>
+    </svg>
+  </div>
+);
 
 interface StatsProps {
   onSupportClick: () => void;
@@ -141,64 +165,34 @@ const Stats = ({ onSupportClick }: StatsProps) => {
       <div className="flex w-full flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div className="flex items-center gap-3 sm:gap-4">
           {profileImage ? (
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden">
-              <Image
-                src={profileImage}
-                alt="User avatar"
-                width={56}
-                height={56}
-                className="object-cover w-full h-full"
-                unoptimized={true}
-              />
+            <div className="relative">
+              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden">
+                <Image
+                  src={profileImage}
+                  alt="User avatar"
+                  width={56}
+                  height={56}
+                  className="object-cover w-full h-full"
+                  unoptimized={true}
+                />
+              </div>
+              
             </div>
           ) : (
-            <div className="w-12 h-12 sm:w-14 sm:h-14 dark:bg-[#35353E] bg-gray-300 rounded-full flex items-center justify-center">
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"
-                  className="stroke-[#788099]"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <circle
-                  cx="12"
-                  cy="7"
-                  r="4"
-                  className="stroke-[#788099]"
-                  strokeWidth="2"
-                />
-              </svg>
+            <div className="relative">
+              <DefaultProfileIcon />
+             
             </div>
           )}
           <div className="flex flex-col min-w-0">
             <span className="text-sm sm:text-[14px] font-semibold truncate">
               {user?.first_name}
             </span>
-            <span className="flex items-center gap-1 text-[#1D8751] text-[11px] sm:text-xs font-medium">
-              Verified Profile
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="shrink-0"
-              >
-                <path
-                  d="M20 6L9 17L4 12"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+            <span className="flex items-center gap-1.5 text-[#1D8751] text-[8px] sm:text-xs font-medium whitespace-nowrap">
+              <span className="shrink-0">Verified Profile</span>
+              <span className="w-4 h-4 bg-[#1D8751] rounded-full flex items-center justify-center shrink-0">
+               <img src="https://res.cloudinary.com/pitz/image/upload/v1763725740/Frame_34214_uymbow.png" alt="" />
+              </span>
             </span>
           </div>
         </div>
@@ -268,12 +262,20 @@ const Stats = ({ onSupportClick }: StatsProps) => {
       <div className="mb-4 sm:mb-6">
         {/* Deposits */}
         <div className="mb-4">
-          <div className="flex w-full items-center justify-between mb-2">
-            <div className="dark:text-[#788099] text-gray-600 text-sm font-medium">
-              Deposits
+          <div className="dark:text-[#788099] text-gray-600 text-sm font-medium mb-1">
+            Deposits
+          </div>
+          <div className="flex w-full items-center justify-between gap-3 mb-2">
+            <div className="text-gray-500 dark:text-[#A0AEC0] font-medium">
+              {formatCurrency(
+                getFilteredAmount(
+                  summary?.total_approved_p2p_deposits || 0,
+                  depositsTimeFilter
+                )
+              )}
             </div>
             <div
-              className="relative w-28 sm:w-32 flex justify-end"
+              className="relative w-28 sm:w-32 flex justify-end items-center"
               ref={depositsDropdownRef}
             >
               <span
@@ -317,18 +319,10 @@ const Stats = ({ onSupportClick }: StatsProps) => {
               )}
             </div>
           </div>
-          <div className="text-gray-500 dark:text-[#A0AEC0] font-medium mb-2">
-            {formatCurrency(
-              getFilteredAmount(
-                summary?.total_approved_p2p_deposits || 0,
-                depositsTimeFilter
-              )
-            )}
-          </div>
         </div>
-        <div className="w-full h-2 sm:h-3 dark:bg-[#35353E] bg-gray-300 rounded-full mb-4">
+        <div className="w-full h-2 sm:h-3 dark:bg-[#35353E] bg-gray-300 rounded-r-full mb-4">
           <div
-            className={`h-2 sm:h-3 rounded-full ${
+            className={`h-2 sm:h-3 rounded-r-full ${
               (summary?.total_approved_p2p_deposits || 0) > 0
                 ? "bg-[#1D8751]"
                 : "bg-[#788099]"
@@ -345,12 +339,20 @@ const Stats = ({ onSupportClick }: StatsProps) => {
         </div>
         {/* Withdrawals */}
         <div className="mb-4">
-          <div className="flex w-full items-center justify-between mb-2">
-            <div className="dark:text-[#788099] text-gray-600 text-sm font-medium">
-              Withdrawals
+          <div className="dark:text-[#788099] text-gray-600 text-sm font-medium mb-1">
+            Withdrawals
+          </div>
+          <div className="flex w-full items-center justify-between gap-3 mb-2">
+            <div className="text-gray-500 dark:text-[#A0AEC0] font-medium">
+              {formatCurrency(
+                getFilteredAmount(
+                  summary?.total_approved_p2p_withdrawals || 0,
+                  withdrawalsTimeFilter
+                )
+              )}
             </div>
             <div
-              className="relative w-28 sm:w-32 flex justify-end"
+              className="relative w-28 sm:w-32 flex justify-end items-center"
               ref={withdrawalsDropdownRef}
             >
               <span
@@ -396,18 +398,10 @@ const Stats = ({ onSupportClick }: StatsProps) => {
               )}
             </div>
           </div>
-          <div className="text-gray-500 dark:text-[#A0AEC0] font-medium mb-2">
-            {formatCurrency(
-              getFilteredAmount(
-                summary?.total_approved_p2p_withdrawals || 0,
-                withdrawalsTimeFilter
-              )
-            )}
-          </div>
         </div>
-        <div className="w-full h-2 sm:h-3 dark:bg-[#35353E] bg-gray-300 rounded-full mb-4">
+        <div className="w-full h-2 sm:h-3 dark:bg-[#35353E] bg-gray-300 rounded-r-full mb-4">
           <div
-            className={`h-2 sm:h-3 rounded-full ${
+            className={`h-2 sm:h-3 rounded-r-full ${
               (summary?.total_approved_p2p_withdrawals || 0) > 0
                 ? "bg-[#E23D3A]"
                 : "bg-[#788099]"

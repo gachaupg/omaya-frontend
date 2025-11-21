@@ -410,8 +410,7 @@ function Cash({ sharedFeesError }: CashProps) {
               )}
 
               {/* Transfer Details */}
-              <div className="bg-white dark:bg-[#18181B] border border-[#1D8751] rounded-xl p-4 mb-4">
-                <div className="flex items-center mb-2 text-[#1D8751] font-semibold text-base">
+              <div className="flex items-center mb-2 text-[#1D8751] font-semibold text-base">
                   <span className="text-[#051015] dark:text-[#A3A3A3] ml-2 text-sm">Transfer Details</span>{" "}
                   <svg
                     width="18"
@@ -436,8 +435,10 @@ function Cash({ sharedFeesError }: CashProps) {
                     <circle cx="12" cy="16" r="1" fill="#1D8751" />
                   </svg>
                 </div>
+              <div className="bg-white dark:bg-[#18181B] border border-[#1D8751] rounded-xl p-4 mb-4">
+               
                 <ul className="list-disc pl-6 text-[#051015] dark:text-[#A3A3A3] text-sm space-y-1">
-                  <li className="dark:text-[#1D8751]">
+                  <li className="">
                     Please send the money from your own account Only
                   </li>
                   <li>

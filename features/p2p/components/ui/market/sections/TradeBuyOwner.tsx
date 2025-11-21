@@ -513,9 +513,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                     height={20}
                   />
                   <span className="text-[#1D8751] text-lg font-bold">
-                    {formatAmount(saveOrder?.amount)}
-
-                    {formatAmount(receiveAmount)}
+                    {formatAmount(Math.ceil(Number(saveOrder?.amount ?? 0)))}
                   </span>
                 </div>
                 <span className="text-xs text-[#F79330] dark:text-[#A3A3C2]">

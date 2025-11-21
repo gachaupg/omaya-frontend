@@ -657,6 +657,9 @@ const PrivacySecurity = () => {
 
       <div className="p-3 dark:text-white text-gray-900 flex flex-col gap-4 w-full">
         {/* 2 Factor Authentication */}
+        <div className="text-base font-semibold mb-2 dark:text-white text-gray-900">
+            Privacy & Security
+          </div>
         <div className="w-full rounded-2xl p-5 flex flex-col gap-4 max-w-none mx-auto bg-white dark:bg-[#1D1D23] border border-[#E4E6F0] dark:border-[#35353E] shadow-sm">
           <div className="text-base font-semibold mb-2 dark:text-white text-gray-900">
             2 Factor Authentication

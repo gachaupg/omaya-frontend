@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import Image from "next/image";
 import { AppDispatch } from "@/store";
 import { loadAllP2PTransactions } from "@/features/p2p/slices/p2pTransactionsSlice";
 import {
@@ -472,9 +473,13 @@ const Dropdown = ({
         </option>
       ))}
     </select>
-    <span className="pointer-events-none absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 text-[#A3A3A3] text-sm sm:text-lg">
-      ▼
-    </span>
+    <Image
+      src="https://res.cloudinary.com/pitz/image/upload/v1763727113/Frame_34634_zwzons.png"
+      alt="Dropdown arrow"
+      width={15}
+      height={15}
+      className="pointer-events-none absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 object-contain"
+    />
   </div>
 );
 

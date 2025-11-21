@@ -224,7 +224,7 @@ const Withdraw = () => {
 
       <div className="min-h-screen dark:text-white text-[#0D0D0D] flex flex-col items-center">
         {/* Withdraw Form Card */}
-        <div className="w-full max-w-2xl rounded-2xl p-6 shadow-lg">
+        <div className="w-full max-w-4xl lg:max-w-5xl rounded-2xl p-6 shadow-lg">
             {/* Tabs for USDT BEP20 / Cash */}
             <div className="flex gap-2 mb-6 border border-[#EF4444] rounded-lg p-1 w-fit flex-wrap">
             <button
@@ -236,7 +236,7 @@ const Withdraw = () => {
                   : "dark:bg-[#23232B] bg-white text-[#A3A3A3]"
               }`}
             >
-                USDT BEP20
+                USDT TRC20
               </button>
             <button
               type="button"
@@ -256,7 +256,7 @@ const Withdraw = () => {
             {/* 1- Transaction Info */}
             <div className="text-md font-bold mb-2">1- Transaction Info</div>
 
-            <div className="mb-3 p-3 border border-[#E8EFF5] dark:border-[#35353F] bg-white dark:bg-[#1D1D23] rounded-lg">
+            <div className="mb-3 p-3 border border-[#E8EFF5] dark:border-[#35353F] bg-white dark:bg-[#1D1D23] rounded-[18px]">
               <div className="flex  flex-col md:flex-row gap-4 mb-2">
                 <div className="flex-1">
                   <label className="block text-sm text-[#788099] dark:text-[#A3A3A3] mb-1">Amount</label>
@@ -463,7 +463,6 @@ const Withdraw = () => {
                     {errors.confirmAddress}
                   </div>
                 )}
-                <div className= "bg-white dark:bg-[#18181B] border border-[#1D8751] rounded-xl p-4 mb-4">
                   <div className="flex items-center mb-2 text-[#1D8751] font-semibold text-base">
                     <span className="text-[#051015] dark:text-[#A3A3A3] ml-2 text-sm">Transfer Details</span>{" "}
                     <svg
@@ -489,8 +488,10 @@ const Withdraw = () => {
                       <circle cx="12" cy="16" r="1" fill="#1D8751" />
                     </svg>
                   </div>
+                <div className= "bg-white dark:bg-[#18181B] border border-[#1D8751] rounded-xl p-4 mb-4">
+                
                   <ul className="list-disc pl-6 text-[#051015] dark:text-[#A3A3A3] text-sm space-y-1">
-                    <li className="dark:text-[#1D8751]">
+                    <li className="">
                       Please send the money from your own account Only
                     </li>
                     <li>
