@@ -22,7 +22,7 @@ export interface ReferralWithdrawalHistoryItem {
   referral_withdrawal_id: string;
   wallet_address: string;
   timestamp: string;
-  status: "pending" | "approved" | "rejected" | "completed";
+  status: "pending" | "approved" | "rejected" | "completed" | "otp_pending";
   requested_amount: string;
   otp_created_at: string;
   assign_to: string | null;
@@ -31,6 +31,7 @@ export interface ReferralWithdrawalHistoryItem {
   email: string;
   client_name: string;
   client_photo: string | null;
+  currency: string;
 }
 
 export interface ReferralWithdrawalHistoryResponse {

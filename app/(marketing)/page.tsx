@@ -1006,9 +1006,9 @@ export default function MarketingPage() {
           <div className="mt-10 text-center">
             <Link
               href={`/blog/`}
-              className="inline-block bg-[#1D8751] text-white rounded-full px-6 py-3 font-medium text-sm transition-colors hover:bg-[#1D8751]"
+              className="inline-block bg-[#1D8751] text-white rounded-2xl px-10 py-3 font-medium text-sm transition-colors hover:bg-[#1D8751]"
             >
-              All Articles
+              Go To News
             </Link>
           </div>
         </div>

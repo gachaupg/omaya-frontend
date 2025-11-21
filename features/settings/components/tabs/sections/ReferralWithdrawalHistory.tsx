@@ -1,7 +1,8 @@
+import Image from "next/image";
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store/rootReducer";
-import { fetchReferralWithdrawalHistory } from "@/features/settings/slices/referralWithdrawalHistorySlice";
+import { fetchReferralWithdrawalHistory, ReferralWithdrawalHistoryItem } from "@/features/settings/slices/referralWithdrawalHistorySlice";
 
 const ReferralWithdrawalHistory: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -26,18 +27,6 @@ const ReferralWithdrawalHistory: React.FC = () => {
       default:
         return "text-gray-500 bg-gray-500/10 border-gray-500/30";
     }
-  };
-
-  // Format date
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
   };
 
   if (loading) {
@@ -84,6 +73,12 @@ const ReferralWithdrawalHistory: React.FC = () => {
     );
   }
 
+  type WithdrawalWithCurrency = ReferralWithdrawalHistoryItem & {
+    currency?: string;
+  };
+
+  const withdrawals = data.results as WithdrawalWithCurrency[];
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-4">
@@ -101,7 +96,7 @@ const ReferralWithdrawalHistory: React.FC = () => {
           <thead>
             <tr className="border-b border-[#E8EFF5] dark:border-[#35353F]">
               <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                Date
+                Asset
               </th>
               <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
                 Withdrawal ID
@@ -118,13 +113,24 @@ const ReferralWithdrawalHistory: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {data.results.map((withdrawal) => (
+            {withdrawals.map((withdrawal) => (
               <tr
                 key={withdrawal.id}
                 className="border-b border-[#E8EFF5] dark:border-[#35353F] hover:bg-gray-50 dark:hover:bg-[#23232B] transition-colors"
               >
                 <td className="py-4 px-4 text-sm text-gray-600 dark:text-gray-400">
-                  {formatDate(withdrawal.timestamp)}
+                  <div className="flex items-center gap-3">
+                    <Image
+                      src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
+                      alt={`${withdrawal.currency} icon`}
+                      width={32}
+                      height={32}
+                      className="rounded-full bg-gray-100 dark:bg-[#2A2A32] p-1"
+                    />
+                    <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                      {withdrawal.currency}
+                    </span>
+                  </div>
                 </td>
                 <td className="py-4 px-4 text-sm font-mono text-gray-700 dark:text-gray-300">
                   {withdrawal.referral_withdrawal_id.slice(0, 8)}...
@@ -153,15 +159,24 @@ const ReferralWithdrawalHistory: React.FC = () => {
 
       {/* Mobile Card View */}
       <div className="md:hidden space-y-3">
-        {data.results.map((withdrawal) => (
+        {withdrawals.map((withdrawal) => (
           <div
             key={withdrawal.id}
             className="bg-white dark:bg-[#1D1D23] border border-[#E8EFF5] dark:border-[#35353F] rounded-xl p-4"
           >
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1">
-                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                  {formatDate(withdrawal.timestamp)}
+                <div className="flex items-center gap-3 mb-1">
+                  <Image
+                    src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
+                    alt={`${withdrawal.currency} icon`}
+                    width={32}
+                    height={32}
+                    className="rounded-full bg-gray-100 dark:bg-[#2A2A32] p-1"
+                  />
+                  <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                    {withdrawal.currency}
+                  </span>
                 </div>
                 <div className="text-sm font-mono text-gray-700 dark:text-gray-300">
                   {withdrawal.referral_withdrawal_id.slice(0, 12)}...

@@ -86,8 +86,8 @@ const ReferralMainCard: React.FC<Props> = ({
 
         <div className="flex-1 flex items-stretch">
           <div
-            className="w-full rounded-[26px] border border-[#E2E8F0] bg-transparent
-                       px-6 py-6 flex flex-col dark:border-[#1E2437]"
+            className="w-full rounded-[26px] border border-[#E2E8F0FF] bg-transparent
+                       px-6 py-6 flex flex-col dark:border-[#35353e]"
           >
 
             {walletError && (

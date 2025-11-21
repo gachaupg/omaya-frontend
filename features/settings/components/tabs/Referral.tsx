@@ -70,7 +70,11 @@ const ApplicationSubmittedModal = ({
   );
 };
 
-const Referral: React.FC = () => {
+interface ReferralProps {
+  onWithdrawStateChange?: (isActive: boolean) => void;
+}
+
+const Referral: React.FC<ReferralProps> = ({ onWithdrawStateChange }) => {
   /* ───────────────────────────── state ───────────────────────────── */
   const [activeTab, setActiveTab] = useState<"Referral" | "History">(
     "Referral"
@@ -108,6 +112,13 @@ const Referral: React.FC = () => {
     }
   }, [activeTab, dispatch, isAuthenticated, refCode]);
 
+  useEffect(() => {
+    onWithdrawStateChange?.(showWithdraw);
+    return () => {
+      onWithdrawStateChange?.(false);
+    };
+  }, [showWithdraw, onWithdrawStateChange]);
+
   /* ───────────────────────────── handlers ─────────────────────────── */
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
@@ -138,7 +149,7 @@ const Referral: React.FC = () => {
       />
 
       {activeTab === "Referral" && (
-        <div className="flex flex-col border border-[#35353F] rounded-[18px] p-3 sm:p-4">
+        <div className="flex flex-col w-full min-h-[calc(100vh-160px)] border-2 border-[#35353e] bg-transparent rounded-[24px] p-3 sm:p-6 shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
           <ReferralMainCard
             user={user}
             walletData={wallet}
@@ -146,6 +157,8 @@ const Referral: React.FC = () => {
             walletError={walletError}
             setShowWithdrawPage={setShowWithdraw}
           />
+
+          <div className="h-px w-full bg-[#35353F] my-4" />
 
           <ReferralUsersList
             referredUsers={referredUsers}

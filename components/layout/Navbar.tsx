@@ -746,7 +746,7 @@ export default function Navbar() {
                     <DefaultProfileIcon />
                   )}
                 </button>
-                <span className="absolute bottom-0 right-0 w-5 h-5 bg-[#1D8751] rounded-full flex items-center justify-center border-2 border-white">
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#1D8751] rounded-full flex items-center justify-center border-2 border-white">
                   <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
                     <circle cx="10" cy="10" r="10" fill="#1D8751" />
                     <path
