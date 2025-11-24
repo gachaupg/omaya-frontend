@@ -2654,7 +2654,7 @@ export default function DepositForm({
 
   return (
     <div className="w-full flex flex-col dark:bg-[#18181D]  ">
-      <h2 className="text-xl font-bold mb-2 text-[#35353e] dark:text-[#ffffff] inline-flex items-center gap-2">
+      <h2 className="text-xl font-bold mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
         <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span>{" "}
         {t("express.transactionInfo", "Transaction Info")}
       </h2>
@@ -2769,7 +2769,7 @@ export default function DepositForm({
                     }
                   }}
                   placeholder="Enter amount"
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none border appearance-none min-h-[44px] sm:min-h-0 ${
+                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-3 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none border appearance-none min-h-[60px] ${
                     (isCalculating || isCalculatingReceive) &&
                     isCalculatingFromPay &&
                     selectedAsset &&
@@ -3097,7 +3097,7 @@ export default function DepositForm({
                     }
                   }}
                   placeholder="Enter amount"
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-16 text-lg  focus:outline-none border appearance-none ${
+                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-3 pr-16 text-base sm:text-lg focus:outline-none border appearance-none min-h-[60px] ${
                     receiveAmountError &&
                     (receiveAmountError.includes("Rough estimate") ||
                       receiveAmountError.includes("Using estimated rate"))
@@ -3230,7 +3230,7 @@ export default function DepositForm({
               </label>
               <div className="relative" ref={assetDropdownRef}>
                 <div
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 text-base sm:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer min-h-[44px] sm:min-h-0`}
+                  className={`h-[60px] w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 text-base sm:text-lg border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer`}
                   onClick={() => {
                     if (!isAssetDropdownOpen) {
                       updateAssetDropdownPosition();
@@ -3462,7 +3462,7 @@ export default function DepositForm({
             {/* Payment Method Details */}
             {selectedPaymentDetail && (
               <>
-                <h2 className="text-xl font-bold mb-2 text-[#35353e] dark:text-[#ffffff] inline-flex items-center gap-2">
+                <h2 className="text-xl font-bold mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
                   <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>{" "}
                   {t("express.paymentDetails", "Payment Details")}
                 </h2>
@@ -3553,7 +3553,7 @@ export default function DepositForm({
               </>
             )}
 
-            <h2 className="text-xl font-bold mb-2 text-[#35353e] dark:text-[#ffffff] inline-flex items-center gap-2">
+            <h2 className="text-xl font-bold mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
               <span className="text-[#7e7e8f] dark:text-[#788099]">3-</span>{" "}
               {t("express.forexAccountDetails", "Forex Account Details")}
             </h2>
@@ -3671,7 +3671,7 @@ export default function DepositForm({
       {selectedPaymentDetail && isFirstCardSubmitted && (
         <>
           {/* Payment Details Card */}
-          <h2 className="text-xl font-bold mb-2 text-[#35353e] dark:text-[#ffffff] inline-flex items-center gap-2">
+          <h2 className="text-xl font-bold mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
             <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>{" "}
             {t("express.paymentDetails", "Payment Details")}
           </h2>
@@ -3763,7 +3763,7 @@ export default function DepositForm({
           {/* Transaction Code Card - below Payment Details, before Wallet Address */}
           {apiResponse && apiResponse.deposit_code && (
             <>
-              <h2 className="text-xl font-bold mb-2 text-[#35353e] dark:text-[#ffffff] inline-flex items-center gap-2">
+              <h2 className="text-xl font-bold mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
                 <span className="text-[#7e7e8f] dark:text-[#788099]">3-</span>{" "}
                 {t("express.transactionCode", "Transaction Code")}
               </h2>
@@ -3879,7 +3879,7 @@ export default function DepositForm({
           )}
 
           {/* Wallet Address Section */}
-          <h2 className="text-xl font-bold mb-2 text-[#35353e] dark:text-[#ffffff] inline-flex items-center gap-2">
+          <h2 className="text-xl font-bold mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
             <span className="text-[#7e7e8f] dark:text-[#788099]">4-</span>{" "}
             {t("express.walletAddress", "Wallet Address")}
           </h2>

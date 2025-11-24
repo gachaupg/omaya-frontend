@@ -270,7 +270,7 @@ const BlogPage = () => {
                   </p>
                   <button
                     onClick={() => handleReadArticle(getPostId(post))}
-                    className="mt-auto w-fit text-[#1D8751] border border-[#1D8751] rounded-full px-2.5 py-2.5 text-sm font-semibold hover:bg-[#1D8751] hover:text-white transition-colors duration-300 self-start"
+                    className="mt-auto w-fit text-[#1D8751] border border-[#1D8751] rounded-full px-6 py-2.5 text-base font-semibold hover:bg-[#1D8751] hover:text-white transition-colors duration-300 self-start"
                   >
                     {t("blogs.readArticle", "Read Article")}
                   </button>
