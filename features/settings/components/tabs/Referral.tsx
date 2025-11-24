@@ -149,7 +149,7 @@ const Referral: React.FC<ReferralProps> = ({ onWithdrawStateChange }) => {
       />
 
       {activeTab === "Referral" && (
-        <div className="flex flex-col w-full min-h-[calc(100vh-160px)] border-2 border-[#35353e] bg-transparent rounded-[24px] p-3 sm:p-6 shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
+        <div className="flex flex-col w-full min-h-[calc(100vh-160px)] border-2 border-[#35353e] bg-transparent rounded-[24px] p-3 sm:p-4 shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
           <ReferralMainCard
             user={user}
             walletData={wallet}

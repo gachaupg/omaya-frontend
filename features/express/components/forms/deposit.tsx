@@ -31,7 +31,6 @@ import {
   usePaymentMethodsDisplay,
 } from "../../hooks/useDataDisplay";
 import CustomSelect from "@/components/ui/CustomSelect";
-import Select from "@/features/p2p/components/Common/Select";
 import {
   buildExpressRedirectPath,
   setAuthRedirectPath,

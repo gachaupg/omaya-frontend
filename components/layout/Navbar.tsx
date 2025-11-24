@@ -37,40 +37,58 @@ const NavLink = ({
   href,
   children,
   isTransparent = false,
+  pathname,
 }: {
   href: string;
   children: React.ReactNode;
   isTransparent?: boolean;
-}) => (
-  <Link
-    href={href}
-    className={`${
-      isTransparent
-        ? "text-white" // Always white when navbar is transparent
-        : "dark:text-white text-gray-900" // Theme-based when navbar has background
-    } hover:text-[#1D8751] transition-colors duration-200 text-sm lg:text-base 2xl:text-lg`}
-  >
-    {children}
-  </Link>
-);
+  pathname?: string;
+}) => {
+  const isActive = pathname === href || (href !== "/" && pathname?.startsWith(href));
+  
+  return (
+    <Link
+      href={href}
+      className={`${
+        isActive
+          ? "text-[#1D8751]" // Green for active page
+          : isTransparent
+          ? "text-white" // Always white when navbar is transparent
+          : "dark:text-white text-gray-900" // Theme-based when navbar has background
+      } hover:text-[#1D8751] transition-colors duration-200 text-sm lg:text-base 2xl:text-lg`}
+    >
+      {children}
+    </Link>
+  );
+};
 
 const MobileNavLink = ({
   href,
   children,
   onClick,
+  pathname,
 }: {
   href: string;
   children: React.ReactNode;
   onClick: () => void;
-}) => (
-  <Link
-    href={href}
-    className="block dark:text-white text-gray-900 hover:text-[#1D8751] py-2 transition-colors duration-200 text-lg"
-    onClick={onClick}
-  >
-    {children}
-  </Link>
-);
+  pathname?: string;
+}) => {
+  const isActive = pathname === href || (href !== "/" && pathname?.startsWith(href));
+  
+  return (
+    <Link
+      href={href}
+      className={`block py-2 transition-colors duration-200 text-lg ${
+        isActive
+          ? "text-[#1D8751]"
+          : "dark:text-white text-gray-900 hover:text-[#1D8751]"
+      }`}
+      onClick={onClick}
+    >
+      {children}
+    </Link>
+  );
+};
 
 const AuthButton = ({
   variant,
@@ -206,7 +224,7 @@ const LanguageSelector = () => {
 
 export default function Navbar() {
   const router = useRouter();
-  const pathname = usePathname();
+  const pathname = usePathname() ?? undefined;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [depositDropdownOpen, setDepositDropdownOpen] = useState(false);
@@ -434,19 +452,19 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex space-x-6 lg:space-x-8 2xl:space-x-12">
-            <NavLink href="/" isTransparent={isTransparentNavbar}>
+            <NavLink href="/" isTransparent={isTransparentNavbar} pathname={pathname}>
               Home
             </NavLink>
-            <NavLink href="/dashboard" isTransparent={isTransparentNavbar}>
+            <NavLink href="/dashboard" isTransparent={isTransparentNavbar} pathname={pathname}>
               Dashboard
             </NavLink>
-            <NavLink href="/market" isTransparent={isTransparentNavbar}>
+            <NavLink href="/market" isTransparent={isTransparentNavbar} pathname={pathname}>
               Market
             </NavLink>
-            <NavLink href="/rates" isTransparent={isTransparentNavbar}>
+            <NavLink href="/rates" isTransparent={isTransparentNavbar} pathname={pathname}>
               Rates
             </NavLink>
-            <NavLink href="/blog" isTransparent={isTransparentNavbar}>
+            <NavLink href="/blog" isTransparent={isTransparentNavbar} pathname={pathname}>
               Blog
             </NavLink>
             {/* Show Contact us only on auth pages */}
@@ -459,7 +477,7 @@ export default function Navbar() {
               </NavLink>
             )} */}
 
-            <NavLink href="/contactUs" isTransparent={isTransparentNavbar}>
+            <NavLink href="/contactUs" isTransparent={isTransparentNavbar} pathname={pathname}>
               Contact us
             </NavLink>
           </div>
@@ -818,7 +836,7 @@ export default function Navbar() {
                 <AuthButton variant="primary">Register</AuthButton>
               </Link>
               <Link href="/auth/login">
-                <AuthButton variant="secondary">Log In</AuthButton>
+                <AuthButton variant="secondary">Get Started</AuthButton>
               </Link>
             </>
           )}
@@ -857,22 +875,22 @@ export default function Navbar() {
           <div
             className={`fixed top-14 sm:top-16 left-0 right-0 z-50 md:hidden p-4 sm:p-6 space-y-4 sm:space-y-6 shadow-lg transition-all duration-300 dark:bg-[#1D1D23] bg-white max-h-[calc(100vh-3.5rem)] sm:max-h-[calc(100vh-4rem)] overflow-y-auto`}
           >
-            <MobileNavLink href="/" onClick={toggleMobileMenu}>
+            <MobileNavLink href="/" onClick={toggleMobileMenu} pathname={pathname}>
               Home
             </MobileNavLink>
-            <MobileNavLink href="/dashboard" onClick={toggleMobileMenu}>
+            <MobileNavLink href="/dashboard" onClick={toggleMobileMenu} pathname={pathname}>
               Dashboard
             </MobileNavLink>
-            <MobileNavLink href="/market" onClick={toggleMobileMenu}>
+            <MobileNavLink href="/market" onClick={toggleMobileMenu} pathname={pathname}>
               Market
             </MobileNavLink>
-            <MobileNavLink href="/rates" onClick={toggleMobileMenu}>
+            <MobileNavLink href="/rates" onClick={toggleMobileMenu} pathname={pathname}>
               Rates
             </MobileNavLink>
-            <MobileNavLink href="/blog" onClick={toggleMobileMenu}>
+            <MobileNavLink href="/blog" onClick={toggleMobileMenu} pathname={pathname}>
               Blog
             </MobileNavLink>
-            <MobileNavLink href="/contactUs" onClick={toggleMobileMenu}>
+            <MobileNavLink href="/contactUs" onClick={toggleMobileMenu} pathname={pathname}>
                 Contact us
               </MobileNavLink>
 
@@ -1283,7 +1301,7 @@ export default function Navbar() {
                   </Link>
                   <Link href="/auth/login" onClick={toggleMobileMenu}>
                     <AuthButton variant="secondary" fullWidth>
-                      Log In
+                      Get Started
                     </AuthButton>
                   </Link>
                 </>

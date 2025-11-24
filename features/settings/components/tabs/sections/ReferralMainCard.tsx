@@ -65,21 +65,17 @@ const ReferralMainCard: React.FC<Props> = ({
             variant="primary"
             size="lg"
             onClick={() => setShowWithdrawPage(true)}
-            className="w-full sm:w-auto px-10 h-[56px] bg-[#FF5E5B] hover:bg-[#ff4946]
-                       rounded-[999px] shadow-[0_18px_40px_rgba(255,94,91,0.4)]
+            className="w-full sm:w-auto px-10 h-[48px] bg-[#FF5E5B] hover:bg-[#ff4946]
+                       rounded-[999px]
                        text-white font-semibold tracking-wide flex items-center justify-center gap-2"
           >
-            <svg
-              width="22"
-              height="22"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
+            <img
+              src="https://res.cloudinary.com/pitz/image/upload/v1763908134/Group_3_ocyc3p.png"
+              alt="Withdraw icon"
+              width={22}
+              height={22}
               className="flex-shrink-0"
-            >
-              <rect x="2.5" y="2.5" width="17" height="17" rx="5" />
-              <path d="M8.5 12h7m-3.5-3.5V16" />
-            </svg>
+            />
             Withdraw
           </Button>
         </div>
@@ -87,7 +83,7 @@ const ReferralMainCard: React.FC<Props> = ({
         <div className="flex-1 flex items-stretch">
           <div
             className="w-full rounded-[26px] border border-[#E2E8F0FF] bg-transparent
-                       px-6 py-6 flex flex-col dark:border-[#35353e]"
+                       px-4 py-4 flex flex-col dark:border-[#35353e]"
           >
 
             {walletError && (
