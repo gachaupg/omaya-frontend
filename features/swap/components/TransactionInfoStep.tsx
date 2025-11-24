@@ -34,14 +34,14 @@ interface TransactionInfoStepProps {
 const strongBorder =
   "border border-white/5 dark:border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.15)]";
 const controlShell =
-  "rounded-[24px] border border-[#1F2233] bg-[#0F111A] shadow-[0_0_25px_rgba(0,0,0,0.35)]";
+  "rounded-[24px] border border-[#788099]/30 bg-white/95 dark:bg-transparent";
 const controlSpacing = "px-5 py-4 min-h-[68px]";
 const baseCard =
   `rounded-[28px] ${strongBorder} bg-[#0F1016] dark:bg-transparent dark:text-white text-gray-100`;
 const labelCopy =
   "text-[11px] uppercase tracking-[0.25em] text-[#8C92B3] dark:text-[#8C92B3]";
 const inputBase =
-  `${controlShell} ${controlSpacing} dark:text-white text-white text-lg font-semibold w-full dark:placeholder:text-[#5C607A] placeholder:text-[#5C607A] focus:outline-none`;
+  `${controlShell} ${controlSpacing} text-black dark:text-white text-lg font-semibold w-full placeholder:text-[#5C607A] focus:outline-none`;
 
 const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
   const { isDark } = useTheme();
