@@ -437,9 +437,15 @@ export default function Navbar() {
             <NavLink href="/" isTransparent={isTransparentNavbar}>
               Home
             </NavLink>
-            <NavLink href="/dashboard" isTransparent={isTransparentNavbar}>
-              Dashboard
-            </NavLink>
+            {isAuthenticated ? (
+              <NavLink href="/dashboard" isTransparent={isTransparentNavbar}>
+                Dashboard
+              </NavLink>
+            ) : (
+              <NavLink href="/about" isTransparent={isTransparentNavbar}>
+                About Us
+              </NavLink>
+            )}
             <NavLink href="/market" isTransparent={isTransparentNavbar}>
               Market
             </NavLink>
@@ -860,9 +866,15 @@ export default function Navbar() {
             <MobileNavLink href="/" onClick={toggleMobileMenu}>
               Home
             </MobileNavLink>
-            <MobileNavLink href="/dashboard" onClick={toggleMobileMenu}>
-              Dashboard
-            </MobileNavLink>
+            {isAuthenticated ? (
+              <MobileNavLink href="/dashboard" onClick={toggleMobileMenu}>
+                Dashboard
+              </MobileNavLink>
+            ) : (
+              <MobileNavLink href="/about" onClick={toggleMobileMenu}>
+                About Us
+              </MobileNavLink>
+            )}
             <MobileNavLink href="/market" onClick={toggleMobileMenu}>
               Market
             </MobileNavLink>

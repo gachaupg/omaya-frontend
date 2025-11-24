@@ -107,7 +107,7 @@ const AboutPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0F0F11]">
       {/* Hero Section */}
-      <section className="relative py-20 px-4 overflow-hidden">
+      <section className="relative pt-32 md:pt-40 pb-20 px-4 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-[#1D8751]/10 via-transparent to-[#1D8751]/5"></div>
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center">
