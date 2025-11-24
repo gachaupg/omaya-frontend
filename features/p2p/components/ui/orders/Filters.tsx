@@ -156,7 +156,7 @@ const Filters: React.FC<FiltersProps> = ({
             >
               {tab.label}
               {tab.count && (
-                <span className="ml-1 text-[11px] font-semibold text-[#F79330] px-2 py-0.5 rounded-full bg-[#F79330]/10">
+                <span className="ml-1 text-[11px] font-semibold text-warning px-2 py-0.5 rounded-full bg-warning/10">
                   ({tab.count})
                 </span>
               )}
@@ -174,7 +174,7 @@ const Filters: React.FC<FiltersProps> = ({
           disabled={loading}
           onClick={onUnreadMessagesClick}
         >
-          <svg width="20" height="20" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
+          <svg width="20" height="20" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
             <rect width="100" height="100" fill="currentColor" className="text-gray-800 dark:text-[#1A1A1D]"/>
             <path d="M20 10 H80 V70 H35 L25 95 L25 70 H20 Z" fill="#F79330"/>
             <rect x="35" y="25" width="40" height="10" fill="currentColor" className="text-gray-800 dark:text-[#1A1A1D]"/>
@@ -214,24 +214,29 @@ const Filters: React.FC<FiltersProps> = ({
                 />
               </div>
               <div className="flex flex-col min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-2">
-                  <span className={valueStyleActive}>
-                    {currencyInfo.name} · {currencyInfo.code}
+                <div className="flex items-center justify-between gap-6 w-full">
+                  <span className="text-[15px] font-medium text-gray-500 dark:text-[#9AA3BC] tracking-[0.01em]">
+                    {currencyInfo.name}
                   </span>
-                  <svg
-                    className="h-4 w-4 text-gray-400 dark:text-[#6F768D]"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[17px] font-medium text-gray-900 dark:text-white tracking-[0.08em]">
+                      {currencyInfo.code}
+                    </span>
+                    <svg
+                      className="h-4 w-4 text-gray-400 dark:text-[#6F768D]"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </div>
                 </div>
               </div>
             </div>
