@@ -71,7 +71,7 @@ const FacebookAuthButton: React.FC<FacebookAuthButtonProps> = ({
           }
         );
 
-        const { access, refresh, user } = backendResponse.data;
+        const { access, refresh, user, phone_required } = backendResponse.data;
         
         // Store tokens and user data
         if (access) {
@@ -88,6 +88,12 @@ const FacebookAuthButton: React.FC<FacebookAuthButtonProps> = ({
           document.cookie = `access_token=${access}; Max-Age=${maxAge}; Path=/; SameSite=Lax`;
         }
         
+        // If phone number is required, redirect to phone capture step
+        if (phone_required) {
+          window.location.href = '/auth/phone';
+          return;
+        }
+
         // Call success callback
         onSuccess?.(user);
         

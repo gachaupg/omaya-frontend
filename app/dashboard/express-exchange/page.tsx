@@ -3,10 +3,10 @@ import Express from "@/features/express/components/express";
 
 const page = () => {
   return (
-    <div>
-      <h1>
+    <div className="w-full flex justify-center px-4">
+      <div className="w-full mr-0 lg:mr-20 mt-2">
         <Express />
-      </h1>
+      </div>
     </div>
   );
 };
