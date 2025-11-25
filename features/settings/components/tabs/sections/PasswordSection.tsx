@@ -1,4 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { resetPassword } from "@/features/settings/slices/settingsSlice";
+import { RootState, AppDispatch } from "@/store/rootReducer";
+import { showToast } from "@/lib/utils/toast";
 
 interface PasswordChangeRequest {
   new_password: string;
@@ -6,7 +10,12 @@ interface PasswordChangeRequest {
 }
 
 const PasswordSection: React.FC = () => {
-  const [updating, setUpdating] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
+  const { user } = useSelector((state: RootState) => state.auth);
+  const { updating, error, success } = useSelector(
+    (state: RootState) => state.settings
+  );
+
   const [formData, setFormData] = useState<PasswordChangeRequest>({
     new_password: "",
     confirm_password: "",
@@ -60,9 +69,22 @@ const PasswordSection: React.FC = () => {
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
-    setUpdating(true);
-    // Simulate API call
-    setTimeout(() => {
+    if (!user?.email) {
+      const errorMessage = "User email not found. Please log in again.";
+      setErrors({ new_password: errorMessage });
+      showToast.error(errorMessage);
+      return;
+    }
+
+    try {
+      await dispatch(
+        resetPassword({
+          email: user.email,
+          password: formData.new_password,
+          confirm_password: formData.confirm_password,
+        })
+      ).unwrap();
+
       // Clear form on success
       setFormData({
         new_password: "",
@@ -72,11 +94,18 @@ const PasswordSection: React.FC = () => {
         new: false,
         confirm: false,
       });
-      setUpdating(false);
-      // Show success message
-      alert("Password updated successfully!");
-    }, 1000);
+    } catch (error: any) {
+      // Error is handled by the slice and toast
+      console.error("Password reset error:", error);
+    }
   };
+
+  // Clear errors when component unmounts or when success occurs
+  useEffect(() => {
+    if (success) {
+      setErrors({});
+    }
+  }, [success]);
 
   return (
     <>

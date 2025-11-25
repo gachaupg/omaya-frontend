@@ -249,7 +249,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                 {searchValue ? "No assets found" : "No assets available"}
               </div>
             ) : (
-              filtered.map((option, idx) => (
+              <>
+                {filtered.map((option, idx) => (
                 <div
                   key={`${option.ticker}-${option.network}-${idx}`}
                   className="flex items-center gap-3 p-3 sm:p-4 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors duration-150"
@@ -294,7 +295,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                       <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
                     )}
                 </div>
-              ))
+                ))}
+              </>
             )}
           </div>
         </div>
