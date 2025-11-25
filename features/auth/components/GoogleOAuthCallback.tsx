@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'react-toastify';
+import { API_BASE_URL } from '@/config/api';
 
 interface UserData {
   id: string;
@@ -28,7 +29,8 @@ export default function GoogleOAuthCallback() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const processedRef = useRef(false);
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://dev.backend.omaya.io';
+  // Use centralized API base to avoid mixing environments (e.g., dev vs localhost)
+  const apiUrl = API_BASE_URL;
 
   // Check if we're in a popup
   const isInPopup = useCallback(() => {
@@ -154,6 +156,15 @@ export default function GoogleOAuthCallback() {
         localStorage.setItem('refresh_token', data.refresh);
         localStorage.setItem('user', JSON.stringify(data.user));
 
+        // Set same-origin cookie immediately so middleware sees it on next request
+        try {
+          const maxAge = 60 * 60; // 1 hour
+          const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
+          document.cookie = `access_token=${data.access}; Max-Age=${maxAge}; Path=/; SameSite=Lax${isHttps ? '; Secure' : ''}`;
+        } catch (e) {
+          console.warn('Could not set auth cookie in callback:', e);
+        }
+
         // Immediately notify app state so Providers can hydrate Redux and set cookie
         try {
           const evt = new CustomEvent('auth-state-changed', {
@@ -179,8 +190,19 @@ export default function GoogleOAuthCallback() {
           return;
         }
         
-        // If not in popup, redirect to dashboard or previous page
-        const redirectPath = sessionStorage.getItem('auth_redirect') || '/dashboard';
+        // If phone number is required (first-time user), redirect to phone capture
+        if (data.phone_required) {
+          const fallback = '/auth/phone';
+          try {
+            router.replace(fallback);
+          } catch {
+            window.location.href = fallback;
+          }
+          return;
+        }
+
+        // If not in popup and phone not required, redirect to dashboard or previous page
+        const redirectPath = sessionStorage.getItem('auth_redirect') || '/dashboard/';
         sessionStorage.removeItem('auth_redirect');
         try {
           router.replace(redirectPath);
