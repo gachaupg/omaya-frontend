@@ -1,9 +1,11 @@
-import React from "react";
+import React, { useRef, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import AssetDropdown from "./AssetDropdown";
 import EstimatedPriceDisplay from "./EstimatedPriceDisplay";
 import { SupportedAsset, SwapEstimate } from "../types";
 import { useTheme } from "@/context/theme";
 import SuccessPage from "./success";
+import { FaSearch } from "react-icons/fa";
 
 interface TransactionInfoStepProps {
   fromAsset: SupportedAsset | null;
@@ -63,6 +65,238 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
   activeInputField,
 }) => {
   const { isDark } = useTheme();
+  const fromAssetDropdownRef = useRef<HTMLDivElement>(null);
+  const fromAssetDropdownContentRef = useRef<HTMLDivElement | null>(null);
+  const toAssetDropdownRef = useRef<HTMLDivElement>(null);
+  const toAssetDropdownContentRef = useRef<HTMLDivElement | null>(null);
+  const [isComponentMounted, setIsComponentMounted] = useState(false);
+
+  useEffect(() => {
+    setIsComponentMounted(true);
+  }, []);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      
+      // Check if click is outside from asset dropdown
+      if (
+        isFromAssetOpen &&
+        fromAssetDropdownRef.current &&
+        !fromAssetDropdownRef.current.contains(target) &&
+        (!fromAssetDropdownContentRef.current ||
+          !fromAssetDropdownContentRef.current.contains(target))
+      ) {
+        onFromAssetToggle();
+      }
+      
+      // Check if click is outside to asset dropdown
+      if (
+        isToAssetOpen &&
+        toAssetDropdownRef.current &&
+        !toAssetDropdownRef.current.contains(target) &&
+        (!toAssetDropdownContentRef.current ||
+          !toAssetDropdownContentRef.current.contains(target))
+      ) {
+        onToAssetToggle();
+      }
+    };
+
+    if (isFromAssetOpen || isToAssetOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isFromAssetOpen, isToAssetOpen, onFromAssetToggle, onToAssetToggle]);
+
+  const updateDropdownPosition = (): React.CSSProperties => {
+    if (typeof window === "undefined") {
+      return {
+        position: "fixed",
+        top: 200,
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: 280,
+      };
+    }
+    
+    const viewportWidth = window.innerWidth || 0;
+    const minMargin = 16;
+    const minWidth = 280;
+    const maxWidth = 450;
+    
+    // Find the first card container (the "You Send" card) to align all dropdowns with it
+    const firstCard = document.querySelector("[data-swap-card='true']");
+    
+    let dropdownStyle: React.CSSProperties = {
+      position: "fixed",
+      top: 200,
+      left: (viewportWidth - minWidth) / 2,
+      width: minWidth,
+    };
+
+    if (firstCard) {
+      const cardRect = firstCard.getBoundingClientRect();
+      
+      // Calculate reduced width so dropdowns don't cover amount inputs (40% of card width)
+      let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.width * 0.4));
+      
+      // ALL dropdowns open at the same position - aligned with top of the first card
+      // Position at the top of the card
+      const top = cardRect.top + 8; // 8px below card top
+      
+      // Position to the right side of the card
+      let left = cardRect.right - desiredWidth - 4; // 4px from right edge
+      
+      // If card is too narrow, center it but still push right a bit
+      if (cardRect.width < desiredWidth + 16) {
+        left = cardRect.left + (cardRect.width - desiredWidth) / 2 + 20; // Push 20px to the right
+      }
+      
+      // Ensure dropdown doesn't go off screen
+      if (left + desiredWidth > viewportWidth - minMargin) {
+        left = viewportWidth - desiredWidth - minMargin;
+      }
+      if (left < minMargin) {
+        left = minMargin;
+      }
+
+      dropdownStyle = {
+        position: "fixed",
+        top,
+        left,
+        width: desiredWidth,
+      };
+    }
+
+    return dropdownStyle;
+  };
+
+  const renderAssetDropdown = (
+    asset: SupportedAsset | null,
+    isOpen: boolean,
+    toggle: () => void,
+    onSelect: (asset: SupportedAsset) => void,
+    searchValue: string,
+    onSearchChange: (value: string) => void,
+    isFrom: boolean
+  ) => {
+    if (!isComponentMounted || !isOpen) {
+      return null;
+    }
+
+    const dropdownStyle = updateDropdownPosition();
+    const filteredAssets = supportedAssets.filter((asset: SupportedAsset) => {
+      if (!searchValue) return true;
+      const searchLower = searchValue.toLowerCase();
+      const ticker = asset.ticker?.toLowerCase() || "";
+      const name = asset.name?.toLowerCase() || "";
+      const network = asset.network?.toLowerCase() || "";
+      return (
+        ticker.includes(searchLower) ||
+        name.includes(searchLower) ||
+        network.includes(searchLower)
+      );
+    });
+
+    return createPortal(
+      (
+        <div
+          ref={isFrom ? fromAssetDropdownContentRef : toAssetDropdownContentRef}
+          className="bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl z-[9999] max-h-[70vh] sm:max-h-[60vh] overflow-hidden"
+          style={dropdownStyle}
+        >
+          {/* Dropdown Title */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-600">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">Select a currency from</h3>
+            <button
+              onClick={toggle}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              aria-label="Close"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          {/* Search Input */}
+          <div className="p-2 border-b border-gray-200 dark:border-gray-600">
+            <div className="relative">
+              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Type a currency"
+                value={searchValue}
+                onChange={(e) => onSearchChange(e.target.value)}
+                className="w-full text-gray-900 dark:text-white dark:bg-gray-800 bg-gray-50 rounded-lg px-10 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400"
+              />
+            </div>
+          </div>
+
+          {/* Asset List */}
+          <div className="max-h-[60vh] sm:max-h-[50vh] overflow-y-auto p-1">
+            {filteredAssets.length === 0 ? (
+              <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                {searchValue ? "No assets found" : "No assets available"}
+              </div>
+            ) : (
+              filteredAssets.map((assetItem: SupportedAsset, index) => (
+                <div
+                  key={`${assetItem.ticker}-${assetItem.network}-${index}`}
+                  className="flex items-center gap-3 p-3 sm:p-4 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors duration-150"
+                  onClick={() => {
+                    onSelect(assetItem);
+                    toggle();
+                  }}
+                >
+                  <img
+                    src={
+                      assetItem.image ||
+                      assetItem.image_url ||
+                      assetItem.asset_image ||
+                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                    }
+                    alt={assetItem.name || "Asset"}
+                    className="w-6 h-6 rounded-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src =
+                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                    }}
+                  />
+                  <div className="flex-1">
+                    <div className={`font-medium flex items-center gap-2 ${
+                      isDark ? "text-white" : "text-[#111827]"
+                    }`}>
+                      {(assetItem.ticker || assetItem.symbol || assetItem.name || "Unknown").toUpperCase()}
+                      {assetItem.network && (
+                        <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                          {assetItem.network}
+                        </span>
+                      )}
+                    </div>
+                    <div className={`text-sm ${
+                      isDark ? "text-[#788099]" : "text-[#475569]"
+                    }`}>
+                      {assetItem.name || assetItem.ticker || "Unknown Asset"}
+                    </div>
+                  </div>
+                  {asset?.ticker === assetItem.ticker &&
+                    asset?.network === assetItem.network && (
+                      <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                    )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      ),
+      document.body
+    );
+  };
 
   return (
     <div className="w-full flex flex-col mt-2">
@@ -71,12 +305,13 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
         <div className="relative mb-4">
           {/* Top Card Container */}
           <div
-            className={`relative flex rounded-2xl p-4 overflow-visible ${
+            data-swap-card="true"
+            className={`relative flex gap-4 rounded-2xl p-4 overflow-visible ${
               isDark ? "border border-[#2F2F3A] bg-[#0F0F17]" : "border border-[#E2E8F0] bg-white shadow-sm"
             }`}
           >
             {/* You Send Section */}
-            <div className="flex-1 pr-4">
+            <div className="flex-1 min-w-0">
               <label
                 className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${
                   isDark ? "text-[#9CA3AF]" : "text-[#475569]"
@@ -92,8 +327,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   value={fromAmount}
                   onChange={onFromAmountChange}
                   placeholder="Enter amount"
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none ${
-                    isDark ? "border-[#35353E] bg-transparent text-white" : "border-[#CBD5F5] bg-white text-[#111827]"
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
+                    isDark ? "border-[#35353E] text-white" : "border-[#CBD5F5] text-[#111827]"
                   }`}
                 />
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
@@ -109,7 +344,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
             </div>
 
             {/* You Get Section */}
-            <div className="flex-1 pl-4">
+            <div className="flex-1 min-w-0">
               <label
                 className={`block text-[15px] mb-2 font-semibold ${
                   isDark ? "text-[#9CA3AF]" : "text-[#475569]"
@@ -117,10 +352,10 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
               >
                 Asset
               </label>
-              <div className="relative">
+              <div className="relative" ref={fromAssetDropdownRef}>
                 <div
-                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between cursor-pointer ${
-                    isDark ? "bg-transparent text-white border-[#39394A]" : "bg-white text-[#1F2937] border-[#CBD5F5]"
+                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between cursor-pointer bg-transparent ${
+                    isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                   }`}
                   onClick={onFromAssetToggle}
                 >
@@ -185,124 +420,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                 </div>
 
                 {/* Asset Dropdown */}
-                {isFromAssetOpen && (
-                  <div className={`absolute top-full left-0 right-0 mt-1 rounded-2xl z-50 max-h-80 overflow-hidden ${
-                    isDark ? "bg-[#1D1D23] border border-[#A2A4A9FF]" : "bg-white border border-[#A2A4A9FF]"
-                  }`}>
-                    {/* Search Input */}
-                    <div className={`p-3 border-b ${isDark ? "border-[#A2A4A9FF]" : "border-[#A2A4A9FF]"}`}>
-                      <div className="relative">
-                        <svg
-                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                          />
-                        </svg>
-                        <input
-                          type="text"
-                          placeholder="Search assets..."
-                          value={searchTerm}
-                          onChange={(e) => onSearchTermChange(e.target.value)}
-                          className={`w-full rounded-xl px-10 py-2 text-sm focus:outline-none border ${
-                            isDark ? "bg-[#1D1D23] text-white border-[#35353E] placeholder-gray-400" : "bg-white text-gray-900 border-[#35353E] placeholder-gray-500"
-                          }`}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Asset List */}
-                    <div className="max-h-60 overflow-y-auto">
-                      {(() => {
-                        const filteredAssets = supportedAssets.filter(
-                          (asset: SupportedAsset) => {
-                            if (!searchTerm) return true;
-
-                            const searchLower = searchTerm.toLowerCase();
-                            const ticker = asset.ticker?.toLowerCase() || "";
-                            const name = asset.name?.toLowerCase() || "";
-                            const network = asset.network?.toLowerCase() || "";
-
-                            return (
-                              ticker.includes(searchLower) ||
-                              name.includes(searchLower) ||
-                              network.includes(searchLower)
-                            );
-                          }
-                        );
-
-                        return filteredAssets.length > 0 ? (
-                          filteredAssets.map((asset: SupportedAsset, index) => (
-                            <div
-                              key={`${asset.ticker}-${asset.network}-${index}`}
-                              className={`flex items-center gap-3 p-3 cursor-pointer border-b last:border-b-0 ${
-                                isDark 
-                                  ? "text-white hover:bg-[#35353E] border-[#A2A4A9FF]" 
-                                  : "text-black hover:bg-[#78787AFF] border-[#A2A4A9FF]"
-                              }`}
-                              onClick={() => {
-                                onFromAssetSelect(asset);
-                                onFromAssetToggle();
-                              }}
-                            >
-                              <img
-                                src={
-                                  asset.image ||
-                                  asset.image_url ||
-                                  asset.asset_image ||
-                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                                }
-                                alt={asset.name}
-                                className="w-6 h-6 rounded-full object-cover"
-                                onError={(e) => {
-                                  e.currentTarget.src =
-                                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
-                                }}
-                              />
-                              <div className="flex-1">
-                                <div className={`font-medium flex items-center gap-2 ${
-                                  isDark ? "text-white" : "text-[#111827]"
-                                }`}>
-                                  {asset.ticker?.toUpperCase() ||
-                                    asset.symbol?.toUpperCase() ||
-                                    asset.name ||
-                                    "Unknown"}
-                                  <span className="bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-                                    {asset.network || "Unknown"}
-                                  </span>
-                                </div>
-                                <div className={`text-sm ${
-                                  isDark ? "text-[#788099]" : "text-[#475569]"
-                                }`}>
-                                  {asset.name ||
-                                    asset.ticker?.toUpperCase() ||
-                                    asset.symbol?.toUpperCase() ||
-                                    "Unknown Asset"}
-                                </div>
-                              </div>
-                              {fromAsset?.ticker === asset.ticker &&
-                                fromAsset?.network === asset.network && (
-                                  <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                                )}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="p-4 text-center text-[#7e7e8f]">
-                            {searchTerm
-                              ? "No assets found"
-                              : "No assets available"}
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                )}
+                {renderAssetDropdown(fromAsset, isFromAssetOpen, onFromAssetToggle, onFromAssetSelect, searchTerm, onSearchTermChange, true)}
               </div>
             </div>
           </div>
@@ -332,12 +450,13 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
         {/* Bottom Section - You Receive and Asset in one card */}
         <div className="relative mb-3">
           <div
-            className={`relative flex rounded-2xl p-4 overflow-visible ${
+            data-swap-card="true"
+            className={`relative flex gap-4 rounded-2xl p-4 overflow-visible ${
               isDark ? "border border-[#2F2F3A] bg-[#0F0F17]" : "border border-[#E2E8F0] bg-white shadow-sm"
             }`}
           >
             {/* You Receive Section */}
-            <div className="flex-1 pr-4">
+            <div className="flex-1 min-w-0">
               <label
                 className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${
                   isDark ? "text-[#9CA3AF]" : "text-[#475569]"
@@ -353,12 +472,12 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   value={toAmount}
                   onChange={onToAmountChange}
                   placeholder="Enter amount"
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none ${
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
                     activeInputField === "to"
                       ? "border-[#1D8751]"
                       : isDark
-                      ? "border-[#35353E] bg-transparent text-white"
-                      : "border-[#CBD5F5] bg-white text-[#111827]"
+                      ? "border-[#35353E] text-white"
+                      : "border-[#CBD5F5] text-[#111827]"
                   }`}
                 />
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
@@ -379,7 +498,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
             </div>
 
             {/* Asset Section */}
-            <div className="flex-1 pl-4">
+            <div className="flex-1 min-w-0">
               <label
                 className={`block text-[15px] mb-2 font-semibold ${
                   isDark ? "text-[#9CA3AF]" : "text-[#475569]"
@@ -387,10 +506,10 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
               >
                 Asset
               </label>
-              <div className="relative">
+              <div className="relative" ref={toAssetDropdownRef}>
                 <div
-                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between cursor-pointer ${
-                    isDark ? "bg-transparent text-white border-[#39394A]" : "bg-white text-[#1F2937] border-[#CBD5F5]"
+                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between cursor-pointer bg-transparent ${
+                    isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                   }`}
                   onClick={onToAssetToggle}
                 >
@@ -455,124 +574,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                 </div>
 
                 {/* Asset Dropdown */}
-                {isToAssetOpen && (
-                  <div className={`absolute top-full left-0 right-0 mt-1 rounded-2xl z-50 max-h-80 overflow-hidden ${
-                    isDark ? "bg-[#1D1D23] border border-[#A2A4A9FF]" : "bg-white border border-[#A2A4A9FF]"
-                  }`}>
-                    {/* Search Input */}
-                    <div className={`p-3 border-b ${isDark ? "border-[#A2A4A9FF]" : "border-[#A2A4A9FF]"}`}>
-                      <div className="relative">
-                        <svg
-                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                          />
-                        </svg>
-                        <input
-                          type="text"
-                          placeholder="Search assets..."
-                          value={toSearchTerm}
-                          onChange={(e) => onToSearchTermChange(e.target.value)}
-                          className={`w-full rounded-xl px-10 py-2 text-sm focus:outline-none border ${
-                            isDark ? "bg-[#1D1D23] text-white border-[#35353E] placeholder-gray-400" : "bg-white text-gray-900 border-[#35353E] placeholder-gray-500"
-                          }`}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Asset List */}
-                    <div className="max-h-60 overflow-y-auto">
-                      {(() => {
-                        const filteredAssets = supportedAssets.filter(
-                          (asset: SupportedAsset) => {
-                            if (!toSearchTerm) return true;
-
-                            const searchLower = toSearchTerm.toLowerCase();
-                            const ticker = asset.ticker?.toLowerCase() || "";
-                            const name = asset.name?.toLowerCase() || "";
-                            const network = asset.network?.toLowerCase() || "";
-
-                            return (
-                              ticker.includes(searchLower) ||
-                              name.includes(searchLower) ||
-                              network.includes(searchLower)
-                            );
-                          }
-                        );
-
-                        return filteredAssets.length > 0 ? (
-                          filteredAssets.map((asset: SupportedAsset, index) => (
-                            <div
-                              key={`${asset.ticker}-${asset.network}-${index}`}
-                              className={`flex items-center gap-3 p-3 cursor-pointer border-b last:border-b-0 ${
-                                isDark 
-                                  ? "text-white hover:bg-[#35353E] border-[#A2A4A9FF]" 
-                                  : "text-black hover:bg-[#78787AFF] border-[#A2A4A9FF]"
-                              }`}
-                              onClick={() => {
-                                onToAssetSelect(asset);
-                                onToAssetToggle();
-                              }}
-                            >
-                              <img
-                                src={
-                                  asset.image ||
-                                  asset.image_url ||
-                                  asset.asset_image ||
-                                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                                }
-                                alt={asset.name}
-                                className="w-6 h-6 rounded-full object-cover"
-                                onError={(e) => {
-                                  e.currentTarget.src =
-                                    "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
-                                }}
-                              />
-                              <div className="flex-1">
-                                <div className={`font-medium flex items-center gap-2 ${
-                                  isDark ? "text-white" : "text-[#111827]"
-                                }`}>
-                                  {asset.ticker?.toUpperCase() ||
-                                    asset.symbol?.toUpperCase() ||
-                                    asset.name ||
-                                    "Unknown"}
-                                  <span className="bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-                                    {asset.network || "Unknown"}
-                                  </span>
-                                </div>
-                                <div className={`text-sm ${
-                                  isDark ? "text-[#788099]" : "text-[#475569]"
-                                }`}>
-                                  {asset.name ||
-                                    asset.ticker?.toUpperCase() ||
-                                    asset.symbol?.toUpperCase() ||
-                                    "Unknown Asset"}
-                                </div>
-                              </div>
-                              {toAsset?.ticker === asset.ticker &&
-                                toAsset?.network === asset.network && (
-                                  <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                                )}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="p-4 text-center text-[#7e7e8f]">
-                            {toSearchTerm
-                              ? "No assets found"
-                              : "No assets available"}
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                )}
+                {renderAssetDropdown(toAsset, isToAssetOpen, onToAssetToggle, onToAssetSelect, toSearchTerm, onToSearchTermChange, false)}
               </div>
             </div>
           </div>

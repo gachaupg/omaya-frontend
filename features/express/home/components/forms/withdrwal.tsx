@@ -40,7 +40,7 @@ import {
   usePaymentMethodsDisplay,
 } from "../../../hooks/useDataDisplay";
 import { useChangeNowAssets } from "../../hooks/useChangeNowAssets";
-import CustomSelect from "@/components/ui/CustomSelect";
+import CustomSelect from "@/components/ui/HomeCommonSelect";
 import ForexWithdrawal from "./ForexWithdrawal";
 import { useTheme } from "@/context/theme";
 import {
@@ -2113,144 +2113,100 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
       return null;
     }
 
-    const triggerRect = assetDropdownRef.current?.getBoundingClientRect();
-    const triggerWidth =
-      assetDropdownPosition.width || triggerRect?.width || 0;
-    let expandedWidth =
-      triggerWidth > 0 ? triggerWidth + 48 : undefined;
-    const viewportAllowance =
-      typeof window !== "undefined" ? window.innerWidth - 32 : undefined;
-
-    if (
-      expandedWidth !== undefined &&
-      viewportAllowance !== undefined &&
-      expandedWidth > viewportAllowance
-    ) {
-      expandedWidth = viewportAllowance;
-    }
-
-    const extraWidth =
-      expandedWidth !== undefined && triggerWidth > 0
-        ? expandedWidth - triggerWidth
-        : 0;
-
-    let computedLeft =
-      triggerRect && extraWidth
-        ? triggerRect.left - extraWidth / 2
-        : assetDropdownPosition.left;
-
-    if (
-      typeof window !== "undefined" &&
-      expandedWidth !== undefined &&
-      computedLeft !== undefined
-    ) {
-      const maxLeft = window.innerWidth - expandedWidth - 16;
-      computedLeft = Math.min(
-        Math.max(16, computedLeft),
-        Math.max(16, maxLeft)
-      );
-    }
-
-    const inputHeight = triggerRect?.height || 0;
-    const adjustedTop = Math.max(
-      window.scrollY + 16,
-      assetDropdownPosition.top - inputHeight - 12
-    );
-
-    const hasCardMetrics =
-      (assetDropdownPosition.cardWidth || 0) > 0;
-
-    const viewportWidth =
-      typeof window !== "undefined" ? window.innerWidth : undefined;
+    const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 0;
     const minMargin = 16;
-    const minWidth = 320;
-
-    const baseWidth =
-      (hasCardMetrics ? assetDropdownPosition.cardWidth : undefined) ||
-      expandedWidth ||
-      assetDropdownPosition.width ||
-      (triggerWidth > 0 ? triggerWidth : undefined);
-
-    let desiredWidth: number | undefined = baseWidth;
-    if (baseWidth) {
-      const cardWidth = hasCardMetrics
-        ? assetDropdownPosition.cardWidth ?? baseWidth
-        : baseWidth;
-      const reducedBase = Math.max(
-        minWidth,
-        Math.min(cardWidth * 0.4, baseWidth * 0.4)
-      );
-
-      desiredWidth = Math.max(minWidth, Math.min(reducedBase, baseWidth * 0.85));
-
-      if (viewportWidth) {
-        const maxViewportWidth = Math.max(
-          minWidth,
-          Math.min(viewportWidth * 0.3, viewportWidth - minMargin * 2)
-        );
-        desiredWidth = Math.min(desiredWidth, maxViewportWidth);
-      }
-    }
-
-    let baseLeft =
-      (hasCardMetrics && desiredWidth !== undefined
-        ? (assetDropdownPosition.cardLeft ?? 0) +
-          ((assetDropdownPosition.cardWidth ?? desiredWidth) - desiredWidth)
-        : undefined) ??
-      computedLeft ??
-      triggerRect?.left ??
-      assetDropdownPosition.left;
-
-    if (viewportWidth && desiredWidth !== undefined) {
-      const maxLeft = viewportWidth - desiredWidth - minMargin;
-      baseLeft = Math.min(
-        Math.max(minMargin, baseLeft ?? minMargin),
-        Math.max(minMargin, maxLeft)
-      );
-    }
-
-    const topOffset = Math.max(
-      0,
-      (assetDropdownPosition.cardTop || 0) - 64
-    );
-
-    const dropdownStyle: React.CSSProperties = {
-      position: "absolute",
-      top: hasCardMetrics
-        ? topOffset
-        : adjustedTop,
-      left: baseLeft,
-      width: desiredWidth,
+    const minWidth = 280;
+    const maxWidth = 450;
+    
+    // Find the first card container (the "You Send" card) to align all dropdowns with it
+    // Use the same logic as CustomSelect component
+    const firstCard = document.querySelector("[data-select-card='true']") || 
+                      document.querySelector("[data-asset-card='true']");
+    
+    let dropdownStyle: React.CSSProperties = {
+      position: "fixed",
+      top: 200,
+      left: (viewportWidth - minWidth) / 2,
+      width: minWidth,
     };
+
+    if (firstCard) {
+      const cardRect = firstCard.getBoundingClientRect();
+      
+      // Calculate reduced width so dropdowns don't cover amount inputs (40% of card width)
+      let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.width * 0.4));
+      
+      // ALL dropdowns open at the same position - aligned with top of the first card
+      // Position at the top of the card
+      const top = cardRect.top + 8; // 8px below card top
+      
+      // Position to the right side of the card
+      let left = cardRect.right - desiredWidth - 4; // 4px from right edge
+      
+      // If card is too narrow, center it but still push right a bit
+      if (cardRect.width < desiredWidth + 16) {
+        left = cardRect.left + (cardRect.width - desiredWidth) / 2 + 20; // Push 20px to the right
+      }
+      
+      // Ensure dropdown doesn't go off screen
+      if (left + desiredWidth > viewportWidth - minMargin) {
+        left = viewportWidth - desiredWidth - minMargin;
+      }
+      if (left < minMargin) {
+        left = minMargin;
+      }
+
+      dropdownStyle = {
+        position: "fixed",
+        top,
+        left,
+        width: desiredWidth,
+      };
+    }
 
     return createPortal(
       (
         <div
           ref={assetDropdownContentRef}
-          className="mt-1 bg-white dark:bg-[#050505] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-2xl shadow-lg z-[1200] max-h-[70vh] sm:max-h-96 overflow-y-auto"
+          className="bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl z-[9999] max-h-[70vh] sm:max-h-[60vh] overflow-hidden"
           style={dropdownStyle}
         >
-          <div className="p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+          {/* Dropdown Title */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-600">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">Select a currency from</h3>
+            <button
+              onClick={() => setIsAssetDropdownOpen(false)}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              aria-label="Close"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          {/* Search Input */}
+          <div className="p-2 border-b border-gray-200 dark:border-gray-600">
             <div className="relative">
               <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
               <input
                 type="text"
-                placeholder="Search assets..."
-                className="w-full text-gray-900 dark:text-white dark:bg-[#050505] bg-white rounded-xl px-10 py-2 text-sm focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400"
+                placeholder="Type a currency"
+                className="w-full text-gray-900 dark:text-white dark:bg-gray-800 bg-gray-50 rounded-lg px-10 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400"
                 value={assetSearchTerm}
                 onChange={(e) => setAssetSearchTerm(e.target.value)}
               />
             </div>
           </div>
 
-          <div className="max-h-[60vh] sm:max-h-72 overflow-y-auto">
+          <div className="max-h-[60vh] sm:max-h-[50vh] overflow-y-auto p-1">
             {sortedSwapAssets.length > 0 ? (
               <>
                 {!assetSearchTerm && sortedSwapAssets.length > 3 && (
                   <>
-                    <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+                    <div className="px-3 sm:px-4 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-gray-200 dark:border-gray-600">
                       <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
-                        Popular
+                        Popular Currencies
                       </span>
                     </div>
                     {sortedSwapAssets
@@ -2312,7 +2268,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                         return (
                           <div
                             key={`popular-${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
-                            className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E]"
+                            className="flex items-center gap-3 p-3 sm:p-4 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-200 dark:border-gray-600 transition-colors duration-150"
                             onClick={handleAssetClick}
                           >
                             <img
@@ -2364,13 +2320,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                         );
                       })}
 
-                    <div className="border-t-2 border-[#D1D2D4FF] dark:border-[#35353E]"></div>
-
-                    <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
-                      <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
-                        All Assets
-                      </span>
-                    </div>
+                    <div className="border-t-2 border-gray-200 dark:border-gray-600"></div>
                   </>
                 )}
 
@@ -2380,7 +2330,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                 ).map((asset: SupportedAsset, index: number) => (
                   <div
                     key={`${asset.asset_id}-${asset.ticker}-${asset.network}-${index}`}
-                    className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
+                    className="flex items-center gap-3 p-3 sm:p-4 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors duration-150"
                     onClick={() => {
                       if (calculationTimeout) {
                         clearTimeout(calculationTimeout);
@@ -3272,12 +3222,12 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
         <div
           data-asset-card="true"
           data-select-card="true"
-          className={`relative flex rounded-2xl p-4 overflow-visible ${
-            isDark ? "border border-[#2F2F3A] bg-[#0F0F17]" : "border border-[#E2E8F0] bg-white shadow-sm"
+          className={`relative flex gap-4 rounded-2xl p-4 overflow-visible ${
+            isDark ? "bg-[#0F0F17] border border-[#2F2F3A]" : "bg-white border border-[#E2E8F0] shadow-sm"
           }`}
         >
             {/* You Send Section */}
-            <div className="flex-1 pr-4">
+            <div className="flex-1 min-w-0">
               <label className="block text-[15px] text-[#475569] dark:text-[#9CA3AF] mb-2 font-semibold flex items-center gap-2">
                 You Send
                 {isCalculatingFromPay &&
@@ -3410,14 +3360,14 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                       ? "Calculating..."
                       : "Enter amount"
                   }
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none ${
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
                     apiValidationError
                       ? "border-red-500"
                       : isCalculating || isCalculatingReceive
                       ? "border-[#1D8751]"
                       : isDark
-                      ? "border-[#35353E] bg-transparent text-white"
-                      : "border-[#CBD5F5] bg-white text-[#111827]"
+                      ? "border-white/10 text-white"
+                      : "border-gray-200 text-[#111827]"
                   }`}
                 />
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
@@ -3483,14 +3433,14 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
             </div>
 
             {/* You Get Section */}
-            <div className="flex-1 pl-4">
+            <div className="flex-1 min-w-0">
               <label className="block text-[15px] text-[#475569] dark:text-[#9CA3AF] mb-2 font-semibold">
                 Asset
               </label>
               <div className="relative" ref={assetDropdownRef}>
                 <div
-                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between cursor-pointer ${
-                    isDark ? "bg-transparent text-white border-[#39394A]" : "bg-white text-[#1F2937] border-[#CBD5F5]"
+                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between cursor-pointer bg-transparent ${
+                    isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                   }`}
                   onClick={() => {
                     if (!isAssetDropdownOpen) {
@@ -3611,12 +3561,12 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
         <div className="relative mb-2 mt-4">
           <div
             data-select-card="true"
-            className={`relative flex rounded-2xl p-4 overflow-visible ${
-              isDark ? "border border-[#2F2F3A] bg-[#0F0F17]" : "border border-[#E2E8F0] bg-white shadow-sm"
+            className={`relative flex gap-4 rounded-2xl p-4 overflow-visible ${
+              isDark ? "bg-[#0F0F17] border border-[#2F2F3A]" : "bg-white border border-[#E2E8F0] shadow-sm"
             }`}
           >
             {/* You Receive Section */}
-            <div className="flex-1 pr-4">
+            <div className="flex-1 min-w-0">
               <label className="block text-[15px] text-[#475569] dark:text-[#9CA3AF] mb-2 font-semibold flex items-center gap-2">
                 You Receive
                 {!isCalculatingFromPay &&
@@ -3776,7 +3726,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                       ? "Calculating..."
                       : "Enter amount"
                   }
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none ${
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
                     (receiveAmountError &&
                       (receiveAmountError.includes("Rough estimate") ||
                         receiveAmountError.includes("Using estimated rate"))) ||
@@ -3798,8 +3748,8 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                         : isCalculating || isCalculatingReceive
                           ? "border-[#1D8751]"
                           : isDark
-                          ? "border-[#35353E] bg-transparent text-white"
-                          : "border-[#CBD5F5] bg-white text-[#111827]"
+                            ? "border-white/10 text-white"
+                            : "border-gray-200 text-[#111827]"
                   }`}
                 />
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
@@ -3897,7 +3847,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
             </div>
 
             {/* Payment Method Section */}
-            <div className="flex-1 pl-4 relative z-0">
+            <div className="flex-1 min-w-0 relative z-0">
               <label className={`block text-[15px] mb-2 font-semibold ${
                 isDark ? "text-[#9CA3AF]" : "text-[#475569]"
               }`}>
@@ -3956,11 +3906,10 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                       className={`w-full ${
                         paymentMethodError ? "border-red-500 dark:border-red-500" : ""
                       }`}
-                      triggerClassName={`px-3 sm:px-4 py-2 sm:py-2.5 text-base sm:text-lg border rounded-xl ${
-                        isDark ? "bg-transparent text-white border-[#39394A]" : "bg-white text-[#1F2937] border-[#CBD5F5]"
+                      triggerClassName={`px-4 py-2 text-lg border rounded-2xl bg-transparent ${
+                        isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                       }`}
                       placeholderClassName="text-white dark:text-white"
-                      sizeMode="wide"
                       onChange={(value) => {
                         // Find the selected provider from public payment methods or admin wallet list
                         let selectedWallet = null;
@@ -4002,6 +3951,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                       loadingText="Loading payment methods..."
                       emptyText="No payment methods available"
                       searchable={true}
+                      dropdownTitle="Select a payment method from"
                     />
                   );
                 })()}
@@ -4114,13 +4064,14 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                               loadingText="Loading accounts..."
                               emptyText="No registered accounts available"
                               searchable={true}
+                              dropdownTitle="Select a registered account from"
                               className={`w-full min-w-0 ${
                                 paymentMethodError 
                                   ? "border-red-500 dark:border-red-500" 
                                   : ""
                               }`}
-                              triggerClassName={`px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border rounded-xl w-full min-w-0 ${
-                                isDark ? "bg-transparent text-white border-[#39394A]" : "bg-white text-[#1F2937] border-[#CBD5F5]"
+                              triggerClassName={`px-4 py-2 text-lg border rounded-2xl w-full min-w-0 bg-transparent ${
+                                isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                               }`}
                             />
                           </div>

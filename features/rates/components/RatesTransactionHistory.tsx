@@ -13,7 +13,7 @@ import {
 const ASSET_ICON_URL =
   "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png";
 const PAYMENT_ICON_URL =
-  "https://omayabucket.s3.amazonaws.com/bank_logo/image_7.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAW7TPBKP2YLA7Y4X4%2F20251121%2Feu-north-1%2Fs3%2Faws4_request&X-Amz-Date=20251121T133202Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=474a681f2adfba893a6ec733d8736c4ccd1b2ccbc6c6ef2e2091f22d64e2151f";
+  "https://omayabucket.s3.amazonaws.com/bank_logo/image_7.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAW7TPBKP2YLA7Y4X4%2F20251123%2Feu-north-1%2Fs3%2Faws4_request&X-Amz-Date=20251123T135945Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=4b6da7174dc37d4563aeb22adf37d1fa70b0c429f1710606e4346cbbe8c8be2f";
 
 const RatesTransactionHistory = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -66,7 +66,7 @@ const RatesTransactionHistory = () => {
                   <div className="text-xs text-gray-600 dark:text-[#788099]">{tx.source}</div>
                 </div>
               </div>
-              <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(tx.status)}`}>
+              <span className={`px-2 py-1 rounded-full text-xs sm:text-sm lg:text-base ${getStatusColor(tx.status)}`}>
                 {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
               </span>
             </div>
@@ -102,10 +102,10 @@ const RatesTransactionHistory = () => {
       </div>
 
       {/* Desktop: Table layout */}
-      <div className="hidden sm:block w-full overflow-x-auto">
+      <div className="hidden sm:block w-full overflow-x-auto border border-gray-200 dark:border-[#35353E] rounded-lg">
         <table className="min-w-max w-full text-left">
         <thead>
-          <tr className="border-b border-gray-200 dark:border-[#35353E] text-gray-600 dark:text-[#788099]">
+          <tr className="bg-gray-100 dark:bg-transparent border-b border-gray-200 dark:border-[#35353E] text-gray-600 dark:text-[#788099]">
             <th className="p-2 sm:p-3 lg:p-4 font-normal text-xs sm:text-sm lg:text-base">Asset</th>
             <th className="p-2 sm:p-3 lg:p-4 font-normal text-xs sm:text-sm lg:text-base">Transaction Type</th>
             <th className="p-2 sm:p-3 lg:p-4 font-normal text-xs sm:text-sm lg:text-base">Amount</th>
@@ -153,7 +153,7 @@ const RatesTransactionHistory = () => {
               </td>
               <td className="p-2 sm:p-3 lg:p-4 min-w-[120px]">
                 <span
-                  className={`px-2 py-1 rounded-full text-xs ${getStatusColor(
+                  className={`px-2 py-1 rounded-full text-xs sm:text-sm lg:text-base ${getStatusColor(
                     tx.status
                   )}`}
                 >

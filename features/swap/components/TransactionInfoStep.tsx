@@ -1,6 +1,8 @@
-import React from "react";
+import React, { useRef, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { SupportedAsset, SwapEstimate } from "../types";
 import { useTheme } from "@/context/theme";
+import { FaSearch } from "react-icons/fa";
 
 interface TransactionInfoStepProps {
   fromAsset: SupportedAsset | null;
@@ -32,16 +34,12 @@ interface TransactionInfoStepProps {
 }
 
 const strongBorder =
-  "border border-white/5 dark:border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.15)]";
-const controlShell =
-  "rounded-[24px] border border-[#788099]/30 bg-white/95 dark:bg-transparent";
-const controlSpacing = "px-5 py-4 min-h-[68px]";
+  "border-[1.5px] border-gray-200 dark:border-white/10 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]";
 const baseCard =
-  `rounded-[28px] ${strongBorder} bg-[#0F1016] dark:bg-transparent dark:text-white text-gray-100`;
-const labelCopy =
-  "text-[11px] uppercase tracking-[0.25em] text-[#8C92B3] dark:text-[#8C92B3]";
+  `rounded-[26px] ${strongBorder} bg-transparent dark:text-white text-gray-900`;
+const labelCopy = "text-[12px] uppercase tracking-wide dark:text-[#7d7f95] text-gray-600";
 const inputBase =
-  `${controlShell} ${controlSpacing} text-black dark:text-white text-lg font-semibold w-full placeholder:text-[#5C607A] focus:outline-none`;
+  `rounded-2xl dark:bg-[#1B1B23] bg-white ${strongBorder} dark:text-white text-gray-900 px-4 py-2 w-full text-lg dark:placeholder:text-[#5f6070] placeholder:text-gray-400 focus:outline-none`;
 
 const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
   const { isDark } = useTheme();
@@ -74,108 +72,188 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
     activeInputField,
   } = props;
 
-  const renderAssetSelector = (
+  const fromAssetDropdownRef = useRef<HTMLDivElement>(null);
+  const fromAssetDropdownContentRef = useRef<HTMLDivElement | null>(null);
+  const toAssetDropdownRef = useRef<HTMLDivElement>(null);
+  const toAssetDropdownContentRef = useRef<HTMLDivElement | null>(null);
+  const [isComponentMounted, setIsComponentMounted] = useState(false);
+
+  useEffect(() => {
+    setIsComponentMounted(true);
+  }, []);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      
+      // Check if click is outside from asset dropdown
+      if (
+        isFromAssetOpen &&
+        fromAssetDropdownRef.current &&
+        !fromAssetDropdownRef.current.contains(target) &&
+        (!fromAssetDropdownContentRef.current ||
+          !fromAssetDropdownContentRef.current.contains(target))
+      ) {
+        onFromAssetToggle();
+      }
+      
+      // Check if click is outside to asset dropdown
+      if (
+        isToAssetOpen &&
+        toAssetDropdownRef.current &&
+        !toAssetDropdownRef.current.contains(target) &&
+        (!toAssetDropdownContentRef.current ||
+          !toAssetDropdownContentRef.current.contains(target))
+      ) {
+        onToAssetToggle();
+      }
+    };
+
+    if (isFromAssetOpen || isToAssetOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isFromAssetOpen, isToAssetOpen, onFromAssetToggle, onToAssetToggle]);
+
+  const updateDropdownPosition = (isFrom: boolean): React.CSSProperties => {
+    if (typeof window === "undefined") {
+      return {
+        position: "fixed",
+        top: 200,
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: 280,
+      };
+    }
+    
+    const viewportWidth = window.innerWidth || 0;
+    const minMargin = 16;
+    const minWidth = 280;
+    const maxWidth = 450;
+    
+    // Find the first card container (the "You Send" card) to align all dropdowns with it
+    // Use the same logic as deposit form
+    const firstCard = document.querySelector("[data-swap-card='true']");
+    
+    let dropdownStyle: React.CSSProperties = {
+      position: "fixed",
+      top: 200,
+      left: (viewportWidth - minWidth) / 2,
+      width: minWidth,
+    };
+
+    if (firstCard) {
+      const cardRect = firstCard.getBoundingClientRect();
+      
+      // Calculate reduced width so dropdowns don't cover amount inputs (40% of card width)
+      let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.width * 0.4));
+      
+      // ALL dropdowns open at the same position - aligned with top of the first card
+      // Position at the top of the card
+      const top = cardRect.top + 8; // 8px below card top
+      
+      // Position to the right side of the card
+      let left = cardRect.right - desiredWidth - 4; // 4px from right edge
+      
+      // If card is too narrow, center it but still push right a bit
+      if (cardRect.width < desiredWidth + 16) {
+        left = cardRect.left + (cardRect.width - desiredWidth) / 2 + 20; // Push 20px to the right
+      }
+      
+      // Ensure dropdown doesn't go off screen
+      if (left + desiredWidth > viewportWidth - minMargin) {
+        left = viewportWidth - desiredWidth - minMargin;
+      }
+      if (left < minMargin) {
+        left = minMargin;
+      }
+
+      dropdownStyle = {
+        position: "fixed",
+        top,
+        left,
+        width: desiredWidth,
+      };
+    }
+
+    return dropdownStyle;
+  };
+
+  const renderAssetDropdown = (
     asset: SupportedAsset | null,
     isOpen: boolean,
     toggle: () => void,
     onSelect: (asset: SupportedAsset) => void,
     searchValue: string,
-    onSearchChange: (value: string) => void
-  ) => (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={toggle}
-        className={`flex items-center justify-between w-full ${controlShell} ${controlSpacing}`}
-      >
-          <div className="flex items-center gap-4 text-left">
-          <img
-            src={
-              asset?.image ||
-              asset?.image_url ||
-              asset?.asset_image ||
-              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-            }
-            alt={asset?.name || "asset icon"}
-            className="w-7 h-7 rounded-full"
-            onError={(e) => {
-              e.currentTarget.src =
-                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
-            }}
-          />
-          <p className="text-base sm:text-lg text-white font-semibold flex items-center gap-3">
-            <span className="text-white">
-              {asset
-                ? asset.ticker?.toUpperCase() ||
-                  asset.symbol?.toUpperCase() ||
-                  asset.name
-                : "Select Asset"}
-            </span>
-            {asset?.name && (
-              <span className="dark:text-[#8C92B3] text-[#8C92B3] font-medium text-sm">
-                {asset.name}
-              </span>
-            )}
-          </p>
-        </div>
-        <svg
-          className={`w-5 h-5 dark:text-[#7d7f95] text-gray-500 transition-transform ${
-            isOpen ? "rotate-180" : ""
-          }`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
+    onSearchChange: (value: string) => void,
+    isFrom: boolean
+  ) => {
+    if (!isComponentMounted || !isOpen) {
+      return null;
+    }
 
-      {isOpen && (
-        <div className={`absolute left-0 right-0 mt-2 rounded-2xl ${strongBorder} dark:bg-[#14141C] bg-white shadow-2xl z-50 max-h-[60vh] overflow-hidden`}>
-          <div className={`p-3 border-b ${strongBorder}`}>
-            <div className="relative">
-              <svg
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 dark:text-[#7d7f95] text-gray-500"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    const dropdownStyle = updateDropdownPosition(isFrom);
+    const filtered = supportedAssets.filter((option) => {
+      if (!searchValue) return true;
+      const term = searchValue.toLowerCase();
+      return (
+        option.ticker?.toLowerCase().includes(term) ||
+        option.name?.toLowerCase().includes(term) ||
+        option.network?.toLowerCase().includes(term)
+      );
+    });
+
+    return createPortal(
+      (
+        <div
+          ref={isFrom ? fromAssetDropdownContentRef : toAssetDropdownContentRef}
+          className="bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl z-[9999] max-h-[70vh] sm:max-h-[60vh] overflow-hidden"
+          style={dropdownStyle}
+        >
+          {/* Dropdown Title */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-600">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">Select a currency from</h3>
+            <button
+              onClick={toggle}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              aria-label="Close"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
+            </button>
+          </div>
+          
+          {/* Search Input */}
+          <div className="p-2 border-b border-gray-200 dark:border-gray-600">
+            <div className="relative">
+              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
               <input
                 type="text"
+                placeholder="Type a currency"
                 value={searchValue}
                 onChange={(e) => onSearchChange(e.target.value)}
-                placeholder="Search assets..."
-                className={`w-full rounded-xl ${strongBorder} dark:bg-[#1F1F27] bg-gray-50 pl-9 pr-3 py-2 text-sm dark:text-white text-gray-900 dark:placeholder:text-[#6c6d82] placeholder:text-gray-400`}
+                className="w-full text-gray-900 dark:text-white dark:bg-gray-800 bg-gray-50 rounded-lg px-10 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400"
               />
             </div>
           </div>
-          <div className="max-h-[45vh] overflow-y-auto">
-            {(() => {
-              const filtered = supportedAssets.filter((option) => {
-                if (!searchValue) return true;
-                const term = searchValue.toLowerCase();
-                return (
-                  option.ticker?.toLowerCase().includes(term) ||
-                  option.name?.toLowerCase().includes(term) ||
-                  option.network?.toLowerCase().includes(term)
-                );
-              });
 
-              if (!filtered.length) {
-                return (
-                  <div className="p-4 text-center text-sm dark:text-[#7d7f95] text-gray-500">
-                    {searchValue ? "No assets found" : "No assets available"}
-                  </div>
-                );
-              }
-
-              return filtered.map((option, idx) => (
-                <button
+          {/* Asset List */}
+          <div className="max-h-[60vh] sm:max-h-[50vh] overflow-y-auto p-1">
+            {filtered.length === 0 ? (
+              <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                {searchValue ? "No assets found" : "No assets available"}
+              </div>
+            ) : (
+              <>
+                {filtered.map((option, idx) => (
+                <div
                   key={`${option.ticker}-${option.network}-${idx}`}
-                  type="button"
-                  className="w-full flex items-center gap-3 p-3 text-left border-b border-white/5 dark:border-white/5 last:border-b-0 dark:hover:bg-[#1F1F27] hover:bg-gray-100"
+                  className="flex items-center gap-3 p-3 sm:p-4 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors duration-150"
                   onClick={() => {
                     onSelect(option);
                     toggle();
@@ -188,36 +266,100 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                       option.asset_image ||
                       "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
                     }
-                    alt={option.name}
-                    className="w-6 h-6 rounded-full"
+                    alt={option.name || "Asset"}
+                    className="w-6 h-6 rounded-full object-cover"
                     onError={(e) => {
                       e.currentTarget.src =
                         "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
                     }}
                   />
                   <div className="flex-1">
-                    <p className="text-sm font-medium dark:text-white text-gray-900">
-                      {option.ticker?.toUpperCase() ||
-                        option.symbol?.toUpperCase() ||
-                        option.name ||
-                        "Unknown"}
-                    </p>
-                    <p className="text-xs dark:text-[#7d7f95] text-gray-500">
-                      {option.network || "Unknown"}
-                    </p>
+                    <div className={`font-medium flex items-center gap-2 ${
+                      isDark ? "text-white" : "text-[#111827]"
+                    }`}>
+                      {(option.ticker || option.symbol || option.name || "Unknown").toUpperCase()}
+                      {option.network && (
+                        <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                          {option.network}
+                        </span>
+                      )}
+                    </div>
+                    <div className={`text-sm ${
+                      isDark ? "text-[#788099]" : "text-[#475569]"
+                    }`}>
+                      {option.name || option.ticker || "Unknown Asset"}
+                    </div>
                   </div>
                   {asset?.ticker === option.ticker &&
                     asset?.network === option.network && (
-                      <span className="w-2 h-2 rounded-full bg-[#1D8751]" />
+                      <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
                     )}
-                </button>
-              ));
-            })()}
+                </div>
+                ))}
+              </>
+            )}
           </div>
         </div>
-      )}
-    </div>
-  );
+      ),
+      document.body
+    );
+  };
+
+  const renderAssetSelector = (
+    asset: SupportedAsset | null,
+    isOpen: boolean,
+    toggle: () => void,
+    onSelect: (asset: SupportedAsset) => void,
+    searchValue: string,
+    onSearchChange: (value: string) => void,
+    isFrom: boolean
+  ) => {
+
+    return (
+      <div className="relative" ref={isFrom ? fromAssetDropdownRef : toAssetDropdownRef}>
+        <button
+          type="button"
+          onClick={toggle}
+          className={`flex items-center justify-between w-full rounded-2xl ${strongBorder} dark:bg-[#1B1B23] bg-white px-4 py-2 text-lg`}
+        >
+          <div className="flex items-center gap-3 text-left min-w-0">
+            <img
+              src={
+                asset?.image ||
+                asset?.image_url ||
+                asset?.asset_image ||
+                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+              }
+              alt={asset?.name || "asset icon"}
+              className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+              onError={(e) => {
+                e.currentTarget.src =
+                  "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+              }}
+            />
+            <p className="text-lg dark:text-white text-gray-900 font-semibold truncate">
+              {asset
+                ? asset.ticker?.toUpperCase() ||
+                  asset.symbol?.toUpperCase() ||
+                  asset.name
+                : "Select Asset"}
+            </p>
+          </div>
+          <svg
+            className={`w-5 h-5 dark:text-[#7d7f95] text-gray-500 transition-transform flex-shrink-0 ${
+              isOpen ? "rotate-180" : ""
+            }`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+        {renderAssetDropdown(asset, isOpen, toggle, onSelect, searchValue, onSearchChange, isFrom)}
+      </div>
+    );
+  };
 
   const renderAmountInput = (
     label: string,
@@ -237,7 +379,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
           placeholder="Enter amount"
           className={inputBase}
         />
-        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#8C92B3]">
+        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold dark:text-white/80 text-gray-700">
           {asset?.ticker?.toUpperCase() ||
             asset?.symbol?.toUpperCase() ||
             "USDT"}
@@ -260,7 +402,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
 
       {/* You Send */}
       <div className="relative mb-4">
-        <div className={`${baseCard} p-1 sm:p-6 space-y-4`}>
+        <div className={`${baseCard} p-1 sm:p-6 space-y-4`} data-swap-card="true">
           <div className="flex flex-col sm:flex-row sm:items-end gap-1 sm:gap-4">
             <div className="space-y-1 sm:flex-1">
               <p className="text-sm sm:text-base font-semibold">You Send</p>
@@ -270,22 +412,27 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
               I want to Send
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-5">
-            {renderAssetSelector(
-              fromAsset,
-              isFromAssetOpen,
-              onFromAssetToggle,
-              onFromAssetSelect,
-              searchTerm,
-              onSearchTermChange
-            )}
-            {renderAmountInput(
-              "",
-              fromAmount,
-              onFromAmountChange,
-              fromAsset,
-              activeInputField === "from"
-            )}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 min-w-0">
+              {renderAssetSelector(
+                fromAsset,
+                isFromAssetOpen,
+                onFromAssetToggle,
+                onFromAssetSelect,
+                searchTerm,
+                onSearchTermChange,
+                true
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              {renderAmountInput(
+                "",
+                fromAmount,
+                onFromAmountChange,
+                fromAsset,
+                activeInputField === "from"
+              )}
+            </div>
           </div>
         </div>
 
@@ -310,7 +457,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
 
       {/* You Receive */}
       <div className="mb-4">
-        <div className={`${baseCard} p-4 sm:p-6 space-y-4`}>
+        <div className={`${baseCard} p-4 sm:p-6 space-y-4`} data-swap-card="true">
           <div className="flex flex-col sm:flex-row sm:items-end gap-1 sm:gap-4">
             <div className="space-y-1 sm:flex-1">
               <p className="text-sm sm:text-base font-semibold">You Receive</p>
@@ -320,28 +467,33 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
               I want to Receive
             </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-5">
-            {renderAssetSelector(
-              toAsset,
-              isToAssetOpen,
-              onToAssetToggle,
-              onToAssetSelect,
-              toSearchTerm,
-              onToSearchTermChange
-            )}
-            {renderAmountInput(
-              "",
-              toAmount,
-              onToAmountChange,
-              toAsset,
-              activeInputField === "to"
-            )}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 min-w-0">
+              {renderAssetSelector(
+                toAsset,
+                isToAssetOpen,
+                onToAssetToggle,
+                onToAssetSelect,
+                toSearchTerm,
+                onToSearchTermChange,
+                false
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              {renderAmountInput(
+                "",
+                toAmount,
+                onToAmountChange,
+                toAsset,
+                activeInputField === "to"
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Disclaimer */}
-      <div className="flex items-center gap-2 text-xs sm:text-sm dark:text-[#d5d7e2] text-gray-600 my-3 mb-6">
+      <div className="flex items-center gap-2 text-xs sm:text-sm dark:text-[#d5d7e2] text-gray-600 mb-3">
         <span className="flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5 rounded-full border border-red-500 text-red-400 text-[10px]">
           !
         </span>
@@ -390,13 +542,13 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
       {estimateError && (
         <div className="mt-4 bg-red-500/10 dark:bg-red-500/10 border border-red-500 rounded-2xl p-3 sm:p-4 dark:text-red-200 text-red-700">
           <h3 className="font-semibold mb-1 text-sm sm:text-base">Estimate Error</h3>
-          <p className="text-xs sm:text-sm wrap-break-word">{estimateError}</p>
+          <p className="text-xs sm:text-sm break-words">{estimateError}</p>
         </div>
       )}
       {localSwapError && (
         <div className="mt-4 bg-red-500/10 dark:bg-red-500/10 border border-red-500 rounded-2xl p-3 sm:p-4 dark:text-red-200 text-red-700">
           <h3 className="font-semibold mb-1 text-sm sm:text-base">Error</h3>
-          <p className="text-xs sm:text-sm wrap-break-word">{localSwapError}</p>
+          <p className="text-xs sm:text-sm break-words">{localSwapError}</p>
         </div>
       )}
     </div>

@@ -29,6 +29,7 @@ import Link from "next/link";
 import { TiArrowUnsorted } from "react-icons/ti";
 import {
   fetchAssets,
+  addFavoriteAsset,
   removeFavoriteAsset,
   getFavoriteAssets,
 } from "../../exchange/slices/exchangeSlice";
@@ -166,13 +167,13 @@ const ChartIcon = () => (
     />
   </svg>
 );
-const StarIcon = () => (
+const StarIcon = ({ filled = false }: { filled?: boolean }) => (
   <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
     <path
       d="M11 3l2.09 6.26H19l-5.18 3.76L15.91 19 11 14.77 6.09 19l1.09-5.98L2 9.26h5.91z"
-      stroke="#788099"
+      stroke={filled ? "#FFD700" : "#788099"}
       strokeWidth="1.5"
-      fill="none"
+      fill={filled ? "#FFD700" : "none"}
     />
   </svg>
 );
@@ -213,6 +214,7 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
     key: string;
     direction: "asc" | "desc" | null;
   } | null>(null);
+  const [favoritesUpdateTrigger, setFavoritesUpdateTrigger] = useState(0);
 
   useEffect(() => {
     if (!allAvailableAssets) {
@@ -221,6 +223,45 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
     dispatch(getFavoriteAssets());
     // eslint-disable-next-line
   }, []);
+
+  // Sync localStorage favorites when assets are loaded
+  useEffect(() => {
+    if (allAvailableAssets?.assets && favoriteAssets) {
+      if (typeof window !== "undefined") {
+        try {
+          const localFavorites = localStorage.getItem("market_favorites");
+          if (localFavorites) {
+            const favorites = JSON.parse(localFavorites);
+            // Try to add any localStorage favorites that aren't in Redux
+            favorites.forEach((symbol: string) => {
+              const asset = allAvailableAssets.assets?.find(
+                (a: Asset) =>
+                  a.symbol.toLowerCase() === symbol.toLowerCase() ||
+                  a.name.toLowerCase() === symbol.toLowerCase()
+              );
+              if (asset?.asset_id) {
+                const isFavorited = favoriteAssets.some(
+                  (fav: FavoriteAsset) =>
+                    fav.asset_symbol.toLowerCase() === symbol.toLowerCase()
+                );
+                if (!isFavorited) {
+                  // Silently try to sync, don't show toast
+                  dispatch(addFavoriteAsset({ asset_id: asset.asset_id })).catch(
+                    () => {
+                      // Ignore errors during sync
+                    }
+                  );
+                }
+              }
+            });
+          }
+        } catch (error) {
+          console.warn("Error syncing favorites from localStorage:", error);
+        }
+      }
+    }
+    // eslint-disable-next-line
+  }, [allAvailableAssets, favoriteAssets, favoritesUpdateTrigger]);
 
   // Make debug functions available globally for testing
   useEffect(() => {
@@ -377,6 +418,143 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
     return asset?.asset_id || null;
   };
 
+  // Helper function to get asset_id from market symbol
+  const getAssetIdFromMarket = (marketSymbol: string, marketName: string): string | null => {
+    if (!allAvailableAssets?.assets) return null;
+    
+    // Try exact symbol match first
+    let asset = allAvailableAssets.assets.find(
+      (asset: Asset) => asset.symbol.toLowerCase() === marketSymbol.toLowerCase()
+    );
+    
+    // If not found, try name match
+    if (!asset) {
+      asset = allAvailableAssets.assets.find(
+        (asset: Asset) => asset.name.toLowerCase() === marketName.toLowerCase()
+      );
+    }
+    
+    // If still not found, try partial matches
+    if (!asset) {
+      asset = allAvailableAssets.assets.find(
+        (asset: Asset) => 
+          asset.symbol.toLowerCase().includes(marketSymbol.toLowerCase()) ||
+          marketSymbol.toLowerCase().includes(asset.symbol.toLowerCase())
+      );
+    }
+    
+    return asset?.asset_id || null;
+  };
+
+  // Helper function to check if market is favorited
+  const isMarketFavorited = (marketSymbol: string, marketName: string): boolean => {
+    // Check Redux state first
+    const isInRedux = favoriteAssets?.some(
+      (fav: FavoriteAsset) =>
+        fav.asset_symbol.toLowerCase() === marketSymbol.toLowerCase() ||
+        fav.asset_symbol.toLowerCase() === marketName.toLowerCase()
+    );
+    
+    if (isInRedux) return true;
+
+    // Check localStorage as fallback
+    if (typeof window !== "undefined") {
+      try {
+        const localFavorites = localStorage.getItem("market_favorites");
+        if (localFavorites) {
+          const favorites = JSON.parse(localFavorites);
+          return favorites.some(
+            (fav: string) =>
+              fav.toLowerCase() === marketSymbol.toLowerCase() ||
+              fav.toLowerCase() === marketName.toLowerCase()
+          );
+        }
+      } catch (error) {
+        console.warn("Error reading favorites from localStorage:", error);
+      }
+    }
+    
+    return false;
+  };
+
+  // LocalStorage utilities
+  const updateLocalStorageFavorites = (symbol: string, add: boolean) => {
+    if (typeof window !== "undefined") {
+      try {
+        const localFavorites = localStorage.getItem("market_favorites");
+        let favorites: string[] = localFavorites ? JSON.parse(localFavorites) : [];
+        
+        if (add) {
+          if (!favorites.includes(symbol)) {
+            favorites.push(symbol);
+          }
+        } else {
+          favorites = favorites.filter((fav) => fav !== symbol);
+        }
+        
+        localStorage.setItem("market_favorites", JSON.stringify(favorites));
+      } catch (error) {
+        console.warn("Error updating favorites in localStorage:", error);
+      }
+    }
+  };
+
+  // Toggle favorite function
+  const handleToggleFavorite = async (
+    e: React.MouseEvent,
+    marketSymbol: string,
+    marketName: string
+  ) => {
+    e.stopPropagation(); // Prevent row click
+    
+    const assetId = getAssetIdFromMarket(marketSymbol, marketName);
+    const isFavorited = isMarketFavorited(marketSymbol, marketName);
+
+    if (!assetId) {
+      // If asset not found in exchange assets, use localStorage only
+      updateLocalStorageFavorites(marketSymbol, !isFavorited);
+      toast.success(
+        !isFavorited
+          ? `${marketSymbol.toUpperCase()} added to favorites!`
+          : `${marketSymbol.toUpperCase()} removed from favorites!`
+      );
+      // Force re-render by updating state
+      await dispatch(getFavoriteAssets());
+      // Force component re-render
+      setFavoritesUpdateTrigger((prev) => prev + 1);
+      handleReloadFavorites();
+      return;
+    }
+
+    try {
+      if (isFavorited) {
+        await dispatch(removeFavoriteAsset({ asset_id: assetId })).unwrap();
+        updateLocalStorageFavorites(marketSymbol, false);
+        toast.success(`${marketSymbol.toUpperCase()} removed from favorites!`);
+      } else {
+        const result = await dispatch(addFavoriteAsset({ asset_id: assetId })).unwrap();
+        updateLocalStorageFavorites(marketSymbol, true);
+        toast.success(`${marketSymbol.toUpperCase()} added to favorites!`);
+      }
+      // Refresh favorites list immediately
+      await dispatch(getFavoriteAssets());
+      // Force component re-render
+      setFavoritesUpdateTrigger((prev) => prev + 1);
+      // Also reload to ensure UI updates
+      handleReloadFavorites();
+    } catch (error: any) {
+      // Fallback to localStorage if API fails
+      updateLocalStorageFavorites(marketSymbol, !isFavorited);
+      const errorMessage = error?.message || error?.toString() || "Unknown error";
+      toast.error(
+        `Failed to ${isFavorited ? "remove" : "add"} favorite: ${errorMessage}. Using local storage.`
+      );
+      await dispatch(getFavoriteAssets());
+      setFavoritesUpdateTrigger((prev) => prev + 1);
+      handleReloadFavorites();
+    }
+  };
+
   // Dummy data for missing fields
   const DUMMY_ASSET_DATA: Record<
     string,
@@ -470,7 +648,7 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
           onClick={() => handleFilterClick(tag)}
           className={`bg-gray-100 dark:bg-[#1D1D23] text-gray-700 dark:text-[#788099] rounded-xl sm:rounded-2xl lg:rounded-2xl px-3 sm:px-4 lg:px-4 py-1.5 sm:py-1 lg:py-1 text-xs sm:text-sm lg:text-sm font-medium border border-gray-300 dark:border-[#35353E] cursor-pointer transition-colors min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center justify-center ${
             activeFilter === tag
-              ? "bg-gray-200 dark:bg-[#35353E] text-gray-900 dark:text-[#fff]"
+              ? "bg-gray-300 dark:bg-[#35353E] text-gray-900 dark:text-[#fff] border-gray-500 dark:border-[#35353E]"
               : "hover:bg-gray-200 dark:hover:bg-[#35353E]"
           }`}
         >
@@ -526,26 +704,40 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 gap-3 sm:gap-0">
               <div className="flex items-center gap-2 font-semibold text-gray-900 dark:text-[#fff] text-base sm:text-lg lg:text-lg">
                 Favourite Assets
-                <button
-                  className="bg-none border-none text-[#1D8751] text-xl sm:text-2xl lg:text-2xl font-semibold leading-none cursor-pointer px-1 sm:px-2 lg:px-2 ml-1 sm:ml-2 lg:ml-2 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center justify-center"
-                  onClick={() => {
-                    document
-                      .getElementById("fav-scroll")
-                      ?.scrollBy({ left: -300, behavior: "smooth" });
-                  }}
-                >
-                  &lt;
-                </button>
-                <button
-                  className="bg-none border-none text-[#1D8751] text-xl sm:text-2xl lg:text-2xl font-semibold leading-none cursor-pointer px-1 sm:px-2 lg:px-2 ml-1 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center justify-center"
-                  onClick={() => {
-                    document
-                      .getElementById("fav-scroll")
-                      ?.scrollBy({ left: 300, behavior: "smooth" });
-                  }}
-                >
-                  &gt;
-                </button>
+                {favoriteAssets && favoriteAssets.length > 0 && (
+                  <>
+                    <button
+                      className="bg-none border-none text-[#1D8751] text-xl sm:text-2xl lg:text-2xl font-semibold leading-none cursor-pointer px-1 sm:px-2 lg:px-2 ml-1 sm:ml-2 lg:ml-2 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center justify-center hover:opacity-70 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const scrollContainer = document.getElementById("fav-scroll");
+                        if (scrollContainer) {
+                          const scrollAmount = scrollContainer.clientWidth * 0.8;
+                          scrollContainer.scrollBy({ left: -scrollAmount, behavior: "smooth" });
+                        }
+                      }}
+                      title="Scroll left"
+                    >
+                      &lt;
+                    </button>
+                    <button
+                      className="bg-none border-none text-[#1D8751] text-xl sm:text-2xl lg:text-2xl font-semibold leading-none cursor-pointer px-1 sm:px-2 lg:px-2 ml-1 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center justify-center hover:opacity-70 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const scrollContainer = document.getElementById("fav-scroll");
+                        if (scrollContainer) {
+                          const scrollAmount = scrollContainer.clientWidth * 0.8;
+                          scrollContainer.scrollBy({ left: scrollAmount, behavior: "smooth" });
+                        }
+                      }}
+                      title="Scroll right"
+                    >
+                      &gt;
+                    </button>
+                  </>
+                )}
               </div>
               <button
                 className="flex items-center text-gray-900 dark:text-[#fff] font-medium text-sm sm:text-base lg:text-base cursor-pointer gap-2 min-h-[44px] sm:min-h-0 lg:min-h-0"
@@ -690,8 +882,20 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
                         <span className="cursor-pointer">
                           <ChartIcon />
                         </span>
-                        <span className="cursor-pointer">
-                          <StarIcon />
+                        <span
+                          className="cursor-pointer hover:opacity-70 transition-opacity"
+                          onClick={(e) =>
+                            handleToggleFavorite(e, market.symbol, market.name)
+                          }
+                          title={
+                            isMarketFavorited(market.symbol, market.name)
+                              ? "Remove from favorites"
+                              : "Add to favorites"
+                          }
+                        >
+                          <StarIcon
+                            filled={isMarketFavorited(market.symbol, market.name)}
+                          />
                         </span>
                       </div>
                     </div>
@@ -741,13 +945,13 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
                               <p>View Chart</p>
                             </Link>
                             <Link href="/dashboard/express-exchange" className="w-full">
-                              <Button className="w-full border border-[#1D8751] rounded-full p-2.5 px-4 text-[#1D8751] flex gap-2 items-center justify-center cursor-pointer min-h-[44px] text-sm">
+                              <Button className="w-full border border-[#1D8751] rounded-full p-2.5 px-4 text-[#1D8751] flex gap-2 items-center justify-center cursor-pointer hover:bg-[#1D8751]/10 transition-colors min-h-[44px] text-sm">
                                 <ArrowLeftRight className="w-4 h-5" />
                                 <p>Exchange</p>
                               </Button>
                             </Link>
                             <Link href="/dashboard/p2p" className="w-full">
-                              <Button className="w-full border border-[#1D8751] rounded-full p-2.5 px-4 text-[#1D8751] flex gap-2 items-center justify-center cursor-pointer min-h-[44px] text-sm">
+                              <Button className="w-full border border-[#1D8751] rounded-full p-2.5 px-4 text-[#1D8751] flex gap-2 items-center justify-center cursor-pointer hover:bg-[#1D8751]/10 transition-colors min-h-[44px] text-sm">
                                 <Users className="w-4 h-4" />
                                 <p>P2P</p>
                               </Button>
@@ -783,14 +987,14 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
                     <th className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 text-left font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-xs sm:text-sm lg:text-base">
                       Name
                     </th>
-                    <th className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 text-left font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-xs sm:text-sm lg:text-base">
-                      <div className="flex items-center gap-1 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300" onClick={() => handleSort("price")}>
+                    <th className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 text-right font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-xs sm:text-sm lg:text-base">
+                      <div className="flex items-center justify-end gap-1 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300" onClick={() => handleSort("price")}>
                         Price
                         {getSortIcon("price")}
                       </div>
                     </th>
-                    <th className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 text-left font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-xs sm:text-sm lg:text-base">
-                      <div className="flex items-center gap-2">
+                    <th className="text-gray-900 dark:text-[#fff] bg-gray-50 dark:bg-[#35353E] px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-4 text-center font-semibold border-b-2 border-gray-200 dark:border-[#35353E] text-xs sm:text-sm lg:text-base">
+                      <div className="flex items-center justify-center gap-2">
                         <div className="flex items-center gap-1 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300" onClick={() => handleSort("24h_volume")}>
                           24h
                           {getSortIcon("24h_volume")}
@@ -859,15 +1063,15 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
                               </div>
                             </div>
                           </td>
-                          <td className="w-[16%] text-right text-[#1D8751] font-medium px-1 sm:px-2 lg:px-3 py-2 sm:py-3 lg:py-3 text-xs sm:text-sm lg:text-base whitespace-nowrap">
+                          <td className="text-right text-[#1D8751] font-medium px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 text-xs sm:text-sm lg:text-base whitespace-nowrap align-middle">
                           {formatPrice(market.current_price)}
                         </td>
                         <td
-                            className={`font-medium px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 text-xs sm:text-sm lg:text-base whitespace-nowrap text-right ${
+                            className={`font-medium px-2 sm:px-3 lg:px-4 py-2 sm:py-3 lg:py-3 text-xs sm:text-sm lg:text-base whitespace-nowrap text-center align-middle ${
                             isPositiveChange ? "text-[#13B562]" : "text-[#FF6B6B]"
                           }`}
                         >
-                            <div className="flex items-center justify-end gap-1">
+                            <div className="flex items-center justify-center gap-1">
                               {priceChange !== null && (
                                 isPositiveChange ? (
                                   <ArrowUpRight className="w-4 h-4" />
@@ -888,8 +1092,15 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
                           <span className="cursor-pointer">
                             <ChartIcon />
                           </span>
-                          <span className="cursor-pointer">
-                            <StarIcon />
+                          <span
+                            className="cursor-pointer"
+                            onClick={(e) =>
+                              handleToggleFavorite(e, market.symbol, market.name)
+                            }
+                          >
+                            <StarIcon
+                              filled={isMarketFavorited(market.symbol, market.name)}
+                            />
                           </span>
                         </td>
                       </tr>
@@ -921,13 +1132,13 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
                                     <p>View Chart</p>
                                   </Link>
                                   <Link href="/dashboard/express-exchange">
-                                      <Button className="border border-[#1D8751] rounded-full p-2.5 sm:p-2 lg:p-2 px-4 text-[#1D8751] flex gap-2 items-center justify-center cursor-pointer text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0">
+                                      <Button className="border border-[#1D8751] rounded-full p-2.5 sm:p-2 lg:p-2 px-4 text-[#1D8751] flex gap-2 items-center justify-center cursor-pointer hover:bg-[#1D8751]/10 transition-colors text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0">
                                         <ArrowLeftRight className="w-4 h-4 sm:w-4 sm:h-5 lg:w-4 lg:h-5" />
                                       <p>Exchange</p>
                                     </Button>
                                   </Link>
                                   <Link href="/dashboard/p2p">
-                                    <Button className="border border-[#1D8751] rounded-full p-2.5 sm:p-2 lg:p-2 px-4 text-[#1D8751] flex gap-2 items-center justify-center cursor-pointer text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0">
+                                    <Button className="border border-[#1D8751] rounded-full p-2.5 sm:p-2 lg:p-2 px-4 text-[#1D8751] flex gap-2 items-center justify-center cursor-pointer hover:bg-[#1D8751]/10 transition-colors text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0">
                                       <Users className="w-4 h-4 sm:w-5 sm:h-5 lg:w-5 lg:h-5" />
                                       <p>P2P</p>
                                     </Button>

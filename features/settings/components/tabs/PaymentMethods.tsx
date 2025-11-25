@@ -101,16 +101,15 @@ const PaymentMethods = () => {
               >
                 <div className="flex items-start gap-4">
                   <div className="relative">
-                    <div className="w-12 h-12 rounded-full bg-white dark:bg-[#171723] flex items-center justify-center overflow-hidden border border-[#E3E6F0] dark:border-[#2C2C35]">
-                      <img
-                        src={payment?.provider_logo || "/default-provider-logo.svg"}
-                        alt={payment?.payment_provider_name || payment?.payment_method_name}
-                        className="w-8 h-8 object-contain"
-                        onError={(e) => {
-                          e.currentTarget.src = "/default-provider-logo.svg";
-                        }}
-                      />
-                    </div>
+                    <img
+                      src={payment?.provider_logo || "/default-provider-logo.svg"}
+                      alt={payment?.payment_provider_name || payment?.payment_method_name}
+                      className="w-12 h-12 object-contain flex-shrink-0"
+                      style={{ display: 'block' }}
+                      onError={(e) => {
+                        e.currentTarget.src = "/default-provider-logo.svg";
+                      }}
+                    />
                     {isPending && (
                       <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-[#FF4D55] border-2 border-white dark:border-[#13131A]" />
                     )}

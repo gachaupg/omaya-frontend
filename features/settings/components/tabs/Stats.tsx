@@ -320,9 +320,9 @@ const Stats = ({ onSupportClick }: StatsProps) => {
             </div>
           </div>
         </div>
-        <div className="w-full h-2 sm:h-3 dark:bg-[#35353E] bg-gray-300 rounded-r-full mb-4">
+        <div className="w-full h-3 sm:h-4 dark:bg-[#35353E] bg-gray-300 rounded-r-full mb-4">
           <div
-            className={`h-2 sm:h-3 rounded-r-full ${
+            className={`h-3 sm:h-4 rounded-r-full ${
               (summary?.total_approved_p2p_deposits || 0) > 0
                 ? "bg-[#1D8751]"
                 : "bg-[#788099]"
@@ -399,9 +399,9 @@ const Stats = ({ onSupportClick }: StatsProps) => {
             </div>
           </div>
         </div>
-        <div className="w-full h-2 sm:h-3 dark:bg-[#35353E] bg-gray-300 rounded-r-full mb-4">
+        <div className="w-full h-3 sm:h-4 dark:bg-[#35353E] bg-gray-300 rounded-r-full mb-4">
           <div
-            className={`h-2 sm:h-3 rounded-r-full ${
+            className={`h-3 sm:h-4 rounded-r-full ${
               (summary?.total_approved_p2p_withdrawals || 0) > 0
                 ? "bg-[#E23D3A]"
                 : "bg-[#788099]"

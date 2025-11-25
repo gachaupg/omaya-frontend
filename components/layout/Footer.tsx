@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { tokens } from "@/styles/tokens";
 import {
   Youtube,
@@ -67,8 +70,21 @@ const SnapchatIcon = ({
 );
 
 export default function Footer() {
+  const pathname = usePathname();
   const { primary } = tokens.colors.brand;
   const { textTitle, textBody, background, card } = tokens.colors.dark;
+
+  // Helper function to check if a link is active
+  const isActive = (href: string) => {
+    if (href === "/") {
+      return pathname === "/";
+    }
+    // For hash links, check if we're on the home page
+    if (href.startsWith("/#")) {
+      return pathname === "/";
+    }
+    return pathname === href || pathname?.startsWith(href + "/");
+  };
 
   return (
     <footer className="relative z-40 pt-10 pb-4 bg-[#18181D] text-[#788099]">
@@ -180,7 +196,9 @@ export default function Footer() {
               <li>
                 <Link
                   href="/#contact"
-                  className="hover:text-[#1D8751] text-xs md:text-sm text-white/80 transition-colors"
+                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${
+                    isActive("/#contact") ? "text-[#1D8751]" : "text-white/80"
+                  }`}
                 >
                   Support center
                 </Link>
@@ -188,7 +206,9 @@ export default function Footer() {
               <li>
                 <Link
                   href="/#supported-assets"
-                  className="hover:text-[#1D8751] text-xs md:text-sm text-white/80 transition-colors"
+                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${
+                    isActive("/#supported-assets") ? "text-[#1D8751]" : "text-white/80"
+                  }`}
                 >
                   Our Partners
                 </Link>
@@ -196,7 +216,9 @@ export default function Footer() {
               <li>
                 <Link
                   href="/#faq"
-                  className="hover:text-[#1D8751] text-xs md:text-sm text-white/80 transition-colors"
+                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${
+                    isActive("/#faq") ? "text-[#1D8751]" : "text-white/80"
+                  }`}
                 >
                   FAQ
                 </Link>
@@ -213,7 +235,9 @@ export default function Footer() {
               <li>
                 <Link
                   href="/blog"
-                  className="hover:text-[#1D8751] text-xs md:text-sm text-white/80 transition-colors"
+                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${
+                    isActive("/blog") ? "text-[#1D8751]" : "text-white/80"
+                  }`}
                 >
                   Blog
                 </Link>
@@ -221,7 +245,9 @@ export default function Footer() {
               <li>
                 <Link
                   href="/contactUs"
-                  className="hover:text-[#1D8751] text-xs md:text-sm text-white/80 transition-colors"
+                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${
+                    isActive("/contactUs") ? "text-[#1D8751]" : "text-white/80"
+                  }`}
                 >
                   Contact us
                 </Link>
@@ -229,7 +255,9 @@ export default function Footer() {
               <li>
                 <Link
                   href="/about"
-                  className="hover:text-[#1D8751] text-xs md:text-sm text-white/80 transition-colors"
+                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${
+                    isActive("/about") ? "text-[#1D8751]" : "text-white/80"
+                  }`}
                 >
                   About us
                 </Link>
@@ -246,7 +274,9 @@ export default function Footer() {
               <li>
                 <Link
                   href="/legal/terms-of-service"
-                  className="hover:text-[#1D8751] text-xs md:text-sm text-white/80 transition-colors"
+                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${
+                    isActive("/legal/terms-of-service") ? "text-[#1D8751]" : "text-white/80"
+                  }`}
                 >
                   Terms of Service
                 </Link>
@@ -254,7 +284,9 @@ export default function Footer() {
               <li>
                 <Link
                   href="/legal/privacy-policy"
-                  className="hover:text-[#1D8751] text-xs md:text-sm text-white/80 transition-colors"
+                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${
+                    isActive("/legal/privacy-policy") ? "text-[#1D8751]" : "text-white/80"
+                  }`}
                 >
                   Privacy Policy
                 </Link>
@@ -262,7 +294,9 @@ export default function Footer() {
               <li>
                 <Link
                   href="/legal/cookies-policy"
-                  className="hover:text-[#1D8751] text-xs md:text-sm text-white/80 transition-colors"
+                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${
+                    isActive("/legal/cookies-policy") ? "text-[#1D8751]" : "text-white/80"
+                  }`}
                 >
                   Cookies Policy
                 </Link>
@@ -270,7 +304,9 @@ export default function Footer() {
               <li>
                 <Link
                   href="/legal/disclaimer-policy"
-                  className="hover:text-[#1D8751] text-xs md:text-sm text-white/80 transition-colors"
+                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${
+                    isActive("/legal/disclaimer-policy") ? "text-[#1D8751]" : "text-white/80"
+                  }`}
                 >
                   Disclaimer Policy
                 </Link>
@@ -278,7 +314,9 @@ export default function Footer() {
               <li>
                 <Link
                   href="/legal/payment-policy"
-                  className="hover:text-[#1D8751] text-xs md:text-sm text-white/80 transition-colors"
+                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${
+                    isActive("/legal/payment-policy") ? "text-[#1D8751]" : "text-white/80"
+                  }`}
                 >
                   Payment Policy
                 </Link>
