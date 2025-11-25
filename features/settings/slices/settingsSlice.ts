@@ -111,6 +111,23 @@ export const changePassword = createAsyncThunk(
   }
 );
 
+export const resetPassword = createAsyncThunk(
+  "settings/resetPassword",
+  async (
+    data: { email: string; password: string; confirm_password: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await settingsApi.resetPassword(data);
+      showToast.success(response.message || "Password has been reset successfully.");
+      return response;
+    } catch (error: any) {
+      showToast.error(error.message || "Failed to reset password");
+      return rejectWithValue(error.message || "Failed to reset password");
+    }
+  }
+);
+
 export const fetchTheme = createAsyncThunk(
   "settings/fetchTheme",
   async (_, { rejectWithValue }) => {
@@ -410,6 +427,18 @@ const settingsSlice = createSlice({
         state.success = "Password changed successfully";
       })
       .addCase(changePassword.rejected, (state, action) => {
+        state.updating = false;
+        state.error = action.payload as string;
+      })
+      .addCase(resetPassword.pending, (state) => {
+        state.updating = true;
+        state.error = null;
+      })
+      .addCase(resetPassword.fulfilled, (state, action) => {
+        state.updating = false;
+        state.success = action.payload.message || "Password has been reset successfully.";
+      })
+      .addCase(resetPassword.rejected, (state, action) => {
         state.updating = false;
         state.error = action.payload as string;
       });

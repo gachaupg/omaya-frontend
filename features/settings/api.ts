@@ -78,6 +78,18 @@ export const settingsApi = {
     });
   },
 
+  resetPassword: async (
+    data: { email: string; password: string; confirm_password: string }
+  ): Promise<{ message: string }> => {
+    return withRetry(async () => {
+      const response = await apiClient.post(
+        API_CONFIG.AUTH.RESET_PASSWORD,
+        data
+      );
+      return response.data;
+    });
+  },
+
   // Theme Management
   getTheme: async (): Promise<ThemeUpdateResponse> => {
     return withRetry(async () => {
