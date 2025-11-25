@@ -96,6 +96,74 @@ const getAssetNetwork = (asset: any): string => {
   return "";
 };
 
+const coerceDetailValueToString = (value: unknown): string => {
+  if (typeof value === "number") {
+    return value.toString();
+  }
+  if (typeof value === "string") {
+    return value.trim();
+  }
+  return "";
+};
+
+const resolvePaymentField = (detail: any, keys: string[]): string => {
+  if (!detail) return "";
+
+  const sources = [
+    detail,
+    detail?.admin_payment_detail,
+    detail?.payment_detail,
+    detail?.admin_payment_info,
+    detail?.payment_info,
+  ];
+
+  if (Array.isArray(detail?.payment_details) && detail.payment_details.length) {
+    sources.push(detail.payment_details[0]);
+  }
+
+  if (Array.isArray(detail?.paymentDetails) && detail.paymentDetails.length) {
+    sources.push(detail.paymentDetails[0]);
+  }
+
+  for (const source of sources) {
+    if (!source) continue;
+    for (const key of keys) {
+      if (key in source) {
+        const resolved = coerceDetailValueToString(source[key]);
+        if (resolved) {
+          return resolved;
+        }
+      }
+    }
+  }
+  return "";
+};
+
+const getAccountNameFromDetail = (detail: any) =>
+  resolvePaymentField(detail, [
+    "account_name",
+    "accountName",
+    "account_holder",
+    "accountHolder",
+    "beneficiary_name",
+    "beneficiaryName",
+    "name",
+  ]);
+
+const getAccountNumberFromDetail = (detail: any) =>
+  resolvePaymentField(detail, [
+    "account_number",
+    "accountNumber",
+    "account_no",
+    "accountNo",
+    "iban",
+    "IBAN",
+    "mobile_number",
+    "mobileNumber",
+    "wallet_address",
+    "walletAddress",
+  ]);
+
 export default function DepositForm({
   onExchange,
   mode,
@@ -494,6 +562,14 @@ export default function DepositForm({
     }
     return null;
   });
+  const accountNameDisplay = useMemo(
+    () => getAccountNameFromDetail(selectedPaymentDetail),
+    [selectedPaymentDetail]
+  );
+  const accountNumberDisplay = useMemo(
+    () => getAccountNumberFromDetail(selectedPaymentDetail),
+    [selectedPaymentDetail]
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [hasAutoExpanded, setHasAutoExpanded] = useState(false);
@@ -2521,9 +2597,11 @@ export default function DepositForm({
       depositPayload.append("asset", assetValue);
 
       // Add additional info
+      const infoAccountName = getAccountNameFromDetail(selectedPaymentDetail) || "N/A";
+      const infoAccountNumber = getAccountNumberFromDetail(selectedPaymentDetail) || "N/A";
       depositPayload.append(
         "additional_info",
-        `Account: ${selectedPaymentDetail.account_name}, Account Number: ${selectedPaymentDetail.account_number}`
+        `Account: ${infoAccountName}, Account Number: ${infoAccountNumber}`
       );
 
       // Submit to API - let axios set the correct Content-Type for FormData
@@ -3497,7 +3575,8 @@ export default function DepositForm({
                       {t("express.accountName", "Account Name :")}
                     </span>
                     <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
-                      {selectedPaymentDetail.account_name}
+                      {accountNameDisplay ||
+                        t("express.accountNameUnavailable", "Not provided yet")}
                     </span>
                   </div>
                   <div className="border-t border-dashed border-[#39394a] mb-2"></div>
@@ -3508,16 +3587,21 @@ export default function DepositForm({
                     </span>
                     <div className="flex items-center gap-2">
                       <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
-                        {selectedPaymentDetail.account_number}
+                        {accountNumberDisplay ||
+                          t("express.accountNumberUnavailable", "Not provided yet")}
                       </span>
                       <button
                         onClick={() => {
-                          navigator.clipboard.writeText(
-                            selectedPaymentDetail.account_number
+                          if (!accountNumberDisplay) return;
+                          navigator.clipboard.writeText(accountNumberDisplay);
+                          showToast.success(
+                            t("express.accountNumberCopied", "Account number copied!")
                           );
-                          showToast.success(t("express.accountNumberCopied", "Account number copied!"));
                         }}
-                        className="text-[#F79330] hover:text-white transition-colors p-2 sm:p-1 rounded min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation"
+                        disabled={!accountNumberDisplay}
+                        className={`text-[#F79330] hover:text-white transition-colors p-2 sm:p-1 rounded min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation ${
+                          !accountNumberDisplay ? "opacity-50 cursor-not-allowed" : ""
+                        }`}
                         title="Copy Account Number"
                       >
                         <svg
@@ -3709,8 +3793,9 @@ export default function DepositForm({
                 <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-medium">
                   {t("express.accountName", "Account Name :")}
                 </span>
-                <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
-                  {selectedPaymentDetail.account_name}
+                <span className="text-[#35353e] dark:text-white text-base font-medium">
+                  {accountNameDisplay ||
+                    t("express.accountNameUnavailable", "Not provided yet")}
                 </span>
               </div>
               <div className="border-t border-dashed border-[#39394a] mb-2"></div>
@@ -3720,17 +3805,20 @@ export default function DepositForm({
                   {t("express.accountNumber", "Account Number :")}
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="text-[#35353e] dark:text-[#788099] text-base font-medium">
-                    {selectedPaymentDetail.account_number}
+                  <span className="text-[#35353e] dark:text-white text-base font-medium">
+                    {accountNumberDisplay ||
+                      t("express.accountNumberUnavailable", "Not provided yet")}
                   </span>
                   <button
                     onClick={() => {
-                      navigator.clipboard.writeText(
-                        selectedPaymentDetail.account_number
-                      );
+                      if (!accountNumberDisplay) return;
+                      navigator.clipboard.writeText(accountNumberDisplay);
                       showToast.success("copied!");
                     }}
-                    className="text-[#F79330] hover:text-white transition-colors p-1 rounded"
+                    disabled={!accountNumberDisplay}
+                    className={`text-[#F79330] hover:text-white transition-colors p-1 rounded ${
+                      !accountNumberDisplay ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                     title="Copy Account Number"
                   >
                     <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
@@ -3767,19 +3855,19 @@ export default function DepositForm({
                 {t("express.transactionCode", "Transaction Code")}
               </h2>
               <div className="mb-6 flex flex-col gap-3 w-full px-2">
-                <div className=" dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-4 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
+                <div className="dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full">
                   {/* Transaction Code Row */}
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-3">
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-4">
                     {/* Display deposit code from API response - each character in its own box */}
-                    <div className="flex gap-1 sm:gap-2 flex-wrap justify-center">
+                    <div className="flex gap-2 flex-wrap justify-center">
                       {apiResponse.deposit_code
                         .split("")
                         .map((char: string, index: number) => (
                           <div
                             key={index}
-                            className="w-8 h-10 sm:w-10 sm:h-12 bg-[#35353E] border border-[#4A4A4A] rounded-lg flex items-center justify-center"
+                            className="w-10 h-12 sm:w-12 sm:h-14 bg-[#23232B] border border-[#4A4A4A] rounded-xl flex items-center justify-center shadow-[0_6px_20px_rgba(0,0,0,0.25)]"
                           >
-                            <span className="text-lg sm:text-xl font-bold text-white font-mono">
+                            <span className="text-xl sm:text-2xl font-bold text-white font-mono tracking-wide">
                               {char}
                             </span>
                           </div>
@@ -3790,7 +3878,7 @@ export default function DepositForm({
                         navigator.clipboard.writeText(apiResponse.deposit_code);
                         showToast.success(t("express.transactionCodeCopied", "Transaction code copied!"));
                       }}
-                      className="flex items-center gap-2 bg-[#35353E] border border-[#1D8751] text-white rounded-full px-3 py-2 sm:px-4 font-semibold text-xs sm:text-sm hover:bg-[#1D8751] hover:text-white transition-colors"
+                      className="flex items-center justify-center gap-2 bg-transparent border border-[#1D8751] text-[#1D8751] rounded-full px-5 py-2 font-semibold text-sm sm:text-base hover:bg-[#1D8751] hover:text-white transition-colors min-w-[140px]"
                     >
                       <svg
                         width="16"
@@ -3821,12 +3909,12 @@ export default function DepositForm({
                     </button>
                   </div>
                   {/* Note Section */}
-                  <div className="flex flex-col gap-2 mt-2">
-                    <div className="flex items-center mb-2">
+                  <div className="flex flex-col gap-2 mt-3">
+                    <div className="flex items-center mb-1">
                       <span className="mr-2 text-[#1D8751]">
                         <svg
-                          width="16"
-                          height="16"
+                          width="20"
+                          height="20"
                           fill="none"
                           viewBox="0 0 24 24"
                         >
@@ -3853,18 +3941,18 @@ export default function DepositForm({
                         {t("express.note", "Note")}
                       </span>
                     </div>
-                    <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-3">
-                      <ul className="list-none space-y-1">
+                    <div className="bg-[#0F131A] dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-4">
+                      <ul className="list-none space-y-2">
                         <li className="flex items-start">
-                          <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-2"></span>
-                          <span className="text-[#35353e] dark:text-[#788099] text-xs">
+                          <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                          <span className="text-[#B5C9D7] dark:text-[#B5C9D7] text-sm leading-relaxed">
                             Please write this Transaction Code in the bank
                             message or note section.
                           </span>
                         </li>
                         <li className="flex items-start">
-                          <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-2"></span>
-                          <span className="text-[#35353e] dark:text-[#788099] text-xs">
+                          <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                          <span className="text-[#B5C9D7] dark:text-[#B5C9D7] text-sm leading-relaxed">
                             This helps us process your payment quickly and
                             accurately.
                           </span>
@@ -3882,82 +3970,85 @@ export default function DepositForm({
             <span className="text-[#7e7e8f] dark:text-[#788099]">4-</span>{" "}
             {t("express.walletAddress", "Wallet Address")}
           </h2>
-          <div className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-6">
+          <div className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full mb-6">
             {/* Wallet/Account Address Label */}
-            <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+            <label className="block text-[17px] text-[#7e7e8f] dark:text-white mb-2 font-semibold">
               {t("express.walletAccountAddress", "Wallet/Account Address")}
             </label>
             {/* Input group */}
-            <div className="flex items-center dark:bg-[#1D1D23] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-4 py-2 mb-0">
-              {/* Left icon */}
-              <span className="mr-2 text-[#1D8751]">
-                <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M7 17v2a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"
-                    stroke="#1D8751"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <rect
-                    x="3"
-                    y="3"
-                    width="12"
-                    height="12"
-                    rx="2"
-                    stroke="#1D8751"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
-              <input
-                type="text"
-                value={walletAddress}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setWalletAddress(value);
-                  setIsAddressConfirmed(false);
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center flex-1 dark:bg-[#1D1D23] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-4 py-3">
+                {/* Green wallet icon inside input */}
+                <span className="mr-2 text-[#1D8751] flex-shrink-0">
+                  <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
+                    <rect
+                      x="3"
+                      y="8"
+                      width="18"
+                      height="12"
+                      rx="2"
+                      stroke="#1D8751"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M7 8V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"
+                      stroke="#1D8751"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <circle cx="12" cy="14" r="2" fill="#1D8751" />
+                  </svg>
+                </span>
+                <input
+                  type="text"
+                  value={walletAddress}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setWalletAddress(value);
+                    setIsAddressConfirmed(false);
 
-                  // Validate immediately as user types (wallet address is optional for initial submission)
-                  if (value.trim() === "") {
-                    setWalletError(null); // No error when empty - address is optional
-                  } else if (!selectedAsset) {
-                    setWalletError("Please select an asset first");
-                  } else {
-                    // Allow all address types - no specific network validation
-                    if (value.trim().length < 10) {
-                      setWalletError("Address seems too short");
-                      setForceUpdate((prev) => prev + 1);
+                    // Validate immediately as user types (wallet address is optional for initial submission)
+                    if (value.trim() === "") {
+                      setWalletError(null); // No error when empty - address is optional
+                    } else if (!selectedAsset) {
+                      setWalletError("Please select an asset first");
                     } else {
-                      setWalletError(null);
-                      setForceUpdate((prev) => prev + 1);
+                      // Allow all address types - no specific network validation
+                      if (value.trim().length < 10) {
+                        setWalletError("Address seems too short");
+                        setForceUpdate((prev) => prev + 1);
+                      } else {
+                        setWalletError(null);
+                        setForceUpdate((prev) => prev + 1);
+                      }
                     }
-                  }
-                }}
-                placeholder="Paste here your Crypto address"
-                className={`flex-1 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-base ${
-                  walletError
-                    ? "border-red-500"
-                    : walletAddress.trim() && !walletError
-                      ? "border-green-500"
-                      : ""
-                }`}
-              />
-              {/* Bookmark icon */}
-              <span className="mx-2 text-[#788099] cursor-pointer">
-                <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"
-                    stroke="#788099"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
-              {/* Paste button */}
+                  }}
+                  placeholder="Paste here your Crypto address"
+                  className={`flex-1 bg-transparent border-none outline-none text-[#35353e] dark:text-white placeholder-[#788099] text-base ${
+                    walletError
+                      ? "border-red-500"
+                      : walletAddress.trim() && !walletError
+                        ? "border-green-500"
+                        : ""
+                  }`}
+                />
+                {/* Bookmark icon */}
+                <span className="ml-2 text-[#788099] cursor-pointer flex-shrink-0">
+                  <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                    <path
+                      d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"
+                      stroke="#788099"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+              </div>
+              {/* Paste button - outside input field */}
               <button
                 onClick={async () => {
                   try {
@@ -3968,8 +4059,7 @@ export default function DepositForm({
                     showToast.error("Failed to paste from clipboard");
                   }
                 }}
-                className="flex items-center gap-1 dark:bg-[#1D1D23] border border-[#1D8751] 
-                text-[#1D8751] rounded-full px-3 sm:px-1 py-2 sm:py-1 ml-2 font-semibold text-sm sm:text-base hover:bg-[#1D8751] hover:text-white transition-colors min-h-[44px] sm:min-h-0 touch-manipulation"
+                className="flex items-center gap-1 bg-transparent border-none text-[#1D8751] rounded-full px-3 py-1 font-semibold text-sm hover:opacity-80 transition-opacity flex-shrink-0"
               >
                 <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
                   <path
@@ -3982,34 +4072,14 @@ export default function DepositForm({
                 </svg>
                 {t("express.paste", "Paste")}
               </button>
-              {/* Address confirmation */}
             </div>
 
             {/* Show validation messages below the wallet address input */}
             {walletError && (
-              <p className="text-red-500 text-sm mt-2 font-medium">
+              <p className="text-red-500 text-sm mt-2 font-medium mb-4">
                 ❌ {walletError}
               </p>
             )}
-
-           
-            <label className="flex mb-4 items-center gap-2 mt-4 text-sm text-[#35353e] dark:text-[#788099]">
-              <input
-                type="checkbox"
-                checked={isAddressConfirmed}
-                onChange={(event) =>
-                  setIsAddressConfirmed(event.target.checked)
-                }
-                className="w-4 h-4 rounded border-[#1D8751] text-[#1D8751] focus:ring-[#1D8751]"
-              />
-              <span>{t("express.confirmWalletAddress", "I confirm that this wallet address is correct.")}</span>
-            </label>
-
-            {/* {!walletAddress.trim() && (
-              <p className="text-[#7e7e8f] dark:text-[#788099] text-sm mt-2 font-medium">
-                ℹ️ Wallet address is optional. You can provide it later if needed.
-              </p>
-            )} */}
 
             {/* Terms and Conditions Summary */}
             <div className="flex items-center mb-2">
@@ -4038,29 +4108,60 @@ export default function DepositForm({
                 {t("express.termsAndConditionsSummary", "Terms and Conditions Summary")}
               </span>
             </div>
-            <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-4">
+            <div className="bg-[#0F131A] dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-4">
               <ul className="list-none space-y-2">
                 <li className="flex items-start">
-                  <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                  <span className="text-[#35353e] dark:text-[#788099] text-sm">
+                  <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                  <span className="text-[#B5C9D7] dark:text-[#B5C9D7] text-sm leading-relaxed">
                     Please send the money from your own account Only
                   </span>
                 </li>
                 <li className="flex items-start">
-                  <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                  <span className="text-[#35353e] dark:text-[#788099] text-sm">
+                  <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                  <span className="text-[#B5C9D7] dark:text-[#B5C9D7] text-sm leading-relaxed">
                     Put transaction ID in the description field of the bank
                   </span>
                 </li>
                 <li className="flex items-start">
-                  <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                  <span className="text-[#35353e] dark:text-[#788099] text-sm">
+                  <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                  <span className="text-[#B5C9D7] dark:text-[#B5C9D7] text-sm leading-relaxed">
                     Please note, If you do not follow above conditions, we will
                     reject your transaction and send you back your money.
                   </span>
                 </li>
               </ul>
             </div>
+          </div>
+
+          {/* Agreement checkbox with links - after wallet address, before button */}
+          <div className="w-full px-2 mb-4">
+            <label className="flex items-start gap-2 text-sm text-[#35353e] dark:text-[#788099] cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isAddressConfirmed}
+                onChange={(event) =>
+                  setIsAddressConfirmed(event.target.checked)
+                }
+                className="w-4 h-4 rounded border-1 border-[#F79330]/90 bg-transparent appearance-none checked:bg-[#1D8751] checked:border-[#1D8751] focus:ring-0 focus:ring-offset-0 mt-0.5 flex-shrink-0 relative"
+                style={{
+                  backgroundImage: isAddressConfirmed 
+                    ? 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'3\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'20 6 9 17 4 12\'%3E%3C/polyline%3E%3C/svg%3E")' 
+                    : 'none',
+                  backgroundSize: 'contain',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'center'
+                }}
+              />
+              <span className="leading-relaxed">
+                i've read and agree to the{" "}
+                <span className="text-[#1D8751] hover:underline cursor-pointer">OMAYA EXCHANGE</span>{" "}
+                <a href="#" className="text-[#1D8751] hover:underline">Terms of Use</a>,{" "}
+                <a href="#" className="text-[#1D8751] hover:underline">Privacy Policy</a>,{" "}
+                <a href="#" className="text-[#1D8751] hover:underline">Payment Policies</a>,{" "}
+                <a href="#" className="text-[#1D8751] hover:underline">AML</a>,{" "}
+                <a href="#" className="text-[#1D8751] hover:underline">Risk Disclosure Statements</a>.
+              </span>
+            </label>
           </div>
 
           {/* Validation Errors Display */}
@@ -4082,7 +4183,7 @@ export default function DepositForm({
           {/* Button outside the card */}
           <div className="flex flex-col gap-3 w-full px-2">
             <button
-              className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${
+              className={`w-full text-white dark:text-white text-base font-semibold py-3 rounded-2xl flex items-center justify-center gap-2 transition-colors ${
                 isProceedDisabled
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
@@ -4092,16 +4193,16 @@ export default function DepositForm({
             >
               {isSubmitting ? (
                 <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#35353e] dark:border-[#35353E]"></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                   <span>{t("express.processing", "Processing...")}</span>
                 </div>
               ) : (
-                <span className="flex items-center justify-center">
-                  <span className="text-base font-bold dark:text-white text-white">
-                    {t("express.express", "Express")}
+                <span className="flex items-center justify-center gap-2">
+                  <span className="text-base font-bold">
+                    Express XCHANGE
                   </span>
                   <img
-                    className="mt-2"
+                    className="mt-1"
                     src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
                     alt=""
                   />

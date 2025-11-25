@@ -11,7 +11,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store/rootReducer";
 import { showToast } from "@/lib/utils/toast";
-import { Trash, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 
 import { logger } from '@/lib/utils/logger';
 import { AdminPaymentMethod } from "@/features/p2p/types/paymentMethods";
@@ -345,46 +345,44 @@ const PaymentMethods = () => {
 const renderAddMethodDropdown = () => (
   <div
     className={`
-      absolute z-[1000] mt-8 w-full max-w-xs rounded-xl right-4
-      border-2 border-[#1D8751]
+      absolute top-full mt-2
       ${showAddDropdown ? "" : "hidden"}
-      bg-white dark:bg-black
-      shadow-lg
+      w-[90vw] max-w-xs sm:w-64
+      left-1/2 -translate-x-1/2 sm:left-auto sm:right-0 sm:translate-x-0
+      rounded-xl border-2 border-[#1D8751] bg-[#0F1219] text-white shadow-[0_10px_30px_rgba(0,0,0,0.45)]
+      z-1000
     `}
   >
-    <div className="p-4">
-      <div className="mb-3">
-        <label className="block text-gray-600 dark:text-[#788099] text-sm mb-2">
-          Payment Method
-        </label>
-        <div className="flex flex-col gap-3 max-h-64 overflow-y-auto pr-1">
-          {methodTypes.map((type, idx) => (
-            <label
+    <div className="p-3">
+      <p className="text-xs uppercase tracking-wide text-[#49C476] mb-2">Payment Method</p>
+      <div className="flex flex-col gap-2 max-h-64 overflow-y-auto pr-1">
+        {methodTypes.map((type, idx) => {
+          const isSelected = selectedMethod === type;
+          return (
+            <button
+              type="button"
               key={type + idx}
-              className="flex items-center justify-between p-2 rounded-lg border border-[#1D8751] cursor-pointer"
+              className={`flex items-center gap-3 rounded-lg border border-[#205437] px-3 py-2 text-left transition
+                ${isSelected ? "bg-[#14301F] border-[#49C476]" : "bg-transparent hover:bg-[#101c14]"}
+              `}
+              onClick={() => handleMethodSelection(type)}
+              disabled={adminLoading}
             >
-              <div className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="payment-method-type"
-                  value={type}
-                  checked={selectedMethod === type}
-                  onChange={() => handleMethodSelection(type)}
-                  disabled={adminLoading}
-                  className="accent-[#1D8751] w-4 h-4 border-2 border-[#1D8751] focus:ring-0"
-                />
-                <span className="text-gray-900 dark:text-white text-sm">{type}</span>
-              </div>
-              <button
-                type="button"
-                className="text-[#1D8751] hover:text-red-500"
-                onClick={() => handleDeleteMethod(type)}
+              <span
+                className={`flex h-5 w-5 items-center justify-center rounded-md border-2 ${
+                  isSelected ? "border-[#49C476] bg-[#49C476]" : "border-[#49C476]"
+                }`}
               >
-                <Trash className="w-5 h-5" />
-              </button>
-            </label>
-          ))}
-        </div>
+                {isSelected && (
+                  <svg className="w-3 h-3 text-[#0F1219]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
+                    <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </span>
+              <span className="text-sm font-medium">{type}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   </div>
@@ -393,30 +391,32 @@ const renderAddMethodDropdown = () => (
 
   /** Render */
   return (
-    <div className="w-full min-h-[600px] bg-white dark:bg-[#18181D] rounded-2xl p-4 text-gray-900 dark:text-white border-2 border-gray-200 dark:border-[#35353E] overflow-x-hidden">
+    <div className="w-full min-h-[600px] bg-white dark:bg-[#18181D] rounded-2xl p-4 text-gray-900 dark:text-white border-2 border-gray-200 dark:border-[#35353E] overflow-visible">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4 ">
         <span className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
           Payment Methods
         </span>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
-          <Button
-            height={44}
-            borderRadius={24}
-            variant="outline"
-            className="border-2 border-[#1D8751] w-full text-gray-900 dark:text-white relative flex items-center justify-between"
-            size="md"
-            onClick={() => setShowAddDropdown(prev => !prev)}
-          >
-            <span className="flex items-center gap-2 text-sm sm:text-base font-semibold">
-              {!selectedMethod && (
-                <span className="text-[#1D8751] text-xl font-bold">+</span>
-              )}
-              {selectedMethod || "Add Method"}
-            </span>
-            <ChevronDown className="w-4 h-4 text-[#1D8751]" />
-          </Button>
-          {renderAddMethodDropdown()}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto relative">
+          <div className="w-full sm:w-auto">
+            <Button
+              height={44}
+              borderRadius={24}
+              variant="outline"
+              className="border-2 border-[#1D8751] w-full text-gray-900 dark:text-white relative flex items-center justify-between"
+              size="md"
+              onClick={() => setShowAddDropdown(prev => !prev)}
+            >
+              <span className="flex items-center gap-2 text-sm sm:text-base font-semibold">
+                {!selectedMethod && (
+                  <span className="text-[#1D8751] text-xl font-bold">+</span>
+                )}
+                {selectedMethod || "Add Method"}
+              </span>
+              <ChevronDown className="w-4 h-4 text-[#1D8751]" />
+            </Button>
+            {renderAddMethodDropdown()}
+          </div>
         </div>
       </div>
 

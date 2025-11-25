@@ -19,7 +19,7 @@ const ClientIdSection: React.FC<ClientIdSectionProps> = ({ user }) => {
 
   return (
     <>
-      <div className="text-base font-semibold dark:text-[#788099] text-gray-600 mb-0">
+      <div className="text-base font-bold dark:text-white text-gray-900 mb-0">
         Client ID
       </div>
       <section className="dark:bg-transparent bg-white rounded-xl border-[#E8EFF5] dark:border-[#35353E] p-3 ">

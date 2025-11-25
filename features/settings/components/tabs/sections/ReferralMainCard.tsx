@@ -133,24 +133,24 @@ const ReferralMainCard: React.FC<Props> = ({
       </div>
 
       <div className="mb-4 mt-10">
-        <div className="text-xs uppercase tracking-[0.3em] text-[#8C92B2] mb-3">
-          Your referral code
+        <div className="text-sm font-medium text-[#1D8751] mb-3">
+          Your Referral Code
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <div
             className="flex items-center gap-3 rounded-[28px] border border-[#1D8751]
-                       bg-[#08141E] px-4 py-3 min-w-[260px] flex-1 w-full"
+                       bg-transparent px-4 py-3 min-w-[260px] flex-1 w-full"
           >
             <span className="w-3 h-3 rounded-full bg-[#1D8751] flex-shrink-0" />
-            <span className="font-mono text-sm sm:text-base tracking-[0.4em] text-[#1D8751] uppercase truncate">
-              {user?.referral_code}
+            <span className="font-mono text-sm sm:text-base tracking-[0.4em] text-[#1D8751] uppercase truncate flex-1">
+              {user?.referral_code || "123456789"}
             </span>
-            <QrCode size={18} className="text-[#1D8751]" />
+            <QrCode size={18} className="text-[#1D8751] flex-shrink-0" strokeWidth={2} />
           </div>
           <CopyButton
             value={user?.referral_code ?? ""}
-            className="bg-[#1D8751]/15 border border-[#1D8751] text-[#1D8751]
-                       hover:bg-[#1D8751] hover:text-white rounded-[999px] px-5 py-3 text-sm font-semibold"
+            className="bg-[#1D1D23] border border-[#35353E] text-[#1D8751]
+                       hover:opacity-80 rounded-[999px] px-4 py-3 text-sm font-semibold transition-opacity flex-shrink-0"
             showIcon={true}
           >
             Copy
