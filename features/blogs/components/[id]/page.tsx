@@ -88,12 +88,12 @@ const SingleBlogPage = () => {
   }
 
   return (
-    <div className="bg-white dark:bg-[#0A0A0A] text-gray-900 dark:text-white min-h-screen p-4 sm:p-6 md:p-8">
+    <div className="bg-white dark:bg-[#0A0A0A] text-gray-900 dark:text-white min-h-screen p-4 sm:p-6 md:p-8 mt-16">
       <div className="container mx-auto">
         {/* Back Button */}
         <button
           onClick={() => router.push("/blog")}
-          className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-6 transition-colors"
+          className="flex items-center gap-2 text-[#1D8751] hover:text-[#166b3e] mb-6 transition-colors"
         >
           <FaArrowLeft className="h-4 w-4" />
           Back to Blog

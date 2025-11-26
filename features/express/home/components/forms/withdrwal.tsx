@@ -2118,10 +2118,27 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     const minWidth = 280;
     const maxWidth = 450;
     
-    // Find the first card container (the "You Send" card) to align all dropdowns with it
-    // Use the same logic as CustomSelect component
-    const firstCard = document.querySelector("[data-select-card='true']") || 
-                      document.querySelector("[data-asset-card='true']");
+    // Find the card that contains the asset dropdown trigger
+    const assetDropdownElement = assetDropdownRef.current;
+    let currentCard: Element | null = null;
+    
+    if (assetDropdownElement) {
+      // Traverse up the DOM to find the parent card
+      let parent = assetDropdownElement.parentElement;
+      while (parent) {
+        if (parent.hasAttribute('data-asset-card') || parent.hasAttribute('data-select-card')) {
+          currentCard = parent;
+          break;
+        }
+        parent = parent.parentElement;
+      }
+    }
+    
+    // Fallback to first card if we can't find the current card
+    if (!currentCard) {
+      currentCard = document.querySelector("[data-select-card='true']") || 
+                    document.querySelector("[data-asset-card='true']");
+    }
     
     let dropdownStyle: React.CSSProperties = {
       position: "fixed",
@@ -2130,30 +2147,51 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
       width: minWidth,
     };
 
-    if (firstCard) {
-      const cardRect = firstCard.getBoundingClientRect();
+    if (currentCard && assetDropdownElement) {
+      const cardRect = currentCard.getBoundingClientRect();
+      const dropdownRect = assetDropdownElement.getBoundingClientRect();
+      
+      // Check if this is "You Send" section (has data-select-card) or "You Receive" section
+      const isYouSend = currentCard.hasAttribute('data-select-card');
       
       // Calculate reduced width so dropdowns don't cover amount inputs (40% of card width)
       let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.width * 0.4));
       
-      // ALL dropdowns open at the same position - aligned with top of the first card
-      // Position at the top of the card
-      const top = cardRect.top + 8; // 8px below card top
-      
-      // Position to the right side of the card
-      let left = cardRect.right - desiredWidth - 4; // 4px from right edge
-      
-      // If card is too narrow, center it but still push right a bit
-      if (cardRect.width < desiredWidth + 16) {
-        left = cardRect.left + (cardRect.width - desiredWidth) / 2 + 20; // Push 20px to the right
+      // Position dropdown vertically based on section
+      let top = cardRect.top - 45; // default: above the card
+      if (isYouSend) {
+        top = cardRect.top + 10; // push "You Send" dropdown downwards
       }
       
-      // Ensure dropdown doesn't go off screen
+      let left: number;
+      
+      // Both "You Send" and "You Receive" - position from right side of card, pushed more right
+      // Position it very close to the right edge
+      left = cardRect.right - desiredWidth - 3; // 3px from right edge of card
+      
+      // Ensure it doesn't go off the left edge
+      if (left < cardRect.left) {
+        left = cardRect.left;
+      }
+      
+      // Ensure it doesn't go off screen on the right
       if (left + desiredWidth > viewportWidth - minMargin) {
         left = viewportWidth - desiredWidth - minMargin;
       }
+      
+      // Ensure it doesn't go off the left edge
       if (left < minMargin) {
         left = minMargin;
+      }
+      
+      // If card is too narrow, center it
+      if (cardRect.width < desiredWidth + 16) {
+        left = cardRect.left + (cardRect.width - desiredWidth) / 2;
+      }
+      
+      // Final boundary check to ensure it doesn't go off screen
+      if (left + desiredWidth > viewportWidth - minMargin) {
+        left = viewportWidth - desiredWidth - minMargin;
       }
 
       dropdownStyle = {
@@ -3903,6 +3941,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                     <CustomSelect
                       options={paymentMethodOptions}
                       value={payBank}
+                      dropdownVerticalAlign="cardCenter"
                       className={`w-full ${
                         paymentMethodError ? "border-red-500 dark:border-red-500" : ""
                       }`}

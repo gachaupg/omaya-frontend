@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 import { logger } from "@/lib/utils/logger";
+import { useValidateAddress } from "@/hooks/useValidateAddress";
 
 interface WalletAddressStepProps {
   walletAddress: string;
@@ -25,6 +26,86 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   isLoading = false,
 }) => {
   const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
+  const [walletError, setWalletError] = useState<string | null>(null);
+
+  // Get currency from toAsset (the asset we're receiving)
+  const getCurrencyFromAsset = useCallback((asset: any): string | undefined => {
+    if (!asset) return undefined;
+    
+    // Try different properties in order of preference
+    if (asset.ticker) {
+      return asset.ticker.toUpperCase();
+    } else if (asset.symbol) {
+      return asset.symbol.toUpperCase();
+    } else if (asset.name) {
+      return asset.name.toUpperCase();
+    }
+    
+    return undefined;
+  }, []);
+
+  const currentCurrency = getCurrencyFromAsset(toAsset);
+
+  // Address validation hook
+  const {
+    result: addressValidationResult,
+    isValidating: isAddressValidating,
+    error: addressValidationError,
+    validate: validateAddress,
+    reset: resetAddressValidation,
+  } = useValidateAddress({
+    currency: currentCurrency,
+    debounceMs: 500,
+    minLength: 10,
+    validateEmpty: false,
+  });
+
+  // Update wallet error based on validation result
+  useEffect(() => {
+    if (walletAddress.trim() === "") {
+      setWalletError(null);
+      return;
+    }
+
+    if (!currentCurrency) {
+      setWalletError("Please select an asset first");
+      return;
+    }
+
+    if (isAddressValidating) {
+      // Don't show error while validating
+      return;
+    }
+
+    if (addressValidationResult) {
+      if (!addressValidationResult.isValid) {
+        setWalletError(
+          addressValidationResult.message ||
+          addressValidationResult.error ||
+          "Invalid address"
+        );
+      } else {
+        setWalletError(null);
+      }
+    } else if (addressValidationError) {
+      setWalletError(addressValidationError);
+    }
+  }, [
+    addressValidationResult,
+    addressValidationError,
+    isAddressValidating,
+    walletAddress,
+    currentCurrency,
+  ]);
+
+  // Reset validation when asset changes
+  useEffect(() => {
+    if (walletAddress.trim() && currentCurrency) {
+      resetAddressValidation();
+      validateAddress(walletAddress, currentCurrency);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentCurrency]); // Only run when currency changes
 
   const handlePaste = async () => {
     try {
@@ -34,6 +115,12 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
         target: { value: text },
       } as React.ChangeEvent<HTMLInputElement>;
       onWalletAddressChange(syntheticEvent);
+      // Trigger validation after pasting
+      if (text.trim() && currentCurrency) {
+        validateAddress(text, currentCurrency);
+      } else {
+        resetAddressValidation();
+      }
     } catch (err) {
       logger.error("swap", "Failed to read clipboard:", err);
     }
@@ -47,6 +134,23 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
 
     await onNext();
   };
+
+  const trimmedWalletAddress = walletAddress.trim();
+  const hasWalletInput = trimmedWalletAddress.length > 0;
+  const shouldBlockForInvalidAddress =
+    hasWalletInput &&
+    !!currentCurrency &&
+    !!addressValidationResult &&
+    !addressValidationResult.isValid;
+  const shouldBlockWhileValidating =
+    hasWalletInput && !!currentCurrency && isAddressValidating;
+  const isSubmitDisabled =
+    !hasAcceptedTerms ||
+    !hasWalletInput ||
+    isLoading ||
+    !!walletError ||
+    shouldBlockForInvalidAddress ||
+    shouldBlockWhileValidating;
 
   return (
     <div className="w-full flex flex-col    gap-4">
@@ -87,11 +191,53 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                     <input
                       type="text"
                       value={walletAddress}
-                      onChange={onWalletAddressChange}
-                      className="flex-1 bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#7e7e8f] text-sm sm:text-base"
+                      onChange={(e) => {
+                        onWalletAddressChange(e);
+                        setWalletError(null); // Clear error immediately for better UX
+                        // Validate address in real-time using the validation hook
+                        if (e.target.value.trim() === "") {
+                          resetAddressValidation();
+                          setWalletError(null);
+                        } else {
+                          // Trigger validation as user types
+                          validateAddress(e.target.value, currentCurrency);
+                        }
+                      }}
+                      className={`flex-1 bg-transparent outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-[#7e7e8f] text-sm sm:text-base ${
+                        walletError ? "text-red-500" : ""
+                      }`}
                       placeholder={`Paste your ${toAsset?.name || toAsset?.symbol || ""} address here`}
                       disabled={isLoading}
                     />
+                    {/* Validation status indicator */}
+                    {walletAddress.trim() && currentCurrency && (
+                      <div className="absolute right-12 top-1/2 -translate-y-1/2 flex items-center">
+                        {isAddressValidating ? (
+                          <div className="w-4 h-4 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin"></div>
+                        ) : addressValidationResult?.isValid ? (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-[#1D8751]">
+                            <path
+                              d="M9 12l2 2 4-4"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                          </svg>
+                        ) : walletError ? (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-[#E23D3A]">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                            <path
+                              d="M12 8v4M12 16h.01"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                        ) : null}
+                      </div>
+                    )}
 
                     {/* Bookmark Icon */}
                     <svg
@@ -132,6 +278,41 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                   <span className="text-xs sm:text-sm font-medium">Paste</span>
                 </button>
               </div>
+              
+              {/* Validation messages */}
+              {walletAddress.trim() && currentCurrency && (
+                <div className="mt-2">
+                  {isAddressValidating && (
+                    <p className="text-[#1D8751] text-sm font-medium flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin"></div>
+                      Validating address...
+                    </p>
+                  )}
+                  {!isAddressValidating && walletError && (
+                    <p className="text-red-500 text-sm font-medium flex items-center gap-2">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                        <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      </svg>
+                      {walletError}
+                    </p>
+                  )}
+                  {!isAddressValidating && !walletError && addressValidationResult?.isValid && (
+                    <p className="text-[#1D8751] text-sm font-medium flex items-center gap-2">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                        <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                      </svg>
+                      Valid address ✓
+                    </p>
+                  )}
+                </div>
+              )}
+              {walletError && !currentCurrency && walletAddress.trim() && (
+                <p className="text-red-500 text-sm mt-2 font-medium">
+                  ❌ {walletError}
+                </p>
+              )}
             </div>
 
             {/* Terms and Conditions Section */}
@@ -245,7 +426,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
         <div className="flex mt-4 sm:mt-6">
           <button
             onClick={handleNext}
-            disabled={!hasAcceptedTerms || !walletAddress.trim() || isLoading}
+            disabled={isSubmitDisabled}
             className="flex-1 bg-[#1D8751] hover:bg-[#166b3e] disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-4 sm:px-6 py-3 sm:py-3 rounded-3xl font-semibold text-sm sm:text-base transition-colors flex items-center justify-center gap-2 min-h-[48px]"
           >
             {isLoading ? (

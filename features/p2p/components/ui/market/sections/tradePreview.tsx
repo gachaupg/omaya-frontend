@@ -461,24 +461,12 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                   />
                   <div className="relative w-full sm:w-auto">
                     <select
-                      className="rounded px-3 py-2 pr-10 text-sm sm:text-base font-semibold min-w-[90px] sm:min-w-[100px] w-full bg-white dark:bg-[#23242A] text-gray-900 dark:text-white border border-gray-300 dark:border-[#35353E]"
-                      value="USDT"
+                      className="rounded px-3 py-2 text-sm sm:text-base font-semibold min-w-[90px] sm:min-w-[100px] w-full bg-white dark:bg-[#23242A] text-gray-900 dark:text-white border border-gray-300 dark:border-[#35353E]"
+                      value={tradeType === "buy" ? "USD" : "USDT"}
                       disabled
                     >
                       <option>{tradeType === "buy" ? "USD" : "USDT"}</option>
                     </select>
-                    <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[#1D8751]">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    </span>
                   </div>
                 </div>
                 {!isAmountValid && sendAmount && (
@@ -547,22 +535,6 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                     />
                   </svg>
                 </button>
-                <span
-                  className={`pointer-events-none absolute inset-y-0 right-4 flex items-center text-[#1D8751] ${
-                    paymentMethod.length > 0 ? "opacity-100" : "opacity-40"
-                  }`}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                </span>
                 {isPaymentDropdownOpen && (
                   <div className="absolute top-full left-0 right-0 mt-2 rounded-xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#23242A] shadow-lg z-20 max-h-60 overflow-y-auto">
                     {paymentOptions.length === 0 ? (
@@ -589,26 +561,6 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                                 : "text-gray-700 dark:text-[#C7CAD1]"
                             }`}
                           >
-                            <span
-                              className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                                isSelected
-                                  ? "border-[#1D8751] bg-[#1D8751]"
-                                  : "border-[#1D8751] bg-transparent"
-                              }`}
-                            >
-                              {isSelected && (
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  className="h-3 w-3 text-white"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="3"
-                                >
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                              )}
-                            </span>
                             <span className="text-sm sm:text-base font-semibold">{opt.label}</span>
                           </button>
                         );

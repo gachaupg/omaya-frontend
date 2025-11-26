@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import CustomSelect from "@/components/ui/CustomSelect";
 
 export interface UserPaymentDetail {
   id: number;
@@ -7,6 +8,8 @@ export interface UserPaymentDetail {
   account_name: string;
   account_number: string;
   provider_logo?: string;
+  logo?: string;
+  logo_url?: string;
   wallet_address?: string | null;
   status?: string;
   created_at?: string;
@@ -38,27 +41,46 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
   // memo helpers
   // ──────────────────────────────────────────────────────────────────────────────
   const methodOptions = useMemo(() => {
-    const seen = new Set();
-    return userPaymentDetails.filter((d) => {
+    const seen = new Set<string>();
+    const options: Array<{ value: string; label: string; logo?: string }> = [];
+    
+    // Find the best logo for each unique payment method
+    userPaymentDetails.forEach((d) => {
       if (!seen.has(d.payment_method_name)) {
         seen.add(d.payment_method_name);
-        return true;
+        // Get logo with priority: logo_url > logo > provider_logo
+        const logoUrl = d.logo_url || d.logo || d.provider_logo || undefined;
+        options.push({
+          value: d.payment_method_name,
+          label: d.payment_method_name,
+          logo: logoUrl,
+        });
       }
-      return false;
     });
+    
+    return options;
   }, [userPaymentDetails]);
 
   const providerOptions = useMemo(() => {
-    const seen = new Set();
-    return userPaymentDetails
+    const seen = new Set<string>();
+    const options: Array<{ value: string; label: string; logo?: string }> = [];
+    
+    userPaymentDetails
       .filter((d) => d.payment_method_name === selectedMethod)
-      .filter((d) => {
+      .forEach((d) => {
         if (!seen.has(d.payment_provider_name)) {
           seen.add(d.payment_provider_name);
-          return true;
+          // Get logo with priority: logo_url > logo > provider_logo
+          const logoUrl = d.logo_url || d.logo || d.provider_logo || undefined;
+          options.push({
+            value: d.payment_provider_name,
+            label: d.payment_provider_name,
+            logo: logoUrl,
+          });
         }
-        return false;
       });
+    
+    return options;
   }, [userPaymentDetails, selectedMethod]);
 
   const filteredDetails = useMemo(
@@ -78,54 +100,51 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
   // render
   // ──────────────────────────────────────────────────────────────────────────────
   return (
-    <div className="w-full">
+    <div className="w-full" data-select-card="true">
       
       
       {/* dropdowns */}
-      <div className="flex flex-col sm:flex-row gap-2 mb-4 w-full">
+      <div className="flex flex-col sm:flex-row gap-2 mb-4 w-full" data-select-card="true">
         {/* payment-method */}
-        <div className="flex-1">
+        <div className="flex-1 w-full">
           <label className="block mb-1 text-sm text-gray-700 dark:text-[#788099]">
             Payment Method Type
           </label>
-          <select
-            className="w-full p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none"
-            value={selectedMethod}
-            onChange={(e) => {
-              setSelectedMethod(e.target.value);
-              setSelectedProvider("");
-            }}
-          >
-            <option value="">Select Method Type</option>
-            {methodOptions.map((d) => (
-              <option key={d.payment_method_name} value={d.payment_method_name}>
-                {d.payment_method_name}
-              </option>
-            ))}
-          </select>
+          <div data-select-card="true" className="w-full">
+            <CustomSelect
+              options={methodOptions}
+              value={selectedMethod}
+              onChange={(value) => {
+                setSelectedMethod(value);
+                setSelectedProvider("");
+              }}
+              placeholder="Select Method Type"
+              logoSize={32}
+              logoClassName="rounded-full object-cover flex-shrink-0"
+              className="w-full"
+              sizeMode="card"
+            />
+          </div>
         </div>
 
         {/* provider */}
         {selectedMethod && (
-          <div className="flex-1">
+          <div className="flex-1 w-full">
             <label className="block mb-1 text-sm text-gray-700 dark:text-[#788099]">
               Provider
             </label>
-            <select
-              className="w-full p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none"
-              value={selectedProvider}
-              onChange={(e) => setSelectedProvider(e.target.value)}
-            >
-              <option value="">Select Provider</option>
-              {providerOptions.map((d) => (
-                <option
-                  key={d.payment_provider_name}
-                  value={d.payment_provider_name}
-                >
-                  {d.payment_provider_name}
-                </option>
-              ))}
-            </select>
+            <div data-select-card="true" className="w-full">
+              <CustomSelect
+                options={providerOptions}
+                value={selectedProvider}
+                onChange={(value) => setSelectedProvider(value)}
+                placeholder="Select Provider"
+                logoSize={32}
+                logoClassName="rounded-full object-cover flex-shrink-0"
+                className="w-full"
+                sizeMode="card"
+              />
+            </div>
           </div>
         )}
       </div>
@@ -140,22 +159,23 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
                 className="flex items-center justify-between p-3 rounded-[24px] bg-gray-50 dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E]"
               >
                 <div className="flex items-center gap-3">
+                  {/* Logo with priority: logo_url > logo > provider_logo */}
                   <img
-                    src={detail.provider_logo || "/default-provider-logo.svg"}
+                    src={detail.logo_url || detail.logo || detail.provider_logo || "/default-provider-logo.svg"}
                     alt={`${detail.payment_provider_name} logo`}
-                    className="w-8 h-8 rounded-full object-cover"
+                    className="w-10 h-10 rounded-full object-cover border border-gray-200 dark:border-[#35353E]"
                     onError={(e) => {
                       e.currentTarget.src = "/default-provider-logo.svg";
                     }}
                   />
                   <div>
-                    <p className="text-xs text-gray-500 dark:text-[#788099]">
+                    <p className="text-xs text-gray-500 dark:text-[#788099] mb-1">
                       Account Name
                     </p>
-                    <p className="font-semibold text-gray-900 dark:text-white">
+                    <p className="font-semibold text-gray-900 dark:text-white mb-2">
                       {detail.account_name}
                     </p>
-                    <p className="mt-1 text-xs text-gray-500 dark:text-[#788099]">
+                    <p className="text-xs text-gray-500 dark:text-[#788099] mb-1">
                       Account Number
                     </p>
                     <p className="font-semibold text-gray-900 dark:text-white">

@@ -27,6 +27,7 @@ export interface TransactionStatusMessage {
     message: string;
     timestamp: string;
     transaction_id: string;
+    moneyx_transaction_id?: string;
     currency?: string;
     amount?: string;
     error?: string;

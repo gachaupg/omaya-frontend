@@ -100,6 +100,31 @@ export default function Sidebar() {
                           </span>
                         )}
                       </span>
+                    ) : item.labelKey === "navigation.exchange" ? (
+                      <span
+                        className={clsx(
+                          "flex items-center gap-0.5 font-normal tracking-normal",
+                          isActive
+                            ? "text-[#051015] dark:text-white text-sm md:text-base"
+                            : "text-[#727272] text-sm md:text-base"
+                        )}
+                        style={{
+                          fontFamily: "'Courier New', 'Courier', monospace",
+                          letterSpacing: "normal",
+                          textTransform: "none",
+                          textShadow: isActive
+                            ? isDark
+                              ? "1px 1px 0 rgba(0,0,0,0.8), 0 0 2px rgba(255,255,255,0.3)"
+                              : "1px 1px 0 rgba(255,255,255,0.8), 0 0 1px rgba(0,0,0,0.2)"
+                            : "none",
+                          WebkitFontSmoothing: "none",
+                          MozOsxFontSmoothing: "unset",
+                          imageRendering: "pixelated",
+                        }}
+                      >
+                        <span>MoneyX</span>
+     
+                      </span>
                     ) : (
                       label
                     )}
@@ -204,6 +229,49 @@ export default function Sidebar() {
                                 "navigation.expressChange",
                                 "CHANGE"
                               ).toUpperCase()}
+                        </span>
+                      </span>
+                    ) : item.labelKey === "navigation.exchange" ? (
+                      <span
+                        className={clsx(
+                          "flex items-center gap-0.5 font-bold uppercase tracking-wider whitespace-nowrap",
+                          isActive
+                            ? "text-[#051015] dark:text-white text-xs sm:text-sm"
+                            : "text-[#727272] text-xs sm:text-sm"
+                        )}
+                        style={{
+                          fontFamily: "'Courier New', 'Courier', monospace",
+                          letterSpacing: "0.08em",
+                          textShadow: isActive
+                            ? isDark
+                              ? "1px 1px 0 rgba(0,0,0,0.8), 0 0 2px rgba(255,255,255,0.3)"
+                              : "1px 1px 0 rgba(255,255,255,0.8), 0 0 1px rgba(0,0,0,0.2)"
+                            : "none",
+                          WebkitFontSmoothing: "none",
+                          MozOsxFontSmoothing: "unset",
+                          imageRendering: "pixelated",
+                        }}
+                      >
+                        <span>Money</span>
+                        <span className="relative inline-block">
+                          X
+                          {/* Green leaf/triangle detail on top-left of X */}
+                          <svg
+                            className="absolute"
+                            width="5"
+                            height="5"
+                            viewBox="0 0 5 5"
+                            style={{
+                              top: "-1px",
+                              left: "-1px",
+                              imageRendering: "pixelated",
+                            }}
+                          >
+                            <polygon
+                              points="0,0 3,0 0,3"
+                              fill={isActive ? "#1D8751" : "#727272"}
+                            />
+                          </svg>
                         </span>
                       </span>
                     ) : (

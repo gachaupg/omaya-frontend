@@ -10,6 +10,8 @@ interface Option {
   logo?: string;
 }
 
+type DropdownVerticalAlign = "cardTop" | "cardCenter";
+
 interface CustomSelectProps {
   options: Option[];
   value: string;
@@ -31,6 +33,7 @@ interface CustomSelectProps {
   placeholderClassName?: string;
   sizeMode?: "compact" | "wide" | "card";
   dropdownTitle?: string; // Title shown at the top of the dropdown
+  dropdownVerticalAlign?: DropdownVerticalAlign;
 }
 
 const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -50,6 +53,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   placeholderClassName = "",
   sizeMode = "compact",
   dropdownTitle,
+  dropdownVerticalAlign = "cardTop",
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -102,22 +106,33 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     const minWidth = 280;
     const maxWidth = 450;
     
-    // Find the first card container (the "You Send" card) to align all dropdowns with it
-    const firstCard = document.querySelector("[data-select-card='true']") || 
-                      document.querySelector("[data-asset-card='true']");
+    // Prefer the card that contains this trigger; fallback to first card
+    const parentCard =
+      triggerElement.closest("[data-select-card='true']") ||
+      triggerElement.closest("[data-asset-card='true']");
+    const fallbackCard =
+      document.querySelector("[data-select-card='true']") ||
+      document.querySelector("[data-asset-card='true']");
     
-    if (firstCard) {
-      const cardRect = firstCard.getBoundingClientRect();
+    const targetCard = parentCard || fallbackCard;
+    
+    if (targetCard) {
+      const cardRect = targetCard.getBoundingClientRect();
       
       // Calculate reduced width so dropdowns don't cover amount inputs (40% of card width)
       let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.width * 0.4));
       
-      // ALL dropdowns open at the same position - aligned with top of the first card
-      // Position at the top of the card
-      const top = cardRect.top + 8; // 8px below card top
+      // Position at the top of the card or center based on preference
+      let top = cardRect.top + 8; // default: slightly below top
+      if (dropdownVerticalAlign === "cardCenter") {
+        top = cardRect.top + cardRect.height / 2 - 70; // slightly higher than previous
+      }
       
       // Position to the right side of the card
       let left = cardRect.right - desiredWidth - 4; // 4px from right edge
+      if (dropdownVerticalAlign === "cardCenter") {
+        left = cardRect.right - desiredWidth + 4; // push further right
+      }
       
       // If card is too narrow, center it but still push right a bit
       if (cardRect.width < desiredWidth + 16) {

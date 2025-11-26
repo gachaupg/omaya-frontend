@@ -11,11 +11,11 @@ export const navItems = [
     icon: "https://res.cloudinary.com/pitz/image/upload/v1752243765/Vector_2_xauedx.png",
     href: "/dashboard/express-exchange/",
   },
-  // {
-  //   labelKey: "navigation.exchange",
-  //   icon: "https://res.cloudinary.com/pitz/image/upload/v1747237692/uil_exchange_tavqwx.png",
-  //   href: "/dashboard/exchange",
-  // },
+  {
+    labelKey: "navigation.exchange",
+    icon: "https://res.cloudinary.com/pitz/image/upload/v1764051173/uil_exchange_tmoooe.png",
+    href: "/dashboard/exchange/",
+  },
   {
     labelKey: "navigation.p2pTrading",
     icon: "https://res.cloudinary.com/pitz/image/upload/v1747237692/users-profiles-left_e2oejc.png",
