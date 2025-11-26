@@ -36,6 +36,15 @@ import {
   setAuthRedirectPath,
 } from "@/lib/utils/authRedirect";
 import { useExpressI18n } from "@/lib/useExpressI18n";
+import {
+  ASSET_ICON_BASE_CLASS,
+  ASSET_ICON_SIZE,
+  getHighResAssetIcon,
+  getHighResPaymentLogo,
+  PAYMENT_LOGO_BASE_CLASS,
+  PAYMENT_LOGO_SIZE,
+} from "../../utils/imageHelpers";
+import { useValidateAddress } from "@/hooks/useValidateAddress";
 
 interface DepositFormProps {
   onExchange?: (transactionData: {
@@ -94,6 +103,31 @@ const getAssetNetwork = (asset: any): string => {
   }
 
   return "";
+};
+
+const resolveProviderLogo = (
+  ...candidates: Array<string | null | undefined>
+) => {
+  for (const candidate of candidates) {
+    if (typeof candidate === "string") {
+      const trimmed = candidate.trim();
+      if (trimmed.length > 0) {
+        return trimmed;
+      }
+    }
+  }
+  return undefined;
+};
+
+const extractLogoFromDetail = (detail?: any) => {
+  if (!detail) return undefined;
+  return resolveProviderLogo(
+    detail.logo_url,
+    detail.logo,
+    detail.provider_logo,
+    detail.provider_logo_url,
+    detail.logoUrl
+  );
 };
 
 export default function DepositForm({
@@ -203,6 +237,19 @@ export default function DepositForm({
                 ? provider.payment_details[0]
                 : {};
 
+          const detailLogo = extractLogoFromDetail(firstPaymentDetail);
+          const providerLogo = resolveProviderLogo(
+            provider.logo_url,
+            provider.logo,
+            provider.provider_logo,
+            provider.provider_logo_url,
+            provider.logoUrl,
+            provider.linked_bank_provider?.logo_url,
+            provider.linked_bank_provider?.logo,
+            provider.linked_bank_provider?.provider_logo,
+            detailLogo
+          );
+
             const flattened = {
               provider_name: provider.provider_name,
               payment_method:
@@ -213,8 +260,9 @@ export default function DepositForm({
                 provider.method?.method_name ||
                 provider.method?.method_display ||
                 "",
-              provider_logo: provider.logo,
-              logo: provider.logo, // Also add as 'logo' for backward compatibility
+            provider_logo: providerLogo,
+            logo: providerLogo, // Also add as 'logo' for backward compatibility
+            logo_url: provider.logo_url || detailLogo || providerLogo,
               is_active: true, // All public methods are considered active
               payment_details: provider.payment_details || [],
               // Flatten first payment detail for easy access
@@ -234,7 +282,9 @@ export default function DepositForm({
               provider_name: flattened.provider_name,
               provider_logo: flattened.provider_logo,
               logo: flattened.logo,
+              logo_url: flattened.logo_url,
               hasLogo: !!(flattened.provider_logo || flattened.logo),
+              detailLogo,
             });
 
             return flattened;
@@ -267,12 +317,26 @@ export default function DepositForm({
                       ? provider.payment_details[0]
                       : {};
 
+                  const detailLogo = extractLogoFromDetail(firstPaymentDetail);
+                  const providerLogo = resolveProviderLogo(
+                    provider.logo_url,
+                    provider.logo,
+                    provider.provider_logo,
+                    provider.provider_logo_url,
+                    provider.logoUrl,
+                    provider.linked_bank_provider?.logo_url,
+                    provider.linked_bank_provider?.logo,
+                    provider.linked_bank_provider?.provider_logo,
+                    detailLogo
+                  );
+
                   flattenedMethods.push({
                     provider_name: provider.provider_name,
                     payment_method: method.method_name,
                     payment_method_type: method.method_name,
-                    provider_logo: provider.logo,
-                    logo: provider.logo, // Also add as 'logo' for backward compatibility
+                    provider_logo: providerLogo,
+                    logo: providerLogo, // Also add as 'logo' for backward compatibility
+                    logo_url: provider.logo_url || detailLogo || providerLogo,
                     is_active: true, // All public methods are considered active
                     payment_details: provider.payment_details || [],
                     // Flatten first payment detail for easy access
@@ -341,11 +405,25 @@ export default function DepositForm({
           })
           .map((payment: any) => {
             // Ensure admin payment methods have logo field properly set
+          const firstDetail =
+            payment.payment_details && payment.payment_details.length > 0
+              ? payment.payment_details[0]
+              : null;
+          const detailLogo = extractLogoFromDetail(firstDetail);
+          const resolvedLogo = resolveProviderLogo(
+            payment.logo_url,
+            payment.logo,
+            payment.provider_logo,
+            payment.provider_logo_url,
+            payment.logoUrl,
+            detailLogo
+          );
             return {
               ...payment,
+            logo_url: payment.logo_url || detailLogo || resolvedLogo,
               // Ensure logo field is available (admin payment methods might have provider_logo)
-              logo: payment.logo || payment.provider_logo || undefined,
-              provider_logo: payment.provider_logo || payment.logo || undefined,
+            logo: resolvedLogo || undefined,
+            provider_logo: resolvedLogo || undefined,
             };
           });
       }
@@ -486,6 +564,87 @@ export default function DepositForm({
   const [walletError, setWalletError] = useState<string | null>(null);
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false);
   const [forceUpdate, setForceUpdate] = useState(0);
+
+  // Get currency from selectedAsset for validation
+  const getCurrencyFromAsset = useCallback((asset: any): string | undefined => {
+    if (!asset) return undefined;
+    
+    // Try different properties in order of preference
+    if (asset.ticker) {
+      return asset.ticker.toUpperCase();
+    } else if (asset.symbol) {
+      // Handle special case for USDT Tether
+      return asset.symbol === "USDT Tether" ? "USDT" : asset.symbol.toUpperCase();
+    } else if (asset.name) {
+      return asset.name.toUpperCase();
+    }
+    
+    return undefined;
+  }, []);
+
+  const currentCurrency = getCurrencyFromAsset(selectedAsset);
+
+  // Address validation hook
+  const {
+    result: addressValidationResult,
+    isValidating: isAddressValidating,
+    error: addressValidationError,
+    validate: validateAddress,
+    reset: resetAddressValidation,
+  } = useValidateAddress({
+    currency: currentCurrency,
+    debounceMs: 500,
+    minLength: 10,
+    validateEmpty: false,
+  });
+
+  // Update wallet error based on validation result
+  useEffect(() => {
+    if (walletAddress.trim() === "") {
+      setWalletError(null);
+      return;
+    }
+
+    if (!currentCurrency) {
+      setWalletError("Please select an asset first");
+      return;
+    }
+
+    if (isAddressValidating) {
+      // Don't show error while validating
+      return;
+    }
+
+    if (addressValidationResult) {
+      if (!addressValidationResult.isValid) {
+        setWalletError(
+          addressValidationResult.message ||
+          addressValidationResult.error ||
+          "Invalid address"
+        );
+      } else {
+        setWalletError(null);
+        setIsAddressConfirmed(true);
+      }
+    } else if (addressValidationError) {
+      setWalletError(addressValidationError);
+    }
+  }, [
+    addressValidationResult,
+    addressValidationError,
+    isAddressValidating,
+    walletAddress,
+    currentCurrency,
+  ]);
+
+  // Reset validation when asset changes
+  useEffect(() => {
+    if (walletAddress.trim() && currentCurrency) {
+      resetAddressValidation();
+      validateAddress(walletAddress, currentCurrency);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentCurrency]); // Only run when currency changes
   // Initialize selectedPaymentDetail from initialState if available (immediate, no waiting)
   const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(() => {
     // If we have initialState with payment, use it immediately
@@ -1398,17 +1557,12 @@ export default function DepositForm({
                         }}
                       >
                         <img
-                          src={
-                            asset?.image_url ||
-                            asset?.asset_image ||
-                            (asset as any)?.image ||
-                            "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                          }
+                          src={getHighResAssetIcon(asset, ASSET_ICON_SIZE)}
                           alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
-                          className="w-6 h-6 rounded-full object-cover"
+                          className={`${ASSET_ICON_BASE_CLASS} w-11 h-11`}
+                          loading="lazy"
                           onError={(e) => {
-                            e.currentTarget.src =
-                              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                            e.currentTarget.src = getHighResAssetIcon(null, ASSET_ICON_SIZE);
                           }}
                         />
                         <div className="flex-1">
@@ -1470,17 +1624,12 @@ export default function DepositForm({
                       }}
                     >
                       <img
-                        src={
-                          asset?.image_url ||
-                          asset?.asset_image ||
-                          (asset as any)?.image ||
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                        }
+                        src={getHighResAssetIcon(asset, ASSET_ICON_SIZE)}
                         alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
-                        className="w-6 h-6 rounded-full object-cover"
+                        className={`${ASSET_ICON_BASE_CLASS} w-11 h-11`}
+                        loading="lazy"
                         onError={(e) => {
-                          e.currentTarget.src =
-                            "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                          e.currentTarget.src = getHighResAssetIcon(null, ASSET_ICON_SIZE);
                         }}
                       />
                       <div className="flex-1">
@@ -2844,22 +2993,32 @@ export default function DepositForm({
                     
                     const mappedOptions = optionsToMap.map(
                       (payment: any, index: number) => {
-                        // Get logo URL - check both fields and ensure it's a valid string
-                        let logoUrl: string | undefined = undefined;
+                        // Get logo URL - check all known fields and ensure it's a valid string
+                        const firstDetail =
+                          payment.payment_details &&
+                          payment.payment_details.length > 0
+                            ? payment.payment_details[0]
+                            : null;
+                        const detailLogo = extractLogoFromDetail(firstDetail);
+                        const rawLogo = resolveProviderLogo(
+                          payment.logo_url,
+                          payment.provider_logo,
+                          payment.logo,
+                          payment.provider_logo_url,
+                          payment.logoUrl,
+                          detailLogo
+                        );
 
-                        if (
-                          payment.provider_logo &&
-                          typeof payment.provider_logo === "string" &&
-                          payment.provider_logo.trim()
-                        ) {
-                          logoUrl = payment.provider_logo.trim();
-                        } else if (
-                          payment.logo &&
-                          typeof payment.logo === "string" &&
-                          payment.logo.trim()
-                        ) {
-                          logoUrl = payment.logo.trim();
-                        }
+                        const fallbackLogo = resolveProviderLogo(
+                          payment.provider_logo,
+                          payment.logo,
+                          detailLogo
+                        );
+
+                        const logoUrl = getHighResPaymentLogo(
+                          rawLogo,
+                          fallbackLogo
+                        );
 
                         if (index < 3) {
                           console.log(`🔍 Payment Method Option ${index}:`, {
@@ -2867,9 +3026,12 @@ export default function DepositForm({
                             provider_name: payment.provider_name,
                             provider_logo: payment.provider_logo,
                             logo: payment.logo,
+                            logo_url: payment.logo_url,
+                            detailLogo,
                             logoUrl: logoUrl,
+                            rawLogo,
                             logoUrlType: typeof logoUrl,
-                            logoUrlIsValid: !!logoUrl && logoUrl.length > 0,
+                            rawLogoIsValid: !!rawLogo,
                             payment_method: payment.payment_method,
                             admin_payment_detail_id:
                               payment.admin_payment_detail_id,
@@ -2877,17 +3039,22 @@ export default function DepositForm({
                           });
                         }
 
-                        if (!logoUrl && index < 3) {
+                        if (!rawLogo && index < 3) {
                           console.warn(
                             `⚠️ No logo found for payment method ${index}: ${payment.provider_name}`,
                             {
                               paymentKeys: Object.keys(payment),
                               hasProviderLogo: !!payment.provider_logo,
                               hasLogo: !!payment.logo,
+                                hasLogoUrl: !!payment.logo_url,
+                                hasDetailLogo: !!detailLogo,
                               providerLogoValue: payment.provider_logo,
                               logoValue: payment.logo,
+                                logoUrlValue: payment.logo_url,
+                                detailLogo,
                               providerLogoType: typeof payment.provider_logo,
                               logoType: typeof payment.logo,
+                                logoUrlType: typeof payment.logo_url,
                             }
                           );
                         }
@@ -2919,6 +3086,8 @@ export default function DepositForm({
                     return mappedOptions;
                   })()}
                   value={payBank}
+                  logoSize={PAYMENT_LOGO_SIZE}
+                  logoClassName={PAYMENT_LOGO_BASE_CLASS}
                   sizeMode="card"
                   onChange={(value) => {
                     const selectedPayment = finalPaymentMethods?.find(
@@ -3241,22 +3410,17 @@ export default function DepositForm({
                     {selectedAsset ? (
                       <>
                         <img
-                          src={
-                            selectedAsset?.image_url ||
-                            selectedAsset?.asset_image ||
-                            (selectedAsset as any)?.image ||
-                            "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                          }
+                          src={getHighResAssetIcon(selectedAsset, 72)}
                           alt={
                             selectedAsset?.name ||
                             selectedAsset?.ticker ||
                             selectedAsset?.symbol ||
                             "Asset"
                           }
-                          className="w-6 h-6 rounded-full object-cover"
+                          className={`${ASSET_ICON_BASE_CLASS} w-12 h-12`}
+                          loading="lazy"
                           onError={(e) => {
-                            e.currentTarget.src =
-                              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                            e.currentTarget.src = getHighResAssetIcon(null, 72);
                           }}
                         />
                         <div className="flex flex-col">
@@ -3291,9 +3455,10 @@ export default function DepositForm({
                     ) : (
                       <>
                         <img
-                          src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                          src={getHighResAssetIcon(null, 72)}
                           alt="asset icon"
-                          className="w-6 h-6"
+                          className={`${ASSET_ICON_BASE_CLASS} w-12 h-12`}
+                          loading="lazy"
                         />
                         <span className="text-[#7e7e8f] dark:text-[#788099]">
                           {assetsDisplay.isLoading
@@ -3355,18 +3520,7 @@ export default function DepositForm({
         {/* Disclaimer Banner */}
         <div className="flex items-center rounded-2xl px-4 py-3 mb-4 dark:bg-[#1D1D23]">
           <div className="flex items-center gap-3">
-            <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
-              <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                <path
-                  d="M12 8v4m0 4h.01"
-                  stroke="white"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" />
-              </svg>
-            </div>
+              <img src="https://res.cloudinary.com/pitz/image/upload/v1764062160/Icon_2_tppzgw.png" alt="" />
             <span className="text-[#35353e] dark:text-[#788099] text-sm font-medium">
               {t("express.estimate.notice", "This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds.")}
             </span>
@@ -3473,16 +3627,27 @@ export default function DepositForm({
                     </span>
                     <div className="flex items-center gap-2">
                       <img
-                        src={
-                          selectedPaymentDetail.provider_logo ||
+                        src={getHighResPaymentLogo(
+                          resolveProviderLogo(
+                            selectedPaymentDetail.logo_url,
+                            extractLogoFromDetail(
+                              selectedPaymentDetail.payment_details?.[0]
+                            ),
+                            selectedPaymentDetail.provider_logo
+                          ),
                           selectedPaymentDetail.logo ||
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
-                        }
+                            selectedPaymentDetail.provider_logo,
+                          PAYMENT_LOGO_SIZE
+                        )}
                         alt={`${selectedPaymentDetail.provider_name || "Bank"} Logo`}
-                        className="w-8 h-8 rounded-full object-contain"
+                        className={`${PAYMENT_LOGO_BASE_CLASS} w-12 h-12`}
+                        loading="lazy"
                         onError={(e) => {
-                          e.currentTarget.src =
-                            "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                          e.currentTarget.src = getHighResPaymentLogo(
+                            null,
+                            null,
+                            PAYMENT_LOGO_SIZE
+                          );
                         }}
                       />
                       <span className="text-[#35353e] dark:text-[#788099] text-base font-semibold">
@@ -3686,16 +3851,27 @@ export default function DepositForm({
                 </span>
                 <div className="flex items-center gap-2">
                   <img
-                    src={
-                      selectedPaymentDetail.provider_logo ||
+                    src={getHighResPaymentLogo(
+                      resolveProviderLogo(
+                        selectedPaymentDetail.logo_url,
+                        extractLogoFromDetail(
+                          selectedPaymentDetail.payment_details?.[0]
+                        ),
+                        selectedPaymentDetail.provider_logo
+                      ),
                       selectedPaymentDetail.logo ||
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
-                    }
+                        selectedPaymentDetail.provider_logo,
+                      PAYMENT_LOGO_SIZE
+                    )}
                     alt={`${selectedPaymentDetail.provider_name || "Bank"} Logo`}
-                    className="w-8 h-8 rounded-full object-contain"
+                    className={`${PAYMENT_LOGO_BASE_CLASS} w-12 h-12`}
+                    loading="lazy"
                     onError={(e) => {
-                      e.currentTarget.src =
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                      e.currentTarget.src = getHighResPaymentLogo(
+                        null,
+                        null,
+                        PAYMENT_LOGO_SIZE
+                      );
                     }}
                   />
                   <span className="text-[#35353e] dark:text-[#788099] text-base font-semibold">
@@ -3888,7 +4064,7 @@ export default function DepositForm({
               {t("express.walletAccountAddress", "Wallet/Account Address")}
             </label>
             {/* Input group */}
-            <div className="flex items-center dark:bg-[#1D1D23] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-4 py-2 mb-0">
+            <div className="relative flex items-center dark:bg-[#1D1D23] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-4 py-2 mb-0">
               {/* Left icon */}
               <span className="mr-2 text-[#1D8751]">
                 <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
@@ -3919,32 +4095,56 @@ export default function DepositForm({
                   const value = e.target.value;
                   setWalletAddress(value);
                   setIsAddressConfirmed(false);
+                  setWalletError(null); // Clear error immediately for better UX
 
-                  // Validate immediately as user types (wallet address is optional for initial submission)
+                  // Validate address in real-time using the validation hook
                   if (value.trim() === "") {
+                    resetAddressValidation();
                     setWalletError(null); // No error when empty - address is optional
-                  } else if (!selectedAsset) {
-                    setWalletError("Please select an asset first");
                   } else {
-                    // Allow all address types - no specific network validation
-                    if (value.trim().length < 10) {
-                      setWalletError("Address seems too short");
-                      setForceUpdate((prev) => prev + 1);
-                    } else {
-                      setWalletError(null);
-                      setForceUpdate((prev) => prev + 1);
-                    }
+                    // Trigger validation as user types
+                    validateAddress(value, currentCurrency);
                   }
+                  setForceUpdate((prev) => prev + 1);
                 }}
                 placeholder="Paste here your Crypto address"
                 className={`flex-1 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-base ${
                   walletError
                     ? "border-red-500"
-                    : walletAddress.trim() && !walletError
+                    : walletAddress.trim() && !walletError && addressValidationResult?.isValid
                       ? "border-green-500"
                       : ""
                 }`}
               />
+              {/* Validation status indicator */}
+              {walletAddress.trim() && currentCurrency && (
+                <div className="absolute right-16 top-1/2 -translate-y-1/2 flex items-center">
+                  {isAddressValidating ? (
+                    <div className="w-4 h-4 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin"></div>
+                  ) : addressValidationResult?.isValid ? (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-[#1D8751]">
+                      <path
+                        d="M9 12l2 2 4-4"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                    </svg>
+                  ) : walletError ? (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-[#E23D3A]">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                      <path
+                        d="M12 8v4M12 16h.01"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  ) : null}
+                </div>
+              )}
               {/* Bookmark icon */}
               <span className="mx-2 text-[#788099] cursor-pointer">
                 <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
@@ -3963,6 +4163,13 @@ export default function DepositForm({
                   try {
                     const text = await navigator.clipboard.readText();
                     setWalletAddress(text);
+                    setIsAddressConfirmed(false);
+                    // Trigger validation after pasting
+                    if (text.trim()) {
+                      validateAddress(text, currentCurrency);
+                    } else {
+                      resetAddressValidation();
+                    }
                   } catch (err) {
                     console.error("Failed to read clipboard:", err);
                     showToast.error("Failed to paste from clipboard");
@@ -3986,7 +4193,35 @@ export default function DepositForm({
             </div>
 
             {/* Show validation messages below the wallet address input */}
-            {walletError && (
+            {walletAddress.trim() && currentCurrency && (
+              <div className="mt-2">
+                {isAddressValidating && (
+                  <p className="text-[#1D8751] text-sm font-medium flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin"></div>
+                    Validating address...
+                  </p>
+                )}
+                {!isAddressValidating && walletError && (
+                  <p className="text-red-500 text-sm font-medium flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                      <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                    {walletError}
+                  </p>
+                )}
+                {!isAddressValidating && !walletError && addressValidationResult?.isValid && (
+                  <p className="text-[#1D8751] text-sm font-medium flex items-center gap-2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                    </svg>
+                    Valid address ✓
+                  </p>
+                )}
+              </div>
+            )}
+            {walletError && !currentCurrency && walletAddress.trim() && (
               <p className="text-red-500 text-sm mt-2 font-medium">
                 ❌ {walletError}
               </p>

@@ -112,7 +112,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
     };
   }, [isFromAssetOpen, isToAssetOpen, onFromAssetToggle, onToAssetToggle]);
 
-  const updateDropdownPosition = (): React.CSSProperties => {
+  const updateDropdownPosition = (isFrom: boolean): React.CSSProperties => {
     if (typeof window === "undefined") {
       return {
         position: "fixed",
@@ -128,8 +128,32 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
     const minWidth = 280;
     const maxWidth = 450;
     
-    // Find the first card container (the "You Send" card) to align all dropdowns with it
-    const firstCard = document.querySelector("[data-swap-card='true']");
+    // Find the card that contains the dropdown trigger
+    const dropdownElement = isFrom ? fromAssetDropdownRef.current : toAssetDropdownRef.current;
+    let currentCard: Element | null = null;
+    
+    if (dropdownElement) {
+      let parent = dropdownElement.parentElement;
+      while (parent) {
+        if (parent.hasAttribute("data-swap-card")) {
+          currentCard = parent;
+          break;
+        }
+        parent = parent.parentElement;
+      }
+    }
+    
+    // Fallback to card order if we can't find via DOM traversal
+    if (!currentCard) {
+      const allCards = document.querySelectorAll("[data-swap-card='true']");
+      if (isFrom && allCards.length > 0) {
+        currentCard = allCards[0];
+      } else if (!isFrom && allCards.length > 1) {
+        currentCard = allCards[1];
+      } else if (allCards.length > 0) {
+        currentCard = allCards[0];
+      }
+    }
     
     let dropdownStyle: React.CSSProperties = {
       position: "fixed",
@@ -138,30 +162,48 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
       width: minWidth,
     };
 
-    if (firstCard) {
-      const cardRect = firstCard.getBoundingClientRect();
+    if (currentCard && dropdownElement) {
+      const cardRect = currentCard.getBoundingClientRect();
+      const dropdownRect = dropdownElement.getBoundingClientRect();
       
       // Calculate reduced width so dropdowns don't cover amount inputs (40% of card width)
       let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.width * 0.4));
       
-      // ALL dropdowns open at the same position - aligned with top of the first card
-      // Position at the top of the card
-      const top = cardRect.top + 8; // 8px below card top
-      
-      // Position to the right side of the card
-      let left = cardRect.right - desiredWidth - 4; // 4px from right edge
-      
-      // If card is too narrow, center it but still push right a bit
-      if (cardRect.width < desiredWidth + 16) {
-        left = cardRect.left + (cardRect.width - desiredWidth) / 2 + 20; // Push 20px to the right
+      // Position at the top of the card, allow different offsets per section
+      let top = cardRect.top - 15; // default: slightly above card
+      if (isFrom) {
+        top = cardRect.top + 10; // push "You Send" dropdown down a little
       }
       
-      // Ensure dropdown doesn't go off screen
+      let left: number;
+      
+      // Both "You Send" and "You Receive" - position from right side of card, pushed more right
+      // Position it very close to the right edge
+      left = cardRect.right - desiredWidth - 3; // 3px from right edge of card
+      
+      // Ensure it doesn't go off the left edge
+      if (left < cardRect.left) {
+        left = cardRect.left;
+      }
+      
+      // Ensure it doesn't go off screen on the right
       if (left + desiredWidth > viewportWidth - minMargin) {
         left = viewportWidth - desiredWidth - minMargin;
       }
+      
+      // Ensure it doesn't go off the left edge
       if (left < minMargin) {
         left = minMargin;
+      }
+      
+      // If card is too narrow, center it
+      if (cardRect.width < desiredWidth + 16) {
+        left = cardRect.left + (cardRect.width - desiredWidth) / 2;
+      }
+      
+      // Final boundary check to ensure it doesn't go off screen
+      if (left + desiredWidth > viewportWidth - minMargin) {
+        left = viewportWidth - desiredWidth - minMargin;
       }
 
       dropdownStyle = {
@@ -188,7 +230,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
       return null;
     }
 
-    const dropdownStyle = updateDropdownPosition();
+    const dropdownStyle = updateDropdownPosition(isFrom);
     const filteredAssets = supportedAssets.filter((asset: SupportedAsset) => {
       if (!searchValue) return true;
       const searchLower = searchValue.toLowerCase();

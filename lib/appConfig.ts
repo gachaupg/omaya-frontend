@@ -104,6 +104,7 @@ export const API_CONFIG = {
     CREATE_SWAP: "/api/changenow/create/",
     SWAP_STATUS: "/api/changenow/status/",
     SWAP_HISTORY: "/api/changenow/user/history/",
+    VALIDATE_ADDRESS: "/api/changenow/validate-address/",
     SWAP_STATUS_WS: (swapId: string) =>
       `${getWebSocketBaseUrl()}/ws/changenow/status/${swapId}/`,
   },
@@ -161,5 +162,13 @@ export const API_CONFIG = {
   },
   REFERRAL: {
     CALCULATE_FEES: "/trading_engine/referral/calculate-fees/",
+  },
+  MONEYX: {
+    TRANSACTIONS: "/api/moneyx/transactions/",
+    UPDATE_TRANSACTION: (transactionId: string) => `/api/moneyx/transactions/${transactionId}/`,
+    SOCKETS: {
+      STATUS: (transactionId: string) =>
+        `${getWebSocketBaseUrl()}/ws/moneyx/status/${transactionId}/`,
+    },
   },
 };

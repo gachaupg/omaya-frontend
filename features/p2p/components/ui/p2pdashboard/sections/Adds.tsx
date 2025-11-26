@@ -557,58 +557,82 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                     <label className="text-sm text-gray-600 dark:text-[#788099] mb-2 block">
                       Selected Payment Methods ({selectedPaymentDetails.length})
                     </label>
-                    <div className="space-y-2">
-                      {selectedPaymentDetails.map((detail) => (
-                        <div
-                          key={detail.id}
-                          className="flex items-center justify-between p-3 rounded-[16px] bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751]/30"
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs font-semibold text-[#1D8751] dark:text-[#1D8751] uppercase bg-white dark:bg-[#18181D] px-2 py-1 rounded">
-                                {detail.payment_method_name}
-                              </span>
-                              <span className="text-xs text-gray-600 dark:text-[#788099]">
-                                •
-                              </span>
-                              <span className="text-xs text-gray-900 dark:text-white font-medium">
-                                {detail.payment_provider_name}
-                              </span>
-                            </div>
-                            <div className="flex flex-col sm:flex-row sm:gap-4">
-                              <div>
-                                <span className="text-xs text-gray-500 dark:text-[#788099]">
-                                  {detail.account_name}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-xs text-gray-500 dark:text-[#788099]">
-                                  •••• {detail.account_number?.slice(-4) || 'N/A'}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          <button
-                            className="ml-2 p-2 text-[#E23D3A] hover:bg-[#E23D3A]/10 rounded-full transition"
-                            onClick={() => handleRemovePaymentDetail(detail)}
-                            title="Remove payment method"
+                    <div className="space-y-3">
+                      {selectedPaymentDetails.map((detail) => {
+                        // Get logo URL with priority: logo_url > logo > provider_logo
+                        const logoUrl = detail.logo_url || detail.logo || detail.provider_logo || "/default-provider-logo.svg";
+                        
+                        return (
+                          <div
+                            key={detail.id}
+                            className="flex items-center justify-between p-4 rounded-[16px] bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751]/30"
                           >
-                            <svg
-                              className="w-5 h-5"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
+                            <div className="flex items-center gap-3 flex-1">
+                              {/* Logo */}
+                              <div className="flex-shrink-0">
+                                <img
+                                  src={logoUrl}
+                                  alt={`${detail.payment_provider_name} logo`}
+                                  className="w-12 h-12 rounded-full object-cover border-2 border-white dark:border-[#18181D]"
+                                  onError={(e) => {
+                                    e.currentTarget.src = "/default-provider-logo.svg";
+                                  }}
+                                />
+                              </div>
+                              
+                              {/* Details */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                  <span className="text-xs font-semibold text-[#1D8751] dark:text-[#1D8751] uppercase bg-white dark:bg-[#18181D] px-2 py-1 rounded">
+                                    {detail.payment_method_name}
+                                  </span>
+                                  <span className="text-xs text-gray-600 dark:text-[#788099]">
+                                    •
+                                  </span>
+                                  <span className="text-xs text-gray-900 dark:text-white font-medium">
+                                    {detail.payment_provider_name}
+                                  </span>
+                                </div>
+                                
+                                {/* Account Name - Prominent Display */}
+                                <div className="mb-1">
+                                  <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                                    {detail.account_name || 'N/A'}
+                                  </span>
+                                </div>
+                                
+                                {/* Account Number */}
+                                <div>
+                                  <span className="text-xs text-gray-500 dark:text-[#788099]">
+                                    •••• {detail.account_number?.slice(-4) || 'N/A'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Remove Button */}
+                            <button
+                              className="ml-3 flex-shrink-0 p-2 text-[#E23D3A] hover:bg-[#E23D3A]/10 rounded-full transition"
+                              onClick={() => handleRemovePaymentDetail(detail)}
+                              title="Remove payment method"
                             >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M6 18L18 6M6 6l12 12"
-                              />
-                            </svg>
-                          </button>
-                        </div>
-                      ))}
+                              <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M6 18L18 6M6 6l12 12"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                        );
+                      })}
                     </div>
                     <p className="text-xs text-gray-500 dark:text-[#788099] mt-2">
                       💡 You can add multiple payment methods from different types (Bank, Mobile Money, etc.)
@@ -665,6 +689,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
           onClose={() => setShowPaymentModal(false)}
           onAdd={() => {
             setShowPaymentModal(false);
+            dispatch(fetchUserPaymentDetails() as any);
           }}
         />
         {/* Terms & Auto Reply */}

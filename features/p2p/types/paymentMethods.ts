@@ -53,6 +53,8 @@ export interface UserPaymentDetail {
   account_name: string;
   account_number: string;
   provider_logo?: string;
+  logo?: string;
+  logo_url?: string;
   wallet_address?: string | null;
   status?: string;
   created_at?: string;

@@ -30,6 +30,8 @@ interface CustomSelectProps {
   hideSelectedLabel?: boolean;
   placeholderClassName?: string;
   sizeMode?: "compact" | "wide" | "card";
+  logoSize?: number;
+  logoClassName?: string;
 }
 
 const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -48,7 +50,12 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   hideSelectedLabel = false,
   placeholderClassName = "",
   sizeMode = "compact",
+  logoSize,
+  logoClassName,
 }) => {
+  const resolvedLogoSize = logoSize ?? (sizeMode === "card" ? 44 : 32);
+  const resolvedLogoClass =
+    logoClassName ?? "rounded object-cover flex-shrink-0";
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -292,7 +299,8 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
               <img
                 src={selectedLogo}
                 alt=""
-                className="w-6 h-6 sm:w-8 sm:h-8 rounded object-cover flex-shrink-0"
+                className={resolvedLogoClass}
+                style={{ width: resolvedLogoSize, height: resolvedLogoSize }}
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = 'none';
                 }}
@@ -399,7 +407,8 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                         <img
                           src={option.logo}
                           alt=""
-                          className="w-6 h-6 sm:w-8 sm:h-8 rounded object-cover flex-shrink-0"
+                          className={resolvedLogoClass}
+                          style={{ width: resolvedLogoSize, height: resolvedLogoSize }}
                           onError={(e) => {
                             (e.target as HTMLImageElement).style.display = "none";
                           }}

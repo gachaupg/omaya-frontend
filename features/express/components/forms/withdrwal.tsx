@@ -37,6 +37,14 @@ import {
   buildExpressRedirectPath,
   setAuthRedirectPath,
 } from "@/lib/utils/authRedirect";
+import {
+  ASSET_ICON_BASE_CLASS,
+  ASSET_ICON_SIZE,
+  getHighResAssetIcon,
+  getHighResPaymentLogo,
+  PAYMENT_LOGO_BASE_CLASS,
+  PAYMENT_LOGO_SIZE,
+} from "../../utils/imageHelpers";
 
 // Add UserPaymentDetail interface
 interface UserPaymentDetail {
@@ -3074,22 +3082,20 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                           }}
                         >
                           <img
-                            src={
-                              asset?.image_url ||
-                              asset?.asset_image ||
-                              (asset as any)?.image ||
-                              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                            }
+                            src={getHighResAssetIcon(asset, ASSET_ICON_SIZE)}
                             alt={
                               asset?.name ||
                               asset?.ticker ||
                               asset?.symbol ||
                               "Asset"
                             }
-                            className="w-6 h-6 rounded-full object-cover"
+                            className={`${ASSET_ICON_BASE_CLASS} w-11 h-11`}
+                            loading="lazy"
                             onError={(e) => {
-                              e.currentTarget.src =
-                                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                              e.currentTarget.src = getHighResAssetIcon(
+                                null,
+                                ASSET_ICON_SIZE
+                              );
                             }}
                           />
                           <div className="flex-1">
@@ -3154,22 +3160,20 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                     }}
                   >
                     <img
-                      src={
-                        asset?.image_url ||
-                        asset?.asset_image ||
-                        (asset as any)?.image ||
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                      }
+                      src={getHighResAssetIcon(asset, ASSET_ICON_SIZE)}
                       alt={
                         asset?.name ||
                         asset?.ticker ||
                         asset?.symbol ||
                         "Asset"
                       }
-                      className="w-6 h-6 rounded-full object-cover"
+                      className={`${ASSET_ICON_BASE_CLASS} w-11 h-11`}
+                      loading="lazy"
                       onError={(e) => {
-                        e.currentTarget.src =
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                        e.currentTarget.src = getHighResAssetIcon(
+                          null,
+                          ASSET_ICON_SIZE
+                        );
                       }}
                     />
                     <div className="flex-1">
@@ -3411,26 +3415,21 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                     {selectedAsset ? (
                       <>
                         <img
-                          src={
-                            selectedAsset?.image_url ||
-                            selectedAsset?.asset_image ||
-                            (selectedAsset as any)?.image ||
-                            "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                          }
+                          src={getHighResAssetIcon(selectedAsset, 72)}
                           alt={
                             selectedAsset?.name ||
                             selectedAsset?.ticker ||
                             selectedAsset?.symbol ||
                             "Asset"
                           }
-                          className="w-6 h-6 rounded-full object-cover"
+                          className={`${ASSET_ICON_BASE_CLASS} w-12 h-12`}
+                          loading="lazy"
                           onError={(e) => {
                             console.log(
                               "Image failed to load for asset:",
                               selectedAsset
                             );
-                            e.currentTarget.src =
-                              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                            e.currentTarget.src = getHighResAssetIcon(null, 72);
                           }}
                         />
                         <div className="flex flex-col">
@@ -3456,9 +3455,10 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                     ) : (
                       <>
                         <img
-                          src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                          src={getHighResAssetIcon(null, 72)}
                           alt="asset icon"
-                          className="w-6 h-6"
+                          className={`${ASSET_ICON_BASE_CLASS} w-12 h-12`}
+                          loading="lazy"
                         />
                         <span className="text-[#7e7e8f] dark:text-[#788099]">
                           {assetsDisplay.isLoading
