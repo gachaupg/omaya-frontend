@@ -461,9 +461,9 @@ const Dropdown = ({
   options: string[];
   onChange: (v: string) => void;
 }) => (
-  <div className="relative w-full sm:w-auto">
+  <div className="relative w-full sm:w-auto inline-flex">
     <select
-      className="appearance-none bg-transparent text-[#A3A3A3] rounded-full px-3 sm:px-5 py-1.5 text-xs sm:text-base pr-6 sm:pr-8 focus:outline-none w-full sm:w-auto sm:min-w-[90px]"
+      className="appearance-none bg-transparent text-[#A3A3A3] rounded-full px-2 sm:px-3 py-1.5 text-xs sm:text-sm pr-3.5 sm:pr-4 focus:outline-none w-full sm:w-auto"
       value={value}
       onChange={(e) => onChange(e.target.value)}
     >
@@ -478,7 +478,7 @@ const Dropdown = ({
       alt="Dropdown arrow"
       width={15}
       height={15}
-      className="pointer-events-none absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 object-contain"
+      className="pointer-events-none absolute right-0.5 sm:right-1.5 top-1/2 transform -translate-y-1/2 object-contain"
     />
   </div>
 );

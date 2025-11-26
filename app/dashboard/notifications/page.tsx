@@ -167,9 +167,17 @@ const Notifications = () => {
     return (
       <div className="max-w-5xl mx-auto px-4">
         <div className="flex items-center justify-between mb-6">
-          <h6 className="dark:text-[#A3A3C2] text-gray-800 text-xl font-semibold">
-            Notifications Center
-          </h6>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.push("/dashboard/p2p")}
+              className="text-sm font-semibold text-[#1D8751] hover:text-[#17693F] transition-colors"
+            >
+              ← Back to P2P
+            </button>
+            <h6 className="dark:text-[#A3A3C2] text-gray-800 text-xl font-semibold">
+              Notifications Center
+            </h6>
+          </div>
           <span className="text-sm dark:text-[#A3A3C2] text-gray-600">0 notifications</span>
         </div>
 
@@ -222,9 +230,17 @@ const Notifications = () => {
   return (
     <div className="max-w-5xl mx-auto px-4">
       <div className="flex items-center justify-between mb-6">
-        <h6 className="text-gray-700 dark:text-[#A3A3C2] text-xl font-semibold">
-          Notifications Center
-        </h6>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.push("/dashboard/p2p")}
+            className="text-sm font-semibold text-[#1D8751] hover:text-[#17693F] transition-colors"
+          >
+            ← Back to P2P
+          </button>
+          <h6 className="text-gray-700 dark:text-[#A3A3C2] text-xl font-semibold">
+            Notifications Center
+          </h6>
+        </div>
         <span className="text-sm text-gray-500 dark:text-[#A3A3C2]">
           {matchedTrades.count || matchedTrades.results.length}{" "}
           {(matchedTrades.count || matchedTrades.results.length) === 1
@@ -248,17 +264,17 @@ const Notifications = () => {
             >
               {/* Avatar and name/amount */}
               <div className="flex items-center min-w-[160px]">
-                <div className="relative">
+                <div className="relative mr-3">
                   {profileImage ? (
                   <img
                     src={profileImage}
                     alt=""
-                    className="w-9 h-9 rounded-full object-cover mr-3"
+                    className="w-9 h-9 rounded-full object-cover"
                   />
                   ) : (
                   <FaUserCircle
                     size={36}
-                    className="text-gray-400 dark:text-[#A3A3C2] mr-3"
+                    className="text-gray-400 dark:text-[#A3A3C2]"
                   />
                   )}
                   <div

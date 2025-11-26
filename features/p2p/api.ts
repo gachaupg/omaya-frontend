@@ -228,7 +228,7 @@ const normalizeAdminPaymentProviders = (
           `${providerName || "provider"}-${paymentMethodType || "method"}`,
         payment_method_type: paymentMethodType || "",
         provider_name: providerName,
-        logo: item?.logo ?? item?.provider_logo ?? null,
+        logo: item?.logo_url ?? item?.logo ?? item?.provider_logo ?? null,
         wallet_address: item?.wallet_address ?? null,
         linked_bank_provider: item?.linked_bank_provider ?? null,
       } as AdminPaymentMethod;

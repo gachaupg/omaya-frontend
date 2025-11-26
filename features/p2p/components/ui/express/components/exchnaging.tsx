@@ -877,9 +877,19 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   </div>
                   <div className="flex items-center mb-1">
                     <img
-                      src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                      src={
+                        effectiveTransactionData.paymentDetail.logo_url ||
+                        effectiveTransactionData.paymentDetail.logo ||
+                        effectiveTransactionData.paymentDetail.provider_logo ||
+                        "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                      }
                       alt={effectiveTransactionData.paymentDetail.provider_name}
-                      className="w-6 h-6 rounded-full mr-2"
+                      className="w-5 h-5 rounded-full mr-2"
+                      onError={(e) => {
+                        if (e.currentTarget.src !== "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png") {
+                          e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                        }
+                      }}
                     />
                     <span
                       className={`${
@@ -1342,9 +1352,19 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             effectiveTransactionData?.paymentDetail ? (
               <>
                 <img
-                  src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                  src={
+                    effectiveTransactionData.paymentDetail.logo_url ||
+                    effectiveTransactionData.paymentDetail.logo ||
+                    effectiveTransactionData.paymentDetail.provider_logo ||
+                    "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
+                  }
                   alt={effectiveTransactionData.paymentDetail.provider_name}
-                  className="w-8 h-8 rounded-full"
+                  className="w-7 h-7 rounded-full"
+                  onError={(e) => {
+                    if (e.currentTarget.src !== "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png") {
+                      e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                    }
+                  }}
                 />
                 <div>
                   <div
