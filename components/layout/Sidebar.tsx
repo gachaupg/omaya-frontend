@@ -32,11 +32,14 @@ export default function Sidebar() {
         <nav>
           <ul className="space-y-1">
             {navItems.map((item) => {
+              // Normalize paths for comparison (handle trailing slashes)
+              const normalizedPathname = pathname?.replace(/\/$/, "") || "";
+              const normalizedHref = item.href.replace(/\/$/, "");
               const isActive =
-                item.href === "/dashboard"
-                  ? pathname === item.href
-                  : pathname === item.href ||
-                    (pathname && pathname.startsWith(item.href + "/"));
+                normalizedHref === "/dashboard"
+                  ? normalizedPathname === normalizedHref
+                  : normalizedPathname === normalizedHref ||
+                    (normalizedPathname && normalizedPathname.startsWith(normalizedHref + "/"));
               const label = t(item.labelKey, item.labelKey);
               return (
                 <li key={item.labelKey}>
@@ -100,6 +103,8 @@ export default function Sidebar() {
                           </span>
                         )}
                       </span>
+                    ) : item.labelKey === "navigation.exchange" ? (
+                      t("navigation.exchange", "MoneyX")
                     ) : (
                       label
                     )}
@@ -120,11 +125,14 @@ export default function Sidebar() {
         <nav className="px-4 sm:px-6 overflow-x-auto scrollbar-hide scroll-smooth">
           <ul className="flex items-center space-x-2 sm:space-x-3 py-3 snap-x snap-mandatory">
             {navItems.map((item) => {
+              // Normalize paths for comparison (handle trailing slashes)
+              const normalizedPathname = pathname?.replace(/\/$/, "") || "";
+              const normalizedHref = item.href.replace(/\/$/, "");
               const isActive =
-                item.href === "/dashboard"
-                  ? pathname === item.href
-                  : pathname === item.href ||
-                    (pathname && pathname.startsWith(item.href + "/"));
+                normalizedHref === "/dashboard"
+                  ? normalizedPathname === normalizedHref
+                  : normalizedPathname === normalizedHref ||
+                    (normalizedPathname && normalizedPathname.startsWith(normalizedHref + "/"));
               const label = t(item.labelKey, item.labelKey);
               return (
                 <li key={item.labelKey} className="snap-start">
@@ -206,6 +214,8 @@ export default function Sidebar() {
                               ).toUpperCase()}
                         </span>
                       </span>
+                    ) : item.labelKey === "navigation.exchange" ? (
+                      t("navigation.exchange", "MoneyX")
                     ) : (
                       label
                     )}
