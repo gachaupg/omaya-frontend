@@ -74,7 +74,7 @@ const PaymentMethods = () => {
         </button>
       </div>
       <div className="flex w-full flex-col gap-3">
-        <p className="text-sm sm:text-base font-semibold dark:text-white text-gray-900">
+        <p className="text-sm sm:text-base font-bold dark:text-white text-gray-900">
           Payment Methods
         </p>
         <div className="rounded-[32px] border border-[#20202A] dark:border-[#1E1E27] bg-white dark:bg-[#0D0D12] p-3 sm:p-4 space-y-3">

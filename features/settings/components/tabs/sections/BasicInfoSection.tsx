@@ -7,7 +7,7 @@ interface BasicInfoSectionProps {
 const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
   return (
     <>
-      <div className="text-base sm:text-lg font-semibold dark:text-[#788099] text-gray-600 mb-1">
+      <div className="text-base sm:text-lg font-bold dark:text-white text-gray-900 mb-1">
         Basic Info
       </div>
       <section className="dark:bg-transparent bg-white rounded-xl border dark:border-[#35353E] border-[#E8EFF5] p-3 sm:p-4 lg:p-6 shadow-lg">

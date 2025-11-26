@@ -109,7 +109,7 @@ const PasswordSection: React.FC = () => {
 
   return (
     <>
-      <div className="text-base sm:text-lg font-semibold dark:text-[#788099] text-gray-600 mb-0">
+      <div className="text-base sm:text-lg font-bold dark:text-white text-gray-900 mb-0">
         Password
       </div>
 

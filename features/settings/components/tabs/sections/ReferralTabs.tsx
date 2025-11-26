@@ -7,23 +7,22 @@ interface ReferralTabsProps {
 
 const ReferralTabs: React.FC<ReferralTabsProps> = ({ tab, setTab }) => {
   return (
-    <div className="inline-flex border-2 border-[#1D8751] rounded-full mb-3">
+    <div className="inline-flex border border-[#1D8751] rounded-lg mb-4 overflow-hidden">
       <button
-        className={`px-3 py-1.5 text-sm font-semibold transition-all duration-150 focus:outline-none rounded-l-full ${
+        className={`px-4 py-2 text-sm font-normal transition-all duration-150 focus:outline-none ${
           tab === "Referral"
             ? "bg-[#1D8751] text-white"
-            : "bg-transparent text-[#1D8751] hover:bg-[#1D8751] hover:text-white"
+            : "bg-[#23232B] text-[#788099] hover:opacity-80"
         }`}
         onClick={() => setTab("Referral")}
-        style={{ borderRight: "none" }}
       >
         Referral
       </button>
       <button
-        className={`px-3 py-1.5 text-sm font-semibold transition-all duration-150 focus:outline-none rounded-r-full ${
+        className={`px-4 py-2 text-sm font-normal transition-all duration-150 focus:outline-none ${
           tab === "History"
             ? "bg-[#1D8751] text-white"
-            : "bg-transparent text-[#1D8751] hover:bg-[#1D8751] hover:text-white"
+            : "bg-[#23232B] text-[#788099] hover:opacity-80"
         }`}
         onClick={() => setTab("History")}
       >
