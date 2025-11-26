@@ -102,7 +102,7 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
       {showExchanging ? (
         <Exchanging transactionData={transactionData} />
       ) : (
-     <div>  <h2>Express</h2>
+    
         <ExpressExchangeForm
           onExchange={(data) => {
             setTransactionData(data);
@@ -110,7 +110,7 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
           }}
           initialMode={currentMode}
           isHomePage={isHomePage}
-        /></div>
+        />
       
       )}
       {/* <Exchanging transactionData={transactionData} /> */}
