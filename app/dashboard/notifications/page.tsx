@@ -265,40 +265,40 @@ const Notifications = () => {
             >
               {/* Avatar and name/amount */}
              <div className="flex items-center min-w-[160px] gap-3">
-  {/* Avatar + Status */}
-  <div className="relative w-10 h-10">
-    {profileImage ? (
-      <img
-        src={profileImage}
-        alt=""
-        className="w-10 h-10 rounded-full object-cover"
-      />
-    ) : (
-      <FaUserCircle
-        size={40}
-        className="text-gray-400 dark:text-[#A3A3C2]"
-      />
-    )}
+                {/* Avatar + Status */}
+                <div className="relative w-10 h-10">
+                  {profileImage ? (
+                    <img
+                      src={profileImage}
+                      alt=""
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    <FaUserCircle
+                      size={40}
+                      className="text-gray-400 dark:text-[#A3A3C2]"
+                    />
+                  )}
 
-    {/* Status Dot (Properly Positioned) */}
-    <span
-      className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-[#23232B] ${
-        orderType.color === "text-[#1D8751]" ? "bg-[#1D8751]" : "bg-red-400"
-      }`}
-    ></span>
-  </div>
+                  {/* Status Dot (Properly Positioned) */}
+                  <span
+                    className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-[#23232B] ${
+                      orderType.color === "text-[#1D8751]" ? "bg-[#1D8751]" : "bg-red-400"
+                    }`}
+                  ></span>
+                </div>
 
-  {/* Name + Amount */}
-  <div className="flex flex-col">
-    <span className="font-medium text-sm text-gray-700 dark:text-[#c7c7d9]">
-      {name}
-    </span>
+                {/* Name + Amount */}
+                <div className="flex flex-col">
+                  <span className="font-medium text-sm text-gray-700 dark:text-[#c7c7d9]">
+                    {name}
+                  </span>
 
-    <span className="text-xs text-gray-900 dark:text-white font-semibold">
-      {trade.amount} USDT
-    </span>
-  </div>
-</div>
+                  <span className="text-xs text-gray-900 dark:text-white font-semibold">
+                    {trade.amount} USDT
+                  </span>
+                </div>
+              </div>
               {/* Order type and time */}
               <div className="flex-1 ml-3">
                 <div className="text-sm text-gray-700 dark:text-white">
