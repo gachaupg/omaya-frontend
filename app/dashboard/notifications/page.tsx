@@ -233,9 +233,10 @@ const Notifications = () => {
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.push("/dashboard/p2p")}
-            className="text-sm font-semibold text-[#1D8751] hover:text-[#17693F] transition-colors"
+            className="flex items-center gap-2 text-sm font-semibold text-[#1D8751] hover:text-[#17693F] transition-colors"
           >
-            ← Back to P2P
+            <span className="text-lg">←</span>
+            Back to P2P
           </button>
           <h6 className="text-gray-700 dark:text-[#A3A3C2] text-xl font-semibold">
             Notifications Center
@@ -263,37 +264,41 @@ const Notifications = () => {
               className="flex items-center bg-gray-50 dark:bg-[#23232B] rounded-lg py-3 px-4 mb-2 border-b border-gray-200 dark:border-[#31313C] hover:bg-gray-100 dark:hover:bg-[#2A2A33] transition-colors duration-200"
             >
               {/* Avatar and name/amount */}
-              <div className="flex items-center min-w-[160px]">
-                <div className="relative mr-3">
-                  {profileImage ? (
-                  <img
-                    src={profileImage}
-                    alt=""
-                    className="w-9 h-9 rounded-full object-cover"
-                  />
-                  ) : (
-                  <FaUserCircle
-                    size={36}
-                    className="text-gray-400 dark:text-[#A3A3C2]"
-                  />
-                  )}
-                  <div
-                  className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full ${
-                    orderType.color === "text-[#1D8751]"
-                    ? "bg-[#1D8751]"
-                    : "bg-red-400"
-                  }`}
-                  ></div>
-                </div>
-                <div>
-                  <div className="font-medium text-sm text-gray-700 dark:text-[#c7c7d9]">
-                    {name}
-                  </div>
-                  <div className="text-xs text-gray-900 dark:text-white font-semibold">
-                    {trade.amount} USDT
-                  </div>
-                </div>
-              </div>
+             <div className="flex items-center min-w-[160px] gap-3">
+  {/* Avatar + Status */}
+  <div className="relative w-10 h-10">
+    {profileImage ? (
+      <img
+        src={profileImage}
+        alt=""
+        className="w-10 h-10 rounded-full object-cover"
+      />
+    ) : (
+      <FaUserCircle
+        size={40}
+        className="text-gray-400 dark:text-[#A3A3C2]"
+      />
+    )}
+
+    {/* Status Dot (Properly Positioned) */}
+    <span
+      className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-[#23232B] ${
+        orderType.color === "text-[#1D8751]" ? "bg-[#1D8751]" : "bg-red-400"
+      }`}
+    ></span>
+  </div>
+
+  {/* Name + Amount */}
+  <div className="flex flex-col">
+    <span className="font-medium text-sm text-gray-700 dark:text-[#c7c7d9]">
+      {name}
+    </span>
+
+    <span className="text-xs text-gray-900 dark:text-white font-semibold">
+      {trade.amount} USDT
+    </span>
+  </div>
+</div>
               {/* Order type and time */}
               <div className="flex-1 ml-3">
                 <div className="text-sm text-gray-700 dark:text-white">
