@@ -185,13 +185,19 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     updateDropdownPosition();
 
     const handleReposition = () => updateDropdownPosition();
+    const handleScroll = () => {
+      setIsOpen(false);
+      setSearchTerm("");
+    };
 
     window.addEventListener("resize", handleReposition);
-    window.addEventListener("scroll", handleReposition, true);
+    window.addEventListener("scroll", handleScroll, true);
+    document.addEventListener("scroll", handleScroll, true);
 
     return () => {
       window.removeEventListener("resize", handleReposition);
-      window.removeEventListener("scroll", handleReposition, true);
+      window.removeEventListener("scroll", handleScroll, true);
+      document.removeEventListener("scroll", handleScroll, true);
     };
   }, [isOpen]);
 

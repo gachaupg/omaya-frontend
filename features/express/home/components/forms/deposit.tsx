@@ -840,6 +840,25 @@ export default function DepositForm({
     };
   }, []);
 
+  // Close dropdown when scrolling
+  useEffect(() => {
+    const handleScroll = () => {
+      if (isAssetDropdownOpen) {
+        setIsAssetDropdownOpen(false);
+      }
+    };
+
+    if (isAssetDropdownOpen) {
+      window.addEventListener("scroll", handleScroll, true);
+      document.addEventListener("scroll", handleScroll, true);
+    }
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll, true);
+      document.removeEventListener("scroll", handleScroll, true);
+    };
+  }, [isAssetDropdownOpen]);
+
   // Check if asset is one of the first two direct assets (USDT on BSC or USDC on BSC)
   const isSimpleCalculationAsset = (asset: any) => {
     if (!asset) return false;
@@ -1303,12 +1322,8 @@ export default function DepositForm({
       // Calculate reduced width so dropdowns don't cover amount inputs (40% of card width)
       let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.width * 0.4));
       
-      // Position at the top of the card, moved up a little more
-      let top = cardRect.top - 15; // 15px above card top
-      
-      if (!isYouSend) {
-        top -= 1; // Push "You Receive" dropdown 1px higher
-      }
+      // Position at the top of the card, moved up a little more, then pushed down by 18px for both dropdowns
+      let top = cardRect.top - 15 + 15.7; // 15px above card top, then push down by 18px
       
       let left: number;
       

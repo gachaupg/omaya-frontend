@@ -398,18 +398,19 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           "admin_approval_required",
           "agent_approve",
           "waiting",
+          "approved",
         ];
 
         if (validStatuses.includes(wsData.status)) {
           let uiStatus = wsData.status;
           if (wsData.status === "pending_review" || wsData.status === "pending_blockchain") {
             uiStatus = "confirming";
-          } else if (wsData.status === "completed" || wsData.status === "finished") {
+          } else if (wsData.status === "completed" || wsData.status === "finished" || wsData.status === "approved") {
             uiStatus = "completed";
           }
           setCurrentStatus(uiStatus);
 
-          if (wsData.status === "completed" || wsData.status === "finished") {
+          if (wsData.status === "completed" || wsData.status === "finished" || wsData.status === "approved") {
             setFinalWebsocketData(data);
             setSnapshotWebsocketData(data);
             setTimeout(() => {
@@ -565,6 +566,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
             "admin_approval_required",
             "agent_approve",
             "waiting",
+            "approved",
           ];
 
           if (status && validStatuses.includes(status)) {
@@ -580,12 +582,13 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
               uiStatus = "exchanging";
             } else if (status === "admin_approval_required") {
               uiStatus = "sending";
-            } else if (status === "completed" || status === "finished") {
+            } else if (status === "completed" || status === "finished" || status === "approved") {
               if (
                 data.is_final === true ||
                 data.type === "final_status" ||
                 (data as any).is_final === true ||
-                data.data?.is_final === true
+                data.data?.is_final === true ||
+                status === "approved"
               ) {
                 uiStatus = "completed";
               } else {
@@ -598,7 +601,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
             setCurrentStatus(uiStatus);
 
             const shouldAutoNavigate =
-              uiStatus === "completed" || status === "completed";
+              uiStatus === "completed" || status === "completed" || status === "approved";
 
             if (shouldAutoNavigate) {
               setFinalWebsocketData(data);
@@ -634,7 +637,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                 }
               }
 
-              if (depositData.status === "completed") {
+              if (depositData.status === "completed" || depositData.status === "approved") {
                 setSnapshotWebsocketData(data);
                 setTimeout(() => {
                   setShowSuccess(true);

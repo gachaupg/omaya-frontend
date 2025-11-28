@@ -1271,6 +1271,25 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     };
   }, []);
 
+  // Close dropdown when scrolling
+  useEffect(() => {
+    const handleScroll = () => {
+      if (isAssetDropdownOpen) {
+        setIsAssetDropdownOpen(false);
+      }
+    };
+
+    if (isAssetDropdownOpen) {
+      window.addEventListener("scroll", handleScroll, true);
+      document.addEventListener("scroll", handleScroll, true);
+    }
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll, true);
+      document.removeEventListener("scroll", handleScroll, true);
+    };
+  }, [isAssetDropdownOpen]);
+
   // Check if asset is one of the first two direct assets (USDT on BSC or USDC on BSC)
   const isSimpleCalculationAsset = (asset: any) => {
     if (!asset) return false;
@@ -2151,8 +2170,10 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
       const cardRect = currentCard.getBoundingClientRect();
       const dropdownRect = assetDropdownElement.getBoundingClientRect();
       
-      // Check if this is "You Send" section (has data-select-card) or "You Receive" section
-      const isYouSend = currentCard.hasAttribute('data-select-card');
+      // Check if this is "You Send" section (has data-asset-card) or "You Receive" section
+      // "You Send" has both data-asset-card and data-select-card
+      // "You Receive" has only data-select-card
+      const isYouSend = currentCard.hasAttribute('data-asset-card');
       
       // Calculate reduced width so dropdowns don't cover amount inputs (40% of card width)
       let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.width * 0.4));
@@ -2162,8 +2183,8 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
       if (isYouSend) {
         top = cardRect.top + 1; // push "You Send" asset dropdown down a little more
       } else {
-        // "You Receive" section - push up a little more
-        top = cardRect.top - 47.5;
+        // "You Receive" section - pushed down significantly below the card bottom
+        top = cardRect.bottom + 20; // Push "You Receive" dropdown down by 20px below card bottom
       }
       
       let left: number;
@@ -3952,7 +3973,6 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                     <CustomSelect
                       options={paymentMethodOptions}
                       value={payBank}
-                      dropdownVerticalAlign="cardCenter"
                       className={`w-full ${
                         paymentMethodError ? "border-red-500 dark:border-red-500" : ""
                       }`}
@@ -4002,6 +4022,8 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                       emptyText="No payment methods available"
                       searchable={true}
                       dropdownTitle="Select a payment methods"
+                      dropdownOffsetY={-7.5}
+                      dropdownOffsetX={15}
                     />
                   );
                 })()}
