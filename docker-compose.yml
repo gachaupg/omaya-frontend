@@ -82,9 +82,6 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-      timeout: 10s
-      retries: 3
-      start_period: 40s
     networks:
       - omaya-network
 
