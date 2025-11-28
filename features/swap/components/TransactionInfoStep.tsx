@@ -135,9 +135,33 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
     const minWidth = 280;
     const maxWidth = 450;
     
-    // Find the first card container (the "You Send" card) to align all dropdowns with it
-    // Use the same logic as deposit form
-    const firstCard = document.querySelector("[data-swap-card='true']");
+    // Find the specific dropdown trigger element (normal positioning - relative to trigger)
+    const dropdownElement = isFrom ? fromAssetDropdownRef.current : toAssetDropdownRef.current;
+    let currentCard: Element | null = null;
+    
+    if (dropdownElement) {
+      // Find the card that contains this specific dropdown
+      let parent = dropdownElement.parentElement;
+      while (parent) {
+        if (parent.hasAttribute("data-swap-card")) {
+          currentCard = parent;
+          break;
+        }
+        parent = parent.parentElement;
+      }
+    }
+    
+    // Fallback to first card if we can't find via DOM traversal
+    if (!currentCard) {
+      const allCards = document.querySelectorAll("[data-swap-card='true']");
+      if (isFrom && allCards.length > 0) {
+        currentCard = allCards[0];
+      } else if (!isFrom && allCards.length > 1) {
+        currentCard = allCards[1];
+      } else if (allCards.length > 0) {
+        currentCard = allCards[0];
+      }
+    }
     
     let dropdownStyle: React.CSSProperties = {
       position: "fixed",
@@ -146,30 +170,35 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
       width: minWidth,
     };
 
-    if (firstCard) {
-      const cardRect = firstCard.getBoundingClientRect();
+    if (currentCard && dropdownElement) {
+      const cardRect = currentCard.getBoundingClientRect();
+      const triggerRect = dropdownElement.getBoundingClientRect();
       
       // Calculate reduced width so dropdowns don't cover amount inputs (40% of card width)
       let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.width * 0.4));
       
-      // ALL dropdowns open at the same position - aligned with top of the first card
-      // Position at the top of the card
-      const top = cardRect.top + 8; // 8px below card top
+      // Normal positioning: position dropdown below the trigger element
+      const top = triggerRect.bottom + 4; // 4px below the trigger
       
-      // Position to the right side of the card
-      let left = cardRect.right - desiredWidth - 4; // 4px from right edge
+      // Position to align with the trigger element (normal behavior)
+      let left = triggerRect.left;
       
-      // If card is too narrow, center it but still push right a bit
-      if (cardRect.width < desiredWidth + 16) {
-        left = cardRect.left + (cardRect.width - desiredWidth) / 2 + 20; // Push 20px to the right
-      }
-      
-      // Ensure dropdown doesn't go off screen
+      // Ensure dropdown doesn't go off screen on the right
       if (left + desiredWidth > viewportWidth - minMargin) {
         left = viewportWidth - desiredWidth - minMargin;
       }
+      
+      // Ensure dropdown doesn't go off the left edge
       if (left < minMargin) {
         left = minMargin;
+      }
+      
+      // If trigger is too narrow, use trigger width but ensure minimum
+      if (triggerRect.width < desiredWidth) {
+        // Keep left aligned with trigger, but ensure it doesn't overflow
+        if (left + desiredWidth > viewportWidth - minMargin) {
+          left = Math.max(minMargin, viewportWidth - desiredWidth - minMargin);
+        }
       }
 
       dropdownStyle = {

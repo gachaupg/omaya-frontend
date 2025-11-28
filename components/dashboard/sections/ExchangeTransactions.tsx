@@ -47,9 +47,15 @@ const extractPaymentInfo = (tx: any) => {
       (detail: any) => detail?.provider_logo || detail?.logo
     ) || paymentDetails[0];
 
-  // Use asset_image if available, otherwise use provider_logo from transaction or payment_details
-  const providerLogoFromDetails = detailWithLogo?.provider_logo || detailWithLogo?.logo || null;
-  const displayImage = tx?.asset_image || tx?.provider_logo || providerLogoFromDetails || null;
+  // Prefer explicit provider logos for payment method visuals, then fall back to asset image
+  const providerLogoFromDetails =
+    detailWithLogo?.provider_logo || detailWithLogo?.logo || null;
+  const providerLogoFromTransaction = tx?.provider_logo || null;
+  const displayImage =
+    providerLogoFromDetails ||
+    providerLogoFromTransaction ||
+    tx?.asset_image ||
+    null;
 
   const providerName =
     detailWithLogo?.provider_name ||

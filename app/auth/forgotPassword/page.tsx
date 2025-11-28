@@ -1,12 +1,12 @@
-"use client"
-import ForgotPasswordPage from "@/features/auth/components/ForgotPasswordForm"
+"use client";
+import ForgotPasswordPage from "@/features/auth/components/ForgotPasswordForm";
 
 const ForgotPassword = () => {
-    return (
-        <>
-        <ForgotPasswordPage />
-        </>
-        )
-    }
-    
+  return (
+    <>
+      <ForgotPasswordPage />
+    </>
+  );
+};
+
 export default ForgotPassword;

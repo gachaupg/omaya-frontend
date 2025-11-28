@@ -325,7 +325,7 @@ export default function MarketingPage() {
   return (
     <div>
       <section
-        className="relative min-h-screen pt-18 pb-16 mx-auto overflow-hidden bg-gradient-to-br from-[#022E18] via-[#022E18CC] to-transparent"
+        className="relative min-h-screen pt-18 pb-16 mx-auto overflow-visible bg-gradient-to-br from-[#022E18] via-[#022E18CC] to-transparent"
         style={{
           background: `
             radial-gradient(circle at top left, ${tokens.colors.brand.hero} 0%, ${tokens.colors.brand.hero}CC 30%, transparent 70%),
@@ -374,9 +374,9 @@ export default function MarketingPage() {
           ></div>
         </div>
 
-        <div className="container mx-auto px-4 sm:px-6 md:px-8 relative z-10 mt-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-3 items-start gap-y-8 md:gap-y-6 md:gap-x-8 lg:gap-x-12">
-            <div className="space-y-5 pl-0 md:pl-4 lg:pl-6 text-center md:text-left 2xl:col-span-2">
+        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 relative z-10 mt-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-3 items-start gap-y-5 md:gap-y-4 md:gap-x-6 lg:gap-x-8">
+            <div className="space-y-4 pl-0 md:pl-4 lg:pl-5 text-center md:text-left 2xl:col-span-2">
               <h1 className="text-[1.875rem] sm:text-[2.25rem] md:text-[3rem] lg:text-[3.5rem] 2xl:text-[3.75rem] font-bold text-white tracking-tight sm:tracking-normal md:tracking-normal leading-tight sm:leading-snug text-balance">
                 <span className="inline-block w-full 2xl:text-[3.5rem]">
                   {t("marketing.hero.heading1", "Welcome to")}
@@ -404,7 +404,7 @@ export default function MarketingPage() {
                 </button>
               </div>
             </div>
-            <div className="flex justify-center md:justify-end lg:justify-end w-full 2xl:col-span-1 mx-2">
+            <div className="flex justify-center md:justify-end lg:justify-end w-full ">
               {/* <div className="relative">
                 <Image
                   src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746561970/iPhone_13_Mockup_1_zzm7tt.png"

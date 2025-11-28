@@ -2160,7 +2160,10 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
       // Position dropdown vertically based on section
       let top = cardRect.top - 45; // default: above the card
       if (isYouSend) {
-        top = cardRect.top + 10; // push "You Send" dropdown downwards
+        top = cardRect.top + 1; // push "You Send" asset dropdown down a little more
+      } else {
+        // "You Receive" section - push up a little more
+        top = cardRect.top - 47.5;
       }
       
       let left: number;
@@ -2168,6 +2171,14 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
       // Both "You Send" and "You Receive" - position from right side of card, pushed more right
       // Position it very close to the right edge
       left = cardRect.right - desiredWidth - 3; // 3px from right edge of card
+      
+      // Push "You Send" dropdown further to the right
+      if (isYouSend) {
+        left += 18; // additional right offset for "You Send"
+      } else {
+        // Push "You Receive" dropdown to the right a little more
+        left += 40; // additional right offset for "You Receive"
+      }
       
       // Ensure it doesn't go off the left edge
       if (left < cardRect.left) {
@@ -3990,7 +4001,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                       loadingText="Loading payment methods..."
                       emptyText="No payment methods available"
                       searchable={true}
-                      dropdownTitle="Select a payment method from"
+                      dropdownTitle="Select a payment methods"
                     />
                   );
                 })()}

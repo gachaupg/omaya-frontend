@@ -1304,13 +1304,22 @@ export default function DepositForm({
       let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.width * 0.4));
       
       // Position at the top of the card, moved up a little more
-      const top = cardRect.top - 15; // 15px above card top
+      let top = cardRect.top - 15; // 15px above card top
+      
+      if (!isYouSend) {
+        top -= 1; // Push "You Receive" dropdown 1px higher
+      }
       
       let left: number;
       
       // Both "You Send" and "You Receive" - position from right side of card, pushed more right
       // Position it very close to the right edge
       left = cardRect.right - desiredWidth - 3; // 3px from right edge of card
+      
+      // Push the "You Receive" dropdown a bit further right to match requested layout
+      if (!isYouSend) {
+        left += 18;
+      }
       
       // Ensure it doesn't go off the left edge
       if (left < cardRect.left) {
@@ -2783,7 +2792,9 @@ export default function DepositForm({
                   loadingText="Loading payment methods..."
                   emptyText="No payment methods available"
                   searchable={true}
-                  dropdownTitle="Select a payment method from"
+                  dropdownTitle="Select a payment methods"
+                  dropdownOffsetY={-6.5}
+                  dropdownOffsetX={12}
                 />
               </div>
               {adminMethodsError && <p className="text-red-500 text-sm mt-1">{adminMethodsError}</p>}
