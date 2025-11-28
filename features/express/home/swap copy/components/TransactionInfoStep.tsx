@@ -112,6 +112,28 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
     };
   }, [isFromAssetOpen, isToAssetOpen, onFromAssetToggle, onToAssetToggle]);
 
+  // Close dropdowns when scrolling
+  useEffect(() => {
+    const handleScroll = () => {
+      if (isFromAssetOpen) {
+        onFromAssetToggle();
+      }
+      if (isToAssetOpen) {
+        onToAssetToggle();
+      }
+    };
+
+    if (isFromAssetOpen || isToAssetOpen) {
+      window.addEventListener("scroll", handleScroll, true);
+      document.addEventListener("scroll", handleScroll, true);
+    }
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll, true);
+      document.removeEventListener("scroll", handleScroll, true);
+    };
+  }, [isFromAssetOpen, isToAssetOpen, onFromAssetToggle, onToAssetToggle]);
+
   const updateDropdownPosition = (isFrom: boolean): React.CSSProperties => {
     if (typeof window === "undefined") {
       return {
@@ -174,7 +196,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
       if (isFrom) {
         top = cardRect.top + 1; // push "You Send" dropdown down a little more
       } else {
-        top = cardRect.top - 16; // push "You Receive" dropdown up just a little
+        top = cardRect.top - 15 + 15.7; // push "You Receive" dropdown down
       }
       
       let left: number;
