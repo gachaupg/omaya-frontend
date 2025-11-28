@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { tokens } from "@/styles/tokens";
 import { 
   Target, 
   Eye, 
