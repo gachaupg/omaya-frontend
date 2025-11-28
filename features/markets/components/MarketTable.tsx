@@ -215,6 +215,20 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
     direction: "asc" | "desc" | null;
   } | null>(null);
   const [favoritesUpdateTrigger, setFavoritesUpdateTrigger] = useState(0);
+  const [localFavorites, setLocalFavorites] = useState<string[]>([]);
+
+  const getStoredFavorites = useCallback((): string[] => {
+    if (typeof window === "undefined") return [];
+    try {
+      const localFavoritesValue = localStorage.getItem("market_favorites");
+      if (!localFavoritesValue) return [];
+      const parsed = JSON.parse(localFavoritesValue);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      console.warn("Error reading favorites from localStorage:", error);
+      return [];
+    }
+  }, []);
 
   useEffect(() => {
     if (!allAvailableAssets) {
@@ -223,6 +237,10 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
     dispatch(getFavoriteAssets());
     // eslint-disable-next-line
   }, []);
+
+  useEffect(() => {
+    setLocalFavorites(getStoredFavorites());
+  }, [getStoredFavorites]);
 
   // Sync localStorage favorites when assets are loaded
   useEffect(() => {
@@ -391,6 +409,36 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
     return result;
   }, [markets, activeFilter, sortConfig]);
 
+  const localFavoriteMarkets = useMemo(() => {
+    if (!localFavorites.length || !markets.length) return [];
+
+    const seen = new Set<string>();
+
+    return localFavorites
+      .map((favoriteSymbol) => {
+        const normalizedFavorite = favoriteSymbol.toLowerCase();
+        const matchingMarket = markets.find(
+          (market) =>
+            market.symbol.toLowerCase() === normalizedFavorite ||
+            market.name.toLowerCase() === normalizedFavorite
+        );
+
+        if (matchingMarket && !seen.has(matchingMarket.id)) {
+          seen.add(matchingMarket.id);
+          return matchingMarket;
+        }
+
+        return null;
+      })
+      .filter(
+        (market): market is (typeof markets)[number] => market !== null
+      );
+  }, [localFavorites, markets]);
+
+  const hasRemoteFavoriteAssets = Boolean(favoriteAssets?.length);
+  const showLocalFavoriteFallback =
+    !hasRemoteFavoriteAssets && localFavoriteMarkets.length > 0;
+
   // Get top 3 markets for favorite assets - memoized
   // const favoriteAssets = useMemo(() => {
   //   return markets.slice(0, 3);
@@ -447,7 +495,20 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
   };
 
   // Helper function to check if market is favorited
-  const isMarketFavorited = (marketSymbol: string, marketName: string): boolean => {
+  const isMarketFavorited = (
+    marketSymbol: string,
+    marketName: string
+  ): boolean => {
+    const normalizedSymbol = marketSymbol.toUpperCase();
+    const normalizedName = marketName.toUpperCase();
+    if (
+      localFavorites.some(
+        (fav) =>
+          fav.toUpperCase() === normalizedSymbol || fav.toUpperCase() === normalizedName
+      )
+    ) {
+      return true;
+    }
     // Check Redux state first
     const isInRedux = favoriteAssets?.some(
       (fav: FavoriteAsset) =>
@@ -481,18 +542,24 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
   const updateLocalStorageFavorites = (symbol: string, add: boolean) => {
     if (typeof window !== "undefined") {
       try {
-        const localFavorites = localStorage.getItem("market_favorites");
-        let favorites: string[] = localFavorites ? JSON.parse(localFavorites) : [];
-        
+        const normalizedSymbol = symbol.toUpperCase();
+        let favorites = getStoredFavorites();
+
         if (add) {
-          if (!favorites.includes(symbol)) {
-            favorites.push(symbol);
+          const hasSymbol = favorites
+            .map((fav) => fav.toUpperCase())
+            .includes(normalizedSymbol);
+          if (!hasSymbol) {
+            favorites.push(normalizedSymbol);
           }
         } else {
-          favorites = favorites.filter((fav) => fav !== symbol);
+          favorites = favorites.filter(
+            (fav) => fav.toUpperCase() !== normalizedSymbol
+          );
         }
-        
+
         localStorage.setItem("market_favorites", JSON.stringify(favorites));
+        setLocalFavorites(favorites);
       } catch (error) {
         console.warn("Error updating favorites in localStorage:", error);
       }
@@ -575,7 +642,8 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
   const handleReloadFavorites = useCallback(() => {
     dispatch(fetchAssets());
     dispatch(getFavoriteAssets());
-  }, [dispatch]);
+    setLocalFavorites(getStoredFavorites());
+  }, [dispatch, getStoredFavorites]);
 
   // Handle row click to fetch and show details
   const handleRowClick = async (id: string) => {
@@ -761,12 +829,8 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
                 <div className="flex items-center justify-center min-w-[250px]">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#13B562]"></div>
                 </div>
-              ) : favoriteAssets?.length === 0 ? (
-                <div className="col-span-3 text-center text-gray-500 text-sm sm:text-base lg:text-base">
-                  No favorite assets found. Add some to see them here.
-                </div>
-              ) : (
-                favoriteAssets?.map((asset: FavoriteAsset) => {
+              ) : hasRemoteFavoriteAssets ? (
+                (favoriteAssets ?? []).map((asset: FavoriteAsset) => {
                   const dummyData = DUMMY_ASSET_DATA[asset.asset_symbol] || {
                     symbol: (asset.asset_symbol ?? "").split(" ")[0],
                     price: 0,
@@ -828,6 +892,46 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
                     </div>
                   );
                 })
+              ) : showLocalFavoriteFallback ? (
+                localFavoriteMarkets.map((market) => {
+                  const priceChange = market.price_change_percentage_24h ?? 0;
+                  const isPositive = priceChange >= 0;
+
+                  return (
+                    <div
+                      key={`local-${market.id}`}
+                      className="bg-white dark:bg-[#1D1D23] rounded-xl sm:rounded-2xl lg:rounded-2xl p-3 sm:p-4 lg:p-4 flex items-center gap-2 sm:gap-3 lg:gap-3 border border-[#E8EFF5] dark:border-[#35353E] relative flex-shrink-0 w-[85%] sm:w-[45%] md:w-[30%] lg:w-[30%]"
+                    >
+                      <div className="w-8 h-8 sm:w-8 sm:h-8 lg:w-8 lg:h-8 rounded-full flex-shrink-0">
+                        <CoinIcon image={market.image} symbol={market.symbol} size={32} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-[#051015] dark:text-white truncate text-sm sm:text-base lg:text-base">
+                          {market.symbol.toUpperCase()}
+                        </div>
+                        <div className="text-xs text-[#788099] dark:text-[#788099] truncate">
+                          {market.name}
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <div className="font-bold text:[#051015] dark:text-white whitespace-nowrap text-sm sm:text-base lg:text-base">
+                          {formatPrice(market.current_price)}
+                        </div>
+                        <div
+                          className={`text-xs whitespace-nowrap ${
+                            isPositive ? "text-[#1D8751]" : "text-[#FF6B6B]"
+                          }`}
+                        >
+                          {formatPercentage(priceChange)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="col-span-3 text-center text-gray-500 text-sm sm:text-base lg:text-base">
+                  No favorite assets found. Add some to see them here.
+                </div>
               )}
             </div>
           </>

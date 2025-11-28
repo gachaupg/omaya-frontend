@@ -1336,7 +1336,7 @@ export default function ExchangeForm({
   // If Swap Crypto tab is active, render SwapWidget with tab controls
   if (activeTab === "swap") {
     return (
-      <div className="w-full w-full mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl px-4 sm:px-6 md:px-8 py-4 shadow-lg">
+      <div className="w-full max-w-none mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl px-3 sm:px-4 md:px-5 py-3 shadow-lg">
         {/* Tabs */}
         <div className="relative flex w-full overflow-hidden rounded-[28px] bg-white/70 p-1 dark:bg-[#12171E]/90">
         <TabButton
@@ -1356,7 +1356,7 @@ export default function ExchangeForm({
   }
 
   return (
-    <div className="w-full w-full mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl px-4 sm:px-6 md:px-8 py-4 shadow-lg">
+    <div className="w-full max-w-none mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl px-3 sm:px-4 md:px-5 py-3 shadow-lg">
       {/* Tabs */}
       <div className="relative flex w-full overflow-hidden rounded-[28px] bg-white/70 p-1 dark:bg-[#12171E]/90">
         <TabButton

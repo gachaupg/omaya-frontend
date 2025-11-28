@@ -32,6 +32,7 @@ interface CustomSelectProps {
   sizeMode?: "compact" | "wide" | "card";
   logoSize?: number;
   logoClassName?: string;
+  dropdownOffsetY?: number;
 }
 
 const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -52,6 +53,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   sizeMode = "compact",
   logoSize,
   logoClassName,
+  dropdownOffsetY = 0,
 }) => {
   const resolvedLogoSize = logoSize ?? (sizeMode === "card" ? 44 : 32);
   const resolvedLogoClass =
@@ -112,6 +114,8 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     const cardElement = triggerElement.closest("[data-select-card='true']");
     const cardRect = cardElement?.getBoundingClientRect();
 
+    const verticalOffset = dropdownOffsetY;
+
     if (sizeMode === "wide" && cardRect) {
       let desiredWidth = cardRect.width * 0.75;
       desiredWidth = Math.min(desiredWidth, viewportWidth - minMargin * 2);
@@ -122,14 +126,9 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         Math.max(minMargin, viewportWidth - desiredWidth - minMargin)
       );
 
-      const topOffset = Math.max(
-        minMargin,
-        cardRect.top - 64
-      );
-      const top = Math.min(
-        topOffset,
-        Math.max(minMargin, viewportHeight - minMargin)
-      );
+      const topOffset = Math.max(minMargin, cardRect.top - 64);
+      let top = Math.min(topOffset, Math.max(minMargin, viewportHeight - minMargin));
+      top = Math.max(minMargin, Math.min(top + verticalOffset, viewportHeight - minMargin));
 
       setDropdownStyles({
         top,
@@ -174,7 +173,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       }
 
       setDropdownStyles({
-        top: rect.bottom + 4,
+        top: rect.bottom + 4 + verticalOffset,
         left: leftPosition,
         width: Math.max(dropdownWidth, triggerWidth), // Ensure it's at least as wide as the trigger
       });
@@ -203,7 +202,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     );
 
     setDropdownStyles({
-      top: rect.bottom + 4,
+      top: rect.bottom + 4 + verticalOffset,
       left,
       width: desiredWidth,
     });

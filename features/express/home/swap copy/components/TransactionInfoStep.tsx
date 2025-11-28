@@ -172,7 +172,9 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
       // Position at the top of the card, allow different offsets per section
       let top = cardRect.top - 15; // default: slightly above card
       if (isFrom) {
-        top = cardRect.top + 10; // push "You Send" dropdown down a little
+        top = cardRect.top + 1; // push "You Send" dropdown down a little more
+      } else {
+        top = cardRect.top - 16; // push "You Receive" dropdown up just a little
       }
       
       let left: number;
@@ -180,6 +182,9 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
       // Both "You Send" and "You Receive" - position from right side of card, pushed more right
       // Position it very close to the right edge
       left = cardRect.right - desiredWidth - 3; // 3px from right edge of card
+      
+      // Push both dropdowns to the right
+      left += 18; // additional right offset for both dropdowns
       
       // Ensure it doesn't go off the left edge
       if (left < cardRect.left) {

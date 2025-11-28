@@ -34,6 +34,8 @@ interface CustomSelectProps {
   sizeMode?: "compact" | "wide" | "card";
   dropdownTitle?: string; // Title shown at the top of the dropdown
   dropdownVerticalAlign?: DropdownVerticalAlign;
+  dropdownOffsetY?: number;
+  dropdownOffsetX?: number;
 }
 
 const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -54,6 +56,8 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   sizeMode = "compact",
   dropdownTitle,
   dropdownVerticalAlign = "cardTop",
+  dropdownOffsetY = 0,
+  dropdownOffsetX = 0,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -115,6 +119,8 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       document.querySelector("[data-asset-card='true']");
     
     const targetCard = parentCard || fallbackCard;
+    const verticalOffset = dropdownOffsetY;
+    const horizontalOffset = dropdownOffsetX;
     
     if (targetCard) {
       const cardRect = targetCard.getBoundingClientRect();
@@ -127,12 +133,14 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       if (dropdownVerticalAlign === "cardCenter") {
         top = cardRect.top + cardRect.height / 2 - 70; // slightly higher than previous
       }
+      top += verticalOffset;
       
       // Position to the right side of the card
       let left = cardRect.right - desiredWidth - 4; // 4px from right edge
       if (dropdownVerticalAlign === "cardCenter") {
         left = cardRect.right - desiredWidth + 4; // push further right
       }
+      left += horizontalOffset;
       
       // If card is too narrow, center it but still push right a bit
       if (cardRect.width < desiredWidth + 16) {
@@ -156,8 +164,10 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       // Fallback: if no card found, center on screen
       const rect = triggerElement.getBoundingClientRect();
       let desiredWidth = Math.min(maxWidth, Math.max(minWidth, viewportWidth * 0.4));
-      const left = (viewportWidth - desiredWidth) / 2;
-      const top = 200; // Fixed top position
+      let left = (viewportWidth - desiredWidth) / 2;
+      left += horizontalOffset;
+      let top = 200; // Fixed top position
+      top += verticalOffset;
 
       setDropdownStyles({
         top,

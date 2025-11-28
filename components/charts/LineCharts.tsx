@@ -55,6 +55,7 @@ const GradientLineChart = React.memo(
   ({
     data1,
     data2,
+    labels = [],
     color1 = "#1D8751",
     color2 = "#FF4D4D",
     showData1 = true,
@@ -62,6 +63,7 @@ const GradientLineChart = React.memo(
   }: {
     data1: LineChartData;
     data2: LineChartData;
+    labels?: string[];
     color1?: string;
     color2?: string;
     showData1?: boolean;
@@ -91,14 +93,24 @@ const GradientLineChart = React.memo(
       return { baseWidth, height, left, right, top, bottom };
     }, [windowWidth]);
 
-    // Memoize min/max calculations
-    const { min, max } = React.useMemo(
-      () => ({
+    const safeLabels =
+      labels && labels.length
+        ? labels
+        : Array.from(
+            { length: Math.max(data1.data.length, data2.data.length, 1) },
+            (_, idx) => months[idx] || `#${idx + 1}`
+          );
+
+    const { min, max } = React.useMemo(() => {
+      const combinedValues = [...data1.data, ...data2.data];
+      if (!combinedValues.length) {
+        return { min: 0, max: 0 };
+      }
+      return {
         min: 0,
-        max: Math.max(...data1.data, ...data2.data, 0),
-      }),
-      [data1.data, data2.data]
-    );
+        max: Math.max(...combinedValues, 0),
+      };
+    }, [data1.data, data2.data]);
 
     // Memoize y-axis ticks
     const yTicks = React.useMemo(
@@ -106,35 +118,35 @@ const GradientLineChart = React.memo(
       [data1.data, data2.data]
     );
 
-    // Memoize point calculations
-    const points1 = React.useMemo(
-      () =>
-        data1.data.map((v, i) => ({
-          x:
-            chartDimensions.left +
-            (i / 11) * (chartDimensions.right - chartDimensions.left),
-          y:
-            chartDimensions.top +
-            (chartDimensions.bottom - chartDimensions.top) -
-            ((v - min) / (max - min || 1)) *
-              (chartDimensions.bottom - chartDimensions.top),
-        })),
-      [data1.data, min, max, chartDimensions]
+    const createPoints = React.useCallback(
+      (dataset: LineChartData) => {
+        const length = Math.min(dataset.data.length, safeLabels.length);
+        if (length === 0) return [];
+        const denominator = Math.max(length - 1, 1);
+        return Array.from({ length }, (_, i) => {
+          const normalizedIndex = denominator === 0 ? 0 : i / denominator;
+          return {
+            x:
+              chartDimensions.left +
+              normalizedIndex * (chartDimensions.right - chartDimensions.left),
+            y:
+              chartDimensions.top +
+              (chartDimensions.bottom - chartDimensions.top) -
+              ((dataset.data[i] - min) / (max - min || 1)) *
+                (chartDimensions.bottom - chartDimensions.top),
+          };
+        });
+      },
+      [chartDimensions, safeLabels.length, min, max]
     );
 
+    const points1 = React.useMemo(
+      () => createPoints(data1),
+      [createPoints, data1]
+    );
     const points2 = React.useMemo(
-      () =>
-        data2.data.map((v, i) => ({
-          x:
-            chartDimensions.left +
-            (i / 11) * (chartDimensions.right - chartDimensions.left),
-          y:
-            chartDimensions.top +
-            (chartDimensions.bottom - chartDimensions.top) -
-            ((v - min) / (max - min || 1)) *
-              (chartDimensions.bottom - chartDimensions.top),
-        })),
-      [data2.data, min, max, chartDimensions]
+      () => createPoints(data2),
+      [createPoints, data2]
     );
 
     // Memoize path generation function
@@ -165,20 +177,25 @@ const GradientLineChart = React.memo(
     );
 
     // Memoize area points
-    const areaPoints1 = React.useMemo(
-      () =>
-        `${chartDimensions.left},${chartDimensions.bottom} ${points1
+    const createAreaPoints = React.useCallback(
+      (points: { x: number; y: number }[]) => {
+        if (!points.length) return "";
+        const firstX = points[0].x;
+        const lastX = points[points.length - 1].x;
+        return `${firstX},${chartDimensions.bottom} ${points
           .map((p) => `${p.x},${p.y}`)
-          .join(" ")} ${chartDimensions.right},${chartDimensions.bottom}`,
-      [points1, chartDimensions]
+          .join(" ")} ${lastX},${chartDimensions.bottom}`;
+      },
+      [chartDimensions.bottom]
     );
 
+    const areaPoints1 = React.useMemo(
+      () => createAreaPoints(points1),
+      [points1, createAreaPoints]
+    );
     const areaPoints2 = React.useMemo(
-      () =>
-        `${chartDimensions.left},${chartDimensions.bottom} ${points2
-          .map((p) => `${p.x},${p.y}`)
-          .join(" ")} ${chartDimensions.right},${chartDimensions.bottom}`,
-      [points2, chartDimensions]
+      () => createAreaPoints(points2),
+      [points2, createAreaPoints]
     );
 
     return (
@@ -285,13 +302,18 @@ const GradientLineChart = React.memo(
               />
             </>
           )}
-          {months.map((m, i) =>
-            i % 2 === 0 ? (
+          {safeLabels.map((label, i) => {
+            const shouldRenderLabel =
+              safeLabels.length <= 6 || i % 2 === 0 || safeLabels.length <= 0;
+            if (!shouldRenderLabel) return null;
+            const denominator = Math.max(safeLabels.length - 1, 1);
+            const normalizedIndex = denominator === 0 ? 0 : i / denominator;
+            return (
               <text
-                key={m}
+                key={`${label}-${i}`}
                 x={
                   chartDimensions.left +
-                  (i / 11) * (chartDimensions.right - chartDimensions.left)
+                  normalizedIndex * (chartDimensions.right - chartDimensions.left)
                 }
                 y={chartDimensions.bottom + (windowWidth < 640 ? 18 : 22)}
                 fill="#A3A3A3"
@@ -299,10 +321,10 @@ const GradientLineChart = React.memo(
                 textAnchor="middle"
                 className="font-semibold"
               >
-                {m}
+                {label}
               </text>
-            ) : null
-          )}
+            );
+          })}
         </svg>
       </div>
     );
@@ -549,7 +571,9 @@ const LineCharts = React.memo(
       "Sells"
     );
     const [period, setPeriod] = useState("Month");
-    const [selectedTimePeriod, setSelectedTimePeriod] = useState("All");
+    const [exchangeTimePeriod, setExchangeTimePeriod] = useState("All");
+    const [p2pTimePeriod, setP2pTimePeriod] = useState("All");
+    const [referralTimePeriod, setReferralTimePeriod] = useState("All");
     const [activeTab, setActiveTab] = useState<
       "exchange" | "p2p" | "swap" | "buy"
     >("exchange");
@@ -580,77 +604,6 @@ const LineCharts = React.memo(
         data: Array(12).fill(0),
       },
     });
-
-    // Memoize filter functions to prevent recreation on every render
-    const getFilteredChartData = React.useCallback(
-      (data: LineChartData) => {
-        if (selectedTimePeriod === "All") {
-          return data;
-        }
-
-        const currentDate = new Date();
-        const filteredData = Array(12).fill(0);
-
-        switch (selectedTimePeriod) {
-          case "Last Week":
-            // Show only the last week data (last 7 days)
-            const lastWeekIndex = 11; // Most recent month
-            filteredData[lastWeekIndex] = data.data[lastWeekIndex];
-            break;
-          case "Month":
-            // Show only the current month data
-            const currentMonthIndex = 11; // Most recent month
-            filteredData[currentMonthIndex] = data.data[currentMonthIndex];
-            break;
-          case "One Year":
-            // Show all 12 months data
-            return data;
-          default:
-            return data;
-        }
-
-        return {
-          ...data,
-          data: filteredData,
-        };
-      },
-      [selectedTimePeriod]
-    );
-
-    const getFilteredP2PChartData = React.useCallback(
-      (data: LineChartData) => {
-        if (selectedTimePeriod === "All") {
-          return data;
-        }
-
-        const currentDate = new Date();
-        const filteredData = Array(12).fill(0);
-
-        switch (selectedTimePeriod) {
-          case "Last Week":
-            // Show only the last week data (last 7 days)
-            const lastWeekIndex = 11; // Most recent month
-            filteredData[lastWeekIndex] = data.data[lastWeekIndex];
-            break;
-          case "Month":
-            // Show only the current month data
-            const currentMonthIndex = 11; // Most recent month
-            filteredData[currentMonthIndex] = data.data[currentMonthIndex];
-            break;
-          case "One Year":
-            // Show all 12 months data
-            return data;
-          default:
-            return data;
-        }
-
-        return {
-          ...data,
-          data: filteredData,
-        };
-      },
-      [selectedTimePeriod]
-    );
 
     // Get user email from storage
     useEffect(() => {
@@ -759,6 +712,108 @@ const LineCharts = React.memo(
       (state: RootState) => state.auth
     );
 
+    const rollingMonthLabels = React.useMemo(() => {
+      const labels: string[] = [];
+      const now = new Date();
+      for (let offset = 11; offset >= 0; offset--) {
+        const target = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+        labels.push(
+          target
+            .toLocaleString("en-US", { month: "short" })
+            .toUpperCase()
+        );
+      }
+      return labels;
+    }, []);
+
+    const getSliceIndices = React.useCallback((length: number, timePeriod: string) => {
+      if (length === 0) return [];
+      let sliceCount = length;
+      switch (timePeriod) {
+        case "Last Week":
+          sliceCount = Math.min(4, length);
+          break;
+        case "Month":
+          sliceCount = Math.min(1, length);
+          break;
+        case "One Year":
+        case "All":
+        default:
+          sliceCount = Math.min(length, 12);
+          break;
+      }
+      const start = Math.max(0, length - sliceCount);
+      return Array.from({ length: sliceCount }, (_, idx) => start + idx);
+    }, []);
+
+    const getFilteredDataset = React.useCallback(
+      (
+        series: LineChartData,
+        timePeriod: string,
+        indices?: number[]
+      ): { dataset: LineChartData; labels: string[]; indices: number[] } => {
+        const dataLength = series.data.length;
+        const sliceIndices =
+          indices && indices.length
+            ? indices
+            : getSliceIndices(dataLength, timePeriod);
+        const normalizedIndices = sliceIndices.filter(
+          (index) => index >= 0 && index < dataLength
+        );
+        const filteredData = normalizedIndices.map(
+          (index) => series.data[index] ?? 0
+        );
+        const filteredLabels = normalizedIndices.map(
+          (index) => rollingMonthLabels[index] ?? months[index] ?? `#${index + 1}`
+        );
+        return {
+          dataset: { ...series, data: filteredData },
+          labels: filteredLabels,
+          indices: normalizedIndices,
+        };
+      },
+      [getSliceIndices, rollingMonthLabels]
+    );
+
+    const exchangeSeries = React.useMemo(() => {
+      const primary = getFilteredDataset(
+        chartData.depositData,
+        exchangeTimePeriod
+      );
+      const secondary = getFilteredDataset(
+        chartData.withdrawalData,
+        exchangeTimePeriod,
+        primary.indices
+      );
+      return {
+        deposits: primary.dataset,
+        withdrawals: secondary.dataset,
+        labels: primary.labels,
+      };
+    }, [
+      chartData.depositData,
+      chartData.withdrawalData,
+      exchangeTimePeriod,
+      getFilteredDataset,
+    ]);
+
+    const p2pSeries = React.useMemo(() => {
+      const primary = getFilteredDataset(
+        p2pChartData.buyData,
+        p2pTimePeriod
+      );
+      const secondary = getFilteredDataset(
+        p2pChartData.sellData,
+        p2pTimePeriod,
+        primary.indices
+      );
+      return {
+        buys: primary.dataset,
+        sells: secondary.dataset,
+        labels: primary.labels,
+      };
+    }, [p2pChartData.buyData, p2pChartData.sellData, p2pTimePeriod, getFilteredDataset]);
+
     useEffect(() => {
       const fetchData = async () => {
         if (user?.referral_code && isAuthenticated) {
@@ -811,17 +866,18 @@ const LineCharts = React.memo(
                 </Button>
                 <div className="ml-0 sm:ml-6 w-full sm:w-auto mt-2 sm:mt-0">
                   <Dropdown
-                    value={selectedTimePeriod}
+                    value={exchangeTimePeriod}
                     options={["All", "Last Week", "Month", "One Year"]}
-                    onChange={setSelectedTimePeriod}
+                    onChange={setExchangeTimePeriod}
                   />
                 </div>
               </div>
             </div>
             <div className="w-full">
               <GradientLineChart
-                data1={getFilteredChartData(chartData.depositData)}
-                data2={getFilteredChartData(chartData.withdrawalData)}
+                data1={exchangeSeries.deposits}
+                data2={exchangeSeries.withdrawals}
+                labels={exchangeSeries.labels}
                 showData1={filter === "All" || filter === "Deposits"}
                 showData2={filter === "All" || filter === "Withdrawals"}
               />
@@ -860,17 +916,18 @@ const LineCharts = React.memo(
                 </Button>
                 <div className="ml-0 sm:ml-6 w-full sm:w-auto mt-2 sm:mt-0">
                   <Dropdown
-                    value={selectedTimePeriod}
+                    value={p2pTimePeriod}
                     options={["All", "Last Week", "Month", "One Year"]}
-                    onChange={setSelectedTimePeriod}
+                    onChange={setP2pTimePeriod}
                   />
                 </div>
               </div>
             </div>
             <div className="w-full">
               <GradientLineChart
-                data1={getFilteredP2PChartData(p2pChartData.buyData)}
-                data2={getFilteredP2PChartData(p2pChartData.sellData)}
+                data1={p2pSeries.buys}
+                data2={p2pSeries.sells}
+                labels={p2pSeries.labels}
                 showData1={p2pFilter === "All" || p2pFilter === "Buys"}
                 showData2={p2pFilter === "All" || p2pFilter === "Sells"}
               />
@@ -952,9 +1009,9 @@ const LineCharts = React.memo(
               </h3>
               <div className="w-full sm:w-auto">
                 <Dropdown
-                  value={selectedTimePeriod}
+                  value={referralTimePeriod}
                   options={["All", "Last Week", "Month", "One Year"]}
-                  onChange={setSelectedTimePeriod}
+                  onChange={setReferralTimePeriod}
                 />
               </div>
             </div>
