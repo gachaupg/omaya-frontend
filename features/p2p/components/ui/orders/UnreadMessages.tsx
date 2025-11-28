@@ -9,6 +9,7 @@ import { GroupedUser } from '../../../api'
 interface UnreadMessagesProps {
   loading?: boolean;
   onBackToOrders?: () => void;
+  backText?: string;
 }
 
 interface AvatarMessageItemProps {
@@ -159,7 +160,7 @@ const AvatarMessageItem: React.FC<AvatarMessageItemProps> = ({
   );
 };
 
-const UnreadMessages: React.FC<UnreadMessagesProps> = ({ loading = false, onBackToOrders }) => {
+const UnreadMessages: React.FC<UnreadMessagesProps> = ({ loading = false, onBackToOrders,backText = "Back to Orders", }) => {
   const router = useRouter()
   const pathname = usePathname()
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth)
@@ -293,9 +294,9 @@ const UnreadMessages: React.FC<UnreadMessagesProps> = ({ loading = false, onBack
           {onBackToOrders && (
             <button
               onClick={onBackToOrders}
-              className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+              className="text-sm cursor-pointer text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
             >
-              Back to Orders
+               <span className="font-medium">{backText}</span>
             </button>
           )}
           {onBackToOrders && (

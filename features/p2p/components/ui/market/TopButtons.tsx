@@ -55,9 +55,9 @@ const TopButtons = ({
           {t("common.sell", "Sell")}
         </button>
       </div>
-
+    {/* now disabled from here  here and handled in the P2P Layout */}
       {/* Unread Message(s) Button */}
-      <button
+      {/* <button
         className={`w-full sm:w-auto rounded-[28px] flex items-center justify-center gap-2 border border-[#1D8751] px-5 py-3 font-semibold text-sm hover:bg-[#1D8751]/10 transition-all relative ${
           showUnreadMessages
             ? "bg-[#1D8751] text-white border border-[#1D8751]"
@@ -77,13 +77,13 @@ const TopButtons = ({
           Unread Message(s)
         </span>
         
-        {/* Unread count badge */}
+  
         {totalUnreadCount > 0 && (
           <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center min-w-[20px]">
             {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
           </span>
         )}
-      </button>
+      </button> */}
     </div>
   );
 };

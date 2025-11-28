@@ -35,9 +35,7 @@ const Market = () => {
       <TopButtons
         activeTab={activeTab}
         setActiveTab={(tab: string) => setActiveTab(tab as "buy" | "sell")}
-        onUnreadMessagesClick={handleUnreadMessagesClick}
-        showUnreadMessages={showUnreadMessages}
-        totalUnreadCount={totalUnreadCount}
+       
         loading={loading}
       />
       

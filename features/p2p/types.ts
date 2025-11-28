@@ -18,6 +18,10 @@ export interface TabsProps {
   tabs: Tab[];
   activeTab: string;
   onTabChange: (tabId: string) => void;
+  onUnreadMessagesClick: () => void;
+  totalUnreadCount: number;
+  showUnreadMessages: boolean;
+  shouldShowMessagesButton?: boolean;
 }
 
 export type TransactionType = {

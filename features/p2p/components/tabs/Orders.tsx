@@ -21,8 +21,7 @@ const Orders = memo(() => {
     (state: RootState) => state.userTrades
   );
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
-  const { totalUnreadCount } = useSelector((state: RootState) => state.unreadMessages);
-
+  
   // Filter states with proper initial values
   const [filters, setFilters] = useState({
     type: "all",
@@ -34,13 +33,7 @@ const Orders = memo(() => {
   // State for unread messages view
   const [showUnreadMessages, setShowUnreadMessages] = useState(false);
 
-  // Initialize API hook for grouped messages
-  useGroupedMessages({ 
-    enabled: isAuthenticated,
-    limit: 100,
-    refetchInterval: 30000, // Poll every 30 seconds
-  });
-
+  
   // Memoize the fetch function to prevent unnecessary re-renders
   const fetchTrades = useCallback(() => {
     if (isAuthenticated) {
@@ -64,9 +57,6 @@ const Orders = memo(() => {
     dispatch(setCurrentPage(1)); // Reset to first page when filters change
   };
 
-  const handleUnreadMessagesClick = () => {
-    setShowUnreadMessages(!showUnreadMessages);
-  };
 
   const handleBackToOrders = () => {
     setShowUnreadMessages(false);
@@ -184,16 +174,17 @@ const Orders = memo(() => {
         onFilterChange={handleFilterChange}
         loading={loading}
         orderStatusTabs={orderStatusTabs}
-        onUnreadMessagesClick={handleUnreadMessagesClick}
-        showUnreadMessages={showUnreadMessages}
-        totalUnreadCount={totalUnreadCount}
+      
       />
       <div className="flex flex-col w-full">
         {showUnreadMessages ? (
-          <UnreadMessages
+          <>
+           <UnreadMessages
             loading={loading}
             onBackToOrders={handleBackToOrders}
           />
+          </>
+         
         ) : (
           <OrdersTransactions
             transformedData={transformedData}
