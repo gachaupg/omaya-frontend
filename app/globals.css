@@ -184,3 +184,7 @@ textarea:active {
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+.nav-active {
+  color: #1D8751 !important;
+}
