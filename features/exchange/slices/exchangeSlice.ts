@@ -52,6 +52,64 @@ const initialState: ExchangeState = {
   error: null,
 };
 
+// Helper to normalize numeric values from API (handles string numbers)
+const normalizeNumber = (value: any): number => {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+};
+
+// Helper to normalize exchange statistics
+const normalizeStatistics = (stats: any): ExchangeStatistics => {
+  return {
+    total_pending_exchange_deposits: normalizeNumber(stats?.total_pending_exchange_deposits),
+    total_pending_exchange_withdrawals: normalizeNumber(stats?.total_pending_exchange_withdrawals),
+    total_approved_exchange_deposits: normalizeNumber(stats?.total_approved_exchange_deposits),
+    total_approved_exchange_withdrawals: normalizeNumber(stats?.total_approved_exchange_withdrawals),
+    total_approved_exchange_combined: stats?.total_approved_exchange_combined !== undefined ? normalizeNumber(stats.total_approved_exchange_combined) : undefined,
+    total_approved_exchange_net: stats?.total_approved_exchange_net !== undefined ? normalizeNumber(stats.total_approved_exchange_net) : undefined,
+    total_approved_exchange_volume: stats?.total_approved_exchange_volume !== undefined ? normalizeNumber(stats.total_approved_exchange_volume) : undefined,
+    total_pending_p2p_deposits: stats?.total_pending_p2p_deposits !== undefined ? normalizeNumber(stats.total_pending_p2p_deposits) : undefined,
+    total_pending_p2p_withdrawals: stats?.total_pending_p2p_withdrawals !== undefined ? normalizeNumber(stats.total_pending_p2p_withdrawals) : undefined,
+    total_approved_p2p_deposits: stats?.total_approved_p2p_deposits !== undefined ? normalizeNumber(stats.total_approved_p2p_deposits) : undefined,
+    total_approved_p2p_withdrawals: stats?.total_approved_p2p_withdrawals !== undefined ? normalizeNumber(stats.total_approved_p2p_withdrawals) : undefined,
+    total_approved_p2p_combined: stats?.total_approved_p2p_combined !== undefined ? normalizeNumber(stats.total_approved_p2p_combined) : undefined,
+    total_approved_p2p_net: stats?.total_approved_p2p_net !== undefined ? normalizeNumber(stats.total_approved_p2p_net) : undefined,
+    total_approved_p2p_volume: stats?.total_approved_p2p_volume !== undefined ? normalizeNumber(stats.total_approved_p2p_volume) : undefined,
+    total_approved_all: stats?.total_approved_all !== undefined ? normalizeNumber(stats.total_approved_all) : undefined,
+    total_approved_volume: stats?.total_approved_volume !== undefined ? normalizeNumber(stats.total_approved_volume) : undefined,
+    total_approved_net: stats?.total_approved_net !== undefined ? normalizeNumber(stats.total_approved_net) : undefined,
+    total_buy_orders_by_status: stats?.total_buy_orders_by_status ? {
+      pending: normalizeNumber(stats.total_buy_orders_by_status.pending),
+      completed: normalizeNumber(stats.total_buy_orders_by_status.completed),
+      canceled: normalizeNumber(stats.total_buy_orders_by_status.canceled),
+      offline: normalizeNumber(stats.total_buy_orders_by_status.offline),
+    } : undefined,
+    total_sell_orders_by_status: stats?.total_sell_orders_by_status ? {
+      pending: normalizeNumber(stats.total_sell_orders_by_status.pending),
+      completed: normalizeNumber(stats.total_sell_orders_by_status.completed),
+      canceled: normalizeNumber(stats.total_sell_orders_by_status.canceled),
+      offline: normalizeNumber(stats.total_sell_orders_by_status.offline),
+    } : undefined,
+    total_buy_orders: stats?.total_buy_orders !== undefined ? normalizeNumber(stats.total_buy_orders) : undefined,
+    total_sell_orders: stats?.total_sell_orders !== undefined ? normalizeNumber(stats.total_sell_orders) : undefined,
+    total_p2p_orders: stats?.total_p2p_orders !== undefined ? normalizeNumber(stats.total_p2p_orders) : undefined,
+    total_trades: stats?.total_trades !== undefined ? normalizeNumber(stats.total_trades) : undefined,
+    avg_release_time: stats?.avg_release_time,
+    avg_payment_time: stats?.avg_payment_time,
+    rating: stats?.rating,
+    total_volume: stats?.total_volume,
+    total_pending_changenow_swaps: stats?.total_pending_changenow_swaps !== undefined ? normalizeNumber(stats.total_pending_changenow_swaps) : undefined,
+    total_completed_changenow_swaps: stats?.total_completed_changenow_swaps !== undefined ? normalizeNumber(stats.total_completed_changenow_swaps) : undefined,
+    total_failed_changenow_swaps: stats?.total_failed_changenow_swaps !== undefined ? normalizeNumber(stats.total_failed_changenow_swaps) : undefined,
+    total_changenow_swaps: stats?.total_changenow_swaps !== undefined ? normalizeNumber(stats.total_changenow_swaps) : undefined,
+    created: stats?.created,
+  };
+};
+
 // Helper to handle API errors
 const handleApiError = (error: unknown): string => {
   let errorMessage = "An unexpected error occurred";
@@ -345,7 +403,8 @@ export const fetchExchangeStatistics = createAsyncThunk<
     });
 
     CircuitBreaker.onSuccess(endpoint);
-    return response.data;
+    // Normalize the response to ensure all numbers are actually numbers
+    return normalizeStatistics(response.data);
   } catch (error: any) {
     CircuitBreaker.onFailure(endpoint, error);
 
@@ -586,7 +645,8 @@ const exchangeSlice = createSlice({
       fetchExchangeStatistics.fulfilled,
       (state, action: PayloadAction<ExchangeStatistics>) => {
         state.loading = false;
-        state.statistics = action.payload;
+        // Ensure statistics are normalized (already done in thunk, but double-check)
+        state.statistics = normalizeStatistics(action.payload);
       }
     );
     builder.addCase(fetchExchangeStatistics.rejected, (state, action) => {

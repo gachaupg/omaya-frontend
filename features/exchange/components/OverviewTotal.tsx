@@ -1,4 +1,5 @@
 import React from "react";
+import { formatCurrency } from "@/lib/globalFormatter";
 
 type OverviewTotalProps = {
   total: number;
@@ -86,7 +87,7 @@ const OverviewTotal: React.FC<OverviewTotalProps> = ({
             })}
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className="text-lg font-bold text-white">{total.toLocaleString()} USD</div>
+            <div className="text-lg font-bold text-white">{formatCurrency(total || 0)}</div>
             <div className="text-sm text-gray-400">Transactions</div>
           </div>
         </div>
@@ -98,7 +99,7 @@ const OverviewTotal: React.FC<OverviewTotalProps> = ({
             <div className="w-3 h-3 rounded-full bg-[#13B562]"></div>
             <span className="text-gray-400 text-sm">Deposits</span>
           </div>
-          <span className="text-white">{deposits.toLocaleString()} USD</span>
+          <span className="text-white">{formatCurrency(deposits || 0)}</span>
         </div>
         
         <div className="flex items-center justify-between">
@@ -106,7 +107,7 @@ const OverviewTotal: React.FC<OverviewTotalProps> = ({
             <div className="w-3 h-3 rounded-full bg-[#E23D3A]"></div>
             <span className="text-gray-400 text-sm">Withdrawals</span>
           </div>
-          <span className="text-white">{withdrawals.toLocaleString()} USD</span>
+          <span className="text-white">{formatCurrency(withdrawals || 0)}</span>
         </div>
         
         <div className="flex items-center justify-between">
@@ -114,7 +115,7 @@ const OverviewTotal: React.FC<OverviewTotalProps> = ({
             <div className="w-3 h-3 rounded-full bg-[#FFD600]"></div>
             <span className="text-gray-400 text-sm">In Progress</span>
           </div>
-          <span className="text-white">{inProgress.toLocaleString()} USD</span>
+          <span className="text-white">{formatCurrency(inProgress || 0)}</span>
         </div>
         
         <div className="flex items-center justify-between">
@@ -122,7 +123,7 @@ const OverviewTotal: React.FC<OverviewTotalProps> = ({
             <div className="w-3 h-3 rounded-full bg-[#4A9EFF]"></div>
             <span className="text-gray-400 text-sm">Exchange</span>
           </div>
-          <span className="text-white text-sm">{exchange.toLocaleString()} USD</span>
+          <span className="text-white text-sm">{formatCurrency(exchange || 0)}</span>
         </div>
       </div>
 

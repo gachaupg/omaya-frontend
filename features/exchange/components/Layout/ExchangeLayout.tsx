@@ -127,7 +127,7 @@ const ExchangeLayout = () => {
               </Suspense>
               <Suspense fallback={<CardSkeleton />}>
                 <OverviewTotal
-                  total={statistics?.total_approved_exchange_combined || 0}
+                  total={statistics?.total_approved_volume || statistics?.total_approved_exchange_combined || 0}
                   deposits={statistics?.total_approved_exchange_deposits || 0}
                   withdrawals={
                     statistics?.total_approved_exchange_withdrawals || 0
@@ -136,7 +136,7 @@ const ExchangeLayout = () => {
                     (statistics?.total_pending_exchange_deposits || 0) +
                     (statistics?.total_pending_exchange_withdrawals || 0)
                   }
-                  exchange={statistics?.total_approved_exchange_combined || 0}
+                  exchange={statistics?.total_approved_exchange_net || statistics?.total_approved_exchange_combined || 0}
                 />
               </Suspense>
               <Suspense fallback={<CardSkeleton />}>

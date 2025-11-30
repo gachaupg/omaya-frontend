@@ -55,7 +55,12 @@ export const formatBalance = (value: number): string => {
  * Formats large numbers to be user-friendly
  * Converts numbers with more than 7 digits to use K, M, B suffixes
  */
-export const formatLargeNumber = (num: number): string => {
+export const formatLargeNumber = (num: number | undefined | null): string => {
+  // Handle undefined, null, or NaN values
+  if (num === undefined || num === null || isNaN(num)) {
+    return '0';
+  }
+  
   if (num === 0) return '0';
   
   const absNum = Math.abs(num);

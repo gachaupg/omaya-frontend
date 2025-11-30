@@ -125,7 +125,7 @@ export const overviewTotalData = (
     },
     {
       label: "Exchange",
-      value: transactionSummary.total_approved_exchange_combined,
+      value: transactionSummary.total_approved_exchange_net || transactionSummary.total_approved_exchange_combined || 0,
       color: "#386AB5",
     },
   ];
@@ -182,7 +182,7 @@ export const overviewTotalSummary = (
 ) => {
   if (type === "p2p") {
     return {
-      total: transactionSummary.total_approved_p2p_combined,
+      total: transactionSummary.total_approved_p2p_net || transactionSummary.total_approved_p2p_combined || 0,
       currency: "USD",
     };
   }
@@ -200,7 +200,7 @@ export const overviewTotalSummary = (
   }
   return {
     total:
-      transactionSummary.total_approved_exchange_combined +
+      (transactionSummary.total_approved_exchange_net || transactionSummary.total_approved_exchange_combined || 0) +
       transactionSummary.total_approved_exchange_deposits +
       transactionSummary.total_approved_exchange_withdrawals +
       transactionSummary.total_pending_exchange_deposits +
@@ -225,7 +225,7 @@ export const referralCommissionsSummary = (
   }
 
   return {
-    total: transactionSummary.total_approved_exchange_combined || 0,
+    total: transactionSummary.total_approved_exchange_net || transactionSummary.total_approved_exchange_combined || 0,
     currency: "USD",
   };
 };
