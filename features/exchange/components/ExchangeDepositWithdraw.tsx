@@ -1,4 +1,5 @@
 import React from "react";
+import { formatCurrency } from "@/lib/globalFormatter";
 
 type ExchangeDepositWithdrawProps = {
   title: string;
@@ -46,7 +47,7 @@ const ExchangeDepositWithdraw: React.FC<ExchangeDepositWithdrawProps> = ({
         </div>
 
         <div className="text-xl font-bold mb-3 text-white">
-          {total.toLocaleString()} USD
+          {formatCurrency(total || 0)}
         </div>
 
         <div className="mb-2 w-full rounded-full h-4 bg-[#35353E]">
@@ -71,7 +72,7 @@ const ExchangeDepositWithdraw: React.FC<ExchangeDepositWithdrawProps> = ({
               </span>
             </div>
             <span className="text-white">
-              {completed.toLocaleString()} USD
+              {formatCurrency(completed || 0)}
             </span>
           </div>
 
@@ -83,7 +84,7 @@ const ExchangeDepositWithdraw: React.FC<ExchangeDepositWithdrawProps> = ({
               </span>
             </div>
             <span className="text-white">
-              {inEscrow.toLocaleString()} USD
+              {formatCurrency(inEscrow || 0)}
             </span>
           </div>
         </div>

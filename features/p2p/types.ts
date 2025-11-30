@@ -351,13 +351,19 @@ export interface TransactionSummary {
   total_pending_exchange_withdrawals: number;
   total_approved_exchange_deposits: number;
   total_approved_exchange_withdrawals: number;
-  total_approved_exchange_combined: number;
+  total_approved_exchange_combined?: number; // Deprecated, use total_approved_exchange_net
+  total_approved_exchange_net?: number;
+  total_approved_exchange_volume?: number;
   total_pending_p2p_deposits: number;
   total_pending_p2p_withdrawals: number;
   total_approved_p2p_deposits: number;
   total_approved_p2p_withdrawals: number;
-  total_approved_p2p_combined: number;
-  total_approved_all: number;
+  total_approved_p2p_combined?: number; // Deprecated, use total_approved_p2p_net
+  total_approved_p2p_net?: number;
+  total_approved_p2p_volume?: number;
+  total_approved_all?: number; // Deprecated, use total_approved_volume
+  total_approved_volume?: number;
+  total_approved_net?: number;
   total_pending_changenow_swaps: number;
   total_completed_changenow_swaps: number;
   total_failed_changenow_swaps: number;
