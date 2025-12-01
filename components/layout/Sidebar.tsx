@@ -39,7 +39,8 @@ export default function Sidebar() {
                 normalizedHref === "/dashboard"
                   ? normalizedPathname === normalizedHref
                   : normalizedPathname === normalizedHref ||
-                    (normalizedPathname && normalizedPathname.startsWith(normalizedHref + "/"));
+                    (normalizedPathname &&
+                      normalizedPathname.startsWith(normalizedHref + "/"));
               const label = t(item.labelKey, item.labelKey);
               return (
                 <li key={item.labelKey}>
@@ -54,11 +55,21 @@ export default function Sidebar() {
                         : "text-[#727272] dark:hover:text-white hover:bg-white dark:hover:bg-[#23262F]"
                     )}
                   >
-                    <img
-                      src={item.icon}
-                      alt={label + " icon"}
-                      className="w-5 h-5 md:w-6 md:h-6 object-contain flex-shrink-0"
-                    />
+                    {item.labelKey === "navigation.exchange" ? (
+                      <>
+                        <img
+                          className=" w-9 h-8 object-cover "
+                          src="https://res.cloudinary.com/pitz/image/upload/v1764568507/uil_exchange_1_okxkvb.png"
+                          alt=""
+                        />
+                      </>
+                    ) : (
+                      <img
+                        src={item.icon}
+                        alt={label + " icon"}
+                        className="ml-2 w-5 h-5 md:w-6 md:h-6 object-contain flex-shrink-0"
+                      />
+                    )}
                     {item.labelKey === "navigation.express" ? (
                       <span
                         className={clsx(
@@ -108,8 +119,6 @@ export default function Sidebar() {
 </span>
                         )}
                       </span>
-                    ) : item.labelKey === "navigation.exchange" ? (
-                      t("navigation.exchange", "MoneyX")
                     ) : (
                       label
                     )}
@@ -137,7 +146,8 @@ export default function Sidebar() {
                 normalizedHref === "/dashboard"
                   ? normalizedPathname === normalizedHref
                   : normalizedPathname === normalizedHref ||
-                    (normalizedPathname && normalizedPathname.startsWith(normalizedHref + "/"));
+                    (normalizedPathname &&
+                      normalizedPathname.startsWith(normalizedHref + "/"));
               const label = t(item.labelKey, item.labelKey);
               return (
                 <li key={item.labelKey} className="snap-start">
@@ -167,7 +177,7 @@ export default function Sidebar() {
                         <span
                           className={isActive ? "font-bold" : "font-normal"}
                         >
-                          {t("navigation.express", "Express")}
+                          {t("navigation.express", "E")}
                         </span>
                         <svg
                           width="28"
@@ -219,8 +229,6 @@ export default function Sidebar() {
                               ).toUpperCase()}
                         </span>
                       </span>
-                    ) : item.labelKey === "navigation.exchange" ? (
-                      t("navigation.exchange", "MoneyX")
                     ) : (
                       label
                     )}

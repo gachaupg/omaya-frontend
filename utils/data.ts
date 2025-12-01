@@ -13,7 +13,7 @@ export const navItems = [
   },
   {
     labelKey: "navigation.exchange",
-    icon: "https://res.cloudinary.com/pitz/image/upload/v1764051173/uil_exchange_tmoooe.png",
+    icon: "",
     href: "/dashboard/exchange/",
   },
   {

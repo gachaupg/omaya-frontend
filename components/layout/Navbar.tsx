@@ -37,12 +37,10 @@ const NavLink = ({
   href,
   children,
   isTransparent = false,
-  active = false
 }: {
   href: string;
   children: React.ReactNode;
   isTransparent?: boolean;
-  active?: boolean;
 }) => (
   <Link
     href={href}
@@ -50,8 +48,7 @@ const NavLink = ({
       isTransparent
         ? "text-white" // Always white when navbar is transparent
         : "dark:text-white text-gray-900" // Theme-based when navbar has background
-    } hover:text-[#1D8751] transition-colors duration-200 text-sm lg:text-base 2xl:text-lg ${active ? 'nav-active' :''}`
-  }
+    } hover:text-[#1D8751] transition-colors duration-200 text-sm lg:text-base 2xl:text-lg`}
   >
     {children}
   </Link>
@@ -61,16 +58,14 @@ const MobileNavLink = ({
   href,
   children,
   onClick,
-  active = false,
 }: {
   href: string;
   children: React.ReactNode;
   onClick: () => void;
-  active?: boolean | undefined;
 }) => (
   <Link
     href={href}
-    className={`block dark:text-white text-gray-900 hover:text-[#1D8751] py-2 transition-colors duration-200 text-lg ${active == true ? 'nav-active' :''}`}
+    className="block dark:text-white text-gray-900 hover:text-[#1D8751] py-2 transition-colors duration-200 text-lg"
     onClick={onClick}
   >
     {children}
@@ -373,19 +368,19 @@ export default function Navbar() {
     if (isHomePage && isNotScrolled) {
       // Home page, not scrolled: white logo for transparent background
       return {
-        src: "https://res.cloudinary.com/dam1sxczj/image/upload/v1746538269/Frame_q3pwt7.png",
+        src: "https://res.cloudinary.com/pitz/image/upload/v1764572384/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png",
         alt: "OMAYA Exchange",
       };
     } else if (isDarkTheme) {
       // Dark theme: green logo
       return {
-        src: "https://res.cloudinary.com/dam1sxczj/image/upload/v1747133499/Omaya_green-logo_yva2ah.png",
+        src: "https://res.cloudinary.com/pitz/image/upload/v1764572384/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png",
         alt: "OMAYA Exchange",
       };
     } else {
       // Light theme: default logo
       return {
-        src: "https://res.cloudinary.com/pitz/image/upload/v1750838143/1446599b0a50473eb54aaee7c59988ecc0856b10_mmmmcl.png",
+        src: "https://res.cloudinary.com/pitz/image/upload/v1764572384/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png",
         alt: "OMAYA Exchange",
       };
     }
@@ -443,22 +438,25 @@ export default function Navbar() {
               Home
             </NavLink>
             {isAuthenticated ? (
-              <NavLink href="/dashboard" isTransparent={isTransparentNavbar} active={pathname?.includes('dashboard')}>
+              <NavLink href="/dashboard" isTransparent={isTransparentNavbar}>
                 Dashboard
               </NavLink>
             ) : (
-              <NavLink href="/about" isTransparent={isTransparentNavbar} active={pathname?.includes('about')}>
+              <NavLink href="/about" isTransparent={isTransparentNavbar}>
                 About Us
               </NavLink>
             )}
-            <NavLink href="/market" isTransparent={isTransparentNavbar} active={pathname?.includes('market')}>
+            <NavLink href="/market" isTransparent={isTransparentNavbar}>
               Market
             </NavLink>
-            <NavLink href="/rates" isTransparent={isTransparentNavbar} active={pathname?.includes('rates')}>
+            <NavLink href="/rates" isTransparent={isTransparentNavbar}>
               Rates
             </NavLink>
-            <NavLink href="/blog" isTransparent={isTransparentNavbar} active={pathname?.includes('blog')}>
+            <NavLink href="/blog" isTransparent={isTransparentNavbar}>
               Blog
+            </NavLink>
+            <NavLink href="/about" isTransparent={isTransparentNavbar}>
+              About Us
             </NavLink>
             {/* Show Contact us only on auth pages */}
             {/* {(pathname?.startsWith("/auth/login") || 
@@ -470,7 +468,7 @@ export default function Navbar() {
               </NavLink>
             )} */}
 
-            <NavLink href="/contactUs" isTransparent={isTransparentNavbar} active={pathname?.includes('contactUs')}>
+            <NavLink href="/contactUs" isTransparent={isTransparentNavbar}>
               Contact us
             </NavLink>
           </div>
@@ -872,26 +870,29 @@ export default function Navbar() {
               Home
             </MobileNavLink>
             {isAuthenticated ? (
-              <MobileNavLink href="/dashboard" onClick={toggleMobileMenu} active={pathname?.includes('dashboard') ?? false}>
+              <MobileNavLink href="/dashboard" onClick={toggleMobileMenu}>
                 Dashboard
               </MobileNavLink>
             ) : (
-              <MobileNavLink href="/about" onClick={toggleMobileMenu} active={pathname?.includes('about')}>
+              <MobileNavLink href="/about" onClick={toggleMobileMenu}>
                 About Us
               </MobileNavLink>
             )}
-            <MobileNavLink href="/market" onClick={toggleMobileMenu} active={pathname?.includes('market')}>
+            <MobileNavLink href="/market" onClick={toggleMobileMenu}>
               Market
             </MobileNavLink>
-            <MobileNavLink href="/rates" onClick={toggleMobileMenu} active={pathname?.includes('rates')}>
+            <MobileNavLink href="/rates" onClick={toggleMobileMenu}>
               Rates
             </MobileNavLink>
-            <MobileNavLink href="/blog" onClick={toggleMobileMenu} active={pathname?.includes('blog')}>
+            <MobileNavLink href="/blog" onClick={toggleMobileMenu}>
               Blog
             </MobileNavLink>
-            <MobileNavLink href="/contactUs" onClick={toggleMobileMenu} active={pathname?.includes('contactUs')}>
-              Contact us
+            <MobileNavLink href="/about" onClick={toggleMobileMenu}>
+              About Us
             </MobileNavLink>
+            <MobileNavLink href="/contactUs" onClick={toggleMobileMenu}>
+                Contact us
+              </MobileNavLink>
 
             <div className="flex flex-col space-y-4 pt-4">
               {isAuthenticated ? (

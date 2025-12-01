@@ -94,7 +94,7 @@ export default function Footer() {
           <div className="lg:col-span-2 space-y-6">
             <Link href="/">
               <Image
-                src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746548004/Omaya-green_g7uk8r.png"
+                src="https://res.cloudinary.com/pitz/image/upload/v1764572384/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png"
                 alt="OMAYA Exchange"
                 width={150}
                 height={40}

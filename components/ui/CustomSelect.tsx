@@ -33,6 +33,8 @@ interface CustomSelectProps {
   logoSize?: number;
   logoClassName?: string;
   dropdownOffsetY?: number;
+  dropdownMaxHeight?: number;
+  dropdownPosition?: "below" | "above";
 }
 
 const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -54,8 +56,10 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   logoSize,
   logoClassName,
   dropdownOffsetY = 0,
+  dropdownMaxHeight,
+  dropdownPosition = "below",
 }) => {
-  const resolvedLogoSize = logoSize ?? (sizeMode === "card" ? 44 : 32);
+  const resolvedLogoSize = logoSize ?? (sizeMode === "card" ? 36 : 32);
   const resolvedLogoClass =
     logoClassName ?? "rounded object-cover flex-shrink-0";
   const [isOpen, setIsOpen] = useState(false);
@@ -172,8 +176,23 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         }
       }
 
+      // Calculate top position based on dropdownPosition prop
+      let topPosition;
+      if (dropdownPosition === "above") {
+        // Position above the trigger
+        const dropdownHeight = dropdownMaxHeight || 300;
+        topPosition = rect.top - dropdownHeight - 4 + verticalOffset;
+        // If it would go above viewport, position it below instead
+        if (topPosition < minMargin) {
+          topPosition = rect.bottom + 4 + verticalOffset;
+        }
+      } else {
+        // Default: position below the trigger
+        topPosition = rect.bottom + 4 + verticalOffset;
+      }
+
       setDropdownStyles({
-        top: rect.bottom + 4 + verticalOffset,
+        top: topPosition,
         left: leftPosition,
         width: Math.max(dropdownWidth, triggerWidth), // Ensure it's at least as wide as the trigger
       });
@@ -344,7 +363,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
           <div
             id={dropdownId}
             ref={dropdownContentRef}
-            className="z-[9999] bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl max-h-[200px] sm:max-h-[180px] overflow-hidden"
+            className="z-[9999] bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl overflow-hidden"
             role="listbox"
             style={{
               position: "fixed",
@@ -352,6 +371,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
               left: dropdownStyles.left,
               width: `${dropdownStyles.width || 200}px`,
               minWidth: `${dropdownStyles.width || 200}px`,
+              maxHeight: dropdownMaxHeight ? `${dropdownMaxHeight}px` : "300px",
             }}
           >
             {/* Search Input */}
@@ -369,7 +389,12 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
             )}
 
             {/* Options List */}
-            <div className="max-h-[180px] sm:max-h-[160px] overflow-y-auto p-1">
+            <div 
+              className="overflow-y-auto p-1"
+              style={{
+                maxHeight: dropdownMaxHeight ? `${dropdownMaxHeight - (searchable ? 60 : 0)}px` : "280px",
+              }}
+            >
               {filteredOptions.length === 0 ? (
                 <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
                   {searchTerm ? "No matching options" : emptyText}
