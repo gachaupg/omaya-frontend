@@ -39,7 +39,7 @@ const TopButtons = ({
           className={`px-2 py-1 font-bold text-sm min-w-[90px] h-10 transition-all duration-200 rounded-l-lg ${
             isBuyActive
               ? "bg-[#1D8751] text-white"
-              : "bg-transparent text-white"
+              : "bg-transparent text-gray-800 dark:text-white"
           }`}
         >
           {t("common.buy", "Buy")}
@@ -49,7 +49,7 @@ const TopButtons = ({
           className={`px-2 py-1 font-bold text-sm min-w-[90px] h-10 transition-all duration-200 rounded-r-lg ${
             isSellActive
               ? "bg-[#E23D3A] text-white"
-              : "bg-transparent text-white"
+              : "bg-transparent text-gray-800 dark:text-white"
           }`}
         >
           {t("common.sell", "Sell")}
