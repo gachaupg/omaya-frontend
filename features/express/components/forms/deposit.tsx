@@ -2829,7 +2829,7 @@ export default function DepositForm({
                 )} */}
               </label>
               <div className="relative">
-                <input
+                {/* <input
                   type="text"
                   inputMode="decimal"
                   value={payAmountInput}
@@ -2925,7 +2925,74 @@ export default function DepositForm({
                       ? "border-[#1D8751]"
                       : "border-[#A2A4A9FF] dark:border-[#35353E]"
                   }`}
-                />
+                /> */}
+                <input
+  type="text"
+  inputMode="decimal"
+  value={payAmountInput}
+  onChange={(e) => {
+    const value = e.target.value;
+
+    if (value === payAmountInput) return;
+
+    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      if (value.includes(".")) {
+        const decimalPart = value.split(".")[1];
+        if (decimalPart && decimalPart.length > 8) {
+          setApiValidationError("Number cannot have more than 8 decimal places.");
+          return;
+        }
+      }
+
+      const newAmount = parseFloat(value) || 0;
+
+      if (newAmount !== payAmount || value !== payAmountInput) {
+        setPayAmountInput(value);
+        setPayAmount(newAmount);
+        setIsCalculatingFromPay(true);
+        setApiValidationError(null);
+        setIsUserModifiedAmount(true);
+
+        if (newAmount > 15000) setIsInfoModalOpen(true);
+
+        if (selectedAsset && newAmount > 0 && isSimpleCalculationAsset(selectedAsset)) {
+          const calculatedGetAmount =
+            newAmount < 2 ? newAmount : Math.max(0, newAmount - 2);
+          setGetAmount(calculatedGetAmount);
+          setGetAmountInput(calculatedGetAmount.toString());
+        } else if (
+          selectedAsset &&
+          newAmount > 0 &&
+          isForexAsset(selectedAsset)
+        ) {
+          const calculatedGetAmount = newAmount / FXP_EXCHANGE_RATE;
+          setGetAmount(calculatedGetAmount);
+          setGetAmountInput(calculatedGetAmount.toFixed(2));
+        } else if (selectedAsset && newAmount > 0) {
+          setIsCalculating(true);
+          setIsCalculatingReceive(true);
+          calculateAmounts(newAmount, true);
+        } else {
+          setIsCalculatingReceive(false);
+          setIsCalculating(false);
+        }
+      }
+    }
+  }}
+  placeholder="Enter amount"
+  className={`w-full h-[80px] text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff]
+    rounded-2xl px-4 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none
+    border appearance-none
+    ${
+      (isCalculating || isCalculatingReceive) &&
+      isCalculatingFromPay &&
+      selectedAsset &&
+      !isForexAsset(selectedAsset)
+        ? "border-[#1D8751]"
+        : "border-[#A2A4A9FF] dark:border-[#35353E]"
+    }`}
+/>
+
 
                 {/* Show loading spinner when calculating "You Receive" from "You Send" */}
                 {(isCalculating || isCalculatingReceive) &&

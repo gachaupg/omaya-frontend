@@ -714,10 +714,10 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
         <span
           key={tag}
           onClick={() => handleFilterClick(tag)}
-          className={`bg-gray-100 dark:bg-[#1D1D23] text-gray-700 dark:text-[#788099] rounded-xl sm:rounded-2xl lg:rounded-2xl px-3 sm:px-4 lg:px-4 py-1.5 sm:py-1 lg:py-1 text-xs sm:text-sm lg:text-sm font-medium border border-gray-300 dark:border-[#35353E] cursor-pointer transition-colors min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center justify-center ${
+          className={`bg-gray-100 rounded-xl sm:rounded-2xl lg:rounded-2xl px-3 sm:px-4 lg:px-4 py-1.5 sm:py-1 lg:py-1 text-xs sm:text-sm lg:text-sm font-medium border cursor-pointer transition-colors min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center justify-center ${
             activeFilter === tag
-              ? "bg-gray-300 dark:bg-[#35353E] text-gray-900 dark:text-[#fff] border-gray-500 dark:border-[#35353E]"
-              : "hover:bg-gray-200 dark:hover:bg-[#35353E]"
+              ? "bg-gray-100 dark:bg-[#35353E] text-green-700 border-green-700 "
+              : "text-gray-700 hover:bg-gray-200 dark:hover:bg-[#35353E] dark:bg-[#1D1D23] dark:text-[#788099] border-gray-300 dark:border-[#35353E]"
           }`}
         >
           {tag}

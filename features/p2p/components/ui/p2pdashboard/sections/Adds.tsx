@@ -174,7 +174,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
     if (amount) {
       const amountNum = Number(amount);
       if (!isNaN(amountNum) && amountNum < 10) {
-        newErrors.amount = "Minimum amount is 10 USDT";
+        newErrors.amount = "Minimum amount is 10 USDT ";
         isValid = false;
       }
     }

@@ -39,7 +39,7 @@ const TopButtons = ({
           className={`px-2 py-1 font-bold text-sm min-w-[90px] h-10 transition-all duration-200 rounded-l-lg ${
             isBuyActive
               ? "bg-[#1D8751] text-white"
-              : "bg-transparent text-white"
+              : "bg-transparent text-gray-800 dark:text-white"
           }`}
         >
           {t("common.buy", "Buy")}
@@ -49,15 +49,15 @@ const TopButtons = ({
           className={`px-2 py-1 font-bold text-sm min-w-[90px] h-10 transition-all duration-200 rounded-r-lg ${
             isSellActive
               ? "bg-[#E23D3A] text-white"
-              : "bg-transparent text-white"
+              : "bg-transparent text-gray-800 dark:text-white"
           }`}
         >
           {t("common.sell", "Sell")}
         </button>
       </div>
-
+    {/* now disabled from here  here and handled in the P2P Layout */}
       {/* Unread Message(s) Button */}
-      <button
+      {/* <button
         className={`w-full sm:w-auto rounded-[28px] flex items-center justify-center gap-2 border border-[#1D8751] px-5 py-3 font-semibold text-sm hover:bg-[#1D8751]/10 transition-all relative ${
           showUnreadMessages
             ? "bg-[#1D8751] text-white border border-[#1D8751]"
@@ -77,13 +77,13 @@ const TopButtons = ({
           Unread Message(s)
         </span>
         
-        {/* Unread count badge */}
+  
         {totalUnreadCount > 0 && (
           <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center min-w-[20px]">
             {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
           </span>
         )}
-      </button>
+      </button> */}
     </div>
   );
 };
