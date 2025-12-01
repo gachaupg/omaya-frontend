@@ -13,7 +13,7 @@ import {
 const ASSET_ICON_URL =
   "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png";
 const PAYMENT_ICON_URL =
-  "https://omayabucket.s3.amazonaws.com/bank_logo/image_7.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAW7TPBKP2YLA7Y4X4%2F20251123%2Feu-north-1%2Fs3%2Faws4_request&X-Amz-Date=20251123T135945Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=4b6da7174dc37d4563aeb22adf37d1fa70b0c429f1710606e4346cbbe8c8be2f";
+  "https://omayabucket.s3.amazonaws.com/bank_logo/image_7.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAW7TPBKP2YLA7Y4X4%2F20251201%2Feu-north-1%2Fs3%2Faws4_request&X-Amz-Date=20251201T050704Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=f67df191f76feb5d291e0c5aec8711b331c5436b4285ed9476bf035ebac267eb";
 
 const RatesTransactionHistory = () => {
   const dispatch = useDispatch<AppDispatch>();

@@ -142,14 +142,14 @@ const Referral: React.FC<ReferralProps> = ({ onWithdrawStateChange }) => {
 
   /* ─────────────────────────────── render ─────────────────────────── */
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-[#18181b] dark:text-white w-full px-3 sm:px-4 pt-2">
+    <div className={`min-h-screen text-gray-900 dark:bg-[#18181b] dark:text-white w-full px-3 sm:px-4 pt-2 ${ activeTab === "Referral" || activeTab === "History" ? '': 'bg-white' }` }>
       <ReferralTabs
         tab={activeTab}
         setTab={setActiveTab as (tab: string) => void}
       />
 
       {activeTab === "Referral" && (
-        <div className="flex flex-col w-full min-h-[calc(100vh-160px)] border-2 border-[#35353e] bg-transparent rounded-[24px] p-3 sm:p-4 shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
+        <div className="flex flex-col w-full min-h-[calc(100vh-160px)] bg-white dark:bg-transparent rounded-[24px] dark:border dark:border-[#35353E] p-3 sm:p-4 ">
           <ReferralMainCard
             user={user}
             walletData={wallet}
@@ -167,7 +167,7 @@ const Referral: React.FC<ReferralProps> = ({ onWithdrawStateChange }) => {
         </div>
       )}
       {activeTab === "History" && (
-        <div className="border border-[#35353F] rounded-[18px] p-3 sm:p-4">
+        <div className="dark:border dark:border-[#35353E] rounded-[18px] p-3 sm:p-4">
           <ReferralWithdrawalHistory />
         </div>
       )}

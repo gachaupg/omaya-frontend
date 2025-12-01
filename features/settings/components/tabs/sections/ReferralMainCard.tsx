@@ -149,7 +149,7 @@ const ReferralMainCard: React.FC<Props> = ({
           </div>
           <CopyButton
             value={user?.referral_code ?? ""}
-            className="bg-[#1D1D23] border border-[#35353E] text-[#1D8751]
+            className="dark:bg-[#23232B] bg-gray-200 text-[#1D8751] bg-gray-200 text-[#1D8751] font-semibold border
                        hover:opacity-80 rounded-[999px] px-4 py-3 text-sm font-semibold transition-opacity flex-shrink-0"
             showIcon={true}
           >
