@@ -158,11 +158,16 @@ const PaymentMethods = () => {
     setAccountName(getDefaultAccountName());
   };
 
-  // Close dropdown on success
+  // Close dropdown and reset form on success
   useEffect(() => {
     if (postSuccess) {
       showToast.success("Payment method added!");
       setShowAddDropdown(false);
+      // Reset all form fields
+      setSelectedMethod("");
+      setSelectedProvider("");
+      setAccountNumber("");
+      setAccountName(getDefaultAccountName());
       dispatch(fetchUserPaymentDetails() as any);
       dispatch(clearPostStatus());
     }
@@ -190,22 +195,25 @@ const PaymentMethods = () => {
             e.currentTarget.src = "/default-provider-logo.svg";
           }}
         />
-        <span className="text-gray-900 dark:text-white font-semibold flex items-center text-base sm:text-lg">
-          {method.payment_provider_name}
-          <svg
-            className="w-5 h-5 ml-2 text-gray-400"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2.5}
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
-        </span>
+        <div className="flex flex-col">
+          <span className="text-gray-900 dark:text-white font-semibold flex items-center text-base sm:text-lg">
+            {method.payment_provider_name}
+          </span>
+          {/* Per–method payment dropdown (borderless) */}
+          <div className="mt-1">
+            <select
+              className="bg-transparent text-xs sm:text-sm text-gray-500 dark:text-gray-400 border-0 focus:ring-0 focus:outline-none cursor-pointer"
+              defaultValue=""
+            >
+              <option value="" disabled>
+                Select payment method
+              </option>
+              <option value={method.payment_method_name}>
+                {method.payment_method_name}
+              </option>
+            </select>
+          </div>
+        </div>
         <button
           disabled={deletingMethodId === method.id.toString()}
           className="ml-auto text-[#1D8751] flex items-center hover:opacity-80 transition-opacity"
@@ -362,8 +370,8 @@ const renderAddMethodDropdown = () => (
             <button
               type="button"
               key={type + idx}
-              className={`flex items-center gap-3 rounded-lg border border-[#205437] px-3 py-2 text-left transition
-                ${isSelected ? "bg-[#14301F] border-[#49C476]" : "bg-transparent hover:bg-[#101c14]"}
+              className={`flex items-center gap-3 rounded-lg  px-3 py-2 text-left transition
+                ${isSelected ? "bg-[#14301F]" : "bg-transparent hover:bg-[#101c14]"}
               `}
               onClick={() => handleMethodSelection(type)}
               disabled={adminLoading}

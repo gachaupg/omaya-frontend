@@ -749,7 +749,13 @@ export default function Navbar() {
                     <img
                       src={userProfile.photo}
                       alt="Profile"
-                      className="w-10 h-10 rounded-full border-2 border-white object-cover"
+                      className="w-10 h-10 rounded-full border-2 border-white object-cover bg-[#e5e7eb]"
+                      onError={(e) => {
+                        // If the profile image fails to load, fall back to a neutral circle
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src =
+                          "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                      }}
                     />
                   ) : (
                     <DefaultProfileIcon />
@@ -779,7 +785,12 @@ export default function Navbar() {
                             <img
                               src={userProfile.photo}
                               alt="Profile"
-                              className="w-12 h-12 rounded-full object-cover"
+                              className="w-12 h-12 rounded-full object-cover bg-[#e5e7eb]"
+                              onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src =
+                                  "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                              }}
                             />
                           ) : (
                             <DefaultProfileIcon />
@@ -1209,7 +1220,12 @@ export default function Navbar() {
                             <img
                               src={userProfile.photo}
                               alt="Profile"
-                              className="w-10 h-10 rounded-full object-cover"
+                              className="w-10 h-10 rounded-full object-cover bg-[#e5e7eb]"
+                              onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src =
+                                  "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                              }}
                             />
                           ) : (
                             <DefaultProfileIcon />
@@ -1243,7 +1259,12 @@ export default function Navbar() {
                                 <img
                                   src={userProfile.photo}
                                   alt="Profile"
-                                  className="w-16 h-16 rounded-full object-cover"
+                                  className="w-16 h-16 rounded-full object-cover bg-[#e5e7eb]"
+                                  onError={(e) => {
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.src =
+                                      "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                                  }}
                                 />
                               ) : (
                                 <DefaultProfileIcon />

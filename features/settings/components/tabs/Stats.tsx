@@ -163,7 +163,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
    <Card className="w-full p-3 sm:p-4 dark:bg-[#1D1D23] bg-gray-50 rounded-2xl dark:border-[#35353E] border-gray-300 border-2 dark:text-white text-gray-900 shadow-lg">
       {/* Header */}
       <div className="flex w-full flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           {profileImage ? (
             <div className="relative">
               <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden">
@@ -185,8 +185,8 @@ const Stats = ({ onSupportClick }: StatsProps) => {
             </div>
           )}
           <div className="flex flex-col min-w-0">
-            <span className="text-sm sm:text-[14px] font-semibold truncate">
-              {user?.first_name}
+            <span className="text-sm sm:text-[14px] font-semibold truncate max-w-xs sm:max-w-sm">
+              {user?.first_name} 
             </span>
             <span className="flex items-center gap-1.5 text-[#1D8751] text-[8px] sm:text-xs font-medium whitespace-nowrap">
               <span className="shrink-0">Verified Profile</span>
@@ -196,7 +196,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
             </span>
           </div>
         </div>
-        <div className="flex gap-2 sm:gap-3">
+        <div className="flex gap-2 sm:gap-3 flex-shrink-0 ml-auto">
           <div 
             className="p-2 rounded-full border border-[#1D8751] flex items-center justify-center relative cursor-pointer"
             onClick={() => router.push("/dashboard/notifications")}

@@ -67,6 +67,20 @@ export interface AdminPaymentMethod {
   payment_method_type: string;
   provider_name: string;
   logo?: string;
+  logo_url?: string | null;
+  provider_logo?: string | null;
   wallet_address?: string | null;
   linked_bank_provider?: string | null;
+
+  // Bank / mobile / crypto details (optional, shape mirrors backend)
+  account_name?: string | null;
+  account_number?: string | null;
+  mobile_number?: string | null;
+  account_type?: string | null;
+  payment_type?: string | null;
+  how_to_send?: string | null;
+
+  // Raw admin payment details from backend (can contain multiple accounts)
+  admin_payment_details?: any[] | null;
+  payment_details?: any[] | null;
 }

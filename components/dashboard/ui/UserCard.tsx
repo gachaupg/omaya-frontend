@@ -18,6 +18,8 @@ import {
 import HelpSupportForm from "@/features/settings/components/HelpSupportForm";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { useMatchedTradesWebSocket } from "@/features/p2p/hooks/useMatchedTradesWebSocket";
+import { logger } from "@/lib/utils/logger";
+import { checkKYCStatus } from "@/features/kyc/slices/kycSlice";
 
 function UserCard() {
   const [showHelpSupport, setShowHelpSupport] = useState(false);
@@ -32,6 +34,9 @@ function UserCard() {
   const { data: matchedTrades } = useSelector(
     (state: RootState) => state.matchedTrades
   );
+  const kycState = useSelector((state: RootState) => state.kyc);
+  // KYC verification status from central KYC slice
+  const isVerified = kycState.isVerified ?? false;
 
   // Use WebSocket for real-time matched trades updates with HTTP polling fallback
   const { isConnected: wsConnected } = useMatchedTradesWebSocket({
@@ -51,6 +56,9 @@ function UserCard() {
           }
         })
         .catch((error) => {});
+
+      // Ensure KYC status (is_verified) is up to date
+      dispatch(checkKYCStatus());
     }
   }, [dispatch, isAuthenticated]);
 
@@ -210,16 +218,41 @@ function UserCard() {
                 </h2>
               </div>
               <div className="flex items-center gap-1 mt-0.5 sm:mt-1 flex-shrink-0">
-                <span className="text-[#1D8751] text-xs sm:text-sm lg:text-sm whitespace-nowrap flex-shrink-0">
-                  {t("userCard.verifiedProfile", "Verified Profile")}
+                <span
+                  className={`text-xs sm:text-sm lg:text-sm whitespace-nowrap flex-shrink-0 ${
+                    isVerified ? "text-[#1D8751]" : "text-[#E23D3A]"
+                  }`}
+                >
+                  {isVerified
+                    ? t("userCard.verifiedProfile", "Verified Profile")
+                    : t("userCard.unverifiedProfile", "Unverified Profile")}
                 </span>
-                <div className="rounded-full p-0.5 flex-shrink-0">
-                  <img
-                    className="h-3 w-3 sm:h-4 sm:w-4 bg-amber-50 rounded-full"
-                    src="https://res.cloudinary.com/pitz/image/upload/v1753946849/download__3_-removebg-preview_1_clnjwy.png"
-                    alt=""
-                  />
-                </div>
+                {isVerified && (
+                  <div className="rounded-full p-0.5 flex-shrink-0 bg-[#1D8751]">
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M9 12L11 14L15 10"
+                        className="stroke-[#FFFFFF]"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="9"
+                        className="stroke-[#FFFFFF]"
+                        strokeWidth="2"
+                      />
+                    </svg>
+                  </div>
+                )}
               </div>
             </div>
           </div>

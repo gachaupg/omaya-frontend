@@ -49,13 +49,13 @@ const KYC = () => {
 
   return (
     <div className="p-3 sm:p-4 dark:text-white text-[#0D0D0D]">
-      <section className="rounded-[32px] p-4 sm:p-6 flex flex-col gap-4 shadow-lg dark:bg-[#111018] bg-white dark:border-[#2B2B3A] border-[#E2E8F0]">
+      <section className="rounded-[32px] p-4 sm:p-6 flex flex-col gap-4 border dark:bg-transparent bg-white dark:border-[#2B2B3A] border-[#E2E8F0]">
         <p className="text-sm sm:text-base leading-relaxed dark:text-[#B8BAC7] text-[#4A5568]">
           Your account is fully verified. Keep your personal information up to date so we can continue protecting access to trading,
           payments, and P2P settlements. If you ever need to refresh your documents, you can upload new files directly from this page.
         </p>
 
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 rounded-3xl p-4 dark:bg-[#15131F] bg-[#F8FAFC] dark:border-[#2F2C3C] border-[#E2E8F0]">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 rounded-3xl p-4 dark:bg-transparent bg-[#F8FAFC] dark:border-[#2F2C3C] border-[#E2E8F0]">
           <div className="flex items-center gap-3">
             <div
               className="relative cursor-pointer"
@@ -104,16 +104,9 @@ const KYC = () => {
               </p>
               <div className="flex items-center gap-2 text-sm font-medium dark:text-[#1D8751] text-[#15803D]">
                 Verified Profile
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M9 12l2 2 4-4"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    fill="none"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                <span className="w-4 h-4 bg-[#1D8751] rounded-full flex items-center justify-center shrink-0">
+               <img src="https://res.cloudinary.com/pitz/image/upload/v1763725740/Frame_34214_uymbow.png" alt="" />
+              </span>
               </div>
             </div>
           </div>
@@ -122,7 +115,7 @@ const KYC = () => {
         <button
           type="button"
           disabled
-          className="w-full rounded-[40px] text-sm sm:text-base py-3 sm:py-4 font-semibold cursor-default dark:bg-[#1E1C2A] bg-[#EDF2F7] dark:border-[#2F2C3C] border-[#E2E8F0] dark:text-[#A1A1B3] text-[#475569]"
+          className="w-full rounded-[40px] text-sm sm:text-base py-3 sm:py-4 font-semibold cursor-default dark:bg-[#35353e] bg-[#EDF2F7] dark:border-[#2F2C3C] border-[#E2E8F0] dark:text-[#A1A1B3] text-[#475569]"
         >
           Verified
         </button>

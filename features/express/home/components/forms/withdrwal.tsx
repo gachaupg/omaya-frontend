@@ -2243,7 +2243,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
         >
           {/* Dropdown Title */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-600">
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white">Select a currency from</h3>
+            <h3 className="text-base font-semibold text-gray-900 dark:text-white">Currency from</h3>
             <button
               onClick={() => setIsAssetDropdownOpen(false)}
               className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"

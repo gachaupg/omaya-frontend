@@ -3373,7 +3373,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                       ? "Calculating..."
                       : "Enter amount"
                   }
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-3 sm:px-3 sm:px-4 py-2 pr-12 sm:pr-16 text-base sm:text-base sm:text-lg focus:outline-none border appearance-none ${
+                  className={`w-full h-[60px] text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none border appearance-none ${
                     apiValidationError
                       ? "border-red-500"
                       : isCalculating || isCalculatingReceive
@@ -3403,7 +3403,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
               </label>
               <div className="relative" ref={assetDropdownRef}>
                 <div
-                  className={`w-full bg-transparent dark:bg-transparent text-[#35353e] dark:text-white rounded-2xl px-4 py-2 text-lg focus:outline-none border border-[#39394A] dark:border-[#39394A] flex items-center justify-between cursor-pointer`}
+                  className={`w-full h-[60px] bg-transparent dark:bg-transparent text-[#35353e] dark:text-white rounded-2xl px-4 text-lg focus:outline-none border border-[#39394A] dark:border-[#39394A] flex items-center justify-between cursor-pointer`}
                   onClick={() => {
                     if (!isAssetDropdownOpen) {
                       updateAssetDropdownPosition();
@@ -3682,7 +3682,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                       ? "Calculating..."
                       : "Enter amount"
                   }
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 py-2 pr-16 text-base sm:text-lg focus:outline-none border appearance-none ${
+                  className={`w-full h-[60px] text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 pr-16 text-base sm:text-lg focus:outline-none border appearance-none ${
                     (receiveAmountError &&
                       (receiveAmountError.includes("Rough estimate") ||
                         receiveAmountError.includes("Using estimated rate"))) ||

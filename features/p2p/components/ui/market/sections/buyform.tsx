@@ -462,7 +462,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
               className="underline text-[#1D8751] cursor-pointer inline-flex items-center gap-1 hover:text-[#16663d] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1D8751] focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-[#18181D]"
               onClick={() => handleCopy(singleOrder?.id || singleOrder?.buy_order)}
             >
-              <span>{singleOrder?.id || "9346457687345"}</span>
+              <span>{confirmOrder?.id || "9346457687345"}</span>
               <Copy className="w-4 h-4 text-[#1D8751]" strokeWidth={2} />
             </button>
           </div>

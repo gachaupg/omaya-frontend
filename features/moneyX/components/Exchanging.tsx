@@ -738,11 +738,11 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   }
 
   return (
-    <div className={`w-full min-h-screen flex flex-col items-center pt-2 `}>
+    <div className={`w-full min-h-screen flex flex-col pt-2 `}>
       {/* Timer Banner */}
       {timerActive && timeRemaining > 0 && (
         <div
-          className={`w-full max-w-4xl mb-4 ${
+          className={`w-full mb-4 ${
             timeRemaining <= 60
               ? "bg-red-500/20 border-red-500"
               : timeRemaining <= 300
@@ -809,7 +809,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           isDark
             ? "bg-[#23232B]  border:[#E8EFF5] dark:border-[#35353E]"
             : "bg-white border-gray-200"
-        } border-2 rounded-2xl p-4 shadow-lg w-full max-w-4xl mb-4 min-h-[180px]`}
+        } border-2 rounded-2xl p-4 shadow-lg w-full mb-4 min-h-[180px]`}
       >
         <div className="flex-1 flex flex-col justify-between py-2 pr-2">
           <div>
@@ -852,7 +852,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                         effectiveTransactionData.fromPaymentMethod.logo
                       }
                       alt={effectiveTransactionData.fromPaymentMethod.provider_name}
-                      className="w-6 h-6 rounded-full mr-2"
+                      className="w-6 h-6 mr-2 rounded-md object-contain bg-white"
                       onError={(e) => {
                         e.currentTarget.src =
                           "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
@@ -888,7 +888,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                         effectiveTransactionData.toPaymentMethod.logo
                       }
                       alt={effectiveTransactionData.toPaymentMethod.provider_name}
-                      className="w-6 h-6 rounded-full mr-2"
+                      className="w-6 h-6 mr-2 rounded-md object-contain bg-white"
                       onError={(e) => {
                         e.currentTarget.src =
                           "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
@@ -948,7 +948,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
       </div>
 
       {/* Progress Steps - Same as express */}
-      <div className="flex items-center justify-between w-full max-w-4xl mb-4 relative">
+      <div className="flex items-center justify-between w-full mb-4 relative">
         {/* Connecting Lines */}
         <div className="absolute top-5 left-[12.5%] right-[12.5%] h-0.5 z-0">
           <div
@@ -1366,7 +1366,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
       <div
         className={`${
           isDark ? "bg-[#23232B] border-[#35353E]" : "bg-white border-gray-200"
-        } border-2 rounded-2xl p-6 shadow-lg w-full max-w-4xl mb-4`}
+        } border-2 rounded-2xl p-6 shadow-lg w-full mb-4`}
       >
         <div
           className={`${
@@ -1442,7 +1442,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                       effectiveTransactionData.fromPaymentMethod.logo
                     }
                     alt={effectiveTransactionData.fromPaymentMethod.provider_name}
-                    className="w-8 h-8 rounded-full"
+                    className="w-8 h-8 rounded-md object-contain bg-white"
                     onError={(e) => {
                       e.currentTarget.src =
                         "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
@@ -1490,7 +1490,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                       effectiveTransactionData.toPaymentMethod.logo
                     }
                     alt={effectiveTransactionData.toPaymentMethod.provider_name}
-                    className="w-8 h-8 rounded-full"
+                    className="w-8 h-8 rounded-md object-contain bg-white"
                     onError={(e) => {
                       e.currentTarget.src =
                         "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
@@ -1530,7 +1530,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
       </div>
 
       {/* Terms and Conditions */}
-      <div className="w-full max-w-4xl rounded-2xl flex">
+      <div className="w-full rounded-2xl flex">
         <div className="w-full bg-[#FF9500]/50 border-2 border-solid border-[#FF9500]/50 rounded-[18px] flex flex-col gap-2 p-3">
           <h2 className="text-white text-base font-semibold">
             Terms and Conditions Summary

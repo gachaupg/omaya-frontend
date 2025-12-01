@@ -458,24 +458,16 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 Order Number :
                 <button
                   className="text-[#1D8751] underline ml-1"
-                  onClick={() => handleCopy(singleOrder?.id)}
+                  onClick={() => handleCopy(confirmOrder?.id?.toString())}
                 >
-                  {singleOrder?.id}
+                  {confirmOrder?.id}
                 </button>
               </span>
-              <CopyIcon
-                className="w-4 h-4 text-[#1D8751] ml-1"
-                onClick={() => handleCopy(singleOrder?.id)}
-              />
-              <span className="text-[14px] text-gray-500 dark:text-[#A3A3C2]">
-                <button
-                  onClick={handleRefresh}
-                  className="flex items-center gap-1 bg-gray-100 dark:bg-[#23232A] text-[#1D8751] rounded-lg px-2 py-1 border border-gray-200 dark:border-[#35353E] hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors"
-                  title="Refresh"
-                >
-                  <RefreshCw size={14} />
-                </button>
-              </span>
+                <CopyIcon
+                  className="w-4 h-4 text-[#1D8751] ml-1 cursor-pointer"
+                  onClick={() => handleCopy(confirmOrder?.id?.toString())}
+                />
+            
             </div>
           </div>
           <div className="flex gap-4 border border-gray-200 dark:border-[#35353E] p-4 rounded-xl mt-4 bg-white dark:bg-[#18181D]">
