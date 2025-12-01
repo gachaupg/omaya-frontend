@@ -164,29 +164,31 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
 
   // Auto-select first payment method for "from" when payment methods are loaded
   useEffect(() => {
-    // Only run if we have payment methods and nothing is selected yet
-    if (!fromPaymentMethod) {
-      // Prioritize stablePaymentMethods (actual loaded methods) over finalPaymentMethods (which includes fallback)
-      const methodsToCheck = Array.isArray(stablePaymentMethods) && stablePaymentMethods.length > 0
-        ? stablePaymentMethods
-        : (Array.isArray(finalPaymentMethods) && finalPaymentMethods.length > 0
-          ? finalPaymentMethods
-          : null);
-      
-      if (methodsToCheck && methodsToCheck.length > 0) {
-        // Filter for banks first
-        const bankMethods = methodsToCheck.filter(isBankMethod);
-        
-        // If banks exist, select the first bank; otherwise select the first method
-        const methodToSelect = bankMethods.length > 0 ? bankMethods[0] : methodsToCheck[0];
-        
-        if (methodToSelect?.provider_name) {
-          setFromPaymentMethod(methodToSelect.provider_name);
-          setSelectedFromPaymentDetail(methodToSelect);
-        }
+    if (!Array.isArray(finalPaymentMethods) || finalPaymentMethods.length === 0) {
+      return;
+    }
+
+    // Check if current selection still exists in the latest list
+    const currentExists = fromPaymentMethod
+      ? finalPaymentMethods.some(
+          (m: any) => m?.provider_name === fromPaymentMethod
+        )
+      : false;
+
+    // If nothing selected OR the current selection no longer exists, (re)auto-select
+    if (!fromPaymentMethod || !currentExists) {
+      const bankMethods = finalPaymentMethods.filter(isBankMethod);
+
+      // If banks exist, pick the first bank; otherwise pick the very first method
+      const methodToSelect =
+        bankMethods.length > 0 ? bankMethods[0] : finalPaymentMethods[0];
+
+      if (methodToSelect?.provider_name) {
+        setFromPaymentMethod(methodToSelect.provider_name);
+        setSelectedFromPaymentDetail(methodToSelect);
       }
     }
-  }, [stablePaymentMethods, finalPaymentMethods, fromPaymentMethod, isBankMethod]);
+  }, [finalPaymentMethods, fromPaymentMethod, isBankMethod]);
 
 
   // Auto-select second payment method for "to"
@@ -199,17 +201,26 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
         : null);
     
     if (methodsToCheck && methodsToCheck.length > 1 && fromPaymentMethod && !toPaymentMethod) {
-      // Filter for banks first (excluding the selected "from" method)
-      const bankMethods = methodsToCheck.filter(
-        (method) => isBankMethod(method) && method.provider_name !== fromPaymentMethod
-      );
+      // Filter for banks first
+      const bankMethods = methodsToCheck.filter(isBankMethod);
       
-      // If multiple banks exist, select the first available bank; otherwise select the second method
+      // Select the second bank (index 1) if it exists, otherwise select the second method overall
       let methodToSelect;
-      if (bankMethods.length > 0) {
-        methodToSelect = bankMethods[0];
+      if (bankMethods.length > 1) {
+        // Select the second bank in the array (index 1)
+        methodToSelect = bankMethods[1];
+      } else if (bankMethods.length === 1 && methodsToCheck.length > 1) {
+        // If only one bank exists, select the second method overall (index 1) if it's different from "from"
+        if (methodsToCheck[1] && methodsToCheck[1].provider_name !== fromPaymentMethod) {
+          methodToSelect = methodsToCheck[1];
+        } else {
+          // Find first method that's different from "from"
+          methodToSelect = methodsToCheck.find(
+            (method) => method.provider_name !== fromPaymentMethod
+          );
+        }
       } else {
-        // Select the second method (index 1) if it's different from "from", otherwise find first different
+        // No banks or only one method, select the second method (index 1) if it's different from "from"
         if (methodsToCheck[1] && methodsToCheck[1].provider_name !== fromPaymentMethod) {
           methodToSelect = methodsToCheck[1];
         } else {

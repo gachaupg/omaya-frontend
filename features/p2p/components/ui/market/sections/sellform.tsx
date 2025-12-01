@@ -466,7 +466,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               onClick={() => handleCopy(singleOrder?.id || "9346457687345")}
               aria-label="Copy order number"
             >
-              {singleOrder?.id || "9346457687345"}
+              {confirmOrder?.id || "9346457687345"}
             </button>
           </div>
         </div>

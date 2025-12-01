@@ -46,7 +46,13 @@ const MarketTable: React.FC<MarketTableProps> = ({
     advertiserName: "",
   });
 
-  const handleTradeClick = (i: number) => setSelectedRowIndex(i);
+  // Toggle the trade preview when clicking BUY/SELL
+  // - First click on a row opens its preview
+  // - Clicking the same row again closes the preview
+  // - Clicking a different row switches the preview to that advertiser
+  const handleTradeClick = (i: number) => {
+    setSelectedRowIndex((current) => (current === i ? null : i));
+  };
   
   const handleMessagesClick = (row: any) => {
     // Open messages in new tab using the order ID

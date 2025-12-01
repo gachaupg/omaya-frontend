@@ -386,9 +386,9 @@ const Overview = () => {
                   {buyTotals.total.toLocaleString()} USD
                 </span>
               </div>
-              <div className="w-full bg-[#2D2D37] rounded-full h-2.5">
+              <div className="w-full bg-[#2D2D37] rounded-r-full h-3">
                 <div
-                  className="bg-[#1D8751] h-2.5 rounded-full transition-all duration-300"
+                  className="bg-[#1D8751] h-3 rounded-r-full transition-all duration-300"
                   style={{ width: `${Math.min(buyProgressPercentage, 100)}%` }}
                 />
               </div>
@@ -472,9 +472,9 @@ const Overview = () => {
                   {sellTotals.total.toLocaleString()} USD
                 </span>
               </div>
-              <div className="w-full bg-[#2D2D37] rounded-full h-2.5">
+              <div className="w-full bg-[#2D2D37] rounded-r-full h-3">
                 <div
-                  className="bg-[#E23D3A] h-2.5 rounded-full transition-all duration-300"
+                  className="bg-[#E23D3A] h-3 rounded-r-full transition-all duration-300"
                   style={{ width: `${Math.min(sellProgressPercentage, 100)}%` }}
                 />
               </div>

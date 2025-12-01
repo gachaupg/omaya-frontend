@@ -63,10 +63,16 @@ const P2pWallet = memo(
     logger.debug("p2p", "P2pWallet render", { balance, currency, loading });
 
     const usdValue = balance;
+
+    const getTitle = () => {
+      if (isOpenForm === "deposit") return "P2P Deposit";
+      if (isOpenForm === "withdraw") return "P2P Withdrawal";
+      return "P2P Wallet";
+    };
     return (
       <div>
         <p className={`text-xl font-bold dark:text-white text-black mb-1`}>
-          P2P Wallet
+          {getTitle()}
         </p>
         <Card
           borderColor={`border-[#E8EFF5] dark:border-[${tokens.colors.dark.border}]`}

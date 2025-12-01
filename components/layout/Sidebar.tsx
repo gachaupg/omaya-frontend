@@ -73,7 +73,7 @@ export default function Sidebar() {
                     {item.labelKey === "navigation.express" ? (
                       <span
                         className={clsx(
-                          "flex items-center justify-center gap-1",
+                          "flex items-center justify-center gap-0.5",
                           isActive
                             ? "font-bold text-white text-base"
                             : "font-normal text-[#727272] text-sm uppercase"
@@ -81,42 +81,42 @@ export default function Sidebar() {
                       >
                         {isActive ? (
                           isDark ? (
-                           <span className="flex items-center justify-center gap-2">
-  <span className="text-[#727272] text-base uppercase font-bold">
-    Express
-  </span>
+                            <span className="flex items-center justify-center gap-0.5">
+                              <span className="text-[#727272] text-base uppercase font-bold">
+                                E
+                              </span>
 
-  <img
-    className="mt-2"
-    src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
-    alt=""
-  />
-</span>
+                              <img
+                                className="mt-2"
+                                src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
+                                alt=""
+                              />
+                            </span>
                           ) : (
-                            <span className="flex items-center justify-center gap-2">
-  <span className="text-[#727272] text-base uppercase font-bold">
-    Express
-  </span>
+                            <span className="flex items-center justify-center gap-0.5">
+                              <span className="text-[#727272] text-base uppercase font-bold">
+                                E
+                              </span>
 
-  <img
-    className="mt-2"
-    src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
-    alt=""
-  />
-</span>
+                              <img
+                                className="mt-2"
+                                src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
+                                alt=""
+                              />
+                            </span>
                           )
                         ) : (
-                        <span className="flex items-center justify-center gap-2">
-  <span className="text-[#727272] text-base uppercase font-bold">
-    Express
-  </span>
+                          <span className="flex items-center justify-center gap-0.5">
+                            <span className="text-[#727272] text-base uppercase font-bold">
+                              E
+                            </span>
 
-  <img
-    className="mt-2"
-    src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
-    alt=""
-  />
-</span>
+                            <img
+                              className="mt-2"
+                              src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
+                              alt=""
+                            />
+                          </span>
                         )}
                       </span>
                     ) : (

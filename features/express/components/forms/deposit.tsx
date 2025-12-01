@@ -130,6 +130,53 @@ const extractLogoFromDetail = (detail?: any) => {
   );
 };
 
+// Helper function to normalize payment details and ensure account_name/account_number are extracted
+const normalizePaymentDetails = (payment: any): any => {
+  if (!payment) return null;
+
+  // Get payment details from either payment_details or admin_payment_details
+  const rawDetails =
+    (payment as any).payment_details && (payment as any).payment_details.length > 0
+      ? (payment as any).payment_details
+      : (payment as any).admin_payment_details &&
+        (payment as any).admin_payment_details.length > 0
+      ? (payment as any).admin_payment_details
+      : [];
+
+  const firstDetail = rawDetails.length > 0 ? rawDetails[0] : null;
+
+  // Ensure account_name and account_number are set (prefer root level, fallback to first detail)
+  const account_name =
+    (payment as any).account_name ||
+    (firstDetail && firstDetail.account_name) ||
+    "";
+
+  const account_number =
+    (payment as any).account_number ||
+    (firstDetail && (firstDetail.account_number || firstDetail.mobile_number)) ||
+    "";
+
+  const mobile_number =
+    (payment as any).mobile_number ||
+    (firstDetail && firstDetail.mobile_number) ||
+    null;
+
+  const wallet_address =
+    (payment as any).wallet_address ||
+    (firstDetail && firstDetail.wallet_address) ||
+    null;
+
+  // Return normalized payment object
+  return {
+    ...payment,
+    payment_details: rawDetails,
+    account_name,
+    account_number,
+    mobile_number,
+    wallet_address,
+  };
+};
+
 export default function DepositForm({
   onExchange,
   mode,
@@ -404,26 +451,72 @@ export default function DepositForm({
             );
           })
           .map((payment: any) => {
-            // Ensure admin payment methods have logo field properly set
-          const firstDetail =
-            payment.payment_details && payment.payment_details.length > 0
-              ? payment.payment_details[0]
-              : null;
-          const detailLogo = extractLogoFromDetail(firstDetail);
-          const resolvedLogo = resolveProviderLogo(
-            payment.logo_url,
-            payment.logo,
-            payment.provider_logo,
-            payment.provider_logo_url,
-            payment.logoUrl,
-            detailLogo
-          );
+            // Normalise admin payment methods so the UI can rely on a single shape
+            const rawDetails =
+              (payment as any).payment_details && (payment as any).payment_details.length > 0
+                ? (payment as any).payment_details
+                : (payment as any).admin_payment_details &&
+                  (payment as any).admin_payment_details.length > 0
+                ? (payment as any).admin_payment_details
+                : [];
+
+            const firstDetail = rawDetails.length > 0 ? rawDetails[0] : null;
+
+            const detailLogo = extractLogoFromDetail(firstDetail);
+            const resolvedLogo = resolveProviderLogo(
+              payment.logo_url,
+              payment.logo,
+              payment.provider_logo,
+              payment.provider_logo_url,
+              payment.logoUrl,
+              detailLogo
+            );
+
+            // Prefer root-level fields, fall back to first detail record
+            const account_name =
+              (payment as any).account_name ||
+              (firstDetail && firstDetail.account_name) ||
+              "";
+
+            const account_number =
+              (payment as any).account_number ||
+              (firstDetail && (firstDetail.account_number || firstDetail.mobile_number)) ||
+              "";
+
+            const mobile_number =
+              (payment as any).mobile_number ||
+              (firstDetail && firstDetail.mobile_number) ||
+              null;
+
+            const wallet_address =
+              (payment as any).wallet_address ||
+              (firstDetail && firstDetail.wallet_address) ||
+              null;
+
+            const how_to_send =
+              (payment as any).how_to_send ||
+              (firstDetail && firstDetail.how_to_send) ||
+              null;
+
+            const account_type =
+              (payment as any).account_type ||
+              (firstDetail && firstDetail.account_type) ||
+              null;
+
             return {
               ...payment,
-            logo_url: payment.logo_url || detailLogo || resolvedLogo,
-              // Ensure logo field is available (admin payment methods might have provider_logo)
-            logo: resolvedLogo || undefined,
-            provider_logo: resolvedLogo || undefined,
+              // Always expose a unified payment_details array for the rest of the component
+              payment_details: rawDetails,
+              account_name,
+              account_number,
+              mobile_number,
+              wallet_address,
+              how_to_send,
+              account_type,
+              // Ensure logo related fields are always present
+              logo_url: payment.logo_url || detailLogo || resolvedLogo,
+              logo: resolvedLogo || undefined,
+              provider_logo: resolvedLogo || undefined,
             };
           });
       }
@@ -647,9 +740,9 @@ export default function DepositForm({
   }, [currentCurrency]); // Only run when currency changes
   // Initialize selectedPaymentDetail from initialState if available (immediate, no waiting)
   const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(() => {
-    // If we have initialState with payment, use it immediately
+    // If we have initialState with payment, use it immediately (normalized)
     if (initialState?.payment) {
-      return initialState.payment;
+      return normalizePaymentDetails(initialState.payment);
     }
     return null;
   });
@@ -663,9 +756,10 @@ export default function DepositForm({
     if (initialState?.payment) {
       const initialStatePayment = initialState.payment;
       
-      // Use the payment object directly from initialState (exact object from home page) - NO CHECKS, NO MATCHING
+      // Use the payment object directly from initialState (exact object from home page) - normalize to ensure account details
       if (!selectedPaymentDetail || selectedPaymentDetail !== initialStatePayment) {
-        setSelectedPaymentDetail(initialStatePayment);
+        const normalized = normalizePaymentDetails(initialStatePayment);
+        setSelectedPaymentDetail(normalized);
       }
       // Ensure payBank is set correctly
       const correctPayBank = initialStatePayment.provider_name || initialStatePayment.payment_provider_name || initialState.payBank || "";
@@ -686,7 +780,9 @@ export default function DepositForm({
           !selectedPaymentDetail ||
           selectedPaymentDetail?.provider_name !== matchingSelection.provider_name
         ) {
-          setSelectedPaymentDetail(matchingSelection);
+          // Normalize payment details before setting
+          const normalized = normalizePaymentDetails(matchingSelection);
+          setSelectedPaymentDetail(normalized);
         }
         return;
       }
@@ -697,7 +793,9 @@ export default function DepositForm({
       }
 
       setPayBank(firstMethod.provider_name);
-      setSelectedPaymentDetail(firstMethod);
+      // Normalize payment details before setting
+      const normalized = normalizePaymentDetails(firstMethod);
+      setSelectedPaymentDetail(normalized);
     }
   }, [finalPaymentMethods, payBank, selectedPaymentDetail, initialState]);
 
@@ -1935,11 +2033,15 @@ export default function DepositForm({
     setIsAddressConfirmed(false);
   }, [walletAddress]);
 
+  // Terms & Conditions acceptance
+  const [termsAccepted, setTermsAccepted] = useState(false);
+
   const isProceedDisabled =
     isSubmitting ||
     !walletAddress.trim() ||
     !!walletError ||
-    !isAddressConfirmed;
+    !isAddressConfirmed ||
+    !termsAccepted;
 
   // Auto-validate receive amount whenever it changes
   useEffect(() => {
@@ -2980,7 +3082,7 @@ export default function DepositForm({
     }
   }}
   placeholder="Enter amount"
-  className={`w-full h-[80px] text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff]
+  className={`w-full h-[60px] text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff]
     rounded-2xl px-4 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none
     border appearance-none
     ${
@@ -3161,26 +3263,33 @@ export default function DepositForm({
                       (payment: any) => payment.provider_name === value
                     );
 
+                    // Normalize payment details to ensure account_name and account_number are extracted
+                    const normalizedPayment = normalizePaymentDetails(selectedPayment);
+
                     // Debug logging when payment method is selected
-                    if (selectedPayment) {
+                    if (normalizedPayment) {
                       console.log("🔍 Selected Payment Method:", {
                         isHomePage,
-                        provider_name: selectedPayment.provider_name,
-                        provider_logo: selectedPayment.provider_logo,
-                        logo: selectedPayment.logo,
-                        account_name: selectedPayment.account_name,
-                        account_number: selectedPayment.account_number,
+                        provider_name: normalizedPayment.provider_name,
+                        provider_logo: normalizedPayment.provider_logo,
+                        logo: normalizedPayment.logo,
+                        account_name: normalizedPayment.account_name,
+                        account_number: normalizedPayment.account_number,
                         hasLogo: !!(
-                          selectedPayment.provider_logo || selectedPayment.logo
+                          normalizedPayment.provider_logo || normalizedPayment.logo
                         ),
                         admin_payment_detail_id:
-                          selectedPayment.admin_payment_detail_id,
-                        fullPayment: selectedPayment,
+                          normalizedPayment.admin_payment_detail_id,
+                        hasAdminPaymentDetails: !!(normalizedPayment as any).admin_payment_details,
+                        adminPaymentDetailsLength: (normalizedPayment as any).admin_payment_details?.length || 0,
+                        hasPaymentDetails: !!(normalizedPayment as any).payment_details,
+                        paymentDetailsLength: (normalizedPayment as any).payment_details?.length || 0,
+                        fullPayment: normalizedPayment,
                       });
                     }
 
                     setPayBank(value);
-                    setSelectedPaymentDetail(selectedPayment || null);
+                    setSelectedPaymentDetail(normalizedPayment);
                   }}
                   placeholder={
                     paymentMethodsDisplay.isLoading &&
@@ -3332,7 +3441,7 @@ export default function DepositForm({
                     }
                   }}
                   placeholder="Enter amount"
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-3 pr-16 text-base sm:text-lg focus:outline-none border appearance-none min-h-[60px] ${
+                  className={`w-full h-[60px] text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 pr-16 text-base sm:text-lg focus:outline-none border appearance-none ${
                     receiveAmountError &&
                     (receiveAmountError.includes("Rough estimate") ||
                       receiveAmountError.includes("Using estimated rate"))
@@ -4130,101 +4239,105 @@ export default function DepositForm({
             <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
               {t("express.walletAccountAddress", "Wallet/Account Address")}
             </label>
-            {/* Input group */}
-            <div className="relative flex items-center dark:bg-[#1D1D23] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-4 py-2 mb-0">
-              {/* Left icon */}
-              <span className="mr-2 text-[#1D8751]">
-                <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M7 17v2a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"
-                    stroke="#1D8751"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <rect
-                    x="3"
-                    y="3"
-                    width="12"
-                    height="12"
-                    rx="2"
-                    stroke="#1D8751"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
-              <input
-                type="text"
-                value={walletAddress}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setWalletAddress(value);
-                  setIsAddressConfirmed(false);
-                  setWalletError(null); // Clear error immediately for better UX
+            {/* Input + Paste row */}
+            <div className="flex flex-col sm:flex-row gap-3 items-stretch">
+              {/* Input group */}
+              <div className="relative flex items-center dark:bg-[#1D1D23] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-4 py-2 mb-0 flex-1">
+                {/* Left icon */}
+                <span className="mr-2 text-[#1D8751]">
+                  <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
+                    <path
+                      d="M7 17v2a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"
+                      stroke="#1D8751"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <rect
+                      x="3"
+                      y="3"
+                      width="12"
+                      height="12"
+                      rx="2"
+                      stroke="#1D8751"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+                <input
+                  type="text"
+                  value={walletAddress}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setWalletAddress(value);
+                    setIsAddressConfirmed(false);
+                    setWalletError(null); // Clear error immediately for better UX
 
-                  // Validate address in real-time using the validation hook
-                  if (value.trim() === "") {
-                    resetAddressValidation();
-                    setWalletError(null); // No error when empty - address is optional
-                  } else {
-                    // Trigger validation as user types
-                    validateAddress(value, currentCurrency);
-                  }
-                  setForceUpdate((prev) => prev + 1);
-                }}
-                placeholder="Paste here your Crypto address"
-                className={`flex-1 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-base ${
-                  walletError
-                    ? "border-red-500"
-                    : walletAddress.trim() && !walletError && addressValidationResult?.isValid
-                      ? "border-green-500"
-                      : ""
-                }`}
-              />
-              {/* Validation status indicator */}
-              {walletAddress.trim() && currentCurrency && (
-                <div className="absolute right-16 top-1/2 -translate-y-1/2 flex items-center">
-                  {isAddressValidating ? (
-                    <div className="w-4 h-4 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin"></div>
-                  ) : addressValidationResult?.isValid ? (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-[#1D8751]">
-                      <path
-                        d="M9 12l2 2 4-4"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-                    </svg>
-                  ) : walletError ? (
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-[#E23D3A]">
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-                      <path
-                        d="M12 8v4M12 16h.01"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  ) : null}
-                </div>
-              )}
-              {/* Bookmark icon */}
-              <span className="mx-2 text-[#788099] cursor-pointer">
-                <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"
-                    stroke="#788099"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
-              {/* Paste button */}
+                    // Validate address in real-time using the validation hook
+                    if (value.trim() === "") {
+                      resetAddressValidation();
+                      setWalletError(null); // No error when empty - address is optional
+                    } else {
+                      // Trigger validation as user types
+                      validateAddress(value, currentCurrency);
+                    }
+                    setForceUpdate((prev) => prev + 1);
+                  }}
+                  placeholder="Paste here your Crypto address"
+                  className={`flex-1 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-base ${
+                    walletError
+                      ? "border-red-500"
+                      : walletAddress.trim() && !walletError && addressValidationResult?.isValid
+                        ? "border-green-500"
+                        : ""
+                  }`}
+                />
+                {/* Validation status indicator */}
+                {walletAddress.trim() && currentCurrency && (
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
+                    {isAddressValidating ? (
+                      <div className="w-4 h-4 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin"></div>
+                    ) : addressValidationResult?.isValid ? (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-[#1D8751]">
+                        <path
+                          d="M9 12l2 2 4-4"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                      </svg>
+                    ) : walletError ? (
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className="text-[#E23D3A]">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                        <path
+                          d="M12 8v4M12 16h.01"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                    ) : null}
+                  </div>
+                )}
+                {/* Bookmark icon */}
+                <span className="mx-2 text-[#788099] cursor-pointer">
+                  <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+                    <path
+                      d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"
+                      stroke="#788099"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+              </div>
+
+              {/* Paste button - same row as input */}
               <button
                 onClick={async () => {
                   try {
@@ -4242,10 +4355,11 @@ export default function DepositForm({
                     showToast.error("Failed to paste from clipboard");
                   }
                 }}
-                className="flex items-center gap-1 dark:bg-[#1D1D23] border border-[#1D8751] 
-                text-[#1D8751] rounded-full px-3 sm:px-1 py-2 sm:py-1 ml-2 font-semibold text-sm sm:text-base hover:bg-[#1D8751] hover:text-white transition-colors min-h-[44px] sm:min-h-0 touch-manipulation"
+                className="mt-3 sm:mt-0 flex items-center justify-center gap-2 bg-[#2A2A35] dark:bg-[#2A2A35] border border-[#4A4A5A] dark:border-[#4A4A5A] 
+                text-[#1D8751] dark:text-[#1D8751] rounded-2xl px-4 py-2 font-semibold text-sm sm:text-base hover:bg-[#35353E] dark:hover:bg-[#35353E] hover:text-[#1D8751] dark:hover:text-[#1D8751] transition-colors min-h-[44px] sm:min-h-0 touch-manipulation w-full sm:w-auto"
               >
-                <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                <span>{t("express.paste", "Paste")}</span>
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" className="text-[#1D8751]">
                   <path
                     d="M19 21H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4l2-2h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z"
                     stroke="currentColor"
@@ -4254,9 +4368,7 @@ export default function DepositForm({
                     strokeLinejoin="round"
                   />
                 </svg>
-                {t("express.paste", "Paste")}
               </button>
-              {/* Address confirmation */}
             </div>
 
             {/* Show validation messages below the wallet address input */}
@@ -4381,8 +4493,66 @@ export default function DepositForm({
             </div>
           )}
 
-          {/* Button outside the card */}
-          <div className="flex flex-col gap-3 w-full px-2">
+          {/* Agreement checkbox before final button */}
+          <div className="flex flex-col gap-3 w-full px-2 pb-3 mb-3 border-b border-[#35353E]">
+            <label className="flex items-start gap-2 text-xs sm:text-sm text-[#35353e] dark:text-[#788099] mb-1">
+              <input
+                type="checkbox"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded border-2 border-[#F79330] text-[#F79330] focus:ring-[#F79330] appearance-none bg-transparent checked:bg-[#F79330] checked:border-[#F79330]"
+              />
+              <span>
+                I've read and agree to the OMAYA EXCHANGE{" "}
+                <a
+                  href="/terms-of-use"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline text-[#1D8751]"
+                >
+                  Terms of Use
+                </a>
+                ,{" "}
+                <a
+                  href="/privacy-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline text-[#1D8751]"
+                >
+                  Privacy Policy
+                </a>
+                ,{" "}
+                <a
+                  href="/payment-policies"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline text-[#1D8751]"
+                >
+                  Payment Policies
+                </a>
+                ,{" "}
+                <a
+                  href="/aml-policy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline text-[#1D8751]"
+                >
+                  AML
+                </a>
+                ,{" "}
+                <a
+                  href="/risk-disclosure"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline text-[#1D8751]"
+                >
+                  Risk Disclosure Statements
+                </a>
+                .
+              </span>
+            </label>
+
+            {/* Button outside the card */}
             <button
               className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${
                 isProceedDisabled

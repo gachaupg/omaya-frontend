@@ -124,18 +124,18 @@ const ReferralWithdrawalHistory: React.FC = () => {
       <div className="hidden md:block overflow-x-auto">
         <div className="bg-white dark:bg-[#1D1D23] border border-[#E8EFF5] dark:border-[#35353F] rounded-xl overflow-hidden">
           <table className="w-full border-collapse">
-            <thead>
+            <thead className="bg-gray-100 dark:bg-[#35353E]">
               <tr className="border-b border-[#E8EFF5] dark:border-[#35353F]">
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400 dark:text-gray-500">
                   Asset
                 </th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400 dark:text-gray-500">
                   Amount
                 </th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400 dark:text-gray-500">
                   Payment Method
                 </th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400 dark:text-gray-500">
                   When
                 </th>
               </tr>

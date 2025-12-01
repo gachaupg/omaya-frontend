@@ -336,16 +336,16 @@ export const Table: React.FC<TableProps> = ({
 
   return (
     <>
-      <div className="mt-2">
-        <div className="flex flex-col gap-0.5 md:flex-row md:flex-wrap md:items-center md:gap-1 md:justify-between mb-2">
-          <h3
-            className={`font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
-          >
-            {title}
-          </h3>
+      <div className="mt-1">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-1">
+          <div className="flex items-center gap-2 md:gap-3">
+            <h3
+              className={`font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
+            >
+              {title}
+            </h3>
 
-          {type === "p2p" && (
-            <>
+            {type === "p2p" && (
               <div className="relative min-w-[150px]" ref={dateDropdownRef}>
                 <div className="flex items-center gap-2">
                   <div className="relative flex-1">
@@ -353,9 +353,7 @@ export const Table: React.FC<TableProps> = ({
                       type="button"
                       onClick={() => setIsDateDropdownOpen((prev) => !prev)}
                       disabled={loading}
-                      className={`w-full px-4 py-2 pr-10 rounded-full text-sm font-semibold bg-[#E6E7EC] dark:bg-[#18181D] flex items-center justify-between focus:outline-none ${
-                        !isAllFilterSelected ? "focus:ring-0" : "focus:ring-2 focus:ring-[#1D8751]/60"
-                      } ${
+                      className={`w-full px-4 py-2 pr-10 rounded-full text-sm font-semibold bg-[#E6E7EC] dark:bg-[#18181D] flex items-center justify-between border-none outline-none focus:outline-none focus:ring-0 ${
                         isAllFilterSelected
                           ? "text-[#8E939E] dark:text-[#8C8CA1]"
                           : "text-[#1F1F23] dark:text-white"
@@ -418,7 +416,11 @@ export const Table: React.FC<TableProps> = ({
                   </div>
                 )}
               </div>
+            )}
+          </div>
 
+          <div className="flex items-center gap-2 md:gap-3">
+            {type === "p2p" && (
               <div className="relative w-full sm:w-60 md:w-56 lg:w-64">
                 <input
                   type="text"
@@ -448,40 +450,40 @@ export const Table: React.FC<TableProps> = ({
                   </svg>
                 </div>
               </div>
-            </>
-          )}
+            )}
 
-          {showExportButton && type !== "orders" && (
-            <div className="relative">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowExportOptions(!showExportOptions)}
-                className="text-base font-semibold"
-              >
-                <p className="text-[14px] text-[#1D8751]">Export Transactions</p>
-              </Button>
+            {showExportButton && type !== "orders" && (
+              <div className="relative">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowExportOptions(!showExportOptions)}
+                  className="text-base font-semibold"
+                >
+                  <p className="text-[14px] text-[#1D8751]">Export Transactions</p>
+                </Button>
 
-              {showExportOptions && (
-                <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E] z-10">
-                  <div className="py-1">
-                    <button
-                      onClick={() => handleExport("csv")}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-400 dark:text-[#8C8CA1] hover:bg-gray-100 dark:hover:bg-[#35353E]"
-                    >
-                      Export as CSV
-                    </button>
-                    <button
-                      onClick={() => handleExport("pdf")}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-400 dark:text-[#8C8CA1] hover:bg-gray-100 dark:hover:bg-[#35353E]"
-                    >
-                      Export as PDF
-                    </button>
+                {showExportOptions && (
+                  <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E] z-10">
+                    <div className="py-1">
+                      <button
+                        onClick={() => handleExport("csv")}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-400 dark:text-[#8C8CA1] hover:bg-gray-100 dark:hover:bg-[#35353E]"
+                      >
+                        Export as CSV
+                      </button>
+                      <button
+                        onClick={() => handleExport("pdf")}
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-400 dark:text-[#8C8CA1] hover:bg-gray-100 dark:hover:bg-[#35353E]"
+                      >
+                        Export as PDF
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="mt-3 overflow-x-auto">

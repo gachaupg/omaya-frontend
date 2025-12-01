@@ -12,6 +12,7 @@ import { showToast } from "@/lib/utils/toast";
 import { useRouter } from "next/navigation";
 
 import { logger } from '@/lib/utils/logger';
+import { checkKYCStatus } from "@/features/kyc/slices/kycSlice";
 
 type UserProfileCardProps = {
   name: string;
@@ -35,11 +36,12 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
     initialProfileImage || defaultAvatar
   );
 
-  const { user, isAuthenticated } = useSelector(
+  const { isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
-
-  const isVerified = user?.is_verified ?? false;
+  const kycState = useSelector((state: RootState) => state.kyc);
+  // KYC verification status from central KYC slice (fed by /api/kyc/status/)
+  const isVerified = kycState.isVerified ?? false;
   const { data: matchedTrades } = useSelector(
     (state: RootState) => state.matchedTrades
   );
@@ -57,6 +59,9 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
         .catch((error) => {
           logger.error('exchange', "Failed to fetch profile:", error);
         });
+
+      // Ensure KYC status (is_verified) is up to date
+      dispatch(checkKYCStatus());
     }
   }, [dispatch, isAuthenticated]);
 

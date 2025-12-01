@@ -228,8 +228,24 @@ const normalizeAdminPaymentProviders = (
           `${providerName || "provider"}-${paymentMethodType || "method"}`,
         payment_method_type: paymentMethodType || "",
         provider_name: providerName,
+        // Logo fields
         logo: item?.logo_url ?? item?.logo ?? item?.provider_logo ?? null,
+        logo_url: item?.logo_url ?? null,
+        provider_logo: item?.provider_logo ?? null,
+
+        // Address / account fields
         wallet_address: item?.wallet_address ?? null,
+        account_name: item?.account_name ?? null,
+        account_number: item?.account_number ?? null,
+        mobile_number: item?.mobile_number ?? null,
+        account_type: item?.account_type ?? null,
+        payment_type: item?.payment_type ?? item?.method ?? null,
+        how_to_send: item?.how_to_send ?? null,
+
+        // Full details arrays (used later by deposit form)
+        admin_payment_details: item?.admin_payment_details ?? null,
+        payment_details: item?.payment_details ?? null,
+
         linked_bank_provider: item?.linked_bank_provider ?? null,
       } as AdminPaymentMethod;
     })
