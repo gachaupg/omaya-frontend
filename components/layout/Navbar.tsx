@@ -37,10 +37,12 @@ const NavLink = ({
   href,
   children,
   isTransparent = false,
+  active = false
 }: {
   href: string;
   children: React.ReactNode;
   isTransparent?: boolean;
+  active?: boolean;
 }) => (
   <Link
     href={href}
@@ -48,7 +50,8 @@ const NavLink = ({
       isTransparent
         ? "text-white" // Always white when navbar is transparent
         : "dark:text-white text-gray-900" // Theme-based when navbar has background
-    } hover:text-[#1D8751] transition-colors duration-200 text-sm lg:text-base 2xl:text-lg`}
+    } hover:text-[#1D8751] transition-colors duration-200 text-sm lg:text-base 2xl:text-lg ${active ? 'nav-active' :''}`
+  }
   >
     {children}
   </Link>
@@ -58,14 +61,16 @@ const MobileNavLink = ({
   href,
   children,
   onClick,
+  active = false,
 }: {
   href: string;
   children: React.ReactNode;
   onClick: () => void;
+  active?: boolean | undefined;
 }) => (
   <Link
     href={href}
-    className="block dark:text-white text-gray-900 hover:text-[#1D8751] py-2 transition-colors duration-200 text-lg"
+    className={`block dark:text-white text-gray-900 hover:text-[#1D8751] py-2 transition-colors duration-200 text-lg ${active == true ? 'nav-active' :''}`}
     onClick={onClick}
   >
     {children}
@@ -438,21 +443,21 @@ export default function Navbar() {
               Home
             </NavLink>
             {isAuthenticated ? (
-              <NavLink href="/dashboard" isTransparent={isTransparentNavbar}>
+              <NavLink href="/dashboard" isTransparent={isTransparentNavbar} active={pathname?.includes('dashboard')}>
                 Dashboard
               </NavLink>
             ) : (
-              <NavLink href="/about" isTransparent={isTransparentNavbar}>
+              <NavLink href="/about" isTransparent={isTransparentNavbar} active={pathname?.includes('about')}>
                 About Us
               </NavLink>
             )}
-            <NavLink href="/market" isTransparent={isTransparentNavbar}>
+            <NavLink href="/market" isTransparent={isTransparentNavbar} active={pathname?.includes('market')}>
               Market
             </NavLink>
-            <NavLink href="/rates" isTransparent={isTransparentNavbar}>
+            <NavLink href="/rates" isTransparent={isTransparentNavbar} active={pathname?.includes('rates')}>
               Rates
             </NavLink>
-            <NavLink href="/blog" isTransparent={isTransparentNavbar}>
+            <NavLink href="/blog" isTransparent={isTransparentNavbar} active={pathname?.includes('blog')}>
               Blog
             </NavLink>
             {/* Show Contact us only on auth pages */}
@@ -465,7 +470,7 @@ export default function Navbar() {
               </NavLink>
             )} */}
 
-            <NavLink href="/contactUs" isTransparent={isTransparentNavbar}>
+            <NavLink href="/contactUs" isTransparent={isTransparentNavbar} active={pathname?.includes('contactUs')}>
               Contact us
             </NavLink>
           </div>
@@ -867,26 +872,26 @@ export default function Navbar() {
               Home
             </MobileNavLink>
             {isAuthenticated ? (
-              <MobileNavLink href="/dashboard" onClick={toggleMobileMenu}>
+              <MobileNavLink href="/dashboard" onClick={toggleMobileMenu} active={pathname?.includes('dashboard') ?? false}>
                 Dashboard
               </MobileNavLink>
             ) : (
-              <MobileNavLink href="/about" onClick={toggleMobileMenu}>
+              <MobileNavLink href="/about" onClick={toggleMobileMenu} active={pathname?.includes('about')}>
                 About Us
               </MobileNavLink>
             )}
-            <MobileNavLink href="/market" onClick={toggleMobileMenu}>
+            <MobileNavLink href="/market" onClick={toggleMobileMenu} active={pathname?.includes('market')}>
               Market
             </MobileNavLink>
-            <MobileNavLink href="/rates" onClick={toggleMobileMenu}>
+            <MobileNavLink href="/rates" onClick={toggleMobileMenu} active={pathname?.includes('rates')}>
               Rates
             </MobileNavLink>
-            <MobileNavLink href="/blog" onClick={toggleMobileMenu}>
+            <MobileNavLink href="/blog" onClick={toggleMobileMenu} active={pathname?.includes('blog')}>
               Blog
             </MobileNavLink>
-            <MobileNavLink href="/contactUs" onClick={toggleMobileMenu}>
-                Contact us
-              </MobileNavLink>
+            <MobileNavLink href="/contactUs" onClick={toggleMobileMenu} active={pathname?.includes('contactUs')}>
+              Contact us
+            </MobileNavLink>
 
             <div className="flex flex-col space-y-4 pt-4">
               {isAuthenticated ? (
