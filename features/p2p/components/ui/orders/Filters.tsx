@@ -165,7 +165,7 @@ const Filters: React.FC<FiltersProps> = ({
         </div>
 
         {/* unread button */}
-        <button
+        {/* <button
           className={`w-full sm:w-auto rounded-[28px] flex items-center justify-center gap-2 border border-[#1D8751] text-[#1D8751] px-5 py-3 font-semibold text-sm hover:bg-[#1D8751]/10 transition-all relative ${
             showUnreadMessages
               ? " text-white border border-[#1D8751]"
@@ -185,13 +185,13 @@ const Filters: React.FC<FiltersProps> = ({
             Unread Message(s)
           </span>
           
-          {/* Unread count badge */}
+         
           {totalUnreadCount > 0 && (
             <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center min-w-[20px]">
               {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
             </span>
           )}
-        </button>
+        </button> */}
       </div>
 
       {/* ───────────────────────── Filter bar */}
