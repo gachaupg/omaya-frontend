@@ -379,10 +379,7 @@ export default function MarketingPage() {
             <div className="space-y-4 pl-0 md:pl-4 lg:pl-5 text-center md:text-left 2xl:col-span-2">
               <h1 className="text-[1.875rem] sm:text-[2.25rem] md:text-[3rem] lg:text-[3.5rem] 2xl:text-[3.75rem] font-bold text-white tracking-tight sm:tracking-normal md:tracking-normal leading-tight sm:leading-snug text-balance">
                 <span className="inline-block w-full 2xl:text-[3.5rem]">
-                  {t("marketing.hero.heading1", "Welcome to")}
-                </span>
-                <span className="inline-block w-full 2xl:text-[3.25rem]">
-                  {t("marketing.hero.heading2", "OMAYA Exchange")}
+                  {t("marketing.hero.heading1", "Welcome to OMAYA.io")}
                 </span>
               </h1>
               <p className="text-white/90 leading-relaxed sm:leading-relaxed tracking-[0.02em] sm:tracking-[0.04em] md:tracking-[0.06em] max-w-full sm:max-w-2xl md:max-w-3xl mx-auto lg:mx-0 px-4 sm:px-0 text-sm sm:text-base md:text-base 2xl:text-lg text-balance">

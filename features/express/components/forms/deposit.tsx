@@ -3640,7 +3640,7 @@ export default function DepositForm({
                           PAYMENT_LOGO_SIZE
                         )}
                         alt={`${selectedPaymentDetail.provider_name || "Bank"} Logo`}
-                        className={`${PAYMENT_LOGO_BASE_CLASS} w-12 h-12`}
+                        className={`${PAYMENT_LOGO_BASE_CLASS} w-9 h-9`}
                         loading="lazy"
                         onError={(e) => {
                           e.currentTarget.src = getHighResPaymentLogo(

@@ -368,19 +368,19 @@ export default function Navbar() {
     if (isHomePage && isNotScrolled) {
       // Home page, not scrolled: white logo for transparent background
       return {
-        src: "https://res.cloudinary.com/dam1sxczj/image/upload/v1746538269/Frame_q3pwt7.png",
+        src: "https://res.cloudinary.com/pitz/image/upload/v1764572384/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png",
         alt: "OMAYA Exchange",
       };
     } else if (isDarkTheme) {
       // Dark theme: green logo
       return {
-        src: "https://res.cloudinary.com/dam1sxczj/image/upload/v1747133499/Omaya_green-logo_yva2ah.png",
+        src: "https://res.cloudinary.com/pitz/image/upload/v1764572384/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png",
         alt: "OMAYA Exchange",
       };
     } else {
       // Light theme: default logo
       return {
-        src: "https://res.cloudinary.com/pitz/image/upload/v1750838143/1446599b0a50473eb54aaee7c59988ecc0856b10_mmmmcl.png",
+        src: "https://res.cloudinary.com/pitz/image/upload/v1764572384/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png",
         alt: "OMAYA Exchange",
       };
     }
@@ -454,6 +454,9 @@ export default function Navbar() {
             </NavLink>
             <NavLink href="/blog" isTransparent={isTransparentNavbar}>
               Blog
+            </NavLink>
+            <NavLink href="/about" isTransparent={isTransparentNavbar}>
+              About Us
             </NavLink>
             {/* Show Contact us only on auth pages */}
             {/* {(pathname?.startsWith("/auth/login") || 
@@ -883,6 +886,9 @@ export default function Navbar() {
             </MobileNavLink>
             <MobileNavLink href="/blog" onClick={toggleMobileMenu}>
               Blog
+            </MobileNavLink>
+            <MobileNavLink href="/about" onClick={toggleMobileMenu}>
+              About Us
             </MobileNavLink>
             <MobileNavLink href="/contactUs" onClick={toggleMobileMenu}>
                 Contact us

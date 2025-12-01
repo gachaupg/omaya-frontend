@@ -14,8 +14,6 @@ export const validateP2PAd = {
   minOrderAmount: (value: string) => {
     if (!value) return "Minimum order amount is required";
     if (isNaN(Number(value))) return "Minimum order amount must be a number";
-    if (Number(value) <= 0)
-      return "Minimum order amount must be greater than 0";
     if (Number(value) < 10) return "Minimum order amount must be at least 10";
     return "";
   },

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useRef } from "react";
+import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../../store";
 import {
@@ -92,6 +92,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
     }
   }, [adminMethods]);
 
+
   // Fallback payment methods
   const fallbackPaymentMethods = useMemo(
     () => [
@@ -145,33 +146,87 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
 
-  // Auto-select first payment method for "from"
-  useEffect(() => {
-    if (finalPaymentMethods && finalPaymentMethods.length > 0 && !fromPaymentMethod) {
-      const firstMethod = finalPaymentMethods[0];
-      if (firstMethod?.provider_name) {
-        setFromPaymentMethod(firstMethod.provider_name);
-        setSelectedFromPaymentDetail(firstMethod);
-      }
-    }
-  }, [finalPaymentMethods, fromPaymentMethod]);
+  // Helper function to check if a payment method is a bank
+  const isBankMethod = useCallback((method: any) => {
+    if (!method) return false;
+    const providerName = (method?.provider_name || "").toLowerCase();
+    const paymentMethod = (method?.payment_method || "").toLowerCase();
+    const paymentMethodType = (method?.payment_method_type || "").toLowerCase();
+    const provider = (method?.provider || "").toLowerCase();
+    
+    return (
+      providerName.includes("bank") ||
+      paymentMethod.includes("bank") ||
+      paymentMethodType.includes("bank") ||
+      provider.includes("bank")
+    );
+  }, []);
 
-  // Auto-select second payment method for "to" (different from "from")
+  // Auto-select first payment method for "from" when payment methods are loaded
   useEffect(() => {
-    if (finalPaymentMethods && finalPaymentMethods.length > 1 && !toPaymentMethod && fromPaymentMethod) {
-      // Find the first method that's different from the selected "from" method
-      const secondMethod = finalPaymentMethods.find(
-        (method: any) => method.provider_name !== fromPaymentMethod
-      );
-      if (secondMethod?.provider_name) {
-        setToPaymentMethod(secondMethod.provider_name);
-        setSelectedToPaymentDetail(secondMethod);
+    // Only run if we have payment methods and nothing is selected yet
+    if (!fromPaymentMethod) {
+      // Prioritize stablePaymentMethods (actual loaded methods) over finalPaymentMethods (which includes fallback)
+      const methodsToCheck = Array.isArray(stablePaymentMethods) && stablePaymentMethods.length > 0
+        ? stablePaymentMethods
+        : (Array.isArray(finalPaymentMethods) && finalPaymentMethods.length > 0
+          ? finalPaymentMethods
+          : null);
+      
+      if (methodsToCheck && methodsToCheck.length > 0) {
+        // Filter for banks first
+        const bankMethods = methodsToCheck.filter(isBankMethod);
+        
+        // If banks exist, select the first bank; otherwise select the first method
+        const methodToSelect = bankMethods.length > 0 ? bankMethods[0] : methodsToCheck[0];
+        
+        if (methodToSelect?.provider_name) {
+          setFromPaymentMethod(methodToSelect.provider_name);
+          setSelectedFromPaymentDetail(methodToSelect);
+        }
       }
-    } else if (finalPaymentMethods && finalPaymentMethods.length === 1 && !toPaymentMethod && fromPaymentMethod) {
-      // If there's only one method, don't auto-select "to" (they can't be the same)
-      // This case will show validation error if user tries to submit
     }
-  }, [finalPaymentMethods, toPaymentMethod, fromPaymentMethod]);
+  }, [stablePaymentMethods, finalPaymentMethods, fromPaymentMethod, isBankMethod]);
+
+
+  // Auto-select second payment method for "to"
+  useEffect(() => {
+    // Only run if we have payment methods, "from" is selected, and "to" is not selected
+    const methodsToCheck = Array.isArray(finalPaymentMethods) && finalPaymentMethods.length > 0
+      ? finalPaymentMethods
+      : (Array.isArray(stablePaymentMethods) && stablePaymentMethods.length > 0
+        ? stablePaymentMethods
+        : null);
+    
+    if (methodsToCheck && methodsToCheck.length > 1 && fromPaymentMethod && !toPaymentMethod) {
+      // Filter for banks first (excluding the selected "from" method)
+      const bankMethods = methodsToCheck.filter(
+        (method) => isBankMethod(method) && method.provider_name !== fromPaymentMethod
+      );
+      
+      // If multiple banks exist, select the first available bank; otherwise select the second method
+      let methodToSelect;
+      if (bankMethods.length > 0) {
+        methodToSelect = bankMethods[0];
+      } else {
+        // Select the second method (index 1) if it's different from "from", otherwise find first different
+        if (methodsToCheck[1] && methodsToCheck[1].provider_name !== fromPaymentMethod) {
+          methodToSelect = methodsToCheck[1];
+        } else {
+          // Find first method that's different from "from"
+          methodToSelect = methodsToCheck.find(
+            (method) => method.provider_name !== fromPaymentMethod
+          );
+        }
+      }
+      
+      if (methodToSelect?.provider_name) {
+        setToPaymentMethod(methodToSelect.provider_name);
+        setSelectedToPaymentDetail(methodToSelect);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finalPaymentMethods, stablePaymentMethods, fromPaymentMethod, adminMethods]);
 
   // Prepare options for CustomSelect
   const paymentMethodOptions = finalPaymentMethods.map((payment: any) => {

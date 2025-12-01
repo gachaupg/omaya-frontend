@@ -3824,6 +3824,9 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                           }]}
                           value={providerName}
                           sizeMode="card"
+                          logoSize={32}
+                          dropdownMaxHeight={350}
+                          dropdownPosition="above"
                           className={`w-full ${
                             paymentMethodError ? "border-red-500 dark:border-red-500" : ""
                           }`}
@@ -3868,6 +3871,9 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                       })}
                       value={payBank}
                       sizeMode="card"
+                      logoSize={32}
+                      dropdownMaxHeight={350}
+                      dropdownPosition="above"
                       className={`w-full ${
                         paymentMethodError ? "border-red-500 dark:border-red-500" : ""
                       }`}

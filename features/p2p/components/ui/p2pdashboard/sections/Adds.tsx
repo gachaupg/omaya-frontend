@@ -1,7 +1,7 @@
 // src/features/p2p/components/ui/p2pdashboard/sections/Adds.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter, useSearchParams } from "next/navigation";
 import Button from "../../../Common/Button";
@@ -99,6 +99,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
     UserPaymentDetail[]
   >([]);
   const [isClient, setIsClient] = useState(false);
+  const prevTypeRef = useRef<"buy" | "sell">(type);
 
   useEffect(() => {
     setIsClient(true);
@@ -139,6 +140,25 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       setType(queryType);
     }
   }, [queryType]);
+
+  // Clear form fields when switching between buy and sell
+  useEffect(() => {
+    // Only clear if type actually changed (not on initial mount)
+    if (prevTypeRef.current !== type && prevTypeRef.current !== undefined) {
+      setAmount("");
+      setOrderMin("");
+      setOrderMax("");
+      setCommission("1.00");
+      setPaymentMethod(paymentMethods[0].value);
+      setProvider(providers[0].value);
+      setTimeLimit(timeLimits[0].value);
+      setTerms("");
+      setAutoReply("");
+      setSelectedPaymentDetails([]);
+      setErrors({});
+    }
+    prevTypeRef.current = type;
+  }, [type]);
 
   const validateForm = () => {
     const newErrors: ValidationErrors = {};
@@ -445,21 +465,63 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                     if (newAmount) {
                       const amountNum = Number(newAmount);
                       
+                      // Check if it's a valid number
+                      if (isNaN(amountNum)) {
+                        setErrors((prev) => ({ 
+                          ...prev, 
+                          amount: "Amount must be a number" 
+                        }));
+                      }
                       // Check minimum 10 USDT for both buy and sell
-                      if (!isNaN(amountNum) && amountNum < 10) {
+                      else if (amountNum < 10) {
                         setErrors((prev) => ({ 
                           ...prev, 
                           amount: "Minimum amount is 10 USDT" 
                         }));
                       }
                       // Additional check for sell ads - cannot exceed available balance
-                      else if (type === "sell" && !isNaN(amountNum) && amountNum > availableBalance) {
+                      else if (type === "sell" && amountNum > availableBalance) {
                         setErrors((prev) => ({ 
                           ...prev, 
                           amount: `Amount cannot exceed available balance (${availableBalance.toFixed(2)} USDT)` 
                         }));
-                      } else {
+                      }
+                      // Check if orderMin is greater than amount
+                      else if (orderMin && !isNaN(Number(orderMin)) && Number(orderMin) > amountNum) {
+                        setErrors((prev) => ({ 
+                          ...prev, 
+                          amount: "Amount must be greater than or equal to minimum order amount" 
+                        }));
+                      }
+                      // Check if orderMax is greater than amount
+                      else if (orderMax && !isNaN(Number(orderMax)) && Number(orderMax) > amountNum) {
+                        setErrors((prev) => ({ 
+                          ...prev, 
+                          amount: "Amount must be greater than or equal to maximum order amount" 
+                        }));
+                      }
+                      // Valid - clear error
+                      else {
                         setErrors((prev) => ({ ...prev, amount: undefined }));
+                        // Re-validate orderMin and orderMax if they exist
+                        if (orderMin) {
+                          const minNum = Number(orderMin);
+                          if (!isNaN(minNum) && minNum > amountNum) {
+                            setErrors((prev) => ({ 
+                              ...prev, 
+                              orderMin: "Minimum order amount cannot be greater than amount" 
+                            }));
+                          }
+                        }
+                        if (orderMax) {
+                          const maxNum = Number(orderMax);
+                          if (!isNaN(maxNum) && maxNum > amountNum) {
+                            setErrors((prev) => ({ 
+                              ...prev, 
+                              orderMax: "Maximum order amount cannot be greater than amount" 
+                            }));
+                          }
+                        }
                       }
                     } else {
                       setErrors((prev) => ({ ...prev, amount: undefined }));
@@ -488,14 +550,71 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               <label className="text-xs text-gray-600 dark:text-[#788099] mb-1">
                 Order Min.
               </label>
-              <div className="flex items-center bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-[19px] px-2 py-2 min-h-[40px]">
+              <div className={`flex items-center bg-white dark:bg-[#18181D] border ${
+                errors.orderMin
+                  ? "border-red-500"
+                  : "border-gray-200 dark:border-[#35353E]"
+              } rounded-[19px] px-2 py-2 min-h-[40px]`}>
                 <span className="text-[#1D8751] text-lg mr-1">$</span>
                 <input
                   type="text"
                   value={orderMin}
                   onChange={(e) => {
-                    setOrderMin(e.target.value);
-                    setErrors((prev) => ({ ...prev, orderMin: undefined }));
+                    const newValue = e.target.value;
+                    setOrderMin(newValue);
+                    
+                    // Real-time validation
+                    if (newValue) {
+                      const valueNum = Number(newValue);
+                      
+                      // Check if it's a valid number
+                      if (isNaN(valueNum)) {
+                        setErrors((prev) => ({ 
+                          ...prev, 
+                          orderMin: "Minimum order amount must be a number" 
+                        }));
+                      }
+                      // Check if it's less than 10
+                      else if (valueNum < 10) {
+                        setErrors((prev) => ({ 
+                          ...prev, 
+                          orderMin: "Minimum order amount must be at least 10" 
+                        }));
+                      }
+                      // Check if it's greater than amount (if amount is set)
+                      else if (amount && !isNaN(Number(amount)) && valueNum > Number(amount)) {
+                        setErrors((prev) => ({ 
+                          ...prev, 
+                          orderMin: "Minimum order amount cannot be greater than amount" 
+                        }));
+                      }
+                      // Check if it's greater than or equal to max order amount (if max is set)
+                      else if (orderMax && !isNaN(Number(orderMax)) && valueNum >= Number(orderMax)) {
+                        setErrors((prev) => ({ 
+                          ...prev, 
+                          orderMin: "Minimum order amount must be less than maximum order amount" 
+                        }));
+                      }
+                      // Valid - clear error
+                      else {
+                        setErrors((prev) => ({ ...prev, orderMin: undefined }));
+                        // Also re-validate orderMax if it exists
+                        if (orderMax && !isNaN(Number(orderMax))) {
+                          const maxNum = Number(orderMax);
+                          if (maxNum <= valueNum) {
+                            setErrors((prev) => ({ 
+                              ...prev, 
+                              orderMax: "Maximum order amount must be greater than minimum order amount" 
+                            }));
+                          } else if (errors.orderMax && errors.orderMax.includes("greater than minimum")) {
+                            setErrors((prev) => ({ ...prev, orderMax: undefined }));
+                          }
+                        }
+                      }
+                    } else {
+                      // Empty - clear error
+                      setErrors((prev) => ({ ...prev, orderMin: undefined }));
+                    }
                   }}
                   className="w-full bg-transparent border-none text-gray-900 dark:text-white text-base focus:outline-none"
                   placeholder="20.00"
@@ -516,14 +635,85 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               <label className="text-xs text-gray-600 dark:text-[#788099] mb-1">
                 Order Max
               </label>
-              <div className="flex items-center bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-[19px] px-2 py-2 min-h-[40px]">
+              <div className={`flex items-center bg-white dark:bg-[#18181D] border ${
+                errors.orderMax
+                  ? "border-red-500"
+                  : "border-gray-200 dark:border-[#35353E]"
+              } rounded-[19px] px-2 py-2 min-h-[40px]`}>
                 <span className="text-[#1D8751] text-lg mr-1">$</span>
                 <input
                   type="text"
                   value={orderMax}
                   onChange={(e) => {
-                    setOrderMax(e.target.value);
-                    setErrors((prev) => ({ ...prev, orderMax: undefined }));
+                    const newValue = e.target.value;
+                    setOrderMax(newValue);
+                    
+                    // Real-time validation
+                    if (newValue) {
+                      const valueNum = Number(newValue);
+                      
+                      // Check if it's a valid number
+                      if (isNaN(valueNum)) {
+                        setErrors((prev) => ({ 
+                          ...prev, 
+                          orderMax: "Maximum order amount must be a number" 
+                        }));
+                      }
+                      // Check if it's 0 or less
+                      else if (valueNum <= 0) {
+                        setErrors((prev) => ({ 
+                          ...prev, 
+                          orderMax: "Maximum order amount must be greater than 0" 
+                        }));
+                      }
+                      // Check if it's less than 10
+                      else if (valueNum < 10) {
+                        setErrors((prev) => ({ 
+                          ...prev, 
+                          orderMax: "Maximum order amount must be at least 10" 
+                        }));
+                      }
+                      // Check if it's less than or equal to min order amount
+                      else if (orderMin && !isNaN(Number(orderMin)) && valueNum <= Number(orderMin)) {
+                        setErrors((prev) => ({ 
+                          ...prev, 
+                          orderMax: "Maximum order amount must be greater than minimum order amount" 
+                        }));
+                      }
+                      // Check if it's greater than amount (if amount is set)
+                      else if (amount && !isNaN(Number(amount)) && valueNum > Number(amount)) {
+                        setErrors((prev) => ({ 
+                          ...prev, 
+                          orderMax: "Maximum order amount cannot be greater than amount" 
+                        }));
+                      }
+                      // Check if it exceeds maximum
+                      else if (valueNum > 1000000) {
+                        setErrors((prev) => ({ 
+                          ...prev, 
+                          orderMax: "Maximum order amount cannot exceed 1,000,000" 
+                        }));
+                      }
+                      // Valid - clear error
+                      else {
+                        setErrors((prev) => ({ ...prev, orderMax: undefined }));
+                        // Re-validate orderMin if it exists
+                        if (orderMin && !isNaN(Number(orderMin))) {
+                          const minNum = Number(orderMin);
+                          if (minNum >= valueNum) {
+                            setErrors((prev) => ({ 
+                              ...prev, 
+                              orderMin: "Minimum order amount must be less than maximum order amount" 
+                            }));
+                          } else if (errors.orderMin && errors.orderMin.includes("less than maximum")) {
+                            setErrors((prev) => ({ ...prev, orderMin: undefined }));
+                          }
+                        }
+                      }
+                    } else {
+                      // Empty - clear error
+                      setErrors((prev) => ({ ...prev, orderMax: undefined }));
+                    }
                   }}
                   className="w-full bg-transparent border-none text-gray-900 dark:text-white text-base focus:outline-none"
                   placeholder="200.00"
