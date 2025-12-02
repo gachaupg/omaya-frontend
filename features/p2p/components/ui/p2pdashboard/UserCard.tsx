@@ -323,7 +323,9 @@ const UserCard = () => {
           {/* User Type */}
           <div className="text-center md:text-left">
             <p className="text-xs text-[#788099] mb-1">User Type</p>
-            <p className="text-base font-bold dark:text-[#FFFFFF] text-[#1D1D23]">{user?.user_type}</p>
+            <p className="text-base font-bold dark:text-[#FFFFFF] text-[#1D1D23]">
+              {user?.user_type ? user.user_type.charAt(0).toUpperCase() + user.user_type.slice(1) : ''}
+            </p>
           </div>
         </div>
 

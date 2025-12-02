@@ -15,6 +15,7 @@ import { ChevronDown } from "lucide-react";
 
 import { logger } from '@/lib/utils/logger';
 import { AdminPaymentMethod } from "@/features/p2p/types/paymentMethods";
+import { getHighResPaymentLogo, PAYMENT_LOGO_SIZE } from "@/features/express/utils/imageHelpers";
 
 // Types
 interface PaymentMethod {
@@ -185,12 +186,10 @@ const PaymentMethods = () => {
     <div key={method.id} className="mb-5">
       <div className="flex items-center mb-3">
         <img
-          src={
-            method.provider_logo ||
-            "/default-provider-logo.svg"
-          }
+          src={getHighResPaymentLogo(method.provider_logo, null, PAYMENT_LOGO_SIZE * 2)}
           alt={`${method.payment_provider_name} Icon`}
-          className="w-10 h-10 sm:w-12 sm:h-12 rounded-full mr-3 object-cover"
+          className="w-12 h-12 sm:w-14 sm:h-14 rounded-full mr-3 object-contain flex-shrink-0"
+          loading="lazy"
           onError={(e) => {
             e.currentTarget.src = "/default-provider-logo.svg";
           }}
@@ -474,13 +473,20 @@ const renderAddMethodDropdown = () => (
             {selectedProvider && (
               <div className="p-3 rounded-xl bg-white dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E] flex items-center gap-3">
                 {(() => {
-                  const selectedProviderObj = providers.find((p: any) => p.provider_name === selectedProvider);
+                  const selectedProviderObj = providers.find(
+                    (p: any) => p.provider_name === selectedProvider
+                  );
                   return (
                     <>
                       <img
-                        src={selectedProviderObj?.logo || "/default-provider-logo.svg"}
+                        src={getHighResPaymentLogo(
+                          selectedProviderObj?.logo,
+                          selectedProviderObj?.provider_logo,
+                          PAYMENT_LOGO_SIZE * 2
+                        )}
                         alt={`${selectedProvider} logo`}
-                        className="w-10 h-10 rounded-full object-cover"
+                        className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-contain flex-shrink-0"
+                        loading="lazy"
                         onError={(e) => {
                           e.currentTarget.src = "/default-provider-logo.svg";
                         }}

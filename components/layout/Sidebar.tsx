@@ -57,6 +57,7 @@ export default function Sidebar() {
                   >
                     {item.labelKey === "navigation.exchange" ? (
                       <>
+                      
                         <img
                           className=" w-9 h-8 object-cover "
                           src="https://res.cloudinary.com/pitz/image/upload/v1764568507/uil_exchange_1_okxkvb.png"
@@ -70,7 +71,7 @@ export default function Sidebar() {
                         className="ml-2 w-5 h-5 md:w-6 md:h-6 object-contain flex-shrink-0"
                       />
                     )}
-                    {item.labelKey === "navigation.express" ? (
+                    {item.labelKey === "navigation.exchange" ? (
                       <span
                         className={clsx(
                           "flex items-center justify-center gap-0.5",
@@ -83,6 +84,58 @@ export default function Sidebar() {
                           isDark ? (
                             <span className="flex items-center justify-center gap-0.5">
                               <span className="text-[#727272] text-base uppercase font-bold">
+                                Money
+                              </span>
+
+                              <img
+                                className="mt-2"
+                                src="https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"
+                                alt=""
+                              />
+                            </span>
+                          ) : (
+                            <span className="flex items-center justify-center gap-0.5">
+                              <span className="text-[#727272] text-base uppercase font-bold">
+                                Money
+                              </span>
+
+                              <img
+                                className="mt-2"
+                                src="https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"
+                                alt=""
+                              />
+                            </span>
+                          )
+                        ) : (
+                          <span className="flex items-center justify-center gap-0.5">
+                            <span className="text-[#727272] text-base uppercase font-bold">
+                              Money
+                            </span>
+
+                            <img
+                              className="mt-2"
+                              src="https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"
+                              alt=""
+                            />
+                          </span>
+                        )}
+                      </span>
+                    ) : (
+                      ''
+                    )}
+                    {item.labelKey === "navigation.express" ? (
+                      <span
+                        className={clsx(
+                          "flex items-center justify-center gap-0.5",
+                          isActive
+                            ? "font-bold text-white text-base"
+                            : "font-normal text-[#727272] text-sm uppercase"
+                        )}
+                      >
+                        {isActive ? (
+                          isDark ? (
+                            <span className="flex ml-1 items-center justify-center gap-0.5">
+                              <span className="text-[#727272] text-base uppercase font-bold">
                                 E
                               </span>
 
@@ -93,7 +146,7 @@ export default function Sidebar() {
                               />
                             </span>
                           ) : (
-                            <span className="flex items-center justify-center gap-0.5">
+                            <span className="flex ml-1 items-center justify-center gap-0.5">
                               <span className="text-[#727272] text-base uppercase font-bold">
                                 E
                               </span>
@@ -106,7 +159,7 @@ export default function Sidebar() {
                             </span>
                           )
                         ) : (
-                          <span className="flex items-center justify-center gap-0.5">
+                          <span className="flex ml-1 items-center justify-center gap-0.5">
                             <span className="text-[#727272] text-base uppercase font-bold">
                               E
                             </span>
@@ -120,7 +173,7 @@ export default function Sidebar() {
                         )}
                       </span>
                     ) : (
-                      label
+                      <span className="font-bold ml-1">{label}</span>
                     )}
                   </Link>
                 </li>
@@ -230,7 +283,7 @@ export default function Sidebar() {
                         </span>
                       </span>
                     ) : (
-                      label
+                      <span className="font-semibold">{label}</span>
                     )}
                   </Link>
                 </li>

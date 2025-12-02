@@ -236,7 +236,9 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
           {/* User Type */}
           <div className="min-w-0">
             <p className="text-xs text-[#788099]">User Type</p>
-            <p className="text-base text-[#FFFFFF] truncate">{userType}</p>
+            <p className="text-base text-[#FFFFFF] truncate">
+              {userType ? userType.charAt(0).toUpperCase() + userType.slice(1) : ''}
+            </p>
           </div>
 
           {/* Action Buttons */}
