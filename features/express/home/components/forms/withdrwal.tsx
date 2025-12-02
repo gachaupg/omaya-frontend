@@ -794,6 +794,52 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     return filtered;
   }, [payBank, userPaymentMethodsDisplay.displayData, effectiveUserPaymentMethods, selectedAsset, availablePaymentMethodNames, userPaymentDetails, selectedProviderData]);
 
+  // Auto-select first payment method when payment methods are available
+  useEffect(() => {
+    // Only auto-select if no payment method is currently selected
+    if (payBank) {
+      return;
+    }
+
+    // Check if payment methods are available from public payment methods
+    if (Array.isArray(publicPaymentMethods?.data?.providers) && publicPaymentMethods.data.providers.length > 0) {
+      const firstProvider = publicPaymentMethods.data.providers[0];
+      const firstProviderName = firstProvider.provider_name || firstProvider.payment_provider_name;
+      
+      if (firstProviderName) {
+        setPayBank(firstProviderName);
+        setSelectedProviderData(firstProvider);
+        setSelectedPaymentDetail(firstProvider);
+        return;
+      }
+    }
+
+    // Fallback to admin wallet list if public methods not available
+    if (adminWalletListDisplay.displayData && adminWalletListDisplay.displayData.length > 0) {
+      const providerNames = Array.from(
+        new Set(
+          adminWalletListDisplay.displayData.map(
+            (wallet: any) => wallet?.admin_payment_detail?.provider_name
+          )
+        )
+      ).filter((type) => Boolean(type && type.trim())) as string[];
+
+      if (providerNames.length > 0) {
+        const firstProviderName = providerNames[0];
+        const selectedWallet = adminWalletListDisplay.displayData.find(
+          (wallet: any) =>
+            wallet.admin_payment_detail?.provider_name === firstProviderName
+        );
+
+        if (selectedWallet?.admin_payment_detail) {
+          setPayBank(firstProviderName);
+          setSelectedProviderData(selectedWallet.admin_payment_detail);
+          setSelectedPaymentDetail(selectedWallet.admin_payment_detail);
+        }
+      }
+    }
+  }, [payBank, publicPaymentMethods, adminWalletListDisplay.displayData]);
+
   // Auto-select first account when accounts are available for selected payment type
   useEffect(() => {
     if (

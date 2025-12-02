@@ -284,7 +284,10 @@ function UserCard() {
                 {t("userCard.userType", "User Type")}
               </p>
               <p className="text-sm sm:text-base lg:text-base dark:text-[#FFFFFF] truncate">
-                {user?.user_type || t("userCard.individual", "Individual")}
+                {(() => {
+                  const userType = user?.user_type || t("userCard.individual", "Individual");
+                  return userType ? userType.charAt(0).toUpperCase() + userType.slice(1) : '';
+                })()}
               </p>
             </div>
            
