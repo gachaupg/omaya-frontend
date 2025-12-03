@@ -395,8 +395,8 @@ const PaymentMethods = () => {
               key={page}
               onClick={() => setCurrentPage(page)}
               className={`w-8 h-8 rounded-lg ${currentPage === page
-                  ? "bg-[#1D8751] text-white"
-                  : "bg-gray-100 dark:bg-[#1D1D23] text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                ? "bg-[#1D8751] text-white"
+                : "bg-gray-100 dark:bg-[#1D1D23] text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                 }`}
             >
               {page}
