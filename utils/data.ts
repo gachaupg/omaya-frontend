@@ -36,11 +36,11 @@ export const navItems = [
     icon: "https://res.cloudinary.com/pitz/image/upload/v1747237692/users-profiles-left_e2oejc.png",
     href: "/dashboard/account/",
   },
-  {
-    labelKey: "Settings",
-    icon: "https://res.cloudinary.com/pitz/image/upload/v1747237691/settings_hi7ckx.png",
-    href: "/dashboard/settings",
-  },
+  // {
+  //   labelKey: "Settings",
+  //   icon: "https://res.cloudinary.com/pitz/image/upload/v1747237691/settings_hi7ckx.png",
+  //   href: "/dashboard/settings",
+  // },
 ];
 
 export const transactions: (TransactionType & { when: string })[] = [

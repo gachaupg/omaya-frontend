@@ -39,8 +39,8 @@ export default function Sidebar() {
                 normalizedHref === "/dashboard"
                   ? normalizedPathname === normalizedHref
                   : normalizedPathname === normalizedHref ||
-                    (normalizedPathname &&
-                      normalizedPathname.startsWith(normalizedHref + "/"));
+                  (normalizedPathname &&
+                    normalizedPathname.startsWith(normalizedHref + "/"));
               const label = t(item.labelKey, item.labelKey);
               return (
                 <li key={item.labelKey}>
@@ -81,18 +81,19 @@ export default function Sidebar() {
                       >
                         {isActive ? (
                           isDark ? (
-                            <span className="flex items-center justify-center gap-0.5">
-
+                            <span className="flex items-center justify-center">
+                              <span className="text-base font-bold">E</span>
                               <img
                                 className="mt-2"
-                                src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
+                                // src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
+                                src="https://res.cloudinary.com/pitz/image/upload/v1764698106/Group_8_hjhlxe.png"
                                 alt=""
                               />
                             </span>
                           ) : (
-                            <span className="flex items-center justify-center gap-0.5">
-                             
+                            <span className="flex items-center justify-center">
 
+                            <span className="text-[#727272] font-bold">E</span>
                               <img
                                 className="mt-2"
                                 src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
@@ -101,9 +102,8 @@ export default function Sidebar() {
                             </span>
                           )
                         ) : (
-                          <span className="flex items-center justify-center gap-0.5">
-                           
-
+                          <span className="flex items-center justify-center">
+                            <span className="text-base font-bold">E</span>
                             <img
                               className="mt-2"
                               src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
@@ -148,8 +148,8 @@ export default function Sidebar() {
                 normalizedHref === "/dashboard"
                   ? normalizedPathname === normalizedHref
                   : normalizedPathname === normalizedHref ||
-                    (normalizedPathname &&
-                      normalizedPathname.startsWith(normalizedHref + "/"));
+                  (normalizedPathname &&
+                    normalizedPathname.startsWith(normalizedHref + "/"));
               const label = t(item.labelKey, item.labelKey);
               return (
                 <li key={item.labelKey} className="snap-start">
@@ -226,9 +226,9 @@ export default function Sidebar() {
                           {isActive
                             ? t("navigation.expressChange", "Change")
                             : t(
-                                "navigation.expressChange",
-                                "CHANGE"
-                              ).toUpperCase()}
+                              "navigation.expressChange",
+                              "CHANGE"
+                            ).toUpperCase()}
                         </span>
                       </span>
                     ) : item.labelKey === "navigation.exchange" ? (
