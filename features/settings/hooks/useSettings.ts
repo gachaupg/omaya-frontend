@@ -63,7 +63,7 @@ export const useSettings = () => {
     fetch: () => dispatch(fetchSecuritySettings()),
     update: (settings: SecuritySettings) =>
       dispatch(updateSecuritySettings(settings)),
-    toggleTwoFactor: (enabled: boolean) => dispatch(toggleTwoFactor(enabled)),
+    toggleTwoFactor: (payload: { enabled: boolean; code?: string }) => dispatch(toggleTwoFactor(payload)),
   };
 
   const privacyActions = {

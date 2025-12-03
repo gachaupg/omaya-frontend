@@ -186,11 +186,11 @@ export const updateSecuritySettings = createAsyncThunk(
 
 export const toggleTwoFactor = createAsyncThunk(
   "settings/toggleTwoFactor",
-  async (enabled: boolean, { rejectWithValue }) => {
+  async (payload: { enabled: boolean; code?: string }, { rejectWithValue }) => {
     try {
-      const response = await settingsApi.toggleTwoFactor(enabled);
+      const response = await settingsApi.toggleTwoFactor(payload.enabled, payload.code);
       showToast.success(
-        `Two-factor authentication ${enabled ? "enabled" : "disabled"}`
+        `Two-factor authentication ${payload.enabled ? "enabled" : "disabled"}`
       );
       return response.data;
     } catch (error: any) {

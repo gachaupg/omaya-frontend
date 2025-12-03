@@ -8,13 +8,15 @@ export const formatTransactionType = (type: string): string => {
     p2p_sell: "P2P Sell",
     swap: "Swap",
     exchange: "Exchange",
+    moneyx: "MoneyX",
   };
 
   return typeMap[type] || type.charAt(0).toUpperCase() + type.slice(1);
 };
 
-export const formatAmount = (amount: number, currency: string): string => {
-  return `$${amount.toLocaleString("en-US", {
+export const formatAmount = (amount: number | string, currency: string): string => {
+  const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+  return `$${numAmount.toLocaleString("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;

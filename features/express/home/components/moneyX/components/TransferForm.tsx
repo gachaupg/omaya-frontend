@@ -12,7 +12,7 @@ import {
   updateMoneyXTransaction,
 } from "../slices/moneyXSlice";
 import { useTheme } from "@/context/theme";
-import CustomSelect from "@/components/ui/CustomSelect";
+import CustomSelect from "@/components/ui/HomeCommonSelect";
 import { showToast } from "@/lib/utils/toast";
 import { usePaymentMethodsDisplay } from "@/features/express/hooks/useDataDisplay";
 
@@ -306,6 +306,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
       // Show only provider name (remove - {method} part) for cleaner display
       label: providerName,
       logo: logoUrl,
+      raw: payment,
     };
   });
 
@@ -445,12 +446,9 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
     !selectedToPaymentDetail;
 
   return (
-    <div className="w-full flex flex-col dark:bg-[#18181D] overflow-x-auto">
-      <h2 className="text-xl font-bold mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
-        <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span>
-        Transfer Information
-      </h2>
-
+    <div className="w-full flex flex-col dark:bg-[#18181D]  ">
+      <div className="mb-2" />
+    
       {/* API Validation Error - Show as simple red text */}
       {apiValidationError && (
         <div className="mb-4 text-red-500 text-sm font-medium">
@@ -464,15 +462,30 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
           {moneyXError}
         </div>
       )}
-
-      <div className="w-full text-white">
+      
+      
+      <div className={`w-full ${isDark ? "text-white" : "text-[#1F2937]"}`}>
         {/* Top Section - Amount and From Payment Method in one card */}
         <div className="relative mb-4">
           {/* Top Card Container */}
-          <div className="relative flex flex-col sm:flex-row border border-[#D1D2D4FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 gap-3 sm:gap-0 min-w-0">
+          <div
+            data-asset-card="true"
+            data-select-card="true"
+            className={`relative flex gap-4 rounded-2xl p-4 overflow-visible ${
+              isDark ? "bg-[#0F0F17] border border-[#2F2F3A]" : "bg-white border border-[#E2E8F0] shadow-sm"
+            }`}
+          >
             {/* Amount Section */}
-            <div className="flex-1 w-full box-border min-w-0">
-              <div className="relative w-full">
+            <div className="flex-1 min-w-0">
+              <label
+                className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${
+                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                }`}
+              >
+                You Send
+                <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
+              </label>
+              <div className="relative">
                 <input
                   type="text"
                   inputMode="decimal"
@@ -481,22 +494,31 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                     handleAmountChange(e.target.value, true);
                   }}
                   placeholder="Enter amount"
-                  className="w-full h-[60px] text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-3 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] appearance-none"
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
+                    isDark ? "border-white/10 text-white" : "border-gray-200 text-[#111827]"
+                  }`}
                 />
               </div>
             </div>
 
             {/* From Payment Method Section */}
-            <div
-              data-select-card="true"
-              className="flex-1 w-full sm:pl-4 box-border min-w-0"
-            >
-              <div className="relative w-full">
+            <div className="flex-1 min-w-0">
+              <label
+                className={`block text-[15px] mb-2 font-semibold ${
+                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                }`}
+              >
+                Payment Method
+              </label>
+              <div className="relative">
                 <CustomSelect
                   options={paymentMethodOptions}
                   value={fromPaymentMethod}
-                  sizeMode="card"
-                  logoSize={30}
+                  className="w-full"
+                  placeholderClassName="text-white dark:text-white"
+                  triggerClassName={`px-4 py-2 text-lg border rounded-2xl bg-transparent ${
+                    isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                  }`}
                   onChange={(value) => {
                     const selectedPayment = finalPaymentMethods?.find(
                       (payment: any) => {
@@ -509,26 +531,18 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                     setValidationErrors([]);
                   }}
                   placeholder={
-                    paymentMethodsDisplay.isLoading &&
-                    finalPaymentMethods.length === 0
+                    paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0
                       ? "Loading payment methods..."
-                      : finalPaymentMethods && finalPaymentMethods.length > 0
-                        ? ""
-                        : "No payment methods available"
+                      : "Payment Method"
                   }
-                  disabled={
-                    paymentMethodsDisplay.isLoading &&
-                    finalPaymentMethods.length === 0
-                  }
-                  loading={
-                    paymentMethodsDisplay.isLoading &&
-                    finalPaymentMethods.length === 0
-                  }
+                  disabled={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
+                  loading={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
                   loadingText="Loading payment methods..."
                   emptyText="No payment methods available"
                   searchable={true}
-                  className="w-full min-w-0"
-                  triggerClassName="h-[60px] min-h-[60px] w-full px-4 py-3 max-w-full"
+                  dropdownTitle="Select a payment method"
+                  dropdownOffsetY={-6.5}
+                  dropdownOffsetX={12}
                 />
               </div>
               {adminMethodsError && (
@@ -540,7 +554,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
           {/* Swap Circle - positioned to touch both borders equally */}
           <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/3 z-10">
             <button
-              className="w-9 h-9 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105 sm:min-h-0 touch-manipulation"
+              className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105"
               onClick={() => {
                 // Swap from and to payment methods
                 const tempFrom = fromPaymentMethod;
@@ -555,13 +569,13 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
               <img
                 src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
                 alt="swap icon"
-                className="w-8 h-8 sm:w-8 sm:h-8 object-contain dark:hidden"
+                className="w-10 h-10 dark:hidden"
               />
               {/* Dark mode image */}
               <img
                 src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
                 alt="swap icon"
-                className="w-8 h-8 sm:w-8 sm:h-8 object-contain hidden dark:block"
+                className="w-10 h-10 hidden dark:block"
               />
             </button>
           </div>
@@ -569,10 +583,23 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
 
         {/* Bottom Section - You Receive and To Payment Method in one card */}
         <div className="relative mb-3">
-          <div className="relative flex flex-col sm:flex-row border border-[#D1D2D4FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 gap-3 sm:gap-0 min-w-0">
+          <div
+            data-asset-card="true"
+            className={`relative flex gap-4 rounded-2xl p-4 overflow-visible ${
+              isDark ? "bg-[#0F0F17] border border-[#2F2F3A]" : "bg-white border border-[#E2E8F0] shadow-sm"
+            }`}
+          >
             {/* You Receive Section */}
-            <div className="flex-1 w-full box-border min-w-0">
-              <div className="relative w-full">
+            <div className="flex-1 min-w-0">
+              <label
+                className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${
+                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                }`}
+              >
+                You Receive
+                <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
+              </label>
+              <div className="relative">
                 <input
                   type="text"
                   inputMode="decimal"
@@ -581,21 +608,33 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                     handleAmountChange(e.target.value, false);
                   }}
                   placeholder="Enter amount"
-                  className="w-full h-[60px] text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-3 pr-16 text-base sm:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] appearance-none"
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
+                    isDark ? "border-white/10 text-white" : "border-gray-200 text-[#111827]"
+                  }`}
                 />
               </div>
             </div>
 
             {/* To Payment Method Section */}
-            <div className="flex-1 w-full sm:pl-4 box-border min-w-0">
-              <div className="relative w-full">
+            <div className="flex-1 min-w-0">
+              <label
+                className={`block text-[15px] mb-2 font-semibold ${
+                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                }`}
+              >
+                Payment Method
+              </label>
+              <div className="relative">
                 <CustomSelect
                   options={paymentMethodOptions.filter(
                     (opt) => opt.value !== fromPaymentMethod
                   )}
                   value={toPaymentMethod}
-                  sizeMode="card"
-                  logoSize={30}
+                  className="w-full"
+                  placeholderClassName="text-white dark:text-white"
+                  triggerClassName={`px-4 py-2 text-lg border rounded-2xl bg-transparent ${
+                    isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                  }`}
                   onChange={(value) => {
                     const selectedPayment = finalPaymentMethods?.find(
                       (payment: any) => {
@@ -608,26 +647,18 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                     setValidationErrors([]);
                   }}
                   placeholder={
-                    paymentMethodsDisplay.isLoading &&
-                    finalPaymentMethods.length === 0
+                    paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0
                       ? "Loading payment methods..."
-                      : finalPaymentMethods && finalPaymentMethods.length > 0
-                        ? ""
-                        : "No payment methods available"
+                      : "Payment Method"
                   }
-                  disabled={
-                    paymentMethodsDisplay.isLoading &&
-                    finalPaymentMethods.length === 0
-                  }
-                  loading={
-                    paymentMethodsDisplay.isLoading &&
-                    finalPaymentMethods.length === 0
-                  }
+                  disabled={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
+                  loading={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
                   loadingText="Loading payment methods..."
                   emptyText="No payment methods available"
                   searchable={true}
-                  className="w-full min-w-0"
-                  triggerClassName="h-[60px] min-h-[60px] w-full px-4 py-3 max-w-full"
+                  dropdownTitle="Select a payment method"
+                  dropdownOffsetY={-6.5}
+                  dropdownOffsetX={12}
                 />
               </div>
               {adminMethodsError && (
@@ -640,7 +671,11 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
         {/* Validation Errors Display */}
         {validationErrors.length > 0 && (
           <div className="w-full px-2 mb-4">
-            <div className="dark:bg-[#1D1D23] border border-[#1D8751] rounded-2xl p-4">
+            <div
+              className={`border border-[#1D8751] rounded-2xl p-4 ${
+                isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"
+              }`}
+            >
               <h3 className="text-[#1D8751] font-semibold mb-2">
                 Please fix the following errors:
               </h3>
@@ -657,7 +692,8 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
         {!isFirstCardSubmitted && (
           <div className="mt-4 relative">
             <button
-              className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${
+              type="button"
+              className={`w-full text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors text-white ${
                 isTransferDisabled
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
@@ -667,16 +703,23 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
             >
               {isSubmitting ? (
                 <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  <span>Processing...</span>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#35353e] dark:border-[#788099]"></div>
+                  <span>Posting...</span>
                 </div>
               ) : (
-                <span>Submit</span>
+                <span className="flex items-center justify-center">
+                  <span className="text-base font-medium dark:text-white text-white">E</span>
+                  <img
+                    className="mt-2"
+                    src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                    alt=""
+                  />
+                </span>
               )}
             </button>
           </div>
         )}
-      </div>
+        </div>
 
       {isFirstCardSubmitted && (
         <>
@@ -821,23 +864,27 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                 Terms and Conditions Summary
               </span>
             </div>
-            <div className="dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-4">
+            <div
+              className={`border border-[#1D8751] rounded-xl p-4 ${
+                isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"
+              }`}
+            >
               <ul className="list-none space-y-2">
                 <li className="flex items-start">
                   <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                  <span className="text-[#35353e] dark:text-[#788099] text-sm">
+                  <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
                     Please send the money from your own account Only
                   </span>
                 </li>
                 <li className="flex items-start">
                   <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                  <span className="text-[#35353e] dark:text-[#788099] text-sm">
+                  <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
                     Put transaction ID in the description field of the bank
                   </span>
                 </li>
                 <li className="flex items-start">
                   <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                  <span className="text-[#35353e] dark:text-[#788099] text-sm">
+                  <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
                     Please note, If you do not follow above conditions, we will
                     reject your transaction and send you back your money.
                   </span>
@@ -849,7 +896,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
           {/* Final Submit Button */}
           <div className="flex flex-col gap-3 w-full px-2">
             <button
-              className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${
+              className={`w-full text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors text-white ${
                 !bankAccountAddress.trim() || bankAddressError || !isAddressConfirmed
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
@@ -912,11 +959,17 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
             >
               {isSubmitting || isUpdatingTransaction ? (
                 <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#35353e] dark:border-[#35353E]"></div>
                   <span>Processing...</span>
                 </div>
               ) : (
-                <span>Submit</span>
+                <span className="flex items-center justify-center">
+                  <img
+                    className="mt-2"
+                    src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
+                    alt=""
+                  />
+                </span>
               )}
             </button>
           </div>

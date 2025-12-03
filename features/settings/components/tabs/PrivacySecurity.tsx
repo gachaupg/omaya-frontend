@@ -98,10 +98,14 @@ const PrivacySecurity = () => {
   
   const [fallbackSessions, setFallbackSessions] = useState<DeviceSession[]>([]);
   const [show2FAModal, setShow2FAModal] = useState(false);
+  const [showDisable2FAModal, setShowDisable2FAModal] = useState(false);
   const [qrData, setQrData] = useState<string | null>(null);
   const [verifyCode, setVerifyCode] = useState("");
+  const [disableCode, setDisableCode] = useState("");
   const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [disableError, setDisableError] = useState<string | null>(null);
   const [verifyLoading, setVerifyLoading] = useState(false);
+  const [disableLoading, setDisableLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const sessionsPerPage = 5;
 
@@ -239,12 +243,10 @@ const PrivacySecurity = () => {
         setVerifyLoading(false);
       }
     } else {
-      try {
-        const result = await dispatch(toggleTwoFactor(false)).unwrap();
-        update2FA(false, JSON.stringify(result)); // Store the disable response
-      } catch (error) {
-        setVerifyError("Failed to disable 2FA: " + error);
-      }
+      // Immediately open modal to enter code when disabling 2FA
+      setShowDisable2FAModal(true);
+      setDisableError(null);
+      setDisableCode(""); // Clear any previous code
     }
   };
 
@@ -254,12 +256,35 @@ const PrivacySecurity = () => {
     try {
       const result = await dispatch(verify2FASetup({ code: verifyCode })).unwrap();
       setShow2FAModal(false);
+      setVerifyCode("");
       update2FA(true, JSON.stringify(result)); // Store the success response
       showToast.success("2FA enabled successfully!");
     } catch (error) {
       setVerifyError("Invalid code or failed to verify: " + error);
     } finally {
       setVerifyLoading(false);
+    }
+  };
+
+  const handleDisable2FA = async () => {
+    if (!disableCode.trim()) {
+      setDisableError("Please enter the 2FA code");
+      return;
+    }
+
+    setDisableLoading(true);
+    setDisableError(null);
+    try {
+      const result = await dispatch(toggleTwoFactor({ enabled: false, code: disableCode.trim() })).unwrap();
+      setShowDisable2FAModal(false);
+      setDisableCode("");
+      update2FA(false, JSON.stringify(result)); // Store the disable response
+      showToast.success("2FA disabled successfully!");
+    } catch (error: any) {
+      const errorMessage = error?.error || error?.message || String(error);
+      setDisableError("Invalid code or failed to disable: " + errorMessage);
+    } finally {
+      setDisableLoading(false);
     }
   };
 
@@ -552,8 +577,62 @@ const PrivacySecurity = () => {
               </button>
               <button
                 className="flex-1 dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 rounded px-4 py-2 sm:py-2.5 font-semibold"
-                onClick={() => setShow2FAModal(false)}
+                onClick={() => {
+                  setShow2FAModal(false);
+                  setVerifyCode("");
+                  setVerifyError(null);
+                }}
                 disabled={verifyLoading}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Disable 2FA Modal */}
+      {showDisable2FAModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
+          <div className="dark:bg-[#23232B] bg-white p-4 sm:p-6 rounded-xl w-full max-w-md sm:max-w-xl max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-2 dark:text-white text-gray-900">
+              Disable 2FA
+            </h3>
+            <div className="text-xs dark:text-[#8C8CA1] text-gray-600 mb-3 sm:mb-4">
+              To disable 2FA, please enter the code from your authenticator app.
+            </div>
+            <input
+              type="text"
+              className="w-full p-2 sm:p-2.5 rounded dark:border-[#35353E] border-gray-300 border mb-2 dark:bg-[#18181D] bg-gray-100 dark:text-white text-gray-900 text-sm sm:text-base"
+              placeholder="Enter code from authenticator app"
+              value={disableCode}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, ""); // Only allow digits
+                setDisableCode(value);
+                if (disableError) setDisableError(null);
+              }}
+              disabled={disableLoading}
+              maxLength={6}
+            />
+            {disableError && (
+              <div className="text-red-500 text-xs sm:text-sm mb-2 break-words">{disableError}</div>
+            )}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                className="flex-1 bg-[#E23D3A] text-white rounded px-4 py-2 sm:py-2.5 font-semibold"
+                onClick={handleDisable2FA}
+                disabled={disableLoading}
+              >
+                {disableLoading ? "Disabling..." : "Disable 2FA"}
+              </button>
+              <button
+                className="flex-1 dark:bg-[#35353E] bg-gray-400 dark:text-white text-gray-900 rounded px-4 py-2 sm:py-2.5 font-semibold"
+                onClick={() => {
+                  setShowDisable2FAModal(false);
+                  setDisableCode("");
+                  setDisableError(null);
+                }}
+                disabled={disableLoading}
               >
                 Cancel
               </button>
