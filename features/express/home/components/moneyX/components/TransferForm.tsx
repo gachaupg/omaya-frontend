@@ -485,6 +485,11 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                 You Send
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
+              <div className={`text-xs mb-1 ${
+                isDark ? "text-[#788099]" : "text-[#64748B]"
+              }`}>
+                Amount
+              </div>
               <div className="relative">
                 <input
                   type="text"
@@ -503,13 +508,11 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
 
             {/* From Payment Method Section */}
             <div className="flex-1 min-w-0">
-              <label
-                className={`block text-[15px] mb-2 font-semibold ${
-                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                }`}
-              >
+              <div className={`text-xs mb-1 mt-[30px] ${
+                isDark ? "text-[#788099]" : "text-[#64748B]"
+              }`}>
                 Payment Method
-              </label>
+              </div>
               <div className="relative">
                 <CustomSelect
                   options={paymentMethodOptions}
@@ -599,6 +602,11 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                 You Receive
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
+              <div className={`text-xs mb-1 ${
+                isDark ? "text-[#788099]" : "text-[#64748B]"
+              }`}>
+                Amount
+              </div>
               <div className="relative">
                 <input
                   type="text"
@@ -617,13 +625,11 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
 
             {/* To Payment Method Section */}
             <div className="flex-1 min-w-0">
-              <label
-                className={`block text-[15px] mb-2 font-semibold ${
-                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                }`}
-              >
+              <div className={`text-xs mb-1 mt-[30px] ${
+                isDark ? "text-[#788099]" : "text-[#64748B]"
+              }`}>
                 Payment Method
-              </label>
+              </div>
               <div className="relative">
                 <CustomSelect
                   options={paymentMethodOptions.filter(

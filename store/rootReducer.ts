@@ -24,6 +24,7 @@ import userTradesReducer from "../features/p2p/slices/userTradesSlice";
 import feedbackReducer from "../features/p2p/slices/feedbackSlice";
 import feedbackSubmissionReducer from "../features/p2p/slices/feedbackSubmissionSlice";
 import p2pTransactionsReducer from "../features/p2p/slices/p2pTransactionsSlice";
+import p2pWithdrawalDepositReducer from "../features/p2p/slices/p2pWithdrawalDepositSlice";
 import exchangeReducer from "../features/exchange/slices/exchangeSlice";
 import referralReducer from "@/features/settings/slices/referralSlice";
 import referralWalletReducer from "@/features/settings/slices/referralWalletSlice";
@@ -65,6 +66,7 @@ const rootReducer = combineReducers({
   feedback: feedbackReducer,
   feedbackSubmission: feedbackSubmissionReducer,
   p2pTransactions: p2pTransactionsReducer,
+  p2pWithdrawalDeposit: p2pWithdrawalDepositReducer,
   exchange: exchangeReducer,
   referral: referralReducer,
   referralWallet: referralWalletReducer,
