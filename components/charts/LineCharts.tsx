@@ -538,22 +538,23 @@ const Legend = ({ data }: { data: DonutChartData[] }) => (
     {data.map((d) => (
       <div
         key={d.label}
-        className="flex items-center gap-2.5 sm:gap-3 text-[13px] sm:text-sm md:text-base"
+        className="flex items-center gap-2 sm:gap-3 text-[11px] sm:text-sm md:text-base"
         style={{ textRendering: "optimizeLegibility" }}
       >
         <span
           style={{
             background: d.color,
-            width: 12,
-            height: 12,
+            width: 10,
+            height: 10,
             borderRadius: "9999px",
             flexShrink: 0,
           }}
+          className="sm:w-3 sm:h-3"
         ></span>
-        <span className="dark:text-[#D4D7E9] text-[#1C2537] font-medium flex-1 truncate">
+        <span className="dark:text-[#D4D7E9] text-[#1C2537] font-medium flex-1 min-w-0 break-words">
           {d.label}
         </span>
-        <span className="dark:text-white text-[#051015] font-medium ml-auto min-w-[72px] sm:min-w-[95px] text-right tracking-tight">
+        <span className="dark:text-white text-[#051015] font-medium ml-auto min-w-[60px] sm:min-w-[95px] text-right tracking-tight flex-shrink-0 text-[11px] sm:text-sm md:text-base">
           {formatLargeNumber(d.value)} USD
         </span>
       </div>
@@ -935,8 +936,8 @@ const LineCharts = React.memo(
           </Card>
           {/* Overview Total */}
           <Card className="w-full rounded-none lg:rounded-2xl flex flex-col lg:flex-row items-center h-full relative dark:bg-[#1D1D23] bg-white">
-            <div className="absolute left-0 top-0 px-2 pt-2 flex flex-wrap w-full justify-between items-center gap-2">
-              <h3 className="dark:text-white text-sm sm:text-base md:text-[18px] font-semibold">
+            <div className="w-full px-2 pt-2 pb-3 flex flex-col sm:flex-row sm:flex-wrap sm:justify-between sm:items-center gap-3">
+              <h3 className="dark:text-white text-sm sm:text-base md:text-[18px] font-semibold flex-shrink-0">
                 Overview Total
               </h3>
               <div className="flex flex-wrap gap-1.5 sm:gap-2">
@@ -982,7 +983,7 @@ const LineCharts = React.memo(
                 </button>
               </div>
             </div>
-            <div className="flex flex-col lg:flex-row w-full pt-10">
+            <div className="flex flex-col lg:flex-row w-full px-2 pb-4">
               <Legend data={overviewTotalData(transactionSummary, activeTab)} />
               <div className="flex-1 flex flex-col items-center justify-center mt-4 lg:mt-0">
                 <DonutChartWithCenter
@@ -1003,8 +1004,8 @@ const LineCharts = React.memo(
           </Card>
           {/* Referral Commissions */}
           <Card className="w-full rounded-none lg:rounded-2xl flex flex-col lg:flex-row items-center h-full relative dark:bg-[#1D1D23] bg-white">
-            <div className="absolute left-0 top-0 px-2 pt-2 flex flex-wrap w-full justify-between items-center gap-2">
-              <h3 className="dark:text-white text-sm sm:text-base md:text-lg mb-2 font-semibold tracking-tight">
+            <div className="w-full px-2 pt-2 pb-3 flex flex-col sm:flex-row sm:flex-wrap sm:justify-between sm:items-center gap-3">
+              <h3 className="dark:text-white text-sm sm:text-base md:text-lg font-semibold tracking-tight flex-shrink-0">
                 Your Referral Commissions
               </h3>
               <div className="w-full sm:w-auto">
@@ -1015,7 +1016,7 @@ const LineCharts = React.memo(
                 />
               </div>
             </div>
-            <div className="flex flex-col lg:flex-row w-full pt-10">
+            <div className="flex flex-col lg:flex-row w-full px-2 pb-4">
               <Legend
                 data={referralCommissionsData(
                   transactionSummary,
