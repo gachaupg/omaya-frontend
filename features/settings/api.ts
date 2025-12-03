@@ -126,7 +126,8 @@ export const settingsApi = {
   },
 
   toggleTwoFactor: async (
-    enabled: boolean
+    enabled: boolean,
+    code?: string
   ): Promise<SecurityUpdateResponse> => {
     return withRetry(async () => {
       if (enabled) {
@@ -134,8 +135,9 @@ export const settingsApi = {
         const response = await apiClient.post("/api/2fa/enable/");
         return response.data;
       } else {
-        // Disable 2FA
-        const response = await apiClient.post("/api/2fa/disable/");
+        // Disable 2FA - include code if provided
+        const payload = code ? { code } : {};
+        const response = await apiClient.post("/api/2fa/disable/", payload);
         return response.data;
       }
     });

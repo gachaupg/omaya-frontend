@@ -28,26 +28,32 @@ export interface BlogState {
 }
 
 // Transaction types
-export interface AssignedTo {
+export interface TransactionUser {
+  id: number;
   name: string;
+  email: string;
   photo: string | null;
 }
 
 export interface Transaction {
-  source: string;
   transaction_type: string;
-  currency: string;
-  timestamp: string;
-  status: string;
   transaction_id: string;
-  user: string;
-  related_order: string | null;
-  wallet_address: string | null;
-  assigned_to: AssignedTo[];
-  photo: string | null;
-  document: string;
-  requested_amount: number;
-  total_amount_due: number;
+  user: TransactionUser;
+  amount: string;
+  currency: string;
+  asset_image: string | null;
+  total_amount_due: string;
+  payment_provider: string;
+  status: string;
+  stages: string;
+  timestamp: string;
+  // Legacy fields for backward compatibility
+  source?: string;
+  related_order?: string | null;
+  wallet_address?: string | null;
+  photo?: string | null;
+  document?: string;
+  requested_amount?: number;
 }
 
 export interface TransactionResponse {

@@ -1151,7 +1151,7 @@ export default function ExchangeForm({
 
     const labelWrapperClasses = [
       "relative z-[1] flex items-center",
-      label?.trim() ? "gap-2" : "gap-0",
+      label?.trim() && variant !== "moneyx" ? "gap-2" : "gap-0",
       "text-xs sm:text-sm md:text-base font-semibold tracking-wide transition-colors"
     ].join(" ");
 
@@ -1159,13 +1159,16 @@ export default function ExchangeForm({
       ? isDark
         ? "text-white"
         : "text-[#0B1418]"
-      : isDark
-      ? "text-[#7C8A97] group-hover:text-[#1D8751]"
-      : "text-[#627180] group-hover:text-[#1D8751]";
+      : "text-[#727272]";
 
-    const expressIconSrc = isDark
-      ? "https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-      : "https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png";
+    const expressActiveIconSrc =
+      "https://res.cloudinary.com/pitz/image/upload/v1764698106/Group_8_hjhlxe.png";
+    const expressInactiveIconSrc =
+      "https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png";
+
+    const moneyXIconSrc = isActive
+      ? "https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png"
+      : "https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png";
 
     const ariaLabel =
       variant === "express"
@@ -1173,6 +1176,32 @@ export default function ExchangeForm({
         : variant === "moneyx"
         ? t("marketing.exchange.tabs.moneyx", "Money X")
         : label || t("marketing.exchange.tabs.swap", "Swap");
+
+    // Process label for moneyx variant - replace "X" with icon
+    const renderLabel = () => {
+      if (variant === "moneyx" && label) {
+        // Replace "X" with icon (case insensitive, handles "Money X" or "Money x")
+        const parts = label.split(/[Xx]/);
+        if (parts.length === 2) {
+          // Split into "Money" and everything after X
+          return (
+            <>
+              <span className={`${textColorClass} text-sm sm:text-base md:text-lg font-semibold`}>{parts[0].trim()}</span>
+              <img
+                src={moneyXIconSrc}
+                alt="X"
+                className="inline-block mt-2.5"
+                style={{ marginLeft: 0 }}
+              />
+            </>
+          );
+        }
+        // Fallback if pattern doesn't match
+        return <span className={textColorClass}>{label}</span>;
+      }
+      // Default rendering for other variants
+      return label?.trim() ? <span className={textColorClass}>{label}</span> : null;
+    };
 
     return (
       <button
@@ -1185,15 +1214,13 @@ export default function ExchangeForm({
       >
         <div className={buttonClasses}>
           <span className={labelWrapperClasses}>
-            {label?.trim() && <span className={textColorClass}>{label}</span>}
+            {renderLabel()}
             {variant === "express" && (
-              <>
-                <img
-                  src={expressIconSrc}
-                  alt="Express Exchange"
-                  className="mt-2 ml-0"
-                />
-              </>
+              <img
+                src={isActive ? expressActiveIconSrc : expressInactiveIconSrc}
+                alt="Express Exchange"
+                className="mt-2 ml-0"
+              />
             )}
           </span>
         </div>

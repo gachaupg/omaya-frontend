@@ -15,6 +15,20 @@ const ASSET_ICON_URL =
 const PAYMENT_ICON_URL =
   "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg";
 
+// Helper function to get source from transaction type
+const getSourceFromType = (transactionType: string): string => {
+  const sourceMap: Record<string, string> = {
+    moneyx: "MoneyX",
+    deposit: "Deposit",
+    withdrawal: "Withdrawal",
+    p2p_buy: "P2P",
+    p2p_sell: "P2P",
+    swap: "Swap",
+    exchange: "Exchange",
+  };
+  return sourceMap[transactionType] || transactionType.toUpperCase();
+};
+
 const RatesTransactionHistory = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { transactions, loading, error } = useSelector(
@@ -57,13 +71,15 @@ const RatesTransactionHistory = () => {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center">
                 <img
-                  src={ASSET_ICON_URL}
+                  src={tx.asset_image || ASSET_ICON_URL}
                   alt={`${tx.currency} network`}
                   className="w-10 h-10 object-contain mr-3"
                 />
                 <div>
                   <div className="text-gray-900 dark:text-white font-medium">{tx.currency}</div>
-                  <div className="text-xs text-gray-600 dark:text-[#788099]">{tx.source}</div>
+                  <div className="text-xs text-gray-600 dark:text-[#788099]">
+                    {tx.source || getSourceFromType(tx.transaction_type)}
+                  </div>
                 </div>
               </div>
               <span className={`px-2 py-1 rounded-full text-xs sm:text-sm lg:text-base ${getStatusColor(tx.status)}`}>
@@ -89,7 +105,7 @@ const RatesTransactionHistory = () => {
                     alt="Payment method"
                     className="w-6 h-6 object-contain"
                   />
-                  <span className="text-gray-900 dark:text-white">Salam Bank</span>
+                  <span className="text-gray-900 dark:text-white">{tx.payment_provider || "N/A"}</span>
                 </div>
               </div>
               <div className="flex justify-between">
@@ -122,7 +138,7 @@ const RatesTransactionHistory = () => {
             >
               <td className="p-2 sm:p-3 lg:p-4 flex items-center text-xs sm:text-sm lg:text-base">
                 <img
-                  src={ASSET_ICON_URL}
+                  src={tx.asset_image || ASSET_ICON_URL}
                   alt={`${tx.currency} network`}
                   className="w-8 h-8 object-contain mr-3"
                 />
@@ -131,7 +147,7 @@ const RatesTransactionHistory = () => {
                     {tx.currency}
                   </span>
                   <span className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099]">
-                    {tx.source}
+                    {tx.source || getSourceFromType(tx.transaction_type)}
                   </span>
                 </div>
               </td>
@@ -148,7 +164,7 @@ const RatesTransactionHistory = () => {
                     alt="Payment method"
                     className="w-6 h-6 object-contain"
                   />
-                  <span>Salam Bank</span>
+                  <span>{tx.payment_provider || "N/A"}</span>
                 </div>
               </td>
               <td className="p-2 sm:p-3 lg:p-4 min-w-[120px]">

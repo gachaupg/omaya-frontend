@@ -30,6 +30,7 @@ import { useRatesI18n } from "@/lib/useRatesI18n";
 import { FaSearch } from "react-icons/fa";
 import { showToast } from "@/lib/utils/toast";
 import Exchanging from "../../express/components/exchnaging";
+import { useTheme } from "@/context/theme";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -71,6 +72,7 @@ const isSimpleCalculationAsset = (asset: any) => {
 
 const RatesCalculator = () => {
   const { t } = useRatesI18n();
+  const { isDark } = useTheme();
   const [activeTab, setActiveTab] = useState("deposit");
   const [isDepositMode, setIsDepositMode] = useState(true);
 
@@ -873,6 +875,43 @@ const RatesCalculator = () => {
     typeof method === 'string' && method.trim().length > 0
   ) ? allPaymentMethods : fallbackPaymentMethods;
 
+  // Auto-select the first payment method when methods are available
+  useEffect(() => {
+    if (!selectedPaymentMethod && finalPaymentMethods.length > 0) {
+      const firstMethod = finalPaymentMethods[0];
+      setSelectedPaymentMethod(firstMethod);
+
+      // Try to also pick a sensible default payment detail for this method
+      // Prefer public providers (for deposit mode), otherwise user payment details
+      let defaultDetail: any = null;
+
+      if (isDepositMode && publicPaymentProviders.length > 0) {
+        defaultDetail =
+          publicPaymentProviders.find((provider: any) => {
+            const methodName =
+              provider?.method?.method_name ||
+              provider?.method_name ||
+              null;
+            return methodName === firstMethod;
+          }) || publicPaymentProviders[0];
+      } else if (!isDepositMode && availablePaymentMethods.length > 0) {
+        defaultDetail =
+          availablePaymentMethods.find(
+            (detail: any) => getPaymentMethodName(detail) === firstMethod
+          ) || availablePaymentMethods[0];
+      }
+
+      if (defaultDetail) {
+        setSelectedPaymentDetail(defaultDetail);
+      }
+    }
+  }, [
+    selectedPaymentMethod,
+    finalPaymentMethods,
+    isDepositMode,
+    publicPaymentProviders,
+    availablePaymentMethods,
+  ]);
   
   // selectedPaymentDetail is now a state variable
 
@@ -1240,116 +1279,59 @@ const RatesCalculator = () => {
   }
 
   return (
-    <div className="bg-white dark:bg-[#18181D] p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-xl lg:rounded-2xl border border-gray-200 dark:border-[#35353E] shadow-md container mx-auto">
-      <div className="relative flex flex-col gap-2">
-        <div className="p-3 sm:p-2 lg:p-2 border border-[#E8EFF5] dark:border-[#35353E] rounded-xl sm:rounded-[18px] lg:rounded-[18px]">
-          <p className="mb-2">{t("rates.youSend", "You send")}</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-2 lg:gap-2 mb-4 items-stretch">
-            {isDepositMode ? (
-              // Deposit Mode: Asset + You Send
-              <>
-            <div className="relative" ref={dropdownRef}>
-              <label className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099] mb-2 block">
-                {t("rates.asset", "Asset")}
-              </label>
-              <div
-                className="border border-[#E8EFF5] dark:border-[#35353E] p-2.5 sm:p-3 lg:p-3 rounded-xl sm:rounded-[18px] lg:rounded-[18px] flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors min-h-[44px] sm:min-h-[44px] lg:min-h-0"
-                onClick={() => setIsAssetDropdownOpen(!isAssetDropdownOpen)}
+    <div className="bg-white dark:bg-[#18181D] p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-xl lg:rounded-2xl border-[1.5px] border-gray-200 dark:border-[#35353E] shadow-md container mx-auto">
+      <div className={`w-full ${isDark ? "text-white" : "text-[#1F2937]"}`}>
+        {/* Mode Switch (Deposit / Withdrawal) */}
+        <div className="flex justify-end mb-3">
+          <div className="inline-flex rounded-full border border-[#2F2F3A] overflow-hidden text-xs sm:text-sm">
+            <button
+              type="button"
+              onClick={() => setIsDepositMode(true)}
+              className={`px-3 sm:px-4 py-1.5 ${
+                isDepositMode
+                  ? "bg-[#1D8751] text-white"
+                  : "bg-transparent text-[#9CA3AF]"
+              }`}
+            >
+              {t("rates.mode.deposit", "Deposit")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsDepositMode(false)}
+              className={`px-3 sm:px-4 py-1.5 ${
+                !isDepositMode
+                  ? "bg-[#1D8751] text-white"
+                  : "bg-transparent text-[#9CA3AF]"
+              }`}
+            >
+              {t("rates.mode.withdrawal", "Withdrawal")}
+            </button>
+          </div>
+        </div>
+
+        {/* Top Section - You Send: Amount and Bank/Payment Method in one card */}
+        <div className="relative mb-4">
+          <div
+            data-asset-card="true"
+            data-select-card="true"
+            className={`relative flex gap-4 rounded-2xl p-4 overflow-visible border-[1.5px] ${
+              isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
+            } bg-transparent`}
+          >
+            {/* Amount Section */}
+            <div className="flex-1 min-w-0">
+              <label
+                className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${
+                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                }`}
               >
-                    <div className="flex items-center gap-3">
-                      {selectedAsset ? (
-                        <>
-                          <img
-                            src={
-                              selectedAsset?.image_url ||
-                              selectedAsset?.asset_image ||
-                              (selectedAsset as any)?.image ||
-                              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                            }
-                            alt={
-                              selectedAsset?.name ||
-                              selectedAsset?.ticker ||
-                              selectedAsset?.symbol ||
-                              "Asset"
-                            }
-                            className="w-6 h-6 rounded-full object-cover"
-                            onError={(e) => {
-                              logger.debug('general', 
-                                "Image failed to load for selected asset:",
-                                selectedAsset
-                              );
-                              e.currentTarget.src =
-                                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
-                            }}
-                          />
-                          <span className="text-[#35353e] dark:text-[#788099]">
-                            {(
-                              selectedAsset.ticker ||
-                              selectedAsset.symbol ||
-                              selectedAsset.name ||
-                              "Unknown"
-                            ).toUpperCase()}
-                          </span>
-                          <span className="ml-2 bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                            {getNetworkDisplayName(
-                              getAssetNetwork(selectedAsset)
-                            )}
-                  </span>
-                        </>
-                      ) : (
-                        <>
-                          <img
-                            src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                            alt="asset icon"
-                            className="w-6 h-6"
-                          />
-                          <span className="text-[#7e7e8f] dark:text-[#788099]">
-                            {assetsDisplay.isLoading
-                              ? "Loading assets..."
-                              : "Select Asset"}
-                          </span>
-                        </>
-                      )}
-                </div>
-                <FiChevronDown
-                  className={`transition-transform duration-200 ${
-                    isAssetDropdownOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </div>
-
-              {/* Asset Dropdown */}
-              {isAssetDropdownOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-xl lg:rounded-2xl z-50 max-h-[60vh] sm:max-h-80 lg:max-h-80 overflow-hidden shadow-lg lg:shadow-none">
-                      {/* Search Input */}
-                      <div className="p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
-                        <div className="relative">
-                          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
-                          <input
-                            type="text"
-                            placeholder="Search assets..."
-                            value={assetSearchTerm}
-                            onChange={(e) => setAssetSearchTerm(e.target.value)}
-                            className="w-full text-gray-900 dark:text-white dark:bg-[#1D1D23] bg-white rounded-xl px-10 py-2 text-sm focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Asset List */}
-                      <div className="max-h-[50vh] sm:max-h-60 lg:max-h-60 overflow-y-auto">
-                        {renderAssetDropdown()}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <label className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099] mb-2 block">
                     {t("rates.youSend", "You Send")}
+                <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                   </label>
-                  <div className="flex items-center border border-[#E8EFF5] dark:border-[#35353E] rounded-xl sm:rounded-[18px] lg:rounded-[18px] relative">
-                    <span className="p-2.5 sm:p-3 lg:p-3 text-[#F79330] text-sm sm:text-base lg:text-base">$</span>
+              <div className="relative">
                     <input
                       type="text"
+                  inputMode="decimal"
                       value={amount}
                       onChange={(e) => {
                         const value = e.target.value;
@@ -1358,22 +1340,18 @@ const RatesCalculator = () => {
                           selectedAsset: selectedAsset?.ticker,
                         });
 
-                        // Only allow numbers and decimals (including 0.006 format)
+                    // Only allow numbers and decimals
                         if (value === "" || /^\d*\.?\d*$/.test(value)) {
                           setAmount(value);
                           const newAmount = parseFloat(value) || 0;
                           setIsCalculatingFromPay(true);
 
-                          // For direct assets (USDT on BSC, USDC on BSC), calculate immediately
+                      // For direct assets, calculate immediately
                           if (
                             selectedAsset &&
                             newAmount > 0 &&
                             isSimpleCalculationAsset(selectedAsset)
                           ) {
-                            logger.debug('general', 
-                              "Triggering immediate forward calculation for direct asset:",
-                              newAmount
-                            );
                             const calculatedReceiveAmount =
                               newAmount < 2
                                 ? newAmount
@@ -1381,431 +1359,70 @@ const RatesCalculator = () => {
                             setReceiveAmount(
                               calculatedReceiveAmount.toFixed(2)
                             );
-
-                            // Simple assets don't need loading states - calculation is instant
                           } else if (selectedAsset && newAmount > 0) {
-                            // For complex assets, trigger API calculation
-                            logger.debug('general', 
-                              "Triggering API forward calculation for complex asset:",
-                              newAmount
-                            );
-
-                            // Set loading states to show spinner in "I want to Receive" field
                             setIsCalculating(true);
                             setIsCalculatingReceive(true);
-
-                            // The API calculation will be handled by the useEffect
                           } else {
-                            // No calculation needed, ensure loading states are off
                             setIsCalculatingReceive(false);
                             setIsCalculating(false);
                           }
                         }
                       }}
-                      onFocus={() => setIsCalculatingFromPay(true)}
-                      className="bg-transparent p-2.5 sm:p-3 lg:p-3 w-full focus:outline-none text-gray-900 dark:text-white text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-[44px] lg:min-h-0"
                       placeholder="Enter amount"
-                    />
-                    <div className="p-2 sm:p-3 lg:p-3 flex items-center text-gray-900 dark:text-white text-xs sm:text-sm lg:text-sm">
-                      <span>USD</span>
-                      <FiChevronDown className="ml-1" />
-                    </div>
-
-                    {/* Show loading spinner when calculating "I want to Receive" from "You Send" */}
-                    {(isCalculating || isCalculatingReceive) &&
-                      isCalculatingFromPay && (
-                        <div className="absolute right-2 sm:right-3 lg:right-3 top-1/2 transform -translate-y-1/2">
-                          <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 lg:h-5 lg:w-5 border-b-2 border-[#1D8751]"></div>
-                    </div>
-                  )}
-                  </div>
-
-                  {/* Show info for non-direct assets when typing in You Send */}
-                  {selectedAsset &&
-                    !isSimpleCalculationAsset(selectedAsset) &&
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
+                    (isCalculating || isCalculatingReceive) &&
                     isCalculatingFromPay &&
-                    parseFloat(amount) > 0 && (
-                      <div className="mt-2 text-xs text-[#788099]">
-                        {estimateLoading
-                          ? "⏳ Fetching live rate..."
-                          : estimate
-                            ? "✅ Using live rate"
-                            : "⏳ Calculating..."}
-                      </div>
-                    )}
-                  {estimateError &&
-                    !estimateLoading &&
-                    isCalculatingFromPay && (
-                      <div className="flex items-center justify-between gap-2 text-[#F79330] text-sm mt-2">
-                        <div className="flex items-center gap-2">
-                          <svg
-                            width="16"
-                            height="16"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              d="M12 8v4m0 4h.01"
-                              stroke="#F79330"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                            <circle
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="#F79330"
-                              strokeWidth="2"
-                            />
-                          </svg>
-                          <span>{estimateError}</span>
-                        </div>
-                        <button
-                          onClick={() => {
-                            // Retry API call
-                            if (parseFloat(amount) > 0) {
-                              // Trigger recalculation
-                              setIsCalculating(true);
-                              setIsCalculatingReceive(true);
-                            }
-                          }}
-                          className="text-[#1D8751] hover:text-[#166b3e] text-xs underline"
-                        >
-                          Retry
-                        </button>
-                      </div>
-                    )}
-                </div>
-              </>
-            ) : (
-              // Withdrawal Mode: Payment Method + You Send
-              <>
-                <div className="relative" ref={methodDropdownRef}>
-                  <label className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099] mb-2 block">
-                    {t("rates.bankPaymentMethod", "Bank/Payment Method")}
-                  </label>
-                  <div
-                    className="border border-[#E8EFF5] dark:border-[#35353E] p-2.5 sm:p-3 lg:p-3 rounded-xl sm:rounded-[18px] lg:rounded-[18px] flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors min-h-[44px] sm:min-h-[44px] lg:min-h-0"
-                    onClick={() =>
-                      setIsMethodDropdownOpen(!isMethodDropdownOpen)
-                    }
-                  >
-                    
-                    <div className="flex items-center">
-                      <FaUniversity />
-                      <span className="ml-2 text-gray-900 dark:text-white">
-                        {selectedPaymentMethod ||
-                          t("rates.selectMethod", "Select Method")}
-                      </span>
-                    </div>
-                    <FiChevronDown
-                      className={`transition-transform duration-200 ${
-                        isMethodDropdownOpen ? "rotate-180" : ""
+                    selectedAsset &&
+                    !isSimpleCalculationAsset(selectedAsset)
+                      ? "border-[#1D8751]"
+                      : isDark
+                      ? "border-white/10 text-white"
+                      : "border-gray-200 text-[#111827]"
                       }`}
                     />
-                  </div>
-
-                  {/* Payment Method Dropdown */}
-                  {isMethodDropdownOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1D1D23] rounded-xl sm:rounded-[18px] lg:rounded-[18px] border border-gray-200 dark:border-gray-700 z-10 max-h-[60vh] sm:max-h-60 lg:max-h-60 overflow-y-auto shadow-lg lg:shadow-lg">
-                      {(userDetailsLoading || publicMethodsLoading) ? (
-                        <div className="p-3 text-center text-gray-600 dark:text-[#788099]">
-                          {t(
-                            "rates.loadingMethods",
-                            "Loading payment methods..."
-                          )}
-                        </div>
-                      ) : (userDetailsError || publicMethodsError) ? (
-                        <div className="p-3 text-center text-red-500">
-                          {t(
-                            "rates.errorMethods",
-                            "Error loading payment methods"
-                          )}
-                        </div>
-                      ) : finalPaymentMethods.length > 0 ? (
-                        finalPaymentMethods.map((method: string) => (
-                          <div
-                            key={method}
-                            className="p-3 flex items-center hover:bg-gray-100 dark:hover:bg-[#35353E] cursor-pointer transition-colors first:rounded-t-[18px] last:rounded-b-[18px]"
-                            onClick={() => handlePaymentMethodSelect(method)}
-                          >
-                            <FaUniversity />
-                        <span className="ml-2 font-medium text-gray-900 dark:text-white">
-                              {method}
-                        </span>
-                      </div>
-                        ))
-                      ) : (
-                      <div className="p-3 text-center text-gray-600 dark:text-[#788099]">
-                          {t("rates.noMethods", "No payment methods available")}
-                      </div>
-                    )}
-                </div>
-              )}
-            </div>
-
-                {/* User Payment Details Dropdown (for withdrawal mode) */}
-                {selectedPaymentMethod && (
-                  <div className="mt-3">
-                    <label className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099] mb-2 block">
-                      {t("rates.registeredAccount", "Registered Account")}
-                    </label>
-                    {enhancedFilteredUserPaymentDetails.length > 0 ? (
-                      <div className="relative">
-                        <img
-                          src="https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
-                          alt="account icon"
-                          className="absolute left-2 sm:left-3 lg:left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 lg:w-5 lg:h-5 pointer-events-none z-10"
-                        />
-                        <select
-                          value={selectedPaymentDetail?.id || ""}
-                          onChange={(e) => {
-                            const selectedId = Number(e.target.value);
-                            const selectedDetail = enhancedFilteredUserPaymentDetails.find(
-                              (detail: any) => detail.id === selectedId
-                            );
-                            if (selectedDetail) {
-                              setSelectedPaymentDetail(selectedDetail);
-                            }
-                          }}
-                          className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#788099] rounded-xl sm:rounded-2xl lg:rounded-2xl px-7 sm:px-9 lg:px-9 py-2 text-sm sm:text-lg lg:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] appearance-none cursor-pointer relative min-h-[44px] sm:min-h-[44px] lg:min-h-0"
-                          style={{
-                            backgroundImage:
-                              'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.4-12.8z%22/%3E%3C/svg%3E")',
-                            backgroundRepeat: "no-repeat",
-                            backgroundPosition: "right 8px center",
-                            backgroundSize: "12px auto",
-                          }}
-                        >
-                          <option value="">
-                            {(userDetailsLoading || publicMethodsLoading)
-                              ? "Loading accounts..."
-                              : "Select Registered Account"}
-                          </option>
-                          {enhancedFilteredUserPaymentDetails.map(
-                            (detail: any) => (
-                              <option key={detail.id} value={detail.id}>
-                                {detail.payment_provider_name || detail.provider_name} - {detail.account_number}
-                              </option>
-                            )
-                          )}
-                        </select>
-                      </div>
-                    ) : (
-                      <p className="text-[#F79330] text-sm">
-                        <button
-                          type="button"
-                          className="hover:underline cursor-pointer"
-                        >
-                          Don't have an account? Register Now
-                        </button>
-                      </p>
-                    )}
-                  </div>
-                )}
-
-            <div>
-              <label className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099] mb-2 block">
-                    {t("rates.youSend", "You Send")}
-              </label>
-              <div className="flex items-center border border-[#E8EFF5] dark:border-[#35353E] rounded-xl sm:rounded-[18px] lg:rounded-[18px] relative">
-                    <span className="p-2.5 sm:p-3 lg:p-3 text-[#F79330] text-sm sm:text-base lg:text-base">$</span>
-                <input
-                  type="text"
-                  value={amount}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        logger.debug('general', "You Send input changed:", {
-                          value,
-                          selectedAsset: selectedAsset?.ticker,
-                        });
-
-                        // Only allow numbers and decimals (including 0.006 format)
-                        if (value === "" || /^\d*\.?\d*$/.test(value)) {
-                          setAmount(value);
-                          const newAmount = parseFloat(value) || 0;
-                          setIsCalculatingFromPay(true);
-
-                          // For direct assets (USDT on BSC, USDC on BSC), calculate immediately
-                          if (
-                            selectedAsset &&
-                            newAmount > 0 &&
-                            isSimpleCalculationAsset(selectedAsset)
-                          ) {
-                            logger.debug('general', 
-                              "Triggering immediate forward calculation for direct asset:",
-                              newAmount
-                            );
-                            const calculatedReceiveAmount =
-                              newAmount < 2
-                                ? newAmount
-                                : Math.max(0, newAmount - 2);
-                            setReceiveAmount(
-                              calculatedReceiveAmount.toFixed(2)
-                            );
-
-                            // Simple assets don't need loading states - calculation is instant
-                          } else if (selectedAsset && newAmount > 0) {
-                            // For complex assets, trigger API calculation
-                            logger.debug('general', 
-                              "Triggering API forward calculation for complex asset:",
-                              newAmount
-                            );
-
-                            // Set loading states to show spinner in "I want to Receive" field
-                            setIsCalculating(true);
-                            setIsCalculatingReceive(true);
-
-                            // The API calculation will be handled by the useEffect
-                          } else {
-                            // No calculation needed, ensure loading states are off
-                            setIsCalculatingReceive(false);
-                            setIsCalculating(false);
-                          }
-                        }
-                      }}
-                      onFocus={() => setIsCalculatingFromPay(true)}
-                  className="bg-transparent p-2.5 sm:p-3 lg:p-3 w-full focus:outline-none text-gray-900 dark:text-white text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-[44px] lg:min-h-0"
-                      placeholder="Enter amount"
-                />
-                <div className="p-2 sm:p-3 lg:p-3 flex items-center text-gray-900 dark:text-white text-xs sm:text-sm lg:text-sm">
-                  <span>USD</span>
-                  <FiChevronDown className="ml-1" />
-                </div>
-
-                    {/* Show loading spinner when calculating "I want to Receive" from "You Send" */}
+                {/* Show loading spinner */}
                     {(isCalculating || isCalculatingReceive) &&
                       isCalculatingFromPay && (
-                        <div className="absolute right-2 sm:right-3 lg:right-3 top-1/2 transform -translate-y-1/2">
-                          <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 lg:h-5 lg:w-5 border-b-2 border-[#1D8751]"></div>
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
               </div>
-                      )}
-            </div>
-
-                  {/* Show info for non-direct assets when typing in You Send */}
-                  {selectedAsset &&
-                    !isSimpleCalculationAsset(selectedAsset) &&
-                    isCalculatingFromPay &&
-                    parseFloat(amount) > 0 && (
-                      <div className="mt-2 text-xs text-[#788099]">
-                        {estimateLoading
-                          ? "⏳ Fetching live rate..."
-                          : estimate
-                            ? "✅ Using live rate"
-                            : "⏳ Calculating..."}
-                      </div>
-                    )}
-                  {estimateError &&
-                    !estimateLoading &&
-                    isCalculatingFromPay && (
-                      <div className="flex items-center justify-between gap-2 text-[#F79330] text-sm mt-2">
-                        <div className="flex items-center gap-2">
-                          <svg
-                            width="16"
-                            height="16"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              d="M12 8v4m0 4h.01"
-                              stroke="#F79330"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                            <circle
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="#F79330"
-                              strokeWidth="2"
-                            />
-                          </svg>
-                          <span>{estimateError}</span>
-                        </div>
-                        <button
-                          onClick={() => {
-                            // Retry API call
-                            if (parseFloat(amount) > 0) {
-                              // Trigger recalculation
-                              setIsCalculating(true);
-                              setIsCalculatingReceive(true);
-                            }
-                          }}
-                          className="text-[#1D8751] hover:text-[#166b3e] text-xs underline"
-                        >
-                          Retry
-                        </button>
-                      </div>
-                    )}
-                </div>
-              </>
             )}
           </div>
         </div>
 
-        {/* Centered Swap Icon */}
-        <div className="flex justify-center relative -my-3 sm:-my-5 lg:-my-5 z-10">
-          <button
-            className="w-12 h-12 sm:w-10 sm:h-10 lg:w-10 lg:h-10 flex items-center justify-center rounded-full bg-white dark:bg-[#18181D] border border-[#E8EFF5] dark:border-[#35353E] hover:bg-gray-50 dark:hover:bg-[#2a2a2a] transition-colors cursor-pointer shadow-md lg:shadow-none"
-            onClick={handleModeSwitch}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              className="sm:w-6 sm:h-6 lg:w-6 lg:h-6"
-              viewBox="0 0 24 24"
-              fill="none"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              {/* Down arrow (left side) - Orange */}
-              <path d="m3 16 4 4 4-4" stroke="#F79330" />
-              <path d="M7 20V4" stroke="#F79330" />
-              {/* Up arrow (right side) - Green */}
-              <path d="m21 8-4-4-4 4" stroke="#1D8751" />
-              <path d="M17 4v16" stroke="#1D8751" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="p-3 sm:p-2 lg:p-2 border border-[#E8EFF5] dark:border-[#35353E] rounded-xl sm:rounded-[18px] lg:rounded-[18px]">
-          <p className="mb-2">{t("rates.method", "Method")}</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3 sm:gap-2 lg:gap-2 mb-4 items-stretch">
-            {isDepositMode ? (
-              // Deposit Mode: Payment Method + I want to Receive
-              <>
-            <div className="relative" ref={methodDropdownRef}>
-              <label className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099] mb-2 block">
+            {/* Bank/Payment Method Section */}
+            <div className="flex-1 min-w-0">
+              <label
+                className={`block text-[15px] mb-2 font-semibold ${
+                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                }`}
+              >
                 {t("rates.bankPaymentMethod", "Bank/Payment Method")}
               </label>
+              <div className="relative" ref={methodDropdownRef}>
               <div
-                className="border border-[#E8EFF5] dark:border-[#35353E] p-2.5 sm:p-3 lg:p-3 rounded-xl sm:rounded-[18px] lg:rounded-[18px] flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors min-h-[44px] sm:min-h-[44px] lg:min-h-0"
+                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${
+                    isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                  }`}
                     onClick={() =>
                       setIsMethodDropdownOpen(!isMethodDropdownOpen)
                     }
               >
-                <div className="flex items-center">
-                  {selectedPaymentDetail && typeof selectedPaymentDetail === 'object' && selectedPaymentDetail.logo ? (
+                  <div className="flex items-center gap-3 min-w-0">
+                    {selectedPaymentDetail && typeof selectedPaymentDetail === 'object' && selectedPaymentDetail.logo ? (
                     <img
                       src={selectedPaymentDetail.logo}
                       alt={selectedPaymentDetail.provider_name || 'Selected provider'}
                       className="w-6 h-6 object-contain rounded"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        const fallback = e.currentTarget.nextElementSibling as HTMLElement;
-                        if (fallback) fallback.style.display = 'block';
-                      }}
                     />
                   ) : (
                     <FaUniversity />
                   )}
-                  <span className="ml-2 text-gray-900 dark:text-white">
-                    {selectedPaymentMethod ||
-                      t("rates.selectMethod", "Select Method")}
+                    <span className={`${isDark ? "text-white" : "text-[#1F2937]"}`}>
+                      {selectedPaymentDetail?.payment_provider_name ||
+                        selectedPaymentDetail?.provider_name ||
+                        selectedPaymentMethod ||
+                        t("rates.selectMethod", "Select Method")}
                   </span>
                 </div>
                 <FiChevronDown
@@ -1817,143 +1434,143 @@ const RatesCalculator = () => {
 
               {/* Payment Method Dropdown */}
               {isMethodDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#1D1D23] rounded-xl sm:rounded-[18px] lg:rounded-[18px] border border-gray-200 dark:border-gray-700 z-10 max-h-[60vh] sm:max-h-60 lg:max-h-60 overflow-y-auto shadow-lg lg:shadow-lg">
+                  <div className={`absolute top-full left-0 right-0 mt-1 ${isDark ? "bg-[#1D1D23]" : "bg-white"} rounded-2xl border ${isDark ? "border-[#35353E]" : "border-gray-200"} z-10 max-h-60 overflow-y-auto shadow-lg`}>
                   {(userDetailsLoading || publicMethodsLoading) ? (
-                    <div className="p-3 text-center text-gray-600 dark:text-[#788099]">
-                          {t(
-                            "rates.loadingMethods",
-                            "Loading payment methods..."
-                          )}
+                      <div className={`p-3 text-center ${isDark ? "text-[#788099]" : "text-gray-600"}`}>
+                        {t("rates.loadingMethods", "Loading payment methods...")}
                     </div>
                   ) : publicPaymentProviders.length > 0 ? (
                     publicPaymentProviders.map((provider: any) => (
                       <div
                         key={provider.provider_id || provider.provider_name}
-                        className="p-3 flex items-center hover:bg-gray-100 dark:hover:bg-[#35353E] cursor-pointer transition-colors first:rounded-t-[18px] last:rounded-b-[18px]"
+                          className={`p-3 flex items-center hover:${isDark ? "bg-[#35353E]" : "bg-gray-100"} cursor-pointer transition-colors`}
                         onClick={() => handlePaymentMethodSelect(provider)}
                       >
                         {provider.logo ? (
-                          <div className="relative w-8 h-8 flex-shrink-0">
                             <img
                               src={provider.logo}
                               alt={provider.provider_name || 'Provider logo'}
-                              className="w-8 h-8 object-contain rounded"
-                              onError={(e) => {
-                                // Hide image and show icon instead
-                                const img = e.currentTarget;
-                                img.style.display = 'none';
-                                const icon = img.parentElement?.querySelector('.fallback-icon') as HTMLElement;
-                                if (icon) icon.style.display = 'block';
-                              }}
+                              className="w-8 h-8 object-contain rounded mr-2"
                             />
-                            <FaUniversity 
-                              className="fallback-icon hidden absolute inset-0 w-full h-full" 
-                              style={{ display: 'none' }}
-                            />
-                          </div>
-                        ) : (
-                          <FaUniversity className="w-5 h-5 flex-shrink-0" />
-                        )}
-                        <div className="ml-2 flex-1 min-w-0">
-                          <div className="font-medium text-gray-900 dark:text-white truncate">
-                            {provider.provider_name || 'Unknown Provider'}
-                          </div>
-                          {provider.method?.method_display && (
-                            <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                              {provider.method.method_display}
-                            </div>
+                          ) : (
+                            <FaUniversity className="w-5 h-5 mr-2" />
                           )}
-                        </div>
+                          <span className={`${isDark ? "text-white" : "text-gray-900"}`}>
+                            {provider.provider_name || 'Unknown Provider'}
+                          </span>
                       </div>
                     ))
                   ) : finalPaymentMethods.length > 0 ? (
                     finalPaymentMethods.map((method: string) => (
                       <div
                         key={method}
-                        className="p-3 flex items-center hover:bg-gray-100 dark:hover:bg-[#35353E] cursor-pointer transition-colors first:rounded-t-[18px] last:rounded-b-[18px]"
+                          className={`p-3 flex items-center hover:${isDark ? "bg-[#35353E]" : "bg-gray-100"} cursor-pointer transition-colors`}
                         onClick={() => handlePaymentMethodSelect(method)}
                       >
-                        <FaUniversity />
-                        <span className="ml-2 font-medium text-gray-900 dark:text-white">
+                          <FaUniversity className="w-5 h-5 mr-2" />
+                          <span className={`${isDark ? "text-white" : "text-gray-900"}`}>
                           {method}
                         </span>
                       </div>
                     ))
                   ) : (
-                    <div className="p-3 text-center text-gray-600 dark:text-[#788099]">
+                      <div className={`p-3 text-center ${isDark ? "text-[#788099]" : "text-gray-600"}`}>
                       {t("rates.noMethods", "No payment methods available")}
                     </div>
                   )}
                 </div>
               )}
+              </div>
+            </div>
             </div>
 
-                <div>
-              <label className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099] mb-2 block">
-                    {t("rates.iWantToReceive", "I want to Receive")}
+          {/* Swap Circle - positioned to touch both borders equally */}
+          <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/3 z-10">
+            <button
+              className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105"
+              onClick={handleModeSwitch}
+            >
+              <img
+                src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
+                alt="swap icon"
+                className="w-10 h-10 dark:hidden"
+              />
+              <img
+                src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
+                alt="swap icon"
+                className="w-10 h-10 hidden dark:block"
+              />
+            </button>
+          </div>
+        </div>
+
+        {/* Bottom Section - You Get: Amount and Provider in one card */}
+        <div className="relative mb-3">
+          <div
+            data-asset-card="true"
+            className={`relative flex gap-4 rounded-2xl p-4 overflow-visible border-[1.5px] ${
+              isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
+            } bg-transparent`}
+          >
+            {/* You Get Section */}
+            <div className="flex-1 min-w-0">
+              <label
+                className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${
+                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                }`}
+              >
+                {t("rates.youGet", "You Get")}
+                <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
-                  <div className="flex items-center border border-[#E8EFF5] dark:border-[#35353E] rounded-xl sm:rounded-[18px] lg:rounded-[18px] relative">
-                    <span className="p-2.5 sm:p-3 lg:p-3 text-[#1D8751] text-sm sm:text-base lg:text-base">$</span>
+              <div className="relative">
                     <input
                       type="text"
+                  inputMode="decimal"
                       value={receiveAmount}
                       onChange={(e) => {
                         const value = e.target.value;
-                        logger.debug('general', "I want to Receive input changed:", {
+                    logger.debug('general', "You Get input changed:", {
                           value,
                           selectedAsset: selectedAsset?.ticker,
                         });
 
-                        // Only allow numbers and decimals (including 0.006 format)
+                    // Only allow numbers and decimals
                         if (value === "" || /^\d*\.?\d*$/.test(value)) {
                           setReceiveAmount(value);
                           const newAmount = parseFloat(value) || 0;
                           setIsCalculatingFromPay(false);
 
-                          // For direct assets (USDT on BSC, USDC on BSC), calculate immediately
+                      // For direct assets, calculate immediately
                           if (
                             selectedAsset &&
                             newAmount > 0 &&
                             isSimpleCalculationAsset(selectedAsset)
                           ) {
-                            logger.debug('general', 
-                              "Triggering immediate reverse calculation for direct asset:",
-                              newAmount
-                            );
                             const calculatedSendAmount =
                               newAmount < 2 ? newAmount : newAmount + 2;
                             setAmount(calculatedSendAmount.toFixed(2));
-
-                            // Simple assets don't need loading states - calculation is instant
                           } else if (selectedAsset && newAmount > 0) {
-                            // For complex assets, trigger API calculation
-                            logger.debug('general', 
-                              "Triggering API reverse calculation for complex asset:",
-                              newAmount
-                            );
-
-                            // Set loading states to show spinner in "You Send" field
                             setIsCalculating(true);
                             setIsCalculatingReceive(true);
-
-                            // The API calculation will be handled by the useEffect
                           } else {
-                            // No calculation needed, ensure loading states are off
                             setIsCalculatingReceive(false);
                             setIsCalculating(false);
                           }
                         }
                       }}
-                      onFocus={() => setIsCalculatingFromPay(false)}
-                      className="bg-transparent p-3 w-full focus:outline-none text-gray-900 dark:text-white"
                       placeholder="Enter amount"
-                    />
-                    <div className="p-3 flex items-center text-gray-900 dark:text-white">
-                      <span>USD</span>
-                      <FiChevronDown className="ml-1" />
-                    </div>
-
-                    {/* Show loading spinner when calculating "You Send" from "I want to Receive" */}
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
+                    (isCalculating || isCalculatingReceive) &&
+                    !isCalculatingFromPay &&
+                    selectedAsset &&
+                    !isSimpleCalculationAsset(selectedAsset)
+                      ? "border-[#1D8751]"
+                      : isDark
+                      ? "border-white/10 text-white"
+                      : "border-gray-200 text-[#111827]"
+                  }`}
+                />
+                {/* Show loading spinner */}
                     {(isCalculating || isCalculatingReceive) &&
                       !isCalculatingFromPay && (
                         <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -1961,112 +1578,25 @@ const RatesCalculator = () => {
                         </div>
                       )}
                   </div>
-
-                  {/* Show API estimate status for non-direct assets */}
-                  {selectedAsset &&
-                    !isSimpleCalculationAsset(selectedAsset) && (
-                      <div className="mt-2">
-                        {estimateLoading && !isCalculatingFromPay && (
-                          <div className="flex items-center gap-2 text-[#1D8751] text-sm">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#1D8751]"></div>
-                            <span>Calculating ...</span>
                           </div>
-                        )}
-                        {estimate &&
-                          !estimateLoading &&
-                          !isCalculatingFromPay && (
-                            <div className="flex items-center gap-2 text-[#1D8751] text-sm">
-                              <svg
-                                width="16"
-                                height="16"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  d="M12 8v4m0 4h.01"
-                                  stroke="#1D8751"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                                <circle
-                                  cx="12"
-                                  cy="12"
-                                  r="10"
-                                  stroke="#1D8751"
-                                  strokeWidth="2"
-                                />
-                              </svg>
-                              <span>
-                                Using live rate for reverse calculation
-                              </span>
-                    </div>
-                          )}
-                        {estimateError && !estimateLoading && (
-                          <div className="flex items-center justify-between gap-2 text-[#F79330] text-sm">
-                            <div className="flex items-center gap-2">
-                              <svg
-                                width="16"
-                                height="16"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  d="M12 8v4m0 4h.01"
-                                  stroke="#F79330"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                                <circle
-                                  cx="12"
-                                  cy="12"
-                                  r="10"
-                                  stroke="#F79330"
-                                  strokeWidth="2"
-                                />
-                              </svg>
-                              <span>{estimateError}</span>
-                            </div>
-                            <button
-                              onClick={() => {
-                                // Retry API call
-                                if (
-                                  isCalculatingFromPay &&
-                                  parseFloat(amount) > 0
-                                ) {
-                                  setIsCalculating(true);
-                                  setIsCalculatingReceive(true);
-                                } else if (
-                                  !isCalculatingFromPay &&
-                                  parseFloat(receiveAmount) > 0
-                                ) {
-                                  setIsCalculating(true);
-                                  setIsCalculatingReceive(true);
-                                }
-                              }}
-                              className="text-[#1D8751] hover:text-[#166b3e] text-xs underline"
-                            >
-                              Retry
-                            </button>
-                    </div>
-                  )}
-                      </div>
-                    )}
-                </div>
-              </>
-            ) : (
-              // Withdrawal Mode: Asset + I want to Receive
-              <>
-                <div className="relative" ref={dropdownRef}>
-                  <label className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099] mb-2 block">
-                    {t("rates.asset", "Asset")}
+
+            {/* Provider Section */}
+            <div className="flex-1 min-w-0">
+              <label
+                className={`block text-[15px] mb-2 font-semibold ${
+                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                }`}
+              >
+                {t("rates.provider", "Provider")}
                   </label>
+              <div className="relative" ref={dropdownRef}>
                   <div
-                    className="border border-[#E8EFF5] dark:border-[#35353E] p-2.5 sm:p-3 lg:p-3 rounded-xl sm:rounded-[18px] lg:rounded-[18px] flex items-center justify-between cursor-pointer hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors min-h-[44px] sm:min-h-[44px] lg:min-h-0"
+                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${
+                    isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                  }`}
                     onClick={() => setIsAssetDropdownOpen(!isAssetDropdownOpen)}
                   >
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                       {selectedAsset ? (
                         <>
                           <img
@@ -2083,16 +1613,10 @@ const RatesCalculator = () => {
                               "Asset"
                             }
                             className="w-6 h-6 rounded-full object-cover"
-                            onError={(e) => {
-                              logger.debug('general', 
-                                "Image failed to load for selected asset:",
-                                selectedAsset
-                              );
-                              e.currentTarget.src =
-                                "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
-                            }}
-                          />
-                          <span className="text-[#35353e] dark:text-[#788099]">
+                        />
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-2">
+                            <span className={`font-semibold ${isDark ? "text-white" : "text-[#111827]"}`}>
                             {(
                               selectedAsset.ticker ||
                               selectedAsset.symbol ||
@@ -2100,11 +1624,13 @@ const RatesCalculator = () => {
                               "Unknown"
                             ).toUpperCase()}
                   </span>
-                          <span className="ml-2 bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                            <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
                             {getNetworkDisplayName(
                               getAssetNetwork(selectedAsset)
                             )}
                           </span>
+                          </div>
+                        </div>
                         </>
                       ) : (
                         <>
@@ -2113,7 +1639,7 @@ const RatesCalculator = () => {
                             alt="asset icon"
                             className="w-6 h-6"
                           />
-                          <span className="text-[#7e7e8f] dark:text-[#788099]">
+                        <span className={`${isDark ? "text-[#788099]" : "text-[#64748B]"}`}>
                             {assetsDisplay.isLoading
                               ? "Loading assets..."
                               : "Select Asset"}
@@ -2122,7 +1648,7 @@ const RatesCalculator = () => {
                       )}
                 </div>
                 <FiChevronDown
-                  className={`transition-transform duration-200 ${
+                    className={`transition-transform ${
                         isAssetDropdownOpen ? "rotate-180" : ""
                   }`}
                 />
@@ -2130,203 +1656,35 @@ const RatesCalculator = () => {
 
                   {/* Asset Dropdown */}
                   {isAssetDropdownOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-xl lg:rounded-2xl z-50 max-h-[60vh] sm:max-h-80 lg:max-h-80 overflow-hidden shadow-lg lg:shadow-none">
+                  <div className={`absolute top-full left-0 right-0 mt-1 ${isDark ? "bg-[#1D1D23]" : "bg-white"} border ${isDark ? "border-[#35353E]" : "border-gray-200"} rounded-2xl z-50 max-h-80 overflow-hidden shadow-lg`}>
                       {/* Search Input */}
-                      <div className="p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+                    <div className={`p-2 border-b ${isDark ? "border-[#35353E]" : "border-gray-200"}`}>
                         <div className="relative">
-                          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
+                        <FaSearch className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${isDark ? "text-[#788099]" : "text-[#7e7e8f]"} w-4 h-4`} />
                           <input
                             type="text"
                             placeholder="Search assets..."
                             value={assetSearchTerm}
                             onChange={(e) => setAssetSearchTerm(e.target.value)}
-                            className="w-full text-gray-900 dark:text-white dark:bg-[#1D1D23] bg-white rounded-xl px-10 py-2 text-sm focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400"
+                          className={`w-full ${isDark ? "text-white bg-[#1D1D23]" : "text-gray-900 bg-white"} rounded-lg px-10 py-2 text-sm focus:outline-none border ${isDark ? "border-[#35353E]" : "border-gray-300"}`}
                           />
                         </div>
                       </div>
 
                       {/* Asset List */}
-                      <div className="max-h-[50vh] sm:max-h-60 lg:max-h-60 overflow-y-auto">
+                    <div className="max-h-60 overflow-y-auto">
                         {renderAssetDropdown()}
                       </div>
                     </div>
                   )}
                 </div>
-
-                <div>
-                  <label className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099] mb-2 block">
-                    {t("rates.iWantToReceive", "I want to Receive")}
-                  </label>
-                  <div className="flex items-center border border-[#E8EFF5] dark:border-[#35353E] rounded-xl sm:rounded-[18px] lg:rounded-[18px] relative">
-                    <span className="p-2.5 sm:p-3 lg:p-3 text-[#1D8751] text-sm sm:text-base lg:text-base">$</span>
-                    <input
-                      type="text"
-                      value={receiveAmount}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        logger.debug('general', "I want to Receive input changed:", {
-                          value,
-                          selectedAsset: selectedAsset?.ticker,
-                        });
-
-                        // Only allow numbers and decimals (including 0.006 format)
-                        if (value === "" || /^\d*\.?\d*$/.test(value)) {
-                          setReceiveAmount(value);
-                          const newAmount = parseFloat(value) || 0;
-                          setIsCalculatingFromPay(false);
-
-                          // For direct assets (USDT on BSC, USDC on BSC), calculate immediately
-                          if (
-                            selectedAsset &&
-                            newAmount > 0 &&
-                            isSimpleCalculationAsset(selectedAsset)
-                          ) {
-                            logger.debug('general', 
-                              "Triggering immediate reverse calculation for direct asset:",
-                              newAmount
-                            );
-                            const calculatedSendAmount =
-                              newAmount < 2 ? newAmount : newAmount + 2;
-                            setAmount(calculatedSendAmount.toFixed(2));
-
-                            // Simple assets don't need loading states - calculation is instant
-                          } else if (selectedAsset && newAmount > 0) {
-                            // For complex assets, trigger API calculation
-                            logger.debug('general', 
-                              "Triggering API reverse calculation for complex asset:",
-                              newAmount
-                            );
-
-                            // Set loading states to show spinner in "You Send" field
-                            setIsCalculating(true);
-                            setIsCalculatingReceive(true);
-
-                            // The API calculation will be handled by the useEffect
-                          } else {
-                            // No calculation needed, ensure loading states are off
-                            setIsCalculatingReceive(false);
-                            setIsCalculating(false);
-                          }
-                        }
-                      }}
-                      onFocus={() => setIsCalculatingFromPay(false)}
-                      className="bg-transparent p-2.5 sm:p-3 lg:p-3 w-full focus:outline-none text-gray-900 dark:text-white text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-[44px] lg:min-h-0"
-                      placeholder="Enter amount"
-                    />
-                    <div className="p-2 sm:p-3 lg:p-3 flex items-center text-gray-900 dark:text-white text-xs sm:text-sm lg:text-sm">
-                      <span>USD</span>
-                      <FiChevronDown className="ml-1" />
                     </div>
-
-                    {/* Show loading spinner when calculating "You Send" from "I want to Receive" */}
-                    {(isCalculating || isCalculatingReceive) &&
-                      !isCalculatingFromPay && (
-                        <div className="absolute right-2 sm:right-3 lg:right-3 top-1/2 transform -translate-y-1/2">
-                          <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 lg:h-5 lg:w-5 border-b-2 border-[#1D8751]"></div>
                         </div>
-                      )}
-                  </div>
-
-                  {/* Show API estimate status for non-direct assets */}
-                  {selectedAsset &&
-                    !isSimpleCalculationAsset(selectedAsset) && (
-                      <div className="mt-2">
-                        {estimateLoading && !isCalculatingFromPay && (
-                          <div className="flex items-center gap-2 text-[#1D8751] text-sm">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#1D8751]"></div>
-                            <span>Calculating ...</span>
-                          </div>
-                        )}
-                        {estimate &&
-                          !estimateLoading &&
-                          !isCalculatingFromPay && (
-                            <div className="flex items-center gap-2 text-[#1D8751] text-sm">
-                              <svg
-                                width="16"
-                                height="16"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  d="M12 8v4m0 4h.01"
-                                  stroke="#1D8751"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                                <circle
-                                  cx="12"
-                                  cy="12"
-                                  r="10"
-                                  stroke="#1D8751"
-                                  strokeWidth="2"
-                                />
-                              </svg>
-                              <span>
-                                Using live rate for reverse calculation
-                        </span>
-                      </div>
-                          )}
-                        {estimateError && !estimateLoading && (
-                          <div className="flex items-center justify-between gap-2 text-[#F79330] text-sm">
-                            <div className="flex items-center gap-2">
-                              <svg
-                                width="16"
-                                height="16"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  d="M12 8v4m0 4h.01"
-                                  stroke="#F79330"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                                <circle
-                                  cx="12"
-                                  cy="12"
-                                  r="10"
-                                  stroke="#F79330"
-                                  strokeWidth="2"
-                                />
-                              </svg>
-                              <span>{estimateError}</span>
-                            </div>
-                            <button
-                              onClick={() => {
-                                // Retry API call
-                                if (
-                                  isCalculatingFromPay &&
-                                  parseFloat(amount) > 0
-                                ) {
-                                  setIsCalculating(true);
-                                  setIsCalculatingReceive(true);
-                                } else if (
-                                  !isCalculatingFromPay &&
-                                  parseFloat(receiveAmount) > 0
-                                ) {
-                                  setIsCalculating(true);
-                                  setIsCalculatingReceive(true);
-                                }
-                              }}
-                              className="text-[#1D8751] hover:text-[#166b3e] text-xs underline"
-                            >
-                              Retry
-                            </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-              </>
-            )}
-          </div>
         </div>
       </div>
 
-      {/* Info Row */}
-      <div className="flex items-start text-white text-xs sm:text-sm lg:text-sm mt-2 mb-4">
+      {/* Estimated Price Warning */}
+      <div className={`flex items-start ${isDark ? "text-white" : "text-[#1F2937]"} text-xs sm:text-sm lg:text-sm mt-2 mb-4`}>
         <AlertCircle className="w-4 h-4 text-[#E23D3A] mr-2 mt-0.5 flex-shrink-0" />
         <span>
           {t(
@@ -2337,19 +1695,19 @@ const RatesCalculator = () => {
       </div>
 
       {/* Amount & Fees */}
-      <div className="border border-[#E8EFF5] dark:border-[#35353E] rounded-xl p-4 bg-transparent mb-4">
-        <p className="text-[#788099] text-sm font-medium mb-2">
+      <div className={`border ${isDark ? "border-[#35353E]" : "border-[#E8EFF5]"} rounded-xl p-4 bg-transparent mb-4`}>
+        <p className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm font-medium mb-2`}>
           {t("rates.amountAndFees", "Amount & Fees")}
         </p>
         <div className="flex flex-col lg:flex-row gap-4 items-stretch">
           <div className="flex-1 flex flex-col justify-start">
-            <span className="text-white text-sm mb-2">
+            <span className={`${isDark ? "text-white" : "text-[#1F2937]"} text-sm mb-2`}>
               {t("rates.netAmount", "Net Amount to Transfer")}
             </span>
             <div className="w-full">
-              <div className="w-full bg-white dark:bg-[#35353E] border border-[#E8EFF5] rounded-2xl flex items-center px-2 py-2">
+              <div className={`w-full ${isDark ? "bg-[#35353E]" : "bg-white"} border ${isDark ? "border-[#35353E]" : "border-[#E8EFF5]"} rounded-2xl flex items-center px-2 py-2`}>
                 <button className="flex-1 flex items-center justify-center bg-transparent">
-                  <span className="text-[#051015] dark:text-[#BDF4D8] text-sm ml-4">
+                  <span className={`${isDark ? "text-[#BDF4D8]" : "text-[#051015]"} text-sm ml-4`}>
                     {t(
                       "rates.amountIncludingFees",
                       "Amount including Total Fees"
@@ -2365,9 +1723,9 @@ const RatesCalculator = () => {
             </div>
           </div>
           {/* Right: Fee Breakdown */}
-          <div className="flex flex-col justify-between min-w-[220px] bg-white dark:bg-[#1D1D23] border border-[#E8EFF5] dark:border-[#35353E] rounded-lg px-4 py-3">
+          <div className={`flex flex-col justify-between min-w-[220px] ${isDark ? "bg-[#1D1D23]" : "bg-white"} border ${isDark ? "border-[#35353E]" : "border-[#E8EFF5]"} rounded-lg px-4 py-3`}>
             <div className="flex justify-between text-sm mb-1">
-              <span className="text-[#051015] dark:text-[#E8EFF5]">
+              <span className={isDark ? "text-[#E8EFF5]" : "text-[#051015]"}>
                 {t("rates.commission", "Commission:")}{" "}
                 {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.omaya_fee_percentage 
                   ? `${estimate.omaya_fee_percentage}%` 
@@ -2380,7 +1738,7 @@ const RatesCalculator = () => {
               </span>
             </div>
             <div className="flex justify-between text-sm mb-1">
-              <span className="text-[#051015] dark:text-[#E8EFF5]">
+              <span className={isDark ? "text-[#E8EFF5]" : "text-[#051015]"}>
                 {t("rates.networkFee", "Network Fee:")}
               </span>
               <span className="text-[#1D8751]">
@@ -2389,7 +1747,7 @@ const RatesCalculator = () => {
                   : amountNum > 0 ? `$${networkFee.toFixed(2)}` : "$0.00"}
               </span>
             </div>
-            <div className="border-t border-[#E8EFF5] dark:border-[#35353E] mt-2 pt-2 flex justify-between text-sm">
+            <div className={`border-t ${isDark ? "border-[#35353E]" : "border-[#E8EFF5]"} mt-2 pt-2 flex justify-between text-sm`}>
               <span className="text-[#F79330] font-semibold">
                 {t("rates.totalFees", "Total Fees")}
               </span>
@@ -2402,6 +1760,8 @@ const RatesCalculator = () => {
           </div>
         </div>
       </div>
+
+   
 
       <div className="flex items-center text-[#F79330] text-lg mb-6 p-3 rounded-md">
         <FiInfo className="text-[#F79330]" />

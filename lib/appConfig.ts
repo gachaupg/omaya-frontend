@@ -109,7 +109,7 @@ export const API_CONFIG = {
       `${getWebSocketBaseUrl()}/ws/changenow/status/${swapId}/`,
   },
   RATES: {
-    TRANSACTIONS: "/trading_engine/detail-transactions/",
+    TRANSACTIONS: "/trading_engine/all-system-transactions/",
   },
   SETTINGS: {
     CREATE_DEVICE: "/api/devices/create/",
