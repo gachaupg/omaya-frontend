@@ -10,5 +10,8 @@
   "express.noPaymentDetails": "No payment details available",
   "express.estimate.notice": "This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds.",
   "express.estimate.line1": "This is only an estimated price based on current market rates.",
-  "express.estimate.line2": "The final price will be confirmed when we receive the funds."
+  "express.estimate.line2": "The final price will be confirmed when we receive the funds.",
+  "express.youSend": "You Send",
+  "express.youGet": "You Get",
+  "express.asset": "Asset"
 }
