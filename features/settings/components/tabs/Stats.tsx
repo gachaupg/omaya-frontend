@@ -245,10 +245,10 @@ const Stats = ({ onSupportClick }: StatsProps) => {
 
       {/* Total Transactions */}
       <div className="mb-4 sm:mb-6">
-        <div className="dark:text-[#788099] text-gray-600 text-xs sm:text-sm font-medium">
+        <div className="dark:text-[#788099] text-gray-600 text-sm sm:text-base font-medium">
           Total Transactions
         </div>
-        <div className="text-sm sm:text-[15px] font-semibold mt-1 mb-2 text-gray-500 dark:text-[#A0AEC0]">
+        <div className="text-base sm:text-lg font-semibold mt-1 mb-2 text-gray-500 dark:text-[#A0AEC0]">
           {formatCurrency(
             (summary?.total_approved_p2p_combined || 0) +
             (summary?.total_p2p_orders || 0),
@@ -262,11 +262,11 @@ const Stats = ({ onSupportClick }: StatsProps) => {
       <div className="mb-4 sm:mb-6">
         {/* Deposits */}
         <div className="mb-4">
-          <div className="dark:text-[#788099] text-gray-600 text-sm font-medium mb-1">
+          <div className="dark:text-[#788099] text-gray-600 text-sm sm:text-base font-medium mb-1">
             Deposits
           </div>
           <div className="flex w-full items-center justify-between gap-3 mb-2">
-            <div className="text-gray-500 dark:text-[#A0AEC0] font-medium">
+            <div className="text-sm sm:text-base text-gray-500 dark:text-[#A0AEC0] font-medium">
               {formatCurrency(
                 getFilteredAmount(
                   summary?.total_approved_p2p_deposits || 0,
@@ -320,9 +320,9 @@ const Stats = ({ onSupportClick }: StatsProps) => {
             </div>
           </div>
         </div>
-        <div className="w-full h-3 sm:h-4 dark:bg-[#35353E] bg-gray-300 rounded-r-full mb-4">
+        <div className="w-full h-4 sm:h-5 dark:bg-[#35353E] bg-gray-300 rounded-r-full mb-4">
           <div
-            className={`h-3 sm:h-4 rounded-r-full ${
+            className={`h-4 sm:h-5 rounded-r-full ${
               (summary?.total_approved_p2p_deposits || 0) > 0
                 ? "bg-[#1D8751]"
                 : "bg-[#788099]"
@@ -339,11 +339,11 @@ const Stats = ({ onSupportClick }: StatsProps) => {
         </div>
         {/* Withdrawals */}
         <div className="mb-4">
-          <div className="dark:text-[#788099] text-gray-600 text-sm font-medium mb-1">
+          <div className="dark:text-[#788099] text-gray-600 text-sm sm:text-base font-medium mb-1">
             Withdrawals
           </div>
           <div className="flex w-full items-center justify-between gap-3 mb-2">
-            <div className="text-gray-500 dark:text-[#A0AEC0] font-medium">
+            <div className="text-sm sm:text-base text-gray-500 dark:text-[#A0AEC0] font-medium">
               {formatCurrency(
                 getFilteredAmount(
                   summary?.total_approved_p2p_withdrawals || 0,
@@ -399,9 +399,9 @@ const Stats = ({ onSupportClick }: StatsProps) => {
             </div>
           </div>
         </div>
-        <div className="w-full h-3 sm:h-4 dark:bg-[#35353E] bg-gray-300 rounded-r-full mb-4">
+        <div className="w-full h-4 sm:h-5 dark:bg-[#35353E] bg-gray-300 rounded-r-full mb-4">
           <div
-            className={`h-3 sm:h-4 rounded-r-full ${
+            className={`h-4 sm:h-5 rounded-r-full ${
               (summary?.total_approved_p2p_withdrawals || 0) > 0
                 ? "bg-[#E23D3A]"
                 : "bg-[#788099]"

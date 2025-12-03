@@ -226,15 +226,15 @@ const MarketTable: React.FC<MarketTableProps> = ({
                       return (
                         <span
                           key={i}
-                          className="flex items-center gap-1 text-sm font-medium text-gray-700 dark:text-white w-1/2"
+                          className="flex items-center gap-2 text-base font-medium text-gray-900 dark:text-white w-1/2"
                         >
                           <img
                             src={imageUrl}
                             alt={method.provider}
-                            className="w-4 h-4 rounded object-contain flex-shrink-0"
+                            className="w-6 h-6 rounded object-contain flex-shrink-0"
                             style={{ 
-                              width: '16px', 
-                              height: '16px',
+                              width: '24px', 
+                              height: '24px',
                               display: 'block'
                             }}
                             loading="lazy"
@@ -343,12 +343,17 @@ const MarketTable: React.FC<MarketTableProps> = ({
                         return (
                           <span
                             key={i}
-                            className="flex items-center gap-1 text-xs font-medium text-gray-700 dark:text-white"
+                            className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white"
                           >
                             <img
                               src={imageUrl}
                               alt={method.provider}
-                              className="w-3 h-3 rounded object-contain"
+                              className="w-5 h-5 rounded object-contain flex-shrink-0"
+                              style={{ 
+                                width: '20px', 
+                                height: '20px',
+                                display: 'block'
+                              }}
                               loading="lazy"
                               onError={(e) => {
                                 if (e.currentTarget.src !== DUMMY_PAYMENT_LOGO) {

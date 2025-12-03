@@ -264,7 +264,7 @@ const Notifications = () => {
               className="flex items-center bg-gray-50 dark:bg-[#23232B] rounded-lg py-3 px-4 mb-2 border-b border-gray-200 dark:border-[#31313C] hover:bg-gray-100 dark:hover:bg-[#2A2A33] transition-colors duration-200"
             >
               {/* Avatar and name/amount */}
-             <div className="flex items-center min-w-[160px] gap-3">
+              <div className="flex items-center min-w-[160px] gap-3">
                 {/* Avatar + Status */}
                 <div className="relative w-10 h-10">
                   {profileImage ? (
@@ -288,8 +288,8 @@ const Notifications = () => {
                   ></span>
                 </div>
 
-                {/* Name + Amount */}
-                <div className="flex flex-col">
+                {/* Name + Amount (offset slightly so it never overlaps the status dot) */}
+                <div className="flex flex-col ml-2">
                   <span className="font-medium text-sm text-gray-700 dark:text-[#c7c7d9]">
                     {name}
                   </span>

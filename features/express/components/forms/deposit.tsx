@@ -1657,7 +1657,7 @@ export default function DepositForm({
                         <img
                           src={getHighResAssetIcon(asset, ASSET_ICON_SIZE)}
                           alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
-                          className={`${ASSET_ICON_BASE_CLASS} w-11 h-11`}
+                          className={`${ASSET_ICON_BASE_CLASS} w-9 h-9`}
                           loading="lazy"
                           onError={(e) => {
                             e.currentTarget.src = getHighResAssetIcon(null, ASSET_ICON_SIZE);
@@ -1724,7 +1724,7 @@ export default function DepositForm({
                       <img
                         src={getHighResAssetIcon(asset, ASSET_ICON_SIZE)}
                         alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
-                        className={`${ASSET_ICON_BASE_CLASS} w-11 h-11`}
+                        className={`${ASSET_ICON_BASE_CLASS} w-9 h-9`}
                         loading="lazy"
                         onError={(e) => {
                           e.currentTarget.src = getHighResAssetIcon(null, ASSET_ICON_SIZE);
@@ -3593,7 +3593,7 @@ export default function DepositForm({
                             selectedAsset?.symbol ||
                             "Asset"
                           }
-                          className={`${ASSET_ICON_BASE_CLASS} w-12 h-12`}
+                          className={`${ASSET_ICON_BASE_CLASS} w-9 h-9`}
                           loading="lazy"
                           onError={(e) => {
                             e.currentTarget.src = getHighResAssetIcon(null, 72);
@@ -3633,7 +3633,7 @@ export default function DepositForm({
                         <img
                           src={getHighResAssetIcon(null, 72)}
                           alt="asset icon"
-                          className={`${ASSET_ICON_BASE_CLASS} w-12 h-12`}
+                          className={`${ASSET_ICON_BASE_CLASS} w-9 h-9`}
                           loading="lazy"
                         />
                         <span className="text-[#7e7e8f] dark:text-[#788099]">
@@ -4040,7 +4040,7 @@ export default function DepositForm({
                       PAYMENT_LOGO_SIZE
                     )}
                     alt={`${selectedPaymentDetail.provider_name || "Bank"} Logo`}
-                    className={`${PAYMENT_LOGO_BASE_CLASS} w-12 h-12`}
+                    className={`${PAYMENT_LOGO_BASE_CLASS} w-9 h-9`}
                     loading="lazy"
                     onError={(e) => {
                       e.currentTarget.src = getHighResPaymentLogo(

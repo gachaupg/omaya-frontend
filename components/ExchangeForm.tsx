@@ -18,6 +18,7 @@ import {
 import { FaSearch } from "react-icons/fa";
 import Express from "@/features/express/home/express/express";
 import SwapWidget from "@/features/express/home/swap copy/components/SwapWidget";
+import MoneyX from "@/features/express/home/components/moneyX/components/MoneyX";
 
 /**
  * ExchangeForm – TypeScript version with BTC ⇄ ETH swap support.
@@ -30,7 +31,7 @@ import SwapWidget from "@/features/express/home/swap copy/components/SwapWidget"
  *   - Express Excahnge.svg / Express Excahnge-light.svg
  */
 
-type Tab = "express" | "swap";
+type Tab = "express" | "moneyx" | "swap";
 type Mode = "deposit" | "withdrawal";
 
 interface Currency {
@@ -517,6 +518,10 @@ export default function ExchangeForm({
     express: {
       pay: { label: "Salam Bank", icon: "/images/salam.svg" },
       get: { label: "USDT", sub: "Tether US", icon: "/images/tether.svg" },
+    },
+    moneyx: {
+      pay: { label: "Bank", icon: "/images/salam.svg" },
+      get: { label: "Bank", sub: "Bank Transfer", icon: "/images/salam.svg" },
     },
     swap: {
       pay: { label: "BTC", sub: "Bitcoin", icon: "/images/Bitcoin.svg" },
@@ -1118,13 +1123,19 @@ export default function ExchangeForm({
   const TabButton: React.FC<{
     id: Tab;
     label: string;
-    variant: "express" | "swap";
-  }> = ({ id, label, variant }) => {
+    variant: "express" | "moneyx" | "swap";
+    position?: "first" | "middle" | "last";
+  }> = ({ id, label, variant, position = "middle" }) => {
     const isActive = activeTab === id;
-    const clipPath =
-      variant === "express"
-        ? "polygon(0 0, 88% 0, 100% 100%, 0 100%)"
-        : "polygon(12% 0, 100% 0, 100% 100%, 0 100%)";
+    let clipPath = "polygon(0 0, 100% 0, 100% 100%, 0 100%)";
+    
+    if (position === "first") {
+      clipPath = "polygon(0 0, 94% 0, 100% 100%, 0 100%)";
+    } else if (position === "middle") {
+      clipPath = "polygon(6% 0, 94% 0, 100% 100%, 0 100%)";
+    } else if (position === "last") {
+      clipPath = "polygon(6% 0, 100% 0, 100% 100%, 0 100%)";
+    }
 
     const buttonClasses = [
       "relative flex w-full items-center justify-center overflow-hidden transition-all duration-200",
@@ -1159,6 +1170,8 @@ export default function ExchangeForm({
     const ariaLabel =
       variant === "express"
         ? t("marketing.exchange.tabs.express", "Express Exchange")
+        : variant === "moneyx"
+        ? t("marketing.exchange.tabs.moneyx", "Money X")
         : label || t("marketing.exchange.tabs.swap", "Swap");
 
     return (
@@ -1178,7 +1191,7 @@ export default function ExchangeForm({
                 <img
                   src={expressIconSrc}
                   alt="Express Exchange"
-               className="mt-2 ml-0"
+                  className="mt-2 ml-0"
                 />
               </>
             )}
@@ -1333,48 +1346,62 @@ export default function ExchangeForm({
   };
 
   /* ------------------- UI ------------------- */
+  // Render tabs and content based on active tab
+  const renderTabs = () => (
+    <div className="relative flex w-full overflow-hidden rounded-[28px] bg-white/70 p-1 dark:bg-[#12171E]/90">
+      <TabButton
+        id="express"
+        variant="express"
+        position="first"
+        label={t("marketing.exchange.tabs.express", "Express")}
+      />
+      <TabButton
+        id="moneyx"
+        variant="moneyx"
+        position="middle"
+        label={t("marketing.exchange.tabs.moneyx", "Money X")}
+      />
+      <TabButton
+        id="swap"
+        variant="swap"
+        position="last"
+        label={t("marketing.exchange.tabs.swap", "Swap")}
+      />
+    </div>
+  );
+
   // If Swap Crypto tab is active, render SwapWidget with tab controls
   if (activeTab === "swap") {
     return (
       <div className="w-full max-w-none mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl px-3 sm:px-4 md:px-5 py-3 shadow-lg">
-        {/* Tabs */}
-        <div className="relative flex w-full overflow-hidden rounded-[28px] bg-white/70 p-1 dark:bg-[#12171E]/90">
-        <TabButton
-          id="express"
-          variant="express"
-          label={t("marketing.exchange.tabs.express", "Express")}
-        />
-        <TabButton
-          id="swap"
-          variant="swap"
-          label={t("marketing.exchange.tabs.swap", "Swap")}
-        />
-        </div>
+        {renderTabs()}
         <SwapWidget usePublicApi={isHomePage} />
       </div>
     );
   }
 
+  // If Money X tab is active, render MoneyX component
+  if (activeTab === "moneyx") {
+    return (
+      <div className={`w-full mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl px-3 sm:px-4 md:px-5 py-3 shadow-lg ${
+        isHomePage 
+          ? "max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl 2xl:max-w-3xl" 
+          : "max-w-none"
+      }`}>
+        {renderTabs()}
+        <MoneyX isHomePage={isHomePage} />
+      </div>
+    );
+  }
+
+  // Default: Express Exchange tab
   return (
     <div className={`w-full mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl px-3 sm:px-4 md:px-5 py-3 shadow-lg ${
       isHomePage 
         ? "max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl 2xl:max-w-3xl" 
         : "max-w-none"
     }`}>
-      {/* Tabs */}
-      <div className="relative flex w-full overflow-hidden rounded-[28px] bg-white/70 p-1 dark:bg-[#12171E]/90">
-        <TabButton
-          id="express"
-          variant="express"
-          label={t("marketing.exchange.tabs.express", "Express")}
-        />
-        <TabButton
-          id="swap"
-          variant="swap"
-          label={t("marketing.exchange.tabs.swap", "Swap")}
-        />
-      </div>
-
+      {renderTabs()}
       {/* Express Exchange Content */}
       <Express isHomePage={isHomePage} />
     </div>

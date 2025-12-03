@@ -6,17 +6,18 @@ import { AppDispatch } from "@/store";
 import {
   fetchPublicPaymentMethods,
   fetchAdminPaymentMethods,
-} from "../../p2p/slices/paymentMethodsSlice";
+} from "@/features/p2p/slices/paymentMethodsSlice";
 import {
   createMoneyXTransaction,
   updateMoneyXTransaction,
 } from "../slices/moneyXSlice";
 import { useTheme } from "@/context/theme";
 import CustomSelect from "@/components/ui/CustomSelect";
-import { showToast } from "../../../lib/utils/toast";
-import { usePaymentMethodsDisplay } from "../../express/hooks/useDataDisplay";
+import { showToast } from "@/lib/utils/toast";
+import { usePaymentMethodsDisplay } from "@/features/express/hooks/useDataDisplay";
 
 interface TransferFormProps {
+  isHomePage?: boolean;
   onTransfer?: (transactionData: {
     fromPaymentMethod: any;
     toPaymentMethod: any;
@@ -28,7 +29,7 @@ interface TransferFormProps {
   }) => void;
 }
 
-export default function TransferForm({ onTransfer }: TransferFormProps) {
+export default function TransferForm({ isHomePage = false, onTransfer }: TransferFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const { isDark } = useTheme();
 
@@ -50,10 +51,10 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
   // Use state to hold payment methods - will trigger re-render when updated
   const [stablePaymentMethods, setStablePaymentMethods] = useState<any[]>([]);
 
-  // Use appropriate payment methods data
-  const paymentMethodsData = adminMethods;
-  const paymentMethodsLoading = adminMethodsLoading;
-  const paymentMethodsError = adminMethodsError;
+  // Use appropriate payment methods data based on isHomePage
+  const paymentMethodsData = isHomePage ? publicPaymentMethods : adminMethods;
+  const paymentMethodsLoading = isHomePage ? publicMethodsLoading : adminMethodsLoading;
+  const paymentMethodsError = isHomePage ? publicMethodsError : adminMethodsError;
 
   const paymentMethodsDisplay = usePaymentMethodsDisplay(
     paymentMethodsData,
@@ -63,13 +64,38 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
 
   // Fetch payment methods on mount
   useEffect(() => {
-    dispatch(fetchAdminPaymentMethods());
-  }, [dispatch]);
+    if (isHomePage) {
+      dispatch(fetchPublicPaymentMethods());
+    } else {
+      dispatch(fetchAdminPaymentMethods());
+    }
+  }, [dispatch, isHomePage]);
 
   // Process payment methods similar to deposit form
   useEffect(() => {
-    if (adminMethods && Array.isArray(adminMethods) && adminMethods.length > 0) {
-      const activeMethods = adminMethods
+    const methodsToProcess = isHomePage ? publicPaymentMethods : adminMethods;
+    
+    // Handle public payment methods structure (similar to ExchangeForm)
+    let processedMethods: any[] = [];
+    if (isHomePage && publicPaymentMethods) {
+      // Check for providers array (new structure)
+      if (Array.isArray(publicPaymentMethods?.data?.providers)) {
+        processedMethods = publicPaymentMethods.data.providers;
+      }
+      // Check for payment_methods array (older structure)
+      else if (Array.isArray(publicPaymentMethods?.data?.payment_methods)) {
+        processedMethods = publicPaymentMethods.data.payment_methods;
+      }
+      // Check if publicPaymentMethods itself is an array (fallback)
+      else if (Array.isArray(publicPaymentMethods)) {
+        processedMethods = publicPaymentMethods;
+      }
+    } else if (adminMethods && Array.isArray(adminMethods)) {
+      processedMethods = adminMethods;
+    }
+
+    if (processedMethods.length > 0) {
+      const activeMethods = processedMethods
         .filter((payment: any) => {
           if (payment.is_active === undefined || payment.is_active === null)
             return true;
@@ -84,13 +110,15 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
           ...payment,
           logo: payment.logo || payment.provider_logo || undefined,
           provider_logo: payment.provider_logo || payment.logo || undefined,
+          // Extract provider_name for public methods
+          provider_name: payment.provider_name || payment.provider?.provider_name || payment.method?.method_name || payment.payment_method_name,
         }));
 
       if (activeMethods.length > 0) {
         setStablePaymentMethods(activeMethods);
       }
     }
-  }, [adminMethods]);
+  }, [adminMethods, publicPaymentMethods, isHomePage]);
 
 
   // Fallback payment methods
@@ -146,10 +174,17 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
 
+  // Helper function to get provider name from payment method (cleaned - removes "- Bank" suffix)
+  const getProviderName = useCallback((payment: any) => {
+    const providerName = payment?.provider_name || payment?.provider?.provider_name || payment?.method?.method_name || payment?.payment_method_name || "";
+    // Clean provider name - remove "- Bank" suffix if present
+    return providerName.replace(/\s*-\s*Bank\s*$/i, "").trim();
+  }, []);
+
   // Helper function to check if a payment method is a bank
   const isBankMethod = useCallback((method: any) => {
     if (!method) return false;
-    const providerName = (method?.provider_name || "").toLowerCase();
+    const providerName = getProviderName(method).toLowerCase();
     const paymentMethod = (method?.payment_method || "").toLowerCase();
     const paymentMethodType = (method?.payment_method_type || "").toLowerCase();
     const provider = (method?.provider || "").toLowerCase();
@@ -160,7 +195,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
       paymentMethodType.includes("bank") ||
       provider.includes("bank")
     );
-  }, []);
+  }, [getProviderName]);
 
   // Auto-select first payment method for "from" when payment methods are loaded
   useEffect(() => {
@@ -168,10 +203,10 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
       return;
     }
 
-    // Check if current selection still exists in the latest list
+    // Check if current selection still exists in the latest list (using cleaned names)
     const currentExists = fromPaymentMethod
       ? finalPaymentMethods.some(
-          (m: any) => m?.provider_name === fromPaymentMethod
+          (m: any) => getProviderName(m) === fromPaymentMethod
         )
       : false;
 
@@ -183,8 +218,9 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
       const methodToSelect =
         bankMethods.length > 0 ? bankMethods[0] : finalPaymentMethods[0];
 
-      if (methodToSelect?.provider_name) {
-        setFromPaymentMethod(methodToSelect.provider_name);
+      const providerName = getProviderName(methodToSelect);
+      if (providerName) {
+        setFromPaymentMethod(providerName);
         setSelectedFromPaymentDetail(methodToSelect);
       }
     }
@@ -211,33 +247,34 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
         methodToSelect = bankMethods[1];
       } else if (bankMethods.length === 1 && methodsToCheck.length > 1) {
         // If only one bank exists, select the second method overall (index 1) if it's different from "from"
-        if (methodsToCheck[1] && methodsToCheck[1].provider_name !== fromPaymentMethod) {
+        if (methodsToCheck[1] && getProviderName(methodsToCheck[1]) !== fromPaymentMethod) {
           methodToSelect = methodsToCheck[1];
         } else {
           // Find first method that's different from "from"
           methodToSelect = methodsToCheck.find(
-            (method) => method.provider_name !== fromPaymentMethod
+            (method) => getProviderName(method) !== fromPaymentMethod
           );
         }
       } else {
         // No banks or only one method, select the second method (index 1) if it's different from "from"
-        if (methodsToCheck[1] && methodsToCheck[1].provider_name !== fromPaymentMethod) {
+        if (methodsToCheck[1] && getProviderName(methodsToCheck[1]) !== fromPaymentMethod) {
           methodToSelect = methodsToCheck[1];
         } else {
           // Find first method that's different from "from"
           methodToSelect = methodsToCheck.find(
-            (method) => method.provider_name !== fromPaymentMethod
+            (method) => getProviderName(method) !== fromPaymentMethod
           );
         }
       }
       
-      if (methodToSelect?.provider_name) {
-        setToPaymentMethod(methodToSelect.provider_name);
+      const providerName = getProviderName(methodToSelect);
+      if (providerName) {
+        setToPaymentMethod(providerName);
         setSelectedToPaymentDetail(methodToSelect);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [finalPaymentMethods, stablePaymentMethods, fromPaymentMethod, adminMethods]);
+  }, [finalPaymentMethods, stablePaymentMethods, fromPaymentMethod, adminMethods, getProviderName]);
 
   // Prepare options for CustomSelect
   const paymentMethodOptions = finalPaymentMethods.map((payment: any) => {
@@ -257,9 +294,17 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
       logoUrl = payment.logo.trim();
     }
 
+    // Get provider name - handle both admin and public payment methods structure
+    let providerName = payment.provider_name || payment.provider?.provider_name || payment.method?.method_name || payment.payment_method_name || "";
+    const paymentMethod = payment.payment_method || payment.payment_method_type || payment.method?.method_display || "";
+
+    // Clean provider name - remove "- Bank" suffix if present
+    providerName = providerName.replace(/\s*-\s*Bank\s*$/i, "").trim();
+
     return {
-      value: payment.provider_name,
-      label: `${payment.provider_name} - ${payment.payment_method || payment.payment_method_type || ""}`,
+      value: providerName,
+      // Show only provider name (remove - {method} part) for cleaner display
+      label: providerName,
       logo: logoUrl,
     };
   });
@@ -400,7 +445,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
     !selectedToPaymentDetail;
 
   return (
-    <div className="w-full flex flex-col dark:bg-[#18181D]">
+    <div className="w-full flex flex-col dark:bg-[#18181D] overflow-x-auto">
       <h2 className="text-xl font-bold mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
         <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span>
         Transfer Information
@@ -424,14 +469,10 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
         {/* Top Section - Amount and From Payment Method in one card */}
         <div className="relative mb-4">
           {/* Top Card Container */}
-          <div className="relative flex flex-col sm:flex-row border border-[#D1D2D4FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 overflow-visible gap-3 sm:gap-0">
+          <div className="relative flex flex-col sm:flex-row border border-[#D1D2D4FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 gap-3 sm:gap-0 min-w-0">
             {/* Amount Section */}
-            <div className="flex-1 sm:pr-4">
-              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                You Send
-                <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
-              </label>
-              <div className="relative">
+            <div className="flex-1 w-full box-border min-w-0">
+              <div className="relative w-full">
                 <input
                   type="text"
                   inputMode="decimal"
@@ -440,7 +481,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                     handleAmountChange(e.target.value, true);
                   }}
                   placeholder="Enter amount"
-                  className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-3 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] appearance-none min-h-[60px]"
+                  className="w-full h-[60px] text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-3 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] appearance-none"
                 />
               </div>
             </div>
@@ -448,19 +489,20 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
             {/* From Payment Method Section */}
             <div
               data-select-card="true"
-              className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#D1D2D4FF] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none"
+              className="flex-1 w-full sm:pl-4 box-border min-w-0"
             >
-              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
-                From Payment Method
-              </label>
-              <div className="relative">
+              <div className="relative w-full">
                 <CustomSelect
                   options={paymentMethodOptions}
                   value={fromPaymentMethod}
                   sizeMode="card"
+                  logoSize={30}
                   onChange={(value) => {
                     const selectedPayment = finalPaymentMethods?.find(
-                      (payment: any) => payment.provider_name === value
+                      (payment: any) => {
+                        const providerName = getProviderName(payment);
+                        return providerName === value;
+                      }
                     );
                     setFromPaymentMethod(value);
                     setSelectedFromPaymentDetail(selectedPayment || null);
@@ -471,7 +513,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                     finalPaymentMethods.length === 0
                       ? "Loading payment methods..."
                       : finalPaymentMethods && finalPaymentMethods.length > 0
-                        ? "Select Payment Method"
+                        ? ""
                         : "No payment methods available"
                   }
                   disabled={
@@ -485,8 +527,8 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                   loadingText="Loading payment methods..."
                   emptyText="No payment methods available"
                   searchable={true}
-                  className="w-full"
-                  triggerClassName="min-h-[60px]"
+                  className="w-full min-w-0"
+                  triggerClassName="h-[60px] min-h-[60px] w-full px-4 py-3 max-w-full"
                 />
               </div>
               {adminMethodsError && (
@@ -498,7 +540,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
           {/* Swap Circle - positioned to touch both borders equally */}
           <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/3 z-10">
             <button
-              className="w-10 h-10 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105 sm:min-h-0 touch-manipulation"
+              className="w-9 h-9 sm:w-9 sm:h-9 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105 sm:min-h-0 touch-manipulation"
               onClick={() => {
                 // Swap from and to payment methods
                 const tempFrom = fromPaymentMethod;
@@ -513,13 +555,13 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
               <img
                 src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
                 alt="swap icon"
-                className="w-10 h-10 sm:w-10 sm:h-10 dark:hidden"
+                className="w-8 h-8 sm:w-8 sm:h-8 object-contain dark:hidden"
               />
               {/* Dark mode image */}
               <img
                 src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
                 alt="swap icon"
-                className="w-10 h-10 sm:w-10 sm:h-10 hidden dark:block"
+                className="w-8 h-8 sm:w-8 sm:h-8 object-contain hidden dark:block"
               />
             </button>
           </div>
@@ -527,19 +569,10 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
 
         {/* Bottom Section - You Receive and To Payment Method in one card */}
         <div className="relative mb-3">
-          <div className="relative flex flex-col sm:flex-row border border-[#D1D2D4FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 overflow-visible gap-3 sm:gap-0">
+          <div className="relative flex flex-col sm:flex-row border border-[#D1D2D4FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 gap-3 sm:gap-0 min-w-0">
             {/* You Receive Section */}
-            <div className="flex-1 sm:pr-4">
-              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                You Receive
-                <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
-                {!isCalculatingFromPay && (
-                  <span className="text-xs text-[#1D8751] font-medium hidden sm:inline">
-                    (Active)
-                  </span>
-                )}
-              </label>
-              <div className="relative">
+            <div className="flex-1 w-full box-border min-w-0">
+              <div className="relative w-full">
                 <input
                   type="text"
                   inputMode="decimal"
@@ -548,26 +581,27 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                     handleAmountChange(e.target.value, false);
                   }}
                   placeholder="Enter amount"
-                  className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-3 pr-16 text-base sm:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] appearance-none min-h-[60px]"
+                  className="w-full h-[60px] text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-3 pr-16 text-base sm:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] appearance-none"
                 />
               </div>
             </div>
 
             {/* To Payment Method Section */}
-            <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#D1D2D4FF] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none">
-              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
-                To Payment Method
-              </label>
-              <div className="relative">
+            <div className="flex-1 w-full sm:pl-4 box-border min-w-0">
+              <div className="relative w-full">
                 <CustomSelect
                   options={paymentMethodOptions.filter(
                     (opt) => opt.value !== fromPaymentMethod
                   )}
                   value={toPaymentMethod}
                   sizeMode="card"
+                  logoSize={30}
                   onChange={(value) => {
                     const selectedPayment = finalPaymentMethods?.find(
-                      (payment: any) => payment.provider_name === value
+                      (payment: any) => {
+                        const providerName = getProviderName(payment);
+                        return providerName === value;
+                      }
                     );
                     setToPaymentMethod(value);
                     setSelectedToPaymentDetail(selectedPayment || null);
@@ -578,7 +612,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                     finalPaymentMethods.length === 0
                       ? "Loading payment methods..."
                       : finalPaymentMethods && finalPaymentMethods.length > 0
-                        ? "Select Payment Method"
+                        ? ""
                         : "No payment methods available"
                   }
                   disabled={
@@ -592,35 +626,14 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                   loadingText="Loading payment methods..."
                   emptyText="No payment methods available"
                   searchable={true}
-                  className="w-full"
-                  triggerClassName="min-h-[60px]"
+                  className="w-full min-w-0"
+                  triggerClassName="h-[60px] min-h-[60px] w-full px-4 py-3 max-w-full"
                 />
               </div>
               {adminMethodsError && (
                 <p className="text-red-500 text-sm mt-1">{adminMethodsError}</p>
               )}
             </div>
-          </div>
-        </div>
-
-        {/* Disclaimer Banner */}
-        <div className="flex items-center rounded-2xl px-4 py-3 mb-4 dark:bg-[#1D1D23]">
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0">
-              <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                <path
-                  d="M12 8v4m0 4h.01"
-                  stroke="white"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" />
-              </svg>
-            </div>
-            <span className="text-[#35353e] dark:text-[#788099] text-sm font-medium">
-              This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds.
-            </span>
           </div>
         </div>
 

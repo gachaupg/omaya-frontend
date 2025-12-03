@@ -17,20 +17,9 @@ import { useLanguageOptional } from "@/context/language";
 import { useTheme } from "@/context/theme";
 
 const DefaultProfileIcon = () => (
-  <div
-    className="w-10 h-10 rounded-full flex items-center justify-center bg-[#e5e7eb] border-2 border-white"
-    dangerouslySetInnerHTML={{
-      __html: `
-        <svg width="40" height="40" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="100" cy="100" r="100" fill="#e5e7eb" stroke="#d1d5db" strokeWidth="2"/>
-          <g fill="#9ca3af">
-            <circle cx="100" cy="75" r="25"/>
-            <path d="M100 110 C85 110, 60 120, 60 140 L60 160 C60 170, 65 175, 75 175 L125 175 C135 175, 140 170, 140 160 L140 140 C140 120, 115 110, 100 110 Z"/>
-          </g>
-        </svg>
-      `,
-    }}
-  />
+  <div className="w-10 h-10 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white">
+    <User className="w-6 h-6 text-white" />
+  </div>
 );
 
 const NavLink = ({
@@ -212,6 +201,8 @@ export default function Navbar() {
   const [depositDropdownOpen, setDepositDropdownOpen] = useState(false);
   const [mobileDepositDropdownOpen, setMobileDepositDropdownOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [profileImageError, setProfileImageError] = useState(false);
+  const [cachedProfilePhoto, setCachedProfilePhoto] = useState<string | null>(null);
 
   const {
     isAuthenticated,
@@ -226,12 +217,35 @@ export default function Navbar() {
     dispatch(initializeAuth());
   }, [dispatch]);
 
+  // Load cached profile photo from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("profile_photo");
+      if (cached) {
+        setCachedProfilePhoto(cached);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     // ✅ Only fetch profile if we don't have it (prevents refetch on every navigation)
     if (isAuthenticated && !userProfile) {
       dispatch(getUserProfile());
     }
   }, [isAuthenticated, dispatch, userProfile]);
+
+  // Cache profile photo in localStorage when it's available
+  useEffect(() => {
+    if (userProfile?.photo && typeof window !== "undefined") {
+      localStorage.setItem("profile_photo", userProfile.photo);
+      setCachedProfilePhoto(userProfile.photo);
+    }
+  }, [userProfile?.photo]);
+
+  // Reset image error when profile photo changes
+  useEffect(() => {
+    setProfileImageError(false);
+  }, [userProfile?.photo, cachedProfilePhoto]);
 
   // Profile data available for rendering
 
@@ -745,16 +759,18 @@ export default function Navbar() {
                   onClick={toggleProfileModal}
                   className="text-white focus:outline-none"
                 >
-                  {userProfile?.photo ? (
+                  {(userProfile?.photo || cachedProfilePhoto) && !profileImageError ? (
                     <img
-                      src={userProfile.photo}
+                      src={userProfile?.photo || cachedProfilePhoto || ""}
                       alt="Profile"
-                      className="w-10 h-10 rounded-full border-2 border-white object-cover bg-[#e5e7eb]"
-                      onError={(e) => {
-                        // If the profile image fails to load, fall back to a neutral circle
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src =
-                          "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                      className="w-10 h-10 rounded-full border-2 border-white object-cover"
+                      onError={() => {
+                        setProfileImageError(true);
+                        // Clear invalid cached photo
+                        if (typeof window !== "undefined") {
+                          localStorage.removeItem("profile_photo");
+                          setCachedProfilePhoto(null);
+                        }
                       }}
                     />
                   ) : (
@@ -781,19 +797,24 @@ export default function Navbar() {
                       {/* User Info */}
                       <div className="flex items-center mb-4 pb-4 border-b dark:border-[#35353E] border-gray-200">
                         <div className="mr-3">
-                          {userProfile?.photo ? (
+                          {(userProfile?.photo || cachedProfilePhoto) && !profileImageError ? (
                             <img
-                              src={userProfile.photo}
+                              src={userProfile?.photo || cachedProfilePhoto || ""}
                               alt="Profile"
-                              className="w-12 h-12 rounded-full object-cover bg-[#e5e7eb]"
-                              onError={(e) => {
-                                e.currentTarget.onerror = null;
-                                e.currentTarget.src =
-                                  "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                              className="w-12 h-12 rounded-full object-cover border-2 border-white"
+                              onError={() => {
+                                setProfileImageError(true);
+                                // Clear invalid cached photo
+                                if (typeof window !== "undefined") {
+                                  localStorage.removeItem("profile_photo");
+                                  setCachedProfilePhoto(null);
+                                }
                               }}
                             />
                           ) : (
-                            <DefaultProfileIcon />
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white">
+                              <User className="w-6 h-6 text-white" />
+                            </div>
                           )}
                         </div>
                         <div>
@@ -1216,15 +1237,18 @@ export default function Navbar() {
                           onClick={toggleMobileMenu}
                           className="text-white"
                         >
-                          {userProfile?.photo ? (
+                          {(userProfile?.photo || cachedProfilePhoto) && !profileImageError ? (
                             <img
-                              src={userProfile.photo}
+                              src={userProfile?.photo || cachedProfilePhoto || ""}
                               alt="Profile"
-                              className="w-10 h-10 rounded-full object-cover bg-[#e5e7eb]"
-                              onError={(e) => {
-                                e.currentTarget.onerror = null;
-                                e.currentTarget.src =
-                                  "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                              className="w-10 h-10 rounded-full object-cover border-2 border-white"
+                              onError={() => {
+                                setProfileImageError(true);
+                                // Clear invalid cached photo
+                                if (typeof window !== "undefined") {
+                                  localStorage.removeItem("profile_photo");
+                                  setCachedProfilePhoto(null);
+                                }
                               }}
                             />
                           ) : (
@@ -1255,19 +1279,24 @@ export default function Navbar() {
                           {/* User Info */}
                           <div className="flex items-center mb-6">
                             <div className="mr-4">
-                              {userProfile?.photo ? (
+                              {(userProfile?.photo || cachedProfilePhoto) && !profileImageError ? (
                                 <img
-                                  src={userProfile.photo}
+                                  src={userProfile?.photo || cachedProfilePhoto || ""}
                                   alt="Profile"
-                                  className="w-16 h-16 rounded-full object-cover bg-[#e5e7eb]"
-                                  onError={(e) => {
-                                    e.currentTarget.onerror = null;
-                                    e.currentTarget.src =
-                                      "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
+                                  className="w-16 h-16 rounded-full object-cover border-2 border-white"
+                                  onError={() => {
+                                    setProfileImageError(true);
+                                    // Clear invalid cached photo
+                                    if (typeof window !== "undefined") {
+                                      localStorage.removeItem("profile_photo");
+                                      setCachedProfilePhoto(null);
+                                    }
                                   }}
                                 />
                               ) : (
-                                <DefaultProfileIcon />
+                                <div className="w-16 h-16 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white">
+                                  <User className="w-8 h-8 text-white" />
+                                </div>
                               )}
                             </div>
                             <div>

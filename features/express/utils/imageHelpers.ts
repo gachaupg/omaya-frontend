@@ -89,10 +89,8 @@ export const getDefaultProviderLogo = () => DEFAULT_PROVIDER_LOGO;
 
 export type { AssetLike };
 
-export const PAYMENT_LOGO_SIZE = 36;
-export const ASSET_ICON_SIZE = 52;
-export const PAYMENT_LOGO_BASE_CLASS =
-  "rounded-2xl border border-black/5 dark:border-white/10 bg-white dark:bg-[#0F1115] p-1 object-contain shadow-sm";
-export const ASSET_ICON_BASE_CLASS =
-  "rounded-2xl border border-black/5 dark:border-white/10 bg-white dark:bg-[#0F1115] p-1 object-contain";
+export const PAYMENT_LOGO_SIZE = 40;
+export const ASSET_ICON_SIZE = 40;
+export const PAYMENT_LOGO_BASE_CLASS = "object-contain";
+export const ASSET_ICON_BASE_CLASS = "object-contain";
 
