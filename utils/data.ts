@@ -13,7 +13,7 @@ export const navItems = [
   },
   {
     labelKey: "navigation.exchange",
-    icon: "",
+    icon: "https://res.cloudinary.com/pitz/image/upload/v1764568507/uil_exchange_1_okxkvb.png",
     href: "/dashboard/exchange/",
   },
   {
@@ -37,7 +37,7 @@ export const navItems = [
     href: "/dashboard/account/",
   },
   // {
-  //   labelKey: "navigation.settings",
+  //   labelKey: "Settings",
   //   icon: "https://res.cloudinary.com/pitz/image/upload/v1747237691/settings_hi7ckx.png",
   //   href: "/dashboard/settings",
   // },

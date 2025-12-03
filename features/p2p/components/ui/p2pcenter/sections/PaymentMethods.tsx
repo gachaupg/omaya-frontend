@@ -268,6 +268,80 @@ const PaymentMethods = () => {
     </div>
   );
 
+  // Render helper specifically for Mobile Money items
+  const renderMobilePaymentMethod = (method: PaymentMethod) => (
+    <div key={method.id} className="mb-5">
+      <div className="flex items-center mb-3">
+        <img
+          src={method.provider_logo || "/default-provider-logo.svg"}
+          alt={`${method.payment_provider_name} Icon`}
+          className="w-10 h-10 sm:w-12 sm:h-12 rounded-full mr-3 object-cover"
+          onError={(e) => {
+            e.currentTarget.src = "/default-provider-logo.svg";
+          }}
+        />
+        <div className="flex flex-col">
+          <span className="text-gray-900 dark:text-white font-semibold flex items-center text-base sm:text-lg">
+            {method.payment_provider_name}
+          </span>
+        </div>
+        <button
+          disabled={deletingMethodId === method.id.toString()}
+          className="ml-auto text-[#1D8751] flex items-center hover:opacity-80 transition-opacity"
+          title="Delete"
+          onClick={() => handleDeleteMethod(method.id.toString())}
+        >
+          {deletingMethodId === method.id.toString() ? (
+            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#1D8751]"></div>
+          ) : (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-6 h-6 sm:w-7 sm:h-7 cursor-pointer"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2.5}
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
+              />
+            </svg>
+          )}
+        </button>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-2">
+        <div className="w-full sm:flex-1">
+          <label className="block text-gray-600 dark:text-[#788099] text-xs sm:text-sm mb-1">Wallet Name</label>
+          <Input
+            placeholder="Wallet Name"
+            value={method.account_name}
+            className="w-full h-[52px] rounded-3xl border border-gray-300 dark:border-[#353535] bg-white dark:bg-[#353535] text-gray-900 dark:text-white px-3.5 py-2.5 text-sm sm:text-base"
+            bgColor="#ffffff"
+            borderColor="#d1d5db"
+            disabled={!method.editable}
+            onChange={(e) => handleInputChange(method.id, "account_name", e.target.value)}
+          />
+        </div>
+
+        <div className="w-full sm:flex-1">
+          <label className="block text-gray-600 dark:text-[#788099] text-xs sm:text-sm mb-1">Wallet Number</label>
+          <Input
+            placeholder="Wallet Number"
+            value={method.account_number}
+            className="w-full h-[52px] rounded-3xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#18181D] text-gray-900 dark:text-white px-3.5 py-2.5 text-sm sm:text-base"
+            bgColor="#ffffff"
+            borderColor="#d1d5db"
+            disabled={!method.editable}
+            onChange={(e) => handleInputChange(method.id, "account_number", e.target.value)}
+          />
+        </div>
+      </div>
+    </div>
+  );
+
   const renderEmptyState = () => (
     <div className="flex flex-col items-center justify-center py-12 px-4">
       <div className="w-24 h-24 mb-6 rounded-full bg-gray-100 dark:bg-[#1D1D23] flex items-center justify-center">
@@ -301,8 +375,8 @@ const PaymentMethods = () => {
     </div>
   );
 
-  const renderPagination = () => {
-    const totalPages = Math.ceil(userPaymentDetails.length / ITEMS_PER_PAGE);
+  const renderPagination = (totalItems: number) => {
+    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
     if (totalPages <= 1) return null;
 
     return (
@@ -319,11 +393,10 @@ const PaymentMethods = () => {
             <button
               key={page}
               onClick={() => setCurrentPage(page)}
-              className={`w-8 h-8 rounded-lg ${
-                currentPage === page
-                  ? "bg-[#1D8751] text-white"
-                  : "bg-gray-100 dark:bg-[#1D1D23] text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-              }`}
+              className={`w-8 h-8 rounded-lg ${currentPage === page
+                ? "bg-[#1D8751] text-white"
+                : "bg-gray-100 dark:bg-[#1D1D23] text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                }`}
             >
               {page}
             </button>
@@ -343,15 +416,34 @@ const PaymentMethods = () => {
   };
 
   /** Pagination logic */
-  const paginatedMethods = userPaymentDetails.slice(
+
+  // Group methods into two sections: Bank and Mobile Money
+  // For now place the first available method under Mobile Money and the rest under Bank
+  const mobileMoneyMethods: PaymentMethod[] = userPaymentDetails.length
+    ? [userPaymentDetails[22]]
+    : [];
+
+  const bankMethods: PaymentMethod[] = userPaymentDetails.length > 1
+    ? userPaymentDetails.slice(1)
+    : [];
+
+  // Paginate bank methods only
+  const bankMethodsPaginated = bankMethods.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
 
+  useEffect(() => {
+    const totalPages = Math.ceil(bankMethods.length / ITEMS_PER_PAGE) || 1;
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [bankMethods.length]);
+
   // Inline Add Method Dropdown
-const renderAddMethodDropdown = () => (
-  <div
-    className={`
+  const renderAddMethodDropdown = () => (
+    <div
+      className={`
       absolute top-full mt-2
       ${showAddDropdown ? "" : "hidden"}
       w-[90vw] max-w-xs sm:w-64
@@ -359,41 +451,40 @@ const renderAddMethodDropdown = () => (
       rounded-xl border-2 border-[#1D8751] bg-[#0F1219] text-white shadow-[0_10px_30px_rgba(0,0,0,0.45)]
       z-1000
     `}
-  >
-    <div className="p-3">
-      <p className="text-xs uppercase tracking-wide text-[#49C476] mb-2">Payment Method</p>
-      <div className="flex flex-col gap-2 max-h-64 overflow-y-auto pr-1">
-        {methodTypes.map((type, idx) => {
-          const isSelected = selectedMethod === type;
-          return (
-            <button
-              type="button"
-              key={type + idx}
-              className={`flex items-center gap-3 rounded-lg  px-3 py-2 text-left transition
+    >
+      <div className="p-3">
+        <p className="text-xs uppercase tracking-wide text-[#49C476] mb-2">Payment Method</p>
+        <div className="flex flex-col gap-2 max-h-64 overflow-y-auto pr-1">
+          {methodTypes.map((type, idx) => {
+            const isSelected = selectedMethod === type;
+            return (
+              <button
+                type="button"
+                key={type + idx}
+                className={`flex items-center gap-3 rounded-lg  px-3 py-2 text-left transition
                 ${isSelected ? "bg-[#14301F]" : "bg-transparent hover:bg-[#101c14]"}
               `}
-              onClick={() => handleMethodSelection(type)}
-              disabled={adminLoading}
-            >
-              <span
-                className={`flex h-5 w-5 items-center justify-center rounded-md border-2 ${
-                  isSelected ? "border-[#49C476] bg-[#49C476]" : "border-[#49C476]"
-                }`}
+                onClick={() => handleMethodSelection(type)}
+                disabled={adminLoading}
               >
-                {isSelected && (
-                  <svg className="w-3 h-3 text-[#0F1219]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
-                    <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
-              </span>
-              <span className="text-sm font-medium">{type}</span>
-            </button>
-          );
-        })}
+                <span
+                  className={`flex h-5 w-5 items-center justify-center rounded-md border-2 ${isSelected ? "border-[#49C476] bg-[#49C476]" : "border-[#49C476]"
+                    }`}
+                >
+                  {isSelected && (
+                    <svg className="w-3 h-3 text-[#0F1219]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
+                      <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </span>
+                <span className="text-sm font-medium">{type}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
 
 
   /** Render */
@@ -545,8 +636,39 @@ const renderAddMethodDropdown = () => (
         renderEmptyState()
       ) : (
         <>
-          {paginatedMethods.map(renderPaymentMethod)}
-          {renderPagination()}
+          {/* Bank Section */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Bank</h4>
+            </div>
+            <div>
+              {bankMethods.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">No bank payment methods added.</p>
+              ) : (
+                <>
+                  {bankMethodsPaginated.map(renderPaymentMethod)}
+                  {renderPagination(bankMethods.length)}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Separator */}
+          <div className="border-t border-gray-200 dark:border-[#35353E] my-6" />
+
+          {/* Mobile Money Section */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Mobile Money</h4>
+            </div>
+            <div>
+              {mobileMoneyMethods.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">No mobile money methods added.</p>
+              ) : (
+                mobileMoneyMethods.map(renderMobilePaymentMethod)
+              )}
+            </div>
+          </div>
         </>
       )}
 

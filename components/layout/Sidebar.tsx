@@ -80,45 +80,19 @@ export default function Sidebar() {
                             : "font-normal text-[#727272] text-sm uppercase"
                         )}
                       >
-                        {isActive ? (
-                          isDark ? (
-                            <span className="flex items-center justify-center gap-0.5">
-                              <span className="text-[#727272] text-base uppercase font-bold">
-                                Money
-                              </span>
-
-                              <img
-                                className="mt-2"
-                                src="https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"
-                                alt=""
-                              />
-                            </span>
-                          ) : (
-                            <span className="flex items-center justify-center gap-0.5">
-                              <span className="text-[#727272] text-base uppercase font-bold">
-                                Money
-                              </span>
-
-                              <img
-                                className="mt-2"
-                                src="https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"
-                                alt=""
-                              />
-                            </span>
-                          )
-                        ) : (
-                          <span className="flex items-center justify-center gap-0.5">
-                            <span className="text-[#727272] text-base uppercase font-bold">
-                              Money
-                            </span>
-
-                            <img
-                              className="mt-2"
-                              src="https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"
-                              alt=""
-                            />
+                        <span className="flex items-center justify-center gap-0.5">
+                          <span className={isActive ? "text-white text-base uppercase font-bold" : "text-[#727272] text-base uppercase font-bold"}>
+                            Money
                           </span>
-                        )}
+                          <img
+                            className="mt-2"
+                            src={isActive 
+                              ? "https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png"
+                              : "https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"
+                            }
+                            alt=""
+                          />
+                        </span>
                       </span>
                     ) : (
                       ''
@@ -132,45 +106,19 @@ export default function Sidebar() {
                             : "font-normal text-[#727272] text-sm uppercase"
                         )}
                       >
-                        {isActive ? (
-                          isDark ? (
-                            <span className="flex ml-1 items-center justify-center gap-0.5">
-                              <span className="text-[#727272] text-base uppercase font-bold">
-                                E
-                              </span>
-
-                              <img
-                                className="mt-2"
-                                src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
-                                alt=""
-                              />
-                            </span>
-                          ) : (
-                            <span className="flex ml-1 items-center justify-center gap-0.5">
-                              <span className="text-[#727272] text-base uppercase font-bold">
-                                E
-                              </span>
-
-                              <img
-                                className="mt-2"
-                                src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
-                                alt=""
-                              />
-                            </span>
-                          )
-                        ) : (
-                          <span className="flex ml-1 items-center justify-center gap-0.5">
-                            <span className="text-[#727272] text-base uppercase font-bold">
-                              E
-                            </span>
-
-                            <img
-                              className="mt-2"
-                              src="https://res.cloudinary.com/pitz/image/upload/v1752561097/Group_9_gen9av.png"
-                              alt=""
-                            />
+                        <span className="flex ml-1 items-center justify-center gap-0.5">
+                          <span className={isActive ? "text-white text-base uppercase font-bold" : "text-[#727272] text-base uppercase font-bold"}>
+                            E
                           </span>
-                        )}
+                          <img
+                            className="mt-2"
+                            src={isActive 
+                              ? "https://res.cloudinary.com/pitz/image/upload/v1764698106/Group_8_hjhlxe.png"
+                              : "https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png"
+                            }
+                            alt=""
+                          />
+                        </span>
                       </span>
                     ) : (
                       <span className="font-bold ml-1">{label}</span>
