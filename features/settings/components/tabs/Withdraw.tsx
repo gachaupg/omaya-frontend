@@ -463,14 +463,14 @@ const Withdraw = () => {
                     {errors.confirmAddress}
                   </div>
                 )}
-                  <div className="flex items-center mb-2 text-[#1D8751] font-semibold text-base">
-                    <span className="text-[#051015] dark:text-[#A3A3A3] ml-2 text-sm">Transfer Details</span>{" "}
+                  <div className="flex items-center mb-2">
+                    <span className="text-[#1D8751] dark:text-[#1D8751] text-xs font-medium">Transfer Details</span>{" "}
                     <svg
-                      width="18"
-                      height="18"
+                      width="14"
+                      height="14"
                       fill="none"
                       viewBox="0 0 24 24"
-                      className="mr-1"
+                      className="ml-1"
                     >
                       <circle
                         cx="12"
@@ -488,19 +488,17 @@ const Withdraw = () => {
                       <circle cx="12" cy="16" r="1" fill="#1D8751" />
                     </svg>
                   </div>
-                <div className= "bg-white dark:bg-[#18181B] border border-[#1D8751] rounded-xl p-4 mb-4">
-                
-                  <ul className="list-disc pl-6 text-[#051015] dark:text-[#A3A3A3] text-sm space-y-1">
-                    <li className="">
-                      Please send the money from your own account Only
-                    </li>
-                    <li>
-                      Put transaction ID in the description field of the bank
-                    </li>
-                    <li>
-                      Please note, If you do not follow above conditions, we
-                      will reject your transaction and send you back your money.
-                    </li>
+                <div className="bg-[#1A1D21] dark:bg-[#1A1D21] border border-[#1D8751]/30 rounded-lg p-4 mb-4">
+                  <style jsx>{`
+                    .custom-bullet-list li::marker {
+                      color: #1D8751;
+                      font-size: 1.2rem;
+                    }
+                  `}</style>
+                  <ul className="custom-bullet-list list-disc pl-5 text-[#C1C1C1] dark:text-[#C1C1C1] text-[13px] leading-relaxed space-y-1 marker:text-[#1D8751] font-normal">
+                    <li>Please send the money from your own account Only</li>
+                    <li>Put transaction ID in the description field of the bank</li>
+                    <li>Please note, If you do not follow above conditions, we will reject your transaction and send you back your money.</li>
                   </ul>
                 </div>
                 <Button
