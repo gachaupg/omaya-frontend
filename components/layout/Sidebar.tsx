@@ -30,7 +30,7 @@ export default function Sidebar() {
         )}
       >
         <nav>
-          <ul className="space-y-1">
+          <ul className="space-y-2">
             {navItems.map((item) => {
               // Normalize paths for comparison (handle trailing slashes)
               const normalizedPathname = pathname?.replace(/\/$/, "") || "";
@@ -48,7 +48,7 @@ export default function Sidebar() {
                     prefetch={true}
                     href={item.href}
                     className={clsx(
-                      "flex items-center px-3 md:px-4 lg:px-6 py-3 rounded-lg text-sm md:text-base font-medium gap-2 md:gap-3 lg:gap-4 transition",
+                      "flex items-center px-3 md:px-4 lg:px-6 py-3 rounded-r-lg text-sm md:text-base font-medium gap-2 md:gap-3 lg:gap-4 transition",
                       "w-full",
                       isActive
                         ? "bg-[#E1E1E1] dark:bg-[#303038] text-[#051015] dark:text-white"
@@ -58,7 +58,7 @@ export default function Sidebar() {
                     {item.labelKey === "navigation.exchange" ? (
                       <>
                         <img
-                          className=" w-9 h-8 object-cover "
+                          className=" w-10 h-10 object-cover "
                           src="https://res.cloudinary.com/pitz/image/upload/v1764568507/uil_exchange_1_okxkvb.png"
                           alt=""
                         />
@@ -67,7 +67,7 @@ export default function Sidebar() {
                       <img
                         src={item.icon}
                         alt={label + " icon"}
-                        className="ml-2 w-5 h-5 md:w-6 md:h-6 object-contain flex-shrink-0"
+                        className="ml-2 w-5 h-5 md:w-7 md:h-7 object-contain flex-shrink-0"
                       />
                     )}
                     {item.labelKey === "navigation.express" ? (
@@ -82,9 +82,6 @@ export default function Sidebar() {
                         {isActive ? (
                           isDark ? (
                             <span className="flex items-center justify-center gap-0.5">
-                              <span className="text-[#727272] text-base uppercase font-bold">
-                                E
-                              </span>
 
                               <img
                                 className="mt-2"
@@ -94,9 +91,7 @@ export default function Sidebar() {
                             </span>
                           ) : (
                             <span className="flex items-center justify-center gap-0.5">
-                              <span className="text-[#727272] text-base uppercase font-bold">
-                                E
-                              </span>
+                             
 
                               <img
                                 className="mt-2"
@@ -107,9 +102,7 @@ export default function Sidebar() {
                           )
                         ) : (
                           <span className="flex items-center justify-center gap-0.5">
-                            <span className="text-[#727272] text-base uppercase font-bold">
-                              E
-                            </span>
+                           
 
                             <img
                               className="mt-2"
@@ -118,6 +111,15 @@ export default function Sidebar() {
                             />
                           </span>
                         )}
+                      </span>
+                    ) : item.labelKey === "navigation.exchange" ? (
+                      <span className="flex items-center justify-center gap-0.5 font-bold text-base">
+                        Money
+                        <img
+                          src="/images/xicon.png"
+                          alt="X icon"
+                          className="-ml-1.5 -mb-1.5 w-5 h-5 object-contain"
+                        />
                       </span>
                     ) : (
                       label
@@ -228,6 +230,15 @@ export default function Sidebar() {
                                 "CHANGE"
                               ).toUpperCase()}
                         </span>
+                      </span>
+                    ) : item.labelKey === "navigation.exchange" ? (
+                      <span className="flex items-center justify-center gap-0.5 font-bold text-base">
+                        Money
+                        <img
+                          src={isDark ? "/images/xicon.png" : "https://via.placeholder.com/24?text=X"}
+                          alt="X icon"
+                          className="w-5 h-5 object-contain"
+                        />
                       </span>
                     ) : (
                       label
