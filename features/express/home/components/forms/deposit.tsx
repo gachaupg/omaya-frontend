@@ -2580,6 +2580,11 @@ export default function DepositForm({
                   <span className="text-xs text-[#1D8751] font-medium">(Active)</span>
                 )} */}
               </label>
+              <div className={`text-xs mb-1 ${
+                isDark ? "text-[#788099]" : "text-[#64748B]"
+              }`}>
+                Amount
+              </div>
               <div className="relative">
                 <input
                   type="text"
@@ -2686,13 +2691,11 @@ export default function DepositForm({
 
             {/* Bank/Payment Method Section */}
             <div className="flex-1 min-w-0">
-              <label
-                className={`block text-[15px] mb-2 font-semibold ${
-                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                }`}
-              >
+              <div className={`text-xs mb-1 mt-[30px] ${
+                isDark ? "text-[#788099]" : "text-[#64748B]"
+              }`}>
                 Payment Method
-              </label>
+              </div>
               {/* <div>
                 hello
                 {
@@ -2863,6 +2866,11 @@ export default function DepositForm({
                   <span className="text-xs text-[#1D8751] font-medium">(Active)</span>
                 )}
               </label>
+              <div className={`text-xs mb-1 ${
+                isDark ? "text-[#788099]" : "text-[#64748B]"
+              }`}>
+                Amount
+              </div>
               <div className="relative">
                 <input
                   type="text"
@@ -3000,13 +3008,11 @@ export default function DepositForm({
 
             {/* Asset Section */}
             <div className="flex-1 min-w-0">
-              <label
-                className={`block text-[15px] mb-2 font-semibold ${
-                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                }`}
-              >
-                Asset
-              </label>
+              <div className={`text-xs mb-1 mt-[30px] ${
+                isDark ? "text-[#788099]" : "text-[#64748B]"
+              }`}>
+                You Get
+              </div>
               <div className="relative" ref={assetDropdownRef}>
                 <div
                   className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${

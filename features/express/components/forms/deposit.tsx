@@ -2930,6 +2930,7 @@ export default function DepositForm({
                   <span className="text-xs text-[#1D8751] font-medium">(Active)</span>
                 )} */}
               </label>
+              <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">Amount</div>
               <div className="relative">
                 {/* <input
                   type="text"
@@ -3128,9 +3129,7 @@ export default function DepositForm({
               data-select-card="true"
               className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#D1D2D4FF] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none"
             >
-              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
-                {t("express.bankPaymentMethod", "Bank/Payment Method")}
-              </label>
+              <div className="text-xs text-[#788099] dark:text-[#788099] mb-1 mt-[30px] sm:mt-[34px]">{t("express.bankPaymentMethod", "Bank/Payment Method")}</div>
               {/* <div>
                 hello
                 {
@@ -3362,6 +3361,7 @@ export default function DepositForm({
                   </span>
                 )}
               </label>
+              <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">Amount</div>
               <div className="relative">
                 <input
                   type="text"
@@ -3569,9 +3569,7 @@ export default function DepositForm({
 
             {/* Asset Section */}
             <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#D1D2D4FF] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none">
-              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
-                {t("express.asset", "Asset")}
-              </label>
+              <div className="text-xs text-[#788099] dark:text-[#788099] mb-1 mt-[30px] sm:mt-[34px]">{t("express.youGet", "You Get")}</div>
               <div className="relative" ref={assetDropdownRef}>
                 <div
                   className={`h-[60px] w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 text-base sm:text-lg border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer`}
