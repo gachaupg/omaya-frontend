@@ -449,8 +449,8 @@ const PaymentMethods = () => {
       w-[90vw] max-w-xs sm:w-64
       left-1/2 -translate-x-1/2 sm:left-auto sm:right-0 sm:translate-x-0
       rounded-xl border-2 border-[#1D8751] bg-[#0F1219] text-white shadow-[0_10px_30px_rgba(0,0,0,0.45)]
-      z-1000
-    `}
+      z-1
+    `} 
     >
       <div className="p-3">
         <p className="text-xs uppercase tracking-wide text-[#49C476] mb-2">Payment Method</p>
