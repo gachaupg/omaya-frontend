@@ -174,9 +174,9 @@ const UserCard = () => {
           <HelpSupportForm />
         </div>
       ) : (
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between w-full gap-4 md:gap-6">
+      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between w-full gap-4 lg:gap-6">
         {/* Left Section: Avatar and Greeting */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
           {/* User Avatar with Edit Button */}
           <div className="relative">
             <div className="h-14 w-14 rounded-full overflow-hidden relative">
@@ -290,11 +290,11 @@ const UserCard = () => {
         </div>
 
         {/* Center Section: User ID and User Type */}
-        <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6 flex-1 justify-center">
+        <div className="flex flex-row items-start gap-4 sm:gap-6 w-full lg:flex-1 lg:justify-center">
           {/* User ID */}
-          <div className="text-center md:text-left">
+          <div className="text-left flex-1">
             <p className="text-xs dark:text-[#788099] text-[#788099] mb-1">User ID</p>
-            <div className="flex items-center gap-2 justify-center md:justify-start">
+            <div className="flex items-center gap-2 justify-start">
               <p className="text-base font-bold dark:text-[#FFFFFF] text-[#1D1D23]">{user?.user_id}</p>
               <button className="cursor-pointer">
                 <svg 
@@ -321,7 +321,7 @@ const UserCard = () => {
           </div>
 
           {/* User Type */}
-          <div className="text-center md:text-left">
+          <div className="text-left flex-1">
             <p className="text-xs text-[#788099] mb-1">User Type</p>
             <p className="text-base font-bold dark:text-[#FFFFFF] text-[#1D1D23]">
               {user?.user_type ? user.user_type.charAt(0).toUpperCase() + user.user_type.slice(1) : ''}
@@ -330,10 +330,10 @@ const UserCard = () => {
         </div>
 
         {/* Right Section: Action Buttons */}
-        <div className="flex flex-wrap gap-2 justify-center md:justify-end">
+        <div className="flex flex-wrap gap-2 justify-start sm:justify-center lg:justify-end w-full lg:w-auto">
             <Button
               borderRadius={24}
-              width={130}
+              className="w-full sm:w-[130px]"
               height={36}
               variant="primary"
               size="sm"
@@ -343,7 +343,7 @@ const UserCard = () => {
             </Button>
             <Button
               borderRadius={24}
-              width={130}
+              className="w-full sm:w-[130px]"
               height={36}
               variant="secondary"
               size="sm"
