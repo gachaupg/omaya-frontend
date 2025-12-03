@@ -540,7 +540,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                   loadingText="Loading payment methods..."
                   emptyText="No payment methods available"
                   searchable={true}
-                  dropdownTitle="Select a payment method"
+                  dropdownTitle="Payment method"
                   dropdownOffsetY={-6.5}
                   dropdownOffsetX={12}
                 />
@@ -656,7 +656,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                   loadingText="Loading payment methods..."
                   emptyText="No payment methods available"
                   searchable={true}
-                  dropdownTitle="Select a payment method"
+                  dropdownTitle="Payment method"
                   dropdownOffsetY={-6.5}
                   dropdownOffsetX={12}
                 />
