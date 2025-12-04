@@ -13,6 +13,7 @@ import Market from "./tabs/Market";
 import Orders from "./tabs/Orders";
 import NotFound from "./tabs/NotFound";
 import P2PCenter from "./tabs/p2pCenter";
+import { Chats } from "./tabs/Chats";
 import { P2PDataProvider } from "./P2PDataProvider";
 import { useGroupedMessages } from "../hooks/useGroupedMessages";
 import { RootState } from "@/store/rootReducer";
@@ -28,10 +29,11 @@ const P2PLayout = () => {
    const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const { totalUnreadCount } = useSelector((state: RootState) => state.unreadMessages);
 
+   // Reduce refetch interval when on chats tab to prevent constant reloading
    useGroupedMessages({ 
     enabled: isAuthenticated,
     limit: 100,
-    refetchInterval: 30000,
+    refetchInterval: activeTab === "chats" ? 60000 : 30000, // 60s for chats, 30s for others
   });
   // Update active tab when query parameter changes
   useEffect(() => {
@@ -81,6 +83,14 @@ const handleTabChange = (tab: string) => {
         return <Orders />;
       case "center":
         return <P2PCenter />;
+          case "chats":
+            return <Chats />;
+      case "chats":
+        return (
+          <div className="w-full rounded-2xl border border-dashed border-[#D1D2D4FF] dark:border-[#35353E] bg-white dark:bg-[#1D1D23] p-6 text-center text-sm text-[#788099] dark:text-[#A2A4A9]">
+            Chats coming soon.
+          </div>
+        );
       default:
         return <NotFound />;
     }
