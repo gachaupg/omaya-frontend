@@ -296,7 +296,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
     <div className="w-full p-0 sm:p-4 min-h-screen flex flex-col items-center justify-start bg-[#EEF1F4] dark:bg-[#18181D]">
       {loading && <Loader />}
       {/* Title and Buy/Sell Switch */}
-      <div className="mb-1 w-full md:max-w-4xl md:mx-auto px-0 sm:px-0">
+      <div className="mb-1 w-full md:max-w-5xl md:mx-auto px-0 sm:px-0">
         <div className="text-gray-900 dark:text-white text-lg mb-1">
           Post Ad
         </div>
@@ -331,7 +331,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       </div>
 
       {/* Type & Price */}
-      <div className="w-full md:max-w-4xl md:mx-auto px-0 sm:px-2 md:px-0">
+      <div className="w-full md:max-w-5xl md:mx-auto px-0 sm:px-2 md:px-0">
         <div className="text-sm text-gray-600 dark:text-[#788099] mb-2 mt-3">
           Type & Price
         </div>
