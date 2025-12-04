@@ -8,9 +8,7 @@ WORKDIR /app
 
 # Copy package files
 COPY package.json package-lock.json* ./
-# Use npm install to automatically resolve platform-specific packages
-# This will install the correct Linux SWC package instead of Windows one
-RUN npm install --legacy-peer-deps
+RUN npm ci
 
 # Rebuild the source code only when needed
 FROM base AS builder

@@ -3011,7 +3011,7 @@ export default function DepositForm({
               <div className={`text-xs mb-1 mt-[30px] ${
                 isDark ? "text-[#788099]" : "text-[#64748B]"
               }`}>
-                You Get
+                Asset
               </div>
               <div className="relative" ref={assetDropdownRef}>
                 <div
