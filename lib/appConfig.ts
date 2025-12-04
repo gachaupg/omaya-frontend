@@ -111,6 +111,9 @@ export const API_CONFIG = {
   RATES: {
     TRANSACTIONS: "/trading_engine/all-system-transactions/",
   },
+  P2P_WITHDRAWAL_DEPOSIT: {
+    MY_TRANSACTIONS: "/trading_engine/my-transactions/",
+  },
   SETTINGS: {
     CREATE_DEVICE: "/api/devices/create/",
     GET_DEVICE: "/api/device-sessions/",
