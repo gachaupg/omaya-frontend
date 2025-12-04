@@ -27,19 +27,48 @@ const P2PDashboard = () => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   useEffect(() => {
     if (isAuthenticated) {
-      dispatch(fetchWallets());
-      dispatch(fetchMatchedTrades(1));
-      dispatch(fetchTransactionSummary())
+      // Use catch to prevent errors from crashing the app
+      dispatch(fetchWallets()).catch(() => {
+        // Silently handle errors - wallet slice will set safe defaults
+      });
+      dispatch(fetchMatchedTrades(1)).catch(() => {
+        // Silently handle errors
+      });
+      dispatch(fetchTransactionSummary()).catch(() => {
+        // Silently handle errors
+      });
     }
   }, [dispatch, isAuthenticated]);
 
+  // Ensure wallets is always an object to prevent crashes
+  const safeWallets = wallets || {
+    total_balance: '0',
+    wallet: {
+      id: 0,
+      currency: 'USDT',
+      balance: '0',
+      deposit_address: '',
+      created_on: new Date().toISOString(),
+    },
+    deposit_addresses: {
+      tron: {
+        address: null,
+        status: 'inactive',
+      },
+      bsc: {
+        address: '',
+        status: 'inactive',
+      },
+    },
+  };
+
   // Get balance from wallet response - try multiple sources
-  const totalBalance = wallets?.total_balance ? toNumber(wallets.total_balance) : 0;
-  const walletBalance = wallets?.wallet?.balance ? parseFloat(wallets.wallet.balance) : 0;
+  const totalBalance = safeWallets?.total_balance ? toNumber(safeWallets.total_balance) : 0;
+  const walletBalance = safeWallets?.wallet?.balance ? parseFloat(safeWallets.wallet.balance) : 0;
   
   // For USDT wallets, prioritize the individual wallet balance
   // This handles cases where total_balance might not be accurate
-  const isUSDTWallet = wallets?.wallet?.currency === "USDT";
+  const isUSDTWallet = safeWallets?.wallet?.currency === "USDT";
   const balance = isUSDTWallet && walletBalance > 0 ? walletBalance : 
                   (totalBalance && !isNaN(totalBalance) && totalBalance > 0) ? totalBalance : walletBalance;
   

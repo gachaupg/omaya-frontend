@@ -130,11 +130,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
     }
   };
 
-  // Debug logging
-  console.log("MyAdsTable - trades:", trades);
-  console.log("MyAdsTable - trades length:", trades?.length);
-  console.log("MyAdsTable - paginatedTrades:", paginatedTrades);
-  console.log("MyAdsTable - totalPages:", totalPages);
+  // Removed debug logging to reduce console noise
 
   // Add check for empty trades
   if (!trades || trades.length === 0) {
@@ -211,16 +207,28 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                 </td>
                 {/* Payment */}
                 <td className="px-4 py-4 min-width-[150px]">
-                  {Array.isArray(trade.payment_details)
-                    ? trade.payment_details.map((p: any, i: number) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <div>
-                           <img src={p.provider_logo || "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png"} alt=""  className="w-5 h-5 rounded"/>
-                        </div>
-                          <div className="text-base font-medium text-gray-900 dark:text-white">{p.provider}</div>
-                      </div>
-                      ))
-                    : <span className="text-base font-medium text-gray-900 dark:text-white">{trade.payment_details?.[0]?.provider}</span>}
+                  {Array.isArray(trade.payment_details) && trade.payment_details.length > 0
+                    ? trade.payment_details
+                        .filter((p: any) => p && typeof p === 'object') // Filter out null/undefined
+                        .map((p: any, i: number) => (
+                          <div key={i} className="flex items-center gap-2">
+                            <div>
+                              <img 
+                                src={p?.provider_logo || "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png"} 
+                                alt="" 
+                                className="w-5 h-5 rounded"
+                                onError={(e) => {
+                                  // Fallback to default image if logo fails to load
+                                  (e.target as HTMLImageElement).src = "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png";
+                                }}
+                              />
+                            </div>
+                            <div className="text-base font-medium text-gray-900 dark:text-white">{p?.provider || ''}</div>
+                          </div>
+                        ))
+                    : <span className="text-base font-medium text-gray-900 dark:text-white">
+                        {trade.payment_details?.[0]?.provider || 'No payment methods'}
+                      </span>}
                 </td>
                 {/* Last update */}
                 <td className="px-4 py-4">
@@ -380,19 +388,29 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
             <div className="flex flex-col gap-2 pt-2 border-t border-gray-200 dark:border-[#35353E]">
               <span className="text-sm font-medium text-gray-500 dark:text-[#8C8CA1]">Payment Methods</span>
               <div className="flex flex-wrap gap-2">
-                {Array.isArray(trade.payment_details) && trade.payment_details.slice(0, 2).map((p: any, i: number) => (
-                  <div key={i} className="flex items-center gap-1.5">
-                    <img 
-                      src={p.provider_logo || "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png"} 
-                      alt="" 
-                      className="w-5 h-5 rounded"
-                    />
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">{p.provider}</span>
-                  </div>
-                ))}
-                {Array.isArray(trade.payment_details) && trade.payment_details.length > 2 && (
+                {Array.isArray(trade.payment_details) && trade.payment_details.length > 0
+                  ? trade.payment_details
+                      .filter((p: any) => p && typeof p === 'object') // Filter out null/undefined
+                      .slice(0, 2)
+                      .map((p: any, i: number) => (
+                        <div key={i} className="flex items-center gap-1.5">
+                          <img 
+                            src={p?.provider_logo || "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png"} 
+                            alt="" 
+                            className="w-5 h-5 rounded"
+                            onError={(e) => {
+                              // Fallback to default image if logo fails to load
+                              (e.target as HTMLImageElement).src = "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png";
+                            }}
+                          />
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">{p?.provider || ''}</span>
+                        </div>
+                      ))
+                  : <span className="text-sm font-medium text-gray-500 dark:text-[#8C8CA1]">No payment methods</span>}
+                {Array.isArray(trade.payment_details) && 
+                 trade.payment_details.filter((p: any) => p && typeof p === 'object').length > 2 && (
                   <span className="text-sm font-medium text-gray-500 dark:text-[#8C8CA1]">
-                    +{trade.payment_details.length - 2} more
+                    +{trade.payment_details.filter((p: any) => p && typeof p === 'object').length - 2} more
                   </span>
                 )}
               </div>

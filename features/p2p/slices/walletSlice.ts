@@ -19,12 +19,55 @@ const walletSlice = createStandardSlice<WalletResponse>(
       })
       .addCase(fetchWallets.fulfilled, (state: any, action: any) => {
         state.loading = false;
-        state.data = action.payload;
+        // Ensure data is always an object, even if payload is null/undefined
+        state.data = action.payload || {
+          total_balance: '0',
+          wallet: {
+            id: 0,
+            currency: 'USDT',
+            balance: '0',
+            deposit_address: '',
+            created_on: new Date().toISOString(),
+          },
+          deposit_addresses: {
+            tron: {
+              address: null,
+              status: 'inactive',
+            },
+            bsc: {
+              address: '',
+              status: 'inactive',
+            },
+          },
+        };
         state.lastUpdated = Date.now();
       })
       .addCase(fetchWallets.rejected, (state: any, action: any) => {
         state.loading = false;
         state.error = action.payload;
+        // Keep existing data or set safe default to prevent crashes
+        if (!state.data) {
+          state.data = {
+            total_balance: '0',
+            wallet: {
+              id: 0,
+              currency: 'USDT',
+              balance: '0',
+              deposit_address: '',
+              created_on: new Date().toISOString(),
+            },
+            deposit_addresses: {
+              tron: {
+                address: null,
+                status: 'inactive',
+              },
+              bsc: {
+                address: '',
+                status: 'inactive',
+              },
+            },
+          };
+        }
       });
   }
 );

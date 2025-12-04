@@ -67,43 +67,69 @@ const P2PCenter: React.FC = () => {
   // Transform the "My Orders" data
   const transformedMyOrders = useMemo(() => {
     // My orders come in the structure: { buy_orders: [], sell_orders: [], buy_pagination: {}, sell_pagination: {} }
-    console.log("P2PCenter - myOrders raw data:", myOrders);
-    const buyOrders = (myOrders as any)?.buy_orders || [];
-    const sellOrders = (myOrders as any)?.sell_orders || [];
-    const allOrders = [...buyOrders, ...sellOrders];
-    console.log("P2PCenter - buyOrders:", buyOrders);
-    console.log("P2PCenter - sellOrders:", sellOrders);
-    console.log("P2PCenter - allOrders:", allOrders);
+    // Handle both array and paginated response structures
+    if (!myOrders || typeof myOrders !== 'object') {
+      return [];
+    }
 
-    const transformed = allOrders.map((trade: any) => ({
-      ...trade,
-      assetSymbol: trade.currency,
-      assetImage:
-        trade.asset_image ||
-        "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png",
-      commission_rate: trade.commission_rate || 0,
-      payment:
-        trade.payment_details?.map((detail: any) => ({
-          bank: detail.provider,
-          logo:
-            detail.provider_logo ||
-            "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png",
-        })) || [],
-      provider_logo: trade.payment_details?.[0]?.provider_logo,
-      lastUpdate: new Date(trade.created_on).toLocaleString(),
-    }));
+    // Extract buy_orders - handle both array and paginated { results: [] } structure
+    let buyOrders: any[] = [];
+    if (Array.isArray((myOrders as any)?.buy_orders)) {
+      buyOrders = (myOrders as any).buy_orders;
+    } else if ((myOrders as any)?.buy_orders?.results && Array.isArray((myOrders as any).buy_orders.results)) {
+      buyOrders = (myOrders as any).buy_orders.results;
+    }
+
+    // Extract sell_orders - handle both array and paginated { results: [] } structure
+    let sellOrders: any[] = [];
+    if (Array.isArray((myOrders as any)?.sell_orders)) {
+      sellOrders = (myOrders as any).sell_orders;
+    } else if ((myOrders as any)?.sell_orders?.results && Array.isArray((myOrders as any).sell_orders.results)) {
+      sellOrders = (myOrders as any).sell_orders.results;
+    }
+
+    const allOrders = [...buyOrders, ...sellOrders];
+
+    const transformed = allOrders
+      .filter((trade: any) => trade && typeof trade === 'object') // Filter out null/undefined
+      .map((trade: any) => {
+        // Safely extract payment_details, filtering out null/undefined items
+        const safePaymentDetails = Array.isArray(trade.payment_details)
+          ? trade.payment_details.filter((detail: any) => detail && typeof detail === 'object')
+          : [];
+
+        return {
+          ...trade,
+          assetSymbol: trade.currency,
+          assetImage:
+            trade.asset_image ||
+            "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png",
+          commission_rate: trade.commission_rate || 0,
+          payment: safePaymentDetails.map((detail: any) => ({
+            bank: detail.provider || '',
+            logo:
+              detail.provider_logo ||
+              "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png",
+          })),
+          payment_details: safePaymentDetails, // Preserve original structure for MyAdsTable
+          provider_logo: safePaymentDetails[0]?.provider_logo || null,
+          lastUpdate: trade.created_on ? new Date(trade.created_on).toLocaleString() : '',
+        };
+      });
     
-    console.log("P2PCenter - transformedMyOrders:", transformed);
     return transformed;
   }, [myOrders]);
 
   // Handle wallet error gracefully - provide fallback empty object
   const safeWallets = wallets || ({} as any);
+  
+  // Safely handle summary data
+  const safeSummary = summary || null;
 
   return (
     <div className="flex flex-col gap-6 w-full h-full min-h-screen px-3 sm:px-4">
-      <P2pProfile wallets={safeWallets} summary={summary} loading={loading} />
-      <Stats summary={summary} />
+      <P2pProfile wallets={safeWallets} summary={safeSummary} loading={loading} />
+      <Stats summary={safeSummary} />
       <FiterTabs
         transformedTrades={transformedTrades}
         myOrders={transformedMyOrders}

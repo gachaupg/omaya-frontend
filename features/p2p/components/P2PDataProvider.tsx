@@ -75,18 +75,43 @@ export const P2PDataProvider = ({ children }: P2PDataProviderProps) => {
       });
 
       // Parallel API calls for maximum speed (3x faster than sequential!)
+      // Use Promise.allSettled to prevent one failure from blocking others
       const promises = [];
 
-      if (needsWallets) promises.push(dispatch(fetchWallets()));
-      if (needsTrades) promises.push(dispatch(fetchMatchedTrades(1)));
-      if (needsSummary) promises.push(dispatch(fetchTransactionSummary()));
+      if (needsWallets) {
+        promises.push(
+          dispatch(fetchWallets())
+            .catch((error) => {
+              // Log but don't throw - allow app to continue even if wallets fail
+              logger.error("[P2PDataProvider] Wallet fetch failed (non-blocking)", error);
+              return null; // Return null to indicate failure without throwing
+            })
+        );
+      }
+      if (needsTrades) {
+        promises.push(
+          dispatch(fetchMatchedTrades(1))
+            .catch((error) => {
+              logger.error("[P2PDataProvider] Trades fetch failed (non-blocking)", error);
+              return null;
+            })
+        );
+      }
+      if (needsSummary) {
+        promises.push(
+          dispatch(fetchTransactionSummary())
+            .catch((error) => {
+              logger.error("[P2PDataProvider] Summary fetch failed (non-blocking)", error);
+              return null;
+            })
+        );
+      }
 
-      Promise.all(promises)
-        .then(() => {
-          logger.info("[P2PDataProvider] All P2P data loaded successfully");
-        })
-        .catch((error) => {
-          logger.error("[P2PDataProvider] Error loading P2P data", error);
+      Promise.allSettled(promises)
+        .then((results) => {
+          const successful = results.filter((r) => r.status === 'fulfilled').length;
+          const failed = results.filter((r) => r.status === 'rejected').length;
+          logger.info(`[P2PDataProvider] Data fetch completed: ${successful} succeeded, ${failed} failed`);
         });
     } else {
       logger.debug(
