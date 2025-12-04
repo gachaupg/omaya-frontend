@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import Button from "@/features/p2p/components/Common/Button";
 import Input from "@/features/p2p/components/Common/Input";
 import {
@@ -78,6 +78,28 @@ const PaymentMethods = () => {
       dispatch(clearPostStatus());
     }
   }, [showAddDropdown, user, dispatch]);
+
+  // Close dropdown on outside click
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLDivElement | null>(null);
+
+  const handleClickOutside = useCallback((e: MouseEvent) => {
+    const target = e.target as Node;
+    if (
+      showAddDropdown &&
+      dropdownRef.current &&
+      !dropdownRef.current.contains(target) &&
+      buttonRef.current &&
+      !buttonRef.current.contains(target)
+    ) {
+      setShowAddDropdown(false);
+    }
+  }, [showAddDropdown]);
+
+  useEffect(() => {
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [handleClickOutside]);
 
   // Providers for selected method
   const providers = (adminMethods || []).filter(
@@ -443,45 +465,33 @@ const PaymentMethods = () => {
   // Inline Add Method Dropdown
   const renderAddMethodDropdown = () => (
     <div
-      className={`
-      absolute top-full mt-2
-      ${showAddDropdown ? "" : "hidden"}
-      w-[90vw] max-w-xs sm:w-64
-      left-1/2 -translate-x-1/2 sm:left-auto sm:right-0 sm:translate-x-0
-      rounded-xl border-2 border-[#1D8751] bg-[#0F1219] text-white shadow-[0_10px_30px_rgba(0,0,0,0.45)]
-      z-1
-    `}
+      ref={dropdownRef}
+      className={
+        `absolute top-full mt-2 ${showAddDropdown ? "" : "hidden"} sm:w-48 md:w-56 right-0 rounded-lg border border-[#49C476] bg-[#0F1219] text-white shadow-lg z-10`
+      }
     >
-      <div className="p-3">
-        <p className="text-xs uppercase tracking-wide text-[#49C476] mb-2">Payment Method</p>
-        <div className="flex flex-col gap-2 max-h-64 overflow-y-auto pr-1">
-          {methodTypes.map((type, idx) => {
-            const isSelected = selectedMethod === type;
-            return (
-              <button
-                type="button"
-                key={type + idx}
-                className={`flex items-center gap-3 rounded-lg  px-3 py-2 text-left transition
-                ${isSelected ? "bg-[#14301F]" : "bg-transparent hover:bg-[#101c14]"}
-              `}
-                onClick={() => handleMethodSelection(type)}
-                disabled={adminLoading}
-              >
-                <span
-                  className={`flex h-5 w-5 items-center justify-center rounded-md border-2 ${isSelected ? "border-[#49C476] bg-[#49C476]" : "border-[#49C476]"
-                    }`}
-                >
-                  {isSelected && (
-                    <svg className="w-3 h-3 text-[#0F1219]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
-                      <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  )}
-                </span>
-                <span className="text-sm font-medium">{type}</span>
-              </button>
-            );
-          })}
-        </div>
+      <div className="py-2">
+        {methodTypes.map((type, idx) => {
+          const isSelected = selectedMethod === type;
+          return (
+            <button
+              type="button"
+              key={type + idx}
+              className={`flex items-center gap-3 px-4 py-2.5 text-left transition w-full hover:bg-[#1a1f2e] ${isSelected ? "bg-[#1a1f2e]" : ""}`}
+              onClick={() => { handleMethodSelection(type); setShowAddDropdown(false); }}
+              disabled={adminLoading}
+            >
+              <span className={`flex h-5 w-5 items-center justify-center rounded border-1 flex-shrink-0 ${isSelected ? "border-[#49C476] bg-[#49C476]" : "border-[#49C476]"}`}>
+                {isSelected ? (
+                  <svg className="w-3 h-3 text-[#0F1219]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
+                    <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ) : null}
+              </span>
+              <span className="text-sm">{type}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -497,22 +507,20 @@ const PaymentMethods = () => {
         </div>
 
         <div className="relative w-full sm:w-auto">
-          <div className="w-full sm:w-auto ml-auto">
+          <div className="w-full sm:w-auto ml-auto" ref={buttonRef}>
             <Button
               height={44}
               borderRadius={24}
               variant="outline"
-              className="border-2 border-[#1D8751] w-full text-gray-900 dark:text-white relative flex items-center justify-between"
+              className="border-1 rounded-lg border-[#49C476] lg:w-56 sm:w-auto text-gray-900 dark:text-white relative flex items-center justify-center gap-2 px-4"
               size="md"
               onClick={() => setShowAddDropdown(prev => !prev)}
             >
-              <span className="flex items-center gap-2 text-sm sm:text-base font-semibold">
-                {!selectedMethod && (
-                  <span className="text-[#1D8751] text-xl font-bold">+</span>
-                )}
-                {selectedMethod || "Add Method"}
+              <span className="flex items-center gap-2">
+                <span className="flex items-center justify-center  text-[#49C476] font-light text-3xl">+</span>
+                <span className="text-sm font-medium">Add Method</span>
               </span>
-              <ChevronDown className="w-4 h-4 text-[#1D8751]" />
+              <ChevronDown className="w-4 h-4 text-neutral-200 ml-auto" />
             </Button>
             {renderAddMethodDropdown()}
           </div>
