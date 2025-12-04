@@ -17,7 +17,7 @@ shouldShowMessagesButton = false,
 }: TabsProps) => {
   const { t } = useP2PI18n();
   return (
-    <div className="flex items-start justify-between gap-4 mb-6 flex-wrap px-3 sm:px-4 pt-6">
+    <div className="flex items-start justify-between gap-4 mb-6 flex-wrap px-3 sm:px-4 pt-2">
       {/* Tab buttons on the left */}
       <div className="flex flex-wrap gap-4">
         {tabs.map((tab) => (
