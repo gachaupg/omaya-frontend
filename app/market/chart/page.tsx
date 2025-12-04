@@ -317,11 +317,16 @@ const MarketChartContent = () => {
         </div>
 
         <div className="mt-8 sm:mt-10 lg:mt-12">
-          <div className="flex flex-col gap-2 mb-4 sm:mb-6 lg:mb-8">
-            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#051015] dark:text-white">
-              Omaya Transactions
-            </h2>
-            
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4 sm:mb-6 lg:mb-8">
+              <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#051015] dark:text-white">
+                Omaya Transactions
+              </h2>
+            <Link 
+              href="/market/live-transactions"
+              className="text-[#13B562] hover:text-[#0f8f4d] font-medium text-sm sm:text-base flex items-center gap-1 transition-colors"
+            >
+              Live Transactions →
+            </Link>
           </div>
           <RatesTransactionHistory/>
           {/* <MarketTable showFullLayout={false} /> */}

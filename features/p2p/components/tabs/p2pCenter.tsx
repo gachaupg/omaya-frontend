@@ -80,12 +80,12 @@ const P2PCenter: React.FC = () => {
                   const providerString = typeof provider === 'string' ? provider : '';
                   
                   return {
-                    bank: providerString || '',
+                    bank: providerString || "",
                     logo: providerString
                       ? `/banks/${providerString
                           .toLowerCase()
                           .replace(/\s+/g, "")}.png`
-                      : '/banks/default.png',
+                      : "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg",
                   };
                 }),
               lastUpdate: trade.timestamp ? new Date(trade.timestamp).toLocaleString() : '',

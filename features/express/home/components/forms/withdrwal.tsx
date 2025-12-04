@@ -1317,9 +1317,18 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     };
   }, []);
 
-  // Close dropdown when scrolling
+  // Close asset dropdown when page scrolls, but NOT when the user scrolls inside the dropdown itself
   useEffect(() => {
-    const handleScroll = () => {
+    const handleScroll = (event: Event) => {
+      const target = event.target as Node | null;
+      // Ignore scroll events that originate from inside the dropdown content
+      if (
+        assetDropdownContentRef.current &&
+        target &&
+        assetDropdownContentRef.current.contains(target)
+      ) {
+        return;
+      }
       if (isAssetDropdownOpen) {
         setIsAssetDropdownOpen(false);
       }
