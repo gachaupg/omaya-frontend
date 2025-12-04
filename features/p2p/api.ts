@@ -630,6 +630,17 @@ export const getAllP2PTransactions = async (
   });
 };
 
+export const getMyTransactions = async (
+  page: number = 1
+): Promise<any> => {
+  return withRetry(async () => {
+    const response = await get<any>(
+      `${API_CONFIG.P2P_WITHDRAWAL_DEPOSIT.MY_TRANSACTIONS}?page=${page}`
+    );
+    return response.data;
+  });
+};
+
 export const deleteP2POrder = async (id: string): Promise<P2PResponse> => {
   return withRetry(async () => {
     const response = await del<P2PResponse>(

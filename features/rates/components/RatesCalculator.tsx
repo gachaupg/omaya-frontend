@@ -1281,34 +1281,6 @@ const RatesCalculator = () => {
   return (
     <div className="bg-white dark:bg-[#18181D] p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-xl lg:rounded-2xl border-[1.5px] border-gray-200 dark:border-[#35353E] shadow-md container mx-auto">
       <div className={`w-full ${isDark ? "text-white" : "text-[#1F2937]"}`}>
-        {/* Mode Switch (Deposit / Withdrawal) */}
-        <div className="flex justify-end mb-3">
-          <div className="inline-flex rounded-full border border-[#2F2F3A] overflow-hidden text-xs sm:text-sm">
-            <button
-              type="button"
-              onClick={() => setIsDepositMode(true)}
-              className={`px-3 sm:px-4 py-1.5 ${
-                isDepositMode
-                  ? "bg-[#1D8751] text-white"
-                  : "bg-transparent text-[#9CA3AF]"
-              }`}
-            >
-              {t("rates.mode.deposit", "Deposit")}
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsDepositMode(false)}
-              className={`px-3 sm:px-4 py-1.5 ${
-                !isDepositMode
-                  ? "bg-[#1D8751] text-white"
-                  : "bg-transparent text-[#9CA3AF]"
-              }`}
-            >
-              {t("rates.mode.withdrawal", "Withdrawal")}
-            </button>
-          </div>
-        </div>
-
         {/* Top Section - You Send: Amount and Bank/Payment Method in one card */}
         <div className="relative mb-4">
           <div
