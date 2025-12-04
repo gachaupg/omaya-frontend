@@ -149,31 +149,62 @@ const P2PCenter: React.FC = () => {
                 )
               : [];
 
-            // Safely get first payment detail for provider_logo
-            const firstPaymentDetail = safePaymentDetails.length > 0 && safePaymentDetails[0] 
-              ? safePaymentDetails[0] 
-              : null;
+            // Safely get first payment detail for provider_logo with extra validation
+            let firstPaymentDetail: any = null;
+            if (safePaymentDetails.length > 0) {
+              const first = safePaymentDetails[0];
+              if (first && typeof first === 'object' && first !== null && !Array.isArray(first)) {
+                firstPaymentDetail = first;
+              }
+            }
+
+            // Safely extract provider_logo with multiple layers of checks
+            let providerLogo: string | null = null;
+            if (firstPaymentDetail) {
+              try {
+                if (typeof firstPaymentDetail === 'object' && 
+                    firstPaymentDetail !== null && 
+                    'provider_logo' in firstPaymentDetail &&
+                    typeof firstPaymentDetail.provider_logo === 'string' &&
+                    firstPaymentDetail.provider_logo.trim()) {
+                  providerLogo = firstPaymentDetail.provider_logo.trim();
+                }
+              } catch (e) {
+                // If any error occurs accessing provider_logo, set to null
+                providerLogo = null;
+              }
+            }
 
             return {
               ...trade,
-              assetSymbol: trade?.currency || '',
+              assetSymbol: typeof trade?.currency === 'string' ? trade.currency : '',
               assetImage:
-                trade?.asset_image ||
+                (typeof trade?.asset_image === 'string' && trade.asset_image) ||
                 "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png",
-              commission_rate: trade?.commission_rate || 0,
+              commission_rate: typeof trade?.commission_rate === 'number' ? trade.commission_rate : 0,
               payment: safePaymentDetails
-                .filter((detail: any) => detail && detail !== null && typeof detail === 'object')
-                .map((detail: any) => ({
-                  bank: typeof detail?.provider === 'string' ? detail.provider : '',
-                  logo:
-                    typeof detail?.provider_logo === 'string' && detail.provider_logo
-                      ? detail.provider_logo
-                      : "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png",
-                })),
+                .filter((detail: any) => detail && detail !== null && typeof detail === 'object' && !Array.isArray(detail))
+                .map((detail: any) => {
+                  try {
+                    const provider = typeof detail?.provider === 'string' ? detail.provider : '';
+                    const detailLogo = typeof detail?.provider_logo === 'string' && detail.provider_logo.trim()
+                      ? detail.provider_logo.trim()
+                      : "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png";
+                    
+                    return {
+                      bank: provider || '',
+                      logo: detailLogo,
+                    };
+                  } catch (e) {
+                    // If any error occurs, return safe defaults
+                    return {
+                      bank: '',
+                      logo: "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png",
+                    };
+                  }
+                }),
               payment_details: safePaymentDetails, // Preserve original structure for MyAdsTable
-              provider_logo: firstPaymentDetail && typeof firstPaymentDetail.provider_logo === 'string' 
-                ? firstPaymentDetail.provider_logo 
-                : null,
+              provider_logo: providerLogo,
               lastUpdate: trade?.created_on ? new Date(trade.created_on).toLocaleString() : '',
             };
           } catch (error) {

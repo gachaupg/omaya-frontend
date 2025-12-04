@@ -657,7 +657,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="Enter amount"
-                className="bg-transparent border-none focus:ring-0 text-gray-900 dark:text-white w-full text-sm"
+                className="bg-transparent border-none focus:ring-0 text-[#35353E] dark:text-white w-full text-sm"
               />
               <span className="w-px h-6 bg-gray-300 dark:bg-[#35353E]" />
               <div className="relative" ref={currencyDropdownRef}>
@@ -980,8 +980,6 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
           {/* WebSocket Connection Status */}
           {wsConnected && (
             <div className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              <span className="hidden sm:inline">Live</span>
             </div>
           )}
           {wsError && !wsConnected && (
