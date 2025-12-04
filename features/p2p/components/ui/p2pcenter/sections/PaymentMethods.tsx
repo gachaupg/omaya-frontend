@@ -450,7 +450,7 @@ const PaymentMethods = () => {
       left-1/2 -translate-x-1/2 sm:left-auto sm:right-0 sm:translate-x-0
       rounded-xl border-2 border-[#1D8751] bg-[#0F1219] text-white shadow-[0_10px_30px_rgba(0,0,0,0.45)]
       z-1
-    `} 
+    `}
     >
       <div className="p-3">
         <p className="text-xs uppercase tracking-wide text-[#49C476] mb-2">Payment Method</p>
@@ -490,13 +490,14 @@ const PaymentMethods = () => {
   /** Render */
   return (
     <div className="w-full min-h-[600px] bg-white dark:bg-[#18181D] rounded-2xl p-4 text-gray-900 dark:text-white border-2 border-gray-200 dark:border-[#35353E] overflow-visible">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4 ">
-        <span className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-          Payment Methods
-        </span>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto relative">
-          <div className="w-full sm:w-auto">
+      {/* Header: Bank title left, Add Method dropdown right */}
+      <div className="flex items-center justify-between mb-4 gap-4">
+        <div className="flex items-center gap-3">
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Bank</h4>
+        </div>
+
+        <div className="relative w-full sm:w-auto">
+          <div className="w-full sm:w-auto ml-auto">
             <Button
               height={44}
               borderRadius={24}
@@ -638,9 +639,6 @@ const PaymentMethods = () => {
         <>
           {/* Bank Section */}
           <div className="mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Bank</h4>
-            </div>
             <div>
               {bankMethods.length === 0 ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400">No bank payment methods added.</p>
