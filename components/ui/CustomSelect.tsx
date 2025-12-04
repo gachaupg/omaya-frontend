@@ -392,7 +392,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
             <div 
               className="overflow-y-auto p-1"
               style={{
-                maxHeight: dropdownMaxHeight ? `${dropdownMaxHeight - (searchable ? 60 : 0)}px` : "280px",
+                maxHeight: dropdownMaxHeight ? `${dropdownMaxHeight - (searchable ? 80 : 20)}px` : "250px",
               }}
             >
               {filteredOptions.length === 0 ? (
