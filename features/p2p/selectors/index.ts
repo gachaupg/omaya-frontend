@@ -39,7 +39,27 @@ export const selectP2PBuySellState = (state: RootState) => state.p2pBuySell;
 export const selectWalletBalance = createSelector(
   [selectWalletsState],
   (walletsState) => {
-    const wallets = walletsState.data;
+    // Ensure wallets is always an object, even if data is null/undefined
+    const wallets = walletsState.data || {
+      total_balance: '0',
+      wallet: {
+        id: 0,
+        currency: 'USDT',
+        balance: '0',
+        deposit_address: '',
+        created_on: new Date().toISOString(),
+      },
+      deposit_addresses: {
+        tron: {
+          address: null,
+          status: 'inactive',
+        },
+        bsc: {
+          address: '',
+          status: 'inactive',
+        },
+      },
+    };
 
     const totalBalance = wallets?.total_balance
       ? toNumber(wallets.total_balance)
@@ -58,9 +78,9 @@ export const selectWalletBalance = createSelector(
           : walletBalance;
 
     return {
-      balance,
-      totalBalance,
-      walletBalance,
+      balance: isNaN(balance) ? 0 : balance,
+      totalBalance: isNaN(totalBalance) ? 0 : totalBalance,
+      walletBalance: isNaN(walletBalance) ? 0 : walletBalance,
       currency: wallets?.wallet?.currency || "USDT",
       loading: walletsState.loading,
     };

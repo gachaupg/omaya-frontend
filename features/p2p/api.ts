@@ -188,10 +188,36 @@ export const getAssets = async (): Promise<AssetsResponse> => {
 
 // Wallet API calls
 export const getWallets = async (): Promise<WalletResponse> => {
-  return withRetry(async () => {
-    const response = await get<WalletResponse>(API_CONFIG.P2P.WALLETS);
-    return response.data;
-  });
+  try {
+    return await withRetry(async () => {
+      const response = await get<WalletResponse>(API_CONFIG.P2P.WALLETS);
+      return response.data;
+    });
+  } catch (error) {
+    // Log error but don't throw - return safe default to prevent app crash
+    logger.error('p2p', 'Failed to fetch wallets, returning safe default', error);
+    // Return empty wallet response structure to prevent crashes
+    return {
+      total_balance: '0',
+      wallet: {
+        id: 0,
+        currency: 'USDT',
+        balance: '0',
+        deposit_address: '',
+        created_on: new Date().toISOString(),
+      },
+      deposit_addresses: {
+        tron: {
+          address: null,
+          status: 'inactive',
+        },
+        bsc: {
+          address: '',
+          status: 'inactive',
+        },
+      },
+    } as WalletResponse;
+  }
 };
 
 // Payment API calls
