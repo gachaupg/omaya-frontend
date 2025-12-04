@@ -165,7 +165,7 @@ const Notifications = () => {
 
   if (!hasNotifications)
     return (
-      <div className="max-w-5xl mx-auto px-4">
+      <div className="w-full px-2">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <button
@@ -228,12 +228,12 @@ const Notifications = () => {
     );
 
   return (
-    <div className="max-w-5xl mx-auto px-4">
+    <div className="w-full px-2">
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center">
           <button
             onClick={() => router.push("/dashboard/p2p")}
-            className="flex items-center gap-2 text-sm font-semibold text-[#1D8751] hover:text-[#17693F] transition-colors"
+            className="flex items-center gap-1 text-sm font-semibold text-[#1D8751] hover:text-[#17693F] transition-colors mr-2"
           >
             <span className="text-lg">←</span>
             Back to P2P
@@ -250,7 +250,7 @@ const Notifications = () => {
         </span>
       </div>
 
-      <div className="bg-white dark:bg-[#23232B] rounded-xl p-4 text-gray-900 dark:text-white font-sans shadow-lg">
+      <div className="bg-white dark:bg-[#23232B] rounded-xl p-2 text-gray-900 dark:text-white font-sans shadow-lg">
         {matchedTrades.results.map((trade: any) => {
           const orderType = getOrderType(trade.order_type);
           const status = getStatus(trade, user?.email || "");
@@ -261,10 +261,10 @@ const Notifications = () => {
           return (
             <div
               key={trade.id}
-              className="flex items-center bg-gray-50 dark:bg-[#23232B] rounded-lg py-3 px-4 mb-2 border-b border-gray-200 dark:border-[#31313C] hover:bg-gray-100 dark:hover:bg-[#2A2A33] transition-colors duration-200"
+              className="flex items-center bg-gray-50 dark:bg-[#23232B] rounded-lg py-1.5 px-3 mb-1 border-b border-gray-200 dark:border-[#31313C] hover:bg-gray-100 dark:hover:bg-[#2A2A33] transition-colors duration-200"
             >
               {/* Avatar and name/amount */}
-              <div className="flex items-center min-w-[160px] gap-3">
+              <div className="flex items-center min-w-[160px]">
                 {/* Avatar + Status */}
                 <div className="relative w-10 h-10">
                   {profileImage ? (
@@ -289,7 +289,7 @@ const Notifications = () => {
                 </div>
 
                 {/* Name + Amount (offset slightly so it never overlaps the status dot) */}
-                <div className="flex flex-col ml-2">
+                <div className="flex flex-col ml-1">
                   <span className="font-medium text-sm text-gray-700 dark:text-[#c7c7d9]">
                     {name}
                   </span>
@@ -300,7 +300,7 @@ const Notifications = () => {
                 </div>
               </div>
               {/* Order type and time */}
-              <div className="flex-1 ml-3">
+              <div className="flex-1 ml-2">
                 <div className="text-sm text-gray-700 dark:text-white">
                   Order Type:{" "}
                   <span className={orderType.color + " font-semibold"}>
@@ -324,7 +324,7 @@ const Notifications = () => {
                 </span>
               </div>
               {/* View Order button */}
-              <div className="min-w-[100px] text-right ml-4">
+              <div className="min-w-[100px] text-right ml-2">
                 <button
                   onClick={() => handleViewOrder(trade)}
                   className="bg-[#1D8751] hover:bg-[#17693F] text-white px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 hover:shadow-lg hover:scale-105"

@@ -164,7 +164,7 @@ export default function ForexWithdrawal({
 
             {/* Additional Notes */}
             <div className="mb-4">
-              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+              <label className="block text-sm text-[#7e7e8f] dark:text-[#A2A4A9] mb-1.5 font-medium">
                 Additional Notes (Optional)
               </label>
               <textarea

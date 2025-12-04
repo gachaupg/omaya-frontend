@@ -349,7 +349,7 @@ const Overview = () => {
               </h3>
               <div className="relative flex-shrink-0">
                 <select
-                  className="px-2 sm:px-3 py-1 sm:py-1.5 rounded text-xs sm:text-sm appearance-none pr-6 sm:pr-8 dark:bg-[#18181D] bg-white border dark:border-[#35353E] border-gray-300 dark:text-white text-[#0D0D0D]"
+                  className="px-2 sm:px-3 py-1 sm:py-1.5 rounded text-xs sm:text-sm appearance-none pr-6 sm:pr-8 dark:bg-[#18181D] bg-white dark:text-[#A0A0A0] text-[#788099]"
                   value={buyDateFilter}
                   onChange={(e) => setBuyDateFilter(e.target.value)}
                   disabled={loading}
@@ -435,7 +435,7 @@ const Overview = () => {
               </h3>
               <div className="relative flex-shrink-0">
                 <select
-                  className="px-2 sm:px-3 py-1 sm:py-1.5 rounded text-xs sm:text-sm appearance-none pr-6 sm:pr-8 dark:bg-[#18181D] bg-white border dark:border-[#35353E] border-gray-300 dark:text-white text-[#0D0D0D]"
+                  className="px-2 sm:px-3 py-1 sm:py-1.5 rounded text-xs sm:text-sm appearance-none pr-6 sm:pr-8 dark:bg-[#18181D] bg-white dark:text-[#A0A0A0] text-[#788099]"
                   value={sellDateFilter}
                   onChange={(e) => setSellDateFilter(e.target.value)}
                   disabled={loading}
@@ -446,9 +446,9 @@ const Overview = () => {
                   <option value="Month">Month</option>
                   <option value="Year">Year</option>
                 </select>
-                <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                <div className="absolute inset-y-0 right-0 flex items-center pr-1 sm:pr-2 pointer-events-none">
                   <svg
-                    className="w-4 h-4 dark:text-white text-[#0D0D0D]"
+                    className="w-3 h-3 sm:w-4 sm:h-4 dark:text-white text-[#0D0D0D]"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"

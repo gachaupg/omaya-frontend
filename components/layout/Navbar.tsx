@@ -759,7 +759,7 @@ export default function Navbar() {
                     <img
                       src={userProfile?.photo || cachedProfilePhoto || ""}
                       alt="Profile"
-                      className="w-10 h-10 rounded-full border-2 border-white object-cover"
+                      className="w-10 h-10 rounded-full object-cover"
                       onError={() => {
                         setProfileImageError(true);
                         // Clear invalid cached photo
@@ -797,7 +797,7 @@ export default function Navbar() {
                             <img
                               src={userProfile?.photo || cachedProfilePhoto || ""}
                               alt="Profile"
-                              className="w-12 h-12 rounded-full object-cover border-2 border-white"
+                              className="w-12 h-12 rounded-full object-cover"
                               onError={() => {
                                 setProfileImageError(true);
                                 // Clear invalid cached photo
@@ -1233,7 +1233,7 @@ export default function Navbar() {
                             <img
                               src={userProfile?.photo || cachedProfilePhoto || ""}
                               alt="Profile"
-                              className="w-10 h-10 rounded-full object-cover border-2 border-white"
+                              className="w-10 h-10 rounded-full object-cover"
                               onError={() => {
                                 setProfileImageError(true);
                                 // Clear invalid cached photo
