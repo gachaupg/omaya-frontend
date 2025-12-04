@@ -186,58 +186,92 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
       if (methodToSelect?.provider_name) {
         setFromPaymentMethod(methodToSelect.provider_name);
         setSelectedFromPaymentDetail(methodToSelect);
+        
+        // Immediately set "to" to second method (index 1) - run in next tick to ensure state is updated
+        if (finalPaymentMethods.length > 1) {
+          setTimeout(() => {
+            const secondMethod = finalPaymentMethods[1];
+            if (secondMethod?.provider_name && secondMethod.provider_name !== methodToSelect.provider_name) {
+              setToPaymentMethod(secondMethod.provider_name);
+              setSelectedToPaymentDetail(secondMethod);
+            } else if (finalPaymentMethods.length > 2) {
+              // Find next different method
+              for (let i = 2; i < finalPaymentMethods.length; i++) {
+                const method = finalPaymentMethods[i];
+                if (method?.provider_name && method.provider_name !== methodToSelect.provider_name) {
+                  setToPaymentMethod(method.provider_name);
+                  setSelectedToPaymentDetail(method);
+                  break;
+                }
+              }
+            }
+          }, 0);
+        }
       }
     }
   }, [finalPaymentMethods, fromPaymentMethod, isBankMethod]);
 
 
-  // Auto-select second payment method for "to"
+  // Create a stable key from payment methods for dependency tracking
+  const paymentMethodsKey = useMemo(() => {
+    const methods = finalPaymentMethods.length > 0 ? finalPaymentMethods : stablePaymentMethods;
+    return methods.length > 0 ? methods.map((m: any) => m?.provider_name || '').join(',') : '';
+  }, [finalPaymentMethods, stablePaymentMethods]);
+
+  // Auto-select second payment method for "to" - ALWAYS runs when "from" is set
   useEffect(() => {
-    // Only run if we have payment methods, "from" is selected, and "to" is not selected
+    // Get the methods to check - use finalPaymentMethods first, then stablePaymentMethods
     const methodsToCheck = Array.isArray(finalPaymentMethods) && finalPaymentMethods.length > 0
       ? finalPaymentMethods
       : (Array.isArray(stablePaymentMethods) && stablePaymentMethods.length > 0
         ? stablePaymentMethods
         : null);
     
-    if (methodsToCheck && methodsToCheck.length > 1 && fromPaymentMethod && !toPaymentMethod) {
-      // Filter for banks first
-      const bankMethods = methodsToCheck.filter(isBankMethod);
-      
-      // Select the second bank (index 1) if it exists, otherwise select the second method overall
-      let methodToSelect;
-      if (bankMethods.length > 1) {
-        // Select the second bank in the array (index 1)
-        methodToSelect = bankMethods[1];
-      } else if (bankMethods.length === 1 && methodsToCheck.length > 1) {
-        // If only one bank exists, select the second method overall (index 1) if it's different from "from"
-        if (methodsToCheck[1] && methodsToCheck[1].provider_name !== fromPaymentMethod) {
-          methodToSelect = methodsToCheck[1];
-        } else {
-          // Find first method that's different from "from"
-          methodToSelect = methodsToCheck.find(
-            (method) => method.provider_name !== fromPaymentMethod
-          );
-        }
-      } else {
-        // No banks or only one method, select the second method (index 1) if it's different from "from"
-        if (methodsToCheck[1] && methodsToCheck[1].provider_name !== fromPaymentMethod) {
-          methodToSelect = methodsToCheck[1];
-        } else {
-          // Find first method that's different from "from"
-          methodToSelect = methodsToCheck.find(
-            (method) => method.provider_name !== fromPaymentMethod
-          );
-        }
-      }
-      
-      if (methodToSelect?.provider_name) {
-        setToPaymentMethod(methodToSelect.provider_name);
-        setSelectedToPaymentDetail(methodToSelect);
+    // Must have at least 2 methods
+    if (!methodsToCheck || methodsToCheck.length < 2) {
+      return;
+    }
+    
+    // Must have "from" selected
+    if (!fromPaymentMethod || fromPaymentMethod === "") {
+      return;
+    }
+    
+    // Skip if "to" is already selected
+    if (toPaymentMethod && toPaymentMethod !== "") {
+      return;
+    }
+    
+    // ALWAYS select the second payment method (index 1) from the original array
+    const secondMethod = methodsToCheck[1];
+    
+    // If second method exists and is different from "from", use it immediately
+    if (secondMethod?.provider_name && secondMethod.provider_name !== fromPaymentMethod) {
+      setToPaymentMethod(secondMethod.provider_name);
+      setSelectedToPaymentDetail(secondMethod);
+      return;
+    }
+    
+    // If second method is same as "from", find the next different method starting from index 2
+    for (let i = 2; i < methodsToCheck.length; i++) {
+      const method = methodsToCheck[i];
+      if (method?.provider_name && method.provider_name !== fromPaymentMethod) {
+        setToPaymentMethod(method.provider_name);
+        setSelectedToPaymentDetail(method);
+        return;
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [finalPaymentMethods, stablePaymentMethods, fromPaymentMethod, adminMethods]);
+    
+    // Final fallback: find ANY method that's different from "from"
+    const methodToSelect = methodsToCheck.find(
+      (method) => method?.provider_name && method.provider_name !== fromPaymentMethod
+    );
+    
+    if (methodToSelect?.provider_name) {
+      setToPaymentMethod(methodToSelect.provider_name);
+      setSelectedToPaymentDetail(methodToSelect);
+    }
+  }, [paymentMethodsKey, fromPaymentMethod, toPaymentMethod]);
 
   // Prepare options for CustomSelect
   const paymentMethodOptions = finalPaymentMethods.map((payment: any) => {
