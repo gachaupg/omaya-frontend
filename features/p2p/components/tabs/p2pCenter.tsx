@@ -16,7 +16,7 @@ import FiterTabs from "../ui/p2pcenter/FilterTabs";
 const P2PCenter: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch<AppDispatch>();
-  const { data: wallets, loading } = useSelector(
+  const { data: wallets, loading, error: walletsError } = useSelector(
     (state: RootState) => state.wallets
   );
   const summary = useSelector(selectTransactionSummary);
@@ -97,9 +97,12 @@ const P2PCenter: React.FC = () => {
     return transformed;
   }, [myOrders]);
 
+  // Handle wallet error gracefully - provide fallback empty object
+  const safeWallets = wallets || ({} as any);
+
   return (
     <div className="flex flex-col gap-6 w-full h-full min-h-screen px-3 sm:px-4">
-      <P2pProfile wallets={wallets} summary={summary} loading={loading} />
+      <P2pProfile wallets={safeWallets} summary={summary} loading={loading} />
       <Stats summary={summary} />
       <FiterTabs
         transformedTrades={transformedTrades}
