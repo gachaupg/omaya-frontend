@@ -273,7 +273,7 @@ const P2PCharts = () => {
   };
 
   return (
-    <div className="w-full pt-4">
+    <div className="w-full pt-6 sm:pt-4">
       <Charts
         title="P2P Overview (USD)"
         timeFrame="Month"

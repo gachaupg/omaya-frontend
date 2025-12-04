@@ -176,14 +176,14 @@ const Charts: React.FC<ChartProps> = ({
   return (
     <div className="w-full">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-0 mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-0 mb-8 pb-2">
         {/* Title + buy/sell buttons */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-          <h3 className="text-gray-900 dark:text-white font-medium">
+          <h3 className="text-sm sm:text-base text-gray-900 dark:text-white font-medium">
             {title}
           </h3>
 
-          <div className="flex gap-3 sm:gap-3">
+          <div className="flex gap-2 sm:gap-3">
             {(["All", "Sells", "Buys"] as const).map((t) => (
               <Button
                 key={t}
@@ -192,7 +192,7 @@ const Charts: React.FC<ChartProps> = ({
                 variant={filter === t ? "primary" : "outline"}
                 size="sm"
                 onClick={() => setFilter(t)}
-                className={`border border-[#1D8751]
+                className={`border border-[#1D8751] px-3 sm:px-4 text-xs sm:text-sm
                   ${filter === t ? "bg-[#1D8751] text-white" : "text-[#1D8751]"}
                   dark:text-[#1D8751]}]`}
               >

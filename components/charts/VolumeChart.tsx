@@ -26,16 +26,15 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ transactionSummary }) => {
       value: formatValue(transactionSummary?.total_approved_volume || transactionSummary?.total_approved_all || 0),
     },
     {
-      title: "Exchange ",
+      title: "Exchange",
       value: formatValue(transactionSummary.total_approved_exchange_net || transactionSummary.total_approved_exchange_combined || 0),
     },
     {
-      title: "P2P ",
+      title: "P2P",
       value: formatValue(transactionSummary.total_approved_p2p_net || transactionSummary.total_approved_p2p_combined || 0),
     },
-
     {
-      title: "Swap ",
+      title: "Swap",
       value: formatValue(transactionSummary.total_completed_changenow_swaps || 0),
     },
   ];

@@ -27,7 +27,7 @@ export default function DashboardLayout({
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className="md:hidden fixed top-18 left-0 right-0 z-40"
+        className="md:hidden sticky top-0 left-0 right-0 z-40 bg-white dark:bg-[#0D0D0D]"
       >
         <Sidebar />
       </motion.div>
@@ -53,7 +53,7 @@ export default function DashboardLayout({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.15 }} // Reduced from 0.3s to 0.15s for snappier feel
-            className="page-shell max-md:mt-[6.75rem] md:mt-20 w-full max-w-full"
+            className="page-shell md:mt-20 w-full max-w-full"
           >
             {children}
           </motion.div>
