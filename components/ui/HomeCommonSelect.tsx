@@ -106,9 +106,13 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     if (!triggerElement) return;
 
     const viewportWidth = window.innerWidth || 0;
+    const viewportHeight = window.innerHeight || 0;
     const minMargin = 16;
     const minWidth = 280;
     const maxWidth = 450;
+    
+    // Get trigger button position - get fresh values
+    const triggerRect = triggerElement.getBoundingClientRect();
     
     // Prefer the card that contains this trigger; fallback to first card
     const parentCard =
@@ -128,24 +132,57 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       // Calculate reduced width so dropdowns don't cover amount inputs (40% of card width)
       let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.width * 0.4));
       
-      // Position at the top of the card or center based on preference
-      let top = cardRect.top + 8; // default: slightly below top
+      // Position directly below the trigger button (from top)
+      // Use getBoundingClientRect which gives viewport-relative coordinates (perfect for fixed positioning)
+      // Calculate base position: trigger bottom + gap (negative to pull up)
+      const baseGap = -44; // Very large negative gap to pull dropdown up with big margin
+      let top = triggerRect.bottom + baseGap;
+      
+      // Apply vertical alignment preference
       if (dropdownVerticalAlign === "cardCenter") {
-        top = cardRect.top + cardRect.height / 2 - 70; // slightly higher than previous
+        // Position at card center vertically
+        top = cardRect.top + cardRect.height / 2 - 70;
       }
+      
+      // Apply vertical offset (positive values push down, negative pull up)
       top += verticalOffset;
       
-      // Position to the right side of the card
-      let left = cardRect.right - desiredWidth - 4; // 4px from right edge
-      if (dropdownVerticalAlign === "cardCenter") {
-        left = cardRect.right - desiredWidth + 4; // push further right
+      // Store the initial calculated position before viewport checks
+      const initialTop = top;
+      
+      // CRITICAL: Allow dropdown to overlap significantly with trigger for very large upward push
+      // Allow it to be well above trigger bottom for huge upward positioning
+      const minTopPosition = triggerRect.bottom - 120; // Allow up to 120px overlap for very big margin
+      if (top < minTopPosition) {
+        top = minTopPosition;
       }
+      
+      // Position horizontally - align with trigger button's right edge
+      // This ensures the dropdown aligns with the trigger button, not the card edge
+      let left = triggerRect.right - desiredWidth; // Align right edge of dropdown with right edge of trigger
+      
+      // Apply horizontal offset (positive moves right, negative moves left)
       left += horizontalOffset;
       
-      // If card is too narrow, center it but still push right a bit
-      if (cardRect.width < desiredWidth + 16) {
-        left = cardRect.left + (cardRect.width - desiredWidth) / 2 + 20; // Push 20px to the right
+      // If there's a horizontal offset, allow dropdown to go outside card boundaries
+      // Otherwise, keep it within card bounds
+      if (horizontalOffset === 0) {
+        // No offset - keep within card boundaries
+        if (left < cardRect.left) {
+          left = cardRect.left;
+        }
+        
+        // If dropdown would go off the right edge of the card, align with trigger's left edge instead
+        if (left + desiredWidth > cardRect.right) {
+          left = triggerRect.left; // Align left edge of dropdown with left edge of trigger
+          
+          // If still goes off, position it to fit within card
+          if (left + desiredWidth > cardRect.right) {
+            left = cardRect.right - desiredWidth;
+          }
+        }
       }
+      // If horizontalOffset is set, allow dropdown to extend beyond card boundaries
       
       // Ensure dropdown doesn't go off screen horizontally
       if (left + desiredWidth > viewportWidth - minMargin) {
@@ -156,34 +193,83 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       }
 
       // Ensure dropdown doesn't go off screen vertically
-      const viewportHeight = window.innerHeight || 0;
       const maxDropdownHeight = viewportHeight * 0.7; // 70vh
       // Estimate dropdown height (assuming ~50px per option + header/search)
       const estimatedDropdownHeight = Math.min(maxDropdownHeight, options.length * 50 + 120);
       
-      // If dropdown would go below viewport, position it above the trigger instead
+      // Only move above trigger if absolutely necessary (dropdown would go off screen)
+      // Otherwise, keep it below the trigger as requested
       if (top + estimatedDropdownHeight > viewportHeight - minMargin) {
-        // Position above the card
-        top = cardRect.top - estimatedDropdownHeight - 8;
-        // Ensure it doesn't go above viewport
+        // Check if we can fit it below by just limiting the height
+        const spaceBelow = viewportHeight - top - minMargin;
+        if (spaceBelow < 100) {
+          // Only then position above the trigger button
+          top = triggerRect.top - estimatedDropdownHeight - 4;
+          // Ensure it doesn't go above viewport
+          if (top < minMargin) {
+            // If we can't fit above, keep it below but constrain to viewport
+            top = Math.max(triggerRect.bottom + 2, minMargin);
+          }
+        }
+        // Otherwise, keep it below and let it be scrollable
+      }
+
+      // Final position calculation - allow very large overlap for huge upward margin
+      const finalTop = Math.max(top, triggerRect.bottom - 120);
+      
+      setDropdownStyles({
+        top: finalTop,
+        left,
+        width: desiredWidth,
+      });
+      
+      // Debug log to verify positioning
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Dropdown position:', {
+          triggerBottom: triggerRect.bottom,
+          calculatedTop: top,
+          finalTop,
+          verticalOffset,
+          baseGap: 2
+        });
+      }
+    } else {
+      // Fallback: if no card found, position relative to trigger button
+      const rect = triggerElement.getBoundingClientRect();
+      let desiredWidth = Math.min(maxWidth, Math.max(minWidth, viewportWidth * 0.4));
+      
+      // Position directly below trigger button (from top)
+      let top = rect.bottom + 4 + verticalOffset;
+      
+      // Align with trigger button's right edge
+      let left = rect.right - desiredWidth + horizontalOffset;
+      
+      // If dropdown would go off screen on the left, align with trigger's left edge instead
+      if (left < minMargin) {
+        left = rect.left + horizontalOffset;
+        // If still goes off, position it to fit
+        if (left + desiredWidth > viewportWidth - minMargin) {
+          left = viewportWidth - desiredWidth - minMargin;
+        }
+      }
+      
+      // Ensure it doesn't go off screen
+      if (left + desiredWidth > viewportWidth - minMargin) {
+        left = viewportWidth - desiredWidth - minMargin;
+      }
+      if (left < minMargin) {
+        left = minMargin;
+      }
+      
+      // If dropdown would go below viewport, position it above the trigger
+      const maxDropdownHeight = viewportHeight * 0.7;
+      const estimatedDropdownHeight = Math.min(maxDropdownHeight, options.length * 50 + 120);
+      if (top + estimatedDropdownHeight > viewportHeight - minMargin) {
+        top = rect.top - estimatedDropdownHeight - 4;
         if (top < minMargin) {
           top = minMargin;
         }
       }
-
-      setDropdownStyles({
-        top,
-        left,
-        width: desiredWidth,
-      });
-    } else {
-      // Fallback: if no card found, center on screen
-      const rect = triggerElement.getBoundingClientRect();
-      let desiredWidth = Math.min(maxWidth, Math.max(minWidth, viewportWidth * 0.4));
-      let left = (viewportWidth - desiredWidth) / 2;
-      left += horizontalOffset;
-      let top = 200; // Fixed top position
-      top += verticalOffset;
 
       setDropdownStyles({
         top,
@@ -198,7 +284,10 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       return;
     }
 
-    updateDropdownPosition();
+    // Use a small timeout to ensure DOM is ready, then calculate position
+    const timeoutId = setTimeout(() => {
+      updateDropdownPosition();
+    }, 10);
 
     const handleReposition = () => updateDropdownPosition();
     const handleScroll = (event: Event) => {
@@ -220,6 +309,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     document.addEventListener("scroll", handleScroll, true);
 
     return () => {
+      clearTimeout(timeoutId);
       window.removeEventListener("resize", handleReposition);
       window.removeEventListener("scroll", handleScroll, true);
       document.removeEventListener("scroll", handleScroll, true);
@@ -244,7 +334,11 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       return;
     }
 
-    updateDropdownPosition();
+    // Calculate position before opening to ensure it's ready
+    // Use setTimeout to ensure DOM is ready
+    setTimeout(() => {
+      updateDropdownPosition();
+    }, 0);
     setIsOpen(true);
     setSearchTerm("");
   };
@@ -347,11 +441,12 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
             role="listbox"
             style={{
               position: "fixed",
-              top: `${dropdownStyles.top}px`,
-              left: `${dropdownStyles.left}px`,
+              top: `${Math.max(0, dropdownStyles.top)}px`,
+              left: `${Math.max(0, dropdownStyles.left)}px`,
               width: `${dropdownStyles.width || 200}px`,
               minWidth: `${dropdownStyles.width || 200}px`,
               maxHeight: '70vh',
+              zIndex: 9999,
             }}
           >
             {/* Dropdown Title */}

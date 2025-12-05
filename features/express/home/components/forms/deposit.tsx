@@ -2817,8 +2817,8 @@ export default function DepositForm({
                   emptyText="No payment methods available"
                   searchable={true}
                   dropdownTitle="Select a payment methods"
-                  dropdownOffsetY={-6.5}
-                  dropdownOffsetX={12}
+                  dropdownOffsetY={-68}
+                  dropdownOffsetX={20}
                 />
               </div>
               {adminMethodsError && <p className="text-red-500 text-sm mt-1">{adminMethodsError}</p>}
