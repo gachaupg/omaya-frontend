@@ -177,15 +177,7 @@ const Orders = memo(() => {
       
       />
       <div className="flex flex-col w-full">
-        {showUnreadMessages ? (
-          <>
-           <UnreadMessages
-            loading={loading}
-            onBackToOrders={handleBackToOrders}
-          />
-          </>
-         
-        ) : (
+        
           <OrdersTransactions
             transformedData={transformedData}
             loading={loading}
@@ -194,7 +186,7 @@ const Orders = memo(() => {
             handlePageChange={handlePageChange}
             trades={trades}
           />
-        )}
+        
       </div>
     </div>
   );

@@ -179,6 +179,75 @@ export default function Footer() {
             </div>
           </div>
 
+          {/* Navigation Column */}
+          <div className="lg:col-span-2">
+            <h3 className="text-base md:text-lg font-semibold mb-3 text-white">
+              Navigation
+            </h3>
+            <ul className="space-y-2 md:space-y-3">
+              <li>
+                <Link
+                  href="/"
+                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${
+                    isActive("/") ? "text-[#1D8751]" : "text-white/80"
+                  }`}
+                >
+                  Home
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/dashboard"
+                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${
+                    isActive("/dashboard") ? "text-[#1D8751]" : "text-white/80"
+                  }`}
+                >
+                  Dashboard
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/market"
+                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${
+                    isActive("/market") ? "text-[#1D8751]" : "text-white/80"
+                  }`}
+                >
+                  Market
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/rates"
+                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${
+                    isActive("/rates") ? "text-[#1D8751]" : "text-white/80"
+                  }`}
+                >
+                  Rates
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/blog"
+                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${
+                    isActive("/blog") ? "text-[#1D8751]" : "text-white/80"
+                  }`}
+                >
+                  Blog
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/contactUs"
+                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${
+                    isActive("/contactUs") ? "text-[#1D8751]" : "text-white/80"
+                  }`}
+                >
+                  Contact Us
+                </Link>
+              </li>
+            </ul>
+          </div>
+
           {/* Quick Links Column */}
           <div className="lg:col-span-2">
             <h3 className="text-base md:text-lg font-semibold mb-3 text-white">
