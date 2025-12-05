@@ -41,13 +41,6 @@ shouldShowMessagesButton = false,
       </div>
 
       
-      {shouldShowMessagesButton && (
-        <UnreadMessagesButton
-          onClick={onUnreadMessagesClick}
-          totalUnreadCount={totalUnreadCount}
-          showUnreadMessages={showUnreadMessages}
-        />
-      )}
     </div>
   );
 };

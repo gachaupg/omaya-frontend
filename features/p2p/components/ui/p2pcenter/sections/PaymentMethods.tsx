@@ -182,12 +182,18 @@ const PaymentMethods = () => {
   }, [postError]);
 
   /** Render helpers */
-  const renderPaymentMethod = (method: PaymentMethod) => (
-    <div key={method.id} className="mb-5">
+  const renderPaymentMethod = (method: PaymentMethod) => {
+    // Safety check - return null if method is invalid
+    if (!method || typeof method !== 'object') {
+      return null;
+    }
+    
+    return (
+      <div key={method.id} className="mb-5">
       <div className="flex items-center mb-3">
         <img
-          src={getHighResPaymentLogo(method.provider_logo, null, PAYMENT_LOGO_SIZE * 2)}
-          alt={`${method.payment_provider_name} Icon`}
+          src={getHighResPaymentLogo(method?.provider_logo, null, PAYMENT_LOGO_SIZE * 2)}
+          alt={`${method?.payment_provider_name || 'Payment'} Icon`}
           className="w-12 h-12 sm:w-14 sm:h-14 rounded-full mr-3 object-contain flex-shrink-0"
           loading="lazy"
           onError={(e) => {
@@ -242,39 +248,46 @@ const PaymentMethods = () => {
       <div className="flex flex-col sm:flex-row gap-2">
         {/* Account Name */}
         <Input
-          placeholder="Accounthhhh Name"
-          value={method.account_name}
+          placeholder="Account Name"
+          value={method?.account_name || ''}
           className="w-full sm:flex-1 h-[52px] rounded-3xl border border-gray-300 dark:border-[#353535] bg-white dark:bg-[#353535] text-gray-900 dark:text-white px-[14px] py-[10px] text-sm sm:text-base"
           bgColor="#ffffff"
           borderColor="#d1d5db"
-          disabled={!method.editable}
+          disabled={!method?.editable}
           onChange={(e) =>
-            handleInputChange(method.id, "account_name", e.target.value)
+            handleInputChange(method?.id, "account_name", e.target.value)
           }
         />
         {/* Account Number */}
         <Input
           placeholder="Account Number"
-          value={method.account_number}
+          value={method?.account_number || ''}
           className="w-full sm:flex-1 h-[52px] rounded-3xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#18181D] text-gray-900 dark:text-white px-[14px] py-[10px] text-sm sm:text-base"
           bgColor="#ffffff"
           borderColor="#d1d5db"
-          disabled={!method.editable}
+          disabled={!method?.editable}
           onChange={(e) =>
-            handleInputChange(method.id, "account_number", e.target.value)
+            handleInputChange(method?.id, "account_number", e.target.value)
           }
         />
       </div>
-    </div>
-  );
+      </div>
+    );
+  };
 
   // Render helper specifically for Mobile Money items
-  const renderMobilePaymentMethod = (method: PaymentMethod) => (
-    <div key={method.id} className="mb-5">
+  const renderMobilePaymentMethod = (method: PaymentMethod) => {
+    // Safety check - return null if method is invalid
+    if (!method || typeof method !== 'object') {
+      return null;
+    }
+    
+    return (
+      <div key={method.id} className="mb-5">
       <div className="flex items-center mb-3">
         <img
-          src={method.provider_logo || "/default-provider-logo.svg"}
-          alt={`${method.payment_provider_name} Icon`}
+          src={method?.provider_logo || "/default-provider-logo.svg"}
+          alt={`${method?.payment_provider_name || 'Payment'} Icon`}
           className="w-10 h-10 sm:w-12 sm:h-12 rounded-full mr-3 object-cover"
           onError={(e) => {
             e.currentTarget.src = "/default-provider-logo.svg";
@@ -282,16 +295,16 @@ const PaymentMethods = () => {
         />
         <div className="flex flex-col">
           <span className="text-gray-900 dark:text-white font-semibold flex items-center text-base sm:text-lg">
-            {method.payment_provider_name}
+            {method?.payment_provider_name || ''}
           </span>
         </div>
         <button
-          disabled={deletingMethodId === method.id.toString()}
+          disabled={deletingMethodId === method?.id?.toString()}
           className="ml-auto text-[#1D8751] flex items-center hover:opacity-80 transition-opacity"
           title="Delete"
-          onClick={() => handleDeleteMethod(method.id.toString())}
+          onClick={() => handleDeleteMethod(method?.id?.toString() || '')}
         >
-          {deletingMethodId === method.id.toString() ? (
+          {deletingMethodId === method?.id?.toString() ? (
             <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#1D8751]"></div>
           ) : (
             <svg
@@ -317,12 +330,12 @@ const PaymentMethods = () => {
           <label className="block text-gray-600 dark:text-[#788099] text-xs sm:text-sm mb-1">Wallet Name</label>
           <Input
             placeholder="Wallet Name"
-            value={method.account_name}
+            value={method?.account_name || ''}
             className="w-full h-[52px] rounded-3xl border border-gray-300 dark:border-[#353535] bg-white dark:bg-[#353535] text-gray-900 dark:text-white px-3.5 py-2.5 text-sm sm:text-base"
             bgColor="#ffffff"
             borderColor="#d1d5db"
-            disabled={!method.editable}
-            onChange={(e) => handleInputChange(method.id, "account_name", e.target.value)}
+            disabled={!method?.editable}
+            onChange={(e) => handleInputChange(method?.id || 0, "account_name", e.target.value)}
           />
         </div>
 
@@ -330,17 +343,18 @@ const PaymentMethods = () => {
           <label className="block text-gray-600 dark:text-[#788099] text-xs sm:text-sm mb-1">Wallet Number</label>
           <Input
             placeholder="Wallet Number"
-            value={method.account_number}
+            value={method?.account_number || ''}
             className="w-full h-[52px] rounded-3xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#18181D] text-gray-900 dark:text-white px-3.5 py-2.5 text-sm sm:text-base"
             bgColor="#ffffff"
             borderColor="#d1d5db"
-            disabled={!method.editable}
-            onChange={(e) => handleInputChange(method.id, "account_number", e.target.value)}
+            disabled={!method?.editable}
+            onChange={(e) => handleInputChange(method?.id || 0, "account_number", e.target.value)}
           />
         </div>
       </div>
-    </div>
-  );
+      </div>
+    );
+  };
 
   const renderEmptyState = () => (
     <div className="flex flex-col items-center justify-center py-12 px-4">
@@ -419,12 +433,17 @@ const PaymentMethods = () => {
 
   // Group methods into two sections: Bank and Mobile Money
   // For now place the first available method under Mobile Money and the rest under Bank
-  const mobileMoneyMethods: PaymentMethod[] = userPaymentDetails.length
-    ? [userPaymentDetails[22]]
+  // Safely filter out any undefined/null methods
+  const safeUserPaymentDetails = Array.isArray(userPaymentDetails) 
+    ? userPaymentDetails.filter((m: any) => m && typeof m === 'object')
+    : [];
+  
+  const mobileMoneyMethods: PaymentMethod[] = safeUserPaymentDetails.length > 22 && safeUserPaymentDetails[22]
+    ? [safeUserPaymentDetails[22]]
     : [];
 
-  const bankMethods: PaymentMethod[] = userPaymentDetails.length > 1
-    ? userPaymentDetails.slice(1)
+  const bankMethods: PaymentMethod[] = safeUserPaymentDetails.length > 1
+    ? safeUserPaymentDetails.slice(1).filter((m: any) => m && typeof m === 'object')
     : [];
 
   // Paginate bank methods only
@@ -565,8 +584,32 @@ const PaymentMethods = () => {
               <div className="p-3 rounded-xl bg-white dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E] flex items-center gap-3">
                 {(() => {
                   const selectedProviderObj = providers.find(
-                    (p: any) => p.provider_name === selectedProvider
+                    (p: any) => p && typeof p === 'object' && p.provider_name === selectedProvider
                   );
+                  // Safely handle case where provider object might not exist
+                  if (!selectedProviderObj || typeof selectedProviderObj !== 'object') {
+                    return (
+                      <>
+                        <img
+                          src="/default-provider-logo.svg"
+                          alt={`${selectedProvider} logo`}
+                          className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-contain flex-shrink-0"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.currentTarget.src = "/default-provider-logo.svg";
+                          }}
+                        />
+                        <div>
+                          <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
+                            {selectedProvider}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-[#788099]">
+                            Selected Provider
+                          </p>
+                        </div>
+                      </>
+                    );
+                  }
                   return (
                     <>
                       <img

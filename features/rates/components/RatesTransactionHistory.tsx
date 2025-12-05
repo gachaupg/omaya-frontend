@@ -50,7 +50,7 @@ const getFromTo = (tx: Transaction): { from: { name: string; logo: string }; to:
         name: tx.payment_provider || "Payment Provider",
         logo: getBankLogo(tx.payment_provider || ""),
       },
-    };
+  };
   }
   
   // For P2P: From = payment provider, To = payment provider (or currency)
@@ -122,10 +122,10 @@ const RatesTransactionHistory = () => {
           const amountColor = index % 2 === 0 ? "text-[#13B562]" : "text-red-500";
           
           return (
-            <div key={tx.transaction_id} className="border border-gray-200 dark:border-[#35353E] rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
+          <div key={tx.transaction_id} className="border border-gray-200 dark:border-[#35353E] rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <img
+                <img
                     src={from.logo}
                     alt={from.name}
                     className="w-8 h-8 rounded-full object-cover"
@@ -147,20 +147,20 @@ const RatesTransactionHistory = () => {
                   />
                   <span className="text-gray-900 dark:text-white font-medium">{to.name}</span>
                 </div>
-              </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-[#788099]">Amount:</span>
+            </div>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-[#788099]">Amount:</span>
                   <span className={`font-semibold ${amountColor}`}>
-                    {formatAmount(tx.total_amount_due, tx.currency)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-[#788099]">When:</span>
-                  <span className="text-gray-600 dark:text-[#788099]">{formatTimeAgo(tx.timestamp)}</span>
-                </div>
+                  {formatAmount(tx.total_amount_due, tx.currency)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-[#788099]">When:</span>
+                <span className="text-gray-600 dark:text-[#788099]">{formatTimeAgo(tx.timestamp)}</span>
               </div>
             </div>
+          </div>
           );
         })}
       </div>
@@ -191,13 +191,13 @@ const RatesTransactionHistory = () => {
             const amountColor = index % 2 === 0 ? "text-[#13B562]" : "text-red-500";
             
             return (
-              <tr
-                key={tx.transaction_id}
+            <tr
+              key={tx.transaction_id}
                 className="border-b border-gray-200 dark:border-[#35353E] last:border-b-0 hover:bg-gray-50 dark:hover:bg-[#23232B] transition-colors"
-              >
+            >
                 <td className="px-4 sm:px-6 py-3 sm:py-4">
                   <div className="flex items-center gap-2 sm:gap-3">
-                    <img
+                <img
                       src={from.logo}
                       alt={from.name}
                       className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0"
@@ -208,9 +208,9 @@ const RatesTransactionHistory = () => {
                     />
                     <span className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
                       {from.name}
-                    </span>
-                  </div>
-                </td>
+                  </span>
+                </div>
+              </td>
                 <td className="px-4 sm:px-6 py-3 sm:py-4">
                   <div className="flex items-center gap-2 sm:gap-3">
                     <img
@@ -225,15 +225,15 @@ const RatesTransactionHistory = () => {
                     <span className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
                       {to.name}
                     </span>
-                  </div>
-                </td>
+                </div>
+              </td>
                 <td className={`px-4 sm:px-6 py-3 sm:py-4 font-semibold text-sm sm:text-base ${amountColor}`}>
                   {formatAmount(tx.total_amount_due, tx.currency)}
-                </td>
+              </td>
                 <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base text-gray-600 dark:text-[#788099]">
-                  {formatTimeAgo(tx.timestamp)}
-                </td>
-              </tr>
+                {formatTimeAgo(tx.timestamp)}
+              </td>
+            </tr>
             );
           })}
         </tbody>

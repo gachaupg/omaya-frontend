@@ -1,3 +1,4 @@
+
 import React, { useEffect, useMemo } from "react";
 import P2pProfile from "../ui/p2pcenter/P2pProfile";
 import Stats from "../ui/p2pcenter/Stats";
@@ -12,6 +13,39 @@ import { AppDispatch } from "@/store";
 import { p2pBuyandSell } from "../../slices/p2pbuysell";
 import { fetchMyOrders } from "../../slices/myOrdersSlice";
 import FiterTabs from "../ui/p2pcenter/FilterTabs";
+
+// Error boundary component to catch rendering errors
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallback?: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode; fallback?: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('P2PCenter Error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || (
+        <div className="flex flex-col items-center justify-center min-h-screen px-4">
+          <p className="text-red-500 text-center">
+            Something went wrong. Please refresh the page.
+          </p>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 const P2PCenter: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
@@ -52,9 +86,9 @@ const P2PCenter: React.FC = () => {
   // Transform the trades data to include commission, payment, and last update
   const transformedTrades = useMemo(() => {
     try {
-      const buyOrders = (orders as any)?.buy_orders?.results || [];
-      const sellOrders = (orders as any)?.sell_orders?.results || [];
-      const allOrders = [...buyOrders, ...sellOrders];
+    const buyOrders = (orders as any)?.buy_orders?.results || [];
+    const sellOrders = (orders as any)?.sell_orders?.results || [];
+    const allOrders = [...buyOrders, ...sellOrders];
 
       return allOrders
         .filter((trade: any) => trade && typeof trade === 'object') // Filter out null/undefined
@@ -71,23 +105,48 @@ const P2PCenter: React.FC = () => {
               : [];
 
             return {
-              ...trade,
-              commission_rate: `${trade.commission_rate || 0}%`,
+      ...trade,
+      commission_rate: `${trade.commission_rate || 0}%`,
               payment: safePaymentDetails
-                .filter((detail: any) => detail && detail !== null && typeof detail === 'object')
+                .filter((detail: any) => {
+                  // Extra defensive check - ensure detail exists and is a valid object
+                  return detail && 
+                         detail !== null && 
+                         detail !== undefined &&
+                         typeof detail === 'object' && 
+                         !Array.isArray(detail);
+                })
                 .map((detail: any) => {
-                  const provider = detail?.provider;
-                  const providerString = typeof provider === 'string' ? provider : '';
-                  
-                  return {
-                    bank: providerString || "",
-                    logo: providerString
-                      ? `/banks/${providerString
-                          .toLowerCase()
-                          .replace(/\s+/g, "")}.png`
-                      : "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg",
-                  };
-                }),
+                  try {
+                    // Double-check detail is still valid inside map
+                    if (!detail || typeof detail !== 'object' || Array.isArray(detail)) {
+                      return {
+                        bank: "",
+                        logo: "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg",
+                      };
+                    }
+                    
+                    const provider = detail?.provider;
+                    const providerString = typeof provider === 'string' ? provider : '';
+                    
+                    return {
+                      bank: providerString || "",
+                      logo: providerString
+                        ? `/banks/${providerString
+                            .toLowerCase()
+                            .replace(/\s+/g, "")}.png`
+                        : "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg",
+                    };
+                  } catch (e) {
+                    // If any error occurs, return safe defaults
+                    console.warn('Error processing payment detail in transformedTrades:', e, detail);
+                    return {
+                      bank: "",
+                      logo: "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg",
+                    };
+                  }
+                })
+                .filter((item: any) => item && typeof item === 'object'), // Final safety filter
               lastUpdate: trade.timestamp ? new Date(trade.timestamp).toLocaleString() : '',
             };
           } catch (error) {
@@ -111,43 +170,43 @@ const P2PCenter: React.FC = () => {
   // Transform the "My Orders" data
   const transformedMyOrders = useMemo(() => {
     try {
-      // My orders come in the structure: { buy_orders: [], sell_orders: [], buy_pagination: {}, sell_pagination: {} }
-      // Handle both array and paginated response structures
-      if (!myOrders || typeof myOrders !== 'object') {
-        return [];
-      }
+    // My orders come in the structure: { buy_orders: [], sell_orders: [], buy_pagination: {}, sell_pagination: {} }
+    // Handle both array and paginated response structures
+    if (!myOrders || typeof myOrders !== 'object') {
+      return [];
+    }
 
-      // Extract buy_orders - handle both array and paginated { results: [] } structure
-      let buyOrders: any[] = [];
-      if (Array.isArray((myOrders as any)?.buy_orders)) {
-        buyOrders = (myOrders as any).buy_orders;
-      } else if ((myOrders as any)?.buy_orders?.results && Array.isArray((myOrders as any).buy_orders.results)) {
-        buyOrders = (myOrders as any).buy_orders.results;
-      }
+    // Extract buy_orders - handle both array and paginated { results: [] } structure
+    let buyOrders: any[] = [];
+    if (Array.isArray((myOrders as any)?.buy_orders)) {
+      buyOrders = (myOrders as any).buy_orders;
+    } else if ((myOrders as any)?.buy_orders?.results && Array.isArray((myOrders as any).buy_orders.results)) {
+      buyOrders = (myOrders as any).buy_orders.results;
+    }
 
-      // Extract sell_orders - handle both array and paginated { results: [] } structure
-      let sellOrders: any[] = [];
-      if (Array.isArray((myOrders as any)?.sell_orders)) {
-        sellOrders = (myOrders as any).sell_orders;
-      } else if ((myOrders as any)?.sell_orders?.results && Array.isArray((myOrders as any).sell_orders.results)) {
-        sellOrders = (myOrders as any).sell_orders.results;
-      }
+    // Extract sell_orders - handle both array and paginated { results: [] } structure
+    let sellOrders: any[] = [];
+    if (Array.isArray((myOrders as any)?.sell_orders)) {
+      sellOrders = (myOrders as any).sell_orders;
+    } else if ((myOrders as any)?.sell_orders?.results && Array.isArray((myOrders as any).sell_orders.results)) {
+      sellOrders = (myOrders as any).sell_orders.results;
+    }
 
-      const allOrders = [...buyOrders, ...sellOrders];
+    const allOrders = [...buyOrders, ...sellOrders];
 
-      const transformed = allOrders
+    const transformed = allOrders
         .filter((trade: any) => trade && typeof trade === 'object' && !Array.isArray(trade)) // Filter out null/undefined/arrays
-        .map((trade: any) => {
+      .map((trade: any) => {
           try {
             // Safely extract payment_details, filtering out null/undefined items with extra checks
-            const safePaymentDetails = Array.isArray(trade.payment_details)
+        const safePaymentDetails = Array.isArray(trade.payment_details)
               ? trade.payment_details.filter((detail: any) => 
                   detail && 
                   typeof detail === 'object' && 
                   detail !== null &&
                   !Array.isArray(detail)
                 )
-              : [];
+          : [];
 
             // Safely get first payment detail for provider_logo with extra validation
             let firstPaymentDetail: any = null;
@@ -175,19 +234,39 @@ const P2PCenter: React.FC = () => {
               }
             }
 
-            return {
-              ...trade,
+        return {
+          ...trade,
               assetSymbol: typeof trade?.currency === 'string' ? trade.currency : '',
-              assetImage:
+          assetImage:
                 (typeof trade?.asset_image === 'string' && trade.asset_image) ||
-                "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png",
+            "https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png",
               commission_rate: typeof trade?.commission_rate === 'number' ? trade.commission_rate : 0,
               payment: safePaymentDetails
-                .filter((detail: any) => detail && detail !== null && typeof detail === 'object' && !Array.isArray(detail))
+                .filter((detail: any) => {
+                  // Extra defensive check - ensure detail exists and is a valid object
+                  return detail && 
+                         detail !== null && 
+                         detail !== undefined &&
+                         typeof detail === 'object' && 
+                         !Array.isArray(detail) &&
+                         Object.keys(detail).length > 0;
+                })
                 .map((detail: any) => {
                   try {
+                    // Double-check detail is still valid inside map
+                    if (!detail || typeof detail !== 'object' || Array.isArray(detail)) {
+                      return {
+                        bank: '',
+                        logo: "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png",
+                      };
+                    }
+                    
                     const provider = typeof detail?.provider === 'string' ? detail.provider : '';
-                    const detailLogo = typeof detail?.provider_logo === 'string' && detail.provider_logo.trim()
+                    const detailLogo = detail && 
+                                      typeof detail === 'object' && 
+                                      'provider_logo' in detail &&
+                                      typeof detail.provider_logo === 'string' && 
+                                      detail.provider_logo.trim()
                       ? detail.provider_logo.trim()
                       : "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png";
                     
@@ -197,16 +276,18 @@ const P2PCenter: React.FC = () => {
                     };
                   } catch (e) {
                     // If any error occurs, return safe defaults
+                    console.warn('Error processing payment detail:', e, detail);
                     return {
                       bank: '',
                       logo: "https://res.cloudinary.com/dam1sxczj/image/upload/v1748884335/image_7_dqkxkj.png",
                     };
                   }
-                }),
-              payment_details: safePaymentDetails, // Preserve original structure for MyAdsTable
+                })
+                .filter((item: any) => item && typeof item === 'object'), // Final safety filter
+          payment_details: safePaymentDetails, // Preserve original structure for MyAdsTable
               provider_logo: providerLogo,
               lastUpdate: trade?.created_on ? new Date(trade.created_on).toLocaleString() : '',
-            };
+        };
           } catch (error) {
             // If transformation fails for a single order, return a safe default
             console.warn('Error transforming my order:', error, trade);
@@ -221,9 +302,9 @@ const P2PCenter: React.FC = () => {
               lastUpdate: '',
             };
           }
-        });
-      
-      return transformed;
+      });
+    
+    return transformed;
     } catch (error) {
       // If entire transformation fails, return empty array
       console.error('Error transforming my orders:', error);
@@ -232,22 +313,31 @@ const P2PCenter: React.FC = () => {
   }, [myOrders]);
 
   // Handle wallet error gracefully - provide fallback empty object
-  const safeWallets = wallets || ({} as any);
+  // Add extra safety checks for production
+  const safeWallets = (wallets && typeof wallets === 'object' && !Array.isArray(wallets)) 
+    ? wallets 
+    : ({} as any);
   
-  // Safely handle summary data
-  const safeSummary = summary || null;
+  // Safely handle summary data with extra checks
+  const safeSummary = (summary && typeof summary === 'object') ? summary : null;
+
+  // Ensure transformed data is always an array to prevent crashes
+  const safeTransformedTrades = Array.isArray(transformedTrades) ? transformedTrades : [];
+  const safeTransformedMyOrders = Array.isArray(transformedMyOrders) ? transformedMyOrders : [];
 
   return (
-    <div className="flex flex-col gap-6 w-full h-full min-h-screen px-3 sm:px-4">
-      <P2pProfile wallets={safeWallets} summary={safeSummary} loading={loading} />
-      <Stats summary={safeSummary} />
-      <FiterTabs
-        transformedTrades={transformedTrades}
-        myOrders={transformedMyOrders}
-        loading={ordersLoading}
-        myOrdersLoading={myOrdersLoading}
-      />
-    </div>
+    <ErrorBoundary>
+      <div className="flex flex-col gap-6 w-full h-full min-h-screen px-3 sm:px-4">
+        <P2pProfile wallets={safeWallets} summary={safeSummary} loading={loading} />
+        <Stats summary={safeSummary} />
+        <FiterTabs
+          transformedTrades={safeTransformedTrades}
+          myOrders={safeTransformedMyOrders}
+          loading={ordersLoading}
+          myOrdersLoading={myOrdersLoading}
+        />
+      </div>
+    </ErrorBoundary>
   );
 };
 

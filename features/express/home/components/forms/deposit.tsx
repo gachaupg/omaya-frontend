@@ -2669,7 +2669,7 @@ export default function DepositForm({
                     }
                   }}
                   placeholder="Enter amount"
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent h-[44px] ${
                     (isCalculating || isCalculatingReceive) &&
                     isCalculatingFromPay &&
                     selectedAsset &&
@@ -2779,9 +2779,10 @@ export default function DepositForm({
                   value={payBank}
                   className="w-full"
                   placeholderClassName="text-white dark:text-white"
-                  triggerClassName={`px-4 py-2 text-lg border rounded-2xl bg-transparent ${
+                  triggerClassName={`!px-4 !py-[8px] !min-h-0 text-lg border rounded-2xl bg-transparent !h-[44px] ${
                     isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                   }`}
+                  logoSize={24}
                   onChange={(value) => {
                     const selectedPayment = finalPaymentMethods?.find(
                       (payment: any) => payment.provider_name === value
@@ -2943,7 +2944,7 @@ export default function DepositForm({
                     }
                   }}
                   placeholder="Enter amount"
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent h-[44px] ${
                     receiveAmountError &&
                     (receiveAmountError.includes("Rough estimate") ||
                       receiveAmountError.includes("Using estimated rate"))
@@ -3020,7 +3021,7 @@ export default function DepositForm({
               </div>
               <div className="relative" ref={assetDropdownRef}>
                 <div
-                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${
+                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent h-[44px] ${
                     isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                   }`}
                   onClick={() => {

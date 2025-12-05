@@ -296,7 +296,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         disabled={disabled || loading}
         ref={triggerRef}
         className={`
-          w-full text-left px-3 sm:px-4 py-2.5 sm:py-3 rounded-2xl border text-base sm:text-lg
+          w-full text-left px-3 sm:px-4 py-2 rounded-2xl border text-base sm:text-lg
           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
           transition-colors duration-200 min-w-0
           ${disabled || loading

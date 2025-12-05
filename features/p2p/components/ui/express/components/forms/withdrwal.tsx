@@ -2698,6 +2698,20 @@ export default function WithdrawalForm({
             </div>
           </div>
 
+          {/* Disclaimer Banner */}
+          <div className="flex items-center rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 mt-4 sm:mt-6 bg-[#f8f9fa] dark:bg-[#1D1D23]">
+            <div className="flex items-center gap-3">
+              <div className="w-5 h-5 border-2 border-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-[#1D8751] text-xs font-bold">i</span>
+              </div>
+              <span className="text-[#35353e] dark:text-[#788099] text-sm font-medium">
+                This is only an estimated price based on current market rates.
+                The final price will be confirmed when we receive the funds.
+              </span>
+            </div>
+          </div>
+        </div>
+
           {/* ----------------------------------------------------------------- */}
           {/*                         TRANSFER DETAILS SECTION                    */}
           {/* ----------------------------------------------------------------- */}
@@ -3005,7 +3019,15 @@ export default function WithdrawalForm({
           </div>
           {/* Disclaimer and Button outside the card */}
           <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
-            
+            <div className="flex items-center text-[#35353e] dark:text-[#788099] text-[16px] font-semibold">
+              <div className="w-5 h-5 border-2 border-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0 mr-2">
+                <span className="text-[#1D8751] text-xs font-bold">i</span>
+              </div>
+              <span>
+                This is only an estimated price based on current market rates.
+                The final price will be confirmed when we receive the funds.
+              </span>
+            </div>
 
             {/* Warning message for amounts over $15,000 */}
             {getAmount > 15000 && (
