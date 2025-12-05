@@ -544,8 +544,8 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                   emptyText="No payment methods available"
                   searchable={true}
                   dropdownTitle="Payment method"
-                  dropdownOffsetY={-6.5}
-                  dropdownOffsetX={12}
+                  dropdownOffsetY={-68}
+                  dropdownOffsetX={20}
                 />
               </div>
               {adminMethodsError && (
@@ -663,8 +663,8 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                   emptyText="No payment methods available"
                   searchable={true}
                   dropdownTitle="Payment method"
-                  dropdownOffsetY={-6.5}
-                  dropdownOffsetX={12}
+                  dropdownOffsetY={-68}
+                  dropdownOffsetX={20}
                 />
               </div>
               {adminMethodsError && (

@@ -4089,8 +4089,8 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                       emptyText="No payment methods available"
                       searchable={true}
                       dropdownTitle="Select a payment methods"
-                      dropdownOffsetY={-7.5}
-                      dropdownOffsetX={15}
+                      dropdownOffsetY={-68}
+                      dropdownOffsetX={20}
                     />
                   );
                 })()}
