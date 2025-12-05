@@ -185,7 +185,16 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     updateDropdownPosition();
 
     const handleReposition = () => updateDropdownPosition();
-    const handleScroll = () => {
+    const handleScroll = (event: Event) => {
+      const target = event.target as Node | null;
+      // If the scroll originated from inside the dropdown itself, don't close it
+      if (
+        dropdownContentRef.current &&
+        target &&
+        dropdownContentRef.current.contains(target)
+      ) {
+        return;
+      }
       setIsOpen(false);
       setSearchTerm("");
     };

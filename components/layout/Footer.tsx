@@ -4,14 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { tokens } from "@/styles/tokens";
-import {
-  Youtube,
-  Facebook,
-  Instagram,
-  PhoneIcon as WhatsApp,
-  Twitter,
-} from "lucide-react";
-
 // Custom Telegram Icon Component
 const TelegramIcon = ({
   size = 20,

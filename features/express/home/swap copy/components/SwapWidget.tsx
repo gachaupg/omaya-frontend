@@ -96,6 +96,34 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
   const assetsLoadingState =
     homeSwapAssets && homeSwapAssets.length > 0 ? homeAssetsLoading : loading;
 
+  // Close asset dropdowns when the user scrolls the page,
+  // but NOT when scrolling inside the dropdown lists themselves
+  useEffect(() => {
+    const handleWindowScroll = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+
+      // If the scroll originated from inside an asset dropdown, ignore it
+      if (
+        target &&
+        target.closest &&
+        target.closest("[data-asset-dropdown='true']")
+      ) {
+        return;
+      }
+
+      setIsFromAssetOpen(false);
+      setIsToAssetOpen(false);
+    };
+
+    window.addEventListener("scroll", handleWindowScroll, true);
+    document.addEventListener("scroll", handleWindowScroll, true);
+
+    return () => {
+      window.removeEventListener("scroll", handleWindowScroll, true);
+      document.removeEventListener("scroll", handleWindowScroll, true);
+    };
+  }, []);
+
   React.useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedFromAmount(fromAmount);

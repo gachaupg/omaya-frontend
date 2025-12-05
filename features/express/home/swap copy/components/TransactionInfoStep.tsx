@@ -112,9 +112,20 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
     };
   }, [isFromAssetOpen, isToAssetOpen, onFromAssetToggle, onToAssetToggle]);
 
-  // Close dropdowns when scrolling
+  // Close dropdowns when scrolling the page, but NOT when scrolling inside the dropdown lists
   useEffect(() => {
-    const handleScroll = () => {
+    const handleScroll = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+
+      // If the scroll originated from inside an asset dropdown, ignore it
+      if (
+        target &&
+        target.closest &&
+        target.closest("[data-asset-dropdown='true']")
+      ) {
+        return;
+      }
+
       if (isFromAssetOpen) {
         onFromAssetToggle();
       }
@@ -275,6 +286,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
       (
         <div
           ref={isFrom ? fromAssetDropdownContentRef : toAssetDropdownContentRef}
+          data-asset-dropdown="true"
           className="bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl z-[9999] max-h-[70vh] sm:max-h-[60vh] overflow-hidden"
           style={dropdownStyle}
         >
