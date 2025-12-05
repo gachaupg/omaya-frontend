@@ -217,7 +217,12 @@ const MarketTable: React.FC<MarketTableProps> = ({
                   </div>
                   {/* Payment */}
                   <div className="flex flex-wrap gap-2 min-w-[200px]">
-                    {row.payment_details?.map((method, i) => {                      
+                    {row.payment_details?.map((method, i) => {
+                      // Safely check if method exists before accessing properties
+                      if (!method || typeof method !== 'object') {
+                        return null;
+                      }
+                      
                       const imageUrl =
                         (typeof method.provider_logo === "string" &&
                           method.provider_logo.trim()) ||
@@ -230,7 +235,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                         >
                           <img
                             src={imageUrl}
-                            alt={method.provider}
+                            alt={method.provider || ''}
                             className="w-6 h-6 rounded object-contain flex-shrink-0"
                             style={{ 
                               width: '24px', 
@@ -244,7 +249,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                               }
                             }}
                           />
-                          {method.provider}
+                          {method.provider || ''}
                         </span>
                       );
                     })}
@@ -335,6 +340,11 @@ const MarketTable: React.FC<MarketTableProps> = ({
                     <span className="text-xs text-gray-500 dark:text-[#8C8CA1]">Payment Methods</span>
                     <div className="flex flex-wrap gap-2">
                       {row.payment_details?.slice(0, 2).map((method, i) => {
+                        // Safely check if method exists before accessing properties
+                        if (!method || typeof method !== 'object') {
+                          return null;
+                        }
+                        
                         const imageUrl =
                           (typeof method.provider_logo === "string" &&
                             method.provider_logo.trim()) ||
@@ -347,7 +357,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                           >
                             <img
                               src={imageUrl}
-                              alt={method.provider}
+                              alt={method.provider || ''}
                               className="w-5 h-5 rounded object-contain flex-shrink-0"
                               style={{ 
                                 width: '20px', 
@@ -361,7 +371,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                                 }
                               }}
                             />
-                            {method.provider}
+                            {method.provider || ''}
                           </span>
                         );
                       })}

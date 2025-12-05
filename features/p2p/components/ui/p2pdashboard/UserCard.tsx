@@ -256,6 +256,10 @@ const UserCard = () => {
               <h2 className="text-base sm:text-lg font-bold dark:text-[#FFFFFF] text-[#1D1D23]">
                 Hello, {user?.first_name} !
               </h2>
+              
+            </div>
+            <span className="text-[#1D8751] flex items-center gap-1 text-xs sm:text-sm font-medium">
+              Verified Profile
               <div className="rounded-full p-0.5 bg-[#1D8751]">
                 <svg
                   width="12"
@@ -280,9 +284,6 @@ const UserCard = () => {
                   />
                 </svg>
               </div>
-            </div>
-            <span className="text-[#1D8751] text-xs sm:text-sm font-medium">
-              Verified Profile
             </span>
           </div>
         </div>
