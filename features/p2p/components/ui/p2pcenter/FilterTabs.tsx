@@ -52,11 +52,13 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
 
   // Calculate ad status indicators
   const adStatusIndicators = useMemo(() => {
-    const liveAds = myOrders.filter((order: any) => 
-      order.status === 'published' || order.status === 'pending'
+    // Ensure myOrders is an array before filtering
+    const safeMyOrders = Array.isArray(myOrders) ? myOrders : [];
+    const liveAds = safeMyOrders.filter((order: any) => 
+      order && typeof order === 'object' && (order.status === 'published' || order.status === 'pending')
     );
-    const offlineAds = myOrders.filter((order: any) => 
-      order.status === 'offline'
+    const offlineAds = safeMyOrders.filter((order: any) => 
+      order && typeof order === 'object' && order.status === 'offline'
     );
     
     return {
@@ -91,62 +93,78 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
 
   /** Derived — filtered trades for My Ads */
   const filteredTrades = useMemo(() => {
-    return myOrders.filter((trade: any) => {
+    // Ensure myOrders is an array before filtering
+    const safeMyOrders = Array.isArray(myOrders) ? myOrders : [];
+    return safeMyOrders.filter((trade: any) => {
+      // Skip invalid trades
+      if (!trade || typeof trade !== 'object') return false;
+      
       if (filters.token !== "Tether" && trade.currency !== filters.token)
         return false;
       if (
         filters.type !== "Type" &&
+        trade.order_type &&
+        typeof trade.order_type === 'string' &&
         trade.order_type.toLowerCase() !== filters.type.toLowerCase()
       )
         return false;
       if (
         filters.status !== "Status" &&
+        trade.status &&
+        typeof trade.status === 'string' &&
         trade.status.toLowerCase() !== filters.status.toLowerCase()
       )
         return false;
-      if (filters.date !== "Date") {
-        const tradeDate = new Date(trade.created_on);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        switch (filters.date) {
-          case "Today": {
-            const d = new Date(tradeDate);
-            d.setHours(0, 0, 0, 0);
-            if (d.getTime() !== today.getTime()) return false;
-            break;
+      if (filters.date !== "Date" && trade.created_on) {
+        try {
+          const tradeDate = new Date(trade.created_on);
+          if (isNaN(tradeDate.getTime())) return false; // Invalid date
+          
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          switch (filters.date) {
+            case "Today": {
+              const d = new Date(tradeDate);
+              d.setHours(0, 0, 0, 0);
+              if (d.getTime() !== today.getTime()) return false;
+              break;
+            }
+            case "Yesterday": {
+              const y = new Date(today);
+              y.setDate(today.getDate() - 1);
+              const d = new Date(tradeDate);
+              d.setHours(0, 0, 0, 0);
+              if (d.getTime() !== y.getTime()) return false;
+              break;
+            }
+            case "Last 7 Days": {
+              const weekAgo = new Date(today);
+              weekAgo.setDate(today.getDate() - 7);
+              if (tradeDate < weekAgo) return false;
+              break;
+            }
+            case "Last 30 Days": {
+              const mAgo = new Date(today);
+              mAgo.setDate(today.getDate() - 30);
+              if (tradeDate < mAgo) return false;
+              break;
+            }
+            case "Last 90 Days": {
+              const qAgo = new Date(today);
+              qAgo.setDate(today.getDate() - 90);
+              if (tradeDate < qAgo) return false;
+              break;
+            }
+            case "Last 180 Days": {
+              const hAgo = new Date(today);
+              hAgo.setDate(today.getDate() - 180);
+              if (tradeDate < hAgo) return false;
+              break;
+            }
           }
-          case "Yesterday": {
-            const y = new Date(today);
-            y.setDate(today.getDate() - 1);
-            const d = new Date(tradeDate);
-            d.setHours(0, 0, 0, 0);
-            if (d.getTime() !== y.getTime()) return false;
-            break;
-          }
-          case "Last 7 Days": {
-            const weekAgo = new Date(today);
-            weekAgo.setDate(today.getDate() - 7);
-            if (tradeDate < weekAgo) return false;
-            break;
-          }
-          case "Last 30 Days": {
-            const mAgo = new Date(today);
-            mAgo.setDate(today.getDate() - 30);
-            if (tradeDate < mAgo) return false;
-            break;
-          }
-          case "Last 90 Days": {
-            const qAgo = new Date(today);
-            qAgo.setDate(today.getDate() - 90);
-            if (tradeDate < qAgo) return false;
-            break;
-          }
-          case "Last 180 Days": {
-            const hAgo = new Date(today);
-            hAgo.setDate(today.getDate() - 180);
-            if (tradeDate < hAgo) return false;
-            break;
-          }
+        } catch (e) {
+          // If date parsing fails, skip this trade
+          return false;
         }
       }
       return true;

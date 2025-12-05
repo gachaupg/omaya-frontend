@@ -147,12 +147,28 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         left = cardRect.left + (cardRect.width - desiredWidth) / 2 + 20; // Push 20px to the right
       }
       
-      // Ensure dropdown doesn't go off screen
+      // Ensure dropdown doesn't go off screen horizontally
       if (left + desiredWidth > viewportWidth - minMargin) {
         left = viewportWidth - desiredWidth - minMargin;
       }
       if (left < minMargin) {
         left = minMargin;
+      }
+
+      // Ensure dropdown doesn't go off screen vertically
+      const viewportHeight = window.innerHeight || 0;
+      const maxDropdownHeight = viewportHeight * 0.7; // 70vh
+      // Estimate dropdown height (assuming ~50px per option + header/search)
+      const estimatedDropdownHeight = Math.min(maxDropdownHeight, options.length * 50 + 120);
+      
+      // If dropdown would go below viewport, position it above the trigger instead
+      if (top + estimatedDropdownHeight > viewportHeight - minMargin) {
+        // Position above the card
+        top = cardRect.top - estimatedDropdownHeight - 8;
+        // Ensure it doesn't go above viewport
+        if (top < minMargin) {
+          top = minMargin;
+        }
       }
 
       setDropdownStyles({
@@ -327,7 +343,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
           <div
             id={dropdownId}
             ref={dropdownContentRef}
-            className="z-[9999] bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl max-h-[70vh] sm:max-h-[60vh] overflow-hidden"
+            className="z-[9999] bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl overflow-hidden"
             role="listbox"
             style={{
               position: "fixed",
@@ -335,6 +351,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
               left: `${dropdownStyles.left}px`,
               width: `${dropdownStyles.width || 200}px`,
               minWidth: `${dropdownStyles.width || 200}px`,
+              maxHeight: '70vh',
             }}
           >
             {/* Dropdown Title */}
@@ -367,7 +384,13 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
             )}
 
             {/* Options List */}
-            <div className="max-h-[60vh] sm:max-h-[50vh] overflow-y-auto p-1">
+            <div 
+              className="overflow-y-auto p-1"
+              style={{ 
+                maxHeight: 'calc(70vh - 120px)',
+                minHeight: '200px',
+              }}
+            >
               {filteredOptions.length === 0 ? (
                 <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
                   {searchTerm ? "No matching options" : emptyText}
@@ -395,7 +418,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                     }
                     ${optionClassName}
                   `}
-                    style={{ minHeight: "32px", marginBottom: "1px" }}
+                    style={{ minHeight: "44px", marginBottom: "2px" }}
                     role="option"
                     aria-selected={value === option.value}
                   >
