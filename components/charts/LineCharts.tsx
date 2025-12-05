@@ -482,28 +482,58 @@ const Dropdown = ({
   value: string;
   options: string[];
   onChange: (v: string) => void;
-}) => (
-  <div className="relative w-full sm:w-auto inline-flex">
-    <select
-      className="appearance-none bg-transparent text-[#A3A3A3] rounded-full px-2 sm:px-3 py-1.5 text-xs sm:text-sm pr-3.5 sm:pr-4 focus:outline-none w-full sm:w-auto"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    >
-      {options.map((opt) => (
-        <option key={opt} value={opt}>
-          {opt}
-        </option>
-      ))}
-    </select>
-    <Image
-      src="https://res.cloudinary.com/pitz/image/upload/v1763727113/Frame_34634_zwzons.png"
-      alt="Dropdown arrow"
-      width={15}
-      height={15}
-      className="pointer-events-none absolute right-0.5 sm:right-1.5 top-1/2 transform -translate-y-1/2 object-contain"
-    />
-  </div>
-);
+}) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative inline-block" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-1 text-[#A3A3A3] text-xs sm:text-sm focus:outline-none cursor-pointer"
+      >
+        <span>{value}</span>
+        <Image
+          src="https://res.cloudinary.com/pitz/image/upload/v1763727113/Frame_34634_zwzons.png"
+          alt="Dropdown arrow"
+          width={12}
+          height={12}
+          className="object-contain"
+        />
+      </button>
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-1 bg-[#2a2a32] border border-[#44454A] rounded-md shadow-lg z-50 min-w-[100px]">
+          {options.map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              className={`block w-full text-left px-3 py-1.5 text-xs sm:text-sm hover:bg-[#3a3a42] ${
+                opt === value ? "text-white bg-[#1D8751]" : "text-[#A3A3A3]"
+              }`}
+              onClick={() => {
+                onChange(opt);
+                setIsOpen(false);
+              }}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const Card = ({
   children,
