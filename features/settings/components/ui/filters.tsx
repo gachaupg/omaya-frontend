@@ -162,10 +162,10 @@ const Filters = () => {
   };
 
   return (
-    <div className="flex flex-col px-3 sm:px-4">
+    <div className="flex flex-col">
       {/* Mobile: Vertical column tabs */}
       <div className="md:hidden">
-        <div className="flex flex-col p-4 rounded-lg border dark:bg-[#1D1D23] bg-white dark:border-[#35353E] border-gray-300 w-full overflow-hidden">
+        <div className="flex flex-col p-3 sm:p-4 rounded-lg border dark:bg-[#1D1D23] bg-white dark:border-[#35353E] border-gray-300 w-full overflow-hidden">
           {tabs.map((tab, idx) => (
             <button
               key={tab.label}
@@ -215,7 +215,7 @@ const Filters = () => {
       </div>
 
       {/* Content area */}
-      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 mt-4 lg:mt-6">
+      <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 lg:gap-6 mt-3 sm:mt-4 lg:mt-6">
         <div className="w-full lg:flex-1 min-w-0">
           <div className="w-full">
             {renderActiveContent()}
