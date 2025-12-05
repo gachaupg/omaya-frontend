@@ -376,7 +376,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
           >
             {/* Search Input */}
             {searchable && (
-              <div className="p-2 border-b border-gray-200 dark:border-gray-600">
+              <div className="p-2">
                 <input
                   ref={searchInputRef}
                   type="text"

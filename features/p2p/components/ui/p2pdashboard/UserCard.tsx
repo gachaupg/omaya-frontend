@@ -252,19 +252,14 @@ const UserCard = () => {
 
           {/* User Info */}
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold dark:text-[#FFFFFF] text-[#1D1D23]">
+            <div className="flex items-center gap-2 mb-1">
+              <h2 className="text-base sm:text-lg font-bold dark:text-[#FFFFFF] text-[#1D1D23]">
                 Hello, {user?.first_name} !
               </h2>
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-[#1D8751] text-sm font-medium">
-                Verified Profile
-              </span>
               <div className="rounded-full p-0.5 bg-[#1D8751]">
                 <svg
-                  width="14"
-                  height="14"
+                  width="12"
+                  height="12"
                   viewBox="0 0 24 24"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
@@ -286,6 +281,9 @@ const UserCard = () => {
                 </svg>
               </div>
             </div>
+            <span className="text-[#1D8751] text-xs sm:text-sm font-medium">
+              Verified Profile
+            </span>
           </div>
         </div>
 
