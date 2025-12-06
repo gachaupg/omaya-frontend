@@ -18,12 +18,12 @@ export default function AddsPage() {
   return (
     <div className="min-h-screen mt-28 flex flex-col md:flex-row gap-1 px-4 md:px-0">
       {/* Sidebar */}
-      <div className="w-full md:w-[180.28px] md:fixed md:top-28">
+      {/* <div className="w-full md:fixed md:top-28"> */}
         <Sidebar />
-      </div>
+      {/* </div> */}
 
       {/* Main Adds section */}
-      <div className="flex-1 md:ml-24 w-full">
+      <div className="flex-1 w-full">
         <Suspense
           fallback={
             <div className="flex items-center justify-center min-h-[200px]">
