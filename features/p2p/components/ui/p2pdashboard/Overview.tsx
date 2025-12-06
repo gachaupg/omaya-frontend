@@ -411,7 +411,7 @@ const Overview = () => {
             Completed:
           </span>
         </div>
-        <span className="text-[11px] sm:text-xs md:text-sm text-[#0D0D0D] dark:text-white/80">
+        <span className="text-[11px] sm:text-xs md:text-sm dark:text-white/80 text-muted-foreground">
           {buyTotals.completed.toLocaleString()} USD
         </span>
       </div>
@@ -424,7 +424,7 @@ const Overview = () => {
             Pending:
           </span>
         </div>
-        <span className="text-[11px] sm:text-xs md:text-sm text-[#0D0D0D] dark:text-white/80">
+        <span className="text-[11px] sm:text-xs md:text-sm dark:text-white/80 text-muted-foreground">
           {buyTotals.pending.toLocaleString()} USD
         </span>
       </div>
