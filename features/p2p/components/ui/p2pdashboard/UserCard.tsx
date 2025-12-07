@@ -261,30 +261,18 @@ const UserCard = () => {
               <span className="text-[#1D8751] text-sm font-medium">
                 Verified Profile
               </span>
-              <div className="rounded-full p-0.5 bg-[#1D8751]">
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M9 12L11 14L15 10"
-                    className="stroke-[#FFFFFF]"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="9"
-                    className="stroke-[#FFFFFF]"
-                    strokeWidth="2"
-                  />
-                </svg>
-              </div>
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#1D8751] rounded-full flex items-center justify-center border-2 border-white">
+                  <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+                    <circle cx="10" cy="10" r="10" fill="#1D8751" />
+                    <path
+                      d="M6 10.5L9 13.5L14 8.5"
+                      stroke="white"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
             </div>
           </div>
         </div>

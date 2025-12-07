@@ -435,13 +435,24 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
           <div className="flex flex-col sm:flex-row sm:items-end gap-1 sm:gap-4">
             <div className="space-y-1 sm:flex-1">
               <p className="text-sm sm:text-base font-semibold">You Send</p>
-              <p className={labelCopy}>Asset</p>
+              <p className="text-xs dark:text-[#7d7f95] text-gray-500 pb-1">
+                I want to Send
+              </p>
             </div>
-            <p className="text-xs dark:text-[#7d7f95] text-gray-500 pb-1 ml-2 sm:ml-0 sm:flex-1 sm:pl-10 lg:pl-10">
-              I want to Send
+            <p className={`${labelCopy} ml-2 sm:ml-0 sm:flex-1 sm:pl-10 lg:pl-10 pb-1`}>
+              Asset
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 min-w-0">
+              {renderAmountInput(
+                "",
+                fromAmount,
+                onFromAmountChange,
+                fromAsset,
+                activeInputField === "from"
+              )}
+            </div>
             <div className="flex-1 min-w-0">
               {renderAssetSelector(
                 fromAsset,
@@ -451,15 +462,6 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                 searchTerm,
                 onSearchTermChange,
                 true
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              {renderAmountInput(
-                "",
-                fromAmount,
-                onFromAmountChange,
-                fromAsset,
-                activeInputField === "from"
               )}
             </div>
           </div>
@@ -490,13 +492,24 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
           <div className="flex flex-col sm:flex-row sm:items-end gap-1 sm:gap-4">
             <div className="space-y-1 sm:flex-1">
               <p className="text-sm sm:text-base font-semibold">You Receive</p>
-              <p className={labelCopy}>Asset</p>
+              <p className="text-xs dark:text-[#7d7f95] text-gray-500 pb-1">
+                I want to Receive
+              </p>
             </div>
-            <p className="text-xs dark:text-[#7d7f95] text-gray-500 pb-1 ml-4 sm:ml-0 sm:flex-1 sm:pl-10 lg:pl-16">
-              I want to Receive
+            <p className={`${labelCopy} ml-4 sm:ml-0 sm:flex-1 sm:pl-10 lg:pl-16 pb-1`}>
+              Asset
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 min-w-0">
+              {renderAmountInput(
+                "",
+                toAmount,
+                onToAmountChange,
+                toAsset,
+                activeInputField === "to"
+              )}
+            </div>
             <div className="flex-1 min-w-0">
               {renderAssetSelector(
                 toAsset,
@@ -506,15 +519,6 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                 toSearchTerm,
                 onToSearchTermChange,
                 false
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              {renderAmountInput(
-                "",
-                toAmount,
-                onToAmountChange,
-                toAsset,
-                activeInputField === "to"
               )}
             </div>
           </div>
