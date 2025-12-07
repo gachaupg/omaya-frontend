@@ -4,6 +4,7 @@ import { RootState } from "@/store/rootReducer";
 import Image from "next/image";
 import { getP2PProfileThunk } from "@/features/p2p/slices/orderSlice";
 import { AppDispatch } from "@/store";
+import VerifiedBadge from "@/components/ui/VerifiedBadge";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -104,9 +105,7 @@ const KYC = () => {
               </p>
               <div className="flex items-center gap-2 text-sm font-medium dark:text-[#1D8751] text-[#15803D]">
                 Verified Profile
-                <span className="w-4 h-4 bg-[#1D8751] rounded-full flex items-center justify-center shrink-0">
-               <img src="https://res.cloudinary.com/pitz/image/upload/v1763725740/Frame_34214_uymbow.png" alt="" />
-              </span>
+                <VerifiedBadge size={16} />
               </div>
             </div>
           </div>

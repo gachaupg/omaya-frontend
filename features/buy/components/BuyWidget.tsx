@@ -91,10 +91,10 @@ const BuyWidget = () => {
             </span>
             <input
               type="text"
-              placeholder="Paste here your Crypto address"
+              placeholder="Paste your crypto address"
               value={walletAddress}
               onChange={(e) => setWalletAddress(e.target.value)}
-              className="w-full bg-[#181820] border-none rounded-[18px] px-12 py-2 text-white outline-none placeholder-[#8C8CA1] text-base"
+              className="w-full bg-[#181820] border-none rounded-[18px] px-12 py-2 text-white outline-none placeholder-[#8C8CA1] text-sm sm:text-base"
             />
             <button
               className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 bg-[#35353E] text-[#8C8CA1] px-4 py-2 rounded-[18px] font-medium"

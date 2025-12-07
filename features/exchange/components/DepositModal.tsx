@@ -555,7 +555,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ asset, assetType, onClose }
                 type="text"
                 value={walletAddress}
                 onChange={handleWalletAddressChange}
-                placeholder="Paste here your Crypto address"
+                placeholder="Paste your crypto address"
                 className="flex-1 bg-transparent text-[#788099] text-sm font-medium focus:outline-none"
               />
               <Copy className='text-white w-4 h-4'/>
