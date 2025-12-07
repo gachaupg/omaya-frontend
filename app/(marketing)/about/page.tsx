@@ -148,7 +148,7 @@ const AboutPage = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0F0F11]">
       {/* Hero Section */}
-      <section className="relative pt-32 md:pt-40 pb-20 px-4 overflow-hidden bg-[#0F0F11] dark:bg-[#0F0F11]">
+      <section className="relative pt-32 md:pt-40 pb-20 px-4 overflow-hidden bg-white dark:bg-[#0F0F11]">
         {/* Background particles effect */}
         <div className="absolute inset-0 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-[#1D8751]/10 via-transparent to-[#1D8751]/5"></div>
@@ -182,12 +182,12 @@ const AboutPage = () => {
             
             {/* Main Heading */}
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6">
-              <span className="text-white">About</span>{" "}
+              <span className="text-gray-900 dark:text-white">About</span>{" "}
               <span className="text-[#1D8751]">OMAYA Exchange</span>
             </h1>
             
             {/* Tagline */}
-            <p className="text-xl text-gray-400 dark:text-[#788099] max-w-3xl mx-auto mb-10">
+            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-10">
               Leading the future of digital asset exchange with innovation, security, and trust
             </p>
             
@@ -213,7 +213,7 @@ const AboutPage = () => {
       </section>
 
       {/* Trading Solutions Section */}
-      <section className="relative py-20 px-4 bg-gradient-to-b from-[#0F0F11] via-[#060608] to-[#050507]">
+      <section className="relative py-20 px-4 bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-[#0F0F11] dark:via-[#060608] dark:to-[#050507]">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-[#1D8751]/10 border border-[#1D8751]/30 mb-5">
@@ -221,10 +221,10 @@ const AboutPage = () => {
                 Trading Solutions
               </span>
             </div>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-4">
               Comprehensive Trading Platform
             </h2>
-            <p className="text-sm md:text-base text-gray-400 max-w-2xl mx-auto">
+            <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Everything you need to trade, invest, and earn in the digital
               economy.
             </p>
@@ -236,17 +236,17 @@ const AboutPage = () => {
               return (
                 <div
                   key={index}
-                  className="group relative overflow-hidden rounded-3xl bg-[#14141A] border border-[#20202A] hover:border-[#1D8751] transition-all duration-300 hover:-translate-y-1"
+                  className="group relative overflow-hidden rounded-3xl bg-white dark:bg-[#14141A] border border-gray-200 dark:border-[#20202A] hover:border-[#1D8751] transition-all duration-300 hover:-translate-y-1"
                 >
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-br from-[#1D8751]/10 via-transparent to-[#1D8751]/5 transition-opacity duration-300" />
                   <div className="relative p-6 flex flex-col h-full">
                     <div className="w-12 h-12 rounded-2xl bg-[#1D8751]/10 flex items-center justify-center mb-4">
                       <Icon className="w-6 h-6 text-[#1D8751]" />
                   </div>
-                    <h3 className="text-lg md:text-xl font-semibold text-white mb-2">
+                    <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-2">
                       {solution.title}
                     </h3>
-                    <p className="text-sm text-gray-400 flex-1">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 flex-1">
                       {solution.description}
                     </p>
                     <div className="mt-6">
@@ -261,13 +261,13 @@ const AboutPage = () => {
       </section>
 
       {/* Mission Section */}
-      <section className="py-16 px-4 bg-[#0F0F11]">
+      <section className="py-16 px-4 bg-white dark:bg-[#0F0F11]">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             {/* Left Column - Mission Content */}
             <div>
               {/* Mission Banner */}
-              <div className="inline-flex items-center gap-3 px-4 py-2 bg-[#18181D] border border-[#1D8751]/30 mb-8" style={{ borderRadius: '2rem' }}>
+              <div className="inline-flex items-center gap-3 px-4 py-2 bg-gray-100 dark:bg-[#18181D] border border-[#1D8751]/30 mb-8" style={{ borderRadius: '2rem' }}>
                 <div className="w-8 h-8 rounded-full bg-[#1D8751]/20 flex items-center justify-center">
                   <Target className="w-4 h-4 text-[#1D8751]" />
                 </div>
@@ -275,39 +275,39 @@ const AboutPage = () => {
               </div>
 
               {/* Main Heading */}
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
                 <span className="block">Democratizing Digital</span>
                 <span className="block">Asset Trading</span>
               </h2>
 
               {/* Description Paragraphs */}
-              <p className="text-lg text-gray-300 mb-4 leading-relaxed">
+              <p className="text-lg text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
                 To democratize access to digital asset trading by providing a secure, 
                 efficient, and user-friendly platform that empowers individuals and 
                 businesses worldwide to participate in the digital economy.
               </p>
-              <p className="text-lg text-gray-300 mb-8 leading-relaxed">
+              <p className="text-lg text-gray-700 dark:text-gray-300 mb-8 leading-relaxed">
                 We strive to break down barriers and make cryptocurrency trading accessible to 
                 everyone, regardless of their location or experience level.
               </p>
 
               {/* Feature Boxes Grid */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-[#18181D] rounded-2xl p-6 border border-[#20202A]">
+                <div className="bg-gray-50 dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#20202A]">
                   <h3 className="text-xl font-bold text-[#1D8751] mb-2">Accessible</h3>
-                  <p className="text-sm text-gray-400">For Everyone</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">For Everyone</p>
                 </div>
-                <div className="bg-[#18181D] rounded-2xl p-6 border border-[#20202A]">
+                <div className="bg-gray-50 dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#20202A]">
                   <h3 className="text-xl font-bold text-[#1D8751] mb-2">Secure</h3>
-                  <p className="text-sm text-gray-400">Bank-Grade</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Bank-Grade</p>
                 </div>
-                <div className="bg-[#18181D] rounded-2xl p-6 border border-[#20202A]">
+                <div className="bg-gray-50 dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#20202A]">
                   <h3 className="text-xl font-bold text-[#1D8751] mb-2">Efficient</h3>
-                  <p className="text-sm text-gray-400">Lightning Fast</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Lightning Fast</p>
                 </div>
-                <div className="bg-[#18181D] rounded-2xl p-6 border border-[#20202A]">
+                <div className="bg-gray-50 dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#20202A]">
                   <h3 className="text-xl font-bold text-[#1D8751] mb-2">Global</h3>
-                  <p className="text-sm text-gray-400">150+ Countries</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">150+ Countries</p>
                 </div>
               </div>
             </div>
@@ -329,7 +329,7 @@ const AboutPage = () => {
       </section>
 
       {/* Vision Section */}
-      <section className="py-16 px-4 bg-[#0F0F11]">
+      <section className="py-16 px-4 bg-gray-50 dark:bg-[#0F0F11]">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             {/* Left Column - Image */}
@@ -349,7 +349,7 @@ const AboutPage = () => {
             <div className="order-1 md:order-2">
               {/* Vision Banner */}
               <div
-                className="inline-flex items-center gap-3 px-4 py-2 bg-[#18181D] border border-[#1D8751]/30 mb-8"
+                className="inline-flex items-center gap-3 px-4 py-2 bg-gray-100 dark:bg-[#18181D] border border-[#1D8751]/30 mb-8"
                 style={{ borderRadius: "2rem" }}
               >
                 <div className="w-8 h-8 rounded-full bg-[#1D8751]/20 flex items-center justify-center">
@@ -359,18 +359,18 @@ const AboutPage = () => {
               </div>
 
               {/* Main Heading */}
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
                 <span className="block">The Future of Digital</span>
                 <span className="block">Finance</span>
                 </h2>
 
               {/* Description Paragraphs */}
-              <p className="text-lg text-gray-300 mb-4 leading-relaxed">
+              <p className="text-lg text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
                 To become the world's most trusted and innovative digital asset exchange
                 platform, setting new standards for security, transparency, and user
                 experience.
               </p>
-              <p className="text-lg text-gray-300 mb-8 leading-relaxed">
+              <p className="text-lg text-gray-700 dark:text-gray-300 mb-8 leading-relaxed">
                 We envision a future where blockchain technology and traditional finance
                 seamlessly integrate, creating unprecedented opportunities for wealth
                 creation and financial freedom.
@@ -378,21 +378,21 @@ const AboutPage = () => {
 
               {/* Vision Feature Boxes */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-[#18181D] rounded-2xl p-6 border border-[#20202A]">
+                <div className="bg-gray-50 dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#20202A]">
                   <h3 className="text-xl font-bold text-[#1D8751] mb-2">Innovation</h3>
-                  <p className="text-sm text-gray-400">Cutting-Edge Tech</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Cutting-Edge Tech</p>
               </div>
-                <div className="bg-[#18181D] rounded-2xl p-6 border border-[#20202A]">
+                <div className="bg-gray-50 dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#20202A]">
                   <h3 className="text-xl font-bold text-[#1D8751] mb-2">Trust</h3>
-                  <p className="text-sm text-gray-400">Transparent</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Transparent</p>
                 </div>
-                <div className="bg-[#18181D] rounded-2xl p-6 border border-[#20202A]">
+                <div className="bg-gray-50 dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#20202A]">
                   <h3 className="text-xl font-bold text-[#1D8751] mb-2">Integration</h3>
-                  <p className="text-sm text-gray-400">Seamless</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Seamless</p>
                 </div>
-                <div className="bg-[#18181D] rounded-2xl p-6 border border-[#20202A]">
+                <div className="bg-gray-50 dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#20202A]">
                   <h3 className="text-xl font-bold text-[#1D8751] mb-2">Freedom</h3>
-                  <p className="text-sm text-gray-400">Financial Liberty</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Financial Liberty</p>
                 </div>
               </div>
             </div>
@@ -401,7 +401,7 @@ const AboutPage = () => {
       </section>
 
       {/* Platform Features Section */}
-      <section className="py-20 px-4 bg-gradient-to-b from-[#0F0F11] via-[#060608] to-[#050507]">
+      <section className="py-20 px-4 bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-[#0F0F11] dark:via-[#060608] dark:to-[#050507]">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-[#1D8751]/10 border border-[#1D8751]/30 mb-5">
@@ -409,10 +409,10 @@ const AboutPage = () => {
                 Platform Features
               </span>
             </div>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-4">
               Why Choose OMAYA Exchange?
             </h2>
-            <p className="text-sm md:text-base text-gray-400 max-w-2xl mx-auto">
+            <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Industry-leading features designed for traders of all levels.
               </p>
             </div>
@@ -423,18 +423,18 @@ const AboutPage = () => {
               return (
                 <div
                   key={index}
-                  className="group relative rounded-3xl bg-[#14141A] border border-[#20202A] hover:border-[#1D8751] transition-all duration-300 p-6 flex flex-col"
+                  className="group relative rounded-3xl bg-white dark:bg-[#14141A] border border-gray-200 dark:border-[#20202A] hover:border-[#1D8751] transition-all duration-300 p-6 flex flex-col"
                 >
                   <div className="w-10 h-10 rounded-2xl bg-[#1D8751]/10 flex items-center justify-center mb-4">
                     <Icon className="w-5 h-5 text-[#1D8751]" />
                   </div>
-                  <h3 className="text-lg md:text-xl font-semibold text-white mb-1">
+                  <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white mb-1">
                     {feature.title}
                   </h3>
-                  <p className="text-xs md:text-sm text-gray-400 mb-4 flex-1">
+                  <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 mb-4 flex-1">
                     {feature.description}
                   </p>
-                  <ul className="space-y-1.5 text-xs md:text-sm text-gray-300">
+                  <ul className="space-y-1.5 text-xs md:text-sm text-gray-700 dark:text-gray-300">
                     {feature.bullets.map((item) => (
                       <li key={item} className="flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-[#1D8751]" />
@@ -487,7 +487,7 @@ const AboutPage = () => {
       </section>
 
       {/* Our Story Section */}
-      <section id="story" className="py-20 px-4 bg-[#050507]">
+      <section id="story" className="py-20 px-4 bg-gray-50 dark:bg-[#050507]">
         <div className="max-w-6xl mx-auto">
           {/* Section Header */}
           <div className="text-center mb-10">
@@ -496,16 +496,16 @@ const AboutPage = () => {
                 Our Journey
               </span>
             </div>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-3">
               Our Story
             </h2>
-            <p className="text-sm md:text-base text-gray-400">
+            <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
               From a visionary startup to a global crypto exchange platform
             </p>
           </div>
 
           {/* Intro Story Card */}
-          <div className="mb-12 rounded-3xl bg-[#0F0F11] border border-[#20202A] p-8 md:p-10 text-gray-300 leading-relaxed shadow-[0_0_40px_rgba(0,0,0,0.6)]">
+          <div className="mb-12 rounded-3xl bg-white dark:bg-[#0F0F11] border border-gray-200 dark:border-[#20202A] p-8 md:p-10 text-gray-700 dark:text-gray-300 leading-relaxed shadow-lg dark:shadow-[0_0_40px_rgba(0,0,0,0.6)]">
             <p className="mb-4">
               Founded in 2020, OMAYA Exchange emerged from a vision to revolutionize the way
               people interact with digital assets. Our founders, seasoned professionals from
@@ -529,26 +529,26 @@ const AboutPage = () => {
           {/* Timeline */}
           <div className="relative max-w-6xl mx-auto">
             {/* Vertical line (desktop) */}
-            <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-[#1D8751]/30" />
+            <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-gray-300 dark:bg-[#1D8751]/30" />
 
             <div className="space-y-10">
               {/* 2020 Row */}
               <div className="relative grid md:grid-cols-2 gap-8 items-stretch">
                 {/* Center dot */}
-                <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#050507] border border-[#1D8751] shadow-[0_0_25px_rgba(29,135,81,0.8)]" />
+                <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-gray-50 dark:bg-[#050507] border border-[#1D8751] shadow-[0_0_25px_rgba(29,135,81,0.8)]" />
 
                 {/* 2020 Text Card */}
-                <div className="rounded-3xl bg-gradient-to-br from-[#101017] to-[#050507] border border-[#20202A] p-8 text-white flex flex-col">
+                <div className="rounded-3xl bg-gradient-to-br from-white to-gray-50 dark:from-[#101017] dark:to-[#050507] border border-gray-200 dark:border-[#20202A] p-8 text-gray-900 dark:text-white flex flex-col">
                   <div className="inline-flex items-center gap-2 mb-4">
                     <span className="px-3 py-1 rounded-full bg-[#1D8751]/10 text-[#1D8751] text-xs font-semibold">
                       2020
                     </span>
-                    <span className="px-3 py-1 rounded-full bg-[#18181D] text-gray-400 text-xs">
+                    <span className="px-3 py-1 rounded-full bg-gray-100 dark:bg-[#18181D] text-gray-600 dark:text-gray-400 text-xs">
                       Q1
                     </span>
           </div>
                   <h3 className="text-2xl font-semibold mb-2">Foundation</h3>
-                  <p className="text-sm md:text-base text-gray-300 mb-4">
+                  <p className="text-sm md:text-base text-gray-700 dark:text-gray-300 mb-4">
                     OMAYA Exchange was founded by crypto pioneers and fintech experts with a
                     vision to revolutionize digital asset trading.
                   </p>
@@ -625,20 +625,20 @@ const AboutPage = () => {
               {/* 2022 Row */}
               <div className="relative grid md:grid-cols-2 gap-8 items-stretch">
                 {/* Center dot */}
-                <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#050507] border border-[#1D8751] shadow-[0_0_25px_rgba(29,135,81,0.8)]" />
+                <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-gray-50 dark:bg-[#050507] border border-[#1D8751] shadow-[0_0_25px_rgba(29,135,81,0.8)]" />
 
                 {/* 2022 Text Card */}
-                <div className="rounded-3xl bg-gradient-to-br from-[#101017] to-[#050507] border border-[#20202A] p-8 text-white flex flex-col">
+                <div className="rounded-3xl bg-gradient-to-br from-white to-gray-50 dark:from-[#101017] dark:to-[#050507] border border-gray-200 dark:border-[#20202A] p-8 text-gray-900 dark:text-white flex flex-col">
                   <div className="inline-flex items-center gap-2 mb-4">
                     <span className="px-3 py-1 rounded-full bg-[#1D8751]/10 text-[#1D8751] text-xs font-semibold">
                       2022
                     </span>
-                    <span className="px-3 py-1 rounded-full bg-[#18181D] text-gray-400 text-xs">
+                    <span className="px-3 py-1 rounded-full bg-gray-100 dark:bg-[#18181D] text-gray-600 dark:text-gray-400 text-xs">
                       Q2
                     </span>
                   </div>
                   <h3 className="text-2xl font-semibold mb-2">Global Expansion</h3>
-                  <p className="text-sm md:text-base text-gray-300 mb-4">
+                  <p className="text-sm md:text-base text-gray-700 dark:text-gray-300 mb-4">
                     Reached 150+ countries with 24/7 multilingual support and introduced P2P
                     trading and staking features.
                   </p>
@@ -717,14 +717,14 @@ const AboutPage = () => {
       </section>
 
       {/* Achievements Section */}
-      <section className="py-20 px-4 bg-[#0F0F11]">
+      <section className="py-20 px-4 bg-white dark:bg-[#0F0F11]">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-4">
               Our Achievements
             </h2>
-            <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Recognition of our commitment to excellence and innovation
             </p>
           </div>
@@ -732,10 +732,10 @@ const AboutPage = () => {
           {/* Achievement Cards */}
           <div className="grid md:grid-cols-3 gap-8 mb-12">
             {/* Best Crypto Exchange 2023 */}
-            <div className="bg-[#18181D] rounded-3xl overflow-hidden border border-[#20202A]">
+            <div className="bg-gray-50 dark:bg-[#18181D] rounded-3xl overflow-hidden border border-gray-200 dark:border-[#20202A]">
               <div className="relative h-48 bg-gradient-to-br from-amber-600 to-amber-800">
                 <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=800')] bg-cover bg-center opacity-60"></div>
-                <div className="absolute top-4 right-4 px-3 py-1.5 rounded-xl bg-[#18181D]/80 backdrop-blur-sm text-white text-sm font-medium">
+                <div className="absolute top-4 right-4 px-3 py-1.5 rounded-xl bg-gray-50/80 dark:bg-[#18181D]/80 backdrop-blur-sm text-gray-900 dark:text-white text-sm font-medium">
                   2023
                 </div>
               </div>
@@ -743,13 +743,13 @@ const AboutPage = () => {
                 <div className="w-12 h-12 rounded-xl bg-[#1D8751]/10 flex items-center justify-center mb-4">
                   <Award className="w-6 h-6 text-[#1D8751]" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-3">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
                 Best Crypto Exchange 2023
               </h3>
                 <div className="inline-block px-3 py-1 rounded-full bg-[#1D8751]/20 border border-[#1D8751]/30 text-[#1D8751] text-xs font-medium mb-3">
                   Crypto Excellence Awards
                 </div>
-                <p className="text-sm text-gray-400 mb-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                   Recognized for outstanding innovation and user experience
                 </p>
                 <div className="flex items-center gap-2 text-sm text-[#1D8751]">
@@ -760,10 +760,10 @@ const AboutPage = () => {
             </div>
 
             {/* ISO 27001 Certified */}
-            <div className="bg-[#18181D] rounded-3xl overflow-hidden border border-[#20202A]">
+            <div className="bg-gray-50 dark:bg-[#18181D] rounded-3xl overflow-hidden border border-gray-200 dark:border-[#20202A]">
               <div className="relative h-48 bg-gradient-to-br from-gray-700 to-gray-900">
                 <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800')] bg-cover bg-center opacity-60"></div>
-                <div className="absolute top-4 right-4 px-3 py-1.5 rounded-xl bg-[#18181D]/80 backdrop-blur-sm text-white text-sm font-medium">
+                <div className="absolute top-4 right-4 px-3 py-1.5 rounded-xl bg-gray-50/80 dark:bg-[#18181D]/80 backdrop-blur-sm text-gray-900 dark:text-white text-sm font-medium">
                   2022
                 </div>
               </div>
@@ -771,13 +771,13 @@ const AboutPage = () => {
                 <div className="w-12 h-12 rounded-xl bg-[#1D8751]/10 flex items-center justify-center mb-4">
                   <Shield className="w-6 h-6 text-[#1D8751]" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-3">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
                 ISO 27001 Certified
               </h3>
                 <div className="inline-block px-3 py-1 rounded-full bg-[#1D8751]/20 border border-[#1D8751]/30 text-[#1D8751] text-xs font-medium mb-3">
                 Information Security Management
                 </div>
-                <p className="text-sm text-gray-400 mb-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                   International standard for security management systems
               </p>
                 <div className="flex items-center gap-2 text-sm text-[#1D8751]">
@@ -788,10 +788,10 @@ const AboutPage = () => {
             </div>
 
             {/* Trusted by 50K+ Users */}
-            <div className="bg-[#18181D] rounded-3xl overflow-hidden border border-[#20202A]">
+            <div className="bg-gray-50 dark:bg-[#18181D] rounded-3xl overflow-hidden border border-gray-200 dark:border-[#20202A]">
               <div className="relative h-48 bg-gradient-to-br from-blue-600 to-purple-600">
                 <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800')] bg-cover bg-center opacity-60"></div>
-                <div className="absolute top-4 right-4 px-3 py-1.5 rounded-xl bg-[#18181D]/80 backdrop-blur-sm text-white text-sm font-medium">
+                <div className="absolute top-4 right-4 px-3 py-1.5 rounded-xl bg-gray-50/80 dark:bg-[#18181D]/80 backdrop-blur-sm text-gray-900 dark:text-white text-sm font-medium">
                   2024
                 </div>
               </div>
@@ -799,13 +799,13 @@ const AboutPage = () => {
                 <div className="w-12 h-12 rounded-xl bg-[#1D8751]/10 flex items-center justify-center mb-4">
                   <Users className="w-6 h-6 text-[#1D8751]" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-3">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3">
                 Trusted by 50K+ Users
               </h3>
-                <div className="inline-block px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/30 text-purple-400 text-xs font-medium mb-3">
+                <div className="inline-block px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/30 text-purple-600 dark:text-purple-400 text-xs font-medium mb-3">
                 Growing community worldwide
                 </div>
-                <p className="text-sm text-gray-400 mb-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                   Building trust through transparency and reliability
                 </p>
                 <div className="flex items-center gap-2 text-sm text-[#1D8751]">
@@ -817,23 +817,23 @@ const AboutPage = () => {
           </div>
 
           {/* Statistics Bar */}
-          <div className="bg-[#18181D] rounded-3xl p-6 border border-[#20202A]">
+          <div className="bg-gray-50 dark:bg-[#18181D] rounded-3xl p-6 border border-gray-200 dark:border-[#20202A]">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div className="text-center">
-                <div className="text-3xl font-bold text-white mb-2">12+</div>
-                <div className="text-sm text-gray-400">Security Audits</div>
+                <div className="text-3xl font-bold text-gray-900 dark:text-white mb-2">12+</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Security Audits</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-white mb-2">5+</div>
-                <div className="text-sm text-gray-400">Industry Awards</div>
+                <div className="text-3xl font-bold text-gray-900 dark:text-white mb-2">5+</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Industry Awards</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-white mb-2">3+</div>
-                <div className="text-sm text-gray-400">Certifications</div>
+                <div className="text-3xl font-bold text-gray-900 dark:text-white mb-2">3+</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Certifications</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-white mb-2">4+</div>
-                <div className="text-sm text-gray-400">Years Experience</div>
+                <div className="text-3xl font-bold text-gray-900 dark:text-white mb-2">4+</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Years Experience</div>
               </div>
             </div>
           </div>
@@ -841,12 +841,12 @@ const AboutPage = () => {
       </section>
 
       {/* Security Section */}
-      <section className="py-20 px-4 bg-[#0F0F11]">
+      <section className="py-20 px-4 bg-gray-50 dark:bg-[#0F0F11]">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             {/* Left Column - Padlock Image */}
             <div className="relative">
-              <div className="relative w-full h-[500px] rounded-3xl overflow-hidden bg-[#18181D] border border-[#20202A] flex items-center justify-center">
+              <div className="relative w-full h-[500px] rounded-3xl overflow-hidden bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#20202A] flex items-center justify-center">
                 <Image
                   src="https://res.cloudinary.com/pitz/image/upload/v1764575591/Container_11_tss9j7.png"
                   alt="Security Padlock"
@@ -855,11 +855,11 @@ const AboutPage = () => {
                   sizes="(max-width: 768px) 100vw, 50vw"
                 />
                 {/* Security Rate Indicator */}
-                <div className="absolute top-6 right-6 px-4 py-2 rounded-2xl bg-[#18181D] border border-[#1D8751]/30 flex items-center gap-2">
+                <div className="absolute top-6 right-6 px-4 py-2 rounded-2xl bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#1D8751]/30 flex items-center gap-2">
                   <Shield className="w-5 h-5 text-[#1D8751]" />
                   <div>
-                    <div className="text-lg font-bold text-white">99.9%</div>
-                    <div className="text-xs text-gray-400">Security Rate</div>
+                    <div className="text-lg font-bold text-gray-900 dark:text-white">99.9%</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400">Security Rate</div>
                   </div>
                 </div>
               </div>
@@ -867,84 +867,84 @@ const AboutPage = () => {
 
             {/* Right Column - Security Features */}
             <div>
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 leading-tight">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-4 leading-tight">
                 <span className="block">Your Assets Are Always</span>
                 <span className="block text-[#1D8751]">Safe</span>
               </h2>
-              <p className="text-lg text-gray-400 mb-8 leading-relaxed">
+              <p className="text-lg text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
                 We employ industry-leading security measures to protect your digital assets and personal information.
               </p>
 
               {/* Security Features Grid */}
               <div className="grid grid-cols-2 gap-4 mb-8">
-                <div className="bg-[#18181D] rounded-2xl p-6 border border-[#1D8751]/30">
+                <div className="bg-white dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#1D8751]/30">
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-xl bg-[#1D8751]/10 flex items-center justify-center flex-shrink-0">
                       <Lock className="w-6 h-6 text-[#1D8751]" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-white mb-1">Cold Storage</h3>
-                      <p className="text-sm text-gray-400">95% of assets stored offline in bank-grade vaults.</p>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Cold Storage</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">95% of assets stored offline in bank-grade vaults.</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-[#18181D] rounded-2xl p-6 border border-[#1D8751]/30">
+                <div className="bg-white dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#1D8751]/30">
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-xl bg-[#1D8751]/10 flex items-center justify-center flex-shrink-0">
                       <ShieldCheck className="w-6 h-6 text-[#1D8751]" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-white mb-1">Multi-Signature</h3>
-                      <p className="text-sm text-gray-400">Multiple approvals required for all transactions.</p>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Multi-Signature</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Multiple approvals required for all transactions.</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-[#18181D] rounded-2xl p-6 border border-[#1D8751]/30">
+                <div className="bg-white dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#1D8751]/30">
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-xl bg-[#1D8751]/10 flex items-center justify-center flex-shrink-0">
                       <Fingerprint className="w-6 h-6 text-[#1D8751]" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-white mb-1">Biometric Auth</h3>
-                      <p className="text-sm text-gray-400">Face ID and fingerprint recognition.</p>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Biometric Auth</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Face ID and fingerprint recognition.</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-[#18181D] rounded-2xl p-6 border border-[#1D8751]/30">
+                <div className="bg-white dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#1D8751]/30">
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-xl bg-[#1D8751]/10 flex items-center justify-center flex-shrink-0">
                       <Eye className="w-6 h-6 text-[#1D8751]" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-white mb-1">24/7 Monitoring</h3>
-                      <p className="text-sm text-gray-400">Real-time threat detection and prevention.</p>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">24/7 Monitoring</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Real-time threat detection and prevention.</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-[#18181D] rounded-2xl p-6 border border-[#1D8751]/30">
+                <div className="bg-white dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#1D8751]/30">
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-xl bg-[#1D8751]/10 flex items-center justify-center flex-shrink-0">
                       <Key className="w-6 h-6 text-[#1D8751]" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-white mb-1">2FA Protection</h3>
-                      <p className="text-sm text-gray-400">Two-factor authentication on all accounts.</p>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">2FA Protection</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Two-factor authentication on all accounts.</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-[#18181D] rounded-2xl p-6 border border-[#1D8751]/30">
+                <div className="bg-white dark:bg-[#18181D] rounded-2xl p-6 border border-gray-200 dark:border-[#1D8751]/30">
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-xl bg-[#1D8751]/10 flex items-center justify-center flex-shrink-0">
                       <FileLock className="w-6 h-6 text-[#1D8751]" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-white mb-1">Data Encryption</h3>
-                      <p className="text-sm text-gray-400">Military-grade SSL encryption.</p>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Data Encryption</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Military-grade SSL encryption.</p>
                     </div>
                   </div>
                 </div>
@@ -963,31 +963,31 @@ const AboutPage = () => {
       </section>
 
       {/* Location Section */}
-      <section className="py-20 px-4 bg-[#0F0F11] relative overflow-hidden">
+      <section className="py-20 px-4 bg-white dark:bg-[#0F0F11] relative overflow-hidden">
         {/* Subtle green glow at top */}
         <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#1D8751]/10 to-transparent"></div>
         
         <div className="max-w-7xl mx-auto relative z-10">
           {/* Header */}
           <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-4">
               Our Locations
             </h2>
-            <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Operating worldwide with local presence
             </p>
           </div>
 
           {/* Statistics Bar */}
-          <div className="bg-[#18181D] rounded-3xl p-6 mb-12 border border-[#20202A]">
+          <div className="bg-gray-50 dark:bg-[#18181D] rounded-3xl p-6 mb-12 border border-gray-200 dark:border-[#20202A]">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-[#1D8751]/10 flex items-center justify-center">
                   <Globe className="w-6 h-6 text-[#1D8751]" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-white">150+</div>
-                  <div className="text-sm text-gray-400">Countries</div>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white">150+</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Countries</div>
                 </div>
               </div>
               <div className="flex items-center gap-4">
@@ -995,8 +995,8 @@ const AboutPage = () => {
                   <Users className="w-6 h-6 text-[#1D8751]" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-white">350+</div>
-                  <div className="text-sm text-gray-400">Team Members</div>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white">350+</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Team Members</div>
                 </div>
               </div>
               <div className="flex items-center gap-4">
@@ -1004,8 +1004,8 @@ const AboutPage = () => {
                   <Clock className="w-6 h-6 text-[#1D8751]" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-white">24/7</div>
-                  <div className="text-sm text-gray-400">Support Hours</div>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white">24/7</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Support Hours</div>
                 </div>
               </div>
             </div>
@@ -1014,7 +1014,7 @@ const AboutPage = () => {
           {/* Location Cards */}
           <div className="grid md:grid-cols-2 gap-8">
             {/* Dubai Headquarters */}
-            <div className="bg-[#18181D] rounded-3xl overflow-hidden border border-[#20202A]">
+            <div className="bg-gray-50 dark:bg-[#18181D] rounded-3xl overflow-hidden border border-gray-200 dark:border-[#20202A]">
               {/* Image Section */}
               <div className="relative h-64 bg-gradient-to-br from-blue-400 to-blue-600">
                 <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800')] bg-cover bg-center opacity-80"></div>
@@ -1035,43 +1035,43 @@ const AboutPage = () => {
                 <div className="flex items-start gap-3">
                   <Clock className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
                 <div>
-                    <p className="text-sm text-gray-400">Local Time</p>
-                    <p className="text-white font-medium">GMT+4</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Local Time</p>
+                    <p className="text-gray-900 dark:text-white font-medium">GMT+4</p>
                 </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <Building2 className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm text-gray-400">Team Size</p>
-                    <p className="text-white font-medium">200+ Employees</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Team Size</p>
+                    <p className="text-gray-900 dark:text-white font-medium">200+ Employees</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <MapPin className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm text-gray-400">Address</p>
-                    <p className="text-white font-medium">123 Blockchain Avenue, Financial District</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Address</p>
+                    <p className="text-gray-900 dark:text-white font-medium">123 Blockchain Avenue, Financial District</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <Mail className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm text-gray-400">Email</p>
-                    <p className="text-white font-medium">support@omaya.io</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Email</p>
+                    <p className="text-gray-900 dark:text-white font-medium">support@omaya.io</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <Phone className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm text-gray-400">Phone</p>
-                    <p className="text-white font-medium">+971 4 123 4567</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Phone</p>
+                    <p className="text-gray-900 dark:text-white font-medium">+971 4 123 4567</p>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* San Francisco Regional Office */}
-            <div className="bg-[#18181D] rounded-3xl overflow-hidden border border-[#20202A]">
+            <div className="bg-gray-50 dark:bg-[#18181D] rounded-3xl overflow-hidden border border-gray-200 dark:border-[#20202A]">
               {/* Image Section */}
               <div className="relative h-64 bg-gradient-to-br from-orange-400 to-pink-500">
                 <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=800')] bg-cover bg-center opacity-80"></div>
@@ -1092,36 +1092,36 @@ const AboutPage = () => {
                 <div className="flex items-start gap-3">
                   <Clock className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
                 <div>
-                    <p className="text-sm text-gray-400">Local Time</p>
-                    <p className="text-white font-medium">PST (GMT-8)</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Local Time</p>
+                    <p className="text-gray-900 dark:text-white font-medium">PST (GMT-8)</p>
                 </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <Building2 className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm text-gray-400">Team Size</p>
-                    <p className="text-white font-medium">150+ Employees</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Team Size</p>
+                    <p className="text-gray-900 dark:text-white font-medium">150+ Employees</p>
                 </div>
               </div>
                 <div className="flex items-start gap-3">
                   <MapPin className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm text-gray-400">Address</p>
-                    <p className="text-white font-medium">456 Tech Hub Street, Silicon Valley, CA 94102</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Address</p>
+                    <p className="text-gray-900 dark:text-white font-medium">456 Tech Hub Street, Silicon Valley, CA 94102</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <Mail className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm text-gray-400">Email</p>
-                    <p className="text-white font-medium">us@omaya.io</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Email</p>
+                    <p className="text-gray-900 dark:text-white font-medium">us@omaya.io</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <Phone className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm text-gray-400">Phone</p>
-                    <p className="text-white font-medium">+1 (415) 123-4567</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Phone</p>
+                    <p className="text-gray-900 dark:text-white font-medium">+1 (415) 123-4567</p>
                   </div>
                 </div>
               </div>
