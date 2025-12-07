@@ -376,6 +376,7 @@ export default function Navbar() {
   // Smart navbar background logic based on page and scroll state
   const getNavbarBackground = () => {
     const isHomePage = pathname === "/";
+    const isAboutPage = pathname === "/about";
     const isDashboardPage = pathname?.startsWith("/dashboard") || false;
 
     if (isHomePage) {
@@ -383,6 +384,11 @@ export default function Navbar() {
       return scrolled
         ? "dark:bg-[#1D1D23] bg-white/95 backdrop-blur-sm"
         : "bg-transparent";
+    } else if (isAboutPage) {
+      // About page: dark green background to match hero section
+      return scrolled
+        ? "dark:bg-[#1D1D23] bg-white/95 backdrop-blur-sm shadow-sm"
+        : "bg-[#0E5531] dark:bg-[#0E5531]";
     } else if (isDashboardPage) {
       // Dashboard pages: always have solid background for visibility
       return scrolled
@@ -396,8 +402,8 @@ export default function Navbar() {
     }
   };
 
-  // Check if navbar should show white text (transparent on home page)
-  const isTransparentNavbar = pathname === "/" && !scrolled;
+  // Check if navbar should show white text (transparent on home page or about page when not scrolled)
+  const isTransparentNavbar = (pathname === "/" && !scrolled) || (pathname === "/about" && !scrolled);
 
   // Use theme context instead of manual localStorage parsing
   const { theme } = useTheme();
@@ -412,11 +418,12 @@ export default function Navbar() {
     if (!mounted) return null;
 
     const isHomePage = pathname === "/";
+    const isAboutPage = pathname === "/about";
     const isNotScrolled = !scrolled;
     const isDarkTheme = theme === "dark";
 
-    if (isHomePage && isNotScrolled) {
-      // Home page, not scrolled: white logo for transparent background
+    if ((isHomePage && isNotScrolled) || (isAboutPage && isNotScrolled)) {
+      // Home page or About page, not scrolled: white logo for transparent/green background
       return {
         src: "https://res.cloudinary.com/pitz/image/upload/v1764572384/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png",
         alt: "OMAYA Exchange",
