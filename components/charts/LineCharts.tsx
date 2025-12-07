@@ -485,7 +485,7 @@ const Dropdown = ({
 }) => (
   <div className="relative w-full sm:w-auto inline-flex">
     <select
-      className="appearance-none bg-transparent text-[#A3A3A3] rounded-full px-2 sm:px-3 py-1.5 text-xs sm:text-sm pr-3.5 sm:pr-4 focus:outline-none w-full sm:w-auto"
+      className="appearance-none bg-transparent text-[#A3A3A3] rounded-full px-2 sm:px-3 py-1.5 text-xs sm:text-sm pr-6 sm:pr-7 focus:outline-none w-full sm:w-auto"
       value={value}
       onChange={(e) => onChange(e.target.value)}
     >

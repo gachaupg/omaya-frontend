@@ -3694,7 +3694,9 @@ export default function DepositForm({
         {/* Disclaimer Banner */}
         <div className="flex items-center rounded-2xl px-4 py-3 mb-4 dark:bg-[#1D1D23]">
           <div className="flex items-center gap-3">
-              <img src="https://res.cloudinary.com/pitz/image/upload/v1764062160/Icon_2_tppzgw.png" alt="" />
+            <div className="w-5 h-5 border-2 border-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="text-[#1D8751] text-xs font-bold">i</span>
+            </div>
             <span className="text-[#35353e] dark:text-[#788099] text-sm font-medium">
               {t("express.estimate.notice", "This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds.")}
             </span>
