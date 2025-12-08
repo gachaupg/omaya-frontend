@@ -27,13 +27,13 @@ const ClientIdSection: React.FC<ClientIdSectionProps> = ({ user }) => {
           <label className="dark:text-[#fff] text-gray-700 text-xs mb-1 block">
             Your unique ID
           </label>
-          <div className="flex items-center gap-2">
-            <div className="flex flex-1 items-center border border-[#1D8751] rounded-full px-3 py-2 bg-transparent">
-              <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block mr-2"></span>
-              <span className="text-[#1D8751] text-sm font-semibold mr-2">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <div className="flex flex-1 items-center border border-[#1D8751] rounded-full px-2 sm:px-3 py-2 bg-transparent min-w-0">
+              <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block mr-2 flex-shrink-0"></span>
+              <span className="text-[#1D8751] text-xs sm:text-sm font-semibold truncate min-w-0">
                 {user?.user_id || ""}
               </span>
-              <span className="ml-auto">
+              <span className="ml-auto flex-shrink-0">
                 {/* QR icon */}
                 <svg
                   width="16"
@@ -41,6 +41,7 @@ const ClientIdSection: React.FC<ClientIdSectionProps> = ({ user }) => {
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="#1D8751"
+                  className="flex-shrink-0"
                 >
                   <rect
                     x="3"
@@ -86,7 +87,7 @@ const ClientIdSection: React.FC<ClientIdSectionProps> = ({ user }) => {
               </span>
             </div>
             <button
-              className={`flex items-center gap-1 px-3 py-2 rounded-xl dark:bg-[#23232B] bg-gray-200 text-[#1D8751] font-semibold hover:bg-[#1D8751] hover:text-white transition text-sm ${
+              className={`flex items-center justify-center gap-1 px-3 py-2 rounded-xl dark:bg-[#23232B] bg-gray-200 text-[#1D8751] font-semibold hover:bg-[#1D8751] hover:text-white transition text-sm whitespace-nowrap flex-shrink-0 ${
                 copied ? "bg-[#1D8751] text-white" : ""
               }`}
               onClick={handleCopy}
@@ -100,6 +101,7 @@ const ClientIdSection: React.FC<ClientIdSectionProps> = ({ user }) => {
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
+                className="flex-shrink-0"
               >
                 <rect
                   x="9"

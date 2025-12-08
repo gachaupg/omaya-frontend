@@ -39,6 +39,7 @@ import toast from "react-hot-toast";
 import { Asset, FavoriteAsset } from "../../exchange/types";
 
 import { logger } from "@/lib/utils/logger";
+import { Chats } from "./chats";
 
 // Utility functions for formatting
 const formatPrice = (price: number | null | undefined): string => {

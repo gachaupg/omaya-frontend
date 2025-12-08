@@ -26,40 +26,74 @@ const NavLink = ({
   href,
   children,
   isTransparent = false,
+  pathname,
 }: {
   href: string;
   children: React.ReactNode;
   isTransparent?: boolean;
-}) => (
-  <Link
-    href={href}
-    className={`${
-      isTransparent
-        ? "text-white" // Always white when navbar is transparent
-        : "dark:text-white text-gray-900" // Theme-based when navbar has background
-    } hover:text-[#1D8751] transition-colors duration-200 text-sm lg:text-base 2xl:text-lg`}
-  >
-    {children}
-  </Link>
-);
+  pathname?: string;
+}) => {
+  // Helper function to check if a link is active
+  const isActive = () => {
+    if (href === "/") {
+      return pathname === "/";
+    }
+    return pathname === href || pathname?.startsWith(href + "/");
+  };
+
+  const active = isActive();
+
+  return (
+    <Link
+      href={href}
+      className={`${
+        active
+          ? "text-[#1D8751]" // Active link in green
+          : isTransparent
+          ? "text-white" // Always white when navbar is transparent
+          : "dark:text-white text-gray-900" // Theme-based when navbar has background
+      } hover:text-[#1D8751] transition-colors duration-200 text-sm lg:text-base 2xl:text-lg`}
+    >
+      {children}
+    </Link>
+  );
+};
 
 const MobileNavLink = ({
   href,
   children,
   onClick,
+  pathname,
 }: {
   href: string;
   children: React.ReactNode;
   onClick: () => void;
-}) => (
-  <Link
-    href={href}
-    className="block dark:text-white text-gray-900 hover:text-[#1D8751] py-2 transition-colors duration-200 text-lg"
-    onClick={onClick}
-  >
-    {children}
-  </Link>
-);
+  pathname?: string;
+}) => {
+  // Helper function to check if a link is active
+  const isActive = () => {
+    if (href === "/") {
+      return pathname === "/";
+    }
+    return pathname === href || pathname?.startsWith(href + "/");
+  };
+
+  const active = isActive();
+
+  return (
+    <Link
+      href={href}
+      className={`block py-2 transition-colors duration-200 text-lg ${
+        active
+          ? "text-[#1D8751]"
+          : "dark:text-white text-gray-900 hover:text-[#1D8751]"
+      }`}
+      onClick={onClick}
+    >
+      {children}
+    </Link>
+  );
+};
 
 const AuthButton = ({
   variant,
@@ -195,7 +229,9 @@ const LanguageSelector = () => {
 
 export default function Navbar() {
   const router = useRouter();
-  const pathname = usePathname();
+  const pathnameRaw = usePathname();
+  // Convert null to undefined for type compatibility
+  const pathname = pathnameRaw ?? undefined;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [depositDropdownOpen, setDepositDropdownOpen] = useState(false);
@@ -340,6 +376,7 @@ export default function Navbar() {
   // Smart navbar background logic based on page and scroll state
   const getNavbarBackground = () => {
     const isHomePage = pathname === "/";
+    const isAboutPage = pathname === "/about";
     const isDashboardPage = pathname?.startsWith("/dashboard") || false;
 
     if (isHomePage) {
@@ -347,6 +384,11 @@ export default function Navbar() {
       return scrolled
         ? "dark:bg-[#1D1D23] bg-white/95 backdrop-blur-sm"
         : "bg-transparent";
+    } else if (isAboutPage) {
+      // About page: dark green background to match hero section
+      return scrolled
+        ? "dark:bg-[#1D1D23] bg-white/95 backdrop-blur-sm shadow-sm"
+        : "bg-[#0E5531] dark:bg-[#0E5531]";
     } else if (isDashboardPage) {
       // Dashboard pages: always have solid background for visibility
       return scrolled
@@ -360,8 +402,8 @@ export default function Navbar() {
     }
   };
 
-  // Check if navbar should show white text (transparent on home page)
-  const isTransparentNavbar = pathname === "/" && !scrolled;
+  // Check if navbar should show white text (transparent on home page or about page when not scrolled)
+  const isTransparentNavbar = (pathname === "/" && !scrolled) || (pathname === "/about" && !scrolled);
 
   // Use theme context instead of manual localStorage parsing
   const { theme } = useTheme();
@@ -376,11 +418,12 @@ export default function Navbar() {
     if (!mounted) return null;
 
     const isHomePage = pathname === "/";
+    const isAboutPage = pathname === "/about";
     const isNotScrolled = !scrolled;
     const isDarkTheme = theme === "dark";
 
-    if (isHomePage && isNotScrolled) {
-      // Home page, not scrolled: white logo for transparent background
+    if ((isHomePage && isNotScrolled) || (isAboutPage && isNotScrolled)) {
+      // Home page or About page, not scrolled: white logo for transparent/green background
       return {
         src: "https://res.cloudinary.com/pitz/image/upload/v1764572384/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png",
         alt: "OMAYA Exchange",
@@ -448,24 +491,24 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex space-x-6 lg:space-x-8 2xl:space-x-12">
-            <NavLink href="/" isTransparent={isTransparentNavbar}>
+            <NavLink href="/" isTransparent={isTransparentNavbar} pathname={pathname}>
               Home
             </NavLink>
             {isAuthenticated && (
-              <NavLink href="/dashboard" isTransparent={isTransparentNavbar}>
+              <NavLink href="/dashboard" isTransparent={isTransparentNavbar} pathname={pathname}>
                 Dashboard
               </NavLink>
             )}
-            <NavLink href="/market" isTransparent={isTransparentNavbar}>
+            <NavLink href="/market" isTransparent={isTransparentNavbar} pathname={pathname}>
               Market
             </NavLink>
-            <NavLink href="/rates" isTransparent={isTransparentNavbar}>
+            <NavLink href="/rates" isTransparent={isTransparentNavbar} pathname={pathname}>
               Rates
             </NavLink>
-            <NavLink href="/blog" isTransparent={isTransparentNavbar}>
+            <NavLink href="/blog" isTransparent={isTransparentNavbar} pathname={pathname}>
               Blog
             </NavLink>
-            <NavLink href="/about" isTransparent={isTransparentNavbar}>
+            <NavLink href="/about" isTransparent={isTransparentNavbar} pathname={pathname}>
               About Us
             </NavLink>
             {/* Show Contact us only on auth pages */}
@@ -473,12 +516,12 @@ export default function Navbar() {
               pathname?.startsWith("/auth/register") || 
               pathname?.startsWith("/auth/forgotPassword") ||
               pathname?.startsWith("/auth/resetPassword")) && (
-              <NavLink href="#" isTransparent={isTransparentNavbar}>
+              <NavLink href="#" isTransparent={isTransparentNavbar} pathname={pathname}>
                 Contact us
               </NavLink>
             )} */}
 
-            <NavLink href="/contactUs" isTransparent={isTransparentNavbar}>
+            <NavLink href="/contactUs" isTransparent={isTransparentNavbar} pathname={pathname}>
               Contact us
             </NavLink>
           </div>
@@ -759,7 +802,7 @@ export default function Navbar() {
                     <img
                       src={userProfile?.photo || cachedProfilePhoto || ""}
                       alt="Profile"
-                      className="w-10 h-10 rounded-full border-2 border-white object-cover"
+                      className="w-10 h-10 rounded-full object-cover"
                       onError={() => {
                         setProfileImageError(true);
                         // Clear invalid cached photo
@@ -773,13 +816,23 @@ export default function Navbar() {
                     <DefaultProfileIcon />
                   )}
                 </button>
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#1D8751] rounded-full flex items-center justify-center border-2 border-white">
-                  <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
-                    <circle cx="10" cy="10" r="10" fill="#1D8751" />
+                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5" style={{position: 'relative'}}>
+                  <svg width="20" height="20" viewBox="0 0 20 20" style={{position: 'absolute'}}>
+                    <circle cx="10" cy="10" r="9" fill="white" />
+                    <circle cx="10" cy="10" r="7.5" fill="#1D8751" />
+                    {/* Serrated edge using small circles */}
+                    {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(angle => {
+                      const rad = (angle * Math.PI) / 180;
+                      const x = 10 + 8.5 * Math.cos(rad);
+                      const y = 10 + 8.5 * Math.sin(rad);
+                      return <circle key={angle} cx={x} cy={y} r="1" fill="white" />;
+                    })}
+                  </svg>
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg" style={{position: 'relative', zIndex: 1}}>
                     <path
-                      d="M6 10.5L9 13.5L14 8.5"
-                      stroke="white"
-                      strokeWidth="2"
+                      d="M2 5L4 7L8 3"
+                      stroke="#FFFFFF"
+                      strokeWidth="1.5"
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
@@ -797,7 +850,7 @@ export default function Navbar() {
                             <img
                               src={userProfile?.photo || cachedProfilePhoto || ""}
                               alt="Profile"
-                              className="w-12 h-12 rounded-full object-cover border-2 border-white"
+                              className="w-12 h-12 rounded-full object-cover"
                               onError={() => {
                                 setProfileImageError(true);
                                 // Clear invalid cached photo
@@ -894,27 +947,27 @@ export default function Navbar() {
           <div
             className={`fixed top-14 sm:top-16 left-0 right-0 z-50 md:hidden p-4 sm:p-6 space-y-4 sm:space-y-6 shadow-lg transition-all duration-300 dark:bg-[#1D1D23] bg-white max-h-[calc(100vh-3.5rem)] sm:max-h-[calc(100vh-4rem)] overflow-y-auto`}
           >
-            <MobileNavLink href="/" onClick={toggleMobileMenu}>
+            <MobileNavLink href="/" onClick={toggleMobileMenu} pathname={pathname}>
               Home
             </MobileNavLink>
             {isAuthenticated && (
-              <MobileNavLink href="/dashboard" onClick={toggleMobileMenu}>
+              <MobileNavLink href="/dashboard" onClick={toggleMobileMenu} pathname={pathname}>
                 Dashboard
               </MobileNavLink>
             )}
-            <MobileNavLink href="/market" onClick={toggleMobileMenu}>
+            <MobileNavLink href="/market" onClick={toggleMobileMenu} pathname={pathname}>
               Market
             </MobileNavLink>
-            <MobileNavLink href="/rates" onClick={toggleMobileMenu}>
+            <MobileNavLink href="/rates" onClick={toggleMobileMenu} pathname={pathname}>
               Rates
             </MobileNavLink>
-            <MobileNavLink href="/blog" onClick={toggleMobileMenu}>
+            <MobileNavLink href="/blog" onClick={toggleMobileMenu} pathname={pathname}>
               Blog
             </MobileNavLink>
-            <MobileNavLink href="/about" onClick={toggleMobileMenu}>
+            <MobileNavLink href="/about" onClick={toggleMobileMenu} pathname={pathname}>
               About Us
             </MobileNavLink>
-            <MobileNavLink href="/contactUs" onClick={toggleMobileMenu}>
+            <MobileNavLink href="/contactUs" onClick={toggleMobileMenu} pathname={pathname}>
                 Contact us
               </MobileNavLink>
 
@@ -1233,7 +1286,7 @@ export default function Navbar() {
                             <img
                               src={userProfile?.photo || cachedProfilePhoto || ""}
                               alt="Profile"
-                              className="w-10 h-10 rounded-full object-cover border-2 border-white"
+                              className="w-10 h-10 rounded-full object-cover"
                               onError={() => {
                                 setProfileImageError(true);
                                 // Clear invalid cached photo

@@ -2,19 +2,12 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
 import { fetchCoinDetailsPublic, fetchCoinMarketChartPublic } from "../../../features/markets/api";
 import Link from "next/link";
 import { ArrowLeft, ArrowLeftRight, Repeat, Users } from "lucide-react";
 import { Button } from "@headlessui/react";
 import RatesTransactionHistory from "@/features/rates/components/RatesTransactionHistory";
+import { Chats } from "@/features/markets/components/chats";
 
 const MarketTable = dynamic(
   () => import("../../../features/markets/components/MarketTable"),
@@ -48,7 +41,7 @@ const MarketChartContent = () => {
   const coinId = searchParams?.get("id");
   
   const [coinDetails, setCoinDetails] = useState<any>(null);
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<{ prices?: [number, number][]; total_volumes?: [number, number][] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<string>("1");
@@ -75,22 +68,10 @@ const MarketChartContent = () => {
         setCoinDetails(details);
         
         if (chart?.prices && Array.isArray(chart.prices)) {
-          const processedChartData = chart.prices.map(
-            ([timestamp, price]: [number, number]) => ({
-              time: Number(timeRange) === 1 
-                ? new Date(timestamp).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })
-                : new Date(timestamp).toLocaleDateString([], {
-                    month: "short",
-                    day: "numeric",
-                  }),
-              price: Number(price),
-              fullTime: new Date(timestamp).toLocaleString(),
-            })
-          );
-          setChartData(processedChartData);
+          setChartData({
+            prices: chart.prices,
+            total_volumes: chart.total_volumes || [],
+          });
         } else {
           throw new Error("No chart data received from API");
         }
@@ -243,50 +224,18 @@ const MarketChartContent = () => {
             ))}
           </div>
 
-          <div style={{ height: "300px" }} className="sm:h-[350px] lg:h-[400px]">
-            {chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={chartData}
-                  margin={{
-                    top: 10,
-                    right: 10,
-                    left: -10,
-                    bottom: 0,
-                  }}
-                >
-                  <XAxis
-                    dataKey="time"
-                    tick={{ fill: "#788099", fontSize: 10 }}
-                    axisLine={false}
-                    tickLine={false}
-                    interval="preserveStartEnd"
-                  />
-                  <YAxis
-                    domain={["auto", "auto"]}
-                    tick={{ fill: "#788099", fontSize: 10 }}
-                    axisLine={false}
-                    tickLine={false}
-                    width={60}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      background: "#23232a",
-                      border: "none",
-                      color: "#fff",
-                    }}
-                    labelStyle={{ color: "#13B562" }}
-                    formatter={(value: number) => [formatPrice(value), "Price"]}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="price"
-                    stroke="#13B562"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+          <div 
+            style={{ height: "300px" }} 
+            className="sm:h-[350px] lg:h-[400px] w-full overflow-hidden"
+          >
+            {chartData && chartData.prices && chartData.prices.length > 0 ? (
+              <Chats
+                data={chartData}
+                symbol={coinDetails ? `${coinDetails.symbol.toUpperCase()}/USD` : 'BTC/USD'}
+                timeRange={timeRange}
+                height="100%"
+                width="100%"
+              />
             ) : (
               <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
                 No chart data available
@@ -317,11 +266,16 @@ const MarketChartContent = () => {
         </div>
 
         <div className="mt-8 sm:mt-10 lg:mt-12">
-          <div className="flex flex-col gap-2 mb-4 sm:mb-6 lg:mb-8">
-            <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#051015] dark:text-white">
-              Omaya Transactions
-            </h2>
-            
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4 sm:mb-6 lg:mb-8">
+              <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#051015] dark:text-white">
+                Omaya Transactions
+              </h2>
+            <Link 
+              href="/market/live-transactions"
+              className="text-[#13B562] hover:text-[#0f8f4d] font-medium text-sm sm:text-base flex items-center gap-1 transition-colors"
+            >
+              Live Transactions →
+            </Link>
           </div>
           <RatesTransactionHistory/>
           {/* <MarketTable showFullLayout={false} /> */}

@@ -15,18 +15,69 @@ const ASSET_ICON_URL =
 const PAYMENT_ICON_URL =
   "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg";
 
-// Helper function to get source from transaction type
-const getSourceFromType = (transactionType: string): string => {
-  const sourceMap: Record<string, string> = {
-    moneyx: "MoneyX",
-    deposit: "Deposit",
-    withdrawal: "Withdrawal",
-    p2p_buy: "P2P",
-    p2p_sell: "P2P",
-    swap: "Swap",
-    exchange: "Exchange",
+// Helper function to get bank logo
+const getBankLogo = (bankName: string): string => {
+  // To avoid 404s from /banks/*.png, always use the Cloudinary default for now
+  return "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg";
+};
+
+// Helper function to determine From and To based on transaction type
+const getFromTo = (tx: Transaction): { from: { name: string; logo: string }; to: { name: string; logo: string } } => {
+  const transactionType = tx.transaction_type?.toLowerCase() || "";
+  
+  // For deposits: From = payment provider, To = currency/asset
+  if (transactionType === "deposit" || transactionType === "moneyx") {
+    return {
+      from: {
+        name: tx.payment_provider || "Payment Provider",
+        logo: getBankLogo(tx.payment_provider || ""),
+      },
+      to: {
+        name: tx.currency || "USD",
+        logo: tx.asset_image || ASSET_ICON_URL,
+      },
+    };
+  }
+  
+  // For withdrawals: From = currency/asset, To = payment provider
+  if (transactionType === "withdrawal") {
+    return {
+      from: {
+        name: tx.currency || "USD",
+        logo: tx.asset_image || ASSET_ICON_URL,
+      },
+      to: {
+        name: tx.payment_provider || "Payment Provider",
+        logo: getBankLogo(tx.payment_provider || ""),
+      },
   };
-  return sourceMap[transactionType] || transactionType.toUpperCase();
+  }
+  
+  // For P2P: From = payment provider, To = payment provider (or currency)
+  if (transactionType.includes("p2p")) {
+    return {
+      from: {
+        name: tx.payment_provider || tx.currency || "Source",
+        logo: getBankLogo(tx.payment_provider || ""),
+      },
+      to: {
+        name: tx.currency || "Destination",
+        logo: tx.asset_image || ASSET_ICON_URL,
+      },
+    };
+  }
+  
+  // Default: From = currency, To = payment provider
+  return {
+    from: {
+      name: tx.currency || "USD",
+      logo: tx.asset_image || ASSET_ICON_URL,
+    },
+    to: {
+      name: tx.payment_provider || "Payment Provider",
+      logo: getBankLogo(tx.payment_provider || ""),
+    },
+  };
 };
 
 const RatesTransactionHistory = () => {
@@ -66,47 +117,43 @@ const RatesTransactionHistory = () => {
     <div className="bg-white dark:bg-[#1D1D23] p-3 sm:p-4 lg:p-6 rounded-lg">
       {/* Mobile: Card-based layout */}
       <div className="block sm:hidden space-y-4">
-        {transactions.map((tx: Transaction) => (
+        {transactions.map((tx: Transaction, index: number) => {
+          const { from, to } = getFromTo(tx);
+          const amountColor = index % 2 === 0 ? "text-[#13B562]" : "text-red-500";
+          
+          return (
           <div key={tx.transaction_id} className="border border-gray-200 dark:border-[#35353E] rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center">
+                <div className="flex items-center gap-2">
                 <img
-                  src={tx.asset_image || ASSET_ICON_URL}
-                  alt={`${tx.currency} network`}
-                  className="w-10 h-10 object-contain mr-3"
-                />
-                <div>
-                  <div className="text-gray-900 dark:text-white font-medium">{tx.currency}</div>
-                  <div className="text-xs text-gray-600 dark:text-[#788099]">
-                    {tx.source || getSourceFromType(tx.transaction_type)}
-                  </div>
+                    src={from.logo}
+                    alt={from.name}
+                    className="w-8 h-8 rounded-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg";
+                    }}
+                  />
+                  <span className="text-gray-900 dark:text-white font-medium">{from.name}</span>
+                  <span className="text-gray-500">→</span>
+                  <img
+                    src={to.logo}
+                    alt={to.name}
+                    className="w-8 h-8 rounded-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg";
+                    }}
+                  />
+                  <span className="text-gray-900 dark:text-white font-medium">{to.name}</span>
                 </div>
-              </div>
-              <span className={`px-2 py-1 rounded-full text-xs sm:text-sm lg:text-base ${getStatusColor(tx.status)}`}>
-                {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
-              </span>
             </div>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-[#788099]">Type:</span>
-                <span className="text-gray-900 dark:text-white">{formatTransactionType(tx.transaction_type)}</span>
-              </div>
-              <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-[#788099]">Amount:</span>
-                <span className={getAmountColor(tx.transaction_type)}>
+                  <span className={`font-semibold ${amountColor}`}>
                   {formatAmount(tx.total_amount_due, tx.currency)}
                 </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-[#788099]">Payment Method:</span>
-                <div className="flex items-center space-x-1">
-                  <img
-                    src={PAYMENT_ICON_URL}
-                    alt="Payment method"
-                    className="w-6 h-6 object-contain"
-                  />
-                  <span className="text-gray-900 dark:text-white">{tx.payment_provider || "N/A"}</span>
-                </div>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-[#788099]">When:</span>
@@ -114,73 +161,81 @@ const RatesTransactionHistory = () => {
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Desktop: Table layout */}
       <div className="hidden sm:block w-full overflow-x-auto border border-gray-200 dark:border-[#35353E] rounded-lg">
         <table className="min-w-max w-full text-left">
         <thead>
-          <tr className="bg-gray-100 dark:bg-transparent border-b border-gray-200 dark:border-[#35353E] text-gray-600 dark:text-[#788099]">
-            <th className="p-2 sm:p-3 lg:p-4 font-normal text-xs sm:text-sm lg:text-base">Asset</th>
-            <th className="p-2 sm:p-3 lg:p-4 font-normal text-xs sm:text-sm lg:text-base">Transaction Type</th>
-            <th className="p-2 sm:p-3 lg:p-4 font-normal text-xs sm:text-sm lg:text-base">Amount</th>
-            <th className="p-2 sm:p-3 lg:p-4 font-normal text-xs sm:text-sm lg:text-base">Payment Method</th>
-            <th className="p-2 sm:p-3 lg:p-4 font-normal text-xs sm:text-sm lg:text-base min-w-[120px]">Status</th>
-            <th className="p-2 sm:p-3 lg:p-4 font-normal text-xs sm:text-sm lg:text-base">When</th>
+          <tr className="bg-gray-50 dark:bg-[#23232B] border-b border-gray-200 dark:border-[#35353E] text-gray-600 dark:text-[#788099]">
+            <th className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">
+              From
+            </th>
+            <th className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">
+              To
+            </th>
+            <th className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">
+              Amount
+            </th>
+            <th className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">
+              When
+            </th>
           </tr>
         </thead>
         <tbody>
-          {transactions.map((tx: Transaction, index: number) => (
+          {transactions.map((tx: Transaction, index: number) => {
+            const { from, to } = getFromTo(tx);
+            // Alternate colors for amount (green/red)
+            const amountColor = index % 2 === 0 ? "text-[#13B562]" : "text-red-500";
+            
+            return (
             <tr
               key={tx.transaction_id}
-              className="border-b border-gray-200 dark:border-[#35353E] last:border-b-0"
+                className="border-b border-gray-200 dark:border-[#35353E] last:border-b-0 hover:bg-gray-50 dark:hover:bg-[#23232B] transition-colors"
             >
-              <td className="p-2 sm:p-3 lg:p-4 flex items-center text-xs sm:text-sm lg:text-base">
+                <td className="px-4 sm:px-6 py-3 sm:py-4">
+                  <div className="flex items-center gap-2 sm:gap-3">
                 <img
-                  src={tx.asset_image || ASSET_ICON_URL}
-                  alt={`${tx.currency} network`}
-                  className="w-8 h-8 object-contain mr-3"
-                />
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-900 dark:text-white text-xs sm:text-sm lg:text-base">
-                    {tx.currency}
-                  </span>
-                  <span className="text-xs sm:text-sm lg:text-sm text-gray-600 dark:text-[#788099]">
-                    {tx.source || getSourceFromType(tx.transaction_type)}
+                      src={from.logo}
+                      alt={from.name}
+                      className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src =
+                          "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg";
+                      }}
+                    />
+                    <span className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
+                      {from.name}
                   </span>
                 </div>
               </td>
-              <td className="p-2 sm:p-3 lg:p-4 text-gray-900 dark:text-white text-xs sm:text-sm lg:text-base">
-                {formatTransactionType(tx.transaction_type)}
-              </td>
-              <td className={`p-2 sm:p-3 lg:p-4 text-xs sm:text-sm lg:text-base ${getAmountColor(tx.transaction_type)}`}>
-                {formatAmount(tx.total_amount_due, tx.currency)}
-              </td>
-              <td className="p-2 sm:p-3 lg:p-4">
-                <div className="flex items-center space-x-2 text-xs sm:text-sm lg:text-base text-gray-900 dark:text-white">
-                  <img
-                    src={PAYMENT_ICON_URL}
-                    alt="Payment method"
-                    className="w-6 h-6 object-contain"
-                  />
-                  <span>{tx.payment_provider || "N/A"}</span>
+                <td className="px-4 sm:px-6 py-3 sm:py-4">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <img
+                      src={to.logo}
+                      alt={to.name}
+                      className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src =
+                          "https://res.cloudinary.com/pitz/image/upload/v1764667057/salam_vizvxy.svg";
+                      }}
+                    />
+                    <span className="text-sm sm:text-base font-medium text-gray-900 dark:text-white">
+                      {to.name}
+                    </span>
                 </div>
               </td>
-              <td className="p-2 sm:p-3 lg:p-4 min-w-[120px]">
-                <span
-                  className={`px-2 py-1 rounded-full text-xs sm:text-sm lg:text-base ${getStatusColor(
-                    tx.status
-                  )}`}
-                >
-                  {tx.status.charAt(0).toUpperCase() + tx.status.slice(1)}
-                </span>
+                <td className={`px-4 sm:px-6 py-3 sm:py-4 font-semibold text-sm sm:text-base ${amountColor}`}>
+                  {formatAmount(tx.total_amount_due, tx.currency)}
               </td>
-              <td className="p-2 sm:p-3 lg:p-4 text-gray-600 dark:text-[#788099] text-xs sm:text-sm lg:text-base">
+                <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm sm:text-base text-gray-600 dark:text-[#788099]">
                 {formatTimeAgo(tx.timestamp)}
               </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
         

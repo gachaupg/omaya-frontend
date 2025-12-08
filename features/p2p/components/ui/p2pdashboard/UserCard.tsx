@@ -17,6 +17,7 @@ import useSound from "use-sound";
 import HelpSupportForm from "@/features/settings/components/HelpSupportForm";
 import { useMatchedTradesWebSocket } from "../../../hooks/useMatchedTradesWebSocket";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
+import VerifiedBadge from "@/components/ui/VerifiedBadge";
 
 const UserCard = () => {
   const [showHelpSupport, setShowHelpSupport] = useState(false);
@@ -234,7 +235,7 @@ const UserCard = () => {
               />
             </div>
             <div
-              className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[#1D8751] flex items-center justify-center cursor-pointer hover:bg-[#16663d] transition-colors"
+              className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-[#1D8751] flex items-center justify-center cursor-pointer hover:bg-[#16663d] transition-colors"
               onClick={handleImageClick}
             >
               <svg
@@ -243,9 +244,15 @@ const UserCard = () => {
                 viewBox="0 0 24 24"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
-                className="stroke-[#FFFFFF]"
               >
-                <path d="M16 3L21 8L8 21L3 21L3 16L16 3Z" strokeWidth="2" />
+                <path
+                  d="M16 3L21 8L8 21H3V16L16 3Z"
+                  stroke="#FFFFFF"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                />
               </svg>
             </div>
           </div>
@@ -261,31 +268,52 @@ const UserCard = () => {
               <span className="text-[#1D8751] text-sm font-medium">
                 Verified Profile
               </span>
-              <div className="rounded-full p-0.5 bg-[#1D8751]">
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#1D8751] rounded-full flex items-center justify-center border-2 border-white">
+                  <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+                    <circle cx="10" cy="10" r="10" fill="#1D8751" />
+                    <path
+                      d="M6 10.5L9 13.5L14 8.5"
+                      stroke="white"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+            </div>
+            <span className="text-[#1D8751] flex items-center gap-1.5 text-xs sm:text-sm font-medium">
+              Verified Profile
+              <span className="inline-flex items-center justify-center w-5 h-5 flex-shrink-0" style={{position: 'relative'}}>
+                <svg width="20" height="20" viewBox="0 0 20 20" style={{position: 'absolute'}}>
+                  <circle cx="10" cy="10" r="9" fill="white" />
+                  <circle cx="10" cy="10" r="7.5" fill="#1D8751" />
+                  {/* Serrated edge using small circles */}
+                  {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(angle => {
+                    const rad = (angle * Math.PI) / 180;
+                    const x = 10 + 8.5 * Math.cos(rad);
+                    const y = 10 + 8.5 * Math.sin(rad);
+                    return <circle key={angle} cx={x} cy={y} r="1" fill="white" />;
+                  })}
+                </svg>
                 <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
+                  width="10"
+                  height="10"
+                  viewBox="0 0 10 10"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
+                  style={{position: 'relative', zIndex: 1}}
+                  className="flex-shrink-0"
                 >
                   <path
-                    d="M9 12L11 14L15 10"
-                    className="stroke-[#FFFFFF]"
-                    strokeWidth="2"
+                    d="M2 5L4 7L8 3"
+                    stroke="#FFFFFF"
+                    strokeWidth="1.5"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="9"
-                    className="stroke-[#FFFFFF]"
-                    strokeWidth="2"
-                  />
                 </svg>
-              </div>
-            </div>
+              </span>
+            </span>
           </div>
         </div>
 

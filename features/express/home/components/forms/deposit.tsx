@@ -840,9 +840,18 @@ export default function DepositForm({
     };
   }, []);
 
-  // Close dropdown when scrolling
+  // Close asset dropdown when page scrolls, but NOT when the user scrolls inside the dropdown itself
   useEffect(() => {
-    const handleScroll = () => {
+    const handleScroll = (event: Event) => {
+      const target = event.target as Node | null;
+      // Ignore scroll events that originate from inside the dropdown content
+      if (
+        assetDropdownContentRef.current &&
+        target &&
+        assetDropdownContentRef.current.contains(target)
+      ) {
+        return;
+      }
       if (isAssetDropdownOpen) {
         setIsAssetDropdownOpen(false);
       }
@@ -1377,7 +1386,7 @@ export default function DepositForm({
           style={dropdownStyle}
         >
           {/* Dropdown Title */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-600">
+          <div className="flex items-center justify-between px-4 py-3">
             <h3 className="text-base font-semibold text-gray-900 dark:text-white">Currency To</h3>
             <button
               onClick={() => setIsAssetDropdownOpen(false)}
@@ -1391,7 +1400,7 @@ export default function DepositForm({
           </div>
           
           {/* Search Input */}
-          <div className="p-2 border-b border-gray-200 dark:border-gray-600">
+          <div className="p-2">
             <div className="relative">
               <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
               <input
@@ -1411,7 +1420,7 @@ export default function DepositForm({
                 {/* Popular Section - First 3 assets only if no search */}
                 {!assetSearchTerm && sortedSwapAssets.length > 3 && (
                   <>
-                    <div className="px-3 sm:px-4 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-gray-200 dark:border-gray-600">
+                    <div className="px-3 sm:px-4 py-2 bg-[#F5F6F7] dark:bg-[#23232B]">
                       <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
                         Popular Currencies
                       </span>
@@ -1421,7 +1430,7 @@ export default function DepositForm({
                       .map((asset: SupportedAsset, index: number) => (
                         <div
                           key={`popular-${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
-                          className="flex items-center gap-3 p-3 sm:p-4 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors duration-150"
+                          className="flex items-center gap-3 p-3 sm:p-4 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-colors duration-150"
                           onClick={() => {
                             handleAssetSelection(asset);
                             setIsAssetDropdownOpen(false);
@@ -1502,7 +1511,7 @@ export default function DepositForm({
                 ).map((asset: SupportedAsset, index: number) => (
                   <div
                     key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
-                    className="flex items-center gap-3 p-3 sm:p-4 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors duration-150"
+                    className="flex items-center gap-3 p-3 sm:p-4 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-colors duration-150"
                     onClick={() => {
                       handleAssetSelection(asset);
                       setIsAssetDropdownOpen(false);
@@ -2660,7 +2669,7 @@ export default function DepositForm({
                     }
                   }}
                   placeholder="Enter amount"
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent h-[44px] ${
                     (isCalculating || isCalculatingReceive) &&
                     isCalculatingFromPay &&
                     selectedAsset &&
@@ -2691,23 +2700,19 @@ export default function DepositForm({
 
             {/* Bank/Payment Method Section */}
             <div className="flex-1 min-w-0">
-              <div className={`text-xs mb-1 mt-[30px] ${
+              <label
+                className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${
+                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                }`}
+              >
+                Bank/Payment Method
+                <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
+              </label>
+              <div className={`text-xs mb-1 ${
                 isDark ? "text-[#788099]" : "text-[#64748B]"
               }`}>
                 Payment Method
               </div>
-              {/* <div>
-                hello
-                {
-                  adminMethods.map((payment: any) => (
-                    <div key={payment.id}>
-                      <img src={payment.logo} alt={payment.provider_name} className="w-5 h-5" />
-                      <span>{payment.provider_name}</span>
-                    </div>
-                  ))
-                }
-              </div> */}
-             
               <div className="relative">
                 <CustomSelect
                   options={(() => {
@@ -2774,7 +2779,7 @@ export default function DepositForm({
                   value={payBank}
                   className="w-full"
                   placeholderClassName="text-white dark:text-white"
-                  triggerClassName={`px-4 py-2 text-lg border rounded-2xl bg-transparent ${
+                  triggerClassName={`!px-4 !py-[8px] !min-h-0 text-lg border rounded-2xl bg-transparent !h-[44px] ${
                     isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                   }`}
                   onChange={(value) => {
@@ -2811,8 +2816,8 @@ export default function DepositForm({
                   emptyText="No payment methods available"
                   searchable={true}
                   dropdownTitle="Select a payment methods"
-                  dropdownOffsetY={-6.5}
-                  dropdownOffsetX={12}
+                  dropdownOffsetY={-68}
+                  dropdownOffsetX={20}
                 />
               </div>
               {adminMethodsError && <p className="text-red-500 text-sm mt-1">{adminMethodsError}</p>}
@@ -2938,7 +2943,7 @@ export default function DepositForm({
                     }
                   }}
                   placeholder="Enter amount"
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent h-[44px] ${
                     receiveAmountError &&
                     (receiveAmountError.includes("Rough estimate") ||
                       receiveAmountError.includes("Using estimated rate"))
@@ -3015,7 +3020,7 @@ export default function DepositForm({
               </div>
               <div className="relative" ref={assetDropdownRef}>
                 <div
-                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${
+                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent h-[44px] ${
                     isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                   }`}
                   onClick={() => {
@@ -3685,8 +3690,8 @@ export default function DepositForm({
                     }
                   }
                 }}
-                placeholder="Paste here your Crypto address"
-                className={`flex-1 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-base ${
+                placeholder="Paste your crypto address"
+                className={`flex-1 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-sm sm:text-base ${
                   walletError
                     ? "border-red-500"
                     : walletAddress.trim() && !walletError

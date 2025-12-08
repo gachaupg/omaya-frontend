@@ -431,8 +431,8 @@ const Withdraw = () => {
                   <div className="flex items-center dark:bg-[#18181B] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-4 py-2 flex-1">
                     <span className="text-[#1D8751] mr-2">📋</span>
                     <input
-                      className="flex-1 bg-transparent text:dark:text-white text-lg focus:outline-none"
-                      placeholder="Paste here your Crypto address"
+                      className="flex-1 bg-transparent text:dark:text-white text-sm sm:text-base lg:text-lg focus:outline-none"
+                      placeholder="Paste your crypto address"
                       value={walletAddress}
                       onChange={(e) => setWalletAddress(e.target.value)}
                     />

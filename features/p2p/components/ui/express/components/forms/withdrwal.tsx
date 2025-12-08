@@ -2698,67 +2698,40 @@ export default function WithdrawalForm({
             </div>
           </div>
 
-          {/* Disclaimer Banner */}
-          <div className="flex items-center rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-3 mt-4 sm:mt-6 bg-[#f8f9fa] dark:bg-[#1D1D23]">
-            <div className="flex items-center gap-3">
-              <div className="w-6 h-6 bg-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0">
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="M12 8v4m0 4h.01"
-                    stroke="white"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="white"
-                    strokeWidth="2"
-                  />
-                </svg>
-              </div>
-              <span className="text-[#35353e] dark:text-[#788099] text-sm font-medium">
-                This is only an estimated price based on current market rates.
-                The final price will be confirmed when we receive the funds.
-              </span>
+          {/* ----------------------------------------------------------------- */}
+          {/*                         TRANSFER DETAILS SECTION                    */}
+          {/* ----------------------------------------------------------------- */}
+          <div className="mb-6 mt-4 sm:mt-6">
+            <div className="flex items-center gap-2 mb-3">
+              <h3 className="text-sm sm:text-base font-medium text-[#7e7e8f] dark:text-[#ffffff]">
+                Transfer Details
+              </h3>
+              <img className="w-4 h-4" src="https://res.cloudinary.com/pitz/image/upload/v1764942946/alert-circle_llaycw.png" alt="alert-circle" />
+            </div>
+            <div className="bg-white dark:bg-[#1D1D23] border border-[#1D8751] rounded-lg sm:rounded-xl p-4">
+              <ul className="space-y-3">
+                <li className="flex items-start gap-3">
+                  <div className="w-2 h-2 rounded-full bg-[#1D8751] mt-1.5 flex-shrink-0" />
+                  <span className="text-sm text-[#35353e] dark:text-[#788099]">
+                    Please send the money from your own account Only
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-2 h-2 rounded-full bg-[#1D8751] mt-1.5 flex-shrink-0" />
+                  <span className="text-sm text-[#35353e] dark:text-[#788099]">
+                    Put transaction ID in the description field of the bank
+                  </span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-2 h-2 rounded-full bg-[#1D8751] mt-1.5 flex-shrink-0" />
+                  <span className="text-sm text-[#35353e] dark:text-[#788099]">
+                    Please note, If you do not follow above conditions, we will reject your transaction and send you back your money.
+                  </span>
+                </li>
+              </ul>
             </div>
           </div>
-        </div>
-
-        {/* ----------------------------------------------------------------- */}
-        {/*                         TRANSFER DETAILS SECTION                    */}
-        {/* ----------------------------------------------------------------- */}
-        <div className="mb-6 mt-4 sm:mt-6">
-          <div className="flex items-center gap-2 mb-3">
-            <h3 className="text-sm sm:text-base font-medium text-[#7e7e8f] dark:text-[#ffffff]">
-              Transfer Details
-            </h3>
-            <FaInfoCircle className="w-4 h-4 text-[#7e7e8f] dark:text-[#788099]" />
-          </div>
-          <div className="bg-white dark:bg-[#1D1D23] border border-[#1D8751] rounded-lg sm:rounded-xl p-4">
-            <ul className="space-y-3">
-              <li className="flex items-start gap-3">
-                <div className="w-2 h-2 rounded-full bg-[#1D8751] mt-1.5 flex-shrink-0" />
-                <span className="text-sm text-[#35353e] dark:text-[#788099]">
-                  Please send the money from your own account Only
-                </span>
-              </li>
-              <li className="flex items-start gap-3">
-                <div className="w-2 h-2 rounded-full bg-[#1D8751] mt-1.5 flex-shrink-0" />
-                <span className="text-sm text-[#35353e] dark:text-[#788099]">
-                  Put transaction ID in the description field of the bank
-                </span>
-              </li>
-              <li className="flex items-start gap-3">
-                <div className="w-2 h-2 rounded-full bg-[#1D8751] mt-1.5 flex-shrink-0" />
-                <span className="text-sm text-[#35353e] dark:text-[#788099]">
-                  Please note, If you do not follow above conditions, we will reject your transaction and send you back your money.
-                </span>
-              </li>
-            </ul>
-          </div>
+       
         </div>
 
         {/* Submit Button for First Card */}
@@ -3032,13 +3005,7 @@ export default function WithdrawalForm({
           </div>
           {/* Disclaimer and Button outside the card */}
           <div className="flex flex-col gap-3 max-w-4xl mx-auto w-full px-2">
-            <div className="flex items-center text-[#35353e] dark:text-[#788099] text-[16px] font-semibold">
-              <FaExclamationCircle className="mr-2 text-[#1D8751]" />
-              <span>
-                This is only an estimated price based on current market rates.
-                The final price will be confirmed when we receive the funds.
-              </span>
-            </div>
+            
 
             {/* Warning message for amounts over $15,000 */}
             {getAmount > 15000 && (
