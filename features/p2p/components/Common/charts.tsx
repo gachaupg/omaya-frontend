@@ -186,11 +186,10 @@ const Charts: React.FC<ChartProps> = ({
               <button
                 key={t}
                 onClick={() => setFilter(t)}
-                className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors border ${
-                  filter === t
+                className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors border ${filter === t
                     ? "bg-[#1D8751] text-white border-[#1D8751]"
                     : "bg-transparent text-[#1D8751] dark:text-[#1D8751] border-[#1D8751]"
-                }`}
+                  }`}
               >
                 {t}
               </button>
@@ -204,14 +203,13 @@ const Charts: React.FC<ChartProps> = ({
             <>
               <button
                 onClick={() => setIsDropdownOpen((o) => !o)}
-                className="flex items-center gap-2 px-4 py-1.5 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 dark:text-white dark:border-[#35353E] dark:hover:bg-[#35353E] transition whitespace-nowrap"
+                className="flex items-center gap-2 px-4 py-1.5 text-sm text-muted-foreground transition whitespace-nowrap"
               >
                 {selectedTimeFilter}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className={`w-4 h-4 transition-transform ${
-                    isDropdownOpen ? "rotate-180" : ""
-                  }`}
+                  className={`w-4 h-4 transition-transform ${isDropdownOpen ? "rotate-180" : ""
+                    }`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -229,17 +227,14 @@ const Charts: React.FC<ChartProps> = ({
                     <button
                       key={opt}
                       onClick={() => handleTimeFilterSelect(opt)}
-                      className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-[#35353E] ${
-                        selectedTimeFilter === opt
+                      className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-[#35353E] ${selectedTimeFilter === opt
                           ? "text-[#1D8751] bg-gray-50 dark:bg-[#35353E]"
                           : "text-gray-700 dark:text-white"
-                      } ${
-                        opt === timeFilterOptions[0] ? "rounded-t-lg" : ""
-                      } ${
-                        opt === timeFilterOptions[timeFilterOptions.length - 1]
+                        } ${opt === timeFilterOptions[0] ? "rounded-t-lg" : ""
+                        } ${opt === timeFilterOptions[timeFilterOptions.length - 1]
                           ? "rounded-b-lg"
                           : ""
-                      }`}
+                        }`}
                     >
                       {opt}
                     </button>
