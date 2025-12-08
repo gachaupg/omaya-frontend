@@ -86,7 +86,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      
+
       // Check if click is outside from asset dropdown
       if (
         isFromAssetOpen &&
@@ -97,7 +97,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
       ) {
         onFromAssetToggle();
       }
-      
+
       // Check if click is outside to asset dropdown
       if (
         isToAssetOpen &&
@@ -122,87 +122,68 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
   const updateDropdownPosition = (isFrom: boolean): React.CSSProperties => {
     if (typeof window === "undefined") {
       return {
-        position: "fixed",
+        position: "absolute",
         top: 200,
         left: "50%",
         transform: "translateX(-50%)",
         width: 280,
       };
     }
-    
+
     const viewportWidth = window.innerWidth || 0;
     const minMargin = 16;
     const minWidth = 280;
     const maxWidth = 450;
-    
-    // Find the specific dropdown trigger element (normal positioning - relative to trigger)
-    const dropdownElement = isFrom ? fromAssetDropdownRef.current : toAssetDropdownRef.current;
-    let currentCard: Element | null = null;
-    
-    if (dropdownElement) {
-      // Find the card that contains this specific dropdown
-      let parent = dropdownElement.parentElement;
+
+    // Get the trigger element
+    const triggerEl = isFrom ? fromAssetDropdownRef.current : toAssetDropdownRef.current;
+    let currentCard: HTMLElement | null = null;
+
+    // Find the parent card containing this trigger
+    if (triggerEl) {
+      let parent = triggerEl.parentElement;
       while (parent) {
         if (parent.hasAttribute("data-swap-card")) {
-          currentCard = parent;
+          currentCard = parent as HTMLElement;
           break;
         }
         parent = parent.parentElement;
       }
     }
-    
-    // Fallback to first card if we can't find via DOM traversal
+
+    // Fallback to first card if none found
     if (!currentCard) {
-      const allCards = document.querySelectorAll("[data-swap-card='true']");
-      if (isFrom && allCards.length > 0) {
-        currentCard = allCards[0];
-      } else if (!isFrom && allCards.length > 1) {
-        currentCard = allCards[1];
-      } else if (allCards.length > 0) {
-        currentCard = allCards[0];
-      }
+      currentCard = document.querySelector("[data-swap-card='true']") as HTMLElement;
     }
-    
+
+    // Default dropdown style
     let dropdownStyle: React.CSSProperties = {
-      position: "fixed",
+      position: "absolute",
       top: 200,
       left: (viewportWidth - minWidth) / 2,
       width: minWidth,
     };
 
-    if (currentCard && dropdownElement) {
+    if (triggerEl && currentCard) {
+      const triggerRect = triggerEl.getBoundingClientRect();
       const cardRect = currentCard.getBoundingClientRect();
-      const triggerRect = dropdownElement.getBoundingClientRect();
-      
-      // Calculate reduced width so dropdowns don't cover amount inputs (40% of card width)
-      let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.width * 0.4));
-      
-      // Normal positioning: position dropdown below the trigger element
-      const top = triggerRect.bottom + 4; // 4px below the trigger
-      
-      // Position to align with the trigger element (normal behavior)
-      let left = triggerRect.left;
-      
-      // Ensure dropdown doesn't go off screen on the right
+
+
+      let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.width));
+
+      let top = triggerRect.bottom + window.scrollY + 4; // 4px below button
+      let left = triggerRect.left + window.scrollX;
+
+      // Ensure dropdown doesn't go off-screen
       if (left + desiredWidth > viewportWidth - minMargin) {
-        left = viewportWidth - desiredWidth - minMargin;
+        left = viewportWidth - desiredWidth - minMargin + window.scrollX;
       }
-      
-      // Ensure dropdown doesn't go off the left edge
       if (left < minMargin) {
-        left = minMargin;
-      }
-      
-      // If trigger is too narrow, use trigger width but ensure minimum
-      if (triggerRect.width < desiredWidth) {
-        // Keep left aligned with trigger, but ensure it doesn't overflow
-        if (left + desiredWidth > viewportWidth - minMargin) {
-          left = Math.max(minMargin, viewportWidth - desiredWidth - minMargin);
-        }
+        left = minMargin + window.scrollX;
       }
 
       dropdownStyle = {
-        position: "fixed",
+        position: "absolute",
         top,
         left,
         width: desiredWidth,
@@ -211,6 +192,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
 
     return dropdownStyle;
   };
+
 
   const renderAssetDropdown = (
     asset: SupportedAsset | null,
@@ -256,7 +238,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
               </svg>
             </button>
           </div>
-          
+
           {/* Search Input */}
           <div className="p-2 border-b border-gray-200 dark:border-gray-600">
             <div className="relative">
@@ -280,50 +262,48 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
             ) : (
               <>
                 {filtered.map((option, idx) => (
-                <div
-                  key={`${option.ticker}-${option.network}-${idx}`}
-                  className="flex items-center gap-3 p-3 sm:p-4 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors duration-150"
-                  onClick={() => {
-                    onSelect(option);
-                    toggle();
-                  }}
-                >
-                  <img
-                    src={
-                      option.image ||
-                      option.image_url ||
-                      option.asset_image ||
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                    }
-                    alt={option.name || "Asset"}
-                    className="w-6 h-6 rounded-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src =
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                  <div
+                    key={`${option.ticker}-${option.network}-${idx}`}
+                    className="flex items-center gap-3 p-3 sm:p-4 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors duration-150"
+                    onClick={() => {
+                      onSelect(option);
+                      toggle();
                     }}
-                  />
-                  <div className="flex-1">
-                    <div className={`font-medium flex items-center gap-2 ${
-                      isDark ? "text-white" : "text-[#111827]"
-                    }`}>
-                      {(option.ticker || option.symbol || option.name || "Unknown").toUpperCase()}
-                      {option.network && (
-                        <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                          {option.network}
-                        </span>
+                  >
+                    <img
+                      src={
+                        option.image ||
+                        option.image_url ||
+                        option.asset_image ||
+                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                      }
+                      alt={option.name || "Asset"}
+                      className="w-6 h-6 rounded-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src =
+                          "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                      }}
+                    />
+                    <div className="flex-1">
+                      <div className={`font-medium flex items-center gap-2 ${isDark ? "text-white" : "text-[#111827]"
+                        }`}>
+                        {(option.ticker || option.symbol || option.name || "Unknown").toUpperCase()}
+                        {option.network && (
+                          <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                            {option.network}
+                          </span>
+                        )}
+                      </div>
+                      <div className={`text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"
+                        }`}>
+                        {option.name || option.ticker || "Unknown Asset"}
+                      </div>
+                    </div>
+                    {asset?.ticker === option.ticker &&
+                      asset?.network === option.network && (
+                        <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
                       )}
-                    </div>
-                    <div className={`text-sm ${
-                      isDark ? "text-[#788099]" : "text-[#475569]"
-                    }`}>
-                      {option.name || option.ticker || "Unknown Asset"}
-                    </div>
                   </div>
-                  {asset?.ticker === option.ticker &&
-                    asset?.network === option.network && (
-                      <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                    )}
-                </div>
                 ))}
               </>
             )}
@@ -369,15 +349,14 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
             <p className="text-lg dark:text-white text-gray-900 font-semibold truncate">
               {asset
                 ? asset.ticker?.toUpperCase() ||
-                  asset.symbol?.toUpperCase() ||
-                  asset.name
+                asset.symbol?.toUpperCase() ||
+                asset.name
                 : "Select Asset"}
             </p>
           </div>
           <svg
-            className={`w-5 h-5 dark:text-[#7d7f95] text-gray-500 transition-transform flex-shrink-0 ${
-              isOpen ? "rotate-180" : ""
-            }`}
+            className={`w-5 h-5 dark:text-[#7d7f95] text-gray-500 transition-transform flex-shrink-0 ${isOpen ? "rotate-180" : ""
+              }`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -549,17 +528,16 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
             estimateLoading ||
             swapLoading
           }
-          className={`w-full text-white text-sm sm:text-base font-medium py-3 sm:py-2.5 rounded-3xl flex items-center justify-center gap-2 transition-colors min-h-[48px] mb-2 ${
-            !fromAsset ||
+          className={`w-full text-white text-sm sm:text-base font-medium py-3 sm:py-2.5 rounded-3xl flex items-center justify-center gap-2 transition-colors min-h-[48px] mb-2 ${!fromAsset ||
             !toAsset ||
             !fromAmount ||
             parseFloat(fromAmount) <= 0 ||
             !estimate ||
             estimateLoading ||
             swapLoading
-              ? "bg-gray-500 cursor-not-allowed"
-              : "bg-[#1D8751] hover:bg-[#147043]"
-          }`}
+            ? "bg-gray-500 cursor-not-allowed"
+            : "bg-[#1D8751] hover:bg-[#147043]"
+            }`}
         >
           {swapLoading ? (
             <>
