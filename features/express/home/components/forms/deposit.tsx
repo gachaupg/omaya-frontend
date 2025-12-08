@@ -2782,7 +2782,6 @@ export default function DepositForm({
                   triggerClassName={`!px-4 !py-[8px] !min-h-0 text-lg border rounded-2xl bg-transparent !h-[44px] ${
                     isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
                   }`}
-                  logoSize={24}
                   onChange={(value) => {
                     const selectedPayment = finalPaymentMethods?.find(
                       (payment: any) => payment.provider_name === value
@@ -3691,8 +3690,8 @@ export default function DepositForm({
                     }
                   }
                 }}
-                placeholder="Paste here your Crypto address"
-                className={`flex-1 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-base ${
+                placeholder="Paste your crypto address"
+                className={`flex-1 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-sm sm:text-base ${
                   walletError
                     ? "border-red-500"
                     : walletAddress.trim() && !walletError

@@ -4236,13 +4236,13 @@ export default function DepositForm({
           </h2>
           <div className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-6">
             {/* Wallet/Account Address Label */}
-            <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+            <label className="block text-sm sm:text-[17px] text-[#7e7e8f] mb-2 font-semibold">
               {t("express.walletAccountAddress", "Wallet/Account Address")}
             </label>
             {/* Input + Paste row */}
             <div className="flex flex-col sm:flex-row gap-3 items-stretch">
               {/* Input group */}
-              <div className="relative flex items-center dark:bg-[#1D1D23] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-4 py-2 mb-0 flex-1">
+              <div className="relative flex items-center dark:bg-[#1D1D23] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-3 sm:px-4 py-2 mb-0 flex-1 min-w-0">
                 {/* Left icon */}
                 <span className="mr-2 text-[#1D8751]">
                   <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
@@ -4285,8 +4285,8 @@ export default function DepositForm({
                     }
                     setForceUpdate((prev) => prev + 1);
                   }}
-                  placeholder="Paste here your Crypto address"
-                  className={`flex-1 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-base ${
+                  placeholder="Paste your crypto address"
+                  className={`flex-1 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-sm sm:text-base min-w-0 ${
                     walletError
                       ? "border-red-500"
                       : walletAddress.trim() && !walletError && addressValidationResult?.isValid

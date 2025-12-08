@@ -3,6 +3,7 @@
 import Button from "@/features/p2p/components/Common/Button";
 import Card from "@/features/p2p/components/Common/Card";
 import CopyButton from "@/components/ui/CopyButton";
+import VerifiedBadge from "@/components/ui/VerifiedBadge";
 import Image from "next/image";
 import React, { useEffect, useRef, useState } from "react";
 import { showToast } from "@/lib/utils/toast";
@@ -217,9 +218,9 @@ function UserCard() {
                   })}
                 </h2>
               </div>
-              <div className="flex items-center gap-1 mt-0.5 sm:mt-1 flex-shrink-0">
+              <div className="flex items-center gap-1.5 mt-0.5 sm:mt-1 flex-shrink-0">
                 <span
-                  className={`text-xs sm:text-sm lg:text-sm whitespace-nowrap flex-shrink-0 ${
+                  className={`text-xs sm:text-sm lg:text-sm whitespace-nowrap flex-shrink-0 font-medium ${
                     isVerified ? "text-[#1D8751]" : "text-[#E23D3A]"
                   }`}
                 >
@@ -228,30 +229,36 @@ function UserCard() {
                     : t("userCard.unverifiedProfile", "Unverified Profile")}
                 </span>
                 {isVerified && (
-                  <div className="rounded-full p-0.5 flex-shrink-0 bg-[#1D8751]">
+                  <span className="inline-flex items-center justify-center w-5 h-5 flex-shrink-0" style={{position: 'relative'}}>
+                    <svg width="20" height="20" viewBox="0 0 20 20" style={{position: 'absolute'}}>
+                      <circle cx="10" cy="10" r="9" fill="white" />
+                      <circle cx="10" cy="10" r="7.5" fill="#1D8751" />
+                      {/* Serrated edge using small circles */}
+                      {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(angle => {
+                        const rad = (angle * Math.PI) / 180;
+                        const x = 10 + 8.5 * Math.cos(rad);
+                        const y = 10 + 8.5 * Math.sin(rad);
+                        return <circle key={angle} cx={x} cy={y} r="1" fill="white" />;
+                      })}
+                    </svg>
                     <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
+                      width="10"
+                      height="10"
+                      viewBox="0 0 10 10"
                       fill="none"
                       xmlns="http://www.w3.org/2000/svg"
+                      style={{position: 'relative', zIndex: 1}}
+                      className="flex-shrink-0"
                     >
                       <path
-                        d="M9 12L11 14L15 10"
-                        className="stroke-[#FFFFFF]"
-                        strokeWidth="2"
+                        d="M2 5L4 7L8 3"
+                        stroke="#FFFFFF"
+                        strokeWidth="1.5"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       />
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="9"
-                        className="stroke-[#FFFFFF]"
-                        strokeWidth="2"
-                      />
                     </svg>
-                  </div>
+                  </span>
                 )}
               </div>
             </div>

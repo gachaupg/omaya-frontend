@@ -88,8 +88,8 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                   type="text"
                   value={walletAddress}
                   onChange={onWalletAddressChange}
-                  placeholder="Paste here your Crypto address"
-                  className={`flex-1 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-base`}
+                  placeholder="Paste your crypto address"
+                  className={`flex-1 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-sm sm:text-base`}
                   disabled={isLoading}
                 />
                 {/* Bookmark icon */}

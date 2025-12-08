@@ -19,6 +19,7 @@ import { fetchReferralWallet } from "@/features/settings/slices/referralWalletSl
 import { formatNumber } from "@/utils/formatters";
 import { formatCurrency, formatAmount } from "@/lib/globalFormatter";
 import { useRouter } from "next/navigation";
+import VerifiedBadge from "@/components/ui/VerifiedBadge";
 
 import { logger } from "@/lib/utils/logger";
 
@@ -190,9 +191,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
             </span>
             <span className="flex items-center gap-1.5 text-[#1D8751] text-[8px] sm:text-xs font-medium whitespace-nowrap">
               <span className="shrink-0">Verified Profile</span>
-              <span className="w-4 h-4 bg-[#1D8751] rounded-full flex items-center justify-center shrink-0">
-               <img src="https://res.cloudinary.com/pitz/image/upload/v1763725740/Frame_34214_uymbow.png" alt="" />
-              </span>
+              <VerifiedBadge size={16} />
             </span>
           </div>
         </div>

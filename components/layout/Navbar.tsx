@@ -376,6 +376,7 @@ export default function Navbar() {
   // Smart navbar background logic based on page and scroll state
   const getNavbarBackground = () => {
     const isHomePage = pathname === "/";
+    const isAboutPage = pathname === "/about";
     const isDashboardPage = pathname?.startsWith("/dashboard") || false;
 
     if (isHomePage) {
@@ -383,6 +384,11 @@ export default function Navbar() {
       return scrolled
         ? "dark:bg-[#1D1D23] bg-white/95 backdrop-blur-sm"
         : "bg-transparent";
+    } else if (isAboutPage) {
+      // About page: dark green background to match hero section
+      return scrolled
+        ? "dark:bg-[#1D1D23] bg-white/95 backdrop-blur-sm shadow-sm"
+        : "bg-[#0E5531] dark:bg-[#0E5531]";
     } else if (isDashboardPage) {
       // Dashboard pages: always have solid background for visibility
       return scrolled
@@ -396,8 +402,8 @@ export default function Navbar() {
     }
   };
 
-  // Check if navbar should show white text (transparent on home page)
-  const isTransparentNavbar = pathname === "/" && !scrolled;
+  // Check if navbar should show white text (transparent on home page or about page when not scrolled)
+  const isTransparentNavbar = (pathname === "/" && !scrolled) || (pathname === "/about" && !scrolled);
 
   // Use theme context instead of manual localStorage parsing
   const { theme } = useTheme();
@@ -412,11 +418,12 @@ export default function Navbar() {
     if (!mounted) return null;
 
     const isHomePage = pathname === "/";
+    const isAboutPage = pathname === "/about";
     const isNotScrolled = !scrolled;
     const isDarkTheme = theme === "dark";
 
-    if (isHomePage && isNotScrolled) {
-      // Home page, not scrolled: white logo for transparent background
+    if ((isHomePage && isNotScrolled) || (isAboutPage && isNotScrolled)) {
+      // Home page or About page, not scrolled: white logo for transparent/green background
       return {
         src: "https://res.cloudinary.com/pitz/image/upload/v1764572384/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png",
         alt: "OMAYA Exchange",
@@ -809,13 +816,23 @@ export default function Navbar() {
                     <DefaultProfileIcon />
                   )}
                 </button>
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#1D8751] rounded-full flex items-center justify-center border-2 border-white">
-                  <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
-                    <circle cx="10" cy="10" r="10" fill="#1D8751" />
+                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5" style={{position: 'relative'}}>
+                  <svg width="20" height="20" viewBox="0 0 20 20" style={{position: 'absolute'}}>
+                    <circle cx="10" cy="10" r="9" fill="white" />
+                    <circle cx="10" cy="10" r="7.5" fill="#1D8751" />
+                    {/* Serrated edge using small circles */}
+                    {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(angle => {
+                      const rad = (angle * Math.PI) / 180;
+                      const x = 10 + 8.5 * Math.cos(rad);
+                      const y = 10 + 8.5 * Math.sin(rad);
+                      return <circle key={angle} cx={x} cy={y} r="1" fill="white" />;
+                    })}
+                  </svg>
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg" style={{position: 'relative', zIndex: 1}}>
                     <path
-                      d="M6 10.5L9 13.5L14 8.5"
-                      stroke="white"
-                      strokeWidth="2"
+                      d="M2 5L4 7L8 3"
+                      stroke="#FFFFFF"
+                      strokeWidth="1.5"
                       strokeLinecap="round"
                       strokeLinejoin="round"
                     />
