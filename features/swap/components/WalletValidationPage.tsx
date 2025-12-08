@@ -189,7 +189,7 @@ const WalletValidationPage: React.FC<WalletValidationPageProps> = ({
   }, [selectedAsset, walletAddress, validateWalletAddressForAsset]);
 
   return (
-    <div className="mx-auto dark:bg-[#181820] bg-gray-50 p-6 rounded-2xl dark:text-white text-gray-900">
+    <div className="mx-auto dark:bg-[var(--card-color)] bg-gray-50 p-6 rounded-2xl dark:text-white text-gray-900">
       <div className="mb-6">
         <h2 className="text-lg font-semibold mb-2">
           Wallet Address Validation
@@ -200,10 +200,10 @@ const WalletValidationPage: React.FC<WalletValidationPageProps> = ({
         </p>
       </div>
 
-      <div className="dark:bg-[#23232b] bg-white dark:border-[#35353E] border-gray-200 border rounded-xl p-5">
+      <div className="dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 border rounded-xl p-5">
         {/* Selected Asset Info */}
         {selectedAsset && (
-          <div className="mb-6 dark:bg-[#181820] bg-gray-100 dark:border-[#35353E] border-gray-300 border rounded-lg p-4">
+          <div className="mb-6 dark:bg-[var(--card-color)] bg-gray-100 dark:border-[#35353E] border-gray-300 border rounded-lg p-4">
             <div className="text-xs dark:text-[#8C8CA1] text-gray-600 mb-2">
               Selected Asset:
             </div>
@@ -245,7 +245,7 @@ const WalletValidationPage: React.FC<WalletValidationPageProps> = ({
               placeholder="Paste your crypto address"
               value={walletAddress}
               onChange={handleWalletAddressChange}
-              className={`w-full dark:bg-[#181820] bg-gray-100 border rounded-[18px] px-12 py-3 dark:text-white text-gray-900 outline-none dark:placeholder-[#8C8CA1] placeholder-gray-500 text-sm sm:text-base transition-colors ${
+              className={`w-full dark:bg-[var(--card-color)] bg-gray-100 border rounded-[18px] px-12 py-3 dark:text-white text-gray-900 outline-none dark:placeholder-[#8C8CA1] placeholder-gray-500 text-sm sm:text-base transition-colors ${
                 validationError
                   ? "border-red-500 focus:border-red-400"
                   : "dark:border-[#35353E] border-gray-300 focus:border-[#1D8751]"
@@ -292,7 +292,7 @@ const WalletValidationPage: React.FC<WalletValidationPageProps> = ({
 
         {/* Network Requirements */}
         {selectedAsset && (
-          <div className="mb-4 dark:bg-[#181820] bg-gray-100 dark:border-[#35353E] border-gray-300 border rounded-lg p-3">
+          <div className="mb-4 dark:bg-[var(--card-color)] bg-gray-100 dark:border-[#35353E] border-gray-300 border rounded-lg p-3">
             <div className="text-xs dark:text-[#8C8CA1] text-gray-600 mb-2">
               Network Requirements:
             </div>
@@ -387,7 +387,7 @@ const WalletValidationPage: React.FC<WalletValidationPageProps> = ({
       </div>
 
       {/* Additional Information */}
-      <div className="mt-6 dark:bg-[#23232b] bg-gray-100 dark:border-[#35353E] border-gray-300 border rounded-xl p-4">
+      <div className="mt-6 dark:bg-[var(--card-color)] bg-gray-100 dark:border-[#35353E] border-gray-300 border rounded-xl p-4">
         <h3 className="text-sm font-semibold text-white mb-2">
           Important Notes:
         </h3>

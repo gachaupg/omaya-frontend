@@ -29,7 +29,7 @@ export const UnreadMessagesButton: React.FC<UnreadMessagesButtonProps> = ({
       className={`w-full sm:w-auto rounded-[28px] cursor-pointer flex items-center justify-center gap-2 border border-[#1D8751] text-[#1D8751] px-5 py-3 font-semibold text-sm hover:bg-[#1D8751]/10 transition-all relative ${
         showUnreadMessages
           ? " text-white border border-[#1D8751]"
-          : "bg-white dark:bg-transparent"
+          : "bg-white dark:bg-[var(--bg-color)]"
       } ${loading ? "opacity-50 cursor-not-allowed" : ""} ${className}`}
       disabled={loading}
       onClick={onClick}

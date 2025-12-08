@@ -49,7 +49,7 @@ const PaymentMethods = () => {
   };
 
   return (
-    <div className="p-3 sm:p-4 dark:text-white text-gray-900 w-full">
+    <div className="p-1 sm:p-2 md:p-4 dark:text-white text-gray-900 w-full">
       {/* Top Header Section */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center w-full justify-between gap-2 sm:gap-3 mb-4">
         <div>
@@ -77,7 +77,7 @@ const PaymentMethods = () => {
         <p className="text-sm sm:text-base font-bold dark:text-white text-gray-900">
           Payment Methods
         </p>
-        <div className="rounded-[32px] border border-[#20202A] dark:border-[#1E1E27] bg-white dark:bg-[#0D0D12] p-3 sm:p-4 space-y-3">
+        <div className="rounded-[32px] border border-[#20202A] dark:border-[#1E1E27] bg-white dark:bg-[var(--bg-color)] p-2 sm:p-3 md:p-4 space-y-3">
           {filteredPayments.length === 0 && (
             <div className="rounded-2xl border border-dashed border-[#E3E6F0] dark:border-[#2A2A35] py-10 text-center text-sm text-gray-500 dark:text-[#7B819C]">
               No payment methods in {activeButton.toLowerCase()} state yet.
@@ -97,7 +97,7 @@ const PaymentMethods = () => {
             return (
               <div
                 key={payment.id}
-                className="flex flex-col gap-3 rounded-[28px] border border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50 dark:bg-[#13131A] px-4 py-4"
+                className="flex flex-col gap-3 rounded-[28px] border border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50 dark:bg-[var(--bg-color)] px-4 py-4"
               >
                 <div className="flex items-start gap-4">
                   <div className="relative">
@@ -169,7 +169,7 @@ const PaymentMethods = () => {
                   <label className="text-xs font-medium text-gray-500 dark:text-[#8B90A5] mb-2 block">
                     {inputLabel}
                   </label>
-                  <div className="rounded-full border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[#0D0D12] px-4 py-2 flex items-center text-sm text-gray-500 dark:text-[#8890A6]">
+                  <div className="rounded-full border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[var(--bg-color)] px-4 py-2 flex items-center text-sm text-gray-500 dark:text-[#8890A6]">
                     <input
                       type="text"
                       readOnly

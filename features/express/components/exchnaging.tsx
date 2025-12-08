@@ -707,7 +707,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   // If showing success page, render it with real transaction data and snapshot websocket data
   if (showSuccess) {
     return (
-      <div className="w-full min-h-screen flex flex-col items-center justify-center pt-2">
+      <div className="w-full min-h-screen flex flex-col items-center justify-center pt-0 sm:pt-1 md:pt-2 px-1 sm:px-2 md:px-0">
         <SuccessPage
           transactionData={effectiveTransactionData}
           websocketData={snapshotWebsocketData || finalWebsocketData}
@@ -720,7 +720,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   if (!effectiveTransactionData) {
     return (
       <div
-        className={`w-full min-h-screen flex flex-col items-center justify-center pt-2 ${
+        className={`w-full min-h-screen flex flex-col items-center justify-center pt-0 sm:pt-1 md:pt-2 px-1 sm:px-2 md:px-0 ${
           isDark ? "bg-[#0A0A0A]" : "bg-gray-50"
         }`}
       >
@@ -742,7 +742,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               : timeRemaining <= 300
                 ? "bg-orange-500/20 border-orange-500"
                 : "bg-[#1D8751]/20 border-[#1D8751]"
-          } border-2 rounded-2xl p-4 flex items-center justify-between`}
+          } border-2 rounded-2xl p-2 sm:p-3 md:p-4 flex items-center justify-between`}
         >
           <div className="flex items-center gap-3">
             <svg
@@ -803,7 +803,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           isDark
             ? "bg-[#23232B]  border:[#E8EFF5] dark:border-[#35353E]"
             : "bg-white border-gray-200"
-        } border-2 rounded-2xl p-4 shadow-lg w-full max-w-4xl mb-4 min-h-[180px]`}
+        } border-2 rounded-2xl p-3 sm:p-4 shadow-lg w-full max-w-4xl mb-2 sm:mb-4 min-h-[180px]`}
       >
         <div className="flex-1 flex flex-col justify-between py-2 pr-2">
           <div>
@@ -858,7 +858,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 <div
                   className={`mt-2 p-2 ${
                     isDark
-                      ? "bg-[#1A1A1A] border-[#35353E]"
+                      ? "bg-[var(--card-color)] border-[#35353E]"
                       : "bg-gray-100 border-gray-300"
                   } rounded border`}
                 >
@@ -1078,7 +1078,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
         </div>
       </div>
 
-      <div className="flex items-center justify-between w-full max-w-4xl mb-4 relative">
+      <div className="flex items-center justify-between w-full max-w-4xl mb-2 sm:mb-4 relative">
         {/* Connecting Lines */}
         <div className="absolute top-5 left-[12.5%] right-[12.5%] h-0.5 z-0">
           <div
@@ -1507,8 +1507,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       {/* Transaction Details Card */}
       <div
         className={`${
-          isDark ? "bg-[#23232B] border-[#35353E]" : "bg-white border-gray-200"
-        } border-2 rounded-2xl p-6 shadow-lg w-full max-w-4xl mb-4`}
+          isDark ? "bg-[var(--card-color)] border-[#35353E]" : "bg-white border-gray-200"
+        } border-2 rounded-2xl p-3 sm:p-4 md:p-6 shadow-lg w-full max-w-4xl mb-2 sm:mb-4`}
       >
         {/* Title */}
         <div

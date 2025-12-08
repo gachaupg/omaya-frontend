@@ -135,7 +135,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
   // Add check for empty trades
   if (!trades || trades.length === 0) {
     return (
-      <div className="w-full min-h-[600px] bg-white dark:bg-[#23232b] rounded-2xl p-4 text-gray-900 dark:text-white border dark:border-[#35353E] border-gray-200">
+      <div className="w-full min-h-[600px] bg-white dark:bg-[var(--card-color)] rounded-2xl p-4 text-gray-900 dark:text-white border dark:border-[#35353E] border-gray-200">
         <NoDataFound
           title="No Ads Found"
           message="You haven't created any ads yet. Create your first ad to start trading."
@@ -144,12 +144,12 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
     );
   }
   return (
-    <div className="w-full min-h-[600px] bg-white dark:bg-[#18181D] rounded-2xl p-4 text-gray-900 dark:text-white">
+    <div className="w-full min-h-[600px] bg-white dark:bg-[var(--bg-color)] rounded-2xl p-4 text-gray-900 dark:text-white">
       {/* Desktop Table View */}
       <div className="hidden md:block overflow-x-auto rounded-[16px]">
         <table className="w-full text-left">
           <thead>
-            <tr className="border-b bg-gray-50 dark:bg-[#23232B] border-gray-200 dark:border-[#35353E]">
+            <tr className="border-b bg-gray-50 dark:bg-[var(--card-color)] border-gray-200 dark:border-[#35353E]">
               {columns.map((col) => (
                 <th
                   key={col}
@@ -164,7 +164,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
             {paginatedTrades.map((trade, idx) => (
               <tr
                 key={trade.id || idx}
-                className="border-b border-gray-200 dark:border-[#35353E] hover:bg-gray-100 dark:hover:bg-[#23232B] transition-colors relative"
+                className="border-b border-gray-200 dark:border-[#35353E] hover:bg-gray-100 dark:hover:bg-[var(--card-color)] transition-colors relative"
               >
                 {/* Asset */}
                 <td className="px-4 py-4 flex items-center gap-2">
@@ -261,7 +261,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                   {openMenuIdx === idx && (
                   <div
                     ref={menuRef}
-                    className="absolute right-0 mt-2 w-32 rounded-md shadow-lg bg-white dark:bg-[#18181D] border border-[#1D8751] dark:border-[#1D8751] z-10"
+                    className="absolute right-0 mt-2 w-32 rounded-md shadow-lg bg-white dark:bg-[var(--bg-color)] border border-[#1D8751] dark:border-[#1D8751] z-10"
                   >
                     <ul className="py-1">
                     {getActionOptions(trade).map((option) => (
@@ -300,7 +300,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
         {paginatedTrades.map((trade, idx) => (
           <div
             key={trade.id || idx}
-            className="bg-white dark:bg-[#23232B] rounded-2xl border border-gray-200 dark:border-[#35353E] p-4 space-y-3 relative"
+            className="bg-white dark:bg-[var(--card-color)] rounded-2xl border border-gray-200 dark:border-[#35353E] p-4 space-y-3 relative"
           >
             {/* Top Row: Asset, Type, and Action Menu */}
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-[#35353E]">
@@ -449,7 +449,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
           <button
             onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
             disabled={currentPage === 1}
-            className="px-4 py-2 rounded-md text-base font-semibold border border-gray-200 dark:border-[#35353E] bg-gray-100 dark:bg-[#23232B] text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors"
+            className="px-4 py-2 rounded-md text-base font-semibold border border-gray-200 dark:border-[#35353E] bg-gray-100 dark:bg-[var(--card-color)] text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors"
           >
             &lt;
           </button>
@@ -460,7 +460,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
               className={`px-4 py-2 rounded-md text-base font-semibold border border-gray-200 dark:border-[#35353E] ${
                 currentPage === i + 1
                   ? "bg-[#1D8751] text-white"
-                  : "bg-gray-100 dark:bg-[#23232B] text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-[#35353E]"
+                  : "bg-gray-100 dark:bg-[var(--card-color)] text-gray-900 dark:text-white hover:bg-gray-200 dark:hover:bg-[#35353E]"
               } transition-colors`}
             >
               {i + 1}
@@ -469,7 +469,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
           <button
             onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
             disabled={currentPage === totalPages}
-            className="px-4 py-2 rounded-md text-base font-semibold border border-gray-200 dark:border-[#35353E] bg-gray-100 dark:bg-[#23232B] text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors"
+            className="px-4 py-2 rounded-md text-base font-semibold border border-gray-200 dark:border-[#35353E] bg-gray-100 dark:bg-[var(--card-color)] text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors"
           >
             &gt;
           </button>
