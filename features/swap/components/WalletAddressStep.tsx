@@ -159,8 +159,8 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
       </div>
       <div className="w-full">
         {/* Combined Wallet Address and Terms Card */}
-        <div className={`bg-white dark:bg-[#1B1B23] ${strongBorder} rounded-2xl p-5 sm:p-6 lg:p-8 w-full text-gray-900 dark:text-white`}>
-          <div className="flex flex-col gap-4 sm:gap-6">
+        <div className={`bg-white dark:bg-[var(--card-color)] ${strongBorder} rounded-2xl p-3 sm:p-4 md:p-6 lg:p-8 w-full text-gray-900 dark:text-white`}>
+          <div className="flex flex-col gap-3 sm:gap-4 md:gap-6">
             {/* Wallet Address Input Section */}
             <div className="flex flex-col gap-3 sm:gap-4">
               {/* Wallet/Account Address Label */}
@@ -171,7 +171,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
               {/* Input Field with Paste Button */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
                 <div className="flex-1 relative">
-                  <div className={`flex items-center bg-white dark:bg-[#1D1D23] ${strongBorder} rounded-2xl px-3 sm:px-4 py-3 min-h-[48px]`}>
+                  <div className={`flex items-center bg-white dark:bg-[var(--card-color)] ${strongBorder} rounded-2xl px-2 sm:px-3 md:px-4 py-2 sm:py-3 min-h-[48px]`}>
                     {/* Wallet Icon */}
                     <svg
                       className="w-5 h-5 text-[#1D8751] mr-3"
@@ -338,7 +338,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
               </div>
 
               {/* Terms Box */}
-              <div className={`bg-gray-50 dark:bg-[#23232b] ${strongBorder} rounded-xl p-4 sm:p-5`}>
+              <div className={`bg-gray-50 dark:bg-[var(--card-color)] ${strongBorder} rounded-xl p-4 sm:p-5`}>
                 <div className="space-y-2 sm:space-y-3">
                   {/* Term 1 */}
                   <div className="flex items-start gap-2 sm:gap-3">
@@ -375,7 +375,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                   checked={hasAcceptedTerms}
                   onChange={(e) => setHasAcceptedTerms(e.target.checked)}
                   disabled={isLoading}
-                  className="w-4 h-4 sm:w-5 sm:h-5 text-[#1D8751] bg-white dark:bg-[#1D1D23] border-gray-300 dark:border-[#39394a] rounded focus:ring-[#1D8751] focus:ring-2 disabled:opacity-50 flex-shrink-0"
+                  className="w-4 h-4 sm:w-5 sm:h-5 text-[#1D8751] bg-white dark:bg-[var(--card-color)] border-gray-300 dark:border-[#39394a] rounded focus:ring-[#1D8751] focus:ring-2 disabled:opacity-50 flex-shrink-0"
                 />
                 <label
                   htmlFor="accept-terms"

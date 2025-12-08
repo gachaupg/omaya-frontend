@@ -28,7 +28,7 @@ const EstimatedPriceDisplay: React.FC<EstimatedPriceDisplayProps> = ({
   const networkFee = estimate?.gas_fee || 0;
 
   return (
-    <div className="dark:bg-[#23232b] bg-gray-50 dark:border-[#35353E] border-gray-200 border rounded-2xl p-2 sm:p-3">
+    <div className="dark:bg-[var(--card-color)] bg-gray-50 dark:border-[#35353E] border-gray-200 border rounded-2xl p-2 sm:p-3">
       <div className="flex items-center justify-between gap-2 sm:gap-0">
         <div className="flex flex-col gap-1.5 sm:gap-2 flex-1 min-w-0">
           {/* Network Fee */}

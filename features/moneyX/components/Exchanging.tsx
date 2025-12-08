@@ -698,7 +698,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   // If showing success page, render it
   if (showSuccess) {
     return (
-      <div className="w-full min-h-screen flex flex-col items-center justify-center pt-2">
+      <div className="w-full min-h-screen flex flex-col items-center justify-center pt-0 sm:pt-1 md:pt-2 px-1 sm:px-2 md:px-0">
         <SuccessPage
           transactionData={effectiveTransactionData}
           websocketData={snapshotWebsocketData || finalWebsocketData}
@@ -711,8 +711,8 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   if (isLoadingData) {
     return (
       <div
-        className={`w-full min-h-screen flex flex-col items-center justify-center pt-2 ${
-          isDark ? "bg-[#0A0A0A]" : "bg-gray-50"
+        className={`w-full min-h-screen flex flex-col items-center justify-center pt-0 sm:pt-1 md:pt-2 px-1 sm:px-2 md:px-0 ${
+          isDark ? "bg-[var(--bg-color)]" : "bg-gray-50"
         }`}
       >
         <div className={`${isDark ? "text-white" : "text-gray-900"} text-lg`}>
@@ -726,8 +726,8 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   if (!effectiveTransactionData) {
     return (
       <div
-        className={`w-full min-h-screen flex flex-col items-center justify-center pt-2 ${
-          isDark ? "bg-[#0A0A0A]" : "bg-gray-50"
+        className={`w-full min-h-screen flex flex-col items-center justify-center pt-0 sm:pt-1 md:pt-2 px-1 sm:px-2 md:px-0 ${
+          isDark ? "bg-[var(--bg-color)]" : "bg-gray-50"
         }`}
       >
         <div className={`${isDark ? "text-white" : "text-gray-900"} text-lg`}>
@@ -738,7 +738,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   }
 
   return (
-    <div className={`w-full min-h-screen flex flex-col pt-2 `}>
+    <div className={`w-full min-h-screen flex flex-col pt-0 sm:pt-1 md:pt-2 px-1 sm:px-2 md:px-0`}>
       {/* Timer Banner */}
       {timerActive && timeRemaining > 0 && (
         <div
@@ -748,7 +748,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
               : timeRemaining <= 300
                 ? "bg-orange-500/20 border-orange-500"
                 : "bg-[#1D8751]/20 border-[#1D8751]"
-          } border-2 rounded-2xl p-4 flex items-center justify-between`}
+          } border-2 rounded-2xl p-2 sm:p-3 md:p-4 flex items-center justify-between`}
         >
           <div className="flex items-center gap-3">
             <svg
@@ -807,7 +807,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
       <div
         className={`flex flex-col md:flex-row justify-between items-stretch bg-[#FFFFFF] dark:${
           isDark
-            ? "bg-[#23232B]  border:[#E8EFF5] dark:border-[#35353E]"
+            ? "bg-[var(--card-color)]  border:[#E8EFF5] dark:border-[#35353E]"
             : "bg-white border-gray-200"
         } border-2 rounded-2xl p-4 shadow-lg w-full mb-4 min-h-[180px]`}
       >
@@ -983,7 +983,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                     currentStatus === "completed" ||
                     currentStatus === "finished"
                   ? "bg-[#1D8751] border-[#1D87511A]"
-                  : "bg-[#23232B] border-[#35353E]"
+                  : "bg-[var(--card-color)] border-[#35353E]"
             }`}
           >
             <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
@@ -1093,7 +1093,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                     currentStatus === "completed" ||
                     currentStatus === "finished"
                   ? "bg-[#1D8751] border-[#1D87511A]"
-                  : `${isDark ? "bg-[#23232B] border-[#35353E]" : "bg-gray-200 border-gray-300"}`
+                  : `${isDark ? "bg-[var(--card-color)] border-[#35353E]" : "bg-gray-200 border-gray-300"}`
             }`}
           >
             <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
@@ -1189,7 +1189,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                     currentStatus === "completed" ||
                     currentStatus === "finished"
                   ? "bg-[#1D8751] border-[#1D87511A]"
-                  : "bg-[#23232B] border-[#35353E]"
+                  : "bg-[var(--card-color)] border-[#35353E]"
             }`}
           >
             <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
@@ -1278,7 +1278,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                 ? "bg-[#FF9500] border-[#FF95001A]"
                 : currentStatus === "completed" || currentStatus === "finished"
                   ? "bg-[#1D8751] border-[#1D87511A]"
-                  : "bg-[#23232B] border-[#35353E]"
+                  : "bg-[var(--card-color)] border-[#35353E]"
             }`}
           >
             <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
@@ -1365,8 +1365,8 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
       {/* Transaction Details Card */}
       <div
         className={`${
-          isDark ? "bg-[#23232B] border-[#35353E]" : "bg-white border-gray-200"
-        } border-2 rounded-2xl p-6 shadow-lg w-full mb-4`}
+          isDark ? "bg-[var(--card-color)] border-[#35353E]" : "bg-white border-gray-200"
+        } border-2 rounded-2xl p-3 sm:p-4 md:p-6 shadow-lg w-full mb-2 sm:mb-4`}
       >
         <div
           className={`${

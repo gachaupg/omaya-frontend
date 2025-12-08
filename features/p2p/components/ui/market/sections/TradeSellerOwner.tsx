@@ -289,7 +289,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   };
 
   return (
-    <div className="final-buy-container grid grid-cols-1 md:grid-cols-3 gap-6 p-2 md:p-6 min-h-screen bg-white dark:bg-[#18181D]">
+    <div className="final-buy-container grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-4 md:gap-6 p-1 sm:p-2 md:p-6 min-h-screen bg-white dark:bg-[var(--bg-color)]">
       {/* Left Column: Main Info */}
       <div className="md:col-span-2 flex flex-col mt-6 md:mt-10 gap-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -311,14 +311,14 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           </div>
           <button
             onClick={handleRefresh}
-            className="flex items-center gap-1 bg-gray-100 dark:bg-[#23232A] text-[#1D8751] rounded-lg px-2 py-1.5 sm:py-1 border border-gray-200 dark:border-[#35353E] hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors self-start sm:self-auto"
+            className="flex items-center gap-1 bg-gray-100 dark:bg-[var(--card-color)] text-[#1D8751] rounded-lg px-2 py-1.5 sm:py-1 border border-gray-200 dark:border-[#35353E] hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors self-start sm:self-auto"
             title="Refresh"
           >
             <RefreshCw size={12} className="sm:w-[14px] sm:h-[14px]" />
           </button>
         </div>
         {/* Advertiser Info */}
-        <section className="advertiser-info rounded-[18px] p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 border-2 border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[#23232B]">
+        <section className="advertiser-info rounded-[18px] p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 border-2 border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[var(--card-color)]">
           <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
             <div className="icon rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-lg sm:text-xl font-bold bg-[#1D8751] text-white flex-shrink-0">
               {tradeDataJson?.buy_photo ? <img className="w-6 h-6 sm:w-8 sm:h-8 rounded-full" src={tradeDataJson?.buy_photo || ""} alt="" /> : <span className="text-[#1D8751] font-bold text-sm sm:text-lg">{(singleOrder?.advertiser_first_name?.[0] || singleOrder?.advertiser_name?.[0] || "?").toUpperCase()}</span>}
@@ -398,14 +398,14 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             </button>
           </div>
         </div>
-        <section className="order-info rounded-[18px] p-2   border-2 border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[#23232B] ">
+        <section className="order-info rounded-[18px] p-2   border-2 border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[var(--card-color)] ">
           <div className="flex flex-col md:flex-row gap-4">
             {/* I want to Send */}
             <div className="flex-1 flex flex-col mb-2 md:mb-0">
               <div className="mb-1 text-gray-600 dark:text-[#788099] text-[0.95rem] font-medium">
                 I want to Send
               </div>
-              <div className="flex items-center h-[46px] rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#23232A] px-2">
+              <div className="flex items-center h-[46px] rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] px-2">
                 <span className="text-[#1D8751] text-2xl mr-2">$</span>
                 <span className="text-[#1D8751] text-xl font-semibold">
                   {formatAmount(Math.round(Number(sendAmount) / Number(commissionRate) * 100) / 100)}
@@ -420,7 +420,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               <div className="mb-1 text-gray-600 dark:text-[#788099] text-[0.95rem] font-medium">
                 I want to Receive
               </div>
-              <div className="flex items-center h-[46px] rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#23232A] px-2">
+              <div className="flex items-center h-[46px] rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] px-2">
                 {/* Placeholder for Tether/USDT icon */}
                 <span className="text-[#1D8751] text-2xl mr-2">&#x20BF;</span>
                 <span className="text-[#1D8751] text-xl font-semibold">
@@ -470,41 +470,41 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               )}
             </div>
           </div>
-          <div className="rounded-[18px] flex flex-col  p-2 md:p-4 gap-4 bg-gray-50 dark:bg-[#1D1D23]">
+          <div className="rounded-[18px] flex flex-col  p-2 md:p-4 gap-4 bg-gray-50 dark:bg-[var(--card-color)]">
             {/* Left: Bank Info */}
             <div className="flex flex-col gap-4">
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex p-3 gap-2 w-full md:w-1/3 min-h-[120px] sm:min-h-[220px] border border-gray-200 dark:border-[#3C3C47] rounded-2xl bg-white dark:bg-[#18181D] mb-4 md:mb-0">
+              <div className="flex flex-col md:flex-row gap-3 md:gap-4">
+                <div className="flex p-2 md:p-3 gap-2 w-full md:w-1/4 min-h-[100px] md:min-h-[180px] border border-gray-200 dark:border-[#3C3C47] rounded-2xl bg-white dark:bg-[var(--bg-color)] mb-4 md:mb-0">
                   {/* Replace with actual logo if available */}
-                  <div className="w-10 h-10  rounded-full bg-white flex items-center justify-center mb-2">
-                    <span className="text-[#1D8751] font-bold">
+                  <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white flex items-center justify-center mb-2">
+                    <span className="text-[#1D8751] font-bold text-xs">
                       {paymentDetails?.provider[0]}
                     </span>
                   </div>
-                  <span className="text-gray-900 dark:text-white text-[13px] font-medium">
+                  <span className="text-gray-900 dark:text-white text-xs md:text-[13px] font-medium">
                     {paymentDetails?.provider}
                   </span>
                 </div>
-                <div className=" flex flex-col gap-4 w-full">
-                  <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-3 md:gap-4 w-full md:flex-1 min-w-0">
+                  <div className="flex flex-col gap-3 md:gap-4">
                     {/* Account Name */}
-                    <div className="flex w-full flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                      <div className=" w-full flex flex-col">
-                        <span className="text-[#788099] w-32">
+                    <div className="flex w-full flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+                      <div className="w-full flex flex-col min-w-0">
+                        <span className="text-[#788099] text-xs md:text-sm mb-2">
                           Account Name
                         </span>
-                        <span className="flex-1 px-4 sm:px-6 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-transparent font-semibold text-sm sm:text-lg flex items-center break-words">
-                          <span className="w-3 h-3 font-[13px] rounded-full bg-[#1D8751] inline-block mr-2"></span>
-                          <span className="truncate sm:truncate-none break-words">{paymentDetails?.account_name}</span>
+                        <span className="flex-1 min-w-0 px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-transparent font-semibold text-sm md:text-base flex items-center truncate">
+                          <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#1D8751] inline-block mr-2 flex-shrink-0"></span>
+                          <span className="truncate">{paymentDetails?.account_name}</span>
                         </span>
                       </div>
                       <button
-                        className="ml-0 sm:ml-2 px-4 sm:px-5 py-2 rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[#23232A] font-semibold flex items-center justify-center gap-2 w-full sm:w-auto"
+                        className="w-full sm:w-auto px-3 md:px-4 py-2 rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[var(--card-color)] font-semibold text-sm flex items-center justify-center gap-1.5 flex-shrink-0"
                         onClick={() => handleCopy(paymentDetails?.account_name)}
                       >
                         Copy
                         <svg
-                          className="w-4 h-4"
+                          className="w-3 h-3 md:w-4 md:h-4"
                           fill="none"
                           stroke="currentColor"
                           strokeWidth="2"
@@ -516,25 +516,25 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                       </button>
                     </div>
                     {/* Account Number */}
-                    <div className="flex w-full flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                      <div className=" w-full flex flex-col">
-                        <span className="text-[#788099] w-32">
+                    <div className="flex w-full flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+                      <div className="w-full flex flex-col min-w-0">
+                        <span className="text-[#788099] text-xs md:text-sm mb-2">
                           Account Number
                         </span>
-                        <span className="flex-1 px-4 sm:px-6 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-transparent font-semibold text-sm sm:text-lg flex items-center break-all">
-                          <span className="w-3 h-3 font-[13px] rounded-full bg-[#1D8751] inline-block mr-2"></span>
-                          <span className="truncate sm:truncate-none break-all">{paymentDetails?.account_number}</span>
+                        <span className="flex-1 min-w-0 px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-transparent font-semibold text-sm md:text-base flex items-center truncate">
+                          <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#1D8751] inline-block mr-2 flex-shrink-0"></span>
+                          <span className="truncate">{paymentDetails?.account_number}</span>
                         </span>
                       </div>
                       <button
-                        className="ml-0 sm:ml-2 px-4 sm:px-5 py-2 rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[#23232A] font-semibold flex items-center justify-center gap-2 w-full sm:w-auto"
+                        className="w-full sm:w-auto px-3 md:px-4 py-2 rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[var(--card-color)] font-semibold text-sm flex items-center justify-center gap-1.5 flex-shrink-0"
                         onClick={() =>
                           handleCopy(paymentDetails?.account_number)
                         }
                       >
                         Copy
                         <svg
-                          className="w-4 h-4"
+                          className="w-3 h-3 md:w-4 md:h-4"
                           fill="none"
                           stroke="currentColor"
                           strokeWidth="2"
@@ -546,22 +546,22 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                       </button>
                     </div>
                     {/* Transaction ID */}
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                      <div className=" w-full flex flex-col">
-                        <span className="text-[#788099] w-32">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+                      <div className="w-full flex flex-col min-w-0">
+                        <span className="text-[#788099] text-xs md:text-sm mb-2">
                           Transaction ID
                         </span>
-                        <span className="flex-1 font-[13px] px-4 sm:px-6 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-transparent   flex items-center break-all">
-                          <span className="truncate sm:truncate-none break-all">{singleOrder?.id}</span>
+                        <span className="flex-1 min-w-0 font-[11px] md:font-[13px] px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-transparent flex items-center truncate">
+                          <span className="truncate">{singleOrder?.id}</span>
                         </span>
                       </div>
                       <button
-                        className="ml-0 sm:ml-2 px-4 sm:px-5 py-2 font-[13px] rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[#23232A]  flex items-center justify-center gap-2 w-full sm:w-auto"
+                        className="w-full sm:w-auto px-3 md:px-4 py-2 font-[11px] md:font-[13px] rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[var(--card-color)] flex items-center justify-center gap-1.5 flex-shrink-0"
                         onClick={() => handleCopy(singleOrder?.id)}
                       >
                         Copy
                         <svg
-                          className="w-4 h-4"
+                          className="w-3 h-3 md:w-4 md:h-4"
                           fill="none"
                           stroke="currentColor"
                           strokeWidth="2"
@@ -577,7 +577,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               </div>
               <div className="flex flex-col  gap-4">
                 <div className="flex-1">
-                  <div className="rounded-2xl border border-[#1D8751] bg-gray-50 dark:bg-[#18181D] p-6 mt-2 text-base flex flex-col gap-2">
+                  <div className="rounded-2xl border border-[#1D8751] bg-gray-50 dark:bg-[var(--bg-color)] p-6 mt-2 text-base flex flex-col gap-2">
                     <div className="flex items-center gap-3 text-gray-900 dark:text-white">
                       <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block"></span>
                       Please send the money from your own account Only
@@ -609,7 +609,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                     <button
                       className={`w-full md:w-auto flex-1 py-2 rounded-2xl border-2 border-gray-200 dark:border-[#3C3C47] text-lg  ${
                         confirmOrder?.status === "half-matched"
-                          ? "bg-gray-100 dark:bg-[#23232A] text-gray-400 dark:text-[#888]"
+                          ? "bg-gray-100 dark:bg-[var(--card-color)] text-gray-400 dark:text-[#888]"
                           : "bg-transparent text-gray-600 dark:text-[#788099]"
                       }`}
                       onClick={handleCancelTransaction}
@@ -622,7 +622,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                     <button
                       className={`w-full md:w-auto flex-1 py-2 rounded-2xl text-lg  ${
                         confirmOrder?.status === "half-matched"
-                          ? "bg-gray-100 dark:bg-[#23232A] text-gray-400 dark:text-[#888]"
+                          ? "bg-gray-100 dark:bg-[var(--card-color)] text-gray-400 dark:text-[#888]"
                           : "bg-[#E23D3A] text-white"
                       } ${
                         confirmTradeLoading
@@ -675,7 +675,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           buyerName={user?.email === confirmOrder?.buyer ? `${user?.first_name || ""} ${user?.last_name || ""}`.trim() || "You" : "Buyer"}
         />
         {/* Advertiser's Terms */}
-        <section className="advertiser-terms rounded-lg p-4 bg-gray-50 dark:bg-[#23232B]">
+        <section className="advertiser-terms rounded-lg p-4 bg-gray-50 dark:bg-[var(--card-color)]">
           <div className="font-semibold text-lg mb-2 text-gray-900 dark:text-white">
             Advertiser's Terms <span className="text-[#E23D3A]">⦿</span>
           </div>
@@ -701,7 +701,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
 
         <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="mx-auto w-full max-w-md rounded-2xl bg-white dark:bg-[#23232A] text-gray-900 dark:text-white border border-gray-200 dark:border-[#35353E]">
+          <Dialog.Panel className="mx-auto w-full max-w-md rounded-2xl bg-white dark:bg-[var(--card-color)] text-gray-900 dark:text-white border border-gray-200 dark:border-[#35353E]">
             <div className="p-8">
               <div className="text-center">
                 {/* Success Icon */}
@@ -727,7 +727,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 </Dialog.Title>
 
                 {/* Trade Details */}
-                <div className="bg-gray-50 dark:bg-[#18181D] rounded-xl p-4 mb-6 border border-gray-200 dark:border-[#35353E]">
+                <div className="bg-gray-50 dark:bg-[var(--bg-color)] rounded-xl p-4 mb-6 border border-gray-200 dark:border-[#35353E]">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-gray-600 dark:text-[#A3A3C2]">
                       Amount Sent:

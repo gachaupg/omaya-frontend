@@ -79,7 +79,7 @@ export default function Footer() {
   };
 
   return (
-    <footer className="relative z-40 pt-10 pb-4 bg-[#18181D] text-[#788099]">
+    <footer className="relative z-40 pt-10 pb-4 bg-[var(--bg-color)] text-[#788099]">
       <div className="container mx-auto px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 pb-8 border-b border-gray-700">
           {/* Logo and Social Media Column */}
