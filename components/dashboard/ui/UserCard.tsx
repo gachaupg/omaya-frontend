@@ -119,7 +119,7 @@ function UserCard() {
       width="w-full"
       bgColor="bg-[#1D1D23]"
       borderRadius="rounded-xl sm:rounded-xl lg:rounded-[20px]"
-      className="p-3 sm:p-3 lg:p-2 dark:bg-[#1D1D23] bg-white overflow-hidden"
+      className="p-2 sm:p-3 lg:p-2 dark:bg-[#1D1D23] bg-white overflow-hidden"
     >
       {showHelpSupport ? (
         <div className="w-full mt-2">

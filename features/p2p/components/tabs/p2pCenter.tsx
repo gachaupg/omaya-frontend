@@ -35,7 +35,7 @@ class ErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return this.props.fallback || (
-        <div className="flex flex-col items-center justify-center min-h-screen px-4">
+        <div className="flex flex-col items-center justify-center min-h-screen px-1 sm:px-2 md:px-4">
           <p className="text-red-500 text-center">
             Something went wrong. Please refresh the page.
           </p>
@@ -327,7 +327,7 @@ const P2PCenter: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <div className="flex flex-col gap-6 w-full h-full min-h-screen px-3 sm:px-4">
+      <div className="flex flex-col gap-4 sm:gap-5 md:gap-6 w-full h-full min-h-screen px-1 sm:px-2 md:px-4">
         <P2pProfile wallets={safeWallets} summary={safeSummary} loading={loading} />
         <Stats summary={safeSummary} />
         <FiterTabs

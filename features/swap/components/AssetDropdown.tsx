@@ -48,7 +48,7 @@ const AssetDropdown: React.FC<AssetDropdownProps> = ({
         tabIndex={0}
         className={`w-full cursor-pointer flex items-center justify-between ${
           className ||
-          "dark:bg-[#181820] bg-gray-100 dark:border-[#35353E] border-gray-300 border rounded-[18px] px-3 py-2 dark:text-white text-gray-900"
+          "dark:bg-[var(--card-color)] bg-gray-100 dark:border-[#35353E] border-gray-300 border rounded-[18px] px-3 py-2 dark:text-white text-gray-900"
         }`}
       >
         {selectedAsset ? (
@@ -91,7 +91,7 @@ const AssetDropdown: React.FC<AssetDropdownProps> = ({
 
       {isOpen && (
         <div
-          className="absolute top-full left-0 right-0 mt-1 dark:bg-[#23232b] bg-white dark:border-[#35353E] border-gray-300 border rounded-xl z-50 max-h-[70vh] sm:max-h-60 overflow-y-auto"
+          className="absolute top-full left-0 right-0 mt-1 dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-300 border rounded-xl z-50 max-h-[70vh] sm:max-h-60 overflow-y-auto"
           role="listbox"
           aria-label={`${label} options`}
         >
@@ -101,7 +101,7 @@ const AssetDropdown: React.FC<AssetDropdownProps> = ({
               placeholder="Search assets..."
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="w-full dark:bg-[#181820] bg-gray-50 dark:border-[#35353E] border-gray-300 border rounded-lg px-3 py-1.5 sm:py-2 text-xs sm:text-sm dark:text-white text-gray-900 dark:placeholder-[#8C8CA1] placeholder-gray-500 outline-none"
+              className="w-full dark:bg-[var(--card-color)] bg-gray-50 dark:border-[#35353E] border-gray-300 border rounded-lg px-3 py-1.5 sm:py-2 text-xs sm:text-sm dark:text-white text-gray-900 dark:placeholder-[#8C8CA1] placeholder-gray-500 outline-none"
               onClick={(e) => e.stopPropagation()}
             />
           </div>

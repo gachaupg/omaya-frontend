@@ -581,7 +581,7 @@ export const Chats: React.FC = () => {
   return (
     <div className="w-full h-full flex flex-col">
       {/* Header */}
-      <div className="px-3 sm:px-4 pt-0 pb-2">
+      <div className="px-1 sm:px-2 md:px-4 pt-0 pb-2">
         <h1 className="text-xl sm:text-2xl font-bold text-white">
           P2P Trading Chat
         </h1>

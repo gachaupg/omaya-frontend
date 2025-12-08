@@ -540,7 +540,7 @@ const PrivacySecurity = () => {
     <>
       {show2FAModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
-          <div className="dark:bg-[#23232B] bg-white p-4 sm:p-6 rounded-xl w-full max-w-md sm:max-w-xl max-h-[90vh] overflow-y-auto">
+          <div className="dark:bg-[var(--card-color)] bg-white p-4 sm:p-6 rounded-xl w-full max-w-md sm:max-w-xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-2 dark:text-white text-gray-900">
               Enable 2FA
             </h3>
@@ -558,7 +558,7 @@ const PrivacySecurity = () => {
             )}
             <input
               type="text"
-              className="w-full p-2 sm:p-2.5 rounded dark:border-[#35353E] border-gray-300 border mb-2 dark:bg-[#18181D] bg-gray-100 dark:text-white text-gray-900 text-sm sm:text-base"
+              className="w-full p-2 sm:p-2.5 rounded dark:border-[#35353E] border-gray-300 border mb-2 dark:bg-[var(--bg-color)] bg-gray-100 dark:text-white text-gray-900 text-sm sm:text-base"
               placeholder="Enter code from app"
               value={verifyCode}
               onChange={(e) => setVerifyCode(e.target.value)}
@@ -594,7 +594,7 @@ const PrivacySecurity = () => {
       {/* Disable 2FA Modal */}
       {showDisable2FAModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
-          <div className="dark:bg-[#23232B] bg-white p-4 sm:p-6 rounded-xl w-full max-w-md sm:max-w-xl max-h-[90vh] overflow-y-auto">
+          <div className="dark:bg-[var(--card-color)] bg-white p-4 sm:p-6 rounded-xl w-full max-w-md sm:max-w-xl max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-2 dark:text-white text-gray-900">
               Disable 2FA
             </h3>
@@ -603,7 +603,7 @@ const PrivacySecurity = () => {
             </div>
             <input
               type="text"
-              className="w-full p-2 sm:p-2.5 rounded dark:border-[#35353E] border-gray-300 border mb-2 dark:bg-[#18181D] bg-gray-100 dark:text-white text-gray-900 text-sm sm:text-base"
+              className="w-full p-2 sm:p-2.5 rounded dark:border-[#35353E] border-gray-300 border mb-2 dark:bg-[var(--bg-color)] bg-gray-100 dark:text-white text-gray-900 text-sm sm:text-base"
               placeholder="Enter code from authenticator app"
               value={disableCode}
               onChange={(e) => {
@@ -644,7 +644,7 @@ const PrivacySecurity = () => {
       {/* Enhanced Logout Modal */}
       {showLogoutModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
-          <div className="dark:bg-[#23232B] bg-white p-4 sm:p-6 rounded-xl w-full max-w-sm sm:max-w-md max-h-[90vh] overflow-y-auto">
+          <div className="dark:bg-[var(--card-color)] bg-white p-4 sm:p-6 rounded-xl w-full max-w-sm sm:max-w-md max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4 dark:text-white text-gray-900">
               Sign Out Options
             </h3>
@@ -739,7 +739,7 @@ const PrivacySecurity = () => {
         <div className="text-base font-bold mb-2 dark:text-white text-gray-900">
             Privacy & Security
           </div>
-        <div className="w-full rounded-2xl p-5 flex flex-col gap-4 max-w-none mx-auto bg-white dark:bg-[#1D1D23] border border-[#E4E6F0] dark:border-[#35353E] shadow-sm">
+        <div className="w-full rounded-2xl p-5 flex flex-col gap-4 max-w-none mx-auto bg-white dark:bg-[var(--card-color)] border border-[#E4E6F0] dark:border-[#35353E] shadow-sm">
           <div className="text-base font-semibold mb-2 dark:text-white text-gray-900">
             2 Factor Authentication
           </div>
@@ -825,7 +825,7 @@ const PrivacySecurity = () => {
               : "No active sessions to sign out from"}
           </button>
          {/* Active Browser Sessions */}
-        <div className="w-full max-w-none mx-auto rounded-2xl border border-[#E4E6F0] dark:border-[#35353E] bg-white dark:bg-[#1D1D23] shadow-sm p-5 space-y-4">
+        <div className="w-full max-w-none mx-auto rounded-2xl border border-[#E4E6F0] dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] shadow-sm p-5 space-y-4">
           <div className="flex items-center justify-between mb-2">
             <div className="text-base font-semibold">
               Active Browser Session
@@ -954,13 +954,13 @@ const PrivacySecurity = () => {
             </div>
           ) : (
             <div className="border-t dark:border-[#35353E] border-gray-200 rounded-xl overflow-hidden">
-              <div className="px-4 py-3 text-xs font-semibold uppercase tracking-wide dark:text-[#8C8CA1] text-gray-500 space-y-1 bg-gray-50 dark:bg-transparent">
+              <div className="px-4 py-3 text-xs font-semibold uppercase tracking-wide dark:text-[#8C8CA1] text-gray-500 space-y-1 bg-gray-50 dark:bg-[var(--bg-color)]">
                 <div>Signed In</div>
                 <div>Location</div>
                 <div>IP Address</div>
                 <div>Browser</div>
               </div>
-              <div className="divide-y dark:divide-[#2F2C3C] divide-gray-200 dark:text-white text-gray-800 bg-white dark:bg-transparent">
+              <div className="divide-y dark:divide-[#2F2C3C] divide-gray-200 dark:text-white text-gray-800 bg-white dark:bg-[var(--bg-color)]">
                 {paginatedSessions.map((session: DeviceSession) => (
                   <div key={session.session_id} className="px-4 py-4 text-sm space-y-2">
                     <p className="font-semibold">

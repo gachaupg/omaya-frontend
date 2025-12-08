@@ -4,11 +4,17 @@
   --background: #EEF1F4;
   --foreground: #171717;
   --layout-gutter: clamp(2rem, 6vw, 2rem);
+  /* Reusable background and card colors */
+  --bg-color: #EEF1F4;
+  --card-color: #ffffff;
 }
 
 .dark {
-  --background: #18181d;
+  --background: #0A0A0A;
   --foreground: #ededed;
+  /* Reusable background and card colors for dark mode */
+  --bg-color: #0A0A0A;
+  --card-color: #1D1D23;
 }
 
 @theme inline {
@@ -18,11 +24,11 @@
   --font-mono: var(--font-geist-mono);
   
   /* Custom theme colors */
-  --color-primary: #1D8751;
+  --color-primary: #0A0A0A;
   --color-accent: #35353E;
   --color-secondary: #13B562;
   --color-warning: #F79330;
-  --color-success: #1D8751;
+  --color-success: #0A0A0A;
   --color-error: #EF4444;
   
   /* Light theme specific colors */
@@ -38,7 +44,7 @@
 }
 
 .dark {
-  --color-card: #1E1E1E;
+  --color-card: #1D1D23;
   --color-card-foreground: #ededed;
   --color-border: #35353E;
   --color-input: #2A2A2A;
@@ -167,6 +173,10 @@ textarea:active {
 .theme-text-primary { color: var(--foreground); }
 .theme-text-muted { color: var(--color-muted-foreground); }
 .theme-border { border-color: var(--color-border); }
+
+/* Reusable background and card color utility classes */
+.bg-app { background-color: var(--bg-color); }
+.bg-card { background-color: var(--card-color); }
 
 /* Scroll snap utilities for responsive horizontal navigation */
 .snap-x {

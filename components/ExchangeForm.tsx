@@ -1400,7 +1400,11 @@ export default function ExchangeForm({
   // If Swap Crypto tab is active, render SwapWidget with tab controls
   if (activeTab === "swap") {
     return (
-      <div className="w-full max-w-none mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl px-3 sm:px-4 md:px-5 py-3 shadow-lg">
+      <div className={`w-full mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl ${isHomePage ? "px-3 sm:px-4 md:px-5 py-3" : "px-1 sm:px-2 md:px-5 py-1 sm:py-2 md:py-3"} shadow-lg ${
+        isHomePage 
+          ? "max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl" 
+          : "max-w-none"
+      }`}>
         {renderTabs()}
         <SwapWidget usePublicApi={isHomePage} />
       </div>
@@ -1410,9 +1414,9 @@ export default function ExchangeForm({
   // If Money X tab is active, render MoneyX component
   if (activeTab === "moneyx") {
     return (
-      <div className={`w-full mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl px-3 sm:px-4 md:px-5 py-3 shadow-lg ${
+      <div className={`w-full mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl ${isHomePage ? "px-3 sm:px-4 md:px-5 py-3" : "px-1 sm:px-2 md:px-5 py-1 sm:py-2 md:py-3"} shadow-lg ${
         isHomePage 
-          ? "max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl 2xl:max-w-3xl" 
+          ? "max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl" 
           : "max-w-none"
       }`}>
         {renderTabs()}
@@ -1423,9 +1427,9 @@ export default function ExchangeForm({
 
   // Default: Express Exchange tab
   return (
-    <div className={`w-full mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl px-3 sm:px-4 md:px-5 py-3 shadow-lg ${
+    <div className={`w-full mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl ${isHomePage ? "px-3 sm:px-4 md:px-5 py-3" : "px-1 sm:px-2 md:px-5 py-1 sm:py-2 md:py-3"} shadow-lg ${
       isHomePage 
-        ? "max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl 2xl:max-w-3xl" 
+        ? "max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl" 
         : "max-w-none"
     }`}>
       {renderTabs()}
