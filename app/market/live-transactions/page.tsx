@@ -196,6 +196,17 @@ const LiveTransactionsPage = () => {
 
   return (
     <div className="w-full">
+      {/* Back Button */}
+      <a 
+        href="/rates"
+        className="inline-flex items-center gap-2 text-gray-600 dark:text-[#788099] hover:text-[#1D8751] dark:hover:text-[#1D8751] transition-colors mb-4 sm:mb-6"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+        <span className="text-sm sm:text-base font-medium">Back</span>
+      </a>
+
       {/* Page header like the provided design */}
       <div className="mb-4 sm:mb-5">
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-[#051015] dark:text-white">
@@ -218,17 +229,17 @@ const LiveTransactionsPage = () => {
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
-              <tr className="bg-gray-50 dark:bg-[#23232B] border-b border-[#E8EFF5] dark:border-[#35353E]">
-                <th className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">
+              <tr className="bg-gray-50 dark:bg-[#23232B] border-b-2 border-gray-300 dark:border-[#35353E]">
+                <th className="px-4 sm:px-6 py-4 sm:py-5 font-semibold text-base sm:text-lg text-gray-900 dark:text-white">
                   From
                 </th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">
+                <th className="px-4 sm:px-6 py-4 sm:py-5 font-semibold text-base sm:text-lg text-gray-900 dark:text-white">
                   To
                 </th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">
+                <th className="px-4 sm:px-6 py-4 sm:py-5 font-semibold text-base sm:text-lg text-gray-900 dark:text-white">
                   Amount
                 </th>
-                <th className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">
+                <th className="px-4 sm:px-6 py-4 sm:py-5 font-semibold text-base sm:text-lg text-gray-900 dark:text-white">
                   When
                 </th>
               </tr>

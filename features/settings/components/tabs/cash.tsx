@@ -155,7 +155,7 @@ function Cash({ sharedFeesError }: CashProps) {
       {/* Success Modal */}
       {showSuccessModal && withdrawalData && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-[#1D1D23] border border-[#1D8751] rounded-2xl p-8 max-w-md mx-4">
+          <div className="bg-[var(--card-color)] border border-[#1D8751] rounded-2xl p-8 max-w-md mx-4">
             <div className="mb-4">
               <svg
                 className="w-16 h-16 text-[#1D8751] mx-auto"
@@ -179,7 +179,7 @@ function Cash({ sharedFeesError }: CashProps) {
             </p>
             
             {/* Withdrawal Details */}
-            <div className="bg-[#18181B] border border-[#35353F] rounded-xl p-4 mb-4 space-y-3">
+            <div className="bg-[var(--bg-color)] border border-[#35353F] rounded-xl p-4 mb-4 space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-[#A3A3A3] text-sm">Withdrawal ID:</span>
                 <span className="text-white text-sm font-mono">{withdrawalData.withdrawal_id?.substring(0, 8)}...</span>
@@ -218,12 +218,12 @@ function Cash({ sharedFeesError }: CashProps) {
           {/* 1- Transaction Info */}
           <div className="text-md font-bold mb-2">1- Transaction Info</div>
 
-          <div className="mb-3 p-3 border border-[#E8EFF5] dark:border-[#35353F] bg-white dark:bg-[#1D1D23] rounded-lg">
+          <div className="mb-3 p-3 border border-[#E8EFF5] dark:border-[#35353F] bg-white dark:bg-[var(--card-color)] rounded-lg">
             <div className="flex flex-col md:flex-row gap-4 mb-2">
               <div className="flex-1">
                 <label className="block text-sm text-[#788099] dark:text-[#A3A3A3] mb-1">Amount</label>
                 <input
-                  className={`w-full bg-white dark:bg-[#18181B] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-1 py-1 text-[#788099] dark:text-white text-lg focus:outline-none ${
+                  className={`w-full bg-white dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-1 py-1 text-[#788099] dark:text-white text-lg focus:outline-none ${
                     errors.amount ? "border-red-500" : ""
                   }`}
                   placeholder="100"
@@ -248,7 +248,7 @@ function Cash({ sharedFeesError }: CashProps) {
                 <label className="block text-sm text-[#788099] dark:text-[#A3A3A3] mb-1">
                   I want to Recieve Net
                 </label>
-                <div className="flex items-center bg-white dark:bg-[#18181B] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-1 py-1">
+                <div className="flex items-center bg-white dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-1 py-1">
                   <span className="text-[#1D8751] text-2xl font-bold mr-2">
                     $ {netAmount ? netAmount.toFixed(2) : "0.00"}
                   </span>
@@ -391,7 +391,7 @@ function Cash({ sharedFeesError }: CashProps) {
             <div className="text-md font-bold mb-2">
               2- Your Bank / Mobile Payment Details
             </div>
-            <div className="mb-2 border border-[#E8EFF5] dark:border-[#35353F] text_highbg-dark bg-[white] dark:bg-[#1D1D23] p-3 rounded-[18px]">
+            <div className="mb-2 border border-[#E8EFF5] dark:border-[#35353F] text_highbg-dark bg-[white] dark:bg-[var(--card-color)] p-3 rounded-[18px]">
               
               {/* User Payment Selector - Same as Adds.tsx */}
               <UserPaymentSelector
@@ -435,7 +435,7 @@ function Cash({ sharedFeesError }: CashProps) {
                     <circle cx="12" cy="16" r="1" fill="#1D8751" />
                   </svg>
                 </div>
-              <div className="bg-white dark:bg-[#18181B] border border-[#1D8751] rounded-xl p-4 mb-4">
+              <div className="bg-white dark:bg-[var(--bg-color)] border border-[#1D8751] rounded-xl p-4 mb-4">
                
                 <ul className="list-disc pl-6 text-[#051015] dark:text-[#A3A3A3] text-sm space-y-1">
                   <li className="">

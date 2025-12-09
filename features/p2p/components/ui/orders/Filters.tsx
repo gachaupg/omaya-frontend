@@ -139,7 +139,7 @@ const Filters: React.FC<FiltersProps> = ({
     <div className="w-full flex flex-col">
       {/* ───────────────────────── Tabs */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-        <div className="flex items-center gap-0 bg-white dark:bg-transparent rounded-[14px] border border-[#1D8751]/60 dark:border-[#1D8751]/60 w-full sm:w-fit px-1.5 py-1.5 overflow-x-auto snap-x snap-mandatory scrollbar-none shadow-[0_6px_24px_rgba(4,10,7,0.35)]">
+        <div className="flex items-center gap-0 bg-white dark:bg-[var(--bg-color)] rounded-[14px] border border-[#1D8751]/60 dark:border-[#1D8751]/60 w-full sm:w-fit px-1.5 py-1.5 overflow-x-auto snap-x snap-mandatory scrollbar-none shadow-[0_6px_24px_rgba(4,10,7,0.35)]">
           {orderStatusTabs.map((tab) => (
             <Button
               key={tab.id}
@@ -169,7 +169,7 @@ const Filters: React.FC<FiltersProps> = ({
           className={`w-full sm:w-auto rounded-[28px] flex items-center justify-center gap-2 border border-[#1D8751] text-[#1D8751] px-5 py-3 font-semibold text-sm hover:bg-[#1D8751]/10 transition-all relative ${
             showUnreadMessages
               ? " text-white border border-[#1D8751]"
-              : "bg-white dark:bg-transparent"
+              : "bg-white dark:bg-[var(--bg-color)]"
           } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
           disabled={loading}
           onClick={onUnreadMessagesClick}

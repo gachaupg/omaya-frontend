@@ -396,7 +396,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                 </div>
               </div>
             </div>
-            <div className="rounded-xl p-3 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[#23242A]">
+            <div className="rounded-xl p-3 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[var(--card-color)]">
               <div className="flex items-start sm:items-center gap-2 mb-1 flex-wrap">
                 <svg 
                  xmlns="http://www.w3.org/2000/svg" 
@@ -461,7 +461,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                   />
                   <div className="relative w-full sm:w-auto">
                     <select
-                      className="rounded px-3 py-2 text-sm sm:text-base font-semibold min-w-[90px] sm:min-w-[100px] w-full bg-white dark:bg-[#23242A] text-gray-900 dark:text-white border border-gray-300 dark:border-[#35353E]"
+                      className="rounded px-3 py-2 text-sm sm:text-base font-semibold min-w-[90px] sm:min-w-[100px] w-full bg-white dark:bg-[var(--card-color)] text-gray-900 dark:text-white border border-gray-300 dark:border-[#35353E]"
                       value={tradeType === "buy" ? "USD" : "USDT"}
                       disabled
                     >
@@ -514,7 +514,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsPaymentDropdownOpen((prev) => !prev)}
-                  className="w-full rounded-xl px-3 sm:px-4 py-2.5 pr-12 text-sm sm:text-base font-semibold border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#23242A] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] flex items-center justify-between"
+                  className="w-full rounded-xl px-3 sm:px-4 py-2.5 pr-12 text-sm sm:text-base font-semibold border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] flex items-center justify-between"
                 >
                   <span className="truncate text-left">
                     {selectedPaymentSummary}
@@ -536,7 +536,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                   </svg>
                 </button>
                 {isPaymentDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-2 rounded-xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#23242A] shadow-lg z-20 max-h-60 overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 mt-2 rounded-xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] shadow-lg z-20 max-h-60 overflow-y-auto">
                     {paymentOptions.length === 0 ? (
                       <div className="px-4 py-3 text-sm text-gray-500 dark:text-[#788099]">
                         No payment methods available
@@ -610,7 +610,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   };
 
   return (
-    <div className="rounded-2xl p-3 sm:p-4 lg:p-6 w-full max-w-5xl mx-auto flex flex-col gap-3 sm:gap-4 border border-gray-300 dark:border-[#35353E] bg-white dark:bg-transparent text-gray-900 dark:text-white">
+    <div className="rounded-2xl p-3 sm:p-4 lg:p-6 w-full max-w-5xl mx-auto flex flex-col gap-3 sm:gap-4 border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white">
       {!isAuthenticated ? (
         <div className="text-center py-4 text-red-500">
           Please login to continue with the trade

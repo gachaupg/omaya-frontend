@@ -77,7 +77,7 @@ const ReferralUsersList: React.FC<Props> = ({ referredUsers, loading }) => {
       {Array.from({ length: 3 }).map((_, i) => (
         <div
           key={i}
-          className="animate-pulse h-16 w-full rounded-2xl bg-gray-200/70 dark:bg-[#2A2A32]"
+          className="animate-pulse h-16 w-full rounded-2xl bg-gray-200/70 dark:bg-[var(--card-color)]"
         />
       ))}
     </div>
@@ -86,12 +86,12 @@ const ReferralUsersList: React.FC<Props> = ({ referredUsers, loading }) => {
   const emptyState = (
     <div
       className="w-full flex flex-col items-center justify-center py-12 px-4
-                    rounded-2xl border bg-gray-50 dark:bg-[#1D1D23] border-gray-200
+                    rounded-2xl border bg-gray-50 dark:bg-[var(--card-color)] border-gray-200
                      dark:border-[#35353F]"
     >
       <div
         className="w-20 h-20 mb-4 flex items-center justify-center rounded-full
-                      bg-gray-100 dark:bg-[#18181B] border border-gray-200
+                      bg-gray-100 dark:bg-[var(--bg-color)] border border-gray-200
                       dark:border-[#35353F]"
       >
         <svg
@@ -137,7 +137,7 @@ const ReferralUsersList: React.FC<Props> = ({ referredUsers, loading }) => {
               {/* User Row */}
               <div
                 className={`flex items-center gap-4 w-full px-6 py-4
-                           bg-white dark:bg-transparent
+                           bg-white dark:bg-[var(--bg-color)]
                            ${index !== referredUsers.length - 1 ? "border-b border-[#35353F]" : ""}`}
               >
                 {/* OA Avatar */}
@@ -167,7 +167,7 @@ const ReferralUsersList: React.FC<Props> = ({ referredUsers, loading }) => {
                   variant="ghost"
                   size="sm"
                   className="rounded-lg border px-4 py-2
-                             border-[#35353F] text-[#1D8751] bg-[#18181B]
+                             border-[#35353F] text-[#1D8751] bg-[var(--bg-color)]
                              hover:bg-[#35353F]"
                 >
                   {expandedUser === u.id ? "Close" : "Details"}
@@ -176,7 +176,7 @@ const ReferralUsersList: React.FC<Props> = ({ referredUsers, loading }) => {
 
               {/* Expanded Details */}
               {expandedUser === u.id && (
-                <div className="px-6 py-6 bg-transparent dark:bg-transparent border-t border-[#DDE3EE] dark:border-[#35353F] rounded-b-[18px]">
+                <div className="px-6 py-6 bg-transparent dark:bg-[var(--bg-color)] border-t border-[#DDE3EE] dark:border-[#35353F] rounded-b-[18px]">
                   <dl className="divide-y divide-[#DDE3EE] dark:divide-[#35353F]">
                     {[
                       {

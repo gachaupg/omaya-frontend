@@ -72,9 +72,10 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     width: 0,
   });
 
-  // Filter options based on search term
+  // Filter options based on search term - search both label and value
   const filteredOptions = options.filter((option) =>
-    option.label.toLowerCase().includes(searchTerm.toLowerCase())
+    option.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    option.value.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Get the selected option label and logo
@@ -437,7 +438,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
           <div
             id={dropdownId}
             ref={dropdownContentRef}
-            className="z-[9999] bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl overflow-hidden"
+            className="z-[99999] bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl overflow-hidden"
             role="listbox"
             style={{
               position: "fixed",
@@ -446,7 +447,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
               width: `${dropdownStyles.width || 200}px`,
               minWidth: `${dropdownStyles.width || 200}px`,
               maxHeight: '70vh',
-              zIndex: 9999,
+              zIndex: 99999,
             }}
           >
             {/* Dropdown Title */}

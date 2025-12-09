@@ -162,12 +162,12 @@ const UserCard = () => {
       width="w-full"
       bgColor="bg-[#18D181]"
       borderRadius="rounded-xl sm:rounded-xl lg:rounded-[20px]"
-      className="p-3 sm:p-3 lg:p-2 dark:bg-[#18181D] bg-white overflow-hidden"
+      className="p-3 sm:p-3 lg:p-2 dark:bg-[var(--bg-color)] bg-white overflow-hidden"
     >
       {showHelpSupport ? (
         <div className="w-full mt-4">
           <button
-            className="mb-4 px-4 py-2 bg-gray-200 dark:bg-[#35353E] dark:text-white rounded"
+            className="mb-2 sm:mb-4 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 bg-gray-200 dark:bg-[#35353E] dark:text-white rounded"
             onClick={() => setShowHelpSupport(false)}
           >
             Back
@@ -265,9 +265,7 @@ const UserCard = () => {
               </h2>
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-[#1D8751] text-sm font-medium">
-                Verified Profile
-              </span>
+             
               <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#1D8751] rounded-full flex items-center justify-center border-2 border-white">
                   <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
                     <circle cx="10" cy="10" r="10" fill="#1D8751" />

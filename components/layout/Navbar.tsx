@@ -175,7 +175,7 @@ const LanguageSelector = () => {
             className="fixed inset-0 z-40 sm:hidden"
             onClick={() => setDropdownOpen(false)}
           />
-          <div className="fixed sm:absolute right-3 sm:right-0 top-14 sm:top-auto sm:mt-2 w-[180px] sm:w-[200px] lg:w-[250px] dark:bg-[#18181D] bg-white dark:border-[#35353E] border-gray-200 rounded-lg shadow-lg z-50 max-w-[calc(100vw-1.5rem)] sm:max-w-none">
+          <div className="fixed sm:absolute right-3 sm:right-0 top-14 sm:top-auto sm:mt-2 w-[180px] sm:w-[200px] lg:w-[250px] dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 rounded-lg shadow-lg z-50 max-w-[calc(100vw-1.5rem)] sm:max-w-none">
           <button
               className="block w-full text-left px-3 sm:px-4 lg:px-4 py-2.5 sm:py-2 lg:py-2 dark:text-white text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center transition-colors"
             onClick={() => selectLanguage("English")}
@@ -382,22 +382,22 @@ export default function Navbar() {
     if (isHomePage) {
       // Home page: transparent initially, dark on scroll (original behavior)
       return scrolled
-        ? "dark:bg-[#1D1D23] bg-white/95 backdrop-blur-sm"
+        ? "dark:bg-[var(--bg-color)] bg-white/95 backdrop-blur-sm"
         : "bg-transparent";
     } else if (isAboutPage) {
       // About page: dark green background to match hero section
       return scrolled
-        ? "dark:bg-[#1D1D23] bg-white/95 backdrop-blur-sm shadow-sm"
+        ? "dark:bg-[var(--bg-color)] bg-white/95 backdrop-blur-sm shadow-sm"
         : "bg-[#0E5531] dark:bg-[#0E5531]";
     } else if (isDashboardPage) {
       // Dashboard pages: always have solid background for visibility
       return scrolled
-        ? "dark:bg-[#1D1D23] bg-white/95 backdrop-blur-sm shadow-sm"
-        : "dark:bg-[#1D1D23]/80 bg-white/80 backdrop-blur-sm";
+        ? "dark:bg-[var(--bg-color)] bg-white/95 backdrop-blur-sm shadow-sm"
+        : "dark:bg-[var(--bg-color)]/80 bg-white/80 backdrop-blur-sm";
     } else {
       // Other pages: smart background based on scroll
       return scrolled
-        ? "dark:bg-[#1D1D23] bg-white/95 backdrop-blur-sm shadow-sm"
+        ? "dark:bg-[var(--bg-color)] bg-white/95 backdrop-blur-sm shadow-sm"
         : "dark:bg-transparent bg-white/80 backdrop-blur-sm";
     }
   };
@@ -841,7 +841,7 @@ export default function Navbar() {
 
                 {/* Profile Modal */}
                 {profileModalOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-64 dark:bg-[#1E2329] bg-white border dark:border-[#35353E] border-gray-200 rounded-lg shadow-xl z-[9999]">
+                  <div className="absolute top-full right-0 mt-2 w-64 dark:bg-[var(--card-color)] bg-white border dark:border-[#35353E] border-gray-200 rounded-lg shadow-xl z-[9999]">
                     <div className="p-4">
                       {/* User Info */}
                       <div className="flex items-center mb-4 pb-4 border-b dark:border-[#35353E] border-gray-200">
@@ -945,7 +945,7 @@ export default function Navbar() {
             onClick={toggleMobileMenu}
           />
           <div
-            className={`fixed top-14 sm:top-16 left-0 right-0 z-50 md:hidden p-4 sm:p-6 space-y-4 sm:space-y-6 shadow-lg transition-all duration-300 dark:bg-[#1D1D23] bg-white max-h-[calc(100vh-3.5rem)] sm:max-h-[calc(100vh-4rem)] overflow-y-auto`}
+            className={`fixed top-14 sm:top-16 left-0 right-0 z-50 md:hidden p-4 sm:p-6 space-y-4 sm:space-y-6 shadow-lg transition-all duration-300 dark:bg-[var(--bg-color)] bg-white max-h-[calc(100vh-3.5rem)] sm:max-h-[calc(100vh-4rem)] overflow-y-auto`}
           >
             <MobileNavLink href="/" onClick={toggleMobileMenu} pathname={pathname}>
               Home
@@ -1020,7 +1020,7 @@ export default function Navbar() {
                           onClick={toggleMobileDepositDropdown}
                         />
                         {/* Dropdown Menu */}
-                        <div className="fixed inset-x-4 top-20 sm:top-24 z-[70] md:hidden dark:bg-[#23242B] bg-white dark:border-[#35353E] border-gray-200 rounded-xl shadow-xl overflow-hidden">
+                        <div className="fixed inset-x-4 top-20 sm:top-24 z-[70] md:hidden dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 rounded-xl shadow-xl overflow-hidden">
                           <div className="p-4 sm:p-6">
                             {/* Exchange Option */}
                             <Link

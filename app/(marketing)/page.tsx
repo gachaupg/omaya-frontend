@@ -375,14 +375,14 @@ export default function MarketingPage() {
         </div>
 
         <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 relative z-10 mt-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-3 items-start gap-y-5 md:gap-y-4 md:gap-x-6 lg:gap-x-8">
-            <div className="space-y-4 pl-0 md:pl-4 lg:pl-5 text-center md:text-left 2xl:col-span-2">
-              <h1 className="text-[1.875rem] sm:text-[2.25rem] md:text-[3rem] lg:text-[3.5rem] 2xl:text-[3.75rem] font-bold text-white tracking-tight sm:tracking-normal md:tracking-normal leading-tight sm:leading-snug text-balance">
-                <span className="inline-block w-full 2xl:text-[3.5rem]">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 items-start gap-y-5 md:gap-y-4 md:gap-x-6 lg:gap-x-8 xl:gap-x-10">
+            <div className="space-y-4 md:space-y-5 pl-0 md:pl-4 lg:pl-5 text-center md:text-left">
+              <h1 className="text-[1.875rem] sm:text-[2.25rem] md:text-[3rem] lg:text-[3.5rem] xl:text-[3.75rem] font-bold text-white tracking-tight sm:tracking-normal md:tracking-normal leading-tight sm:leading-snug md:leading-tight lg:leading-snug text-balance">
+                <span className="inline-block w-full">
                   {t("marketing.hero.heading1", "Welcome to OMAYA.io")}
                 </span>
               </h1>
-              <p className="text-white/90 leading-relaxed sm:leading-relaxed tracking-[0.02em] sm:tracking-[0.04em] md:tracking-[0.06em] max-w-full sm:max-w-2xl md:max-w-3xl mx-auto lg:mx-0 px-4 sm:px-0 text-sm sm:text-base md:text-base 2xl:text-lg text-balance">
+              <p className="text-white/90 leading-relaxed sm:leading-relaxed tracking-[0.02em] sm:tracking-[0.04em] md:tracking-[0.06em] max-w-full sm:max-w-2xl md:max-w-3xl mx-auto lg:mx-0 px-4 sm:px-0 text-sm sm:text-base md:text-base lg:text-lg text-balance">
                 {t(
                   "marketing.hero.subtitle",
                   "We are OMAYA EXCHANGE, Somalia's leading platform for exchanging cryptocurrencies and Forex. Founded by experts with over 15 years of IT experience, we bridge traditional finance with the digital economy in East Africa. Our secure and user-friendly platform is designed to meet the unique needs of our market, empowering users with seamless access to the world of digital assets. Committed to transparency, innovation, and education, we are shaping the future of finance in our region."
@@ -391,27 +391,20 @@ export default function MarketingPage() {
               <div className="flex flex-wrap gap-3 sm:gap-4 justify-center md:justify-start w-full sm:w-auto">
                 <a
                   href="#contact"
-                  className="rounded-md px-5 sm:px-6 py-2.5 sm:py-2 text-white bg-[#1D8751] text-sm sm:text-base 2xl:text-lg hover:bg-[#166b42] transition-colors min-h-[44px] flex items-center justify-center"
+                  className="rounded-md px-5 sm:px-6 py-2.5 sm:py-2 text-white bg-[#1D8751] text-sm sm:text-base lg:text-lg hover:bg-[#166b42] transition-colors min-h-[44px] flex items-center justify-center"
                 >
                   {t("marketing.hero.cta.primary", "Contact Us")}
                 </a>
-                <button className="rounded-md text-white hover:bg-white/10 px-5 sm:px-6 py-2.5 sm:py-2 flex items-center gap-2 border border-[#1D8751] text-sm sm:text-base 2xl:text-lg min-h-[44px]">
+                <button className="rounded-md text-white hover:bg-white/10 px-5 sm:px-6 py-2.5 sm:py-2 flex items-center gap-2 border border-[#1D8751] text-sm sm:text-base lg:text-lg min-h-[44px]">
                   {t("marketing.hero.cta.secondary", "Watch Video")}
                   <Play size={16} className="ml-1 text-[#1D8751]" />
                 </button>
               </div>
             </div>
-            <div className="flex justify-center md:justify-end lg:justify-end w-full ">
-              {/* <div className="relative">
-                <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746561970/iPhone_13_Mockup_1_zzm7tt.png"
-                  alt="OMAYA Exchange App"
-                  width={300}
-                  height={400}
-                  className="2xl:w-[369.55px] 2xl:h-[695.7px]"
-                />
-              </div> */}
-              <ExchangeForm isHomePage={true} />
+            <div className="flex justify-center md:justify-end lg:justify-end w-full">
+              <div className="w-full max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl">
+                <ExchangeForm isHomePage={true} />
+              </div>
             </div>
           </div>
         </div>

@@ -241,7 +241,7 @@ export const Table: React.FC<TableProps> = ({
   if (error) {
     return (
       <div className="w-full text-center py-8">
-        <div className="flex flex-col items-center justify-center border border-gray-200 dark:border-[#35353E] rounded-[24px] p-8 bg-white dark:bg-[#23232B]">
+        <div className="flex flex-col items-center justify-center border border-gray-200 dark:border-[#35353E] rounded-[24px] p-8 bg-white dark:bg-[var(--card-color)]">
           <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-[#35353E] flex items-center justify-center">
             <svg
               width="24"
@@ -288,7 +288,7 @@ export const Table: React.FC<TableProps> = ({
   if (data.length === 0) {
     return (
       <div className="w-full text-center py-2">
-        <div className="flex flex-col items-center justify-center border border-gray-200 dark:border-[#35353E] rounded-[24px] p-8 bg-white dark:bg-[#23232B]">
+        <div className="flex flex-col items-center justify-center border border-gray-200 dark:border-[#35353E] rounded-[24px] p-8 bg-white dark:bg-[var(--card-color)]">
           <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-[#35353E] flex items-center justify-center">
             <svg
               width="24"
@@ -353,7 +353,7 @@ export const Table: React.FC<TableProps> = ({
                       type="button"
                       onClick={() => setIsDateDropdownOpen((prev) => !prev)}
                       disabled={loading}
-                      className={`w-full px-3 py-2 rounded-full text-sm font-medium bg-[#E6E7EC] dark:bg-[#18181D] flex items-center gap-1 border-none outline-none focus:outline-none focus:ring-0 ${
+                      className={`w-full px-3 py-2 rounded-full text-sm font-medium bg-[#E6E7EC] dark:bg-[var(--bg-color)] flex items-center gap-1 border-none outline-none focus:outline-none focus:ring-0 ${
                         isAllFilterSelected
                           ? "text-[#8E939E] dark:text-[#8C8CA1]"
                           : "text-[#1F1F23] dark:text-white"
@@ -582,7 +582,7 @@ export const Table: React.FC<TableProps> = ({
                     </p>
                     <button
                       onClick={() => handleDateFilterChange("ALL")}
-                      className="inline-flex items-center px-4 py-2 border dark:border-[#35353E] border-gray-300 rounded-md shadow-sm text-sm font-medium dark:text-white text-gray-900 dark:bg-[#18181D] bg-gray-100 dark:hover:bg-[#35353E] hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1D8751] transition-colors"
+                      className="inline-flex items-center px-4 py-2 border dark:border-[#35353E] border-gray-300 rounded-md shadow-sm text-sm font-medium dark:text-white text-gray-900 dark:bg-[var(--bg-color)] bg-gray-100 dark:hover:bg-[#35353E] hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1D8751] transition-colors"
                     >
                       <svg
                         className="w-4 h-4 mr-2"
@@ -608,7 +608,7 @@ export const Table: React.FC<TableProps> = ({
                 <React.Fragment key={idx}>
                   {/* Desktop Grid View */}
                 <div
-                    className={`hidden md:grid ${desktopGridCols} mx-2 py-2 px-2 items-center hover:bg-gray-50 dark:hover:bg-[#2A2A35] transition-colors duration-200 bg-white dark:bg-[#18181D] relative`}
+                    className={`hidden md:grid ${desktopGridCols} mx-2 py-2 px-2 items-center hover:bg-gray-50 dark:hover:bg-[#2A2A35] transition-colors duration-200 bg-white dark:bg-[var(--bg-color)] relative`}
                 >
                   <div className="flex items-center gap-2">
                     <img
@@ -810,7 +810,7 @@ export const Table: React.FC<TableProps> = ({
                     }
                   }}
                   disabled={currentPage === 1}
-                  className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#23232B] text-gray-400 dark:text-[#8C8CA1] ${
+                  className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-400 dark:text-[#8C8CA1] ${
                     currentPage === 1
                       ? "opacity-50 cursor-not-allowed"
                       : "hover:bg-gray-100 dark:hover:bg-[#35353E]"
@@ -836,7 +836,7 @@ export const Table: React.FC<TableProps> = ({
                           className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
                             currentPage === i
                               ? "bg-[#1D8751] text-white"
-                              : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[#23232B] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
+                              : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
                           }`}
                         >
                           {i}
@@ -853,7 +853,7 @@ export const Table: React.FC<TableProps> = ({
                         className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
                           currentPage === 1
                             ? "bg-[#1D8751] text-white"
-                            : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[#23232B] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
+                            : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
                         }`}
                       >
                         1
@@ -896,7 +896,7 @@ export const Table: React.FC<TableProps> = ({
                           className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
                             currentPage === i
                               ? "bg-[#1D8751] text-white"
-                              : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[#23232B] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
+                              : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
                           }`}
                         >
                           {i}
@@ -925,7 +925,7 @@ export const Table: React.FC<TableProps> = ({
                           className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
                             currentPage === totalPages
                               ? "bg-[#1D8751] text-white"
-                              : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[#23232B] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
+                              : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
                           }`}
                         >
                           {totalPages}
@@ -950,7 +950,7 @@ export const Table: React.FC<TableProps> = ({
                     }
                   }}
                   disabled={currentPage === totalPages}
-                  className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#23232B] text-gray-400 dark:text-[#8C8CA1] ${
+                  className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-400 dark:text-[#8C8CA1] ${
                     currentPage === totalPages
                       ? "opacity-50 cursor-not-allowed"
                       : "hover:bg-gray-100 dark:hover:bg-[#35353E]"
@@ -972,7 +972,7 @@ export const Table: React.FC<TableProps> = ({
         >
           <div
             ref={modalContentRef}
-            className="bg-white dark:bg-[#23232B] rounded-[24px] p-4 sm:p-6 w-full max-w-[500px] max-h-[90vh] overflow-y-auto"
+            className="bg-white dark:bg-[var(--card-color)] rounded-[24px] p-4 sm:p-6 w-full max-w-[500px] max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Image at the top */}

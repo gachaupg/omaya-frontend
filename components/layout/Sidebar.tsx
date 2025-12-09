@@ -155,7 +155,7 @@ export default function Sidebar() {
       </aside>
 
       {/* Mobile Top Navigation */}
-      <div className="md:hidden w-full dark:bg-[#1D1D23] bg-white sticky top-0 z-40 relative">
+      <div className="md:hidden w-full dark:bg-[#1D1D23] bg-white relative">
         {/* Fade indicators for horizontal scroll */}
         <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-white dark:from-[#1D1D23] to-transparent" />
         <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white dark:from-[#1D1D23] to-transparent" />
@@ -184,77 +184,109 @@ export default function Sidebar() {
                         : "text-[#727272] dark:hover:text-white hover:text-[#051015] dark:hover:bg-[#23262F] hover:bg-gray-100"
                     )}
                   >
-                    <img
-                      src={item.icon}
-                      alt={label + " icon"}
-                      className="w-4 h-4 sm:w-5 sm:h-5 object-contain flex-shrink-0"
-                    />
-                    {item.labelKey === "navigation.express" ? (
-                      <span
-                        className={clsx(
-                          "flex items-center justify-center gap-1 min-h-[20px]",
-                          isActive
-                            ? "font-bold text-white text-base"
-                            : "font-normal text-[#727272] text-sm uppercase"
-                        )}
-                      >
+                    {item.labelKey === "navigation.exchange" ? (
+                      <>
+                        <img
+                          className="w-7 h-6 sm:w-8 sm:h-7 object-cover flex-shrink-0"
+                          src="https://res.cloudinary.com/pitz/image/upload/v1764568507/uil_exchange_1_okxkvb.png"
+                          alt=""
+                        />
                         <span
-                          className={isActive ? "font-bold" : "font-normal"}
+                          className={clsx(
+                            "flex items-center justify-center gap-0.5 sm:gap-1",
+                            isActive
+                              ? "font-bold text-white text-sm sm:text-base"
+                              : "font-normal text-[#727272] text-xs sm:text-sm uppercase"
+                          )}
                         >
-                          {t("navigation.express", "E")}
+                          <span className={isActive ? "text-white text-sm sm:text-base uppercase font-bold" : "text-[#727272] text-xs sm:text-sm uppercase font-bold"}>
+                            Money
+                          </span>
+                          <img
+                            className="mt-1 sm:mt-2 w-3 h-3 sm:w-4 sm:h-4"
+                            src={isActive 
+                              ? "https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png"
+                              : "https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"
+                            }
+                            alt=""
+                          />
                         </span>
-                        <svg
-                          width="28"
-                          height="32"
-                          viewBox="0 0 32 32"
-                          className="mx-0 flex-shrink-0"
-                          style={{ minWidth: 28, verticalAlign: "middle" }}
-                        >
-                          {/* Left stroke (upper, green) */}
-                          <line
-                            x1="7"
-                            y1="4"
-                            x2="16"
-                            y2="16"
-                            stroke="#1D8751"
-                            strokeWidth="4"
-                            strokeLinecap="round"
-                          />
-                          {/* Left stroke (lower, white, very long) */}
-                          <line
-                            x1="16"
-                            y1="16"
-                            x2="28"
-                            y2="32"
-                            stroke={isActive ? "#fff" : "#727272"}
-                            strokeWidth="4"
-                            strokeLinecap="round"
-                          />
-                          {/* Right stroke (long, white) */}
-                          <line
-                            x1="25"
-                            y1="4"
-                            x2="7"
-                            y2="28"
-                            stroke={isActive ? "#fff" : "#727272"}
-                            strokeWidth="4"
-                            strokeLinecap="round"
-                          />
-                        </svg>
-                        <span
-                          className={isActive ? "font-bold" : "font-normal"}
-                          style={{ marginLeft: "-6px" }}
-                        >
-                          {isActive
-                            ? t("navigation.expressChange", "Change")
-                            : t(
-                              "navigation.expressChange",
-                              "CHANGE"
-                            ).toUpperCase()}
-                        </span>
-                      </span>
+                      </>
                     ) : (
-                      <span className="font-semibold">{label}</span>
+                      <>
+                        <img
+                          src={item.icon}
+                          alt={label + " icon"}
+                          className="w-4 h-4 sm:w-5 sm:h-5 object-contain flex-shrink-0"
+                        />
+                        {item.labelKey === "navigation.express" (
+                          <span
+                            className={clsx(
+                              "flex items-center justify-center gap-1 min-h-[20px]",
+                              isActive
+                                ? "font-bold text-white text-base"
+                                : "font-normal text-[#727272] text-sm uppercase"
+                            )}
+                          >
+                            <span
+                              className={isActive ? "font-bold" : "font-normal"}
+                            >
+                              {t("navigation.express", "E")}
+                            </span>
+                            <svg
+                              width="28"
+                              height="32"
+                              viewBox="0 0 32 32"
+                              className="mx-0 flex-shrink-0"
+                              style={{ minWidth: 28, verticalAlign: "middle" }}
+                            >
+                              {/* Left stroke (upper, green) */}
+                              <line
+                                x1="7"
+                                y1="4"
+                                x2="16"
+                                y2="16"
+                                stroke="#1D8751"
+                                strokeWidth="4"
+                                strokeLinecap="round"
+                              />
+                              {/* Left stroke (lower, white, very long) */}
+                              <line
+                                x1="16"
+                                y1="16"
+                                x2="28"
+                                y2="32"
+                                stroke={isActive ? "#fff" : "#727272"}
+                                strokeWidth="4"
+                                strokeLinecap="round"
+                              />
+                              {/* Right stroke (long, white) */}
+                              <line
+                                x1="25"
+                                y1="4"
+                                x2="7"
+                                y2="28"
+                                stroke={isActive ? "#fff" : "#727272"}
+                                strokeWidth="4"
+                                strokeLinecap="round"
+                              />
+                            </svg>
+                            <span
+                              className={isActive ? "font-bold" : "font-normal"}
+                              style={{ marginLeft: "-6px" }}
+                            >
+                              {isActive
+                                ? t("navigation.expressChange", "Change")
+                                : t(
+                                    "navigation.expressChange",
+                                    "CHANGE"
+                                  ).toUpperCase()}
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="font-semibold">{label}</span>
+                        )}
+                      </>
                     )}
                   </Link>
                 </li>

@@ -241,9 +241,9 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center py-4 sm:py-8 w-full px-3 sm:px-4">
+    <div className="min-h-screen flex flex-col items-center py-2 sm:py-4 md:py-8 w-full px-1 sm:px-2 md:px-4">
       {/* Top Card */}
-      <div className="flex flex-col md:flex-row justify-between items-stretch bg-white dark:bg-[#23232b] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl p-3 sm:p-4 shadow-lg w-full max-w-4xl mb-4 min-h-[180px]">
+      <div className="flex flex-col md:flex-row justify-between items-stretch bg-white dark:bg-[var(--card-color)] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl p-2 sm:p-3 md:p-4 shadow-lg w-full max-w-4xl mb-2 sm:mb-4 min-h-[180px]">
         <div className="flex-1 flex flex-col justify-between py-2 pr-2">
                       <div>
               <div className="text-gray-600 dark:text-[#7e7e8f] text-xs font-semibold mb-0.5">
@@ -383,7 +383,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
       </div>
 
       {/* Transaction Details Card */}
-      <div className="bg-white dark:bg-[#23232b] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl p-4 sm:p-6 shadow-lg w-full max-w-4xl mb-3">
+      <div className="bg-white dark:bg-[var(--card-color)] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl p-3 sm:p-4 md:p-6 shadow-lg w-full max-w-4xl mb-2 sm:mb-3">
         {/* Title */}
         <div className="text-gray-900 dark:text-white text-lg sm:text-xl md:text-2xl font-semibold mb-3 sm:mb-4">
           Transaction Details
