@@ -21,7 +21,7 @@ export default function Sidebar() {
   const { isDark } = useTheme();
 
   return (
-    <>
+    <React.Fragment>
       {/* Desktop Sidebar */}
       <aside
         className={clsx(
@@ -219,7 +219,7 @@ export default function Sidebar() {
                           alt={label + " icon"}
                           className="w-4 h-4 sm:w-5 sm:h-5 object-contain flex-shrink-0"
                         />
-                        {item.labelKey === "navigation.express" (
+                        {item.labelKey === "navigation.express" ? (
                           <span
                             className={clsx(
                               "flex items-center justify-center gap-1 min-h-[20px]",
@@ -295,6 +295,6 @@ export default function Sidebar() {
           </ul>
         </nav>
       </div>
-    </>
+    </React.Fragment>
   );
 }
