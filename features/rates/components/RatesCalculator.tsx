@@ -1,10 +1,12 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { FaBitcoin, FaUniversity } from "react-icons/fa";
 import { FiChevronDown, FiInfo } from "react-icons/fi";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../../store";
 import { RootState } from "../../../store/rootReducer";
+import { setAuthRedirectPath } from "@/lib/utils/authRedirect";
 import {
   fetchAssets,
   createDeposit,
@@ -73,8 +75,12 @@ const isSimpleCalculationAsset = (asset: any) => {
 const RatesCalculator = () => {
   const { t } = useRatesI18n();
   const { isDark } = useTheme();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState("deposit");
   const [isDepositMode, setIsDepositMode] = useState(true);
+  
+  // Get authentication state
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
 
   // Network mapping function
   const getNetworkDisplayName = (network: string) => {
@@ -1077,6 +1083,15 @@ const RatesCalculator = () => {
   };
 
   const handleSubmit = async () => {
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      // Set redirect path to return to rates page after login
+      setAuthRedirectPath("/rates");
+      // Redirect to login page
+      router.push("/auth/login");
+      return;
+    }
+
     if (!selectedAsset || !selectedPaymentMethod || !selectedPaymentDetail) {
       showToast.error("Please select all required fields");
       return;

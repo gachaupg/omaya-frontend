@@ -293,7 +293,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
   }
 
   return (
-    <div className="w-full p-0 sm:p-4 min-h-screen flex flex-col items-center justify-start bg-[#EEF1F4] dark:bg-[#18181D]">
+    <div className="w-full p-0 sm:p-4 min-h-screen flex flex-col items-center justify-start bg-app">
       {loading && <Loader />}
       {/* Title and Buy/Sell Switch */}
       <div className="mb-1 w-full md:max-w-6xl md:mx-auto px-0 sm:px-0">
@@ -335,7 +335,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
         <div className="text-sm text-gray-600 dark:text-[#788099] mb-2 mt-3">
           Type & Price
         </div>
-        <Card className="w-full mb-2 p-9 sm:px-2 sm:py-2 bg-gray-50 dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E] rounded-[24px]">
+        <Card className="w-full mb-2 p-9 sm:px-2 sm:py-2 bg-card border border-gray-200 dark:border-[#35353E] rounded-[24px]">
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-end w-full">
             {/* Asset */}
             <div className="flex-1 flex flex-col">
@@ -344,7 +344,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               </span>
               <div
                 className="flex w-full items-center
-               bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-[19px] px-2 py-2 min-h-[40px]"
+               bg-card border border-gray-200 dark:border-[#35353E] rounded-[19px] px-2 py-2 min-h-[40px]"
               >
                 <img
                   src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
@@ -363,7 +363,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                 Rate
               </span>
               <div
-                className={`flex w-full items-center justify-between bg-white dark:bg-[#18181D] border ${
+                className={`flex w-full items-center justify-between bg-card border ${
                   errors.commission
                     ? "border-red-500"
                     : "border-gray-200 dark:border-[#35353E]"
@@ -436,7 +436,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
         <div className="text-sm text-gray-600 dark:text-[#788099] mb-2 mt-3">
           Amount & Payment Method
         </div>
-        <Card className="w-full mb-4 px-2 py-2 sm:px-2 sm:py-2 bg-gray-50 dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E] rounded-[24px]">
+        <Card className="w-full mb-4 px-2 py-2 sm:px-2 sm:py-2 bg-card border border-gray-200 dark:border-[#35353E] rounded-[24px]">
           <div className="flex flex-col md:flex-row gap-4 mb-6 p-2">
             {/* I want to Buy */}
             <div className="flex-1 flex flex-col">
@@ -448,7 +448,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                   </span>
                 )}
               </label>
-              <div className="flex items-center bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-[19px] px-2 py-2 min-h-[40px]">
+              <div className="flex items-center bg-card border border-gray-200 dark:border-[#35353E] rounded-[19px] px-2 py-2 min-h-[40px]">
                 <img
                   src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
                   alt="USDT"
@@ -550,7 +550,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               <label className="text-xs text-gray-600 dark:text-[#788099] mb-1">
                 Order Min.
               </label>
-              <div className={`flex items-center bg-white dark:bg-[#18181D] border ${
+              <div className={`flex items-center bg-card border ${
                 errors.orderMin
                   ? "border-red-500"
                   : "border-gray-200 dark:border-[#35353E]"
@@ -635,7 +635,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               <label className="text-xs text-gray-600 dark:text-[#788099] mb-1">
                 Order Max
               </label>
-              <div className={`flex items-center bg-white dark:bg-[#18181D] border ${
+              <div className={`flex items-center bg-card border ${
                 errors.orderMax
                   ? "border-red-500"
                   : "border-gray-200 dark:border-[#35353E]"
@@ -763,7 +763,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                                 <img
                                   src={logoUrl}
                                   alt={`${detail.payment_provider_name} logo`}
-                                  className="w-12 h-12 rounded-full object-cover border-2 border-white dark:border-[#18181D]"
+                                  className="w-12 h-12 rounded-full object-cover border-2 border-white dark:border-card"
                                   onError={(e) => {
                                     e.currentTarget.src = "/default-provider-logo.svg";
                                   }}
@@ -773,7 +773,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                               {/* Details */}
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                  <span className="text-xs font-semibold text-[#1D8751] dark:text-[#1D8751] uppercase bg-white dark:bg-[#18181D] px-2 py-1 rounded">
+                                  <span className="text-xs font-semibold text-[#1D8751] dark:text-[#1D8751] uppercase bg-white dark:bg-card px-2 py-1 rounded">
                                     {detail.payment_method_name}
                                   </span>
                                   <span className="text-xs text-gray-600 dark:text-[#788099]">
@@ -839,7 +839,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                     Time Limit
                   </label>
                   <select
-                    className={`bg-white dark:bg-[#18181D] border ${
+                    className={`bg-card border ${
                       errors.timeLimit
                         ? "border-red-500"
                         : "border-gray-200 dark:border-[#35353E]"
@@ -886,13 +886,13 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
         <div className="text-2xl text-gray-600 dark:text-[#788099] mb-2 mt-6">
           Terms & Auto Reply
         </div>
-        <Card className="w-full mb-4 px-2 py-2 sm:px-4 sm:py-4 bg-gray-50 dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E] rounded-[24px]">
+        <Card className="w-full mb-4 px-2 py-2 sm:px-4 sm:py-4 bg-card border border-gray-200 dark:border-[#35353E] rounded-[24px]">
           <div>
             <label className="text-lg text-gray-600 dark:text-[#788099] mb-2 block">
               Terms (Optional)
             </label>
             <textarea
-              className={`w-full bg-white dark:bg-[#18181D] border ${
+              className={`w-full bg-card border ${
                 errors.terms
                   ? "border-red-500"
                   : "border-gray-200 dark:border-[#35353E]"
@@ -913,7 +913,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               Auto Reply (Optional)
             </label>
             <textarea
-              className={`w-full bg-white dark:bg-[#18181D] border ${
+              className={`w-full bg-card border ${
                 errors.autoReply
                   ? "border-red-500"
                   : "border-gray-200 dark:border-[#35353E]"
