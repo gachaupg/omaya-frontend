@@ -14,7 +14,7 @@ export const tokens = {
     },
     dark: {
       background:    "#0A0A0A", // Dark-mode background
-      card:          "#1D1D23", // Dark-mode card bg
+      card:          "##18181D", // Dark-mode card bg
       textTitle:     "#FFFFFF", // Dark-mode title text
       textBody:      "#788099", // Dark-mode body text
       border:        "#35353E", // Dark-mode border primary

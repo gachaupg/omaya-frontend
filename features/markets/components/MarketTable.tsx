@@ -693,7 +693,7 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
 
   if (error) {
     return (
-      <div className="bg-white dark:bg-[#18181D] min-h-screen py-8 text-gray-900 dark:text-[#788099] font-sans">
+      <div className="bg-white dark:bg-background min-h-screen py-8 text-gray-900 dark:text-[#788099] font-sans">
         <div className="max-w-[1000px] mx-auto px-6">
           <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-4 mb-4">
             <p className="text-red-400">Error loading market data: {error}</p>
@@ -730,7 +730,7 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
   return (
     <div
       className={`text-gray-900 dark:text-[#788099] font-sans ${
-        showFullLayout ? "bg-[#EEF1F4] dark:bg-[#18181D] min-h-screen py-4 sm:py-6 lg:py-8" : ""
+        showFullLayout ? "bg-[#EEF1F4] dark:bg-background min-h-screen py-4 sm:py-6 lg:py-8" : ""
       }`}
     >
       <div className={showFullLayout ? "max-w-[1400px] mx-auto px-3 sm:px-4 lg:px-6" : ""}>

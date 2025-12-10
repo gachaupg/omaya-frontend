@@ -387,7 +387,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
           {/* Top Card Container */}
           <div
             data-swap-card="true"
-            className={`relative flex gap-4 rounded-2xl p-4 overflow-visible ${
+            className={`relative flex flex-col sm:flex-row gap-4 rounded-2xl p-3 sm:p-4 overflow-visible ${
               isDark ? "border border-[#2F2F3A] bg-[#0F0F17]" : "border border-[#E2E8F0] bg-white shadow-sm"
             }`}
           >
@@ -535,7 +535,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
         <div className="relative mb-3">
           <div
             data-swap-card="true"
-            className={`relative flex gap-4 rounded-2xl p-4 overflow-visible ${
+            className={`relative flex flex-col sm:flex-row gap-4 rounded-2xl p-3 sm:p-4 overflow-visible ${
               isDark ? "border border-[#2F2F3A] bg-[#0F0F17]" : "border border-[#E2E8F0] bg-white shadow-sm"
             }`}
           >
@@ -715,7 +715,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
 
         {/* Error Display */}
         {localSwapError && (
-          <div className="mt-4 bg-red-500/10 border border-red-500 rounded-2xl p-4">
+          <div className="mt-4 bg-red-500/10 border border-red-500 rounded-2xl p-3 sm:p-4">
             <h3 className="text-red-500 font-semibold mb-2">Error</h3>
             <p className="text-red-400 text-sm">{localSwapError}</p>
           </div>

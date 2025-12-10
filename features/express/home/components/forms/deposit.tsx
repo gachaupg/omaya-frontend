@@ -2572,7 +2572,7 @@ export default function DepositForm({
           <div
             data-asset-card="true"
             data-select-card="true"
-            className={`relative flex gap-4 rounded-2xl p-4 overflow-visible ${
+            className={`relative flex flex-col sm:flex-row gap-4 rounded-2xl p-3 sm:p-4 overflow-visible ${
               isDark ? "bg-[#0F0F17] border border-[#2F2F3A]" : "bg-white border border-[#E2E8F0] shadow-sm"
             }`}
           >
@@ -2854,7 +2854,7 @@ export default function DepositForm({
         <div className="relative mb-3">
           <div
             data-asset-card="true"
-            className={`relative flex gap-4 rounded-2xl p-4 overflow-visible ${
+            className={`relative flex flex-col sm:flex-row gap-4 rounded-2xl p-3 sm:p-4 overflow-visible ${
               isDark ? "bg-[#0F0F17] border border-[#2F2F3A]" : "bg-white border border-[#E2E8F0] shadow-sm"
             }`}
           >
@@ -3436,13 +3436,13 @@ export default function DepositForm({
             className="mt-1 mb-2 w-full flex flex-col gap-3 px-2 "
           >
             <div
-              className={`flex-1 rounded-2xl flex flex-col justify-between p-5 relative min-h-[120px] ${
+              className={`flex-1 rounded-2xl flex flex-col justify-between p-3 sm:p-5 relative min-h-[120px] ${
                 isDark ? "bg-[#1D1D23] border border-[#35353E]" : "bg-white border border-[#E2E8F0] shadow-sm"
               }`}
             >
               {/* Bank and logo */}
-              <div className="flex items-center justify-between mb-4">
-                <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-base font-semibold`}>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-4">
+                <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm sm:text-base font-semibold`}>
                   Bank:
                 </span>
                 <div className="flex items-center gap-2">
@@ -3453,34 +3453,34 @@ export default function DepositForm({
                       "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png"
                     }
                     alt={`${selectedPaymentDetail.provider_name || 'Bank'} Logo`}
-                    className="w-8 h-8 rounded-full object-contain"
+                    className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-contain"
                     onError={(e) => {
                       e.currentTarget.src = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
                     }}
                   />
-                  <span className={`${isDark ? "text-[#D1D5DB]" : "text-[#1F2937]"} text-base font-semibold`}>
+                  <span className={`${isDark ? "text-[#D1D5DB]" : "text-[#1F2937]"} text-sm sm:text-base font-semibold truncate max-w-[150px] sm:max-w-none`}>
                     {selectedPaymentDetail.provider_name}
                   </span>
                 </div>
               </div>
               <div className={`${isDark ? "border-[#39394A]" : "border-[#E2E8F0]"} border-t border-dashed mb-2`}></div>
               {/* Account Name */}
-              <div className="flex items-center justify-between mb-2">
-                <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-base font-medium`}>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-2">
+                <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm sm:text-base font-medium`}>
                   Account Name :
                 </span>
-                <span className={`${isDark ? "text-[#D1D5DB]" : "text-[#1F2937]"} text-base font-medium`}>
+                <span className={`${isDark ? "text-[#D1D5DB]" : "text-[#1F2937]"} text-sm sm:text-base font-medium break-words text-right sm:text-left`}>
                   {selectedPaymentDetail.account_name}
                 </span>
               </div>
               <div className={`${isDark ? "border-[#39394A]" : "border-[#E2E8F0]"} border-t border-dashed mb-2`}></div>
               {/* Account Number */}
-              <div className="flex items-center justify-between">
-                <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-base font-medium`}>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm sm:text-base font-medium`}>
                   Account Number :
                 </span>
-                <div className="flex items-center gap-2">
-                  <span className={`${isDark ? "text-[#D1D5DB]" : "text-[#1F2937]"} text-base font-medium`}>
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end sm:justify-start">
+                  <span className={`${isDark ? "text-[#D1D5DB]" : "text-[#1F2937]"} text-sm sm:text-base font-medium break-all sm:break-normal`}>
                     {selectedPaymentDetail.account_number}
                   </span>
                   <button
@@ -3525,9 +3525,9 @@ export default function DepositForm({
               <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
                 <span className="text-[#7e7e8f] dark:text-[#788099]">3-</span> Transaction Code
               </h2>
-              <div className="mb-6 flex flex-col gap-3 w-full px-2">
+              <div className="mb-6 flex flex-col gap-3 w-full px-0 sm:px-2">
               <div
-                className={`border-2 rounded-2xl p-4 shadow-lg w-full ${
+                className={`border-2 rounded-2xl p-3 sm:p-4 shadow-lg w-full ${
                   isDark ? "bg-[#1D1D23] border-[#35353E] text-[#788099]" : "bg-white border-[#E2E8F0] text-[#1F2937]"
                 }`}
               >
@@ -3637,13 +3637,13 @@ export default function DepositForm({
           <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
             <span className="text-[#7e7e8f] dark:text-[#788099]">4-</span> Wallet Address
           </h2>
-          <div className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-6">
+          <div className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-3 sm:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-6">
             {/* Wallet/Account Address Label */}
-            <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
+            <label className="block text-sm sm:text-[17px] text-[#7e7e8f] mb-2 font-semibold">
               Wallet/Account Address
             </label>
             {/* Input group */}
-            <div className="flex items-center bg-transparent dark:bg-transparent border border-[#39394a] dark:border-[#39394A] rounded-2xl px-4 py-2 mb-4">
+            <div className="flex flex-wrap items-center bg-transparent dark:bg-transparent border border-[#39394a] dark:border-[#39394A] rounded-2xl px-2 sm:px-4 py-2 mb-4 gap-2">
               {/* Left icon */}
               <span className="mr-2 text-[#1D8751]">
                 <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
@@ -3700,8 +3700,8 @@ export default function DepositForm({
                 }`}
               />
               {/* Bookmark icon */}
-              <span className="mx-2 text-[#788099] cursor-pointer">
-                <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
+              <span className="mx-1 sm:mx-2 text-[#788099] cursor-pointer flex-shrink-0">
+                <svg width="18" height="18" className="sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24">
                   <path
                     d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"
                     stroke="#788099"
@@ -3722,7 +3722,7 @@ export default function DepositForm({
                     showToast.error("Failed to paste from clipboard");
                   }
                 }}
-                className="flex items-center gap-1 dark:bg-[#1D1D23] border border-[#1D8751] text-[#1D8751] rounded-full px-4 py-1 ml-2 font-semibold text-base hover:bg-[#1D8751] hover:text-white transition-colors"
+                className="flex items-center gap-1 dark:bg-[#1D1D23] border border-[#1D8751] text-[#1D8751] rounded-full px-2 sm:px-4 py-1 ml-1 sm:ml-2 font-semibold text-xs sm:text-base hover:bg-[#1D8751] hover:text-white transition-colors"
               >
                 <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
                   <path

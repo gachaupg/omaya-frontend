@@ -14,7 +14,7 @@
   --foreground: #ededed;
   /* Reusable background and card colors for dark mode */
   --bg-color: #0A0A0A;
-  --card-color: #1D1D23;
+  --card-color: #18181D;
 }
 
 @theme inline {

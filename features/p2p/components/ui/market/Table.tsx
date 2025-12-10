@@ -118,7 +118,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
       <div className="overflow-x-auto rounded-2xl">
         <div className="min-w-0 md:min-w-[800px] w-full overflow-hidden border bg-white border-gray-200 rounded-2xl dark:bg-[var(--card-color)] dark:border-[#35353E]">
           {/* ---------------- Desktop header row ---------------- */}
-          <div className="hidden md:grid grid-cols-5 py-3 px-4 border-b bg-gray-50 border-gray-200 text-xs font-semibold text-gray-500 dark:bg-[#35353E] dark:border-[#35353E] dark:text-[#788099]">
+          <div className="hidden md:grid grid-cols-5 py-3 px-4 border-b bg-gray-50 border-gray-200 text-xs font-semibold text-gray-500 dark:bg-[var(--card-color)] dark:border-[#35353E] dark:text-[#788099]">
             <div
               className="min-w-[200px] flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
               onClick={() => handleSort("advertiser")}
