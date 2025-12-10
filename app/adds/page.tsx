@@ -23,7 +23,7 @@ export default function AddsPage() {
       </div>
 
       {/* Main Adds section */}
-      <div className="flex-1 md:ml-24 w-full">
+      <div className="flex-1 md:ml-[180.28px] w-full">
         <Suspense
           fallback={
             <div className="flex items-center justify-center min-h-[200px]">
