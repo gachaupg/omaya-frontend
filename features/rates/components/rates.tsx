@@ -9,9 +9,9 @@ const Rates = () => {
   const [activeTab, setActiveTab] = React.useState<'crypto' | 'moneyx'>('crypto');
   const { t } = useRatesI18n();
   return (
-    <div className="text-gray-900 dark:text-white px-4 sm:px-6 lg:px-0">
+    <div className="max-w-5xl text-gray-900 dark:text-white px-4 sm:px-6 lg:px-0">
       {/* Back Button */}
-      <Link 
+      <Link
         href="/dashboard"
         className="inline-flex items-center gap-2 text-gray-600 dark:text-[#788099] hover:text-[#1D8751] dark:hover:text-[#1D8751] transition-colors mb-4 sm:mb-6"
       >
@@ -31,7 +31,7 @@ const Rates = () => {
         )}
       </p>
 
-        {/* Tab System */}
+      {/* Tab System */}
       <div className="flex p-1 rounded-xl border-2 border-secondary w-fit bg-transparent mb-2 sm:mb-4 lg:mb-6">
         {/* Crypto */}
         <button
@@ -73,9 +73,9 @@ const Rates = () => {
         <h2 className="text-xl sm:text-2xl lg:text-2xl font-bold">
           {t("rates.transactions", "OMAYA Transactions")}
         </h2>
-        <Link 
+        <Link
           href="/market/live-transactions"
-          className="text-[#13B562] hover:text-[#0f8f4d] font-medium text-sm sm:text-base flex items-center gap-1 transition-colors"
+          className="text-secondary hover:text-[#0f8f4d] font-medium text-sm sm:text-base flex items-center gap-1 transition-colors"
         >
           Live Transactions →
         </Link>
