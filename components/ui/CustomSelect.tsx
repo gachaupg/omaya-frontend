@@ -301,7 +301,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
           transition-colors duration-200 min-w-0
           ${disabled || loading
             ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed border-gray-300 dark:border-gray-600"
-            : "bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff] border-[#A2A4A9FF] dark:border-[#35353E] hover:border-blue-400 dark:hover:border-blue-400 cursor-pointer"
+            : "bg-white dark:bg-transparent text-[#35353e] dark:text-[#ffffff] border-[#A2A4A9FF] dark:border-accent hover:border-blue-400 dark:hover:border-blue-400 cursor-pointer"
           }
         ${triggerClassName}
         `}
