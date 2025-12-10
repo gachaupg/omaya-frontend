@@ -79,7 +79,7 @@ const UserPaymentSelector = ({
   adminWalletListDisplay: any;
 }) => {
   return (
-    <div className="bg-white dark:bg-[var(--card-color)] rounded-2xl border border-gray-200 dark:border-[#39394a] p-2 sm:p-3 md:p-4">
+    <div className="bg-white dark:bg-[#18181D] rounded-2xl border border-gray-200 dark:border-[#39394a] p-2 sm:p-3 md:p-4">
       <h3 className="text-gray-900 dark:text-white font-semibold mb-3 text-lg sm:text-xl">Select Payment Methods</h3>
       <div className="space-y-2">
         {userPaymentDetails && userPaymentDetails.length > 0 ? (
@@ -3050,7 +3050,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
               <input
                 type="text"
                 placeholder="Search assets..."
-                className="w-full text-gray-900 dark:text-white dark:bg-[var(--card-color)] bg-white rounded-xl px-8 sm:px-10 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400"
+                className="w-full text-gray-900 dark:text-white dark:bg-[#18181D] bg-white rounded-xl px-8 sm:px-10 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400"
                 value={assetSearchTerm}
                 onChange={(e) => setAssetSearchTerm(e.target.value)}
               />
@@ -3252,9 +3252,9 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
         {/* Top Section - You Send and You Get in one card */}
         <div className="relative mb-2 sm:mb-3 md:mb-4">
           {/* Top Card Container */}
-          <div className="relative flex flex-col sm:flex-row border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-2 sm:p-3 md:p-4 gap-2 sm:gap-3 md:gap-0 overflow-visible">
+          <div className="relative flex flex-col sm:flex-row border border-[#35353E] dark:border-[#35353E] rounded-2xl p-2 sm:p-3 md:p-4 gap-2 sm:gap-3 md:gap-0 overflow-visible bg-white dark:bg-[#18181D]">
             {/* You Send Section */}
-            <div className="flex-1 sm:sm:pr-4">
+            <div className="flex-1 sm:pr-4">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 You Send
                 {isCalculatingFromPay &&
@@ -3262,6 +3262,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                     <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                   )}
               </label>
+              <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">Amount</div>
               <div className="relative">
                 <input
                   type="text"
@@ -3373,7 +3374,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                       ? "Calculating..."
                       : "Enter amount"
                   }
-                  className={`w-full h-[60px] text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-2xl px-2 sm:px-3 md:px-4 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none border appearance-none ${
+                  className={`w-full h-[48px] text-[#35353e] dark:text-white bg-transparent dark:bg-transparent rounded-2xl px-2 sm:px-3 md:px-4 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none border appearance-none ${
                     apiValidationError
                       ? "border-red-500"
                       : isCalculating || isCalculatingReceive
@@ -3382,7 +3383,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                   }`}
                 />
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                  <span className="text-[#35353e] dark:text-[#ffffff] text-sm font-medium">
+                  <span className="text-[#35353e] dark:text-white text-sm font-medium">
                     {selectedAsset
                       ? (
                           selectedAsset.ticker ||
@@ -3397,13 +3398,11 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
             </div>
 
             {/* You Get Section */}
-            <div className="flex-1 sm:pl-4" data-select-card="true">
-              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
-                Asset
-              </label>
+            <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none" data-select-card="true">
+              <div className="text-xs text-[#788099] dark:text-[#788099] mb-1 mt-[30px] sm:mt-[34px]">You Get</div>
               <div className="relative" ref={assetDropdownRef}>
                 <div
-                  className={`w-full h-[60px] bg-transparent dark:bg-transparent text-[#35353e] dark:text-white rounded-2xl px-4 text-lg focus:outline-none border border-[#39394A] dark:border-[#39394A] flex items-center justify-between cursor-pointer`}
+                  className={`w-full h-[48px] bg-transparent dark:bg-transparent text-[#35353e] dark:text-white rounded-2xl px-4 text-lg focus:outline-none border border-[#39394A] dark:border-[#35353E] flex items-center justify-between cursor-pointer`}
                   onClick={() => {
                     if (!isAssetDropdownOpen) {
                       updateAssetDropdownPosition();
@@ -3422,7 +3421,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                             selectedAsset?.symbol ||
                             "Asset"
                           }
-                          className={`${ASSET_ICON_BASE_CLASS} w-12 h-12`}
+                          className={`${ASSET_ICON_BASE_CLASS} w-6 h-6`}
                           loading="lazy"
                           onError={(e) => {
                             console.log(
@@ -3520,16 +3519,17 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
 
         {/* Bottom Section - You Receive and Bank/Payment Method in one card */}
         <div className="relative mb-2 sm:mb-3">
-          <div className="relative flex flex-col sm:flex-row border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-2 sm:p-3 md:p-4 gap-2 sm:gap-3 md:gap-4 overflow-visible">
+          <div className="relative flex flex-col sm:flex-row border border-[#35353E] dark:border-[#35353E] rounded-2xl p-2 sm:p-3 md:p-4 gap-2 sm:gap-3 md:gap-4 overflow-visible bg-white dark:bg-[#18181D]">
             {/* You Receive Section */}
             <div className="flex-1 sm:pr-4">
-              <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 You Receive
                 {!isCalculatingFromPay &&
                   (isCalculating || isCalculatingReceive) && (
                     <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                   )}
               </label>
+              <div className="text-xs text-[#788099] dark:text-[#788099] mb-1">Amount</div>
               <div className="relative">
                 <input
                   type="text"
@@ -3682,7 +3682,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                       ? "Calculating..."
                       : "Enter amount"
                   }
-                  className={`w-full h-[60px] text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 pr-16 text-base sm:text-lg focus:outline-none border appearance-none ${
+                  className={`w-full h-[48px] text-[#35353e] dark:text-white bg-white dark:bg-[#35353E] rounded-2xl px-3 sm:px-4 pr-16 text-base sm:text-lg focus:outline-none border appearance-none ${
                     (receiveAmountError &&
                       (receiveAmountError.includes("Rough estimate") ||
                         receiveAmountError.includes("Using estimated rate"))) ||
@@ -3801,10 +3801,8 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
             </div>
 
             {/* Payment Method Section */}
-            <div className="flex-1 sm:pl-4">
-              <label className="block text-[15px] text-[#9CA3AF] dark:text-[#9CA3AF] mb-2 font-semibold">
-                Payment Method
-              </label>
+            <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none" data-select-card="true">
+              <div className="text-xs text-[#788099] dark:text-[#788099] mb-1 mt-[30px] sm:mt-[34px]">Bank/Payment Method</div>
               <div className="relative">
                 {(() => {
                   // PRIORITY: If we have initialState paymentDetails, use EXACT payment method from there - NO MATCHING
@@ -4119,7 +4117,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
           </div>  */}
 
         {/* Disclaimer Banner */}
-        <div className="flex items-center rounded-2xl px-2 sm:px-3 md:px-4 py-2 sm:py-3 mb-2 sm:mb-4 dark:bg-[var(--card-color)]">
+        <div className="flex items-center rounded-2xl px-2 sm:px-3 md:px-4 py-2 sm:py-3 mb-2 sm:mb-4 bg-white dark:bg-[#18181D]">
           <div className="flex items-center gap-3">
             <div className="w-5 h-5 border-2 border-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0">
               <span className="text-[#1D8751] text-xs font-bold">i</span>
@@ -4236,14 +4234,14 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
             <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>
             Wallet Address
           </h2>
-          <div className="dark:bg-[var(--card-color)] border-2 border-[#35353e] rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
+          <div className="bg-white dark:bg-[#18181D] border-2 border-[#35353e] rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
             {/* USDT Wallet Address */}
             <div className="mb-2 sm:mb-3 md:mb-4">
               <h3 className="text-[#35353e] dark:text-[#788099] font-semibold mb-2">
                 USDT Wallet Address
               </h3>
               {withdrawalAddress ? (
-                <div className=" dark:bg-[var(--card-color)]  border border-[#1D8751] rounded-xl p-2 sm:p-3 md:p-4">
+                <div className="bg-white dark:bg-[#18181D] border border-[#1D8751] rounded-xl p-2 sm:p-3 md:p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-[#35353e] dark:text-[#788099] text-sm font-mono break-all">
                       {withdrawalAddress}
@@ -4334,7 +4332,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
             </div>
             {/* QR Code */}
             <div className="mb-2 sm:mb-3 md:mb-4">
-              <div className=" dark:bg-[var(--card-color)] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl p-2 sm:p-3 md:p-4 flex justify-center">
+              <div className="bg-white dark:bg-[#18181D] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl p-2 sm:p-3 md:p-4 flex justify-center">
                 {qrCodeUrl ? (
                   <img src={qrCodeUrl} alt="QR Code" className="w-48 h-48" />
                 ) : (

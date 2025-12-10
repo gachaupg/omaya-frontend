@@ -3,7 +3,8 @@
 :root {
   --background: #EEF1F4;
   --foreground: #171717;
-  --layout-gutter: clamp(2rem, 6vw, 2rem);
+  /* Use clamp with percentage instead of vw to prevent zoom issues */
+  --layout-gutter: clamp(1rem, 4%, 2rem);
   /* Reusable background and card colors */
   --bg-color: #EEF1F4;
   --card-color: #ffffff;
@@ -14,7 +15,7 @@
   --foreground: #ededed;
   /* Reusable background and card colors for dark mode */
   --bg-color: #0A0A0A;
-  --card-color: #1D1D23;
+  --card-color: #18181D;
 }
 
 @theme inline {
@@ -61,13 +62,225 @@ body {
   font-family: Arial, Helvetica, sans-serif;
   transition: background-color 0.3s ease, color 0.3s ease;
   overflow-x: hidden; /* Prevent horizontal scrolling on body */
-  max-width: 100vw; /* Ensure body doesn't exceed viewport width */
+  width: 100%;
+  max-width: 100%;
+  min-width: 0; /* Prevent stretching at extreme zoom levels */
 }
 
 /* Ensure root element doesn't cause horizontal scroll */
 html {
   overflow-x: hidden;
+  width: 100%;
   max-width: 100%;
+  min-width: 0;
+}
+
+/* Prevent stretching at extreme zoom levels */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Ensure flex children don't overflow at extreme zoom */
+.flex > *,
+[class*="flex"] > *,
+[class*="flex-"] {
+  min-width: 0;
+}
+
+/* Prevent containers from stretching beyond reasonable limits */
+.container,
+[class*="container"] {
+  max-width: 100%;
+}
+
+/* Ensure max-width classes respect viewport at extreme zoom */
+[class*="max-w-"]:not([class*="fixed"]):not([class*="sticky"]) {
+  max-width: min(100%, var(--tw-max-w, 100%)) !important;
+}
+
+/* Override max-w-none to prevent unlimited width */
+[class*="max-w-none"]:not([class*="fixed"]):not([class*="sticky"]) {
+  max-width: 100% !important;
+}
+
+/* Prevent w-full from causing overflow at extreme zoom */
+[class*="w-full"]:not([class*="fixed"]):not([class*="sticky"]) {
+  max-width: 100% !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Prevent images and media from causing overflow */
+img,
+video,
+iframe,
+svg,
+canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Prevent absolute positioned elements from causing overflow */
+[class*="absolute"] {
+  max-width: 100%;
+}
+
+/* Ensure root container doesn't stretch */
+#__next,
+#root,
+main,
+body > div {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow-x: hidden !important;
+  position: relative;
+  box-sizing: border-box !important;
+}
+
+/* Force all nested divs to respect constraints */
+body > div > * {
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Prevent grid and flex containers from stretching */
+[class*="grid"],
+[class*="flex"] {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Ensure all direct children of body respect width constraints */
+body > * {
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Use CSS containment to prevent overflow */
+html {
+  contain: layout style;
+  position: relative;
+}
+
+body {
+  position: relative;
+  overflow-x: clip; /* Use clip instead of hidden for better performance */
+}
+
+/* Force viewport constraint at document level */
+@supports (width: 100dvw) {
+  /* Use dynamic viewport units if available (better for mobile) */
+  html {
+    width: min(100%, 100dvw);
+  }
+  body {
+    width: min(100%, 100dvw);
+  }
+}
+
+/* Prevent table and other block elements from stretching */
+table {
+  max-width: 100%;
+  table-layout: auto;
+}
+
+/* Prevent form elements from stretching */
+form {
+  max-width: 100%;
+  width: 100%;
+}
+
+/* Ensure all block-level elements respect constraints */
+p, h1, h2, h3, h4, h5, h6, ul, ol, li {
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Media query for extreme zoom levels - add minimum width constraint */
+@media (max-width: 400px) {
+  body {
+    min-width: 280px; /* Minimum readable width */
+  }
+  
+  html {
+    min-width: 280px;
+  }
+  
+  /* Prevent elements from becoming too narrow */
+  input,
+  textarea,
+  select,
+  button {
+    min-width: 0;
+    max-width: 100%;
+  }
+  
+  /* Ensure containers don't overflow */
+  [class*="w-full"] {
+    max-width: 100%;
+  }
+  
+  /* Force all containers to respect viewport */
+  .container,
+  [class*="container"],
+  [class*="max-w-"] {
+    max-width: 100%;
+  }
+}
+
+/* Additional fix for extreme zoom - use CSS clamp for responsive sizing */
+@media (max-width: 320px) {
+  /* At 25% zoom on a 1920px screen, viewport becomes ~480px, but content might still stretch */
+  body,
+  html {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+  
+  /* Force all width-based classes to respect constraints */
+  [class*="w-"],
+  [class*="max-w-"],
+  [class*="min-w-"] {
+    max-width: 100%;
+  }
+}
+
+/* Critical fix: Prevent common elements from exceeding container width */
+/* Use 100% instead of 100vw to avoid zoom issues */
+/* Use !important to override any inline styles or conflicting rules */
+div:not([class*="fixed"]):not([class*="sticky"]),
+section:not([class*="fixed"]):not([class*="sticky"]),
+article:not([class*="fixed"]):not([class*="sticky"]),
+aside:not([class*="fixed"]):not([class*="sticky"]),
+header:not([class*="fixed"]):not([class*="sticky"]),
+footer:not([class*="fixed"]):not([class*="sticky"]),
+main:not([class*="fixed"]):not([class*="sticky"]),
+nav:not([class*="fixed"]):not([class*="sticky"]) {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* But allow flex/grid children to shrink properly */
+.flex > *,
+[class*="flex"] > *,
+.grid > *,
+[class*="grid"] > * {
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Exception for elements that need to be full viewport (like modals) */
+[class*="fixed"],
+[class*="sticky"] {
+  max-width: 100vw; /* These need viewport width for proper positioning */
+  left: 0;
+  right: 0;
 }
 
 /* Remove all outlines from interactive elements */

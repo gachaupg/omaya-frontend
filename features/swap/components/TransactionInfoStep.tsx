@@ -34,12 +34,12 @@ interface TransactionInfoStepProps {
 }
 
 const strongBorder =
-  "border-[1.5px] border-gray-200 dark:border-white/10 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]";
+  "border-[1.5px] border-[#35353E] dark:border-[#35353E]";
 const baseCard =
-  `rounded-[26px] ${strongBorder} bg-transparent dark:text-white text-gray-900`;
+  `rounded-[26px] ${strongBorder} bg-white dark:bg-[#18181D] dark:text-white text-gray-900`;
 const labelCopy = "text-[12px] uppercase tracking-wide dark:text-[#7d7f95] text-gray-600";
 const inputBase =
-  `rounded-2xl dark:bg-[var(--card-color)] bg-white ${strongBorder} dark:text-white text-gray-900 px-4 py-2 w-full text-lg dark:placeholder:text-[#5f6070] placeholder:text-gray-400 focus:outline-none`;
+  `rounded-2xl bg-transparent dark:bg-transparent ${strongBorder} dark:text-white text-[#35353e] px-4 py-2 w-full text-lg dark:placeholder:text-[#5f6070] placeholder:text-gray-400 focus:outline-none h-[48px]`;
 
 const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
   const { isDark } = useTheme();
@@ -132,8 +132,6 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
 
     const viewportWidth = window.innerWidth || 0;
     const minMargin = 16;
-    const minWidth = 280;
-    const maxWidth = 450;
 
     // Get the trigger element
     const triggerEl = isFrom ? fromAssetDropdownRef.current : toAssetDropdownRef.current;
@@ -156,20 +154,20 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
       currentCard = document.querySelector("[data-swap-card='true']") as HTMLElement;
     }
 
-    // Default dropdown style
+    // Default dropdown style (fallback)
     let dropdownStyle: React.CSSProperties = {
       position: "absolute",
       top: 200,
-      left: (viewportWidth - minWidth) / 2,
-      width: minWidth,
+      left: "50%",
+      transform: "translateX(-50%)",
+      width: 280,
     };
 
     if (triggerEl && currentCard) {
       const triggerRect = triggerEl.getBoundingClientRect();
-      const cardRect = currentCard.getBoundingClientRect();
 
-
-      let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.width));
+      // Match dropdown width exactly to trigger button width
+      let desiredWidth = triggerRect.width;
 
       let top = triggerRect.bottom + window.scrollY + 4; // 4px below button
       let left = triggerRect.left + window.scrollX;
@@ -222,7 +220,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
       (
         <div
           ref={isFrom ? fromAssetDropdownContentRef : toAssetDropdownContentRef}
-          className="bg-white dark:bg-[var(--card-color)] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl z-[9999] max-h-[70vh] sm:max-h-[60vh] overflow-hidden"
+          className="bg-white dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl z-[9999] max-h-[70vh] sm:max-h-[60vh] overflow-hidden"
           style={dropdownStyle}
         >
           {/* Dropdown Title */}
@@ -329,7 +327,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
         <button
           type="button"
           onClick={toggle}
-          className={`flex items-center justify-between w-full rounded-2xl ${strongBorder} dark:bg-[var(--card-color)] bg-white px-3 sm:px-4 py-2 text-lg`}
+          className={`flex items-center justify-between w-full rounded-2xl ${strongBorder} bg-transparent dark:bg-transparent px-4 py-2 text-lg h-[48px]`}
         >
           <div className="flex items-center gap-3 text-left min-w-0">
             <img
@@ -374,8 +372,14 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
     value: string,
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void,
     asset: SupportedAsset | null,
-    isActive: boolean
-  ) => (
+    isActive: boolean,
+    isYouSend: boolean = false
+  ) => {
+    const inputClassName = isYouSend 
+      ? inputBase 
+      : inputBase.replace('bg-transparent dark:bg-transparent', 'bg-white dark:bg-[#35353E]');
+    
+    return (
     <div className="space-y-2">
       {label && <p className={labelCopy}>{label}</p>}
       <div className="relative">
@@ -385,9 +389,9 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
           value={value}
           onChange={onChange}
           placeholder="Enter amount"
-          className={inputBase}
+          className={inputClassName}
         />
-        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold dark:text-white/80 text-gray-700">
+        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#35353e] dark:text-white/80">
           {asset?.ticker?.toUpperCase() ||
             asset?.symbol?.toUpperCase() ||
             "USDT"}
@@ -399,7 +403,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
         )}
       </div>
     </div>
-  );
+    );
+  };
 
   return (
     <div className="w-full flex flex-col   dark:text-white text-gray-900">
@@ -429,7 +434,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                 fromAmount,
                 onFromAmountChange,
                 fromAsset,
-                activeInputField === "from"
+                activeInputField === "from",
+                true
               )}
             </div>
             <div className="flex-1 min-w-0">

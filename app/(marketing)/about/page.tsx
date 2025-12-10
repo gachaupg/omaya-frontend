@@ -561,14 +561,14 @@ const AboutPage = () => {
       </section>
       {/* Our Story Section */} 
 
-      <section id="story" className="py-20 px-4 bg-[#0A0A0F]">
+      <section id="story" className="py-20 px-4 bg-white dark:bg-[#0A0A0F]">
         <div className="max-w-6xl mx-auto">
           {/* Section Header */}
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-3">
               Our Story
             </h2>
-            <p className="text-sm md:text-base text-gray-400">
+            <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
               From a visionary startup to a global crypto exchange platform
             </p>
           </div>
@@ -576,26 +576,26 @@ const AboutPage = () => {
           {/* Bento Grid Timeline */}
           <div className="relative">
             {/* Center vertical line */}
-            <div className="absolute left-1/2 top-0 bottom-0 w-[2px] bg-[#25252F] transform -translate-x-1/2 hidden md:block" />
+            <div className="absolute left-1/2 top-0 bottom-0 w-[2px] bg-gray-300 dark:bg-[#25252F] transform -translate-x-1/2 hidden md:block" />
 
             {/* 2020 Row */}
             <div className="grid md:grid-cols-2 gap-6 mb-6 relative">
               {/* Left - Text Card */}
-              <div className="bg-[#14141A] border border-[#1E1E26] rounded-3xl p-8 flex flex-col min-h-[320px]">
+              <div className="bg-white dark:bg-[#14141A] border border-gray-200 dark:border-[#1E1E26] rounded-3xl p-8 flex flex-col min-h-[320px]">
                 <div className="flex items-center justify-center gap-3 mb-1">
                   <span className="text-4xl md:text-5xl font-bold text-[#1D8751]">2020</span>
                   <div className="w-10 h-10 rounded-xl bg-[#1D8751] flex items-center justify-center">
                     <Target className="w-5 h-5 text-white" />
                   </div>
                 </div>
-                <span className="text-gray-500 text-sm text-center mb-6">Q1</span>
-                <h3 className="text-xl font-bold text-white text-center mb-3">Foundation</h3>
-                <p className="text-gray-400 text-sm leading-relaxed text-center mb-6 flex-1">
+                <span className="text-gray-600 dark:text-gray-500 text-sm text-center mb-6">Q1</span>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white text-center mb-3">Foundation</h3>
+                <p className="text-gray-700 dark:text-gray-400 text-sm leading-relaxed text-center mb-6 flex-1">
                   OMAYA Exchange was founded by crypto pioneers and fintech experts with a vision to revolutionize digital asset trading.
                 </p>
                 <div className="flex flex-wrap gap-2 justify-center">
                   <span className="px-4 py-2 rounded-full bg-[#1D8751] text-white text-xs font-medium">10 Cryptocurrencies</span>
-                  <span className="px-4 py-2 rounded-full border border-[#2A2A35] text-white text-xs font-medium">Beta Launch</span>
+                  <span className="px-4 py-2 rounded-full border border-gray-300 dark:border-[#2A2A35] text-gray-900 dark:text-white text-xs font-medium">Beta Launch</span>
                   <span className="px-4 py-2 rounded-full bg-[#1D8751] text-white text-xs font-medium">1,000+ Users</span>
                 </div>
               </div>
@@ -634,21 +634,21 @@ const AboutPage = () => {
               <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#1D8751] z-10 hidden md:block" />
 
               {/* Right - Text Card */}
-              <div className="bg-[#14141A] border border-[#1E1E26] rounded-3xl p-8 flex flex-col min-h-[320px] order-1 md:order-2">
+              <div className="bg-white dark:bg-[#14141A] border border-gray-200 dark:border-[#1E1E26] rounded-3xl p-8 flex flex-col min-h-[320px] order-1 md:order-2">
                 <div className="flex items-center justify-center gap-3 mb-1">
                   <div className="w-10 h-10 rounded-xl bg-[#1D8751] flex items-center justify-center">
                     <Zap className="w-5 h-5 text-white" />
                   </div>
                   <span className="text-4xl md:text-5xl font-bold text-[#1D8751]">2021</span>
                 </div>
-                <span className="text-gray-500 text-sm text-center mb-6">Q3</span>
-                <h3 className="text-xl font-bold text-white text-center mb-3">Rapid Growth</h3>
-                <p className="text-gray-400 text-sm leading-relaxed text-center mb-6 flex-1">
+                <span className="text-gray-600 dark:text-gray-500 text-sm text-center mb-6">Q3</span>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white text-center mb-3">Rapid Growth</h3>
+                <p className="text-gray-700 dark:text-gray-400 text-sm leading-relaxed text-center mb-6 flex-1">
                   Expanded to 50 countries and reached 10,000 active users with enhanced trading features and mobile app launch.
                 </p>
                 <div className="flex flex-wrap gap-2 justify-center">
                   <span className="px-4 py-2 rounded-full bg-[#1D8751] text-white text-xs font-medium">50 Countries</span>
-                  <span className="px-4 py-2 rounded-full border border-[#2A2A35] text-white text-xs font-medium">$100M+ Volume</span>
+                  <span className="px-4 py-2 rounded-full border border-gray-300 dark:border-[#2A2A35] text-gray-900 dark:text-white text-xs font-medium">$100M+ Volume</span>
                   <span className="px-4 py-2 rounded-full bg-[#1D8751] text-white text-xs font-medium">10K+ Users</span>
                 </div>
               </div>
@@ -657,21 +657,21 @@ const AboutPage = () => {
             {/* 2022 Row */}
             <div className="grid md:grid-cols-2 gap-6 mb-6 relative">
               {/* Left - Text Card */}
-              <div className="bg-[#14141A] border border-[#1E1E26] rounded-3xl p-8 flex flex-col min-h-[320px]">
+              <div className="bg-white dark:bg-[#14141A] border border-gray-200 dark:border-[#1E1E26] rounded-3xl p-8 flex flex-col min-h-[320px]">
                 <div className="flex items-center justify-center gap-3 mb-1">
                   <span className="text-4xl md:text-5xl font-bold text-[#1D8751]">2022</span>
                   <div className="w-10 h-10 rounded-xl bg-[#1D8751] flex items-center justify-center">
                     <Globe className="w-5 h-5 text-white" />
                   </div>
                 </div>
-                <span className="text-gray-500 text-sm text-center mb-6">Q2</span>
-                <h3 className="text-xl font-bold text-white text-center mb-3">Global Expansion</h3>
-                <p className="text-gray-400 text-sm leading-relaxed text-center mb-6 flex-1">
+                <span className="text-gray-600 dark:text-gray-500 text-sm text-center mb-6">Q2</span>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white text-center mb-3">Global Expansion</h3>
+                <p className="text-gray-700 dark:text-gray-400 text-sm leading-relaxed text-center mb-6 flex-1">
                   Reached 150+ countries with 24/7 multilingual support and introduced P2P trading and staking features.
                 </p>
                 <div className="flex flex-wrap gap-2 justify-center">
                   <span className="px-4 py-2 rounded-full bg-[#1D8751] text-white text-xs font-medium">150+ Countries</span>
-                  <span className="px-4 py-2 rounded-full border border-[#2A2A35] text-white text-xs font-medium">200+ Coins</span>
+                  <span className="px-4 py-2 rounded-full border border-gray-300 dark:border-[#2A2A35] text-gray-900 dark:text-white text-xs font-medium">200+ Coins</span>
                   <span className="px-4 py-2 rounded-full bg-[#1D8751] text-white text-xs font-medium">15 Languages</span>
                 </div>
               </div>
@@ -710,21 +710,21 @@ const AboutPage = () => {
               <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#1D8751] z-10 hidden md:block" />
 
               {/* Right - Text Card */}
-              <div className="bg-[#14141A] border border-[#1E1E26] rounded-3xl p-8 flex flex-col min-h-[320px] order-1 md:order-2">
-                <div className="flex items-center justify-center gap-3 mb-1">
-                  <div className="w-10 h-10 rounded-xl bg-[#1D8751] flex items-center justify-center">
-                    <Award className="w-5 h-5 text-white" />
-                  </div>
+              <div className="bg-white dark:bg-[#14141A] border border-gray-200 dark:border-[#1E1E26] rounded-3xl p-8 flex flex-col min-h-[320px] order-1 md:order-2">
+              <div className="flex items-center justify-center gap-3 mb-1">
                   <span className="text-4xl md:text-5xl font-bold text-[#1D8751]">2023</span>
+                  <div className="w-10 h-10 rounded-xl bg-[#1D8751] flex items-center justify-center">
+                    <Globe className="w-5 h-5 text-white" />
+                  </div>
                 </div>
-                <span className="text-gray-500 text-sm text-center mb-6">Q4</span>
-                <h3 className="text-xl font-bold text-white text-center mb-3">Industry Recognition</h3>
-                <p className="text-gray-400 text-sm leading-relaxed text-center mb-6 flex-1">
+                <span className="text-gray-600 dark:text-gray-500 text-sm text-center mb-6">Q4</span>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white text-center mb-3">Industry Recognition</h3>
+                <p className="text-gray-700 dark:text-gray-400 text-sm leading-relaxed text-center mb-6 flex-1">
                   Won Best Crypto Exchange Award and achieved ISO 27001 certification for information security management.
                 </p>
                 <div className="flex flex-wrap gap-2 justify-center">
                   <span className="px-4 py-2 rounded-full bg-[#1D8751] text-white text-xs font-medium">50K+ Traders</span>
-                  <span className="px-4 py-2 rounded-full border border-[#2A2A35] text-white text-xs font-medium">ISO Certified</span>
+                  <span className="px-4 py-2 rounded-full border border-gray-300 dark:border-[#2A2A35] text-gray-900 dark:text-white text-xs font-medium">ISO Certified</span>
                   <span className="px-4 py-2 rounded-full bg-[#1D8751] text-white text-xs font-medium">Best Exchange</span>
                 </div>
               </div>
@@ -735,14 +735,14 @@ const AboutPage = () => {
     {/* Achievements Section - Figma Match */}
 
       {/* Achievements Section */}
-      <section className="py-20 px-4 bg-[#0A0A0F]">
+      <section className="py-20 px-4 bg-white dark:bg-[#0A0A0F]">
         <div className="max-w-6xl mx-auto">
           {/* Header - NO ITALIC */}
           <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
               Our Achievements
             </h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">
+            <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Recognition of our commitment to excellence and innovation
             </p>
           </div>
@@ -750,55 +750,58 @@ const AboutPage = () => {
           {/* Achievement Cards */}
           <div className="grid md:grid-cols-3 gap-6 mb-8">
             {/* Best Crypto Exchange 2023 - Use handshake/team image */}
-            <div className="flex flex-col">
-              <div className="relative h-40 rounded-2xl overflow-hidden">
+            <div className="flex flex-col relative w-full min-w-0">
+              <div className="relative w-full h-40 rounded-2xl overflow-hidden bg-gray-100 dark:bg-[#14141A]">
                 <Image
                   src="https://res.cloudinary.com/pitz/image/upload/v1764575266/Container_9_e1cnzo.png"
                   alt="Best Crypto Exchange"
                   fill
-                  className="object-cover"
+                  className="object-cover rounded-2xl !w-full !h-full"
                   sizes="(max-width: 768px) 100vw, 33vw"
+                  style={{ objectPosition: 'center' }}
                 />
-                <div className="absolute top-3 right-3 px-3 py-1 rounded-lg bg-[#1D8751] text-white text-xs font-medium">2023</div>
-                <div className="absolute -bottom-5 left-4 w-11 h-11 rounded-xl bg-[#1D8751] flex items-center justify-center z-10">
+                <div className="absolute top-3 right-2 px-3 py-1 rounded-lg bg-[#1D8751] text-white text-xs font-medium">2023</div>
+                <div className="absolute bottom-3 left-6 w-11 h-11 rounded-xl bg-[#1D8751] flex items-center justify-center z-10">
                   <Award className="w-5 h-5 text-white" />
                 </div>
               </div>
-              <div className="pt-8 pb-4 flex flex-col flex-1">
-                <h3 className="text-base font-semibold text-white mb-2">Best Crypto Exchange 2023</h3>
+              <div className="pt-4 pb-4 flex flex-col flex-1">
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">Best Crypto Exchange 2023</h3>
                 <div className="inline-flex mb-3">
                   <span className="px-3 py-1 rounded-full border border-[#1D8751]/40 text-[#1D8751] text-xs">Crypto Excellence Awards</span>
                 </div>
-                <p className="text-xs text-gray-500 mb-4 flex-1 leading-relaxed">Recognized for outstanding innovation and user experience</p>
+                <p className="text-xs text-gray-600 dark:text-gray-500 mb-4 flex-1 leading-relaxed">Recognized for outstanding innovation and user experience</p>
                 <div className="flex items-center gap-2 text-xs text-[#1D8751]">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>Verified & Certified</span>
                 </div>
               </div>
-              <div className="h-0.5 bg-gradient-to-r from-[#1D8751] via-[#22c55e] to-[#eab308]" />
+              <div className="h-0.5 bg-gradient-to-r from-[#1D8751] 
+              via-[#22c55e] to-[#eab308]" />
             </div>
 
             {/* ISO 27001 Certified - Use padlock image */}
-            <div className="flex flex-col">
-              <div className="relative h-40 rounded-2xl overflow-hidden">
+            <div className="flex flex-col relative w-full min-w-0">
+              <div className="relative w-full h-40 rounded-2xl overflow-hidden bg-gray-100 dark:bg-[#14141A]">
                 <Image
                   src="https://res.cloudinary.com/pitz/image/upload/v1764575591/Container_11_tss9j7.png"
                   alt="ISO Certified"
                   fill
-                  className="object-cover"
+                  className="object-cover rounded-2xl !w-full !h-full"
                   sizes="(max-width: 768px) 100vw, 33vw"
+                  style={{ objectPosition: 'center' }}
                 />
                 <div className="absolute top-3 right-3 px-3 py-1 rounded-lg bg-[#1D8751] text-white text-xs font-medium">2022</div>
-                <div className="absolute -bottom-5 left-4 w-11 h-11 rounded-xl bg-[#1D8751] flex items-center justify-center z-10">
+                <div className="absolute bottom-3 left-4 w-11 h-11 rounded-xl bg-[#1D8751] flex items-center justify-center z-10">
                   <Shield className="w-5 h-5 text-white" />
                 </div>
               </div>
-              <div className="pt-8 pb-4 flex flex-col flex-1">
-                <h3 className="text-base font-semibold text-white mb-2">ISO 27001 Certified</h3>
+              <div className="pt-4 pb-4 flex flex-col flex-1">
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">ISO 27001 Certified</h3>
                 <div className="inline-flex mb-3">
                   <span className="px-3 py-1 rounded-full border border-[#1D8751]/40 text-[#1D8751] text-xs">Information Security Management</span>
                 </div>
-                <p className="text-xs text-gray-500 mb-4 flex-1 leading-relaxed">International standard for security management systems</p>
+                <p className="text-xs text-gray-600 dark:text-gray-500 mb-4 flex-1 leading-relaxed">International standard for security management systems</p>
                 <div className="flex items-center gap-2 text-xs text-[#1D8751]">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>Verified & Certified</span>
@@ -808,26 +811,27 @@ const AboutPage = () => {
             </div>
 
             {/* Trusted by 50K+ Users - Use handshake image */}
-            <div className="flex flex-col">
-              <div className="relative h-40 rounded-2xl overflow-hidden">
+            <div className="flex flex-col relative w-full min-w-0">
+              <div className="relative w-full h-40 rounded-2xl overflow-hidden bg-gray-100 dark:bg-[#14141A]">
                 <Image
                   src="https://res.cloudinary.com/pitz/image/upload/v1764575158/Container_5_aj1cpq.png"
                   alt="Trusted Users"
                   fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover rounded-2xl !w-full !h-full"
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                  style={{ objectPosition: 'center' }}
                 />
-                <div className="absolute top-3 right-3 px-3 py-1 rounded-lg bg-[#1D8751] text-white text-xs font-medium">2024</div>
-                <div className="absolute -bottom-5 left-4 w-11 h-11 rounded-xl bg-[#1D8751] flex items-center justify-center z-10">
+                <div className="absolute top-3 right-2 px-3 py-1 rounded-lg bg-[#1D8751] text-white text-xs font-medium">2024</div>
+                <div className="absolute bottom-3 left-6 w-11 h-11 rounded-xl bg-[#1D8751] flex items-center justify-center z-10">
                   <Users className="w-5 h-5 text-white" />
                 </div>
               </div>
-              <div className="pt-8 pb-4 flex flex-col flex-1">
-                <h3 className="text-base font-semibold text-white mb-2">Trusted by 50K+ Users</h3>
+              <div className="pt-4 pb-4 flex flex-col flex-1">
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-2">Trusted by 50K+ Users</h3>
                 <div className="inline-flex mb-3">
                   <span className="px-3 py-1 rounded-full border border-[#1D8751]/40 text-[#1D8751] text-xs">Growing community worldwide</span>
                 </div>
-                <p className="text-xs text-gray-500 mb-4 flex-1 leading-relaxed">Building trust through transparency and reliability</p>
+                <p className="text-xs text-gray-600 dark:text-gray-500 mb-4 flex-1 leading-relaxed">Building trust through transparency and reliability</p>
                 <div className="flex items-center gap-2 text-xs text-[#1D8751]">
                   <CheckCircle2 className="w-3.5 h-3.5" />
                   <span>Verified & Certified</span>
@@ -838,23 +842,23 @@ const AboutPage = () => {
           </div>
 
           {/* Statistics Bar - NUMBERS ARE GREEN */}
-          <div className="rounded-2xl p-6 border border-[#1E1E26] bg-transparent">
+          <div className="rounded-2xl p-6 border border-gray-200 dark:border-[#1E1E26] bg-transparent">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div className="text-center">
                 <div className="text-3xl md:text-4xl font-bold text-[#1D8751] mb-1">12+</div>
-                <div className="text-xs text-gray-500">Security Audits</div>
+                <div className="text-xs text-gray-600 dark:text-gray-500">Security Audits</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl md:text-4xl font-bold text-[#1D8751] mb-1">5+</div>
-                <div className="text-xs text-gray-500">Industry Awards</div>
+                <div className="text-xs text-gray-600 dark:text-gray-500">Industry Awards</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl md:text-4xl font-bold text-[#1D8751] mb-1">3+</div>
-                <div className="text-xs text-gray-500">Certifications</div>
+                <div className="text-xs text-gray-600 dark:text-gray-500">Certifications</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl md:text-4xl font-bold text-[#1D8751] mb-1">4+</div>
-                <div className="text-xs text-gray-500">Years Experience</div>
+                <div className="text-xs text-gray-600 dark:text-gray-500">Years Experience</div>
               </div>
             </div>
           </div>
@@ -869,12 +873,12 @@ const AboutPage = () => {
       {/* Security Section - Figma Match */}
      
       {/* Security Section */}
-      <section className="py-20 px-4 bg-[#0A0A0F]">
+      <section className="py-20 px-4 bg-white dark:bg-[#0A0A0F]">
         <div className="max-w-6xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             {/* Left Column - Padlock Image - NO OVERLAY (image has badge baked in) */}
             <div className="relative">
-              <div className="relative w-full h-[400px] rounded-3xl overflow-hidden bg-[#0F0F14]">
+              <div className="relative w-full h-[400px] rounded-3xl overflow-hidden bg-gray-100 dark:bg-[#0F0F14]">
                 <Image
                   src="https://res.cloudinary.com/pitz/image/upload/v1764575591/Container_11_tss9j7.png"
                   alt="Security Padlock"
@@ -896,14 +900,14 @@ const AboutPage = () => {
               </div>
 
               {/* Heading - Italic style */}
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-1 leading-tight italic">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-1 leading-tight italic">
                 Your Assets Are Always
               </h2>
               <h2 className="text-3xl md:text-4xl font-bold text-[#1D8751] mb-4 italic">
                 Safe
               </h2>
               
-              <p className="text-gray-400 mb-8 text-sm leading-relaxed">
+              <p className="text-gray-600 dark:text-gray-400 mb-8 text-sm leading-relaxed">
                 We employ industry-leading security measures to protect your digital assets and personal information.
               </p>
 
@@ -914,8 +918,8 @@ const AboutPage = () => {
                     <Lock className="w-5 h-5 text-[#1D8751]" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-white mb-0.5">Cold Storage</h3>
-                    <p className="text-xs text-gray-500 leading-relaxed">95% of assets stored offline in bank-grade vaults.</p>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">Cold Storage</h3>
+                    <p className="text-xs text-gray-600 dark:text-gray-500 leading-relaxed">95% of assets stored offline in bank-grade vaults.</p>
                   </div>
                 </div>
 
@@ -924,8 +928,8 @@ const AboutPage = () => {
                     <ShieldCheck className="w-5 h-5 text-[#1D8751]" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-white mb-0.5">Multi-Signature</h3>
-                    <p className="text-xs text-gray-500 leading-relaxed">Multiple approvals required for all transactions.</p>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">Multi-Signature</h3>
+                    <p className="text-xs text-gray-600 dark:text-gray-500 leading-relaxed">Multiple approvals required for all transactions.</p>
                   </div>
                 </div>
 
@@ -934,8 +938,8 @@ const AboutPage = () => {
                     <Fingerprint className="w-5 h-5 text-[#1D8751]" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-white mb-0.5">Biometric Auth</h3>
-                    <p className="text-xs text-gray-500 leading-relaxed">Face ID and fingerprint recognition.</p>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">Biometric Auth</h3>
+                    <p className="text-xs text-gray-600 dark:text-gray-500 leading-relaxed">Face ID and fingerprint recognition.</p>
                   </div>
                 </div>
 
@@ -944,8 +948,8 @@ const AboutPage = () => {
                     <Eye className="w-5 h-5 text-[#1D8751]" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-white mb-0.5">24/7 Monitoring</h3>
-                    <p className="text-xs text-gray-500 leading-relaxed">Real-time threat detection and prevention.</p>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">24/7 Monitoring</h3>
+                    <p className="text-xs text-gray-600 dark:text-gray-500 leading-relaxed">Real-time threat detection and prevention.</p>
                   </div>
                 </div>
 
@@ -954,8 +958,8 @@ const AboutPage = () => {
                     <Key className="w-5 h-5 text-[#1D8751]" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-white mb-0.5">2FA Protection</h3>
-                    <p className="text-xs text-gray-500 leading-relaxed">Two-factor authentication on all accounts.</p>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">2FA Protection</h3>
+                    <p className="text-xs text-gray-600 dark:text-gray-500 leading-relaxed">Two-factor authentication on all accounts.</p>
                   </div>
                 </div>
 
@@ -964,8 +968,8 @@ const AboutPage = () => {
                     <FileLock className="w-5 h-5 text-[#1D8751]" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-white mb-0.5">Data Encryption</h3>
-                    <p className="text-xs text-gray-500 leading-relaxed">Military-grade SSL encryption.</p>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5">Data Encryption</h3>
+                    <p className="text-xs text-gray-600 dark:text-gray-500 leading-relaxed">Military-grade SSL encryption.</p>
                   </div>
                 </div>
               </div>
@@ -987,20 +991,20 @@ const AboutPage = () => {
       {/* Location Section */}
 
       {/* Location Section */}
-      <section className="py-20 px-4 bg-[#0A0A0F] relative overflow-hidden">
+      <section className="py-20 px-4 bg-white dark:bg-[#0A0A0F] relative overflow-hidden">
         <div className="max-w-7xl mx-auto relative z-10">
           {/* Header */}
           <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-4">
               Our Locations
             </h2>
-            <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Operating worldwide with local presence
             </p>
           </div>
 
           {/* Statistics Bar - COLORED ICONS AND NUMBERS */}
-          <div className="bg-[#14141A] rounded-2xl p-6 mb-12 border border-[#1E1E26]">
+          <div className="bg-white dark:bg-[#14141A] rounded-2xl p-6 mb-12 border border-gray-200 dark:border-[#1E1E26]">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Countries - BLUE */}
               <div className="flex items-center gap-4">
@@ -1008,8 +1012,8 @@ const AboutPage = () => {
                   <Globe className="w-6 h-6 text-blue-500" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-white-500">150+</div>
-                  <div className="text-sm text-gray-400">Countries</div>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white">150+</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Countries</div>
                 </div>
               </div>
               
@@ -1019,8 +1023,8 @@ const AboutPage = () => {
                   <Users className="w-6 h-6 text-purple-500" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-white-500">350+</div>
-                  <div className="text-sm text-gray-400">Team Members</div>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white">350+</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Team Members</div>
                 </div>
               </div>
               
@@ -1030,8 +1034,8 @@ const AboutPage = () => {
                   <Clock className="w-6 h-6 text-[#1D8751]" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-white-500">24/7</div>
-                  <div className="text-sm text-gray-400">Support Hours</div>
+                  <div className="text-2xl font-bold text-gray-900 dark:text-white">24/7</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Support Hours</div>
                 </div>
               </div>
             </div>
@@ -1040,7 +1044,7 @@ const AboutPage = () => {
           {/* Location Cards */}
           <div className="grid md:grid-cols-2 gap-8">
             {/* Dubai Headquarters */}
-            <div className="bg-[#14141A] rounded-3xl overflow-hidden border border-[#1E1E26]">
+            <div className="bg-white dark:bg-[#14141A] rounded-3xl overflow-hidden border border-gray-200 dark:border-[#1E1E26]">
               {/* Image Section */}
               <div className="relative h-64">
                 <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800')] bg-cover bg-center">
@@ -1060,7 +1064,7 @@ const AboutPage = () => {
                 </div>
                 <div className="absolute bottom-6 left-6">
                   <h3 className="text-3xl font-bold text-white mb-1">Dubai</h3>
-                  <p className="text-gray-300">United Arab Emirates</p>
+                  <p className="text-gray-200 dark:text-gray-300">United Arab Emirates</p>
                 </div>
               </div>
 
@@ -1069,43 +1073,43 @@ const AboutPage = () => {
                 <div className="flex items-start gap-3">
                   <Clock className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm text-gray-400">Local Time</p>
-                    <p className="text-white font-medium">GMT+4</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Local Time</p>
+                    <p className="text-gray-900 dark:text-white font-medium">GMT+4</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <Building2 className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm text-gray-400">Team Size</p>
-                    <p className="text-white font-medium">200+ Employees</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Team Size</p>
+                    <p className="text-gray-900 dark:text-white font-medium">200+ Employees</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <MapPin className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm text-gray-400">Address</p>
-                    <p className="text-white font-medium">123 Blockchain Avenue, Financial District</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Address</p>
+                    <p className="text-gray-900 dark:text-white font-medium">123 Blockchain Avenue, Financial District</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <Mail className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm text-gray-400">Email</p>
-                    <p className="text-white font-medium">support@omaya.io</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Email</p>
+                    <p className="text-gray-900 dark:text-white font-medium">support@omaya.io</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <Phone className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm text-gray-400">Phone</p>
-                    <p className="text-white font-medium">+971 4 123 4567</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Phone</p>
+                    <p className="text-gray-900 dark:text-white font-medium">+971 4 123 4567</p>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* San Francisco Regional Office */}
-            <div className="bg-[#14141A] rounded-3xl overflow-hidden border border-[#1E1E26]">
+            <div className="bg-white dark:bg-[#14141A] rounded-3xl overflow-hidden border border-gray-200 dark:border-[#1E1E26]">
               {/* Image Section */}
               <div className="relative h-64">
                 <div className="absolute inset-0">
@@ -1125,7 +1129,7 @@ const AboutPage = () => {
                 </div>
                 <div className="absolute bottom-6 left-6">
                   <h3 className="text-3xl font-bold text-white mb-1">San Francisco</h3>
-                  <p className="text-gray-300">United States</p>
+                  <p className="text-gray-200 dark:text-gray-300">United States</p>
                 </div>
               </div>
 
@@ -1134,36 +1138,36 @@ const AboutPage = () => {
                 <div className="flex items-start gap-3">
                   <Clock className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm text-gray-400">Local Time</p>
-                    <p className="text-white font-medium">PST (GMT-8)</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Local Time</p>
+                    <p className="text-gray-900 dark:text-white font-medium">PST (GMT-8)</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <Building2 className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm text-gray-400">Team Size</p>
-                    <p className="text-white font-medium">150+ Employees</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Team Size</p>
+                    <p className="text-gray-900 dark:text-white font-medium">150+ Employees</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <MapPin className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm text-gray-400">Address</p>
-                    <p className="text-white font-medium">456 Tech Hub Street, Silicon Valley, CA 94102</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Address</p>
+                    <p className="text-gray-900 dark:text-white font-medium">456 Tech Hub Street, Silicon Valley, CA 94102</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <Mail className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm text-gray-400">Email</p>
-                    <p className="text-white font-medium">us@omaya.io</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Email</p>
+                    <p className="text-gray-900 dark:text-white font-medium">us@omaya.io</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <Phone className="w-5 h-5 text-[#1D8751] mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm text-gray-400">Phone</p>
-                    <p className="text-white font-medium">+1 (415) 123-4567</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Phone</p>
+                    <p className="text-gray-900 dark:text-white font-medium">+1 (415) 123-4567</p>
                   </div>
                 </div>
               </div>
