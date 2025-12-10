@@ -135,7 +135,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
     }
   }, [postOrderError, postOrderSuccess, router, dispatch]);
 
-    useEffect(() => {
+  useEffect(() => {
     if (queryType && queryType !== type) {
       setType(queryType);
     }
@@ -178,7 +178,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
         isValid = false;
       }
     }
-    
+
     // Additional validation for sell ads: check available balance
     if (type === "sell" && amount) {
       const amountNum = Number(amount);
@@ -265,7 +265,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       limit: timeLimit.toString(),
       completion_time: timeLimit.toString(),
       completion_rate: "",
-        asset: "TRON",
+      asset: "TRON",
       advertiser_name: {
         id: 1,
         username: "dennis",
@@ -295,48 +295,61 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
   return (
     <div className="w-full p-0 sm:p-4 min-h-screen flex flex-col items-center justify-start bg-[#EEF1F4] dark:bg-[#18181D]">
       {loading && <Loader />}
-      {/* Title and Buy/Sell Switch */}
-      <div className="mb-1 w-full md:max-w-6xl md:mx-auto px-0 sm:px-0">
-        <div className="text-gray-900 dark:text-white text-lg mb-1">
+      {/* Buy/Sell Tabs */}
+      <div className="mb-2 w-full md:max-w-6xl md:mx-auto">
+        <div className="text-gray-900 dark:text-white text-lg mb-2">
           Post Ad
         </div>
+
         <div
-          className={`flex w-fit border-2 rounded-[8px] overflow-hidden ${
-            type === "buy" ? "border-[#1D8751]" : "border-[#E23D3A]"
-          }`}
+          className={`flex p-1 rounded-lg border-2 w-fit bg-transparent transition-all
+      ${type === "buy" ? "border-secondary" : "border-[#E23D3A]"}
+    `}
         >
+          {/* Buy */}
           <button
-            className={`px-2 py-1.5 text-sm transition rounded-l-[6px] ${
-              type === "buy"
-                ? "bg-[#1D8751] text-white"
-                : "bg-transparent text-[#051015] dark:text-white"
-            }`}
             onClick={() => setType("buy")}
             type="button"
+            className={`
+        rounded-lg transition-all
+        text-xs sm:text-sm md:text-base
+        px-3 py-1 sm:px-5 sm:py-2 md:px-6 md:py-2
+        ${type === "buy"
+                ? "bg-secondary text-muted"
+                : "bg-transparent dark:text-muted text-muted-foreground"
+              }
+      `}
           >
             Buy
           </button>
+
+          {/* Sell */}
           <button
-            className={`px-4 py-1.5 text-sm transition rounded-r-[6px] ${
-              type === "sell"
-                ? "bg-[#E23D3A] text-white"
-                : "bg-transparent text-[#051015] dark:text-white"
-            }`}
             onClick={() => setType("sell")}
             type="button"
+            className={`
+        rounded-lg transition-all
+        text-xs sm:text-sm md:text-base
+        px-3 py-1 sm:px-5 sm:py-2 md:px-6 md:py-2
+        ${type === "sell"
+                ? "bg-[#E23D3A] text-muted"
+                : "bg-transparent text-muted-foreground dark:text-muted"
+              }
+      `}
           >
             Sell
           </button>
         </div>
       </div>
 
+
       {/* Type & Price */}
       <div className="w-full md:max-w-6xl md:mx-auto px-0 sm:px-2 md:px-0">
         <div className="text-sm text-gray-600 dark:text-[#788099] mb-2 mt-3">
           Type & Price
         </div>
-        <Card className="w-full mb-2 p-9 sm:px-2 sm:py-2 bg-gray-50 dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E] rounded-[24px]">
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-end w-full">
+        <Card className="mb-4 px-2 py-2 sm:px-2 sm:py-2 bg-gray-50 dark:bg-[#1D1D23] border border-gray-200 dark:border-accent">
+          <div className="flex flex-row gap-4 items-start md:items-end w-full">
             {/* Asset */}
             <div className="flex-1 flex flex-col">
               <span className="text-xs text-gray-600 dark:text-[#788099] mb-2">
@@ -344,7 +357,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               </span>
               <div
                 className="flex w-full items-center
-               bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-[19px] px-2 py-2 min-h-[40px]"
+               bg-white dark:bg-transparent border border-border dark:border-accent rounded-xl p-3 min-h-10"
               >
                 <img
                   src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
@@ -363,15 +376,14 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                 Rate
               </span>
               <div
-                className={`flex w-full items-center justify-between bg-white dark:bg-[#18181D] border ${
-                  errors.commission
-                    ? "border-red-500"
-                    : "border-gray-200 dark:border-[#35353E]"
-                } rounded-[19px] min-h-[40px]`}
+                className={`flex w-full items-center justify-between bg-white dark:bg-transparent border rounded-xl p-3 min-h-10 ${errors.commission
+                  ? "border-red-500"
+                  : "border-border dark:border-accent rounded-xl p-3 min-h-10"
+                  } `}
               >
                 <div className="flex items-center flex-1">
                   <svg
-                    className="w-6 h-6 text-[#1D8751] mr-2"
+                    className="w-6 h-6 text-secondary mr-2"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
@@ -398,7 +410,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                 </div>
                 <div className="flex items-center">
                   <button
-                    className="text-[#1D8751] text-xl w-8 h-8 rounded-full hover:bg-[#1D8751]/10 flex items-center justify-center transition mr-2"
+                    className="text-[#1D8751] text-xl w-6 h-6 rounded-full hover:bg-[#1D8751]/10 flex items-center justify-center transition mr-2"
                     onClick={() => {
                       setCommission((c) => {
                         const current = parseFloat(c) || 0;
@@ -410,7 +422,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                     +
                   </button>
                   <button
-                    className="text-[#1D8751] text-xl w-8 h-8 rounded-full hover:bg-[#1D8751]/10 flex items-center justify-center transition"
+                    className="text-[#1D8751] text-xl w-6 h-6 rounded-full hover:bg-[#1D8751]/10 flex items-center justify-center transition"
                     onClick={() => {
                       setCommission((c) => {
                         const current = parseFloat(c) || 0;
@@ -448,7 +460,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                   </span>
                 )}
               </label>
-              <div className="flex items-center bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-[19px] px-2 py-2 min-h-[40px]">
+              <div className="flex items-center bg-white dark:bg-transparent border border-border dark:border-accent rounded-xl p-3 min-h-10">
                 <img
                   src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
                   alt="USDT"
@@ -460,44 +472,44 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                   onChange={(e) => {
                     const newAmount = e.target.value;
                     setAmount(newAmount);
-                    
+
                     // Real-time validation
                     if (newAmount) {
                       const amountNum = Number(newAmount);
-                      
+
                       // Check if it's a valid number
                       if (isNaN(amountNum)) {
-                        setErrors((prev) => ({ 
-                          ...prev, 
-                          amount: "Amount must be a number" 
+                        setErrors((prev) => ({
+                          ...prev,
+                          amount: "Amount must be a number"
                         }));
                       }
                       // Check minimum 10 USDT for both buy and sell
                       else if (amountNum < 10) {
-                        setErrors((prev) => ({ 
-                          ...prev, 
-                          amount: "Minimum amount is 10 USDT" 
+                        setErrors((prev) => ({
+                          ...prev,
+                          amount: "Minimum amount is 10 USDT"
                         }));
                       }
                       // Additional check for sell ads - cannot exceed available balance
                       else if (type === "sell" && amountNum > availableBalance) {
-                        setErrors((prev) => ({ 
-                          ...prev, 
-                          amount: `Amount cannot exceed available balance (${availableBalance.toFixed(2)} USDT)` 
+                        setErrors((prev) => ({
+                          ...prev,
+                          amount: `Amount cannot exceed available balance (${availableBalance.toFixed(2)} USDT)`
                         }));
                       }
                       // Check if orderMin is greater than amount
                       else if (orderMin && !isNaN(Number(orderMin)) && Number(orderMin) > amountNum) {
-                        setErrors((prev) => ({ 
-                          ...prev, 
-                          amount: "Amount must be greater than or equal to minimum order amount" 
+                        setErrors((prev) => ({
+                          ...prev,
+                          amount: "Amount must be greater than or equal to minimum order amount"
                         }));
                       }
                       // Check if orderMax is greater than amount
                       else if (orderMax && !isNaN(Number(orderMax)) && Number(orderMax) > amountNum) {
-                        setErrors((prev) => ({ 
-                          ...prev, 
-                          amount: "Amount must be greater than or equal to maximum order amount" 
+                        setErrors((prev) => ({
+                          ...prev,
+                          amount: "Amount must be greater than or equal to maximum order amount"
                         }));
                       }
                       // Valid - clear error
@@ -507,18 +519,18 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                         if (orderMin) {
                           const minNum = Number(orderMin);
                           if (!isNaN(minNum) && minNum > amountNum) {
-                            setErrors((prev) => ({ 
-                              ...prev, 
-                              orderMin: "Minimum order amount cannot be greater than amount" 
+                            setErrors((prev) => ({
+                              ...prev,
+                              orderMin: "Minimum order amount cannot be greater than amount"
                             }));
                           }
                         }
                         if (orderMax) {
                           const maxNum = Number(orderMax);
                           if (!isNaN(maxNum) && maxNum > amountNum) {
-                            setErrors((prev) => ({ 
-                              ...prev, 
-                              orderMax: "Maximum order amount cannot be greater than amount" 
+                            setErrors((prev) => ({
+                              ...prev,
+                              orderMax: "Maximum order amount cannot be greater than amount"
                             }));
                           }
                         }
@@ -527,11 +539,10 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                       setErrors((prev) => ({ ...prev, amount: undefined }));
                     }
                   }}
-                  className={`w-full bg-transparent border-none text-gray-900 dark:text-white text-base focus:outline-none ${
-                    errors.amount
-                      ? "border-2 border-red-500 rounded-[19px]"
-                      : ""
-                  }`}
+                  className={`w-full bg-transparent border-none text-gray-900 dark:text-white text-base focus:outline-none ${errors.amount
+                    ? "border-2 border-red-500 rounded-[19px]"
+                    : ""
+                    }`}
                   placeholder="0.000"
                 />
                 <span className="text-gray-500 dark:text-[#788099] text-base ml-2">
@@ -550,11 +561,10 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               <label className="text-xs text-gray-600 dark:text-[#788099] mb-1">
                 Order Min.
               </label>
-              <div className={`flex items-center bg-white dark:bg-[#18181D] border ${
-                errors.orderMin
-                  ? "border-red-500"
-                  : "border-gray-200 dark:border-[#35353E]"
-              } rounded-[19px] px-2 py-2 min-h-[40px]`}>
+              <div className={`flex items-center bg-white dark:bg-transparent border rounded-xl p-3 min-h-10 ${errors.orderMin
+                ? "border-red-500"
+                : "border-border dark:border-accent"
+                } `}>
                 <span className="text-[#1D8751] text-lg mr-1">$</span>
                 <input
                   type="text"
@@ -562,37 +572,37 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                   onChange={(e) => {
                     const newValue = e.target.value;
                     setOrderMin(newValue);
-                    
+
                     // Real-time validation
                     if (newValue) {
                       const valueNum = Number(newValue);
-                      
+
                       // Check if it's a valid number
                       if (isNaN(valueNum)) {
-                        setErrors((prev) => ({ 
-                          ...prev, 
-                          orderMin: "Minimum order amount must be a number" 
+                        setErrors((prev) => ({
+                          ...prev,
+                          orderMin: "Minimum order amount must be a number"
                         }));
                       }
                       // Check if it's less than 10
                       else if (valueNum < 10) {
-                        setErrors((prev) => ({ 
-                          ...prev, 
-                          orderMin: "Minimum order amount must be at least 10" 
+                        setErrors((prev) => ({
+                          ...prev,
+                          orderMin: "Minimum order amount must be at least 10"
                         }));
                       }
                       // Check if it's greater than amount (if amount is set)
                       else if (amount && !isNaN(Number(amount)) && valueNum > Number(amount)) {
-                        setErrors((prev) => ({ 
-                          ...prev, 
-                          orderMin: "Minimum order amount cannot be greater than amount" 
+                        setErrors((prev) => ({
+                          ...prev,
+                          orderMin: "Minimum order amount cannot be greater than amount"
                         }));
                       }
                       // Check if it's greater than or equal to max order amount (if max is set)
                       else if (orderMax && !isNaN(Number(orderMax)) && valueNum >= Number(orderMax)) {
-                        setErrors((prev) => ({ 
-                          ...prev, 
-                          orderMin: "Minimum order amount must be less than maximum order amount" 
+                        setErrors((prev) => ({
+                          ...prev,
+                          orderMin: "Minimum order amount must be less than maximum order amount"
                         }));
                       }
                       // Valid - clear error
@@ -602,9 +612,9 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                         if (orderMax && !isNaN(Number(orderMax))) {
                           const maxNum = Number(orderMax);
                           if (maxNum <= valueNum) {
-                            setErrors((prev) => ({ 
-                              ...prev, 
-                              orderMax: "Maximum order amount must be greater than minimum order amount" 
+                            setErrors((prev) => ({
+                              ...prev,
+                              orderMax: "Maximum order amount must be greater than minimum order amount"
                             }));
                           } else if (errors.orderMax && errors.orderMax.includes("greater than minimum")) {
                             setErrors((prev) => ({ ...prev, orderMax: undefined }));
@@ -635,11 +645,10 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               <label className="text-xs text-gray-600 dark:text-[#788099] mb-1">
                 Order Max
               </label>
-              <div className={`flex items-center bg-white dark:bg-[#18181D] border ${
-                errors.orderMax
-                  ? "border-red-500"
-                  : "border-gray-200 dark:border-[#35353E]"
-              } rounded-[19px] px-2 py-2 min-h-[40px]`}>
+              <div className={`flex items-center bg-white dark:bg-transparent border rounded-xl p-3 min-h-10 ${errors.orderMax
+                ? "border-red-500"
+                : "border-border dark:border-accent"
+                }`}>
                 <span className="text-[#1D8751] text-lg mr-1">$</span>
                 <input
                   type="text"
@@ -647,51 +656,51 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                   onChange={(e) => {
                     const newValue = e.target.value;
                     setOrderMax(newValue);
-                    
+
                     // Real-time validation
                     if (newValue) {
                       const valueNum = Number(newValue);
-                      
+
                       // Check if it's a valid number
                       if (isNaN(valueNum)) {
-                        setErrors((prev) => ({ 
-                          ...prev, 
-                          orderMax: "Maximum order amount must be a number" 
+                        setErrors((prev) => ({
+                          ...prev,
+                          orderMax: "Maximum order amount must be a number"
                         }));
                       }
                       // Check if it's 0 or less
                       else if (valueNum <= 0) {
-                        setErrors((prev) => ({ 
-                          ...prev, 
-                          orderMax: "Maximum order amount must be greater than 0" 
+                        setErrors((prev) => ({
+                          ...prev,
+                          orderMax: "Maximum order amount must be greater than 0"
                         }));
                       }
                       // Check if it's less than 10
                       else if (valueNum < 10) {
-                        setErrors((prev) => ({ 
-                          ...prev, 
-                          orderMax: "Maximum order amount must be at least 10" 
+                        setErrors((prev) => ({
+                          ...prev,
+                          orderMax: "Maximum order amount must be at least 10"
                         }));
                       }
                       // Check if it's less than or equal to min order amount
                       else if (orderMin && !isNaN(Number(orderMin)) && valueNum <= Number(orderMin)) {
-                        setErrors((prev) => ({ 
-                          ...prev, 
-                          orderMax: "Maximum order amount must be greater than minimum order amount" 
+                        setErrors((prev) => ({
+                          ...prev,
+                          orderMax: "Maximum order amount must be greater than minimum order amount"
                         }));
                       }
                       // Check if it's greater than amount (if amount is set)
                       else if (amount && !isNaN(Number(amount)) && valueNum > Number(amount)) {
-                        setErrors((prev) => ({ 
-                          ...prev, 
-                          orderMax: "Maximum order amount cannot be greater than amount" 
+                        setErrors((prev) => ({
+                          ...prev,
+                          orderMax: "Maximum order amount cannot be greater than amount"
                         }));
                       }
                       // Check if it exceeds maximum
                       else if (valueNum > 1000000) {
-                        setErrors((prev) => ({ 
-                          ...prev, 
-                          orderMax: "Maximum order amount cannot exceed 1,000,000" 
+                        setErrors((prev) => ({
+                          ...prev,
+                          orderMax: "Maximum order amount cannot exceed 1,000,000"
                         }));
                       }
                       // Valid - clear error
@@ -701,9 +710,9 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                         if (orderMin && !isNaN(Number(orderMin))) {
                           const minNum = Number(orderMin);
                           if (minNum >= valueNum) {
-                            setErrors((prev) => ({ 
-                              ...prev, 
-                              orderMin: "Minimum order amount must be less than maximum order amount" 
+                            setErrors((prev) => ({
+                              ...prev,
+                              orderMin: "Minimum order amount must be less than maximum order amount"
                             }));
                           } else if (errors.orderMin && errors.orderMin.includes("less than maximum")) {
                             setErrors((prev) => ({ ...prev, orderMin: undefined }));
@@ -732,7 +741,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
 
           {/* Replace old payment method/provider dropdowns with UserPaymentSelector */}
           {isClient && (
-            <div className="my-6 gap-10 flex flex-col lg:flex-row p-2">
+            <div className="my-4 gap-10 flex flex-col lg:flex-row p-2">
               <div className="flex-1">
                 <UserPaymentSelector
                   userPaymentDetails={userPaymentDetails || []}
@@ -740,7 +749,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                   onRemove={handleRemovePaymentDetail}
                   selectedDetails={selectedPaymentDetails}
                 />
-                
+
                 {/* Display Selected Payment Methods */}
                 {selectedPaymentDetails.length > 0 && (
                   <div className="mt-4">
@@ -751,7 +760,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                       {selectedPaymentDetails.map((detail) => {
                         // Get logo URL with priority: logo_url > logo > provider_logo
                         const logoUrl = detail.logo_url || detail.logo || detail.provider_logo || "/default-provider-logo.svg";
-                        
+
                         return (
                           <div
                             key={detail.id}
@@ -769,7 +778,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                                   }}
                                 />
                               </div>
-                              
+
                               {/* Details */}
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -783,14 +792,14 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                                     {detail.payment_provider_name}
                                   </span>
                                 </div>
-                                
+
                                 {/* Account Name - Prominent Display */}
                                 <div className="mb-1">
                                   <span className="text-sm font-semibold text-gray-900 dark:text-white">
                                     {detail.account_name || 'N/A'}
                                   </span>
                                 </div>
-                                
+
                                 {/* Account Number */}
                                 <div>
                                   <span className="text-xs text-gray-500 dark:text-[#788099]">
@@ -799,7 +808,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                                 </div>
                               </div>
                             </div>
-                            
+
                             {/* Remove Button */}
                             <button
                               className="ml-3 flex-shrink-0 p-2 text-[#E23D3A] hover:bg-[#E23D3A]/10 rounded-full transition"
@@ -830,7 +839,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                   </div>
                 )}
               </div>
-              
+
               {/* Time Limit */}
               <div className="flex flex-col md:flex-row gap-4 mb-4">
                 {/* Time Limit */}
@@ -839,11 +848,10 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                     Time Limit
                   </label>
                   <select
-                    className={`bg-white dark:bg-[#18181D] border ${
-                      errors.timeLimit
-                        ? "border-red-500"
-                        : "border-gray-200 dark:border-[#35353E]"
-                    } rounded-[20px] px-4 py-3 text-gray-900 dark:text-white text-base focus:outline-none`}
+                    className={`bg-white dark:bg-[#18181D] border ${errors.timeLimit
+                      ? "border-red-500"
+                      : "border-gray-200 dark:border-[#35353E]"
+                      } rounded-[20px] px-4 py-3 text-gray-900 dark:text-white text-base focus:outline-none`}
                     value={timeLimit}
                     onChange={(e) => {
                       setTimeLimit(Number(e.target.value));
@@ -868,7 +876,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
 
           <Button
             borderRadius={24}
-            className="w-fit bg-[#1D8751] h-10 text-white hover:bg-[#1D8751]/90"
+            className="w-fit bg-[#1D8751] h-10 mb-3 text-white hover:bg-[#1D8751]/90"
             onClick={() => setShowPaymentModal(true)}
           >
             Add Payment Method
@@ -892,11 +900,10 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               Terms (Optional)
             </label>
             <textarea
-              className={`w-full bg-white dark:bg-[#18181D] border ${
-                errors.terms
-                  ? "border-red-500"
-                  : "border-gray-200 dark:border-[#35353E]"
-              } rounded-[24px] px-6 py-5 text-gray-600 dark:text-[#788099] min-h-[120px] mb-6 resize-none`}
+              className={`w-full bg-white dark:bg-[#18181D] border ${errors.terms
+                ? "border-red-500"
+                : "border-gray-200 dark:border-[#35353E]"
+                } rounded-[24px] px-6 py-5 text-gray-600 dark:text-[#788099] min-h-[120px] mb-6 resize-none`}
               placeholder="Enter terms..."
               value={terms}
               onChange={(e) => {
@@ -913,11 +920,10 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               Auto Reply (Optional)
             </label>
             <textarea
-              className={`w-full bg-white dark:bg-[#18181D] border ${
-                errors.autoReply
-                  ? "border-red-500"
-                  : "border-gray-200 dark:border-[#35353E]"
-              } rounded-[24px] px-6 py-5 text-gray-600 dark:text-[#788099] min-h-[120px] mb-6 resize-none`}
+              className={`w-full bg-white dark:bg-[#18181D] border ${errors.autoReply
+                ? "border-red-500"
+                : "border-gray-200 dark:border-[#35353E]"
+                } rounded-[24px] px-6 py-5 text-gray-600 dark:text-[#788099] min-h-[120px] mb-6 resize-none`}
               placeholder="Enter auto-reply..."
               value={autoReply}
               onChange={(e) => {
@@ -954,26 +960,24 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
             </Button>
             <Button
               borderRadius={24}
-              className={`flex-1 rounded-[24px] border-1 text-white text-base py-2 ${
-                type === "buy"
-                  ? "bg-[#1D8751] border-[#1D8751]"
-                  : "bg-[#E23D3A] border-[#E23D3A]"
-              } ${
-                postOrderLoading || 
-                Object.values(errors).some(error => error !== undefined) || 
-                !amount.trim() || 
-                !orderMin.trim() || 
-                !orderMax.trim() ||
-                selectedPaymentDetails.length === 0
+              className={`flex-1 rounded-[24px] border-1 text-white text-base py-2 ${type === "buy"
+                ? "bg-[#1D8751] border-[#1D8751]"
+                : "bg-[#E23D3A] border-[#E23D3A]"
+                } ${postOrderLoading ||
+                  Object.values(errors).some(error => error !== undefined) ||
+                  !amount.trim() ||
+                  !orderMin.trim() ||
+                  !orderMax.trim() ||
+                  selectedPaymentDetails.length === 0
                   ? "opacity-50 cursor-not-allowed"
                   : ""
-              }`}
+                }`}
               onClick={handleSubmit}
               disabled={
-                postOrderLoading || 
-                Object.values(errors).some(error => error !== undefined) || 
-                !amount.trim() || 
-                !orderMin.trim() || 
+                postOrderLoading ||
+                Object.values(errors).some(error => error !== undefined) ||
+                !amount.trim() ||
+                !orderMin.trim() ||
                 !orderMax.trim() ||
                 selectedPaymentDetails.length === 0
               }
