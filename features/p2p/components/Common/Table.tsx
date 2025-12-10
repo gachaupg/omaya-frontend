@@ -6,6 +6,9 @@ import { Download, Search, X, ArrowLeft, Pointer, Eye } from "lucide-react";
 import { formatDate, formatNumber } from "@/utils/formatters";
 import { TiArrowUnsorted } from "react-icons/ti";
 import html2canvas from "html2canvas";
+import * as XLSX from "xlsx";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -13,6 +16,8 @@ type TableProps = {
   title?: string;
   type?: string;
   data?: TransactionType[];
+  allDataForExport?: TransactionType[]; // All data for export (not paginated)
+  onFetchAllDataForExport?: () => Promise<TransactionType[]>; // Callback to fetch all data for export
   loading?: boolean;
   error?: string | null;
   currentPage?: number;
@@ -29,6 +34,8 @@ type TableProps = {
 export const Table: React.FC<TableProps> = ({
   title = "P2P History",
   data = [],
+  allDataForExport,
+  onFetchAllDataForExport,
   type = "",
   loading = false,
   error = null,
@@ -156,11 +163,174 @@ export const Table: React.FC<TableProps> = ({
     return `${day}-${month}-${year}`;
   };
 
-  const handleExport = (format: "csv" | "pdf") => {
-    if (onExport) {
-      onExport(format);
-    }
+  const handleExport = async (format: "csv" | "pdf") => {
     setShowExportOptions(false);
+    
+    // Priority order:
+    // 1. If parent provides custom export handler, use it (but warn if onFetchAllDataForExport is also provided)
+    // 2. Try onFetchAllDataForExport callback (best for fetching all data)
+    // 3. Try allDataForExport prop (if parent provides all data)
+    // 4. Finally fall back to data prop (current page only)
+    
+    if (onExport && !onFetchAllDataForExport) {
+      // Use parent's export handler only if no fetch callback is provided
+      try {
+        await Promise.resolve(onExport(format));
+      } catch (error) {
+        console.error("Export error:", error);
+        alert("Failed to export. Please try again.");
+      }
+      return;
+    }
+
+    // Use default export functionality with all data fetching
+    let sourceData: TransactionType[] = [];
+
+    console.log('🔍 Export - Checking data sources:', {
+      hasOnFetchAllData: !!onFetchAllDataForExport,
+      hasAllDataForExport: !!allDataForExport,
+      allDataLength: allDataForExport?.length || 0,
+      dataLength: data.length,
+      totalPages,
+    });
+
+    if (onFetchAllDataForExport) {
+      // Prefer fetching all data via callback
+      try {
+        console.log('📡 Export - Fetching all data via onFetchAllDataForExport callback');
+        sourceData = await onFetchAllDataForExport();
+        console.log(`✅ Export - Fetched ${sourceData.length} items via callback`);
+      } catch (error) {
+        console.error("❌ Export - Error fetching all data:", error);
+        // Fall back to allDataForExport or data
+        sourceData = allDataForExport && allDataForExport.length > 0 ? allDataForExport : data;
+        console.warn(`⚠️ Export - Using fallback data: ${sourceData.length} items`);
+      }
+    } else if (allDataForExport && allDataForExport.length > 0) {
+      sourceData = allDataForExport;
+      console.log(`✅ Export - Using allDataForExport prop: ${sourceData.length} items`);
+    } else {
+      sourceData = data;
+      console.warn(`⚠️ Export - Using data prop (current page only): ${sourceData.length} items`);
+      if (totalPages > 1) {
+        console.warn(`⚠️ Export - Warning: Only exporting current page (${data.length} items) out of ${totalPages} pages. Consider providing onFetchAllDataForExport prop.`);
+      }
+    }
+
+    // Debug: Log data counts
+    logger.debug('p2p', `Export - Total data prop items: ${data.length}`);
+    logger.debug('p2p', `Export - All data for export items: ${allDataForExport?.length || 0}`);
+    logger.debug('p2p', `Export - Using source data items: ${sourceData.length}`);
+    logger.debug('p2p', `Export - Total pages: ${totalPages}`);
+
+    // Apply date filter to ALL data (not just current page)
+    let dataToExport = getFilteredData(sourceData, dateFilter);
+    logger.debug('p2p', `Export - After date filter (${dateFilter}): ${dataToExport.length} items`);
+
+    // Apply search filter if search query exists
+    if (searchQuery && searchQuery.trim()) {
+      const searchLower = searchQuery.toLowerCase().trim();
+      const beforeSearch = dataToExport.length;
+      dataToExport = dataToExport.filter((item) => {
+        // Search across multiple fields
+        const searchableText = [
+          item.id || "",
+          item.asset || "",
+          item.type || "",
+          item.status || "",
+          item.amount?.toString() || "",
+          item.date?.toString() || "",
+        ]
+          .join(" ")
+          .toLowerCase();
+        return searchableText.includes(searchLower);
+      });
+      logger.debug('p2p', `Export - After search filter ("${searchQuery}"): ${dataToExport.length} items (was ${beforeSearch})`);
+    }
+
+    logger.debug('p2p', `Export - Final data to export: ${dataToExport.length} items`);
+
+    if (dataToExport.length === 0) {
+      alert("No data to export");
+      return;
+    }
+
+    if (format === "csv") {
+      // Export as CSV
+      try {
+        const exportData = dataToExport.map((item) => ({
+          Asset: item.asset || "",
+          ...(type === "p2p" && { ID: item.id || "" }),
+          Type: item.type || "",
+          Amount: item.amount || 0,
+          Date: item.date ? formatP2PDate(item.date) : "",
+          Status: item.status || "",
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(exportData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
+        
+        const fileName = `${title.toLowerCase().replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.csv`;
+        XLSX.writeFile(workbook, fileName);
+      } catch (error) {
+        console.error("CSV export error:", error);
+        alert("Failed to export CSV. Please try again.");
+      }
+    } else if (format === "pdf") {
+      // Export as PDF
+      try {
+        const doc = new jsPDF();
+        doc.setFontSize(16);
+        doc.text(title, 14, 15);
+
+        // Prepare table data
+        const tableData = dataToExport.map((item) => {
+          const row: string[] = [];
+          if (type === "p2p") {
+            row.push(String(item.asset || ""));
+            row.push(String(item.id || "").slice(0, 10) + "...");
+            row.push(String(item.type || ""));
+            row.push(item.date ? formatP2PDate(item.date) : "");
+            row.push(String(item.amount || 0));
+            row.push(String(item.status || ""));
+          } else {
+            row.push(String(item.asset || ""));
+            row.push(String(item.type || ""));
+            row.push(item.date ? formatP2PDate(item.date) : "");
+            row.push(String(item.amount || 0));
+            row.push(String(item.status || ""));
+          }
+          return row;
+        });
+
+        // Define headers based on type
+        const headers = type === "p2p" 
+          ? [["Asset", "ID", "Type", "Date", "Amount", "Status"]]
+          : [["Asset", "Type", "Date", "Amount", "Status"]];
+
+        autoTable(doc, {
+          head: headers,
+          body: tableData,
+          startY: 25,
+          theme: "grid",
+          styles: {
+            fontSize: 8,
+            cellPadding: 2,
+          },
+          headStyles: {
+            fillColor: [29, 135, 81], // #1D8751
+            textColor: 255,
+          },
+        });
+
+        const fileName = `${title.toLowerCase().replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf`;
+        doc.save(fileName);
+      } catch (error) {
+        console.error("PDF export error:", error);
+        alert("Failed to export PDF. Please try again.");
+      }
+    }
   };
 
   const getAmountColor = (type: string | undefined | null) => {
@@ -241,7 +411,7 @@ export const Table: React.FC<TableProps> = ({
   if (error) {
     return (
       <div className="w-full text-center py-8">
-        <div className="flex flex-col items-center justify-center border border-gray-200 dark:border-[#35353E] rounded-[24px] p-8 bg-white dark:bg-[#23232B]">
+        <div className="flex flex-col items-center justify-center border border-gray-200 dark:border-[#35353E] rounded-[24px] p-8 bg-white dark:bg-[var(--card-color)]">
           <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-[#35353E] flex items-center justify-center">
             <svg
               width="24"
@@ -288,7 +458,7 @@ export const Table: React.FC<TableProps> = ({
   if (data.length === 0) {
     return (
       <div className="w-full text-center py-2">
-        <div className="flex flex-col items-center justify-center border border-gray-200 dark:border-[#35353E] rounded-[24px] p-8 bg-white dark:bg-[#23232B]">
+        <div className="flex flex-col items-center justify-center border border-gray-200 dark:border-[#35353E] rounded-[24px] p-8 bg-white dark:bg-[var(--card-color)]">
           <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-[#35353E] flex items-center justify-center">
             <svg
               width="24"
@@ -353,7 +523,7 @@ export const Table: React.FC<TableProps> = ({
                       type="button"
                       onClick={() => setIsDateDropdownOpen((prev) => !prev)}
                       disabled={loading}
-                      className={`w-full px-3 py-2 rounded-full text-sm font-medium bg-[#E6E7EC] dark:bg-[#18181D] flex items-center gap-1 border-none outline-none focus:outline-none focus:ring-0 ${
+                      className={`w-full px-3 py-2 rounded-full text-sm font-medium bg-[#E6E7EC] dark:bg-[var(--bg-color)] flex items-center gap-1 border-none outline-none focus:outline-none focus:ring-0 ${
                         isAllFilterSelected
                           ? "text-[#8E939E] dark:text-[#8C8CA1]"
                           : "text-[#1F1F23] dark:text-white"
@@ -486,11 +656,11 @@ export const Table: React.FC<TableProps> = ({
 
         <div className="mt-3 overflow-x-auto">
           <div
-            className={`w-full border-2 bg-white dark:bg-[${tokens.colors.dark.card}] border-gray-200 dark:border-[${tokens.colors.dark.border}] shadow-lg rounded-[24px]`}
+            className={`w-full border-2 bg-black dark:bg-black border-gray-200 dark:border-[${tokens.colors.dark.border}] shadow-lg rounded-[24px]`}
           >
             {/* Desktop Table Header - Hidden on mobile */}
             <div
-              className={`hidden md:grid grid-cols-6 ${desktopGridCols} py-2 px-4 border-b bg-gray-50 dark:bg-[#35353E] border-gray-200 dark:border-[${tokens.colors.dark.border}] rounded-t-[24px]`}
+              className={`hidden md:grid grid-cols-6 ${desktopGridCols} py-2 px-4 border-b bg-gray-50 dark:bg-[var(--card-color)] border-gray-200 dark:border-[${tokens.colors.dark.border}] rounded-t-[24px]`}
             >
               <div
                 className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
@@ -538,9 +708,9 @@ export const Table: React.FC<TableProps> = ({
             </div>
 
             {/* Table Body */}
-            <div>
+            <div className="bg-black dark:bg-black">
               {filteredData.length === 0 && data.length > 0 ? (
-                <div className="w-full text-center py-12 px-4">
+                <div className="w-full text-center py-12 px-4 bg-black dark:bg-black">
                   <div className="flex flex-col items-center justify-center">
                     <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-[#35353E] flex items-center justify-center">
                       <svg
@@ -582,7 +752,7 @@ export const Table: React.FC<TableProps> = ({
                     </p>
                     <button
                       onClick={() => handleDateFilterChange("ALL")}
-                      className="inline-flex items-center px-4 py-2 border dark:border-[#35353E] border-gray-300 rounded-md shadow-sm text-sm font-medium dark:text-white text-gray-900 dark:bg-[#18181D] bg-gray-100 dark:hover:bg-[#35353E] hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1D8751] transition-colors"
+                      className="inline-flex items-center px-4 py-2 border dark:border-[#35353E] border-gray-300 rounded-md shadow-sm text-sm font-medium dark:text-white text-gray-900 dark:bg-[var(--bg-color)] bg-gray-100 dark:hover:bg-[#35353E] hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1D8751] transition-colors"
                     >
                       <svg
                         className="w-4 h-4 mr-2"
@@ -608,7 +778,7 @@ export const Table: React.FC<TableProps> = ({
                 <React.Fragment key={idx}>
                   {/* Desktop Grid View */}
                 <div
-                    className={`hidden md:grid ${desktopGridCols} mx-2 py-2 px-2 items-center hover:bg-gray-50 dark:hover:bg-[#2A2A35] transition-colors duration-200 bg-white dark:bg-[#18181D] relative`}
+                    className={`hidden md:grid ${desktopGridCols} mx-2 py-2 px-2 items-center hover:bg-gray-900 dark:hover:bg-gray-900 transition-colors duration-200 bg-black dark:bg-black relative`}
                 >
                   <div className="flex items-center gap-2">
                     <img
@@ -689,14 +859,14 @@ export const Table: React.FC<TableProps> = ({
                   </div>
                   {!isLastRow && (
                     <div
-                      className={`absolute bottom-0 left-4 right-4 h-px bg-gray-200 dark:bg-[${tokens.colors.dark.border}]`}
+                      className={`absolute bottom-0 left-4 right-4 h-px bg-gray-800 dark:bg-gray-800`}
                     />
                   )}
                 </div>
 
                   {/* Mobile Card View */}
                   <div
-                    className={`md:hidden flex flex-col gap-2 p-3 mx-4 relative hover:bg-gray-50 dark:hover:bg-[#2A2A35] transition-colors duration-200 bg-white dark:bg-[${tokens.colors.dark.background}]`}
+                    className={`md:hidden flex flex-col gap-2 p-3 mx-4 relative hover:bg-gray-900 dark:hover:bg-gray-900 transition-colors duration-200 bg-black dark:bg-black`}
                   >
                     {/* Top Row: Asset and Type */}
                     <div className="flex items-center justify-between">
@@ -747,7 +917,7 @@ export const Table: React.FC<TableProps> = ({
 
                     {/* ID Row (only for p2p type) */}
                     {type === "p2p" && row.id && (
-                      <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-[#35353E]">
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-800 dark:border-gray-800">
                         <span className="text-xs text-gray-500 dark:text-[#788099]">ID</span>
                         <div
                           className={`text-xs text-gray-500 dark:text-[${tokens.colors.dark.textBody}] cursor-pointer relative`}
@@ -771,7 +941,7 @@ export const Table: React.FC<TableProps> = ({
                     )}
 
                     {/* Action Button */}
-                    <div className="pt-2 border-t border-gray-200 dark:border-[#35353E]">
+                    <div className="pt-2 border-t border-gray-800 dark:border-gray-800">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -784,7 +954,7 @@ export const Table: React.FC<TableProps> = ({
                     </div>
                     {!isLastRow && (
                       <div
-                        className={`absolute bottom-0 left-4 right-4 h-px bg-gray-200 dark:bg-[${tokens.colors.dark.border}]`}
+                        className={`absolute bottom-0 left-4 right-4 h-px bg-gray-800 dark:bg-gray-800`}
                       />
                     )}
                   </div>
@@ -795,7 +965,7 @@ export const Table: React.FC<TableProps> = ({
             </div>
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-2 py-4 bg-transparent rounded-b-[24px]">
+              <div className="flex justify-center items-center gap-2 py-4 bg-black dark:bg-black rounded-b-[24px]">
                 <button
                   onClick={() => {
                     logger.debug('p2p', "Previous page clicked, current:", currentPage);
@@ -810,7 +980,7 @@ export const Table: React.FC<TableProps> = ({
                     }
                   }}
                   disabled={currentPage === 1}
-                  className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#23232B] text-gray-400 dark:text-[#8C8CA1] ${
+                  className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-400 dark:text-[#8C8CA1] ${
                     currentPage === 1
                       ? "opacity-50 cursor-not-allowed"
                       : "hover:bg-gray-100 dark:hover:bg-[#35353E]"
@@ -836,7 +1006,7 @@ export const Table: React.FC<TableProps> = ({
                           className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
                             currentPage === i
                               ? "bg-[#1D8751] text-white"
-                              : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[#23232B] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
+                              : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
                           }`}
                         >
                           {i}
@@ -853,7 +1023,7 @@ export const Table: React.FC<TableProps> = ({
                         className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
                           currentPage === 1
                             ? "bg-[#1D8751] text-white"
-                            : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[#23232B] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
+                            : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
                         }`}
                       >
                         1
@@ -896,7 +1066,7 @@ export const Table: React.FC<TableProps> = ({
                           className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
                             currentPage === i
                               ? "bg-[#1D8751] text-white"
-                              : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[#23232B] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
+                              : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
                           }`}
                         >
                           {i}
@@ -925,7 +1095,7 @@ export const Table: React.FC<TableProps> = ({
                           className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] ${
                             currentPage === totalPages
                               ? "bg-[#1D8751] text-white"
-                              : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[#23232B] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
+                              : "bg-white text-gray-400 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]"
                           }`}
                         >
                           {totalPages}
@@ -950,7 +1120,7 @@ export const Table: React.FC<TableProps> = ({
                     }
                   }}
                   disabled={currentPage === totalPages}
-                  className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#23232B] text-gray-400 dark:text-[#8C8CA1] ${
+                  className={`px-3 py-1 rounded-md text-sm font-medium border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-400 dark:text-[#8C8CA1] ${
                     currentPage === totalPages
                       ? "opacity-50 cursor-not-allowed"
                       : "hover:bg-gray-100 dark:hover:bg-[#35353E]"
@@ -972,7 +1142,7 @@ export const Table: React.FC<TableProps> = ({
         >
           <div
             ref={modalContentRef}
-            className="bg-white dark:bg-[#23232B] rounded-[24px] p-4 sm:p-6 w-full max-w-[500px] max-h-[90vh] overflow-y-auto"
+            className="bg-white dark:bg-[var(--card-color)] rounded-[24px] p-4 sm:p-6 w-full max-w-[500px] max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Image at the top */}

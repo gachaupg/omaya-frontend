@@ -34,12 +34,12 @@ interface TransactionInfoStepProps {
 }
 
 const strongBorder =
-  "border-[1.5px] border-gray-200 dark:border-white/10 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]";
+  "border-[1.5px] border-[#35353E] dark:border-[#35353E]";
 const baseCard =
-  `rounded-[26px] ${strongBorder} bg-transparent dark:text-white text-gray-900`;
+  `rounded-[26px] ${strongBorder} bg-white dark:bg-[#18181D] dark:text-white text-gray-900`;
 const labelCopy = "text-[12px] uppercase tracking-wide dark:text-[#7d7f95] text-gray-600";
 const inputBase =
-  `rounded-2xl dark:bg-[#1B1B23] bg-white ${strongBorder} dark:text-white text-gray-900 px-4 py-2 w-full text-lg dark:placeholder:text-[#5f6070] placeholder:text-gray-400 focus:outline-none`;
+  `rounded-2xl bg-transparent dark:bg-transparent ${strongBorder} dark:text-white text-[#35353e] px-4 py-2 w-full text-lg dark:placeholder:text-[#5f6070] placeholder:text-gray-400 focus:outline-none h-[48px]`;
 
 const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
   const { isDark } = useTheme();
@@ -132,8 +132,6 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
 
     const viewportWidth = window.innerWidth || 0;
     const minMargin = 16;
-    const minWidth = 280;
-    const maxWidth = 450;
 
     // Get the trigger element
     const triggerEl = isFrom ? fromAssetDropdownRef.current : toAssetDropdownRef.current;
@@ -156,20 +154,20 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
       currentCard = document.querySelector("[data-swap-card='true']") as HTMLElement;
     }
 
-    // Default dropdown style
+    // Default dropdown style (fallback)
     let dropdownStyle: React.CSSProperties = {
       position: "absolute",
       top: 200,
-      left: (viewportWidth - minWidth) / 2,
-      width: minWidth,
+      left: "50%",
+      transform: "translateX(-50%)",
+      width: 280,
     };
 
     if (triggerEl && currentCard) {
       const triggerRect = triggerEl.getBoundingClientRect();
-      const cardRect = currentCard.getBoundingClientRect();
 
-
-      let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.width));
+      // Match dropdown width exactly to trigger button width
+      let desiredWidth = triggerRect.width;
 
       let top = triggerRect.bottom + window.scrollY + 4; // 4px below button
       let left = triggerRect.left + window.scrollX;
@@ -222,11 +220,11 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
       (
         <div
           ref={isFrom ? fromAssetDropdownContentRef : toAssetDropdownContentRef}
-          className="bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl z-[9999] max-h-[70vh] sm:max-h-[60vh] overflow-hidden"
+          className="bg-white dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl z-[9999] max-h-[70vh] sm:max-h-[60vh] overflow-hidden"
           style={dropdownStyle}
         >
           {/* Dropdown Title */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-600">
+          <div className="flex items-center justify-between px-2 sm:px-3 md:px-4 py-2 sm:py-3 border-b border-gray-200 dark:border-gray-600">
             <h3 className="text-base font-semibold text-gray-900 dark:text-white">Currency from</h3>
             <button
               onClick={toggle}
@@ -240,7 +238,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
           </div>
 
           {/* Search Input */}
-          <div className="p-2 border-b border-gray-200 dark:border-gray-600">
+          <div className="p-1 sm:p-2 border-b border-gray-200 dark:border-gray-600">
             <div className="relative">
               <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
               <input
@@ -254,7 +252,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
           </div>
 
           {/* Asset List */}
-          <div className="max-h-[60vh] sm:max-h-[50vh] overflow-y-auto p-1">
+          <div className="max-h-[60vh] sm:max-h-[50vh] overflow-y-auto p-0.5 sm:p-1">
             {filtered.length === 0 ? (
               <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
                 {searchValue ? "No assets found" : "No assets available"}
@@ -264,7 +262,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                 {filtered.map((option, idx) => (
                   <div
                     key={`${option.ticker}-${option.network}-${idx}`}
-                    className="flex items-center gap-3 p-3 sm:p-4 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors duration-150"
+                    className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 md:p-4 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors duration-150"
                     onClick={() => {
                       onSelect(option);
                       toggle();
@@ -329,7 +327,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
         <button
           type="button"
           onClick={toggle}
-          className={`flex items-center justify-between w-full rounded-2xl ${strongBorder} dark:bg-[#1B1B23] bg-white px-4 py-2 text-lg`}
+          className={`flex items-center justify-between w-full rounded-2xl ${strongBorder} bg-transparent dark:bg-transparent px-4 py-2 text-lg h-[48px]`}
         >
           <div className="flex items-center gap-3 text-left min-w-0">
             <img
@@ -374,8 +372,14 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
     value: string,
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void,
     asset: SupportedAsset | null,
-    isActive: boolean
-  ) => (
+    isActive: boolean,
+    isYouSend: boolean = false
+  ) => {
+    const inputClassName = isYouSend 
+      ? inputBase 
+      : inputBase.replace('bg-transparent dark:bg-transparent', 'bg-white dark:bg-[#35353E]');
+    
+    return (
     <div className="space-y-2">
       {label && <p className={labelCopy}>{label}</p>}
       <div className="relative">
@@ -385,9 +389,9 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
           value={value}
           onChange={onChange}
           placeholder="Enter amount"
-          className={inputBase}
+          className={inputClassName}
         />
-        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold dark:text-white/80 text-gray-700">
+        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#35353e] dark:text-white/80">
           {asset?.ticker?.toUpperCase() ||
             asset?.symbol?.toUpperCase() ||
             "USDT"}
@@ -399,19 +403,20 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
         )}
       </div>
     </div>
-  );
+    );
+  };
 
   return (
     <div className="w-full flex flex-col   dark:text-white text-gray-900">
-      <h2 className="text-base sm:text-lg md:text-xl font-semibold mb-4 dark:text-[#9ba3c5] text-gray-700">
+      <h2 className="text-base sm:text-lg md:text-xl font-semibold mb-2 sm:mb-3 md:mb-4 dark:text-[#9ba3c5] text-gray-700">
         <span className="dark:text-[#7e7e8f] text-gray-500 mr-1">1-</span>
         Transaction Info
       </h2>
 
       {/* You Send */}
-      <div className="relative mb-4">
-        <div className={`${baseCard} p-1 sm:p-6 space-y-4`} data-swap-card="true">
-          <div className="flex flex-col sm:flex-row sm:items-end gap-1 sm:gap-4">
+      <div className="relative mb-2 sm:mb-3 md:mb-4">
+        <div className={`${baseCard} p-2 sm:p-3 md:p-6 space-y-3 sm:space-y-4`} data-swap-card="true">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-3 md:gap-4">
             <div className="space-y-1 sm:flex-1">
               <p className="text-sm sm:text-base font-semibold">You Send</p>
               <p className="text-xs dark:text-[#7d7f95] text-gray-500 pb-1">
@@ -422,14 +427,15 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
               Asset
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 md:gap-4">
             <div className="flex-1 min-w-0">
               {renderAmountInput(
                 "",
                 fromAmount,
                 onFromAmountChange,
                 fromAsset,
-                activeInputField === "from"
+                activeInputField === "from",
+                true
               )}
             </div>
             <div className="flex-1 min-w-0">
@@ -466,9 +472,9 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
       </div>
 
       {/* You Receive */}
-      <div className="mb-4">
-        <div className={`${baseCard} p-4 sm:p-6 space-y-4`} data-swap-card="true">
-          <div className="flex flex-col sm:flex-row sm:items-end gap-1 sm:gap-4">
+      <div className="mb-2 sm:mb-3 md:mb-4">
+        <div className={`${baseCard} p-2 sm:p-3 md:p-6 space-y-3 sm:space-y-4`} data-swap-card="true">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-3 md:gap-4">
             <div className="space-y-1 sm:flex-1">
               <p className="text-sm sm:text-base font-semibold">You Receive</p>
               <p className="text-xs dark:text-[#7d7f95] text-gray-500 pb-1">
@@ -479,7 +485,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
               Asset
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 md:gap-4">
             <div className="flex-1 min-w-0">
               {renderAmountInput(
                 "",

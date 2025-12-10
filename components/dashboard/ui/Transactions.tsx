@@ -19,8 +19,8 @@ export const NoDataFound = ({
   const { t } = useDashboardI18n();
 
   return (
-    <div className="w-full text-center py-8">
-      <div className="flex flex-col items-center justify-center dark:border-[#35353E] border-gray-200 border rounded-[24px] p-8 dark:bg-[#23232B] bg-gray-50">
+    <div className="w-full text-center py-4 sm:py-6 md:py-8">
+      <div className="flex flex-col items-center justify-center dark:border-[#35353E] border-gray-200 border rounded-[24px] p-4 sm:p-6 md:p-8 dark:bg-[#23232B] bg-gray-50">
         <div className="w-16 h-16 mb-4 rounded-full dark:bg-[#35353E] bg-gray-200 flex items-center justify-center">
           <svg
             width="24"

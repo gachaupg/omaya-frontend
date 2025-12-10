@@ -351,7 +351,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
   };
 
   return (
-    <div className="final-buy-container grid grid-cols-1 md:grid-cols-3 gap-6 p-2 md:p-6 min-h-screen bg-[#EEF1F4] dark:bg-[#18181D]">
+    <div className="final-buy-container grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-4 md:gap-6 p-1 sm:p-2 md:p-6 min-h-screen bg-[#EEF1F4] dark:bg-[var(--bg-color)]">
       {/* Left Column: Main Info */}
       <div className="md:col-span-2 flex flex-col mt-6  gap-1">
         {confirmOrderError && (
@@ -384,14 +384,14 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
           </div>
           <button
             onClick={handleRefresh}
-            className="flex items-center gap-1 bg-white dark:bg-[#18181D] text-[#1D8751] rounded-lg px-2 py-1 border border-[#E8EFF5] dark:border-[#35353E] hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors"
+            className="flex items-center gap-1 bg-white dark:bg-[var(--bg-color)] text-[#1D8751] rounded-lg px-2 py-1 border border-[#E8EFF5] dark:border-[#35353E] hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors"
             title="Refresh"
           >
             <RefreshCw size={14} />
           </button>
         </div>
         {/* Advertiser Info */}
-        <section className=" rounded-[18px] p-4 flex items-center gap-4  border-2 border-[#E8EFF5] dark:border-[#35353E] bg-gray-50 dark:bg-[#18181D] mb-2 ">
+        <section className=" rounded-[18px] p-4 flex items-center gap-4  border-2 border-[#E8EFF5] dark:border-[#35353E] bg-gray-50 dark:bg-[var(--bg-color)] mb-2 ">
           <div className="flex flex-col justify-start gap-2">
             <div className="flex items-center gap-2">
               <div className="icon rounded-full w-8 h-8 flex items-center justify-center text-lg font-bold bg-[#1D8751] text-white">
@@ -467,14 +467,14 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
             </button>
           </div>
         </div>
-        <section className="order-info rounded-[18px] p-4 border-2 border-[#E8EFF5] dark:border-[#35353E] bg-gray-50 dark:bg-[#18181D] ">
+        <section className="order-info rounded-[18px] p-4 border-2 border-[#E8EFF5] dark:border-[#35353E] bg-gray-50 dark:bg-[var(--bg-color)] ">
           <div className="flex flex-col md:flex-row gap-4">
             {/* I want to Send */}
             <div className="flex-1 flex flex-col mb-2 md:mb-0">
               <div className="mb-1 text-gray-600 dark:text-[#788099] text-[0.95rem] font-medium">
                 I want to Send
               </div>
-              <div className="flex items-center h-[46px] rounded-2xl border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[#18181D] px-2">
+              <div className="flex items-center h-[46px] rounded-2xl border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[var(--bg-color)] px-2">
                 <span className="text-[#1D8751] text-2xl mr-2">$</span>
                 <span className="text-[#1D8751] text-xl font-semibold">
                 {formatAmount(receiveAmount)}
@@ -490,7 +490,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
               <div className="mb-1 text-gray-600 dark:text-[#788099] text-[0.95rem] font-medium">
                 I want to Receive
               </div>
-              <div className="flex items-center h-[46px] rounded-2xl border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[#18181D] px-2">
+              <div className="flex items-center h-[46px] rounded-2xl border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[var(--bg-color)] px-2">
                 {/* Placeholder for Tether/USDT icon */}
                 <span className="text-[#1D8751] text-2xl mr-2">
                   <img
@@ -546,80 +546,80 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
               )}
             </div>
           </div>
-          <div className="rounded-[18px] flex flex-col p-2 md:p-4 gap-4 bg-gray-50 dark:bg-[#18181D] border-1 border-[#E8EFF5] dark:border-[#35353E]">
+          <div className="rounded-[18px] flex flex-col p-2 md:p-4 gap-4 bg-gray-50 dark:bg-[var(--bg-color)] border-1 border-[#E8EFF5] dark:border-[#35353E]">
             {/* Left: Bank Info */}
             <div className="flex flex-col gap-4">
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex flex-row gap-1 p-3 w-full md:w-1/3 min-h-[120px] md:min-h-[220px] border border-[#E8EFF5] dark:border-[#3C3C47] rounded-2xl bg-white dark:bg-[#18181D] mb-4 md:mb-0">
+              <div className="flex flex-col md:flex-row gap-3 md:gap-4">
+                <div className="flex flex-row gap-1 p-2 md:p-3 w-full md:w-1/4 min-h-[100px] md:min-h-[180px] border border-[#E8EFF5] dark:border-[#3C3C47] rounded-2xl bg-white dark:bg-[var(--bg-color)] mb-4 md:mb-0">
                   {/* Replace with actual logo if available */}
                   <div className="w-5 h-5 rounded-full bg-[#E8EFF5] dark:bg-white flex items-center justify-center mb-2">
-                    <span className="text-[#1D8751] font-bold">
+                    <span className="text-[#1D8751] font-bold text-xs">
                       {paymentDetails?.provider[0].toUpperCase()}
                     </span>
                   </div>
-                  <span className="text-gray-900 dark:text-white text-[13px] font-medium">
+                  <span className="text-gray-900 dark:text-white text-xs md:text-[13px] font-medium">
                     {paymentDetails?.provider}
                   </span>
                 </div>
-                <div className="flex flex-col gap-4 w-full">
-                  <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-3 md:gap-4 w-full md:flex-1 min-w-0">
+                  <div className="flex flex-col gap-3 md:gap-4">
                     {/* Account Name */}
                     <div>
-                        <p className="text-[#788099] w-32 mb-2">
+                        <p className="text-[#788099] text-xs md:text-sm mb-2">
                           Account Name
                         </p>
-                      <div className="w-full flex gap-4">
-                        <p className="flex-1 px-6 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] font-semibold text-lg flex items-center">
-                          <span className="w-3 h-3 font-[13px] rounded-full bg-[#1D8751] inline-block mr-2"></span>
-                          {paymentDetails?.account_name}
+                      <div className="w-full flex flex-col sm:flex-row gap-2 sm:gap-3">
+                        <p className="flex-1 min-w-0 px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] font-semibold text-sm md:text-base flex items-center truncate">
+                          <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#1D8751] inline-block mr-2 flex-shrink-0"></span>
+                          <span className="truncate">{paymentDetails?.account_name}</span>
                         </p>
                         <button
-                        className="w-full md:w-auto mt-2 md:mt-0 px-5 py-2 rounded-full border border-[#E8EFF5] dark:border-[#35353E] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] font-semibold flex items-center justify-center gap-2"
+                        className="w-full sm:w-auto px-3 md:px-4 py-2 rounded-full border border-[#E8EFF5] dark:border-[#35353E] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] font-semibold text-sm flex items-center justify-center gap-1.5 flex-shrink-0"
                         onClick={() =>
                           handleCopy(paymentDetails?.account_name || "")
                         }
                       >
                         Copy
-                        <Copy className="w-4 h-4" />
+                        <Copy className="w-3 h-3 md:w-4 md:h-4" />
                       </button>
                       </div>
                     </div>
                     {/* Account Number */}
                     <div>
-                        <p className="text-[#788099] w-32 mb-2">
+                        <p className="text-[#788099] text-xs md:text-sm mb-2">
                           Account Number
                         </p>
-                      <div className="w-full flex gap-4">
-                        <p className="flex-1 px-6 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] font-semibold text-lg flex items-center">
-                          <span className="w-3 h-3 font-[13px] rounded-full bg-[#1D8751] inline-block mr-2"></span>
-                          {paymentDetails?.account_number}
+                      <div className="w-full flex flex-col sm:flex-row gap-2 sm:gap-3">
+                        <p className="flex-1 min-w-0 px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] font-semibold text-sm md:text-base flex items-center truncate">
+                          <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#1D8751] inline-block mr-2 flex-shrink-0"></span>
+                          <span className="truncate">{paymentDetails?.account_number}</span>
                         </p>
                         <button
-                          className="w-full md:w-auto mt-2 md:mt-0 px-5 py-2 rounded-full border border-[#E8EFF5] dark:border-[#35353E] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] font-semibold flex items-center justify-center gap-2"
+                          className="w-full sm:w-auto px-3 md:px-4 py-2 rounded-full border border-[#E8EFF5] dark:border-[#35353E] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] font-semibold text-sm flex items-center justify-center gap-1.5 flex-shrink-0"
                           onClick={() =>
                             handleCopy(paymentDetails?.account_number || "")
                           }
                         >
                           Copy
-                          <Copy className="w-4 h-4" />
+                          <Copy className="w-3 h-3 md:w-4 md:h-4" />
                         </button>
                       </div>
                     </div>
                     {/* Transaction ID */}
                     <div>
-                        <p className="text-[#788099] w-32 text mb-2">
+                        <p className="text-[#788099] text-xs md:text-sm mb-2">
                           Transaction ID
                         </p>
-                      <div className="w-full flex gap-4">
-                        <p className="flex-1 font-[13px] px-6 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] flex items-center">
-                          {singleOrder?.id}
+                      <div className="w-full flex flex-col sm:flex-row gap-2 sm:gap-3">
+                        <p className="flex-1 min-w-0 font-[11px] md:font-[13px] px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] flex items-center truncate">
+                          <span className="truncate">{singleOrder?.id}</span>
                         </p>
                         <button
-                          className="w-full md:w-auto mt-2 md:mt-0 px-5 py-2 font-[13px] rounded-full border border-[#E8EFF5] dark:border-[#35353E] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] flex items-center justify-center gap-2"
+                          className="w-full sm:w-auto px-3 md:px-4 py-2 font-[11px] md:font-[13px] rounded-full border border-[#E8EFF5] dark:border-[#35353E] text-[#1D8751] bg-[#E8EFF5] dark:bg-[#35353E] flex items-center justify-center gap-1.5 flex-shrink-0"
                           onClick={() => handleCopy(singleOrder?.id || "")}
                         >
                           Copy
-                          <Copy className="w-4 h-4" />
+                          <Copy className="w-3 h-3 md:w-4 md:h-4" />
                         </button>
                       </div>
                     </div>
@@ -628,7 +628,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
               </div>
               <div className="flex flex-col  gap-4">
                 <div className="flex-1">
-                  <div className="rounded-2xl border border-[#1D8751] bg-white dark:bg-[#18181D] p-6 mt-2 text-base flex flex-col gap-2">
+                  <div className="rounded-2xl border border-[#1D8751] bg-white dark:bg-[var(--bg-color)] p-6 mt-2 text-base flex flex-col gap-2">
                     <div className="flex items-center gap-3 text-gray-900 dark:text-white">
                       <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block"></span>
                       Please send the money from your own account Only
@@ -660,7 +660,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
                     <button
                       className={`w-full md:w-auto flex-1 py-2 rounded-2xl border-2 border-[#E8EFF5] dark:border-[#3C3C47] text-lg  ${
                         confirmOrder?.status === "half-matched"
-                          ? "bg-white dark:bg-[#23232A] text-gray-400 dark:text-[#888]"
+                          ? "bg-white dark:bg-[var(--card-color)] text-gray-400 dark:text-[#888]"
                           : "bg-transparent text-gray-600 dark:text-[#788099]"
                       }`}
                       onClick={handleCancelTransaction}
@@ -673,7 +673,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
                     <button
                     className={`w-full md:w-auto flex-1 py-2 rounded-2xl text-lg  ${
                         confirmOrder?.status === "half-matched"
-                          ? "bg-white dark:bg-[#23232A] text-gray-400 dark:text-[#888]"
+                          ? "bg-white dark:bg-[var(--card-color)] text-gray-400 dark:text-[#888]"
                           : "bg-[#1D8751] text-white"
                       } ${(() => {
                         const isThisTradeLoading =
@@ -738,7 +738,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
           buyerName={user?.email === confirmOrder?.buyer ? `${user?.first_name || ""} ${user?.last_name || ""}`.trim() || "You" : "Buyer"}
         />
         {/* Advertiser's Terms */}
-        <section className="advertiser-terms rounded-lg p-4 bg-white dark:bg-[#23232B]">
+        <section className="advertiser-terms rounded-lg p-4 bg-white dark:bg-[var(--card-color)]">
           <div className="font-semibold text-lg mb-2 text-gray-900 dark:text-white flex gap-4 items-center">
             Advertiser's Terms
             <AlertCircle className="w-5 h-5 text-[#E23D3A]" />
@@ -756,7 +756,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
         tradeId={confirmOrder?.id || ""}
       />
       {showCancelMsg && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-white dark:bg-[#23232A] text-gray-900 dark:text-white px-6 py-3 rounded-xl shadow-lg z-50 border border-[#E23D3A] text-[13px]">
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-white dark:bg-[var(--card-color)] text-gray-900 dark:text-white px-6 py-3 rounded-xl shadow-lg z-50 border border-[#E23D3A] text-[13px]">
           Trade cancelled
         </div>
       )}
@@ -770,7 +770,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
 
         <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="mx-auto w-full max-w-md rounded-2xl bg-white dark:bg-[#23232A] text-gray-900 dark:text-white border border-[#E8EFF5] dark:border-[#35353E]">
+          <Dialog.Panel className="mx-auto w-full max-w-md rounded-2xl bg-white dark:bg-[var(--card-color)] text-gray-900 dark:text-white border border-[#E8EFF5] dark:border-[#35353E]">
             <div className="p-8">
               <div className="text-center">
                 {/* Success Icon */}
@@ -796,7 +796,7 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
                 </Dialog.Title>
 
                 {/* Trade Details */}
-                <div className="bg-gray-50 dark:bg-[#18181D] rounded-xl p-4 mb-6 border border-[#E8EFF5] dark:border-[#35353E]">
+                <div className="bg-gray-50 dark:bg-[var(--bg-color)] rounded-xl p-4 mb-6 border border-[#E8EFF5] dark:border-[#35353E]">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-gray-600 dark:text-[#A3A3C2]">
                       Amount Sent:

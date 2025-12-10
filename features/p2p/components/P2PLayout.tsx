@@ -87,7 +87,7 @@ const handleTabChange = (tab: string) => {
             return <Chats />;
       case "chats":
         return (
-          <div className="w-full rounded-2xl border border-dashed border-[#D1D2D4FF] dark:border-[#35353E] bg-white dark:bg-[#1D1D23] p-6 text-center text-sm text-[#788099] dark:text-[#A2A4A9]">
+          <div className="w-full rounded-2xl border border-dashed border-[#D1D2D4FF] dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] p-6 text-center text-sm text-[#788099] dark:text-[#A2A4A9]">
             Chats coming soon.
           </div>
         );
@@ -97,7 +97,7 @@ const handleTabChange = (tab: string) => {
   };
   return (
     <P2PDataProvider>
-      <div className="dark:bg-[#18181D] bg-[#EEF1F4] w-full min-h-screen">
+      <div className="dark:bg-[var(--bg-color)] bg-[#EEF1F4] w-full min-h-screen">
          <Tabs 
           tabs={p2pTabs} 
           activeTab={activeTab} 
@@ -107,7 +107,7 @@ const handleTabChange = (tab: string) => {
           showUnreadMessages={showUnreadMessages}
           shouldShowMessagesButton={shouldShowMessagesButton}
         />
-        <div className="px-3 sm:px-4 pt-0 mb-4 flex flex-col gap-4 rounded-lg w-full">
+        <div className="px-1 sm:px-2 md:px-4 pt-0 mb-2 sm:mb-4 flex flex-col gap-2 sm:gap-3 md:gap-4 rounded-lg w-full">
           {renderTabContent()}
         </div>
       </div>

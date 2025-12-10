@@ -487,6 +487,11 @@ export const Chats: React.FC = () => {
     // Use displayedMessages which includes optimistic messages
     const allMessages = displayedMessages;
     
+    // Check if chat is closed - only show if status is "Complete"/"completed" or "Responded"/"responded"
+    const chatStatus = selectedUser ? (selectedUser as any).status : null;
+    const normalizedStatus = chatStatus ? String(chatStatus).toLowerCase() : null;
+    const isChatClosed = normalizedStatus === "complete" || normalizedStatus === "responded";
+    
     if (allMessages.length === 0) {
       return (
         <div className="flex items-center justify-center h-full text-sm text-[#788099] dark:text-[#A2A4A9]">
@@ -545,6 +550,39 @@ export const Chats: React.FC = () => {
               </div>
             );
           })}
+        
+        {/* Chat Closed Notification in messages area */}
+        {isChatClosed && (
+          <div className="mt-4 mb-2 bg-[#2C2C34] rounded-xl p-4 border border-[#35353E]">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full border border-gray-400 dark:border-gray-600 flex items-center justify-center bg-transparent">
+                <svg
+                  className="w-4 h-4 text-gray-400 dark:text-gray-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-white mb-1">Chat Closed</h3>
+                <p className="text-xs text-gray-400 dark:text-gray-500 leading-relaxed">
+                  This chat is now closed as there are no active or pending orders.
+                </p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 leading-relaxed mt-1">
+                  Please note that the chat will automatically reopen only when there is a new order between you and this user.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div ref={messagesEndRef} />
       </div>
     );
@@ -581,7 +619,7 @@ export const Chats: React.FC = () => {
   return (
     <div className="w-full h-full flex flex-col">
       {/* Header */}
-      <div className="px-3 sm:px-4 pt-0 pb-2">
+      <div className="px-1 sm:px-2 md:px-4 pt-0 pb-2">
         <h1 className="text-xl sm:text-2xl font-bold text-white">
           P2P Trading Chat
         </h1>
@@ -763,23 +801,66 @@ export const Chats: React.FC = () => {
               <div className="flex-1">
                 <input
                   type="text"
-                  placeholder={termsAccepted ? "Type your message..." : "Accept terms to start chatting"}
+                  placeholder={
+                    !termsAccepted 
+                      ? "Accept terms to start chatting" 
+                      : (() => {
+                          const status = selectedUser ? (selectedUser as any).status : null;
+                          const normalizedStatus = status ? String(status).toLowerCase() : null;
+                          const isClosed = normalizedStatus === "complete" || normalizedStatus === "responded";
+                          return isClosed ? "Chat is closed - No active orders" : "Type your message...";
+                        })()
+                  }
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  disabled={!termsAccepted || isSending}
+                  disabled={
+                    !termsAccepted || 
+                    isSending || 
+                    (() => {
+                      const status = selectedUser ? (selectedUser as any).status : null;
+                      const normalizedStatus = status ? String(status).toLowerCase() : null;
+                      return normalizedStatus === "complete" || normalizedStatus === "responded";
+                    })()
+                  }
                   className="w-full rounded-full bg-[#111827] border border-[#374151] px-4 py-2 text-xs sm:text-sm text-white placeholder:text-[#6B7280] focus:outline-none focus:border-[#1D8751] disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
               <button
                 onClick={handleSendMessage}
-                disabled={!termsAccepted || !messageInput.trim() || isSending}
+                disabled={
+                  !termsAccepted || 
+                  !messageInput.trim() || 
+                  isSending ||
+                  (() => {
+                    const status = selectedUser ? (selectedUser as any).status : null;
+                    const normalizedStatus = status ? String(status).toLowerCase() : null;
+                    return normalizedStatus === "complete" || normalizedStatus === "responded";
+                  })()
+                }
                 className={`w-8 h-8 rounded-full bg-[#1D8751] text-white flex items-center justify-center transition-opacity ${
-                  termsAccepted && messageInput.trim() && !isSending
+                  (() => {
+                    const status = selectedUser ? (selectedUser as any).status : null;
+                    const normalizedStatus = status ? String(status).toLowerCase() : null;
+                    const isClosed = normalizedStatus === "complete" || normalizedStatus === "responded";
+                    return termsAccepted && 
+                           messageInput.trim() && 
+                           !isSending &&
+                           !isClosed;
+                  })()
                     ? "opacity-100 hover:bg-[#15803D] cursor-pointer"
                     : "opacity-60 cursor-not-allowed"
                 }`}
-                title={!termsAccepted ? "Accept terms to send messages" : isSending ? "Sending..." : "Send message"}
+                title={
+                  !termsAccepted 
+                    ? "Accept terms to send messages" 
+                    : (() => {
+                        const status = selectedUser ? (selectedUser as any).status : null;
+                        const normalizedStatus = status ? String(status).toLowerCase() : null;
+                        const isClosed = normalizedStatus === "complete" || normalizedStatus === "responded";
+                        return isClosed ? "Chat is closed" : (isSending ? "Sending..." : "Send message");
+                      })()
+                }
               >
                 <svg
                   className="w-4 h-4"

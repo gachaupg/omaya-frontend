@@ -4,7 +4,7 @@ import { useMarketingI18n } from "@/lib/useMarketingI18n";
 import Image from "next/image";
 import Link from "next/link";
 import { tokens } from "@/styles/tokens";
-import { Play, MessageCircle, Plus } from "lucide-react";
+import { Play, MessageCircle, Plus, BarChart, Globe, Lock, DollarSign, Users, TrendingUp, Shield, Zap, Gift, UserPlus, ArrowRight, Building2, Calendar, Clock, MapPin, Phone, Mail, Send, ChevronDown, ChevronUp } from "lucide-react";
 import ExchangeForm from "@/components/ExchangeForm";
 import { useBlog } from "@/features/blogs/hooks/blog";
 import { BlogPost } from "@/features/blogs/types";
@@ -70,6 +70,8 @@ const fallbackSupportedAssets = [
     symbol: "FXP",
     image:
       "https://res.cloudinary.com/dam1sxczj/image/upload/v1746793801/FXPRIMUS-logo_2_k8ikwb.png",
+    current_price: 0,
+    price_change_percentage_24h: 0,
   },
   {
     id: "perfect-money",
@@ -77,6 +79,8 @@ const fallbackSupportedAssets = [
     symbol: "PM",
     image:
       "https://res.cloudinary.com/dam1sxczj/image/upload/v1746793801/Perfect_Money_Logo_2_niaa2j.png",
+    current_price: 0,
+    price_change_percentage_24h: 0,
   },
   {
     id: "usdt-erc20",
@@ -84,6 +88,8 @@ const fallbackSupportedAssets = [
     symbol: "USDT",
     image:
       "https://res.cloudinary.com/dam1sxczj/image/upload/v1746793800/Group_164023_bluiv9.png",
+    current_price: 1.0,
+    price_change_percentage_24h: 0.01,
   },
   {
     id: "bitcoin",
@@ -91,6 +97,8 @@ const fallbackSupportedAssets = [
     symbol: "BTC",
     image:
       "https://res.cloudinary.com/dam1sxczj/image/upload/v1746793800/Bitcoin-1_b6ku56.png",
+    current_price: 42580,
+    price_change_percentage_24h: 2.4,
   },
   {
     id: "usdt-trc20",
@@ -98,6 +106,8 @@ const fallbackSupportedAssets = [
     symbol: "USDT",
     image:
       "https://res.cloudinary.com/dam1sxczj/image/upload/v1746793800/Tether_ttkeym.png",
+    current_price: 1.0,
+    price_change_percentage_24h: 0.01,
   },
   {
     id: "icm-capital",
@@ -105,6 +115,8 @@ const fallbackSupportedAssets = [
     symbol: "ICM",
     image:
       "https://res.cloudinary.com/dam1sxczj/image/upload/v1746793800/ICMCapital_1_qte6tt.png",
+    current_price: 0,
+    price_change_percentage_24h: 0,
   },
 ];
 
@@ -135,7 +147,7 @@ interface Article {
 export default function MarketingPage() {
   const { t } = useMarketingI18n();
   const [activeCategory, setActiveCategory] = useState<Category>("News");
-  const [openFAQ, setOpenFAQ] = useState<number | null>(4);
+  const [openFAQ, setOpenFAQ] = useState<number | null>(0);
   const [showContactSuccess, setShowContactSuccess] = useState(false);
   const [showContactError, setShowContactError] = useState(false);
   const [contactErrorMessage, setContactErrorMessage] = useState("");
@@ -157,6 +169,8 @@ export default function MarketingPage() {
         name: asset.name,
         symbol: asset.symbol?.toUpperCase() ?? "",
         image: asset.image ?? "/images/alert-circle.svg",
+        current_price: asset.current_price ?? 0,
+        price_change_percentage_24h: asset.price_change_percentage_24h ?? 0,
       })),
     [marketAssets]
   );
@@ -165,7 +179,7 @@ export default function MarketingPage() {
     ? transformedMarketAssets
     : fallbackSupportedAssets;
 
-  const maxPreviewAssets = 6;
+  const maxPreviewAssets = 8;
 
   const displayedAssets = useMemo(
     () =>
@@ -282,20 +296,16 @@ export default function MarketingPage() {
     };
   };
 
-  // Get articles based on active category
+  // Get all articles (both News and Blog)
   const getArticles = (): Article[] => {
-    const posts = activeCategory === "News" ? news : blogs;
-    return posts
+    const allPosts = [...news, ...blogs];
+    return allPosts
       .slice(0, 6)
       .map((post, index) => transformBlogToArticle(post, index));
   };
 
   const articles = getArticles();
-
-  // Filter articles based on active category
-  const filteredArticles = articles.filter(
-    (article) => article.category === activeCategory
-  );
+  const filteredArticles = articles;
 
   const toggleFAQ = (id: number) => {
     setOpenFAQ(openFAQ === id ? null : id);
@@ -325,21 +335,36 @@ export default function MarketingPage() {
   return (
     <div>
       <section
-        className="relative min-h-screen pt-18 pb-16 mx-auto overflow-visible bg-gradient-to-br from-[#022E18] via-[#022E18CC] to-transparent"
-        style={{
-          background: `
-            radial-gradient(circle at top left, ${tokens.colors.brand.hero} 0%, ${tokens.colors.brand.hero}CC 30%, transparent 70%),
-            radial-gradient(circle at bottom right, ${tokens.colors.brand.hero} 0%, ${tokens.colors.brand.hero}CC 30%, transparent 70%),
-            linear-gradient(135deg, ${tokens.colors.brand.hero} 0%, ${tokens.colors.brand.hero}CC 40%, 
-            ${tokens.colors.brand.lightGreen} 50%, ${tokens.colors.brand.hero}CC 60%, ${tokens.colors.brand.hero} 100%)
-          `,
-        }}
+        className="relative min-h-screen pt-18 pb-16 mx-auto overflow-visible bg-[#0A0A0A] dark:bg-[#0A0A0A] bg-white"
       >
+        {/* Green glowing particles background */}
+        <div className="absolute inset-0 overflow-hidden">
+          {/* Glowing particles */}
+          <div className="absolute top-20 left-10 w-2 h-2 bg-[#1D8751] rounded-full opacity-60 blur-sm animate-pulse"></div>
+          <div className="absolute top-40 right-20 w-3 h-3 bg-[#1D8751] rounded-full opacity-40 blur-md animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+          <div className="absolute bottom-32 left-1/4 w-2 h-2 bg-[#1D8751] rounded-full opacity-50 blur-sm animate-pulse" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute top-1/3 right-1/3 w-2.5 h-2.5 bg-[#1D8751] rounded-full opacity-45 blur-sm animate-pulse" style={{ animationDelay: '1.5s' }}></div>
+          <div className="absolute bottom-20 right-1/4 w-3 h-3 bg-[#1D8751] rounded-full opacity-35 blur-md animate-pulse" style={{ animationDelay: '2s' }}></div>
+          <div className="absolute top-1/2 left-1/3 w-2 h-2 bg-[#1D8751] rounded-full opacity-55 blur-sm animate-pulse" style={{ animationDelay: '2.5s' }}></div>
+          
+          {/* Subtle gradient overlays for depth */}
+          <div 
+            className="absolute inset-0 opacity-30"
+            style={{
+              background: `
+                radial-gradient(circle at 20% 30%, ${tokens.colors.brand.lightGreen}15 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, ${tokens.colors.brand.lightGreen}10 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, ${tokens.colors.brand.hero}08 0%, transparent 60%)
+              `,
+            }}
+          ></div>
+        </div>
+        
         {/* Heptagonal Patterns */}
         <div className="absolute inset-0 overflow-hidden">
           {/* Bottom right heptagon */}
           <div
-            className="absolute bottom-[80px] right-[20px] w-[100px] h-[100px] sm:bottom-[120px] sm:right-[30px] sm:w-[130px] sm:h-[130px] md:bottom-[160px] md:right-[40px] md:w-[170px] md:h-[170px] 2xl:bottom-[220px] 2xl:right-[130px] opacity-20 bg-[#13B562] hidden sm:block"
+            className="absolute bottom-[80px] right-[20px] w-[100px] h-[100px] sm:bottom-[120px] sm:right-[30px] sm:w-[130px] sm:h-[130px] md:bottom-[160px] md:right-[40px] md:w-[170px] md:h-[170px] 2xl:bottom-[220px] 2xl:right-[130px] opacity-20 bg-[#1D8751] hidden sm:block"
             style={{
               clipPath:
                 "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
@@ -348,7 +373,7 @@ export default function MarketingPage() {
 
           {/* Top left heptagon */}
           <div
-            className="absolute top-[-20px] left-[20px] w-[70px] h-[70px] sm:left-[30px] sm:w-[90px] sm:h-[90px] 2xl:left-[60px] opacity-20 bg-[#13B562] hidden sm:block"
+            className="absolute top-[-20px] left-[20px] w-[70px] h-[70px] sm:left-[30px] sm:w-[90px] sm:h-[90px] 2xl:left-[60px] opacity-20 bg-[#1D8751] hidden sm:block"
             style={{
               clipPath:
                 "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
@@ -357,7 +382,7 @@ export default function MarketingPage() {
 
           {/* Bottom left heptagon */}
           <div
-            className="absolute bottom-[-40px] left-[150px] w-[120px] h-[120px] sm:left-[200px] sm:w-[150px] sm:h-[150px] md:left-[300px] md:w-[180px] md:h-[180px] opacity-20 bg-[#13B562] hidden sm:block"
+            className="absolute bottom-[-40px] left-[150px] w-[120px] h-[120px] sm:left-[200px] sm:w-[150px] sm:h-[150px] md:left-[300px] md:w-[180px] md:h-[180px] opacity-20 bg-[#1D8751] hidden sm:block"
             style={{
               clipPath:
                 "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
@@ -366,7 +391,7 @@ export default function MarketingPage() {
 
           {/* Top right heptagon */}
           <div
-            className="absolute top-[40px] left-[50%] translate-x-[-50%] w-[120px] h-[120px] sm:top-[60px] sm:left-[60%] sm:w-[150px] sm:h-[150px] md:top-[70px] md:left-[720px] md:w-[180px] md:h-[180px] 2xl:left-[1250px] opacity-20 bg-[#13B562] hidden md:block"
+            className="absolute top-[40px] left-[50%] translate-x-[-50%] w-[120px] h-[120px] sm:top-[60px] sm:left-[60%] sm:w-[150px] sm:h-[150px] md:top-[70px] md:left-[720px] md:w-[180px] md:h-[180px] 2xl:left-[1250px] opacity-20 bg-[#1D8751] hidden md:block"
             style={{
               clipPath:
                 "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
@@ -375,430 +400,575 @@ export default function MarketingPage() {
         </div>
 
         <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 relative z-10 mt-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-3 items-start gap-y-5 md:gap-y-4 md:gap-x-6 lg:gap-x-8">
-            <div className="space-y-4 pl-0 md:pl-4 lg:pl-5 text-center md:text-left 2xl:col-span-2">
-              <h1 className="text-[1.875rem] sm:text-[2.25rem] md:text-[3rem] lg:text-[3.5rem] 2xl:text-[3.75rem] font-bold text-white tracking-tight sm:tracking-normal md:tracking-normal leading-tight sm:leading-snug text-balance">
-                <span className="inline-block w-full 2xl:text-[3.5rem]">
-                  {t("marketing.hero.heading1", "Welcome to OMAYA.io")}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 items-start gap-y-5 md:gap-y-4 md:gap-x-6 lg:gap-x-8 xl:gap-x-10">
+            <div className="space-y-2 md:space-y-3 pl-0 md:pl-4 lg:pl-5 text-center md:text-left">
+              {/* Green pill banner */}
+              <div className="inline-flex items-center justify-center md:justify-start">
+                <span className="bg-[#1D8751]/10 border border-[#1D8751] text-[#1D8751] px-3 py-1 rounded-full text-xs sm:text-sm font-medium">
+                  Somalia's #1 Crypto Exchange.
+                </span>
+              </div>
+
+              {/* Main heading */}
+              <h1 className="text-[1.5rem] sm:text-[1.75rem] md:text-[2.5rem] lg:text-[3rem] xl:text-[3.5rem] font-bold text-gray-900 dark:text-white tracking-tight leading-tight sm:leading-tight md:leading-tight lg:leading-tight">
+                <span className="block">Trade Crypto</span>
+                <span className="block text-[#1D8751]">Instantly</span>
+                <span className="block">
+                  With <span className="text-[#1D8751]">OMAYA</span>
                 </span>
               </h1>
-              <p className="text-white/90 leading-relaxed sm:leading-relaxed tracking-[0.02em] sm:tracking-[0.04em] md:tracking-[0.06em] max-w-full sm:max-w-2xl md:max-w-3xl mx-auto lg:mx-0 px-4 sm:px-0 text-sm sm:text-base md:text-base 2xl:text-lg text-balance">
-                {t(
-                  "marketing.hero.subtitle",
-                  "We are OMAYA EXCHANGE, Somalia's leading platform for exchanging cryptocurrencies and Forex. Founded by experts with over 15 years of IT experience, we bridge traditional finance with the digital economy in East Africa. Our secure and user-friendly platform is designed to meet the unique needs of our market, empowering users with seamless access to the world of digital assets. Committed to transparency, innovation, and education, we are shaping the future of finance in our region."
-                )}
+
+              {/* Description text */}
+              <p className="text-gray-700 dark:text-white/90 leading-relaxed max-w-full sm:max-w-2xl md:max-w-3xl mx-auto lg:mx-0 px-4 sm:px-0 text-xs sm:text-sm md:text-sm lg:text-base">
+                Experience lightning-fast trades, ultra-low fees, and bank-grade security.{" "}
+                <span className="text-[#1D8751]">Join 500,000+ traders worldwide.</span>
               </p>
-              <div className="flex flex-wrap gap-3 sm:gap-4 justify-center md:justify-start w-full sm:w-auto">
+
+              {/* CTA Buttons */}
+              <div className="flex flex-wrap gap-2 sm:gap-3 justify-center md:justify-start w-full sm:w-auto">
                 <a
                   href="#contact"
-                  className="rounded-md px-5 sm:px-6 py-2.5 sm:py-2 text-white bg-[#1D8751] text-sm sm:text-base 2xl:text-lg hover:bg-[#166b42] transition-colors min-h-[44px] flex items-center justify-center"
+                  className="rounded-lg px-5 sm:px-6 py-2.5 sm:py-2.5 text-white bg-[#1D8751] text-sm sm:text-base font-medium hover:bg-[#167a47] transition-colors min-h-[44px] flex items-center justify-center gap-2"
                 >
-                  {t("marketing.hero.cta.primary", "Contact Us")}
+                  Start Trading Now
+                  <span className="text-lg">→</span>
                 </a>
-                <button className="rounded-md text-white hover:bg-white/10 px-5 sm:px-6 py-2.5 sm:py-2 flex items-center gap-2 border border-[#1D8751] text-sm sm:text-base 2xl:text-lg min-h-[44px]">
-                  {t("marketing.hero.cta.secondary", "Watch Video")}
-                  <Play size={16} className="ml-1 text-[#1D8751]" />
+                <button className="rounded-lg px-5 sm:px-6 py-2.5 sm:py-2.5 text-white bg-[#1D1D23] border border-[#35353E] text-sm sm:text-base font-medium hover:bg-[#23232B] transition-colors min-h-[44px] flex items-center justify-center gap-2">
+                  Watch Demo
+                  <Play size={16} className="text-[#1D8751]" />
                 </button>
               </div>
+
+              {/* Three stat cards */}
+              <div className="flex flex-wrap gap-2 sm:gap-3 justify-center md:justify-start pt-1 md:pt-2">
+                {/* Trading Volume Card */}
+                <div className="bg-gray-100 dark:bg-white/10 backdrop-blur-sm rounded-lg px-5 py-3 flex flex-col items-center gap-2 min-w-[160px]">
+                  <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                    <BarChart className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <p className="text-gray-900 dark:text-white text-sm font-semibold text-center">$50M+</p>
+                  <p className="text-gray-700 dark:text-white text-xs font-medium text-center">Trading Volume</p>
+                </div>
+
+                {/* Countries Card */}
+                <div className="bg-gray-100 dark:bg-white/10 backdrop-blur-sm rounded-lg px-5 py-3 flex flex-col items-center gap-2 min-w-[160px]">
+                  <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                    <Globe className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <p className="text-gray-900 dark:text-white text-sm font-semibold text-center">50+</p>
+                  <p className="text-gray-700 dark:text-white text-xs font-medium text-center">Countries</p>
+                </div>
+
+                {/* Uptime Card */}
+                <div className="bg-gray-100 dark:bg-white/10 backdrop-blur-sm rounded-lg px-5 py-3 flex flex-col items-center gap-2 min-w-[160px]">
+                  <div className="w-10 h-10 rounded-lg bg-[#1D8751]/20 flex items-center justify-center">
+                    <Lock className="w-5 h-5 text-[#1D8751]" />
+                  </div>
+                  <p className="text-gray-900 dark:text-white text-sm font-semibold text-center">99.9%</p>
+                  <p className="text-gray-700 dark:text-white text-xs font-medium text-center">Uptime</p>
+                </div>
+              </div>
             </div>
-            <div className="flex justify-center md:justify-end lg:justify-end w-full ">
-              {/* <div className="relative">
-                <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746561970/iPhone_13_Mockup_1_zzm7tt.png"
-                  alt="OMAYA Exchange App"
-                  width={300}
-                  height={400}
-                  className="2xl:w-[369.55px] 2xl:h-[695.7px]"
-                />
-              </div> */}
-              <ExchangeForm isHomePage={true} />
+            <div className="flex justify-center md:justify-end lg:justify-end w-full">
+              <div className="w-full max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl">
+                <ExchangeForm isHomePage={true} />
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <div className="py-20 px-4 bg-[#EEF1F4] dark:bg-[#18181D]">
-        <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
+      <div className="pt-4 sm:pt-6 md:pt-8 pb-12 sm:pb-16 md:pb-20 px-4 md:px-[100px] bg-white dark:bg-[#0A0A0A]">
+        <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl">
+          {/* Green pill banner */}
+          <div className="flex justify-center mb-4 sm:mb-6">
+            <span className="bg-[#1D8751]/10 border border-[#1D8751] text-[#1D8751] px-4 py-1.5 sm:px-5 sm:py-2 rounded-full text-xs sm:text-sm font-medium">
+              Trusted by Thousands
+            </span>
+          </div>
+
           {/* Section Title */}
-        <h2 className="text-center text-2xl md:text-3xl 2xl:text-4xl font-medium mb-12">
-            <span className="dark:text-white">
+          <h2 className="text-center text-xl sm:text-2xl md:text-3xl lg:text-4xl 2xl:text-5xl font-bold mb-3 sm:mb-4">
+            <span className="text-gray-900 dark:text-white">
               {t(
                 "marketing.achievements.title.leading",
                 "Celebrating Success:"
               )}
             </span>{" "}
-            <span className="text-[#1D8751] dark:text-[#1D8751]">
+            <span className="text-[#1D8751]">
               {t(
                 "marketing.achievements.title.highlight",
-                "Key Achievements at OMAYA EXCHANGE"
+                "Key Achievements"
               )}
             </span>
           </h2>
-          {/* Achievement Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-            {achievements.map((achievement, index) => (
-              <div
-                key={index}
-                className="border border-[#13B562]/40 rounded-lg p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center dark:bg-[#1D1D23]"
-              >
-                <div className="text-[#F79330] text-2xl sm:text-3xl md:text-4xl font-bold mb-2 flex items-center gap-2">
+
+          {/* Subtitle */}
+          <p className="text-center text-gray-700 dark:text-white text-sm sm:text-base md:text-lg mb-8 sm:mb-10 md:mb-12 px-4">
+            Join the fastest-growing crypto exchange platform in Somalia.
+          </p>
+
+          {/* First Row - Achievement Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6 mb-6 sm:mb-8 md:mb-10">
+            {achievements.map((achievement, index) => {
+              const icons = [
+                <DollarSign key="dollar" className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white" />,
+                <Users key="users" className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white" />,
+                <TrendingUp key="trending" className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white" />,
+                <Shield key="shield" className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white" />,
+              ];
+              
+              const titles = [
+                "USD Fiat Transactions",
+                "Satisfied Users",
+                "Successful Transactions",
+                "Years Of Experience",
+              ];
+              
+              const descriptions = [
+                "Total trading volume.",
+                "Active traders worldwide.",
+                "Completed daily trades.",
+                "Industry leadership.",
+              ];
+
+              return (
+                <div
+                  key={index}
+                  className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 flex flex-col relative overflow-hidden border border-gray-200 dark:border-[#2A2A2A]"
+                >
+                  {/* Dark mode gradient background */}
+                  <div 
+                    className="hidden dark:block absolute inset-0 rounded-lg sm:rounded-xl"
+                    style={{
+                      background: 'linear-gradient(to bottom, rgba(29, 29, 35, 0.95), rgba(29, 29, 35, 1))'
+                    }}
+                  ></div>
                   
-                  <span>{achievement.value}</span>
-                  <Plus
-                    size={20}
-                    strokeWidth={2.5}
-                    className="text-[#F79330] drop-shadow-sm sm:w-6 sm:h-6 md:w-6 md:h-6"
-                  />
-                </div>
-                <div className="dark:text-white text-xs sm:text-sm text-center 2xl:text-sm">
-                  {t(achievement.label, achievement.label)}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* About section */}
-        <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl mt-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            {/* Left side - About */}
-            <div className="md:text-left text-center">
-              <div className="flex mb-6 justify-center md:justify-start">
-                <div className="mr-4"></div>
-                <div>
-                  <div className="flex items-center mb-2 gap-4 justify-center md:justify-start">
-                    <div className="text-sm 2xl:text-lg darK:text-white font-medium p-1 tracking-widest rotate-180 border-l-2 border-[#1D8751] [writing-mode:vertical-rl]">
-                      {t("marketing.about.label", "ABOUT US")}
-                    </div>
-                    <div>
-                      <h3 className="text-[#1D8751] text-xl 2xl:text-2xl font-medium mb-1">
-                        {t("marketing.about.title1", "ABOUT")}
-                      </h3>
-                      <h4 className="text-[#1D8751] text-xl 2xl:text-2xl font-medium mb-4">
-                        {t("marketing.about.title2", "OMAYA EXCHANGE .")}
-                      </h4>
+                  {/* Greenish gradient overlay - lighter in light mode */}
+                  <div 
+                    className="absolute top-0 right-0 bottom-0 w-3/4 opacity-30 dark:opacity-60 rounded-lg sm:rounded-xl"
+                    style={{
+                      background: 'linear-gradient(to left, rgba(29, 135, 81, 0.15) 0%, rgba(29, 135, 81, 0.08) 40%, transparent 100%)'
+                    }}
+                  ></div>
+                  
+                  {/* Content wrapper */}
+                  <div className="relative z-10 flex flex-col">
+                  
+                  {/* Icon Container - Vibrant green rounded square */}
+                  <div className="relative mb-3 sm:mb-4 self-start">
+                    <div 
+                      className="bg-[#1D8751] rounded-lg p-2 sm:p-2.5 md:p-3 flex items-center justify-center shadow-md"
+                      style={{
+                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+                      }}
+                    >
+                      {icons[index]}
                     </div>
                   </div>
-
-                  <div className="darK:text-white space-y-6 text-left 2xl:text-lg">
-                    <p>
-                      {t(
-                        "marketing.about.body",
-                        "Established in 2019, OMAYA Express Exchange is Somalia's leading cryptocurrency exchange, licensed by the Central Bank of Somalia. With a team spread across the country and abroad, we've facilitated over 50,000 transactions, surpassing $60 million in volume. In addition to cryptocurrency services, we act as a local agent for premier Forex brokers, offering comprehensive financial solutions. We are fully compliant with government regulations, ensuring a secure and trustworthy platform for all our users. Our commitment to innovation and customer satisfaction drives everything we do at OMAYA Exchange. We focus on providing a seamless, user-friendly experience for both novice and experienced traders. By combining advanced technology with a deep understanding of the local market, we empower our users to confidently participate in the global digital economy. As we continue to grow, we remain dedicated to maintaining the highest standards of transparency, security, and regulatory compliance, ensuring that OMAYA Exchange remains the trusted gateway to financial freedom in East Africa."
-                      )}
-                    </p>
+                  
+                  {/* Number */}
+                  <div className="text-[#1D8751] text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-3">
+                    {achievement.value}
+                  </div>
+                  
+                  {/* Title */}
+                  <div className="text-gray-900 dark:text-white text-sm sm:text-base md:text-lg font-semibold mb-1 sm:mb-2">
+                    {titles[index]}
+                  </div>
+                  
+                  {/* Description */}
+                  <div className="text-gray-700 dark:text-white text-xs sm:text-sm">
+                    {descriptions[index]}
+                  </div>
                   </div>
                 </div>
-              </div>
+              );
+            })}
+          </div>
+
+          {/* Second Row - Feature Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
+            {/* 0.1% Trading Fee */}
+            <div 
+              className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors shadow-lg"
+              style={{
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
+              }}
+            >
+              <Zap className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[#FF9500] mb-2 sm:mb-3" />
+              <p className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base text-center font-medium">
+                0.1% Trading Fee
+              </p>
             </div>
 
-            {/* Right side - 3D illustration */}
-            <div className="flex justify-center items-start">
-              <div className="relative h-56 w-56 sm:h-64 sm:w-64 md:h-72 md:w-72 lg:h-80 lg:w-80 xl:h-96 xl:w-96 2xl:h-[440px] 2xl:w-[440px]">
-                <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746707948/Group_164015_izwpob.png"
-                  alt="Cryptocurrency exchange 3D illustration"
-                  fill
-                  className="object-contain"
-                  sizes="(max-width: 640px) 224px, (max-width: 768px) 256px, (max-width: 1024px) 288px, (max-width: 1280px) 320px, 440px"
-                />
-              </div>
+            {/* Bank-Grade Security */}
+            <div 
+              className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors shadow-lg"
+              style={{
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
+              }}
+            >
+              <Shield className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[#3B82F6] mb-2 sm:mb-3" />
+              <p className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base text-center font-medium">
+                Bank-Grade Security
+              </p>
+            </div>
+
+            {/* 24/7 Support */}
+            <div 
+              className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors shadow-lg"
+              style={{
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
+              }}
+            >
+              <Globe className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[#8B5CF6] mb-2 sm:mb-3" />
+              <p className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base text-center font-medium">
+                24/7 Support
+              </p>
+            </div>
+
+            {/* Real-Time Charts */}
+            <div 
+              className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors shadow-lg"
+              style={{
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
+              }}
+            >
+              <BarChart className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[#1D8751] mb-2 sm:mb-3" />
+              <p className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base text-center font-medium">
+                Real-Time Charts
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Main heading */}
-        <div className="text-center mb-12">
-          <h2 className="text-2xl md:text-3xl 2xl:text-4xl font-medium">
-            <span className="darK:text-white">
-              {t("marketing.getSetup.titlePrefix", "Get Set Up And")}{" "}
-            </span>
-            <span className="text-[#1D8751]">
-              {t("marketing.getSetup.titleHighlight", "Start Exchanging")}
-            </span>
-          </h2>
         </div>
 
-        {/* Steps */}
-        <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl relative mt-24">
-          <div className="w-full flex justify-center">
-            <div className="w-full max-w-6xl">
-              <Image
-                src="https://res.cloudinary.com/pitz/image/upload/v1762976253/Group_164012_mxn5oy.png"
-                alt={t("marketing.getSetup.flowLight", "Get started flow illustration for light mode")}
-                width={1680}
-                height={573}
-                className="w-full h-auto dark:hidden"
-                priority
-              />
-              <Image
-                src="https://res.cloudinary.com/pitz/image/upload/v1762976253/Group_164012_1_agui5m.png"
-                alt={t("marketing.getSetup.flowDark", "Get started flow illustration for dark mode")}
-                width={1680}
-                height={573}
-                className="hidden w-full h-auto dark:block"
-                priority
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Features section */}
-        <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl mt-24">
-          <h2 className="text-center text-2xl md:text-3xl 2xl:text-4xl font-medium text-white mb-16">
-            <span className="text-[#1D8751]">
-              {t("marketing.features.title", "Why Choose Us")}
-            </span>
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-24">
-            <div className="relative flex justify-center">
-              <div className="relative w-64 h-96 2xl:w-80 2xl:h-110">
-                <div
-                  className="absolute w-60 h-60 2xl:w-76 2xl:h-76  rounded-full bg-[#12AA5D21] bg-opacity- top-[100px] right-1/4 "
-                  style={{ transform: "scale(1.5)" }}
-                ></div>
-                <div
-                  className="absolute w-60 h-60 2xl:w-76 2xl:h-76 rounded-full border border-[#1D7A4A] border-opacity- top-[100px] "
-                  style={{ transform: "scale(1.5)" }}
-                ></div>
-                <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746561970/iPhone_13_Mockup_1_zzm7tt.png"
-                  alt="OMAYA Exchange mobile app"
-                  fill
-                  className="object-contain"
-                  priority
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-col justify-center md:items-start items-center">
-              <h3 className="text-2xl 2xl:text-3xl font-medium mb-8">
-                <span className="text-[#1D8751] mr-2">Fast</span>
-                <span className="dark:text-white mr-2">and</span>
-                <span className="text-[#1D8751]">Secure</span>
-                <span className="dark:text-white"> Crypto Exchange</span>
-              </h3>
-
-              <ul className="space-y-4 ml-4">
-                {features.map((feature, index) => (
-                  <li key={index} className="flex items-center 2xl:text-lg">
-                    <div className="w-3 h-3 rounded-full bg-[#1D8751] flex items-center justify-center mr-3"></div>
-                    <span className="text-[#788099]">
-                      {t(
-                        `marketing.features.items.${feature === "Low Transaction Fee" ? "lowFee" : feature === "Secure Payment Service" ? "secure" : feature === "Fast Transactions" ? "fast" : "support"}`,
-                        feature
-                      )}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              {/* App Store Buttons */}
-              <div className="flex flex-col sm:flex-row mt-6 sm:mt-8 gap-3 sm:gap-2 sm:space-x-2">
-                <div className="rounded px-4 py-3 sm:py-2 flex items-center justify-center sm:justify-start border border-gray-700 min-h-[56px] sm:min-h-[auto] hover:bg-gray-800/50 transition-colors cursor-pointer">
-                  <Image
-                    src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746786399/apple_f0yfel.png"
-                    alt="Apple App Store"
-                    width={20}
-                    height={20}
-                    className="mr-2"
-                  />
-                  <div>
-                    <p className="dark:text-white text-xs sm:text-xs 2xl:text-sm">
-                      Download on the
-                    </p>
-                    <span className="dark:text-white text-sm sm:text-sm 2xl:text-lg">
-                      App Store
-                    </span>
-                  </div>
-                </div>
-                <div className="rounded px-4 py-3 sm:py-2 flex items-center justify-center sm:justify-start border border-gray-700 min-h-[56px] sm:min-h-[auto] hover:bg-gray-800/50 transition-colors cursor-pointer">
-                  <Image
-                    src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746787514/Google_Play-Icon-Logo.wine_dqxxk7.svg"
-                    alt="Google Play Store"
-                    width={45}
-                    height={13}
-                    className="mr-2"
-                  />
-                  <div>
-                    <p className="dark:text-white text-xs sm:text-xs 2xl:text-sm">
-                      Download on the
-                    </p>
-                    <span className="dark:text-white text-sm sm:text-sm 2xl:text-lg">
-                      Google Play
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      {/* Benefits Section*/}
-      <div className="w-full bg-gradient-to-r from-[#022E18] to-[#13B562] py-16">
-        <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Absolute Safety */}
-            <div className="flex">
-              <div className="mr-4">
-                <div
-                  className="w-16 h-16 bg-[#095E32] flex items-center justify-center shadow-lg shadow-[#0A6E3A]/50 p-2"
-                  style={{
-                    clipPath:
-                      "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-                  }}
-                >
-                  <img
-                    src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746792649/safety_s0zxej.png"
-                    alt=""
-                  />
-                </div>
-              </div>
-              <div>
-                <h3 className="text-white font-medium text-lg mb-2 2xl:text-xl">
-                  {t("marketing.benefits.safety.title", "Absolute Safety")}
-                </h3>
-                <p className="text-gray-200 text-sm 2xl:text-lg">
-                  {t(
-                    "marketing.benefits.safety.desc",
-                    "Exchange confidently with OMAYA, where safety is our top priority."
-                  )}
-                </p>
-              </div>
-            </div>
-
-            {/* Fast Deposits & Withdrawals */}
-            <div className="flex">
-              <div className="mr-4">
-                <div
-                  className="w-16 h-16 bg-[#095E32] flex items-center justify-center shadow-lg shadow-[#0A6E3A]/50 px-2 py-3"
-                  style={{
-                    clipPath:
-                      "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-                  }}
-                >
-                  <img
-                    src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746792649/withdrawals_sy4kqe.png"
-                    alt=""
-                  />
-                </div>
-              </div>
-              <div>
-                <h3 className="text-white font-medium text-lg 2xl:text-xl mb-2">
-                  {t(
-                    "marketing.benefits.fast.title",
-                    "Fast Deposits & Withdrawals"
-                  )}
-                </h3>
-                <p className="text-gray-200 text-sm 2xl:text-lg">
-                  {t(
-                    "marketing.benefits.fast.desc",
-                    "Enjoy swift and seamless deposits and withdrawals."
-                  )}
-                </p>
-              </div>
-            </div>
-
-            {/* Invite your friend and earn */}
-            <div className="flex">
-              <div className="mr-4">
-                <div
-                  className="w-16 h-16 bg-[#095E32] flex items-center justify-center shadow-lg shadow-[#0A6E3A]/50 p-2"
-                  style={{
-                    clipPath:
-                      "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-                  }}
-                >
-                  <img
-                    src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746792649/users-profiles-03_qfxyha.png"
-                    alt=""
-                  />
-                </div>
-              </div>
-              <div>
-                <h3 className="text-white font-medium text-lg 2xl:text-xl mb-2">
-                  {t(
-                    "marketing.benefits.invite.title",
-                    "Invite your friend and earn"
-                  )}
-                </h3>
-                <p className="text-gray-200 text-sm 2xl:text-lg">
-                  {t(
-                    "marketing.benefits.invite.desc",
-                    "Refer and invite your friends and earn commission on each transaction they make with us!"
-                  )}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Supported Assets Section*/}
       <div
         id="supported-assets"
-        className="w-full dark:bg-[#18181D] bg-[#EEF1F4]  py-16"
+        className="w-full bg-white dark:bg-[#0A0A0A] pt-4 md:pt-6 pb-16 px-4 md:px-[100px] relative overflow-hidden"
       >
-        <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
-          <h2 className="text-center text-2xl md:text-3xl 2xl:text-4xl font-medium darK:text-white mb-12">
-            {t("marketing.assets.title", "Supported Assets")}
-          </h2>
+        {/* Subtle green glowing dots background */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-20 left-10 w-2 h-2 bg-[#13B562] rounded-full opacity-60 blur-sm animate-pulse"></div>
+          <div className="absolute top-40 right-20 w-3 h-3 bg-[#13B562] rounded-full opacity-40 blur-md animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+          <div className="absolute bottom-32 left-1/4 w-2 h-2 bg-[#1D8751] rounded-full opacity-50 blur-sm animate-pulse" style={{ animationDelay: '1s' }}></div>
+        </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-3 sm:gap-4">
+        <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl relative z-10">
+          {/* Section Title */}
+          <h2 className="text-center text-2xl md:text-3xl 2xl:text-4xl font-bold mb-3">
+            <span className="text-gray-900 dark:text-white">Trade Your Favorite</span>{" "}
+            <span className="text-[#1D8751]">Cryptocurrencies</span>
+          </h2>
+          
+          {/* Subtitle */}
+          <p className="text-center text-gray-700 dark:text-white text-sm sm:text-base md:text-lg mb-12 px-4">
+            Access 500+ cryptocurrencies with industry-leading security, competitive fees and lightning-fast transactions.
+          </p>
+
+          {/* Cryptocurrency Cards Grid - 2 rows of 4 */}
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-5 mb-8">
             {marketsLoading
-              ? Array.from({ length: maxPreviewAssets }).map((_, index) => (
+              ? Array.from({ length: 8 }).map((_, index) => (
                   <div
                     key={`asset-skeleton-${index}`}
-                    className="dark:bg-[#1D1D23] bg-[#F5F5F5] rounded-lg py-4 sm:py-5 md:py-6 px-3 sm:px-4 flex flex-col items-center animate-pulse"
+                    className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A] animate-pulse relative overflow-hidden"
                   >
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mb-2 sm:mb-3 bg-gray-300 dark:bg-[#23232B] rounded" />
-                    <span className="dark:text-white text-xs sm:text-sm md:text-sm 2xl:text-lg bg-gray-300 dark:bg-[#23232B] h-4 w-16 sm:w-20 rounded" />
+                    {/* Dark mode gradient background */}
+                    <div 
+                      className="hidden dark:block absolute inset-0 rounded-lg"
+                      style={{
+                        background: 'linear-gradient(to bottom, rgba(29, 29, 35, 0.95), rgba(29, 29, 35, 1))',
+                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
+                      }}
+                    ></div>
+                    <div className="relative z-10">
+                      <div className="w-10 h-10 mb-3 bg-gray-200 dark:bg-[#23232B] rounded"></div>
+                      <div className="h-4 bg-gray-200 dark:bg-[#23232B] rounded mb-2 w-20"></div>
+                      <div className="h-3 bg-gray-200 dark:bg-[#23232B] rounded mb-2 w-12"></div>
+                      <div className="h-5 bg-gray-200 dark:bg-[#23232B] rounded mb-1 w-24"></div>
+                      <div className="h-3 bg-gray-200 dark:bg-[#23232B] rounded w-16"></div>
+                    </div>
                   </div>
                 ))
               : (
                   <>
-                    {displayedAssets.map((asset) => (
-                      <div
-                        key={asset.id}
-                        className="dark:bg-[#1D1D23] bg-[#F5F5F5] rounded-lg py-4 sm:py-5 md:py-6 px-3 sm:px-4 flex flex-col items-center"
-                      >
-                        <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mb-2 sm:mb-3">
-                          <Image
-                            src={asset.image}
-                            alt={asset.name}
-                            width={64}
-                            height={64}
-                            className="object-contain w-full h-full"
-                            unoptimized
-                          />
-                        </div>
-                        <span className="dark:text-white text-xs sm:text-sm md:text-sm 2xl:text-lg text-center break-words">
-                          {asset.name}
-                        </span>
-                        {asset.symbol && (
-                          <span className="text-xs text-[#788099] mt-1">
+                    {displayedAssets.slice(0, 8).map((asset) => {
+                      const price = asset.current_price || 0;
+                      const change = asset.price_change_percentage_24h || 0;
+                      const formattedPrice = price >= 1 
+                        ? price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                        : price.toFixed(4);
+                      
+                      // Get icon container color based on symbol
+                      const getIconColor = (symbol: string, name: string) => {
+                        const symbolUpper = symbol.toUpperCase();
+                        const nameUpper = name.toUpperCase();
+                        const colorMap: { [key: string]: string } = {
+                          'BTC': 'bg-orange-500', // Bitcoin - orange circle
+                          'BITCOIN': 'bg-orange-500',
+                          'ETH': 'bg-indigo-600', // Ethereum - indigo/purple
+                          'ETHEREUM': 'bg-indigo-600',
+                          'USDT': 'bg-green-500', // Tether - green circle
+                          'TETHER': 'bg-green-500',
+                          'BNB': 'bg-yellow-500', // BNB - yellow
+                          'ADA': 'bg-blue-700', // Cardano - dark blue
+                          'CARDANO': 'bg-blue-700',
+                          'XRP': 'bg-red-500', // Ripple - red circle
+                          'RIPPLE': 'bg-red-500',
+                          'SOL': 'bg-purple-600', // Solana - purple square
+                          'SOLANA': 'bg-purple-600',
+                          'DOT': 'bg-pink-500', // Polkadot - pink square
+                          'POLKADOT': 'bg-pink-500',
+                          'FXP': 'bg-blue-700', // FXPRIMUS - dark blue
+                          'FXPRIMUS': 'bg-blue-700',
+                          'PM': 'bg-red-500', // Perfect Money - red circle
+                          'PERFECT MONEY': 'bg-red-500',
+                          'ICM': 'bg-blue-500', // ICM Capital - blue
+                          'ICM CAPITAL': 'bg-blue-500',
+                        };
+                        return colorMap[symbolUpper] || colorMap[nameUpper] || 'bg-gray-500'; // Default gray
+                      };
+                      
+                      const iconBgColor = getIconColor(asset.symbol, asset.name);
+                      
+                      return (
+                        <div
+                          key={asset.id}
+                          className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors relative overflow-hidden"
+                        >
+                          {/* Dark mode gradient background */}
+                          <div 
+                            className="hidden dark:block absolute inset-0 rounded-lg"
+                            style={{
+                              background: 'linear-gradient(to bottom, rgba(29, 29, 35, 0.95), rgba(29, 29, 35, 1))',
+                              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
+                            }}
+                          ></div>
+                          
+                          {/* Greenish radial gradient from top-right corner - lighter in light mode */}
+                          <div 
+                            className="absolute top-0 right-0 w-3/4 h-3/4 opacity-20 dark:opacity-30 pointer-events-none rounded-lg"
+                            style={{
+                              background: 'radial-gradient(circle at top right, rgba(29, 135, 81, 0.15) 0%, transparent 70%)'
+                            }}
+                          ></div>
+                          
+                          {/* Content wrapper with relative positioning */}
+                          <div className="relative z-10">
+                          {/* Icon header with colored bar cutting across */}
+                          <div className="relative mb-3 w-full overflow-hidden">
+                            {/* Colored horizontal bar cutting across - contained within card */}
+                            <div 
+                              className={`absolute top-1/2 left-0 h-12 ${iconBgColor} transform -translate-y-1/2 opacity-30 rounded-full`}
+                              style={{
+                                width: '100%',
+                                maxWidth: '100%'
+                              }}
+                            ></div>
+                            {/* Centered asset image */}
+                            <div className="relative z-10 flex items-center justify-center">
+                              <div className="w-10 h-10 bg-white dark:bg-[#1D1D23] rounded-full flex items-center justify-center border border-gray-200 dark:border-transparent">
+                                <Image
+                                  src={asset.image}
+                                  alt={asset.name}
+                                  width={32}
+                                  height={32}
+                                  className="object-contain w-full h-full"
+                                  unoptimized
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Cryptocurrency Name - Left aligned */}
+                          <div className="text-gray-900 dark:text-white font-bold text-sm sm:text-base mb-1">
+                            {asset.name}
+                          </div>
+                          
+                          {/* Ticker Symbol - Left aligned */}
+                          <div className="text-gray-700 dark:text-white text-xs sm:text-sm mb-3 opacity-80">
                             {asset.symbol}
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                    {shouldRenderToggle && (
-                      <button
-                        type="button"
-                        onClick={() => setShowAllAssets((prev) => !prev)}
-                        className="dark:bg-[#1D1D23] bg-[#F5F5F5] rounded-lg py-4 sm:py-5 md:py-6 px-3 sm:px-4 flex flex-col items-center justify-center border border-dashed border-[#1D8751] transition-colors hover:bg-[#E6F4EC] dark:hover:bg-[#23232B] min-h-[44px]"
-                      >
-                        <div className="text-[#FFA500] font-semibold text-2xl sm:text-3xl mb-2">
-                          {showAllAssets ? "−" : "+"}
+                          </div>
+                          
+                          {/* Price and Percentage Change - Left aligned */}
+                          <div className="flex items-baseline gap-2 mb-2">
+                            <div className="text-gray-900 dark:text-white font-bold text-base sm:text-lg">
+                              ${formattedPrice}
+                            </div>
+                            <div className={`text-xs sm:text-sm font-medium ${change >= 0 ? 'text-[#13B562]' : 'text-red-500'}`}>
+                              {change >= 0 ? '+' : ''}{change.toFixed(2)}%
+                            </div>
+                          </div>
+                          
+                          {/* Mini Line Chart - Graph-like visualization */}
+                          <div className="h-12 w-full mt-2 relative overflow-hidden">
+                            <svg width="100%" height="100%" viewBox="0 0 100 40" preserveAspectRatio="none" className="overflow-visible">
+                              {/* Gradient fill for area under graph */}
+                              <defs>
+                                <linearGradient id={`gradient-${asset.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                                  <stop offset="0%" stopColor={change >= 0 ? "#1D8751" : "#EF4444"} stopOpacity="0.3" />
+                                  <stop offset="100%" stopColor={change >= 0 ? "#1D8751" : "#EF4444"} stopOpacity="0" />
+                                </linearGradient>
+                              </defs>
+                              {/* Generate dynamic graph points based on price change */}
+                              {(() => {
+                                // Create graph points that reflect the price trend
+                                const isPositive = change >= 0;
+                                const changePercent = Math.abs(change);
+                                const volatility = Math.min(changePercent / 5, 4); // Scale volatility, max 4
+                                const baseHeight = 20;
+                                const points = [];
+                                
+                                // Use asset ID as seed for deterministic but unique patterns
+                                const seed = asset.id ? asset.id.toString().split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) : 0;
+                                
+                                // Generate 24 points for smoother graph
+                                for (let i = 0; i <= 24; i++) {
+                                  const x = (i / 24) * 100;
+                                  // Create wave pattern with trend - deterministic based on seed
+                                  const wave = Math.sin((i * 0.4) + (seed % 10) * 0.1) * (2 + volatility);
+                                  const trend = isPositive 
+                                    ? (i / 24) * -10 // Upward trend
+                                    : (i / 24) * 10; // Downward trend
+                                  // Add some variation based on seed
+                                  const variation = Math.sin((i * 0.3) + seed * 0.1) * volatility;
+                                  const y = baseHeight + wave + trend + variation;
+                                  points.push(`${x},${Math.max(3, Math.min(37, y))}`);
+                                }
+                                
+                                const pathData = points.join(' ');
+                                
+                                return (
+                                  <>
+                                    {/* Area fill */}
+                                    <polygon
+                                      points={`0,40 ${pathData} 100,40`}
+                                      fill={`url(#gradient-${asset.id})`}
+                                    />
+                                    {/* Main graph line */}
+                                    <polyline
+                                      points={pathData}
+                                      fill="none"
+                                      stroke={change >= 0 ? "#1D8751" : "#EF4444"}
+                                      strokeWidth="2.5"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                    {/* Subtle grid line for reference */}
+                                    <line x1="0" y1="20" x2="100" y2="20" stroke="currentColor" strokeWidth="0.5" strokeOpacity="0.1" />
+                                  </>
+                                );
+                              })()}
+                            </svg>
+                          </div>
+                          </div>
                         </div>
-                        <span className="text-xs sm:text-sm md:text-sm 2xl:text-lg text-[#1D8751] text-center">
-                          {toggleLabel}
-                        </span>
-                      </button>
-                    )}
+                      );
+                    })}
                   </>
                 )}
           </div>
+
+          {/* Feature/Achievement Cards - Bottom Row */}
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-5">
+            {/* 500+ Total Assets */}
+            <div 
+              className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors flex flex-col items-center relative overflow-hidden"
+            >
+              {/* Dark mode gradient background */}
+              <div 
+                className="hidden dark:block absolute inset-0 rounded-lg"
+                style={{
+                  background: 'linear-gradient(to bottom, rgba(29, 29, 35, 0.95), rgba(29, 29, 35, 1))',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
+                }}
+              ></div>
+              <div className="relative z-10 flex flex-col items-center w-full">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 mb-3 flex items-center justify-center">
+                  <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" className="text-blue-400">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <div className="text-gray-900 dark:text-white text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-center">500+</div>
+                <div className="text-gray-700 dark:text-white text-xs sm:text-sm md:text-base text-center">Total Assets</div>
+              </div>
+            </div>
+
+            {/* 1000+ Trading Pairs */}
+            <div 
+              className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors flex flex-col items-center relative overflow-hidden"
+            >
+              {/* Dark mode gradient background */}
+              <div 
+                className="hidden dark:block absolute inset-0 rounded-lg"
+                style={{
+                  background: 'linear-gradient(to bottom, rgba(29, 29, 35, 0.95), rgba(29, 29, 35, 1))',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
+                }}
+              ></div>
+              <div className="relative z-10 flex flex-col items-center w-full">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 mb-3 flex items-center justify-center">
+                  <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" className="text-pink-400">
+                    <path d="M3 21L12 3L21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M3 21H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <div className="text-gray-900 dark:text-white text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-center">1000+</div>
+                <div className="text-gray-700 dark:text-white text-xs sm:text-sm md:text-base text-center">Trading Pairs</div>
+              </div>
+            </div>
+
+            {/* $2B+ Daily Volume */}
+            <div 
+              className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors flex flex-col items-center relative overflow-hidden"
+            >
+              {/* Dark mode gradient background */}
+              <div 
+                className="hidden dark:block absolute inset-0 rounded-lg"
+                style={{
+                  background: 'linear-gradient(to bottom, rgba(29, 29, 35, 0.95), rgba(29, 29, 35, 1))',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
+                }}
+              ></div>
+              <div className="relative z-10 flex flex-col items-center w-full">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 mb-3 flex items-center justify-center">
+                  <DollarSign className="w-full h-full text-[#13B562]" />
+                </div>
+                <div className="text-gray-900 dark:text-white text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-center">$2B+</div>
+                <div className="text-gray-700 dark:text-white text-xs sm:text-sm md:text-base text-center">Daily Volume</div>
+              </div>
+            </div>
+
+            {/* Spot & P2P Markets */}
+            <div 
+              className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors flex flex-col items-center relative overflow-hidden"
+            >
+              {/* Dark mode gradient background */}
+              <div 
+                className="hidden dark:block absolute inset-0 rounded-lg"
+                style={{
+                  background: 'linear-gradient(to bottom, rgba(29, 29, 35, 0.95), rgba(29, 29, 35, 1))',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
+                }}
+              ></div>
+              <div className="relative z-10 flex flex-col items-center w-full">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 mb-3 flex items-center justify-center">
+                  <BarChart className="w-full h-full text-orange-400" />
+                </div>
+                <div className="text-gray-900 dark:text-white text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-center">Spot & P2P</div>
+                <div className="text-gray-700 dark:text-white text-xs sm:text-sm md:text-base text-center">Markets</div>
+              </div>
+            </div>
+          </div>
+
           {marketsError && (
             <p className="text-center text-sm text-red-400 mt-6">
               {t(
@@ -810,117 +980,362 @@ export default function MarketingPage() {
         </div>
       </div>
 
-      {/* Referral Section*/}
-      <div className="w-full bg-gradient-to-r from-[#197345] to-[#278D59] relative py-8 md:py-0 lg:py-8">
-        <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:pl-18 lg:pr-0">
-          <div className="flex flex-col lg:flex-row items-center relative">
-            {/* Text content */}
-            <div className="w-full lg:w-1/2 mb-8 lg:mb-0 z-10">
-              <p className="text-white text-base sm:text-lg 2xl:text-xl mb-2">
-                {t(
-                  "marketing.referral.subtitle",
-                  "Invite your friend, and earn commission"
-                )}
-              </p>
-              <h2 className="text-white text-xl sm:text-2xl md:text-2xl 2xl:text-3xl font-medium mb-4 sm:mb-6">
-                {t(
-                  "marketing.referral.title",
-                  "Refer and Invite your friends and earn commission on each transaction they make with us!"
-                )}
-              </h2>
-              <a
-                href="#contact"
-                className="bg-white text-[#0A6E3A] px-5 sm:px-6 py-2.5 sm:py-2 rounded-full hover:bg-gray-100 transition duration-300 inline-block min-h-[44px] flex items-center justify-center text-sm sm:text-base"
-              >
-                Contact Us
-              </a>
+      {/* Safe & Reliable Section */}
+      <div className="w-full bg-white dark:bg-[#0A0A0A] py-16">
+        <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+            {/* Left Section - Image */}
+            <div className="relative">
+              <div className="relative w-full h-[400px] md:h-[500px] rounded-xl overflow-hidden">
+                <Image
+                  src="https://res.cloudinary.com/pitz/image/upload/v1765268255/Container_17_n6i2xm.png"
+                  alt="Safe & Reliable Cryptocurrency Exchange Platform"
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
+                
+                {/* Badge - Since 2015 */}
+                <div className="absolute top-4 right-4 bg-[#1D8751] rounded-full px-4 py-1.5 z-20">
+                  <span className="text-white text-xs font-medium">Since 2015</span>
+                </div>
+                
+                {/* Badge - 100K+ Users */}
+                <div className="absolute bottom-4 left-4 bg-[#1D8751] rounded-full px-4 py-1.5 z-20">
+                  <span className="text-white text-xs font-medium">100K+ Users</span>
+                </div>
+              </div>
             </div>
 
-            <div className="w-full lg:w-1/2 flex justify-center lg:justify-end lg:absolute lg:right-0 lg:mt-8 xl:mt-12">
-              <div className="relative w-56 h-56 sm:w-64 sm:h-64 md:w-72 md:h-72 lg:w-64 lg:h-64">
-                <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746795074/phones_fmej07.png"
-                  alt="Referral Program"
-                  fill
-                  className="object-contain"
-                />
+            {/* Right Section - Text and Feature Cards */}
+            <div className="space-y-6">
+              {/* ABOUT OMAYA Header */}
+              <div className="bg-[#1D8751] border border-[#1D8751] rounded-2xl px-4 py-2 inline-block">
+                <div className="text-white text-sm font-medium uppercase tracking-wide">
+                  ABOUT OMAYA
+                </div>
+              </div>
+                  
+              {/* Title */}
+              <h2 className="text-3xl md:text-4xl 2xl:text-5xl font-bold text-gray-900 dark:text-white">
+                <span className="text-[#1D8751]">Safe & Reliable</span>{" "}
+                <span className="text-gray-900 dark:text-white">Cryptocurrency Exchange Platform</span>
+              </h2>
+              
+              {/* Descriptive Text */}
+              <p className="text-gray-700 dark:text-white/80 text-sm md:text-base leading-relaxed">
+                Established in 2015, OMAYA Exchange is Somalia's leading cryptocurrency exchange, 
+                licensed by the{" "}
+                <span className="text-[#1D8751] font-semibold">Central Bank of Somalia</span>.
+                With a team rooted in East Africa, we specialize in localized transactions, 
+                supporting the region's unique demands to meet your financial needs. At OMAYA Exchange, 
+                our focus extends beyond mere transactions. We are committed to empowering you by 
+                offering expert insights and resources that support informed financial decision-making. 
+                Leveraging deep knowledge of East African markets, we provide secure and responsive 
+                solutions tailored to local requirements.
+              </p>
+              
+              {/* Feature Boxes - 2x2 Grid */}
+              <div className="grid grid-cols-2 gap-4 mt-8">
+                {/* Bank-Grade Security */}
+                <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A]">
+                  <div className="w-10 h-10 bg-blue-400/20 rounded-lg flex items-center justify-center mb-3">
+                    <Shield className="w-6 h-6 text-blue-400" />
+                  </div>
+                  <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">Bank-Grade Security</div>
+                  <div className="text-gray-700 dark:text-white/70 text-xs">Advanced encryption & multi-layer protection</div>
+                </div>
+
+                {/* Licensed & Regulated */}
+                <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A]">
+                  <div className="w-10 h-10 bg-pink-400/20 rounded-lg flex items-center justify-center mb-3">
+                    <Lock className="w-6 h-6 text-pink-400" />
+                  </div>
+                  <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">Licensed & Regulated</div>
+                  <div className="text-gray-700 dark:text-white/70 text-xs">Approved by Central Bank of Somalia</div>
+                </div>
+
+                {/* 100K+ Active Users */}
+                <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A]">
+                  <div className="w-10 h-10 bg-green-400/20 rounded-lg flex items-center justify-center mb-3">
+                    <Users className="w-6 h-6 text-green-400" />
+                  </div>
+                  <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">100K+ Active Users</div>
+                  <div className="text-gray-700 dark:text-white/70 text-xs">Trusted by traders across East Africa</div>
+                </div>
+
+                {/* 99.9% Uptime */}
+                <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A]">
+                  <div className="w-10 h-10 bg-orange-400/20 rounded-lg flex items-center justify-center mb-3">
+                    <TrendingUp className="w-6 h-6 text-orange-400" />
+                  </div>
+                  <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">99.9% Uptime</div>
+                  <div className="text-gray-700 dark:text-white/70 text-xs">Reliable trading 24/7/365</div>
+                </div>
+              </div>
+              
+              {/* Bottom Tags/Buttons */}
+              <div className="flex flex-wrap gap-3 mt-6">
+                <div className="border border-[#1D8751] rounded-full px-4 py-2 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
+                  <Lock className="w-4 h-4 text-[#1D8751]" />
+                  <span className="text-gray-900 dark:text-white text-xs font-medium">Licensed Exchange</span>
+                </div>
+                <div className="border border-[#1D8751] rounded-full px-4 py-2 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
+                  <Globe className="w-4 h-4 text-[#1D8751]" />
+                  <span className="text-gray-900 dark:text-white text-xs font-medium">Global Reach</span>
+                </div>
+                <div className="border border-[#1D8751] rounded-full px-4 py-2 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
+                  <Zap className="w-4 h-4 text-[#1D8751]" />
+                  <span className="text-gray-900 dark:text-white text-xs font-medium">Fast Execution</span>
+                </div>
+                <div className="border border-[#1D8751] rounded-full px-4 py-2 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
+                  <Shield className="w-4 h-4 text-[#1D8751]" />
+                  <span className="text-gray-900 dark:text-white text-xs font-medium">Verified Platform</span>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Blogs Section */}
-      <div className="w-full dark:bg-[#18181D] bg-[#EEF1F4] text-white py-12 px-4 md:px-8">
-        <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto">
-          {/* Header section */}
-          <div className="mb-10">
-          <h2 className="text-center text-2xl 2xl:text-3xl font-semibold dark:text-white text-[#0D0D0D]">
-  Enjoy Our <span className="text-[#1D8751]">Blog</span> & News On the <span className="text-[#1D8751]">Latest Updates</span>
-</h2>
+      {/* Easy Onboarding Section */}
+      <div className="w-full bg-white dark:bg-[#0A0A0A] pt-4 md:pt-6 pb-16 md:pb-24 relative overflow-hidden">
+        {/* Dark gradient background with green dots */}
+        <div className="absolute inset-0 overflow-hidden">
+          {/* Green glowing particles background */}
+          <div className="absolute top-20 left-10 w-2 h-2 bg-[#1D8751] rounded-full opacity-60 blur-sm animate-pulse"></div>
+          <div className="absolute top-40 right-20 w-3 h-3 bg-[#1D8751] rounded-full opacity-40 blur-md animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+          <div className="absolute bottom-32 left-1/4 w-2 h-2 bg-[#1D8751] rounded-full opacity-50 blur-sm animate-pulse" style={{ animationDelay: '1s' }}></div>
+          <div className="absolute top-1/3 right-1/3 w-2.5 h-2.5 bg-[#1D8751] rounded-full opacity-45 blur-sm animate-pulse" style={{ animationDelay: '1.5s' }}></div>
+          <div className="absolute bottom-20 right-1/4 w-3 h-3 bg-[#1D8751] rounded-full opacity-35 blur-md animate-pulse" style={{ animationDelay: '2s' }}></div>
+          
+          {/* Subtle gradient overlays */}
+          <div 
+            className="absolute inset-0 opacity-30"
+            style={{
+              background: `
+                radial-gradient(circle at 20% 30%, ${tokens.colors.brand.lightGreen}15 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, ${tokens.colors.brand.lightGreen}10 0%, transparent 50%)
+              `,
+            }}
+          ></div>
+        </div>
 
-            {/* Category toggle buttons */}
-            <div className="mt-6 inline-flex bg-white dark:bg-[#1D1D23] rounded-full">
-              <button
-                onClick={() => setActiveCategory("News")}
-                className={`px-5 sm:px-6 py-2.5 sm:py-2 rounded-full text-sm sm:text-sm md:text-base 2xl:text-lg font-medium flex items-center gap-2 transition-colors min-h-[44px] ${
-                  activeCategory === "News"
-                    ? "bg-[#1D8751] text-white"
-                    : "text-[#788099]"
-                }`}
-              >
-                <span
-                  className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${
-                    activeCategory === "News"
-                      ? "border-white"
-                      : "border-gray-400"
-                  }`}
-                >
-                  <span
-                    className={`w-3 h-3 rounded-full ${
-                      activeCategory === "News" ? "bg-white" : "bg-transparent"
-                    }`}
-                  ></span>
-                </span>
-                News
-              </button>
-              <button
-                onClick={() => setActiveCategory("Blog")}
-                className={`px-5 sm:px-6 py-2.5 sm:py-2 rounded-full text-sm sm:text-sm md:text-base 2xl:text-lg font-medium flex items-center gap-2 transition-colors min-h-[44px] ${
-                  activeCategory === "Blog"
-                    ? "bg-[#1D8751] text-white"
-                    : "text-[#788099]"
-                }`}
-              >
-                <span
-                  className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${
-                    activeCategory === "Blog"
-                      ? "border-white"
-                      : "border-gray-400"
-                  }`}
-                >
-                  <span
-                    className={`w-3 h-3 rounded-full ${
-                      activeCategory === "Blog" ? "bg-white" : "bg-transparent"
-                    }`}
-                  ></span>
-                </span>
-                Blog
-              </button>
-            </div>
+        <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4 relative z-10">
+          {/* Green pill label */}
+          <div className="flex justify-center mb-6">
+            <span className="bg-[#1D8751]/10 border border-[#1D8751] text-[#1D8751] px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium">
+              EASY ONBOARDING
+            </span>
           </div>
 
-          {/* Articles grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6">
+          {/* Main heading */}
+          <div className="text-center mb-4">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold">
+              <span className="text-gray-900 dark:text-white">Get Set Up And</span>{" "}
+              <span className="text-[#1D8751]">Start Exchanging</span>
+            </h2>
+          </div>
+
+          {/* Description */}
+          <p className="text-center text-gray-700 dark:text-white/90 text-sm sm:text-base md:text-lg mb-12 max-w-2xl mx-auto">
+            Begin your crypto journey in 4 simple steps. Join thousands of traders who trust OMAYA Exchange.
+          </p>
+
+          {/* Image with cards */}
+          <div className="w-full flex justify-center">
+            <div className="w-full max-w-6xl">
+              <Image
+                src="https://res.cloudinary.com/pitz/image/upload/v1765269508/Container_21_ftewij.png"
+                alt="Easy Onboarding - Get Set Up And Start Exchanging"
+                width={1680}
+                height={800}
+                className="w-full h-auto"
+                priority
+                unoptimized
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    {/* Benefits Section*/}
+    <div className="w-full bg-gradient-to-r from-[#0A3D1F] via-[#095E32] to-[#022E18] py-16 relative overflow-hidden">
+        {/* Faint circular patterns/rings in background */}
+        <div className="absolute inset-0 overflow-hidden">
+          {/* Large circular ring on left */}
+          <div className="absolute left-[-100px] top-1/2 transform -translate-y-1/2 w-[400px] h-[400px] border border-white/5 rounded-full"></div>
+          <div className="absolute left-[-80px] top-1/2 transform -translate-y-1/2 w-[360px] h-[360px] border border-white/5 rounded-full"></div>
+          
+          {/* Large circular ring on right */}
+          <div className="absolute right-[-100px] top-1/2 transform -translate-y-1/2 w-[400px] h-[400px] border border-white/5 rounded-full"></div>
+          <div className="absolute right-[-80px] top-1/2 transform -translate-y-1/2 w-[360px] h-[360px] border border-white/5 rounded-full"></div>
+          
+          {/* Additional subtle rings */}
+          <div className="absolute left-[10%] top-[-50px] w-[300px] h-[300px] border border-white/3 rounded-full"></div>
+          <div className="absolute right-[10%] bottom-[-50px] w-[300px] h-[300px] border border-white/3 rounded-full"></div>
+        </div>
+
+        <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4 relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Absolute Safety */}
+            <div className="flex">
+              <div className="mr-4 relative">
+                {/* Circular ring around icon */}
+                <div className="absolute -inset-2 border border-white/10 rounded-full"></div>
+                <div className="absolute -inset-4 border border-white/5 rounded-full"></div>
+                
+                {/* Hexagonal icon container */}
+                <div
+                  className="relative w-16 h-16 bg-[#1D8751] flex items-center justify-center shadow-lg p-2"
+                  style={{
+                    clipPath:
+                      "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+                  }}
+                >
+                  {/* Shield icon with checkmark */}
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-lg mb-2 2xl:text-xl">
+                  {t("marketing.benefits.safety.title", "Absolute Safety")}
+                </h3>
+                <p className="text-white/90 text-sm 2xl:text-base">
+                  {t(
+                    "marketing.benefits.safety.desc",
+                    "Exchange confidently with OMAYA, where safety is our top priority."
+                )}
+              </p>
+              </div>
+            </div>
+
+            {/* Fast Deposits & Withdrawals */}
+            <div className="flex">
+              <div className="mr-4 relative">
+                {/* Circular ring around icon */}
+                <div className="absolute -inset-2 border border-white/10 rounded-full"></div>
+                <div className="absolute -inset-4 border border-white/5 rounded-full"></div>
+                
+                {/* Hexagonal icon container */}
+                <div
+                  className="relative w-16 h-16 bg-[#1D8751] flex items-center justify-center shadow-lg p-2"
+                  style={{
+                    clipPath:
+                      "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+                  }}
+                >
+                  {/* Dollar sign icon with circle */}
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10" strokeWidth="2" stroke="currentColor" fill="none" opacity="0.3" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-lg 2xl:text-xl mb-2">
+                  {t(
+                    "marketing.benefits.fast.title",
+                    "Fast Deposits & Withdrawals"
+                  )}
+                </h3>
+                <p className="text-white/90 text-sm 2xl:text-base">
+                  {t(
+                    "marketing.benefits.fast.desc",
+                    "Enjoy swift and seamless deposits and withdrawals."
+                  )}
+                </p>
+              </div>
+            </div>
+
+            {/* Invite your friend and earn */}
+            <div className="flex">
+              <div className="mr-4 relative">
+                {/* Circular ring around icon */}
+                <div className="absolute -inset-2 border border-white/10 rounded-full"></div>
+                <div className="absolute -inset-4 border border-white/5 rounded-full"></div>
+                
+                {/* Hexagonal icon container */}
+                <div
+                  className="relative w-16 h-16 bg-[#1D8751] flex items-center justify-center shadow-lg p-2"
+                  style={{
+                    clipPath:
+                      "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
+                  }}
+                >
+                  {/* Users/referral icon */}
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-lg 2xl:text-xl mb-2">
+                  {t(
+                    "marketing.benefits.invite.title",
+                    "Invite your friend and earn"
+                  )}
+                </h3>
+                <p className="text-white/90 text-sm 2xl:text-base">
+                  {t(
+                    "marketing.benefits.invite.desc",
+                    "Refer and invite your friends and earn commission on each transaction they make with us!"
+                  )}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+            </div>
+
+      {/* Refer and Invite Section */}
+      <div className="w-full bg-white dark:bg-transparent py-4 md:py-8 my-4 md:my-6">
+        <div className="w-full md:container md:mx-auto md:max-w-7xl md:px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
+          {/* Card Image - Full width on small screens, centered on larger screens */}
+          <div className="w-full md:mx-auto md:max-w-6xl md:rounded-3xl overflow-hidden">
+                <Image
+              src="https://res.cloudinary.com/pitz/image/upload/v1765346728/Container_37_fpyfvs.png"
+              alt="Refer and Invite your friends and earn commission"
+              width={1440}
+              height={800}
+              className="w-full h-auto object-contain"
+              priority
+              quality={100}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Blogs Section */}
+      <div className="w-full bg-white dark:bg-[#0A0A0A] text-gray-900 dark:text-white pt-8 md:pt-12 pb-16 px-6 md:px-12 lg:px-16 xl:px-20">
+        <div className="max-w-6xl 2xl:max-w-7xl mx-auto">
+          {/* Header section */}
+          <div className="text-center mb-12">
+
+            {/* Main Title */}
+            <h2 className="text-3xl sm:text-4xl md:text-5xl 2xl:text-6xl font-bold mb-4">
+              Enjoy Our <span className="text-[#1D8751]">Blog</span> & News on the <span className="text-[#1D8751]">Latest Updates</span>
+</h2>
+
+            {/* Subheading */}
+            <p className="text-gray-700 dark:text-white/70 text-base md:text-lg max-w-2xl mx-auto">
+              Stay informed with expert insights, market analysis, and the latest developments in the cryptocurrency world.
+            </p>
+          </div>
+
+          {/* Articles grid - 3 columns */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
             {loading ? (
               // Loading state
               Array.from({ length: 6 }).map((_, index) => (
                 <div
                   key={index}
-                  className="dark:bg-[#18181D] rounded-lg overflow-hidden flex flex-col h-full animate-pulse"
+                  className="bg-[#1D1D23] rounded-xl overflow-hidden flex flex-col h-full animate-pulse border border-[#2A2A2A]"
                 >
-                  <div className="relative h-48 bg-gray-700"></div>
-                  <div className="py-6 space-y-3">
+                  <div className="relative w-full h-48 bg-gray-700"></div>
+                  <div className="p-5 md:p-6 space-y-3">
+                    <div className="h-4 bg-gray-700 rounded w-20"></div>
                     <div className="h-4 bg-gray-700 rounded"></div>
                     <div className="h-6 bg-gray-700 rounded"></div>
                     <div className="h-4 bg-gray-700 rounded"></div>
@@ -944,7 +1359,7 @@ export default function MarketingPage() {
               // Empty state
               <div className="col-span-full text-center py-12">
                 <p className="text-gray-400 text-lg">
-                  No {activeCategory.toLowerCase()} posts available.
+                  No posts available.
                 </p>
                 <p className="text-gray-500 text-sm mt-2">
                   Please add some blog posts to your Sanity CMS.
@@ -952,60 +1367,92 @@ export default function MarketingPage() {
               </div>
             ) : (
               // Articles grid
-              filteredArticles.map((article) => (
+              filteredArticles.slice(0, 6).map((article, index) => {
+                // Category colors mapping
+                const categoryColors: { [key: string]: string } = {
+                  'Market Analysis': 'bg-purple-500',
+                  'Security': 'bg-orange-500',
+                  'DeFi': 'bg-[#1D8751]',
+                  'Trading': 'bg-yellow-500',
+                  'Technology': 'bg-pink-500',
+                  'Regulation': 'bg-blue-500',
+                  'Crypto': 'bg-blue-500',
+                  'Investment': 'bg-purple-500',
+                  'NFTs': 'bg-pink-500',
+                  'Finance': 'bg-green-500',
+                };
+
+                const categoryName = article.tags[0]?.name || article.category || 'News';
+                const categoryColor = categoryColors[categoryName] || 'bg-[#1D8751]';
+                
+                // Calculate read time (estimate 200 words per minute)
+                const wordCount = article.excerpt.split(' ').length;
+                const readTime = Math.ceil(wordCount / 200) || 5;
+
+                return (
                 <div
                   key={article.id}
-                  className="dark:bg-[#18181D] rounded-lg overflow-hidden flex flex-col h-full"
+                    className="bg-gray-50 dark:bg-[#1D1D23] rounded-xl overflow-hidden flex flex-col h-full border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors"
                 >
-                  <div className="relative h-40 sm:h-44 md:h-48">
+                    {/* Article Image */}
+                    <div className="relative w-full h-48 overflow-hidden">
                     <Image
                       src={article.image}
                       alt={article.title}
                       fill
                       className="object-cover"
                     />
-                  </div>
-                  <div className="py-6">
-                    <div className="flex justify-between flex-wrap gap-2 mb-3">
-                      <p className="text-xs 2xl:text-sm rounded-full dark:text-[#727272] text-[#788099]">
-                        {article.createdAt}
-                      </p>
-                      <div className="flex gap-2 flex-wrap">
-                        {article.tags.map((tag) => (
-                          <span
-                            key={tag.id}
-                            className="text-xs 2xl:text-sm px-2 py-1 dark:bg-[#35353E] bg-[#F5F5F5] rounded-full text-[#788099]"
-                          >
-                            {tag.name}
+                      {/* Category Label - positioned absolutely over image */}
+                      <div className="absolute top-3 left-3">
+                        <span className={`${categoryColor} text-white text-xs font-medium px-3 py-1 rounded-full inline-block shadow-lg`}>
+                          {categoryName}
                           </span>
-                        ))}
                       </div>
                     </div>
-                    <h3 className="font-bold text-lg 2xl:text-xl mb-4 dark:text-white text-[#0D0D0D]">
+                    
+                    <div className="p-5 md:p-6 flex flex-col h-full">
+
+                      {/* Date and Read Time */}
+                      <div className="flex items-center gap-2 text-gray-600 dark:text-white/60 text-xs mb-3">
+                        <Calendar className="w-3 h-3" />
+                        <span>{article.createdAt}</span>
+                        <span className="mx-1">|</span>
+                        <Clock className="w-3 h-3" />
+                        <span>{readTime} min read</span>
+                      </div>
+
+                      {/* Article Title */}
+                      <h3 className="font-bold text-base md:text-lg mb-3 text-gray-900 dark:text-white line-clamp-2">
                       {article.title}
                     </h3>
-                    <p className="dark:text-[#788099] text-[#788099] text-sm 2xl:text-lg mb-4">
+
+                      {/* Description */}
+                      <p className="text-gray-700 dark:text-white/70 text-sm mb-5 flex-grow line-clamp-3">
                       {article.excerpt}
                     </p>
+
+                      {/* Read More Link */}
                     <Link
                       href={`/blog/${article.id}`}
-                      className="inline-block text-[#1D8751] border border-[#1D8751] rounded-full px-4 py-1 text-sm 2xl:text-lg transition-colors hover:bg-[#1D8751] hover:text-white"
+                        className="inline-flex items-center gap-2 text-[#1D8751] text-sm font-medium hover:text-[#167a47] transition-colors group mt-auto"
                     >
-                      {t("marketing.blogs.read", "Read Article")}
+                        Read More
+                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </Link>
                   </div>
                 </div>
-              ))
+                );
+              })
             )}
           </div>
 
-          {/* See all button */}
-          <div className="mt-10 text-center">
+          {/* View All Articles Button */}
+          <div className="mt-12 text-center">
             <Link
               href={`/blog/`}
-              className="inline-block bg-[#1D8751] text-white rounded-2xl px-10 py-3 font-medium text-sm transition-colors hover:bg-[#1D8751]"
+              className="inline-block bg-[#1D8751] text-white rounded-full px-8 py-4 font-medium text-base md:text-lg transition-colors hover:bg-[#167a47]"
             >
-              Go To News
+              View All Articles
             </Link>
           </div>
         </div>
@@ -1014,23 +1461,106 @@ export default function MarketingPage() {
       {/* Contact Us Section */}
       <section
         id="contact"
-        className="w-full dark:bg-[#1D1D23] bg-[#F6F6F6] text-white py-16 px-4 md:px-8"
+        className="w-full bg-white dark:bg-[#0A0A0A] text-gray-900 dark:text-white py-16 px-4 md:px-[100px]"
       >
         <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto">
-          <div className="flex flex-col lg:flex-row items-center gap-8">
-            {/* Form Section */}
-            <div className="w-full lg:w-1/2 space-y-6">
-              <h2 className="text-3xl 2xl:text-4xl font-bold mb-6 w-3/4 text-[#0D0D0D]  dark:text-white">
-                {t(
-                  "marketing.contact.title",
-                  "Need Answers to Your Questions? Contact Us"
-                )}
+          {/* Header Section */}
+          <div className="text-center mb-12">
+            {/* Get In Touch Pill */}
+            <div className="flex justify-center mb-6">
+              <span className="bg-[#1D8751]/10 border border-[#1D8751] text-[#1D8751] px-4 py-2 rounded-2xl text-sm font-medium">
+                Get In Touch
+              </span>
+            </div>
+
+            {/* Main Title */}
+            <h2 className="text-3xl sm:text-4xl md:text-5xl 2xl:text-6xl font-bold mb-4">
+              Need Answers to Your Questions?{" "}
+              <span className="text-[#1D8751]">Contact Us</span>
               </h2>
 
+            {/* Subtitle */}
+            <p className="text-gray-700 dark:text-white/70 text-base md:text-lg max-w-2xl mx-auto">
+              Our dedicated support team is here to help you with any questions or concerns
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+            {/* Left Column - Contact Information */}
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-gray-900 dark:text-white font-bold text-xl md:text-2xl mb-2">
+                  Contact Information
+                </h3>
+                <p className="text-gray-700 dark:text-white/70 text-sm md:text-base">
+                  Fill out the form and our team will get back to you within 24 hours
+                </p>
+              </div>
+
+              {/* Contact Cards */}
+              <div className="space-y-4">
+                {/* Our Office */}
+                <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-xl p-5 border border-gray-200 dark:border-[#2A2A2A]">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="text-gray-900 dark:text-white font-bold text-base mb-1">Our Office</h4>
+                      <p className="text-gray-700 dark:text-white/80 text-sm">
+                        KM4, Taleh, Hodan District, Mogadishu, Somalia
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Phone Number */}
+                <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-xl p-5 border border-gray-200 dark:border-[#2A2A2A]">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-[#1D8751] rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Phone className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="text-gray-900 dark:text-white font-bold text-base mb-1">Phone Number</h4>
+                      <p className="text-gray-700 dark:text-white/80 text-sm">+252 771 000777</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Email Address */}
+                <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-xl p-5 border border-gray-200 dark:border-[#2A2A2A]">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Mail className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="text-gray-900 dark:text-white font-bold text-base mb-1">Email Address</h4>
+                      <p className="text-gray-700 dark:text-white/80 text-sm">info@omaya.io</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Working Hours */}
+                <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-xl p-5 border border-gray-200 dark:border-[#2A2A2A]">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <Clock className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="text-gray-900 dark:text-white font-bold text-base mb-1">Working Hours</h4>
+                      <p className="text-gray-700 dark:text-white/80 text-sm">Mon - Fri: 9:00 AM - 6:00 PM</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column - Contact Form */}
+            <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-xl p-6 md:p-8 border border-gray-200 dark:border-[#2A2A2A]">
               {/* Success Message */}
               {showContactSuccess && (
-                <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl">
-                  <p className="text-green-800 dark:text-green-200 text-sm">
+                <div className="mb-6 p-4 bg-green-900/20 border border-green-800 rounded-xl">
+                  <p className="text-green-200 text-sm">
                     {t(
                       "marketing.contact.success",
                       "Thank you! Your message has been submitted successfully. We'll get back to you soon."
@@ -1041,8 +1571,8 @@ export default function MarketingPage() {
 
               {/* Error Message */}
               {showContactError && (
-                <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl">
-                  <p className="text-red-800 dark:text-red-200 text-sm">
+                <div className="mb-6 p-4 bg-red-900/20 border border-red-800 rounded-xl">
+                  <p className="text-red-200 text-sm">
                     {contactErrorMessage}
                   </p>
                 </div>
@@ -1053,19 +1583,6 @@ export default function MarketingPage() {
                 onError={handleContactError}
               />
             </div>
-
-            {/* Image Section */}
-            <div className="w-full lg:w-1/2">
-              <div className="rounded-2xl overflow-hidden">
-                <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746799099/Rectangle_39366_f6i8px.png"
-                  alt="Customer service representatives"
-                  width={600}
-                  height={400}
-                  className="w-full h-auto object-cover"
-                />
-              </div>
-            </div>
           </div>
         </div>
       </section>
@@ -1073,42 +1590,37 @@ export default function MarketingPage() {
       {/* FAQ Section */}
       <section
         id="faq"
-        className="w-full dark:bg-[#18181D]  bg-[#EEF1F4]   dark:text-white text-[#0D0D0D] py-16 px-4 md:px-8"
+        className="w-full bg-white dark:bg-[#0A0A0A] text-gray-900 dark:text-white py-16 px-4 md:px-8"
       >
-        <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto">
-          <div className="flex flex-col lg:flex-row items-center gap-12">
-            {/* Illustration */}
-            <div className="w-full lg:w-1/2">
-              <div className="relative w-full max-w-md mx-auto">
-                <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746799098/na_january_14-ai_2_odotog.png"
-                  alt="FAQ Illustration"
-                  width={500}
-                  height={400}
-                  className="w-full h-auto "
-                />
-              </div>
+        <div className="max-w-4xl mx-auto">
+          {/* Header Section */}
+          <div className="text-center mb-12">
+            {/* FAQ Pill */}
+            <div className="flex justify-center mb-6 -mt-4">
+              <span className="bg-[#1D8751]/10 border border-[#1D8751] text-[#1D8751] px-4 py-1.5 rounded-lg text-sm font-medium">
+                FAQ
+              </span>
             </div>
 
-            {/* FAQ Content */}
-            <div className="w-full lg:w-1/2 space-y-6">
-              <div className="mb-8">
-                <h2 className="text-2xl 2xl:text-3xl font-bold ">
-                  Let's Answer Some Of Your Questions Or
+            {/* Main Title */}
+            <h2 className="text-3xl sm:text-4xl md:text-5xl 2xl:text-6xl font-bold mb-4">
+              Frequently Asked <span className="text-[#1D8751]">Questions</span>
                 </h2>
-                <p className="text-2xl 2xl:text-3xl font-medium text-[#1D8751]">
-                  Frequently Asked Questions
+
+            {/* Subtitle */}
+            <p className="text-gray-700 dark:text-white/70 text-base md:text-lg max-w-2xl mx-auto">
+              Find answers to common questions about OMAYA Exchange, trading, security, and more
                 </p>
               </div>
 
-              {/* Accordion */}
-              <div className="space-y-4">
+          {/* FAQ Accordion */}
+          <div className="space-y-4 mb-12">
                 {faqLoading ? (
                   // Loading state
-                  Array.from({ length: 5 }).map((_, index) => (
+              Array.from({ length: 8 }).map((_, index) => (
                     <div key={index} className="relative animate-pulse">
-                      <div className="border rounded-xl overflow-hidden border-[#35353E]">
-                        <div className="w-full flex justify-between items-center px-4 py-3 text-left dark:bg-[#1D1D23] bg-[#F5F5F5]">
+                  <div className="bg-gray-50 dark:bg-[#1D1D23] border border-gray-200 dark:border-[#2A2A2A] rounded-xl overflow-hidden">
+                    <div className="w-full flex justify-between items-center px-5 py-4">
                           <div className="h-4 bg-gray-700 rounded w-3/4"></div>
                           <div className="h-4 bg-gray-700 rounded w-4"></div>
                         </div>
@@ -1143,103 +1655,85 @@ export default function MarketingPage() {
                   </div>
                 ) : (
                   <>
-                    {/* FAQ items - show only 5 initially */}
-                    {faqItems.slice(0, showAllFAQs ? faqItems.length : 5).map((item) => (
-                      <div key={item.id || item._id} className="relative">
-                        <div
-                          className={`border rounded-xl overflow-hidden ${
-                            openFAQ === (item.id || 0)
+                {/* FAQ items */}
+                {faqItems.slice(0, showAllFAQs ? faqItems.length : 8).map((item, index) => {
+                  const isOpen = openFAQ === (item.id || index);
+                  
+                  // Category mapping (you can customize this based on your FAQ data)
+                  const categories = [
+                    'GETTING STARTED',
+                    'TRADING',
+                    'SECURITY',
+                    'FEES',
+                    'WITHDRAWALS',
+                    'AVAILABILITY',
+                    'P2P TRADING',
+                    'SUPPORT'
+                  ];
+                  const category = categories[index] || 'GENERAL';
+
+                  return (
+                    <div key={item.id || item._id || index} className="relative">
+                      <div
+                        className={`bg-gray-50 dark:bg-[#1D1D23] border rounded-xl overflow-hidden ${
+                          isOpen
                               ? "border-[#1D8751]"
-                              : "border-[#35353E]"
+                            : "border-gray-200 dark:border-[#2A2A2A]"
                           }`}
                         >
                           {/* Accordion Header */}
                           <button
-                            onClick={() => toggleFAQ(item.id || 0)}
-                            className="w-full flex justify-between items-center px-4 py-3 text-left dark:bg-[#1D1D23] bg-[#F5F5F5]"
-                          >
-                            <span className="dark:text-white text-black">
+                          onClick={() => toggleFAQ(item.id || index)}
+                            className="w-full flex justify-between items-start px-5 py-4 text-left hover:bg-gray-100 dark:hover:bg-[#23232B] transition-colors"
+                        >
+                          <div className="flex flex-col gap-1 flex-1">
+                            <span className="text-[#1D8751] text-xs font-semibold uppercase">
+                              {category}
+                            </span>
+                            <span className="text-gray-900 dark:text-white font-medium text-base">
                               {item.question}
                             </span>
-                            {openFAQ === (item.id || 0) ? (
-                              <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 16 16"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path
-                                  d="M12 4L4 12"
-                                  stroke="#1D8751"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                                <path
-                                  d="M4 4L12 12"
-                                  stroke="#1D8751"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
+                          </div>
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ml-4 transition-colors ${
+                            isOpen 
+                              ? "bg-[#1D8751]" 
+                              : "bg-[#2A2A2A]"
+                          }`}>
+                            {isOpen ? (
+                              <ChevronUp className="w-4 h-4 text-white" />
                             ) : (
-                              <svg
-                                width="16"
-                                height="16"
-                                viewBox="0 0 16 16"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path
-                                  d="M8 4V12"
-                                  stroke="#1D8751"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                                <path
-                                  d="M4 8H12"
-                                  stroke="#1D8751"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
+                              <ChevronDown className="w-4 h-4 text-gray-400" />
                             )}
+                          </div>
                           </button>
 
                           {/* Accordion Content */}
-                          {openFAQ === (item.id || 0) && (
-                            <>
-                              {/* Dashed separator line */}
-                              <div className="border-t border-dashed border-gray-600 ml-2 mr-2"></div>
-                              <div className="px-4 py-3 dark:bg-[#1D1D23] bg-[#F5F5F5]">
-                                <p className="text-gray-400 text-sm 2xl:text-lg">
+                        {isOpen && (
+                          <div className="px-5 py-4 bg-gray-50 dark:bg-[#1D1D23] border-t border-gray-200 dark:border-[#2A2A2A]">
+                            <p className="text-gray-700 dark:text-white/80 text-sm md:text-base leading-relaxed">
                                   {item.answer}
                                 </p>
                               </div>
-                            </>
                           )}
                         </div>
                       </div>
-                    ))}
+                  );
+                })}
                     
-                    {/* Load All Button - only show if there are more than 5 FAQs */}
-                    {faqItems.length > 5 && !showAllFAQs && (
+                {/* Load All Button - only show if there are more than 8 FAQs */}
+                {faqItems.length > 8 && !showAllFAQs && (
                       <div className="text-center pt-4">
                         <button
                           onClick={() => setShowAllFAQs(true)}
                           className="bg-[#1D8751] text-white px-6 py-3 rounded-lg hover:bg-[#167a47] transition-colors font-medium"
                         >
-                          {t("marketing.faq.loadAll", "Load All FAQs")} ({faqItems.length - 5} more)
+                      {t("marketing.faq.loadAll", "Load All FAQs")} ({faqItems.length - 8} more)
                         </button>
                       </div>
                     )}
                     
                     {/* Show Less Button - only show when all FAQs are displayed */}
-                    {faqItems.length > 5 && showAllFAQs && (
+                {faqItems.length > 8 && showAllFAQs && (
                       <div className="text-center pt-4">
                         <button
                           onClick={() => setShowAllFAQs(false)}
@@ -1252,14 +1746,26 @@ export default function MarketingPage() {
                   </>
                 )}
               </div>
+
+          {/* Bottom Support Section */}
+          <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-2xl p-8 md:p-12 text-center border border-gray-200 dark:border-[#2A2A2A]">
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-[#1D8751] rounded-full flex items-center justify-center">
+                <MessageCircle className="w-8 h-8 text-white" />
             </div>
           </div>
-
-          {/* Chat button */}
-          <div className="absolute right-4 mt-4">
-            <button className="rounded-full p-3 text-[#1D8751]">
-              <MessageCircle size={34} />
-            </button>
+            <h3 className="text-gray-900 dark:text-white text-xl md:text-2xl font-bold mb-2">
+              Still have questions?
+            </h3>
+            <p className="text-gray-700 dark:text-white/70 text-sm md:text-base mb-6">
+              Our support team is available 24/7 to assist you
+            </p>
+            <a
+              href="#contact"
+              className="inline-block bg-[#1D8751] text-white px-8 py-3 rounded-lg font-medium hover:bg-[#167a47] transition-colors"
+            >
+              Contact Support
+            </a>
           </div>
         </div>
       </section>

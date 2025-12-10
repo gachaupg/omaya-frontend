@@ -14,13 +14,13 @@ const SystemThemeSection: React.FC = () => {
       <div className="text-base font-bold dark:text-white text-gray-900 mb-0">
         System Theme
       </div>
-      <section className="dark:bg-[#1D1D23] bg-gray-50 rounded-2xl dark:border-[#35353E] border-gray-300 border-2 p-4 shadow-lg">
+      <section className="dark:bg-[var(--card-color)] bg-gray-50 rounded-2xl dark:border-[#35353E] border-gray-300 border-2 p-2 sm:p-3 md:p-4 shadow-lg">
         <div className="flex gap-3 mb-3">
           <button
             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-2xl font-semibold text-sm transition-all ${
               isLight
                 ? "bg-[#1D8751] text-white"
-                : "bg-[#23232B] text-[#788099] hover:bg-[#2A2A32]"
+                : "bg-[var(--card-color)] text-[#788099] hover:bg-[#2A2A32]"
             }`}
             onClick={() => handleThemeChange("light")}
             aria-pressed={isLight}

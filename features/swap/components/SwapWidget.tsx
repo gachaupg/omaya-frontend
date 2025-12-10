@@ -671,7 +671,7 @@ const SwapWidget = () => {
     }
 
     return (
-      <div className="w-full max-w-lg mx-auto p-4 sm:p-6 bg-white dark:bg-[#1D1D23] rounded-lg border dark:border-[#35353E] border-gray-200 px-3 sm:px-4">
+      <div className="w-full max-w-lg mx-auto p-4 sm:p-6 bg-white dark:bg-[var(--card-color)] rounded-lg border dark:border-[#35353E] border-gray-200 px-3 sm:px-4">
         <div className="flex flex-col items-center text-center gap-3">
           <SwapWidgetSkeleton />
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
@@ -716,8 +716,8 @@ const SwapWidget = () => {
   }
 
   return (
-    <div className="mx-auto dark:text-white text-gray-900 px-3 sm:px-3">
-      <h2 className="text-base sm:text-lg font-semibold mb-4 sm:mb-6 text-gray-900 dark:text-white">
+    <div className="mx-auto dark:text-white text-gray-900 px-1 sm:px-2 md:px-3">
+      <h2 className="text-base sm:text-lg font-semibold mb-2 sm:mb-4 md:mb-6 text-gray-900 dark:text-white">
         Swap Crypto
       </h2>
 

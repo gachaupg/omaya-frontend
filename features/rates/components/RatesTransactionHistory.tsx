@@ -25,57 +25,90 @@ const getBankLogo = (bankName: string): string => {
 const getFromTo = (tx: Transaction): { from: { name: string; logo: string }; to: { name: string; logo: string } } => {
   const transactionType = tx.transaction_type?.toLowerCase() || "";
   
-  // For deposits: From = payment provider, To = currency/asset
+  // Helper to check if a name is likely a crypto asset (USDT, BTC, ETH, etc.)
+  const isCryptoAsset = (name: string) => {
+    const cryptoAssets = ['usdt', 'btc', 'eth', 'usd', 'usdc', 'bnb', 'trx', 'aurora_eth'];
+    return cryptoAssets.some(crypto => name.toLowerCase().includes(crypto));
+  };
+  
+  // For deposits: From = payment provider (bank), To = crypto asset
   if (transactionType === "deposit" || transactionType === "moneyx") {
+    const providerName = tx.payment_provider || "Payment Provider";
+    const assetName = tx.currency || "USD";
+    
     return {
       from: {
-        name: tx.payment_provider || "Payment Provider",
-        logo: getBankLogo(tx.payment_provider || ""),
+        name: providerName,
+        logo: PAYMENT_ICON_URL, // Always use payment icon for banks/providers
       },
       to: {
-        name: tx.currency || "USD",
-        logo: tx.asset_image || ASSET_ICON_URL,
+        name: assetName,
+        logo: tx.asset_image || ASSET_ICON_URL, // Use asset image for crypto
       },
     };
   }
   
-  // For withdrawals: From = currency/asset, To = payment provider
+  // For withdrawals: From = crypto asset, To = payment provider (bank)
   if (transactionType === "withdrawal") {
+    const assetName = tx.currency || "USD";
+    const providerName = tx.payment_provider || "Payment Provider";
+    
     return {
       from: {
-        name: tx.currency || "USD",
-        logo: tx.asset_image || ASSET_ICON_URL,
+        name: assetName,
+        logo: tx.asset_image || ASSET_ICON_URL, // Use asset image for crypto
       },
       to: {
-        name: tx.payment_provider || "Payment Provider",
-        logo: getBankLogo(tx.payment_provider || ""),
+        name: providerName,
+        logo: PAYMENT_ICON_URL, // Always use payment icon for banks/providers
       },
   };
   }
   
-  // For P2P: From = payment provider, To = payment provider (or currency)
+  // For P2P: From = payment provider, To = crypto asset
   if (transactionType.includes("p2p")) {
+    const providerName = tx.payment_provider || "Payment Provider";
+    const assetName = tx.currency || "USD";
+    
     return {
       from: {
-        name: tx.payment_provider || tx.currency || "Source",
-        logo: getBankLogo(tx.payment_provider || ""),
+        name: providerName,
+        logo: PAYMENT_ICON_URL, // Use payment icon for provider
       },
       to: {
-        name: tx.currency || "Destination",
-        logo: tx.asset_image || ASSET_ICON_URL,
+        name: assetName,
+        logo: tx.asset_image || ASSET_ICON_URL, // Use asset image for crypto
       },
     };
   }
   
-  // Default: From = currency, To = payment provider
+  // Default: Determine based on names
+  const firstName = tx.payment_provider || tx.currency || "Source";
+  const secondName = tx.currency || "Destination";
+  
+  // If first name is crypto, swap them
+  if (isCryptoAsset(firstName)) {
+    return {
+      from: {
+        name: firstName,
+        logo: tx.asset_image || ASSET_ICON_URL,
+      },
+      to: {
+        name: secondName,
+        logo: PAYMENT_ICON_URL,
+      },
+    };
+  }
+  
+  // Default: From = payment provider, To = asset
   return {
     from: {
-      name: tx.currency || "USD",
-      logo: tx.asset_image || ASSET_ICON_URL,
+      name: firstName,
+      logo: PAYMENT_ICON_URL,
     },
     to: {
-      name: tx.payment_provider || "Payment Provider",
-      logo: getBankLogo(tx.payment_provider || ""),
+      name: secondName,
+      logo: tx.asset_image || ASSET_ICON_URL,
     },
   };
 };
@@ -169,17 +202,17 @@ const RatesTransactionHistory = () => {
       <div className="hidden sm:block w-full overflow-x-auto border border-gray-200 dark:border-[#35353E] rounded-lg">
         <table className="min-w-max w-full text-left">
         <thead>
-          <tr className="bg-gray-50 dark:bg-[#23232B] border-b border-gray-200 dark:border-[#35353E] text-gray-600 dark:text-[#788099]">
-            <th className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">
+          <tr className="bg-gray-50 dark:bg-[#23232B] border-b-2 border-gray-300 dark:border-[#35353E]">
+            <th className="px-4 sm:px-6 py-4 sm:py-5 font-semibold text-base sm:text-lg text-gray-900 dark:text-white">
               From
             </th>
-            <th className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">
+            <th className="px-4 sm:px-6 py-4 sm:py-5 font-semibold text-base sm:text-lg text-gray-900 dark:text-white">
               To
             </th>
-            <th className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">
+            <th className="px-4 sm:px-6 py-4 sm:py-5 font-semibold text-base sm:text-lg text-gray-900 dark:text-white">
               Amount
             </th>
-            <th className="px-4 sm:px-6 py-3 sm:py-4 font-medium text-xs sm:text-sm text-gray-600 dark:text-[#788099]">
+            <th className="px-4 sm:px-6 py-4 sm:py-5 font-semibold text-base sm:text-lg text-gray-900 dark:text-white">
               When
             </th>
           </tr>

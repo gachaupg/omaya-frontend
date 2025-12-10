@@ -168,7 +168,7 @@ const Orders = memo(() => {
   }
 
   return (
-    <div className="flex flex-col gap-4 w-full h-full mx-auto max-w-[1400px] px-4 md:px-6 lg:px-8">
+    <div className="flex flex-col gap-2 sm:gap-3 md:gap-4 w-full h-full mx-auto max-w-[1400px] px-1 sm:px-2 md:px-6 lg:px-8">
       <Filters
         filters={filters}
         onFilterChange={handleFilterChange}

@@ -12,7 +12,7 @@ const ReferralTabs: React.FC<ReferralTabsProps> = ({ tab, setTab }) => {
         className={`px-4 py-2 text-sm font-normal transition-all duration-150 focus:outline-none ${
           tab === "Referral"
             ? "bg-[#1D8751] text-white rounded"
-            : "dark:bg-[#23232B] text-[#788099] hover:opacity-80"
+            : "dark:bg-[var(--card-color)] text-[#788099] hover:opacity-80"
         }`}
         onClick={() => setTab("Referral")}
       >
@@ -22,7 +22,7 @@ const ReferralTabs: React.FC<ReferralTabsProps> = ({ tab, setTab }) => {
         className={`px-4 py-2 text-sm font-normal transition-all duration-150 focus:outline-none ${
           tab === "History"
             ? "bg-[#1D8751] text-white rounded"
-            : "dark:bg-[#23232B] text-[#788099] hover:opacity-80"
+            : "dark:bg-[var(--card-color)] text-[#788099] hover:opacity-80"
         }`}
         onClick={() => setTab("History")}
       >

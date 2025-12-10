@@ -471,7 +471,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
           <div
             data-asset-card="true"
             data-select-card="true"
-            className={`relative flex gap-4 rounded-2xl p-4 overflow-visible ${
+            className={`relative flex flex-col sm:flex-row gap-4 rounded-2xl p-3 sm:p-4 overflow-visible ${
               isDark ? "bg-[#0F0F17] border border-[#2F2F3A]" : "bg-white border border-[#E2E8F0] shadow-sm"
             }`}
           >
@@ -588,7 +588,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
         <div className="relative mb-3">
           <div
             data-asset-card="true"
-            className={`relative flex gap-4 rounded-2xl p-4 overflow-visible ${
+            className={`relative flex flex-col sm:flex-row gap-4 rounded-2xl p-3 sm:p-4 overflow-visible ${
               isDark ? "bg-[#0F0F17] border border-[#2F2F3A]" : "bg-white border border-[#E2E8F0] shadow-sm"
             }`}
           >
@@ -678,7 +678,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
         {validationErrors.length > 0 && (
           <div className="w-full px-2 mb-4">
             <div
-              className={`border border-[#1D8751] rounded-2xl p-4 ${
+              className={`border border-[#1D8751] rounded-2xl p-3 sm:p-4 ${
                 isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"
               }`}
             >
@@ -736,7 +736,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
           </h2>
           <div
             ref={paymentDetailsRef}
-            className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-6"
+            className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-3 sm:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-6"
           >
             {/* Bank Account Address Label */}
             <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">

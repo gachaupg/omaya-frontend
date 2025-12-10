@@ -59,7 +59,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   dropdownMaxHeight,
   dropdownPosition = "below",
 }) => {
-  const resolvedLogoSize = logoSize ?? (sizeMode === "card" ? 36 : 32);
+  const resolvedLogoSize = logoSize ?? (sizeMode === "card" ? 24 : 32);
   const resolvedLogoClass =
     logoClassName ?? "rounded object-cover flex-shrink-0";
   const [isOpen, setIsOpen] = useState(false);
@@ -299,9 +299,12 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
           w-full text-left px-3 sm:px-4 py-2 rounded-2xl border text-base sm:text-lg
           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
           transition-colors duration-200 min-w-0
+          ${sizeMode === "card" ? "h-[48px] flex items-center bg-transparent dark:bg-transparent" : ""}
           ${disabled || loading
             ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed border-gray-300 dark:border-gray-600"
-            : "bg-white dark:bg-transparent text-[#35353e] dark:text-[#ffffff] border-[#A2A4A9FF] dark:border-accent hover:border-blue-400 dark:hover:border-blue-400 cursor-pointer"
+            : sizeMode === "card" 
+              ? "bg-transparent dark:bg-transparent text-[#35353e] dark:text-[#ffffff] border-[#A2A4A9FF] dark:border-[#35353E] hover:border-blue-400 dark:hover:border-blue-400 cursor-pointer"
+              : "bg-white dark:bg-[var(--card-color)] text-[#35353e] dark:text-[#ffffff] border-[#A2A4A9FF] dark:border-[#35353E] hover:border-blue-400 dark:hover:border-blue-400 cursor-pointer"
           }
         ${triggerClassName}
         `}
@@ -427,6 +430,29 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                     aria-selected={value === option.value}
                   >
                     <div className="flex items-center gap-2 sm:gap-3 min-w-0 w-full">
+                      {/* Checkbox */}
+                      <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
+                        {isSelected ? (
+                          <div className="w-5 h-5 rounded border-2 border-[#1D8751] bg-[#1D8751] flex items-center justify-center">
+                            <svg
+                              className="w-3.5 h-3.5 text-white"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={3}
+                                d="M5 13l4 4L19 7"
+                              />
+                            </svg>
+                          </div>
+                        ) : (
+                          <div className="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-600 bg-transparent"></div>
+                        )}
+                      </div>
                       {option.logo && (
                         <img
                           src={option.logo}

@@ -61,7 +61,7 @@ const TopButtons = ({
         className={`w-full sm:w-auto rounded-[28px] flex items-center justify-center gap-2 border border-[#1D8751] px-5 py-3 font-semibold text-sm hover:bg-[#1D8751]/10 transition-all relative ${
           showUnreadMessages
             ? "bg-[#1D8751] text-white border border-[#1D8751]"
-            : "bg-white dark:bg-transparent text-[#1D8751]"
+            : "bg-white dark:bg-[var(--bg-color)] text-[#1D8751]"
         } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
         disabled={loading}
         onClick={onUnreadMessagesClick}
