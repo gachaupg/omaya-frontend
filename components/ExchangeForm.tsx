@@ -1234,7 +1234,7 @@ export default function ExchangeForm({
               <img
                 src={isActive ? expressActiveIconSrc : expressInactiveIconSrc}
                 alt="Express Exchange"
-                className="mt-1 sm:mt-1.5 md:mt-2 ml-0 w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5"
+                className="mt-1 sm:mt-1.5 md:mt-2 ml-0 h-[1em] w-auto object-contain flex-shrink-0"
               />
             )}
           </span>
