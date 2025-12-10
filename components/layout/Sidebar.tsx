@@ -21,7 +21,7 @@ export default function Sidebar() {
   const { isDark } = useTheme();
 
   return (
-    <>
+    <React.Fragment>
       {/* Desktop Sidebar */}
       <aside
         className={clsx(
@@ -39,8 +39,8 @@ export default function Sidebar() {
                 normalizedHref === "/dashboard"
                   ? normalizedPathname === normalizedHref
                   : normalizedPathname === normalizedHref ||
-                    (normalizedPathname &&
-                      normalizedPathname.startsWith(normalizedHref + "/"));
+                  (normalizedPathname &&
+                    normalizedPathname.startsWith(normalizedHref + "/"));
               const label = t(item.labelKey, item.labelKey);
               return (
                 <li key={item.labelKey}>
@@ -57,7 +57,7 @@ export default function Sidebar() {
                   >
                     {item.labelKey === "navigation.exchange" ? (
                       <>
-                      
+
                         <img
                           className=" w-9 h-8 object-cover "
                           src="https://res.cloudinary.com/pitz/image/upload/v1764568507/uil_exchange_1_okxkvb.png"
@@ -73,56 +73,79 @@ export default function Sidebar() {
                     )}
                     {item.labelKey === "navigation.exchange" ? (
                       <span
-                        className={clsx(
-                          "flex items-center justify-center gap-0.5",
-                          isActive
-                            ? "font-bold text-white text-base"
-                            : "font-normal text-[#727272] text-sm uppercase"
-                        )}
+
                       >
                         <span className="flex items-center justify-center gap-0.5">
-                          <span className={isActive ? "text-white text-base uppercase font-bold" : "text-[#727272] text-base uppercase font-bold"}>
+                          <span
+                            className={
+                              isActive
+                                ? "text-[#727272] dark:text-white text-base uppercase font-bold"
+                                : "text-[#727272] text-base uppercase font-bold"
+                            }
+                          >
                             Money
                           </span>
-                          <img
-                            className="mt-2"
-                            src={isActive 
-                              ? "https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png"
-                              : "https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"
-                            }
-                            alt=""
-                          />
+
+                          <span className="relative mt-2">
+                            {/* Light-mode image (always shown in light mode, and in dark mode when inactive) */}
+                            <img
+                              src="https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"
+                              className={isActive ? "block dark:hidden" : "block"}
+                              alt=""
+                            />
+
+                            {/* Dark-mode active image (shown only when active + dark mode) */}
+                            {isActive && (
+                              <img
+                                src="https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png"
+                                className="hidden dark:block"
+                                alt=""
+                              />
+                            )}
+                          </span>
                         </span>
                       </span>
+
                     ) : (
                       ''
                     )}
                     {item.labelKey === "navigation.express" ? (
-                      <span
-                        className={clsx(
-                          "flex items-center justify-center gap-0.5",
-                          isActive
-                            ? "font-bold text-white text-base"
-                            : "font-normal text-[#727272] text-sm uppercase"
-                        )}
-                      >
+                      <span >
                         <span className="flex ml-1 items-center justify-center gap-0.5">
-                          <span className={isActive ? "text-white text-base uppercase font-bold" : "text-[#727272] text-base uppercase font-bold"}>
+                          <span
+                            className={
+                              isActive
+                                ? "text-[#727272] dark:text-white text-base uppercase font-bold"
+                                : "text-[#727272] text-base uppercase font-bold"
+                            }
+                          >
                             E
                           </span>
-                          <img
-                            className="mt-2"
-                            src={isActive 
-                              ? "https://res.cloudinary.com/pitz/image/upload/v1764698106/Group_8_hjhlxe.png"
-                              : "https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png"
-                            }
-                            alt=""
-                          />
+
+                          <span className="relative mt-2">
+                            {/* Light-mode image: shown in light mode always (active or not), 
+            also shown in dark mode when not active */}
+                            <img
+                              src="https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png"
+                              className={isActive ? "block dark:hidden" : "block"}
+                              alt=""
+                            />
+
+                            {/* Dark-mode active image: only visible in dark mode AND active */}
+                            {isActive && (
+                              <img
+                                src="https://res.cloudinary.com/pitz/image/upload/v1764698106/Group_8_hjhlxe.png"
+                                className="hidden dark:block"
+                                alt=""
+                              />
+                            )}
+                          </span>
                         </span>
                       </span>
                     ) : (
                       <span className="font-bold ml-1">{label}</span>
                     )}
+
                   </Link>
                 </li>
               );
@@ -147,8 +170,8 @@ export default function Sidebar() {
                 normalizedHref === "/dashboard"
                   ? normalizedPathname === normalizedHref
                   : normalizedPathname === normalizedHref ||
-                    (normalizedPathname &&
-                      normalizedPathname.startsWith(normalizedHref + "/"));
+                  (normalizedPathname &&
+                    normalizedPathname.startsWith(normalizedHref + "/"));
               const label = t(item.labelKey, item.labelKey);
               return (
                 <li key={item.labelKey} className="snap-start">
@@ -272,6 +295,6 @@ export default function Sidebar() {
           </ul>
         </nav>
       </div>
-    </>
+    </React.Fragment>
   );
 }
