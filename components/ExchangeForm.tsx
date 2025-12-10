@@ -1127,19 +1127,34 @@ export default function ExchangeForm({
     position?: "first" | "middle" | "last";
   }> = ({ id, label, variant, position = "middle" }) => {
     const isActive = activeTab === id;
+    const [isSmallScreen, setIsSmallScreen] = useState(false);
+    
+    useEffect(() => {
+      const checkScreenSize = () => {
+        setIsSmallScreen(window.innerWidth < 640);
+      };
+      checkScreenSize();
+      window.addEventListener('resize', checkScreenSize);
+      return () => window.removeEventListener('resize', checkScreenSize);
+    }, []);
+    
+    // Use less aggressive clipPath on small screens to prevent cutting off content
     let clipPath = "polygon(0 0, 100% 0, 100% 100%, 0 100%)";
     
-    if (position === "first") {
-      clipPath = "polygon(0 0, 94% 0, 100% 100%, 0 100%)";
-    } else if (position === "middle") {
-      clipPath = "polygon(6% 0, 94% 0, 100% 100%, 0 100%)";
-    } else if (position === "last") {
-      clipPath = "polygon(6% 0, 100% 0, 100% 100%, 0 100%)";
+    // On small screens, remove clipping entirely; on larger screens, use the angled design
+    if (!isSmallScreen) {
+      if (position === "first") {
+        clipPath = "polygon(0 0, 94% 0, 100% 100%, 0 100%)";
+      } else if (position === "middle") {
+        clipPath = "polygon(6% 0, 94% 0, 100% 100%, 0 100%)";
+      } else if (position === "last") {
+        clipPath = "polygon(6% 0, 100% 0, 100% 100%, 0 100%)";
+      }
     }
 
     const buttonClasses = [
       "relative flex w-full items-center justify-center overflow-hidden transition-all duration-200",
-      "px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 md:py-3.5 min-h-[46px] sm:min-h-[54px]",
+      "px-2 sm:px-3 md:px-4 lg:px-5 xl:px-6 py-1.5 sm:py-2 md:py-2.5 lg:py-3 min-h-[40px] sm:min-h-[44px] md:min-h-[48px] lg:min-h-[54px]",
       isActive
         ? isDark
           ? "bg-[#20262F] text-white shadow-[0_20px_38px_rgba(6,29,18,0.32)]"
@@ -1151,8 +1166,8 @@ export default function ExchangeForm({
 
     const labelWrapperClasses = [
       "relative z-[1] flex items-center",
-      label?.trim() && variant !== "moneyx" ? "gap-2" : "gap-0",
-      "text-xs sm:text-sm md:text-base font-semibold tracking-wide transition-colors"
+      label?.trim() && variant !== "moneyx" ? "gap-1 sm:gap-2" : "gap-0",
+      "text-[10px] sm:text-xs md:text-sm lg:text-base font-semibold tracking-wide transition-colors whitespace-nowrap"
     ].join(" ");
 
     const textColorClass = isActive
@@ -1186,11 +1201,11 @@ export default function ExchangeForm({
           // Split into "Money" and everything after X
           return (
             <>
-              <span className={`${textColorClass} text-sm sm:text-base md:text-lg font-semibold`}>{parts[0].trim()}</span>
+              <span className={`${textColorClass} text-[10px] sm:text-xs md:text-sm lg:text-base xl:text-lg font-semibold`}>{parts[0].trim()}</span>
               <img
                 src={moneyXIconSrc}
                 alt="X"
-                className="inline-block mt-2.5"
+                className="inline-block mt-1 sm:mt-1.5 md:mt-2 w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5"
                 style={{ marginLeft: 0 }}
               />
             </>
@@ -1219,7 +1234,7 @@ export default function ExchangeForm({
               <img
                 src={isActive ? expressActiveIconSrc : expressInactiveIconSrc}
                 alt="Express Exchange"
-                className="mt-2 ml-0"
+                className="mt-1 sm:mt-1.5 md:mt-2 ml-0 w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5"
               />
             )}
           </span>
@@ -1375,7 +1390,7 @@ export default function ExchangeForm({
   /* ------------------- UI ------------------- */
   // Render tabs and content based on active tab
   const renderTabs = () => (
-    <div className="relative flex w-full overflow-hidden rounded-[28px] bg-white/70 p-1 dark:bg-[#12171E]/90">
+    <div className="relative flex w-full overflow-visible sm:overflow-hidden rounded-[28px] bg-white/70 p-0.5 sm:p-1 dark:bg-[#12171E]/90 mb-3 sm:mb-4">
       <TabButton
         id="express"
         variant="express"
@@ -1400,13 +1415,15 @@ export default function ExchangeForm({
   // If Swap Crypto tab is active, render SwapWidget with tab controls
   if (activeTab === "swap") {
     return (
-      <div className={`w-full mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl ${isHomePage ? "px-3 sm:px-4 md:px-5 py-3" : "px-1 sm:px-2 md:px-5 py-1 sm:py-2 md:py-3"} shadow-lg ${
+      <div className={`w-full mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl ${isHomePage ? "px-2 sm:px-3 md:px-4 lg:px-5 py-2 sm:py-3 md:py-3" : "px-1 sm:px-2 md:px-5 py-1 sm:py-2 md:py-3"} shadow-lg ${
         isHomePage 
-          ? "max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl" 
+          ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl" 
           : "max-w-none"
       }`}>
         {renderTabs()}
-        <SwapWidget usePublicApi={isHomePage} />
+        <div className="mt-2 sm:mt-3">
+          <SwapWidget usePublicApi={isHomePage} />
+        </div>
       </div>
     );
   }
@@ -1414,27 +1431,31 @@ export default function ExchangeForm({
   // If Money X tab is active, render MoneyX component
   if (activeTab === "moneyx") {
     return (
-      <div className={`w-full mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl ${isHomePage ? "px-3 sm:px-4 md:px-5 py-3" : "px-1 sm:px-2 md:px-5 py-1 sm:py-2 md:py-3"} shadow-lg ${
+      <div className={`w-full mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl ${isHomePage ? "px-2 sm:px-3 md:px-4 lg:px-5 py-2 sm:py-3 md:py-3" : "px-1 sm:px-2 md:px-5 py-1 sm:py-2 md:py-3"} shadow-lg ${
         isHomePage 
-          ? "max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl" 
+          ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl" 
           : "max-w-none"
       }`}>
         {renderTabs()}
-        <MoneyX isHomePage={isHomePage} />
+        <div className="mt-2 sm:mt-3">
+          <MoneyX isHomePage={isHomePage} />
+        </div>
       </div>
     );
   }
 
   // Default: Express Exchange tab
   return (
-    <div className={`w-full mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl ${isHomePage ? "px-3 sm:px-4 md:px-5 py-3" : "px-1 sm:px-2 md:px-5 py-1 sm:py-2 md:py-3"} shadow-lg ${
+    <div className={`w-full mx-auto bg-white dark:bg-[#18181D] rounded-2xl sm:rounded-3xl ${isHomePage ? "px-2 sm:px-3 md:px-4 lg:px-5 py-2 sm:py-3 md:py-3" : "px-1 sm:px-2 md:px-5 py-1 sm:py-2 md:py-3"} shadow-lg ${
       isHomePage 
-        ? "max-w-full sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl" 
+        ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl" 
         : "max-w-none"
     }`}>
       {renderTabs()}
       {/* Express Exchange Content */}
-      <Express isHomePage={isHomePage} />
+      <div className="mt-2 sm:mt-3">
+        <Express isHomePage={isHomePage} />
+      </div>
     </div>
   );
 }

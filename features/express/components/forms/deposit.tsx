@@ -1629,7 +1629,7 @@ export default function DepositForm({
                 placeholder="Search assets..."
                 value={assetSearchTerm}
                 onChange={(e) => setAssetSearchTerm(e.target.value)}
-                className="w-full text-gray-900 dark:text-white dark:bg-[var(--card-color)] bg-white rounded-xl px-10 py-2 text-sm focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400"
+                className="w-full text-gray-900 dark:text-white dark:bg-[#18181D] bg-white rounded-xl px-10 py-2 text-sm focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400"
               />
             </div>
           </div>
@@ -2920,7 +2920,7 @@ export default function DepositForm({
         {/* Top Section - Amount and Bank/Payment Method in one card */}
         <div className="relative mb-2 sm:mb-3 md:mb-4">
           {/* Top Card Container */}
-          <div className="relative flex flex-col sm:flex-row border border-[#D1D2D4FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0">
+          <div className="relative flex flex-col sm:flex-row border border-[#35353E] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0 bg-white dark:bg-[#18181D]">
             {/* Amount Section */}
             <div className="flex-1 sm:pr-4">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
@@ -3020,7 +3020,7 @@ export default function DepositForm({
                     }
                   }}
                   placeholder="Enter amount"
-                  className={`w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 py-2 sm:py-3 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none border appearance-none min-h-[60px] ${
+                  className={`w-full text-[#35353e] dark:bg-[#18181D] dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 py-2 sm:py-3 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none border appearance-none min-h-[60px] ${
                     (isCalculating || isCalculatingReceive) &&
                     isCalculatingFromPay &&
                     selectedAsset &&
@@ -3083,7 +3083,7 @@ export default function DepositForm({
     }
   }}
   placeholder="Enter amount"
-  className={`w-full h-[60px] text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff]
+  className={`w-full h-[48px] text-[#35353e] dark:text-white bg-transparent dark:bg-transparent
     rounded-2xl px-3 sm:px-4 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none
     border appearance-none
     ${
@@ -3127,7 +3127,7 @@ export default function DepositForm({
             {/* Bank/Payment Method Section */}
             <div
               data-select-card="true"
-              className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#D1D2D4FF] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none"
+              className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none"
             >
               <div className="text-xs text-[#788099] dark:text-[#788099] mb-1 mt-[30px] sm:mt-[34px]">{t("express.bankPaymentMethod", "Bank/Payment Method")}</div>
               {/* <div>
@@ -3349,7 +3349,7 @@ export default function DepositForm({
 
         {/* Bottom Section - You Receive and Asset in one card */}
         <div className="relative mb-2 sm:mb-3">
-          <div className="relative flex flex-col sm:flex-row border border-[#D1D2D4FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0">
+          <div className="relative flex flex-col sm:flex-row border border-[#35353E] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0 bg-white dark:bg-[#18181D]">
             {/* You Receive Section */}
             <div className="flex-1 sm:pr-4">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
@@ -3441,7 +3441,7 @@ export default function DepositForm({
                     }
                   }}
                   placeholder="Enter amount"
-                  className={`w-full h-[60px] text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 pr-16 text-base sm:text-lg focus:outline-none border appearance-none ${
+                  className={`w-full h-[48px] text-[#35353e] dark:text-white bg-white dark:bg-[#35353E] rounded-2xl px-4 pr-16 text-base sm:text-lg focus:outline-none border appearance-none ${
                     receiveAmountError &&
                     (receiveAmountError.includes("Rough estimate") ||
                       receiveAmountError.includes("Using estimated rate"))
@@ -3568,11 +3568,11 @@ export default function DepositForm({
             </div>
 
             {/* Asset Section */}
-            <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#D1D2D4FF] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none">
+            <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none">
               <div className="text-xs text-[#788099] dark:text-[#788099] mb-1 mt-[30px] sm:mt-[34px]">{t("express.youGet", "You Get")}</div>
               <div className="relative" ref={assetDropdownRef}>
                 <div
-                  className={`h-[60px] w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 text-base sm:text-lg border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer`}
+                  className={`h-[48px] w-full text-[#35353e] bg-transparent dark:bg-transparent dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 text-base sm:text-lg border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer`}
                   onClick={() => {
                     if (!isAssetDropdownOpen) {
                       updateAssetDropdownPosition();
@@ -3591,7 +3591,7 @@ export default function DepositForm({
                             selectedAsset?.symbol ||
                             "Asset"
                           }
-                          className={`${ASSET_ICON_BASE_CLASS} w-9 h-9`}
+                          className={`${ASSET_ICON_BASE_CLASS} w-6 h-6`}
                           loading="lazy"
                           onError={(e) => {
                             e.currentTarget.src = getHighResAssetIcon(null, 72);
@@ -3692,7 +3692,7 @@ export default function DepositForm({
         </div> */}
 
         {/* Disclaimer Banner */}
-        <div className="flex items-center rounded-2xl px-2 sm:px-3 md:px-4 py-2 sm:py-3 mb-2 sm:mb-4 dark:bg-[var(--card-color)]">
+        <div className="flex items-center rounded-2xl px-2 sm:px-3 md:px-4 py-2 sm:py-3 mb-2 sm:mb-4 bg-white dark:bg-[#18181D]">
           <div className="flex items-center gap-3">
             <div className="w-5 h-5 border-2 border-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0">
               <span className="text-[#1D8751] text-xs font-bold">i</span>
@@ -3795,7 +3795,7 @@ export default function DepositForm({
                   <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>{" "}
                   {t("express.paymentDetails", "Payment Details")}
                 </h2>
-                <div className="flex-1 dark:bg-[var(--card-color)] rounded-2xl border border-[#39394a] dark:border-[#35353E] flex flex-col justify-between p-3 sm:p-4 md:p-5 relative min-h-[120px]">
+                <div className="flex-1 bg-white dark:bg-[#18181D] rounded-2xl border border-[#39394a] dark:border-[#35353E] flex flex-col justify-between p-3 sm:p-4 md:p-5 relative min-h-[120px]">
                   {/* Bank and logo */}
                   <div className="flex items-center justify-between mb-2 sm:mb-4">
                     <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-semibold">
@@ -3899,7 +3899,7 @@ export default function DepositForm({
             </h2>
 
             {/* Forex Account Number */}
-            <div className="flex flex-col dark:bg-[var(--card-color)] border-2 border-[#35353E] rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg">
+            <div className="flex flex-col bg-white dark:bg-[#18181D] border-2 border-[#35353E] rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg">
               <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                 {t("express.yourForexAccountNumber", "Your Forex Account Number")}
               </label>
@@ -3913,7 +3913,7 @@ export default function DepositForm({
             </div>
 
             {/* User Notes */}
-            <div className="flex flex-col dark:bg-[var(--card-color)] border-2 border-[#35353E] rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg">
+            <div className="flex flex-col bg-white dark:bg-[#18181D] border-2 border-[#35353E] rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg">
               <label className="block text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                 {t("express.additionalNotesOptional", "Additional Notes (Optional)")}
               </label>
@@ -3921,7 +3921,7 @@ export default function DepositForm({
                 value={userNotes}
                 onChange={(e) => setUserNotes(e.target.value)}
                 placeholder="Add any special instructions or notes..."
-                className="w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 py-2 text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] min-h-[100px] resize-none"
+                className="w-full text-[#35353e] dark:bg-[#18181D] dark:text-[#ffffff] rounded-2xl px-3 sm:px-4 py-2 text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] min-h-[100px] resize-none"
               />
             </div>
 
@@ -4019,7 +4019,7 @@ export default function DepositForm({
             ref={paymentDetailsRef}
             className="mt-1 mb-2 w-full flex flex-col gap-3 px-2 "
           >
-            <div className="flex-1  dark:bg-[var(--card-color)] rounded-2xl border border-[#39394a] dark:border-[#35353E] flex flex-col justify-between p-3 sm:p-4 md:p-5 relative min-h-[120px]">
+            <div className="flex-1  dark:bg-[#18181D] rounded-2xl border border-[#39394a] dark:border-[#35353E] flex flex-col justify-between p-3 sm:p-4 md:p-5 relative min-h-[120px]">
               {/* Bank and logo */}
               <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4">
                 <span className="text-[#7e7e8f] dark:text-[#788099] text-base font-semibold">
@@ -4119,7 +4119,7 @@ export default function DepositForm({
                 {t("express.transactionCode", "Transaction Code")}
               </h2>
               <div className="mb-4 sm:mb-6 flex flex-col gap-2 sm:gap-3 w-full px-1 sm:px-2">
-                <div className=" dark:bg-[var(--card-color)] border-2 border-[#35353E] rounded-2xl p-3 sm:p-4 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
+                <div className="bg-white dark:bg-[#18181D] border-2 border-[#35353E] rounded-2xl p-3 sm:p-4 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
                   {/* Transaction Code Row */}
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-3">
                     {/* Display deposit code from API response - each character in its own box */}
@@ -4205,7 +4205,7 @@ export default function DepositForm({
                         {t("express.note", "Note")}
                       </span>
                     </div>
-                    <div className=" dark:bg-[var(--card-color)] border border-[#1D8751] rounded-xl p-2 sm:p-3">
+                    <div className="bg-white dark:bg-[#18181D] border border-[#1D8751] rounded-xl p-2 sm:p-3">
                       <ul className="list-none space-y-1">
                         <li className="flex items-start">
                           <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-2"></span>
@@ -4234,7 +4234,7 @@ export default function DepositForm({
             <span className="text-[#7e7e8f] dark:text-[#788099]">4-</span>{" "}
             {t("express.walletAddress", "Wallet Address")}
           </h2>
-          <div className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-6">
+          <div className="flex flex-col bg-white dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-6">
             {/* Wallet/Account Address Label */}
             <label className="block text-sm sm:text-[17px] text-[#7e7e8f] mb-2 font-semibold">
               {t("express.walletAccountAddress", "Wallet/Account Address")}
@@ -4242,7 +4242,7 @@ export default function DepositForm({
             {/* Input + Paste row */}
             <div className="flex flex-col sm:flex-row gap-3 items-stretch">
               {/* Input group */}
-              <div className="relative flex items-center dark:bg-[var(--card-color)] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-2 sm:px-3 md:px-4 py-2 mb-0 flex-1 min-w-0">
+              <div className="relative flex items-center bg-white dark:bg-[#18181D] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-2 sm:px-3 md:px-4 py-2 mb-0 flex-1 min-w-0">
                 {/* Left icon */}
                 <span className="mr-2 text-[#1D8751]">
                   <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
@@ -4452,7 +4452,7 @@ export default function DepositForm({
                 {t("express.termsAndConditionsSummary", "Terms and Conditions Summary")}
               </span>
             </div>
-            <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-4">
+            <div className="bg-white dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-4">
               <ul className="list-none space-y-2">
                 <li className="flex items-start">
                   <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>

@@ -62,7 +62,7 @@ const P2pProfile = ({
   
 
   return (
-    <div className="w-full min-h-[110px] rounded-[24px] border-2 bg-white dark:bg-[#18181D] border-gray-200 dark:border-[#35353E] flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 sm:p-5 box-border gap-4 sm:gap-0">
+    <div className="w-full min-h-[110px] rounded-[24px] border-2 bg-white dark:bg-[#1D1D23] border-gray-200 dark:border-[#35353E] flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 sm:p-5 box-border gap-4 sm:gap-0">
       {/* Left Section */}
       <div className="flex items-center gap-4 sm:gap-6">
         {/* User Info */}

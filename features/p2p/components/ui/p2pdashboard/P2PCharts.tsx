@@ -9,6 +9,7 @@ import {
   setCurrentPage as setMyOrdersCurrentPage,
 } from "@/features/p2p/slices/myOrdersSlice";
 import { P2POrder, TransactionType } from "@/features/p2p/types";
+import { getMyP2POrders } from "@/features/p2p/api";
 import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -189,11 +190,203 @@ const P2PCharts = () => {
   }, [orders?.buy_orders, orders?.sell_orders, dataKey]);
 
   // Handlers for table functionality
-  const handleExport = (format: "csv" | "pdf") => {
+  const handleExport = async (format: "csv" | "pdf") => {
+    console.log("🔄 Export started - handleExport called");
+    
+    // Fetch all pages of data for export
+    const allPagesData: TransactionType[] = [];
+    
+    try {
+      // First, fetch page 1 to get accurate pagination info
+      const firstPageResponse = await getMyP2POrders(1);
+      const buyTotalPages = firstPageResponse?.buy_pagination?.total_pages || 1;
+      const sellTotalPages = firstPageResponse?.sell_pagination?.total_pages || 1;
+      const buyCount = firstPageResponse?.buy_pagination?.count || 0;
+      const sellCount = firstPageResponse?.sell_pagination?.count || 0;
+      
+      // Use the maximum of both paginations to ensure we get all data
+      const maxTotalPages = Math.max(buyTotalPages, sellTotalPages, 1);
+      
+      // Also calculate from counts as fallback
+      const calculatedBuyPages = buyCount > 0 ? Math.ceil(buyCount / 10) : 1;
+      const calculatedSellPages = sellCount > 0 ? Math.ceil(sellCount / 10) : 1;
+      const maxCalculatedPages = Math.max(calculatedBuyPages, calculatedSellPages);
+      
+      // Use the maximum to ensure we don't miss any pages
+      // Don't cap - fetch all pages if needed
+      const finalMaxPages = Math.max(maxTotalPages, maxCalculatedPages, totalPages || 1);
+      
+      console.log("📊 Export - Pagination info:", {
+        buyTotalPages,
+        sellTotalPages,
+        buyCount,
+        sellCount,
+        calculatedBuyPages,
+        calculatedSellPages,
+        maxTotalPages,
+        maxCalculatedPages,
+        finalMaxPages,
+        currentOrdersState: {
+          buyCount: orders?.buy_pagination?.count,
+          sellCount: orders?.sell_pagination?.count,
+        },
+      });
+
+      // Fetch all pages using API directly
+      // Keep fetching until we get an error (404) or no data
+      let page = 1;
+      let consecutiveEmptyPages = 0;
+      const MAX_PAGES_TO_FETCH = 100; // Safety limit
+      const MAX_CONSECUTIVE_EMPTY = 2; // Stop after 2 empty pages in a row
+      let hasMorePages = true;
+      
+      while (hasMorePages && page <= Math.max(finalMaxPages, MAX_PAGES_TO_FETCH)) {
+        try {
+          const response = await getMyP2POrders(page);
+          const buyOrders = response?.buy_orders || [];
+          const sellOrders = response?.sell_orders || [];
+          const allOrdersPage = [...buyOrders, ...sellOrders];
+          
+          console.log(`📄 Export - Page ${page}:`, {
+            buyOrdersCount: buyOrders.length,
+            sellOrdersCount: sellOrders.length,
+            total: allOrdersPage.length,
+            buyPagination: response?.buy_pagination,
+            sellPagination: response?.sell_pagination,
+          });
+          
+          // Check if we have a "next" field indicating more pages
+          const hasBuyNext = response?.buy_pagination?.next !== null;
+          const hasSellNext = response?.sell_pagination?.next !== null;
+          const hasNextPage = hasBuyNext || hasSellNext;
+          
+          if (allOrdersPage.length === 0) {
+            consecutiveEmptyPages++;
+            if (consecutiveEmptyPages >= MAX_CONSECUTIVE_EMPTY || !hasNextPage) {
+              console.log(`✅ Export - Got ${MAX_CONSECUTIVE_EMPTY} empty pages or no next page, stopping at page ${page}`);
+              hasMorePages = false;
+              break;
+            }
+            page++;
+            continue;
+          }
+          
+          // Reset consecutive empty counter if we got data
+          consecutiveEmptyPages = 0;
+          
+          const transformedPageData: TransactionType[] = allOrdersPage.map((order: P2POrder) => ({
+            id: order.id,
+            type: order.order_type,
+            advertiser_email: order.advertiser_email,
+            date: order.created_on,
+            amount: order.amount,
+            status: order.status,
+            asset: order.asset,
+            assetSymbol: order.currency,
+            rate: order.exchange_rate,
+            payment: order.payment_details.map((payment) => ({
+              bank: payment.provider,
+              logo: "",
+            })),
+            username: `${order.advertiser_first_name} ${order.advertiser_last_name}`,
+            limit: `${order.min_order_amount} - ${order.max_order_amount}`,
+            price: order.exchange_rate,
+            commission: order.commission_rate,
+            lastUpdate: order.created_on,
+          }));
+          
+          allPagesData.push(...transformedPageData);
+          
+          // Update pagination info from current page response
+          const currentBuyTotalPages = response?.buy_pagination?.total_pages || buyTotalPages;
+          const currentSellTotalPages = response?.sell_pagination?.total_pages || sellTotalPages;
+          const currentMaxPages = Math.max(currentBuyTotalPages, currentSellTotalPages);
+          
+          // Stop if no next page and we've reached max pages
+          if (!hasNextPage || (page >= currentMaxPages && allOrdersPage.length === 0)) {
+            console.log(`✅ Export - No more pages available, stopping at page ${page}`);
+            hasMorePages = false;
+            break;
+          }
+          
+          page++;
+        } catch (error: any) {
+          // Handle 404 or other errors - means we've reached the end or page doesn't exist
+          if (error?.response?.status === 404 || error?.status === 404) {
+            console.log(`✅ Export - Got 404 on page ${page}, no more pages available`);
+            hasMorePages = false;
+            break;
+          } else if (page === 1) {
+            // If first page fails, throw error
+            throw error;
+          } else {
+            // For other errors after page 1, just stop and use what we have
+            console.warn(`⚠️ Export - Error on page ${page}, stopping and using data fetched so far:`, error);
+            hasMorePages = false;
+            break;
+          }
+        }
+      }
+      
+      console.log("✅ Export - Fetching complete:", {
+        totalItems: allPagesData.length,
+        pagesFetched: Math.min(finalMaxPages, maxTotalPages),
+      });
+      
+      // If we still don't have data, use current page data as fallback
+      if (allPagesData.length === 0) {
+        console.warn("⚠️ Export - No data fetched, using current page data");
+        allPagesData.push(...transformedData);
+      }
+    } catch (error) {
+      console.error("❌ Export - Error fetching all pages:", error);
+      // Fall back to current page data if fetching all pages fails
+      allPagesData.push(...transformedData);
+      console.warn("⚠️ Export - Using current page data only due to error");
+    }
+
+    console.log("🔍 Export - Applying filters:", {
+      totalItemsBeforeFilters: allPagesData.length,
+      timeFilter,
+      searchQuery,
+    });
+
+    // Apply time filter to all data
+    const timeFilteredAllData = filterDataByTime(allPagesData, timeFilter);
+    console.log("📅 Export - After time filter:", timeFilteredAllData.length);
+    
+    // Apply search filter if exists
+    const exportData = searchQuery.trim()
+      ? timeFilteredAllData.filter(
+          (item) =>
+            item.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (item.username || "")
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase()) ||
+            item.asset.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            String(item.status || "")
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase())
+        )
+      : timeFilteredAllData;
+    
+    console.log("📤 Export - Final data to export:", {
+      totalItems: exportData.length,
+      format,
+    });
+
+    // Validate we have data to export
+    if (!exportData || exportData.length === 0) {
+      alert("No data to export. Please check your filters or try again.");
+      console.error("❌ Export - No data to export after filtering");
+      return;
+    }
+
     if (format === "csv") {
       // Export as CSV
+      console.log(`💾 Exporting CSV with ${exportData.length} items...`);
       const worksheet = XLSX.utils.json_to_sheet(
-        filteredData.map((item) => ({
+        exportData.map((item) => ({
           ID: item.id,
           Type: item.type,
           Amount: item.amount,
@@ -208,12 +401,14 @@ const P2PCharts = () => {
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
       XLSX.writeFile(workbook, "p2p_transactions.csv");
+      console.log(`✅ CSV exported successfully with ${exportData.length} items`);
     } else {
       // Export as PDF
+      console.log(`💾 Exporting PDF with ${exportData.length} items...`);
       const doc = new jsPDF();
       doc.text("P2P Transactions", 14, 15);
 
-      const tableData = filteredData.map((item) => [
+      const tableData = exportData.map((item) => [
         String(item.id || ""),
         String(item.type || ""),
         String(item.amount || ""),
@@ -239,6 +434,12 @@ const P2PCharts = () => {
       });
 
       doc.save("p2p_transactions.pdf");
+      console.log(`✅ PDF exported successfully with ${exportData.length} items`);
+    }
+    
+    // Restore the original page data by fetching the current page again
+    if (currentPage !== 1 || totalPages > 1) {
+      dispatch(fetchMyOrders(currentPage));
     }
   };
 
@@ -270,6 +471,96 @@ const P2PCharts = () => {
 
   const handleTimeFilterChange = (filter: TimeFilter) => {
     setTimeFilter(filter);
+  };
+
+  // Function to fetch all data for export - used by Table component
+  const fetchAllDataForExport = async (): Promise<TransactionType[]> => {
+    console.log("🔄 fetchAllDataForExport called - fetching all pages");
+    const allPagesData: TransactionType[] = [];
+    
+    try {
+      // First, fetch page 1 to get accurate pagination info
+      const firstPageResponse = await getMyP2POrders(1);
+      const buyTotalPages = firstPageResponse?.buy_pagination?.total_pages || 1;
+      const sellTotalPages = firstPageResponse?.sell_pagination?.total_pages || 1;
+      const buyCount = firstPageResponse?.buy_pagination?.count || 0;
+      const sellCount = firstPageResponse?.sell_pagination?.count || 0;
+      
+      const maxTotalPages = Math.max(buyTotalPages, sellTotalPages, 1);
+      const calculatedBuyPages = buyCount > 0 ? Math.ceil(buyCount / 10) : 1;
+      const calculatedSellPages = sellCount > 0 ? Math.ceil(sellCount / 10) : 1;
+      const maxCalculatedPages = Math.max(calculatedBuyPages, calculatedSellPages);
+      const finalMaxPages = Math.max(maxTotalPages, maxCalculatedPages, totalPages || 1);
+      
+      console.log("📊 Fetching all data - Pagination:", { buyTotalPages, sellTotalPages, finalMaxPages });
+      
+      // Fetch all pages
+      let page = 1;
+      let hasMorePages = true;
+      
+      while (hasMorePages && page <= Math.min(finalMaxPages, 100)) {
+        try {
+          const response = await getMyP2POrders(page);
+          const buyOrders = response?.buy_orders || [];
+          const sellOrders = response?.sell_orders || [];
+          const allOrdersPage = [...buyOrders, ...sellOrders];
+          
+          const hasBuyNext = response?.buy_pagination?.next !== null;
+          const hasSellNext = response?.sell_pagination?.next !== null;
+          const hasNextPage = hasBuyNext || hasSellNext;
+          
+          if (allOrdersPage.length === 0 && !hasNextPage) {
+            console.log(`✅ No more data at page ${page}`);
+            break;
+          }
+          
+          console.log(`📄 Fetched page ${page}: ${allOrdersPage.length} items`);
+          
+          const transformedPageData: TransactionType[] = allOrdersPage.map((order: P2POrder) => ({
+            id: order.id,
+            type: order.order_type,
+            advertiser_email: order.advertiser_email,
+            date: order.created_on,
+            amount: order.amount,
+            status: order.status,
+            asset: order.asset,
+            assetSymbol: order.currency,
+            rate: order.exchange_rate,
+            payment: order.payment_details.map((payment) => ({
+              bank: payment.provider,
+              logo: "",
+            })),
+            username: `${order.advertiser_first_name} ${order.advertiser_last_name}`,
+            limit: `${order.min_order_amount} - ${order.max_order_amount}`,
+            price: order.exchange_rate,
+            commission: order.commission_rate,
+            lastUpdate: order.created_on,
+          }));
+          
+          allPagesData.push(...transformedPageData);
+          
+          if (!hasNextPage) {
+            hasMorePages = false;
+            break;
+          }
+          
+          page++;
+        } catch (error: any) {
+          if (error?.response?.status === 404 || error?.status === 404) {
+            console.log(`✅ 404 at page ${page}, stopping`);
+            break;
+          }
+          throw error;
+        }
+      }
+      
+      console.log(`✅ Fetched all data: ${allPagesData.length} total items`);
+      return allPagesData;
+    } catch (error) {
+      console.error("❌ Error fetching all data:", error);
+      // Return current page data as fallback
+      return transformedData;
+    }
   };
 
   return (
@@ -331,7 +622,7 @@ const P2PCharts = () => {
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={handlePageChange}
-            onExport={handleExport}
+            onFetchAllDataForExport={fetchAllDataForExport}
             onSearch={handleSearch}
           />
         )}

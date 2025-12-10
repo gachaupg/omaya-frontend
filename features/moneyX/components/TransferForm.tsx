@@ -458,7 +458,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
         {/* Top Section - Amount and From Payment Method in one card */}
         <div className="relative mb-4">
           {/* Top Card Container */}
-          <div className="relative flex flex-col sm:flex-row border border-[#D1D2D4FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0">
+          <div className="relative flex flex-col sm:flex-row border border-[#35353E] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0 bg-white dark:bg-[#18181D]">
             {/* Amount Section */}
             <div className="flex-1 sm:pr-4">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
@@ -474,7 +474,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                     handleAmountChange(e.target.value, true);
                   }}
                   placeholder="Enter amount"
-                  className="w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-2xl px-4 py-3 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] appearance-none min-h-[60px]"
+                  className="w-full h-[48px] text-[#35353e] dark:text-white bg-transparent dark:bg-transparent rounded-2xl px-4 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] appearance-none"
                 />
               </div>
             </div>
@@ -482,7 +482,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
             {/* From Payment Method Section */}
             <div
               data-select-card="true"
-              className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#D1D2D4FF] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none"
+              className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none"
             >
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                 From Payment Method
@@ -520,7 +520,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                   emptyText="No payment methods available"
                   searchable={true}
                   className="w-full"
-                  triggerClassName="min-h-[60px]"
+                  triggerClassName="h-[48px]"
                 />
               </div>
               {adminMethodsError && (
@@ -561,7 +561,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
 
         {/* Bottom Section - You Receive and To Payment Method in one card */}
         <div className="relative mb-3">
-          <div className="relative flex flex-col sm:flex-row border border-[#D1D2D4FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0">
+          <div className="relative flex flex-col sm:flex-row border border-[#35353E] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0 bg-white dark:bg-[#18181D]">
             {/* You Receive Section */}
             <div className="flex-1 sm:pr-4">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
@@ -582,13 +582,13 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                     handleAmountChange(e.target.value, false);
                   }}
                   placeholder="Enter amount"
-                  className="w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-2xl px-4 py-3 pr-16 text-base sm:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] appearance-none min-h-[60px]"
+                  className="w-full h-[48px] text-[#35353e] dark:text-white bg-white dark:bg-[#35353E] rounded-2xl px-4 pr-16 text-base sm:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] appearance-none"
                 />
               </div>
             </div>
 
             {/* To Payment Method Section */}
-            <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#D1D2D4FF] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none">
+            <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
                 To Payment Method
               </label>
@@ -627,7 +627,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                   emptyText="No payment methods available"
                   searchable={true}
                   className="w-full"
-                  triggerClassName="min-h-[60px]"
+                  triggerClassName="h-[48px]"
                 />
               </div>
               {adminMethodsError && (
@@ -638,7 +638,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
         </div>
 
         {/* Disclaimer Banner */}
-        <div className="flex items-center rounded-2xl px-2 sm:px-3 md:px-4 py-2 sm:py-3 mb-2 sm:mb-4 dark:bg-[var(--card-color)]">
+        <div className="flex items-center rounded-2xl px-2 sm:px-3 md:px-4 py-2 sm:py-3 mb-2 sm:mb-4 bg-white dark:bg-[#18181D]">
           <div className="flex items-center gap-3">
             <div className="w-5 h-5 border-2 border-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0">
               <span className="text-[#1D8751] text-xs font-bold">i</span>
@@ -652,7 +652,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
         {/* Validation Errors Display */}
         {validationErrors.length > 0 && (
           <div className="w-full px-2 mb-4">
-            <div className="dark:bg-[var(--card-color)] border border-[#1D8751] rounded-2xl p-4">
+            <div className="bg-white dark:bg-[#18181D] border border-[#1D8751] rounded-2xl p-4">
               <h3 className="text-[#1D8751] font-semibold mb-2">
                 Please fix the following errors:
               </h3>
@@ -699,14 +699,14 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
           </h2>
           <div
             ref={paymentDetailsRef}
-            className="flex flex-col dark:bg-[var(--card-color)] border-2 border-[#35353E] rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-4 sm:mb-6"
+            className="flex flex-col bg-white dark:bg-[#18181D] border-2 border-[#35353E] rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-4 sm:mb-6"
           >
             {/* Bank Account Address Label */}
             <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
               Bank Account Address
             </label>
             {/* Input group */}
-            <div className="flex items-center dark:bg-[var(--card-color)] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-4 py-2 mb-0">
+            <div className="flex items-center bg-white dark:bg-[#18181D] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-4 py-2 mb-0">
               {/* Left icon */}
               <span className="mr-2 text-[#1D8751]">
                 <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
@@ -771,7 +771,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
                     showToast.error("Failed to paste from clipboard");
                   }
                 }}
-                className="flex items-center gap-1 dark:bg-[var(--card-color)] border border-[#1D8751] 
+                className="flex items-center gap-1 bg-white dark:bg-[#18181D] border border-[#1D8751] 
                 text-[#1D8751] rounded-full px-3 sm:px-1 py-2 sm:py-1 ml-2 font-semibold text-sm sm:text-base hover:bg-[#1D8751] hover:text-white transition-colors min-h-[44px] sm:min-h-0 touch-manipulation"
               >
                 <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
