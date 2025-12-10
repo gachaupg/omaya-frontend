@@ -743,10 +743,10 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
               Bank Account Address
             </label>
             {/* Input group */}
-            <div className="flex items-center dark:bg-[#1D1D23] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-4 py-2 mb-0">
+            <div className="flex items-center dark:bg-[#1D1D23] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-2 sm:px-4 py-2 mb-0 overflow-hidden gap-1 sm:gap-2">
               {/* Left icon */}
-              <span className="mr-2 text-[#1D8751]">
-                <svg width="22" height="22" fill="none" viewBox="0 0 24 24">
+              <span className="text-[#1D8751] flex-shrink-0">
+                <svg width="22" height="22" fill="none" viewBox="0 0 24 24" className="w-5 h-5 sm:w-[22px] sm:h-[22px]">
                   <path
                     d="M7 17v2a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"
                     stroke="#1D8751"
@@ -777,7 +777,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                   setBankAddressError(null);
                 }}
                 placeholder="Paste here your Bank Account Address"
-                className={`flex-1 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-base ${
+                className={`flex-1 min-w-0 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-sm sm:text-base ${
                   bankAddressError
                     ? "border-red-500"
                     : bankAccountAddress.trim() && !bankAddressError
@@ -785,8 +785,8 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                       : ""
                 }`}
               />
-              {/* Bookmark icon */}
-              <span className="mx-2 text-[#788099] cursor-pointer">
+              {/* Bookmark icon - hidden on small screens */}
+              <span className="hidden sm:block mx-1 sm:mx-2 text-[#788099] cursor-pointer flex-shrink-0">
                 <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                   <path
                     d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"
@@ -809,9 +809,9 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                   }
                 }}
                 className="flex items-center gap-1 dark:bg-[#1D1D23] border border-[#1D8751] 
-                text-[#1D8751] rounded-full px-3 sm:px-1 py-2 sm:py-1 ml-2 font-semibold text-sm sm:text-base hover:bg-[#1D8751] hover:text-white transition-colors min-h-[44px] sm:min-h-0 touch-manipulation"
+                text-[#1D8751] rounded-full px-2 sm:px-3 py-1.5 sm:py-2 ml-1 sm:ml-2 font-semibold text-xs sm:text-sm hover:bg-[#1D8751] hover:text-white transition-colors min-h-[36px] sm:min-h-[44px] touch-manipulation flex-shrink-0 whitespace-nowrap"
               >
-                <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" className="w-4 h-4 sm:w-[18px] sm:h-[18px]">
                   <path
                     d="M19 21H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4l2-2h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z"
                     stroke="currentColor"
@@ -820,7 +820,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                     strokeLinejoin="round"
                   />
                 </svg>
-                Paste
+                <span className="hidden sm:inline">Paste</span>
               </button>
             </div>
 
