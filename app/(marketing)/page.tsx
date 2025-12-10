@@ -740,7 +740,7 @@ export default function MarketingPage() {
                       return (
                         <div
                           key={asset.id}
-                          className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors relative overflow-hidden"
+                          className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors relative overflow-visible"
                         >
                           {/* Dark mode gradient background */}
                           <div 
@@ -762,13 +762,13 @@ export default function MarketingPage() {
                           {/* Content wrapper with relative positioning */}
                           <div className="relative z-10">
                           {/* Icon header with colored bar cutting across */}
-                          <div className="relative mb-3 w-full overflow-hidden">
-                            {/* Colored horizontal bar cutting across - contained within card */}
+                          <div className="relative mb-3 w-full -mx-4">
+                            {/* Colored horizontal bar cutting across - faded, edge to edge, no padding, full right coverage */}
                             <div 
-                              className={`absolute top-1/2 left-0 h-12 ${iconBgColor} transform -translate-y-1/2 opacity-30 rounded-full`}
+                              className={`absolute top-1/2 left-0 h-12 ${iconBgColor} transform -translate-y-1/2 opacity-30`}
                               style={{
-                                width: '100%',
-                                maxWidth: '100%'
+                                right: '-1rem',
+                                width: 'calc(100% + 2rem)'
                               }}
                             ></div>
                             {/* Centered asset image */}
@@ -806,65 +806,17 @@ export default function MarketingPage() {
                             </div>
                           </div>
                           
-                          {/* Mini Line Chart - Graph-like visualization */}
-                          <div className="h-12 w-full mt-2 relative overflow-hidden">
-                            <svg width="100%" height="100%" viewBox="0 0 100 40" preserveAspectRatio="none" className="overflow-visible">
-                              {/* Gradient fill for area under graph */}
-                              <defs>
-                                <linearGradient id={`gradient-${asset.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
-                                  <stop offset="0%" stopColor={change >= 0 ? "#1D8751" : "#EF4444"} stopOpacity="0.3" />
-                                  <stop offset="100%" stopColor={change >= 0 ? "#1D8751" : "#EF4444"} stopOpacity="0" />
-                                </linearGradient>
-                              </defs>
-                              {/* Generate dynamic graph points based on price change */}
-                              {(() => {
-                                // Create graph points that reflect the price trend
-                                const isPositive = change >= 0;
-                                const changePercent = Math.abs(change);
-                                const volatility = Math.min(changePercent / 5, 4); // Scale volatility, max 4
-                                const baseHeight = 20;
-                                const points = [];
-                                
-                                // Use asset ID as seed for deterministic but unique patterns
-                                const seed = asset.id ? asset.id.toString().split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) : 0;
-                                
-                                // Generate 24 points for smoother graph
-                                for (let i = 0; i <= 24; i++) {
-                                  const x = (i / 24) * 100;
-                                  // Create wave pattern with trend - deterministic based on seed
-                                  const wave = Math.sin((i * 0.4) + (seed % 10) * 0.1) * (2 + volatility);
-                                  const trend = isPositive 
-                                    ? (i / 24) * -10 // Upward trend
-                                    : (i / 24) * 10; // Downward trend
-                                  // Add some variation based on seed
-                                  const variation = Math.sin((i * 0.3) + seed * 0.1) * volatility;
-                                  const y = baseHeight + wave + trend + variation;
-                                  points.push(`${x},${Math.max(3, Math.min(37, y))}`);
-                                }
-                                
-                                const pathData = points.join(' ');
-                                
-                                return (
-                                  <>
-                                    {/* Area fill */}
-                                    <polygon
-                                      points={`0,40 ${pathData} 100,40`}
-                                      fill={`url(#gradient-${asset.id})`}
-                                    />
-                                    {/* Main graph line */}
-                                    <polyline
-                                      points={pathData}
-                                      fill="none"
-                                      stroke={change >= 0 ? "#1D8751" : "#EF4444"}
-                                      strokeWidth="2.5"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                    {/* Subtle grid line for reference */}
-                                    <line x1="0" y1="20" x2="100" y2="20" stroke="currentColor" strokeWidth="0.5" strokeOpacity="0.1" />
-                                  </>
-                                );
-                              })()}
+                          {/* Mini Line Chart */}
+                          <div className="h-8 w-full mt-2">
+                            <svg width="100%" height="100%" viewBox="0 0 100 30" preserveAspectRatio="none" className="overflow-visible">
+                              <polyline
+                                points="0,25 10,22 20,20 30,18 40,15 50,12 60,10 70,8 80,6 90,4 100,2"
+                                fill="none"
+                                stroke="#1D8751"
+                                strokeWidth="2"
+                                strokeDasharray="2,2"
+                                strokeLinecap="round"
+                              />
                             </svg>
                           </div>
                           </div>
