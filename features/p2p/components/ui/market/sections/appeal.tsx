@@ -126,7 +126,7 @@ const AppealModal: React.FC<AppealModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[80] flex items-start justify-center pt-12 pb-12 px-4 md:pt-16 md:pb-20 md:px-0 pointer-events-none overflow-y-auto">
-      <div className="pointer-events-auto dark:bg-[#23232A] bg-white rounded-[24px] p-6 md:p-8 w-full max-w-md shadow-xl border border-[#E8EFF5] dark:border-[#35353E] relative max-h-[calc(100vh-4rem)] md:max-h-[calc(100vh-6rem)] overflow-y-auto">
+      <div className="pointer-events-auto dark:bg-[var(--card-color)] bg-white rounded-[24px] p-6 md:p-8 w-full max-w-md shadow-xl border border-gray-200 dark:border-[#35353E] relative max-h-[calc(100vh-4rem)] md:max-h-[calc(100vh-6rem)] overflow-y-auto">
         <h2 className="text-[13px] text-center dark:text-white text-gray-900 mb-6">
           Submit Appeal
         </h2>
@@ -144,7 +144,7 @@ const AppealModal: React.FC<AppealModalProps> = ({
             </label>
             <div className="relative">
               <select
-                className="w-full rounded-xl px-4 py-3 dark:bg-[#18181D] bg-gray-100 dark:text-white text-gray-900 dark:border-[#35353E] border-gray-300 border focus:outline-none appearance-none"
+                className="w-full rounded-xl px-4 py-3 dark:bg-[var(--card-color)] bg-gray-100 dark:text-white text-gray-900 dark:border-[#35353E] border-gray-300 border focus:outline-none appearance-none"
                 value={selectedReason}
                 onChange={handleReasonChange}
                 required
@@ -171,7 +171,7 @@ const AppealModal: React.FC<AppealModalProps> = ({
                   Tell us more
                 </label>
                 <textarea
-                  className="w-full rounded-xl px-4 py-3 dark:bg-[#18181D] bg-gray-100 dark:text-white text-gray-900 dark:border-[#35353E] border-gray-300 border focus:outline-none resize-none"
+                  className="w-full rounded-xl px-4 py-3 dark:bg-[var(--card-color)] bg-gray-100 dark:text-white text-gray-900 dark:border-[#35353E] border-gray-300 border focus:outline-none resize-none"
                   rows={3}
                   placeholder="Describe the issue you’re experiencing"
                   value={customReason}

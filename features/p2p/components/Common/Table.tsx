@@ -335,10 +335,10 @@ export const Table: React.FC<TableProps> = ({
 
   const getAmountColor = (type: string | undefined | null) => {
     if (!type)
-      return `text-gray-500 dark:text-[${tokens.colors.dark.textBody}]`;
+      return `text-gray-500 dark:text-[#788099]`;
     if (type.toLowerCase() === "buy") return "text-[#1D8751]";
     if (type.toLowerCase() === "sell") return "text-[#FF4D4D]";
-    return `text-gray-500 dark:text-[${tokens.colors.dark.textBody}]`;
+    return `text-gray-500 dark:text-[#788099]`;
   };
 
   const getAssetLabel = (asset?: string | null) => {
@@ -510,7 +510,7 @@ export const Table: React.FC<TableProps> = ({
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-1">
           <div className="flex items-center gap-2 md:gap-3">
             <h3
-              className={`font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
+              className={`font-medium text-gray-900 dark:text-white`}
             >
               {title}
             </h3>
@@ -560,7 +560,7 @@ export const Table: React.FC<TableProps> = ({
                   )}
                 </div>
                 {isDateDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-full min-w-[100px] rounded-xl bg-[#0F0F13] dark:bg-[#0F0F13] text-white shadow-lg z-20 py-1">
+                  <div className="absolute top-full left-0 mt-2 w-full min-w-[100px] rounded-xl bg-white dark:bg-[#0F0F13] text-gray-900 dark:text-white shadow-lg z-20 py-1 border border-gray-200 dark:border-[#35353E]">
                     {dateFilterOptions.map((option) => {
                       const isSelected = dateFilter === option;
                       return (
@@ -571,10 +571,10 @@ export const Table: React.FC<TableProps> = ({
                             handleDateFilterChange(option);
                             setIsDateDropdownOpen(false);
                           }}
-                          className={`w-full flex items-center px-3 py-1.5 text-left hover:bg-[#1b1b22] ${
+                          className={`w-full flex items-center px-3 py-1.5 text-left hover:bg-gray-100 dark:hover:bg-[#1b1b22] ${
                             isSelected
-                              ? "text-white bg-[#1D8751]"
-                              : "text-[#C7CAD1]"
+                              ? "text-white bg-[#1D8751] dark:bg-[#1D8751]"
+                              : "text-gray-700 dark:text-[#C7CAD1]"
                           }`}
                         >
                           <span className="text-xs font-medium">{option}</span>
@@ -595,7 +595,7 @@ export const Table: React.FC<TableProps> = ({
                   placeholder="Search"
                   value={searchQuery}
                   onChange={handleSearch}
-                  className={`py-2 pl-9 pr-10 rounded-[24px] text-sm w-full border focus:outline-none bg-gray-100 dark:bg-[#35353E] text-gray-900 dark:text-gray-300 placeholder:text-gray-400 dark:placeholder:text-gray-500 border-gray-200 dark:border-[${tokens.colors.dark.border}]`}
+                  className={`py-2 pl-9 pr-10 rounded-[24px] text-sm w-full border focus:outline-none bg-gray-100 dark:bg-[#35353E] text-gray-900 dark:text-gray-300 placeholder:text-gray-400 dark:placeholder:text-gray-500 border-gray-200 dark:border-[#35353E]`}
                 />
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
                   <Search
@@ -636,13 +636,13 @@ export const Table: React.FC<TableProps> = ({
                     <div className="py-1">
                       <button
                         onClick={() => handleExport("csv")}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-400 dark:text-[#8C8CA1] hover:bg-gray-100 dark:hover:bg-[#35353E]"
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-[#8C8CA1] hover:bg-gray-100 dark:hover:bg-[#35353E]"
                       >
                         Export as CSV
                       </button>
                       <button
                         onClick={() => handleExport("pdf")}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-400 dark:text-[#8C8CA1] hover:bg-gray-100 dark:hover:bg-[#35353E]"
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-[#8C8CA1] hover:bg-gray-100 dark:hover:bg-[#35353E]"
                       >
                         Export as PDF
                       </button>
@@ -656,51 +656,51 @@ export const Table: React.FC<TableProps> = ({
 
         <div className="mt-3 overflow-x-auto">
           <div
-            className={`w-full border-2 bg-black dark:bg-black border-gray-200 dark:border-[${tokens.colors.dark.border}] shadow-lg rounded-[24px]`}
+            className={`w-full border-2 bg-white dark:bg-black border-gray-200 dark:border-[#35353E] shadow-lg rounded-[24px]`}
           >
             {/* Desktop Table Header - Hidden on mobile */}
             <div
-              className={`hidden md:grid grid-cols-6 ${desktopGridCols} py-2 px-4 border-b bg-gray-50 dark:bg-[var(--card-color)] border-gray-200 dark:border-[${tokens.colors.dark.border}] rounded-t-[24px]`}
+              className={`hidden md:grid grid-cols-6 ${desktopGridCols} py-2 px-4 border-b bg-gray-50 dark:bg-[var(--card-color)] border-gray-200 dark:border-[#35353E] rounded-t-[24px]`}
             >
               <div
-                className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}]`}
+                className={`text-sm font-medium text-gray-900 dark:text-white`}
               >
                 Asset
               </div>
               {type === "p2p" && (
                 <div
-                  className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] flex items-center justify-start -ml-4 pl-0`}
+                  className={`text-sm font-medium text-gray-900 dark:text-white flex items-center justify-start -ml-4 pl-0`}
                 >
                   <span>ID</span>
                   <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
                 </div>
               )}
               <div
-                className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] flex items-center`}
+                className={`text-sm font-medium text-gray-900 dark:text-white flex items-center`}
               >
                 Type
                 <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
               </div>
               <div
-                className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] flex items-center`}
+                className={`text-sm font-medium text-gray-900 dark:text-white flex items-center`}
               >
                 Date
                 <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
               </div>
               <div
-                className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] flex items-center`}
+                className={`text-sm font-medium text-gray-900 dark:text-white flex items-center`}
               >
                 Amount
                 <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
               </div>
               <div
-                className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] flex items-center`}
+                className={`text-sm font-medium text-gray-900 dark:text-white flex items-center`}
               >
                 Status
                 <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
               </div>
               <div
-                className={`text-sm font-medium text-gray-900 dark:text-[${tokens.colors.dark.textTitle}] flex items-center`}
+                className={`text-sm font-medium text-gray-900 dark:text-white flex items-center`}
               >
                 Receipt
                 <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
@@ -708,9 +708,9 @@ export const Table: React.FC<TableProps> = ({
             </div>
 
             {/* Table Body */}
-            <div className="bg-black dark:bg-black">
+            <div className="bg-white dark:bg-black">
               {filteredData.length === 0 && data.length > 0 ? (
-                <div className="w-full text-center py-12 px-4 bg-black dark:bg-black">
+                <div className="w-full text-center py-12 px-4 bg-white dark:bg-black">
                   <div className="flex flex-col items-center justify-center">
                     <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-[#35353E] flex items-center justify-center">
                       <svg
@@ -778,7 +778,7 @@ export const Table: React.FC<TableProps> = ({
                 <React.Fragment key={idx}>
                   {/* Desktop Grid View */}
                 <div
-                    className={`hidden md:grid ${desktopGridCols} mx-2 py-2 px-2 items-center hover:bg-gray-900 dark:hover:bg-gray-900 transition-colors duration-200 bg-black dark:bg-black relative`}
+                    className={`hidden md:grid ${desktopGridCols} mx-2 py-2 px-2 items-center hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200 bg-white dark:bg-black relative`}
                 >
                   <div className="flex items-center gap-2">
                     <img
@@ -794,7 +794,7 @@ export const Table: React.FC<TableProps> = ({
                   </div>
                   {type === "p2p" && (
                     <div
-                      className={`text-sm text-left text-gray-500 dark:text-[${tokens.colors.dark.textBody}] cursor-pointer relative -ml-4 pl-0`}
+                      className={`text-sm text-left text-gray-600 dark:text-[#788099] cursor-pointer relative -ml-4 pl-0`}
                       onMouseEnter={() => setTooltipId(row.id || "")}
                       onMouseLeave={() => setTooltipId(null)}
                       onClick={() => {
@@ -808,7 +808,7 @@ export const Table: React.FC<TableProps> = ({
                     >
                       {row.id ? `${row.id.slice(0, 3)}...${row.id.slice(-3)}` : "--"}
                       {tooltipId === row.id && row.id && (
-                        <div className="absolute z-50 px-3 py-2 text-xs text-white bg-gray-900 rounded-lg shadow-xl whitespace-nowrap -top-10 left-1/2 transform -translate-x-1/2 border border-gray-700">
+                        <div className="absolute z-50 px-3 py-2 text-xs text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-900 rounded-lg shadow-xl whitespace-nowrap -top-10 left-1/2 transform -translate-x-1/2 border border-gray-300 dark:border-gray-700">
                           <div className="flex items-center gap-2">
                             <span>{row.id}</span>
                             <svg
@@ -820,7 +820,7 @@ export const Table: React.FC<TableProps> = ({
                               <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
                             </svg>
                           </div>
-                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-100 dark:border-t-gray-900"></div>
                         </div>
                       )}
                       {copiedId === row.id && (
@@ -835,7 +835,7 @@ export const Table: React.FC<TableProps> = ({
                     {formatTypeLabel(row.type)}
                   </div>
                   <div
-                    className={`text-sm text-gray-500 dark:text-[${tokens.colors.dark.textBody}]`}
+                    className={`text-sm text-gray-600 dark:text-[#788099]`}
                   >
                     {formatP2PDate(row.date)}
                   </div>
@@ -859,14 +859,14 @@ export const Table: React.FC<TableProps> = ({
                   </div>
                   {!isLastRow && (
                     <div
-                      className={`absolute bottom-0 left-4 right-4 h-px bg-gray-800 dark:bg-gray-800`}
+                      className={`absolute bottom-0 left-4 right-4 h-px bg-gray-200 dark:bg-gray-800`}
                     />
                   )}
                 </div>
 
                   {/* Mobile Card View */}
                   <div
-                    className={`md:hidden flex flex-col gap-2 p-3 mx-4 relative hover:bg-gray-900 dark:hover:bg-gray-900 transition-colors duration-200 bg-black dark:bg-black`}
+                    className={`md:hidden flex flex-col gap-2 p-3 mx-4 relative hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200 bg-white dark:bg-black`}
                   >
                     {/* Top Row: Asset and Type */}
                     <div className="flex items-center justify-between">
@@ -903,7 +903,7 @@ export const Table: React.FC<TableProps> = ({
                     <div className="flex items-center justify-between">
                       <div className="flex flex-col">
                         <span className="text-xs text-gray-500 dark:text-[#788099]">Date</span>
-                        <span className={`text-sm text-gray-500 dark:text-[${tokens.colors.dark.textBody}]`}>
+                        <span className={`text-sm text-gray-600 dark:text-[#788099]`}>
                           {formatP2PDate(row.date)}
                         </span>
                       </div>
@@ -917,10 +917,10 @@ export const Table: React.FC<TableProps> = ({
 
                     {/* ID Row (only for p2p type) */}
                     {type === "p2p" && row.id && (
-                      <div className="flex items-center justify-between pt-2 border-t border-gray-800 dark:border-gray-800">
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-800">
                         <span className="text-xs text-gray-500 dark:text-[#788099]">ID</span>
                         <div
-                          className={`text-xs text-gray-500 dark:text-[${tokens.colors.dark.textBody}] cursor-pointer relative`}
+                          className={`text-xs text-gray-600 dark:text-[#788099] cursor-pointer relative`}
                           onClick={() => {
                             if (row.id) {
                               navigator.clipboard.writeText(row.id);
@@ -941,7 +941,7 @@ export const Table: React.FC<TableProps> = ({
                     )}
 
                     {/* Action Button */}
-                    <div className="pt-2 border-t border-gray-800 dark:border-gray-800">
+                    <div className="pt-2 border-t border-gray-200 dark:border-gray-800">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -954,7 +954,7 @@ export const Table: React.FC<TableProps> = ({
                     </div>
                     {!isLastRow && (
                       <div
-                        className={`absolute bottom-0 left-4 right-4 h-px bg-gray-800 dark:bg-gray-800`}
+                        className={`absolute bottom-0 left-4 right-4 h-px bg-gray-200 dark:bg-gray-800`}
                       />
                     )}
                   </div>
@@ -965,7 +965,7 @@ export const Table: React.FC<TableProps> = ({
             </div>
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-2 py-4 bg-black dark:bg-black rounded-b-[24px]">
+              <div className="flex justify-center items-center gap-2 py-4 bg-white dark:bg-black rounded-b-[24px]">
                 <button
                   onClick={() => {
                     logger.debug('p2p', "Previous page clicked, current:", currentPage);

@@ -237,7 +237,7 @@ function ForexStatusContent() {
   }
 
   return (
-    <div className={`w-full min-h-screen flex flex-col items-center pt-2 ${isDark ? 'bg-[#18181D]' : 'bg-transparent'}`}>
+    <div className={`container mx-auto px-4 sm:px-6 md:px-8 min-h-screen flex flex-col items-center pt-2 overflow-x-hidden ${isDark ? 'bg-[#18181D]' : 'bg-transparent'}`}>
       {/* WebSocket Connection Status Indicator */}
       <div className="w-full max-w-4xl mb-2 flex justify-between items-center">
         <div className="flex-1" />
