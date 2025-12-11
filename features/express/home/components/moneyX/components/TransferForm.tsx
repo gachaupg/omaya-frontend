@@ -13,10 +13,11 @@ import {
 } from "../slices/moneyXSlice";
 import { useTheme } from "@/context/theme";
 import CustomSelect from "@/components/ui/CustomSelect";
-import { showToast } from "../../../lib/utils/toast";
-import { usePaymentMethodsDisplay } from "../../express/hooks/useDataDisplay";
+import { showToast } from "@/lib/utils/toast";
+import { usePaymentMethodsDisplay } from "@/features/express/hooks/useDataDisplay";
 
 interface TransferFormProps {
+  isHomePage?: boolean;
   onTransfer?: (transactionData: {
     fromPaymentMethod: any;
     toPaymentMethod: any;
@@ -28,7 +29,7 @@ interface TransferFormProps {
   }) => void;
 }
 
-export default function TransferForm({ onTransfer }: TransferFormProps) {
+export default function TransferForm({ isHomePage, onTransfer }: TransferFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const { isDark } = useTheme();
 
