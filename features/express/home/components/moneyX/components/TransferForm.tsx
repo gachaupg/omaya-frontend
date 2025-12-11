@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
 import { AppDispatch } from "@/store";
 import {
   fetchPublicPaymentMethods,
@@ -15,6 +16,7 @@ import { useTheme } from "@/context/theme";
 import CustomSelect from "@/components/ui/HomeCommonSelect";
 import { showToast } from "@/lib/utils/toast";
 import { usePaymentMethodsDisplay } from "@/features/express/hooks/useDataDisplay";
+import { setAuthRedirectPath } from "@/lib/utils/authRedirect";
 
 interface TransferFormProps {
   isHomePage?: boolean;
@@ -31,6 +33,7 @@ interface TransferFormProps {
 
 export default function TransferForm({ isHomePage = false, onTransfer }: TransferFormProps) {
   const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
   const { isDark } = useTheme();
 
   const {
@@ -47,6 +50,9 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
     loading: moneyXLoading,
     error: moneyXError,
   } = useSelector((state: any) => state.moneyX);
+
+  const { isAuthenticated } = useSelector((state: any) => state.auth);
+  const requiresLoginRedirect = isHomePage && !isAuthenticated;
 
   // Use state to hold payment methods - will trigger re-render when updated
   const [stablePaymentMethods, setStablePaymentMethods] = useState<any[]>([]);
@@ -174,11 +180,16 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
 
-  // Helper function to get provider name from payment method (cleaned - removes "- Bank" suffix)
+  // Helper function to get provider name from payment method (cleaned - removes method suffixes)
+  // Removes method suffixes like "- Bank", "- Mobile", "- Crypto", etc.
   const getProviderName = useCallback((payment: any) => {
-    const providerName = payment?.provider_name || payment?.provider?.provider_name || payment?.method?.method_name || payment?.payment_method_name || "";
-    // Clean provider name - remove "- Bank" suffix if present
-    return providerName.replace(/\s*-\s*Bank\s*$/i, "").trim();
+    let providerName = payment?.provider_name || payment?.provider?.provider_name || payment?.provider || payment?.method?.method_name || payment?.payment_method_name || "";
+    
+    // Remove common method suffixes (case-insensitive)
+    // Matches patterns like "- Bank", "- Mobile", "- Crypto", "- Forex", "- Marchant", "- Money Transfer", etc.
+    providerName = providerName.replace(/\s*-\s*(Bank|Mobile|Crypto|Forex|Marchant|Money\s*Transfer|Merchant)\s*$/i, "").trim();
+    
+    return providerName;
   }, []);
 
   // Helper function to check if a payment method is a bank
@@ -197,9 +208,178 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
     );
   }, [getProviderName]);
 
-  // Auto-select first payment method for "from" when payment methods are loaded
+  // Restore state from localStorage after login (only for home page)
+  const hasRestoredState = useRef(false);
+  const paymentMethodRestoreAttempted = useRef(false);
+  
+  useEffect(() => {
+    if (!isHomePage || hasRestoredState.current || !isAuthenticated) {
+      return;
+    }
+
+    try {
+      const savedState = localStorage.getItem("moneyx_form_state");
+      if (savedState) {
+        const state = JSON.parse(savedState);
+        
+        console.log("Restoring moneyx form state:", state);
+        
+        // Restore amounts immediately
+        if (state.amountInput !== undefined && state.amountInput !== null) {
+          setPayAmountInput(state.amountInput);
+          setPayAmount(state.amountValue || parseFloat(state.amountInput) || 0);
+        }
+        if (state.receiveAmountInput !== undefined && state.receiveAmountInput !== null) {
+          setGetAmountInput(state.receiveAmountInput);
+          setGetAmount(state.receiveAmountValue || parseFloat(state.receiveAmountInput) || 0);
+        }
+
+        // Store payment method data for later restoration (after payment methods are loaded)
+        if (state.fromPaymentMethod || state.toPaymentMethod) {
+          localStorage.setItem("moneyx_restore_from", state.fromPaymentMethod || "");
+          localStorage.setItem("moneyx_restore_to", state.toPaymentMethod || "");
+          if (state.fromPaymentDetail) {
+            localStorage.setItem("moneyx_restore_from_detail", JSON.stringify(state.fromPaymentDetail));
+          }
+          if (state.toPaymentDetail) {
+            localStorage.setItem("moneyx_restore_to_detail", JSON.stringify(state.toPaymentDetail));
+          }
+        }
+
+        // Clear the saved state
+        localStorage.removeItem("moneyx_form_state");
+        hasRestoredState.current = true;
+      }
+    } catch (error) {
+      console.error("Failed to restore moneyx form state:", error);
+    }
+  }, [isHomePage, isAuthenticated]);
+
+  // Restore payment methods after they're loaded
+  useEffect(() => {
+    if (!isHomePage || !isAuthenticated || !Array.isArray(finalPaymentMethods) || finalPaymentMethods.length === 0) {
+      return;
+    }
+
+    // Only attempt restoration once
+    if (paymentMethodRestoreAttempted.current) {
+      return;
+    }
+
+    const restoreFrom = localStorage.getItem("moneyx_restore_from");
+    const restoreTo = localStorage.getItem("moneyx_restore_to");
+    
+    if (restoreFrom || restoreTo) {
+      console.log("Restoring payment methods - From:", restoreFrom, "To:", restoreTo);
+      paymentMethodRestoreAttempted.current = true;
+      
+      // Restore "from" payment method
+      if (restoreFrom) {
+        const savedFromDetail = localStorage.getItem("moneyx_restore_from_detail");
+        let matchedFromMethod = null;
+
+        if (savedFromDetail) {
+          try {
+            const fromDetail = JSON.parse(savedFromDetail);
+            console.log("Trying to match from payment detail:", fromDetail);
+            
+            // Try multiple matching strategies
+            matchedFromMethod = finalPaymentMethods.find(
+              (m: any) => {
+                const providerName = getProviderName(m);
+                return (
+                  (m.id && m.id === fromDetail.id) ||
+                  (m.provider_id && m.provider_id === fromDetail.provider_id) ||
+                  (m.providerId && m.providerId === fromDetail.providerId) ||
+                  (providerName === restoreFrom) ||
+                  (providerName === fromDetail.provider_name) ||
+                  (m.provider_name === fromDetail.provider_name)
+                );
+              }
+            );
+          } catch (e) {
+            console.error("Failed to parse from payment detail:", e);
+          }
+        }
+
+        // If no match by ID, try by name
+        if (!matchedFromMethod) {
+          matchedFromMethod = finalPaymentMethods.find(
+            (m: any) => getProviderName(m) === restoreFrom
+          );
+        }
+
+        if (matchedFromMethod) {
+          console.log("Matched from payment method:", matchedFromMethod);
+          setFromPaymentMethod(restoreFrom);
+          setSelectedFromPaymentDetail(matchedFromMethod);
+        } else {
+          console.warn("Could not match from payment method:", restoreFrom);
+        }
+      }
+
+      // Restore "to" payment method
+      if (restoreTo) {
+        const savedToDetail = localStorage.getItem("moneyx_restore_to_detail");
+        let matchedToMethod = null;
+
+        if (savedToDetail) {
+          try {
+            const toDetail = JSON.parse(savedToDetail);
+            console.log("Trying to match to payment detail:", toDetail);
+            
+            // Try multiple matching strategies
+            matchedToMethod = finalPaymentMethods.find(
+              (m: any) => {
+                const providerName = getProviderName(m);
+                return (
+                  (m.id && m.id === toDetail.id) ||
+                  (m.provider_id && m.provider_id === toDetail.provider_id) ||
+                  (m.providerId && m.providerId === toDetail.providerId) ||
+                  (providerName === restoreTo) ||
+                  (providerName === toDetail.provider_name) ||
+                  (m.provider_name === toDetail.provider_name)
+                );
+              }
+            );
+          } catch (e) {
+            console.error("Failed to parse to payment detail:", e);
+          }
+        }
+
+        // If no match by ID, try by name
+        if (!matchedToMethod) {
+          matchedToMethod = finalPaymentMethods.find(
+            (m: any) => getProviderName(m) === restoreTo
+          );
+        }
+
+        if (matchedToMethod) {
+          console.log("Matched to payment method:", matchedToMethod);
+          setToPaymentMethod(restoreTo);
+          setSelectedToPaymentDetail(matchedToMethod);
+        } else {
+          console.warn("Could not match to payment method:", restoreTo);
+        }
+      }
+
+      // Clear restoration keys after attempting restoration
+      localStorage.removeItem("moneyx_restore_from");
+      localStorage.removeItem("moneyx_restore_to");
+      localStorage.removeItem("moneyx_restore_from_detail");
+      localStorage.removeItem("moneyx_restore_to_detail");
+    }
+  }, [finalPaymentMethods, isHomePage, isAuthenticated, getProviderName]);
+
+  // Auto-select first payment method for "from" when payment methods are loaded (only if not restored)
   useEffect(() => {
     if (!Array.isArray(finalPaymentMethods) || finalPaymentMethods.length === 0) {
+      return;
+    }
+
+    // Skip auto-selection if we're restoring state or if restoration was attempted
+    const isRestoring = localStorage.getItem("moneyx_restore_from") || localStorage.getItem("moneyx_restore_to");
+    if (isRestoring || paymentMethodRestoreAttempted.current) {
       return;
     }
 
@@ -224,11 +404,17 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
         setSelectedFromPaymentDetail(methodToSelect);
       }
     }
-  }, [finalPaymentMethods, fromPaymentMethod, isBankMethod]);
+  }, [finalPaymentMethods, fromPaymentMethod, isBankMethod, getProviderName]);
 
 
   // Auto-select second payment method for "to"
   useEffect(() => {
+    // Skip auto-selection if we're restoring state or if restoration was attempted
+    const isRestoring = localStorage.getItem("moneyx_restore_from") || localStorage.getItem("moneyx_restore_to");
+    if (isRestoring || paymentMethodRestoreAttempted.current) {
+      return;
+    }
+
     // Only run if we have payment methods, "from" is selected, and "to" is not selected
     const methodsToCheck = Array.isArray(finalPaymentMethods) && finalPaymentMethods.length > 0
       ? finalPaymentMethods
@@ -354,6 +540,46 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
   };
 
   const handleFirstCardSubmit = async () => {
+    // Check if user needs to login first
+    if (requiresLoginRedirect) {
+      // Save state to localStorage for restoration after login
+      // Get the base provider name (without suffix) for better matching
+      const fromProviderBase = selectedFromPaymentDetail?.provider || getProviderName(selectedFromPaymentDetail) || fromPaymentMethod;
+      const toProviderBase = selectedToPaymentDetail?.provider || getProviderName(selectedToPaymentDetail) || toPaymentMethod;
+      
+      const state = {
+        mode: "moneyx",
+        // Send amounts (You Send)
+        amountInput: payAmountInput,
+        amountValue: payAmount,
+        // Receive amounts (You Receive)
+        receiveAmountInput: getAmountInput,
+        receiveAmountValue: getAmount,
+        // Payment methods - save cleaned names and base provider names for better matching
+        fromPaymentMethod: fromPaymentMethod, // Cleaned name (already cleaned by getProviderName)
+        toPaymentMethod: toPaymentMethod, // Cleaned name
+        fromProviderBase: fromProviderBase, // Base provider name from API
+        toProviderBase: toProviderBase, // Base provider name from API
+        fromPaymentDetail: selectedFromPaymentDetail ? { ...selectedFromPaymentDetail } : null,
+        toPaymentDetail: selectedToPaymentDetail ? { ...selectedToPaymentDetail } : null,
+      };
+      
+      console.log("💾 [Home] Saving moneyx form state before login:", state);
+      console.log("💾 [Home] From payment detail:", selectedFromPaymentDetail);
+      console.log("💾 [Home] To payment detail:", selectedToPaymentDetail);
+      
+      // Save to localStorage
+      localStorage.setItem("moneyx_form_state", JSON.stringify(state));
+      
+      // Set redirect path - redirect to moneyX in dashboard
+      const redirectPath = `/dashboard/exchange?mode=moneyx&source=public-express`;
+      setAuthRedirectPath(redirectPath);
+      
+      // Redirect to login
+      router.push("/auth/login");
+      return;
+    }
+
     // Clear previous errors
     setValidationErrors([]);
     setApiValidationError(null);

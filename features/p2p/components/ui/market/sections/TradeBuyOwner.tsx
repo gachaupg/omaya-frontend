@@ -387,12 +387,12 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
   logger.debug("p2p", "Confirm order:", confirmOrder);
   return (
-    <div className="grid grid-cols-1 mt-10 md:grid-cols-3 gap-6 p-6 min-h-screen bg-[#EEF1F4] dark:bg-[#18181D]">
+    <div className="grid grid-cols-1 mt-10 md:grid-cols-3 gap-6 p-6 min-h-screen bg-[#EEF1F4] dark:bg-[var(--bg-color)]">
       {/* Left: Timeline/Steps */}
       <div className="md:col-span-2 flex flex-col gap-4">
         {/* Step 1: Order Created */}
         <div className="relative pl-8 pb-4 border-l-2 border-gray-200 dark:border-[#35353E]">
-          <div className="absolute -left-4 top-0 w-8 h-8 rounded-full bg-gray-100 dark:bg-[#23232A] border-2 border-[#1D8751] flex items-center justify-center text-[#1D8751] font-bold text-lg">
+          <div className="absolute -left-4 top-0 w-8 h-8 rounded-full bg-gray-100 dark:bg-[var(--card-color)] border-2 border-[#1D8751] flex items-center justify-center text-[#1D8751] font-bold text-lg">
             1
           </div>
           <div className="flex justify-between items-center">
@@ -470,10 +470,10 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             
             </div>
           </div>
-          <div className="flex gap-4 border border-gray-200 dark:border-[#35353E] p-4 rounded-xl mt-4 bg-white dark:bg-[#18181D]">
+          <div className="flex gap-4 border border-gray-200 dark:border-[#35353E] p-4 rounded-xl mt-4 bg-white dark:bg-[var(--card-color)]">
             <div className="flex flex-col gap-2 w-full">
               <p className="text-[#788099] text-sm">Fiat USD</p>
-              <div className="flex flex-row items-center justify-between w-full  bg-[#EEF1F4] dark:bg-[#35353E] rounded-xl px-6 py-2">
+              <div className="flex flex-row items-center justify-between w-full bg-gray-100 dark:bg-[#35353E] rounded-xl px-6 py-2">
                 <span className="text-[#F79330] text-lg font-bold">
                   <span className="text-[#1D8751] text-xl">$</span>{" "}
                   {formatAmount(Math.round(Number(sendAmount) * Number(commissionRate)))}
@@ -484,7 +484,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
             <div className="flex flex-col gap-2 w-full">
               <p className="text-[#788099] text-sm">Rate</p>
-              <div className="flex f w-full flex-row  justify-between items-center bg-[#EEF1F4] dark:bg-[#35353E] rounded-xl px-6 py-2">
+              <div className="flex f w-full flex-row  justify-between items-center bg-gray-100 dark:bg-[#35353E] rounded-xl px-6 py-2">
                 <span className="text-[#1D8751] text-xl">
                   $ {commissionRate}%
                 </span>
@@ -496,7 +496,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
             <div className="flex flex-col gap-2 w-full">
               <p className="text-[#788099] text-sm">Total Quantity</p>
-              <div className="flex flex-row justify-between w-full items-center bg-[#EEF1F4] dark:bg-[#35353E] rounded-xl px-6 py-2">
+              <div className="flex flex-row justify-between w-full items-center bg-gray-100 dark:bg-[#35353E] rounded-xl px-6 py-2">
                 <div className="flex flex-row items-center gap-2">
                   <Image
                     src="https://res.cloudinary.com/pitz/image/upload/v1750918504/tether_1_yim48g.png"
@@ -518,7 +518,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
         {/* Step 2: Confirm Payment From Buyer */}
         <div className="relative pl-8 pb-4 border-l-2 border-gray-200 dark:border-[#35353E]">
-          <div className="absolute -left-4 top-0 w-8 h-8 rounded-full bg-gray-100 dark:bg-[#23232A] border-2 border-[#1D8751] flex items-center justify-center text-[#1D8751] font-bold text-lg">
+          <div className="absolute -left-4 top-0 w-8 h-8 rounded-full bg-gray-100 dark:bg-[var(--card-color)] border-2 border-[#1D8751] flex items-center justify-center text-[#1D8751] font-bold text-lg">
             2
           </div>
           <span className="text-gray-900 dark:text-white font-semibold text-lg">
@@ -528,9 +528,9 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               user?.last_name ||
               "Mohammed Zyad Yousef"}
           </span>
-          <div className="bg-white dark:bg-[#18181D] rounded-2xl p-6 mt-4 flex flex-col gap-6 border border-gray-200 dark:border-[#31313C]">
+          <div className="bg-white dark:bg-[var(--card-color)] rounded-2xl p-6 mt-4 flex flex-col gap-6 border border-gray-200 dark:border-[#35353E]">
             {/* Bank Info */}
-            <div className="flex items-center bg-white dark:bg-[#18181D] gap-4 border border-gray-200 dark:border-[#35353E] rounded-xl px-4 py-3 w-fit mb-2">
+            <div className="flex items-center bg-white dark:bg-[var(--card-color)] gap-4 border border-gray-200 dark:border-[#35353E] rounded-xl px-4 py-3 w-fit mb-2">
               <div className="w-10 h-10 rounded-full text-black bg-white flex items-center justify-center overflow-hidden">
                 {/* Use logo mapped from provider */}
                 {paymentDetails?.provider[0]}
@@ -584,7 +584,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               </div>
             </div>
             {/* Buyer's Name */}
-            <div className="border border-[#F79330] rounded-2xl px-2 md:px-8 py-6 flex items-center justify-between mt-2 bg-white dark:bg-[#23232A]">
+            <div className="border border-[#F79330] rounded-2xl px-2 md:px-8 py-6 flex items-center justify-between mt-2 bg-white dark:bg-[var(--card-color)]">
               <p className="text-[#F79330] font-semibold text-lg mr-6">
                 Buyer&apos;s Name
               </p>
@@ -603,7 +603,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
         {/* Step 3: Confirm Payment Received */}
         <div className="relative pl-8">
-          <div className="absolute -left-4 top-0 w-8 h-8 rounded-full bg-gray-100 dark:bg-[#23232A] border-2 border-[#1D8751] flex items-center justify-center text-[#1D8751] font-bold text-lg">
+          <div className="absolute -left-4 top-0 w-8 h-8 rounded-full bg-gray-100 dark:bg-[var(--card-color)] border-2 border-[#1D8751] flex items-center justify-center text-[#1D8751] font-bold text-lg">
             3
           </div>
           <span className="text-gray-900 dark:text-white font-semibold text-lg">
@@ -614,13 +614,13 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             button below
           </div>
           <div className="flex gap-4 mt-6">
-            <button className="bg-gray-100 dark:bg-[#23232A] text-gray-600 dark:text-[#A3A3C2] rounded-lg px-6 py-2 border border-gray-200 dark:border-[#35353E]">
+            <button className="bg-gray-100 dark:bg-[var(--card-color)] text-gray-600 dark:text-[#A3A3C2] rounded-lg px-6 py-2 border border-gray-200 dark:border-[#35353E]">
               Appeal After 9:45
             </button>
             <button
               className={`${
                 confirmOrder?.status === "matched"
-                  ? "bg-gray-100 dark:bg-[#23232A]"
+                  ? "bg-gray-100 dark:bg-[var(--card-color)]"
                   : "bg-[#1D8751] text-white"
               }  dark:text-white rounded-lg px-6 py-2 font-semibold ${(() => {
                 const isThisTradeLoading =
@@ -681,7 +681,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           }
         />
         {/* Advertiser's Terms */}
-        <section className="advertiser-terms rounded-lg p-4 bg-gray-50 dark:bg-[#23232B]">
+        <section className="advertiser-terms rounded-lg p-4 bg-gray-50 dark:bg-[var(--card-color)]">
           <div className="font-semibold text-lg mb-2 text-gray-900 dark:text-white flex items-center gap-2">
             Advertiser's Terms
             <AlertCircle className="w-5 h-5 text-[#E23D3A]" />
@@ -697,7 +697,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       {/* Success Modal */}
       {showSuccessModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-[#23232A] rounded-2xl p-8 max-w-md w-full mx-4 border border-gray-200 dark:border-[#35353E]">
+          <div className="bg-white dark:bg-[var(--card-color)] rounded-2xl p-8 max-w-md w-full mx-4 border border-gray-200 dark:border-[#35353E]">
             <div className="text-center">
               {/* Success Icon */}
               <div className="w-16 h-16 bg-[#1D8751] rounded-full flex items-center justify-center mx-auto mb-6">
@@ -722,7 +722,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               </h2>
 
               {/* Trade Details */}
-              <div className="bg-gray-50 dark:bg-[#18181D] rounded-xl p-4 mb-6 border border-gray-200 dark:border-[#35353E]">
+              <div className="bg-gray-50 dark:bg-[var(--card-color)] rounded-xl p-4 mb-6 border border-gray-200 dark:border-[#35353E]">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-gray-600 dark:text-[#A3A3C2]">
                     Amount Sent:
@@ -780,7 +780,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       {/* Feedback Modal */}
       {showFeedbackModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-[#23232A] rounded-2xl p-8 max-w-md w-full mx-4 border border-gray-200 dark:border-[#35353E]">
+          <div className="bg-white dark:bg-[var(--card-color)] rounded-2xl p-8 max-w-md w-full mx-4 border border-gray-200 dark:border-[#35353E]">
             <div className="text-center">
               {/* Feedback Icon */}
               <div className="w-16 h-16 bg-[#F79330] rounded-full flex items-center justify-center mx-auto mb-6">
@@ -843,7 +843,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                   value={feedbackComment}
                   onChange={(e) => setFeedbackComment(e.target.value)}
                   placeholder="Share your experience..."
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-[#35353E] rounded-lg bg-white dark:bg-[#18181D] text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#1D8751] focus:border-transparent resize-none"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-[#35353E] rounded-lg bg-white dark:bg-[var(--card-color)] text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-[#1D8751] focus:border-transparent resize-none"
                   rows={3}
                 />
               </div>

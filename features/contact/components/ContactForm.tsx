@@ -226,12 +226,12 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
       <div>
         <label
           htmlFor="name"
-          className="block text-sm font-medium text-white mb-2"
+          className="block text-sm font-medium text-gray-900 dark:text-white mb-2"
         >
           Your Name
         </label>
         <div className="relative">
-          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
           <input
             type="text"
             id="name"
@@ -240,7 +240,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
             onChange={handleInputChange}
             placeholder="Enter your name"
             disabled={isSubmitting}
-            className="w-full pl-10 pr-4 py-3 bg-transparent border border-[#2A2A2A] rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full pl-10 pr-4 py-3 bg-white dark:bg-transparent border border-gray-300 dark:border-[#2A2A2A] rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-500 focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
       </div>
@@ -249,12 +249,12 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
       <div>
         <label
           htmlFor="email_address"
-          className="block text-sm font-medium text-white mb-2"
+          className="block text-sm font-medium text-gray-900 dark:text-white mb-2"
         >
           Email Address
         </label>
         <div className="relative">
-          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
           <input
             type="email"
             id="email_address"
@@ -264,7 +264,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
             placeholder="your@email.com"
             required
             disabled={isSubmitting}
-            className="w-full pl-10 pr-4 py-3 bg-transparent border border-[#2A2A2A] rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full pl-10 pr-4 py-3 bg-white dark:bg-transparent border border-gray-300 dark:border-[#2A2A2A] rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-500 focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
       </div>
@@ -273,12 +273,12 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
       <div>
         <label
           htmlFor="subject"
-          className="block text-sm font-medium text-white mb-2"
+          className="block text-sm font-medium text-gray-900 dark:text-white mb-2"
         >
           Subject
         </label>
         <div className="relative">
-          <MessageCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <MessageCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
           <input
             type="text"
             id="subject"
@@ -287,7 +287,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
             onChange={handleInputChange}
             placeholder="How can we help?"
             disabled={isSubmitting}
-            className="w-full pl-10 pr-4 py-3 bg-transparent border border-[#2A2A2A] rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full pl-10 pr-4 py-3 bg-white dark:bg-transparent border border-gray-300 dark:border-[#2A2A2A] rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-500 focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
       </div>
@@ -296,7 +296,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
       <div>
         <label
           htmlFor="question"
-          className="block text-sm font-medium text-white mb-2"
+          className="block text-sm font-medium text-gray-900 dark:text-white mb-2"
         >
           Message
         </label>
@@ -309,7 +309,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
           rows={4}
           required
           disabled={isSubmitting}
-          className="w-full px-4 py-3 bg-transparent border border-[#2A2A2A] rounded-xl text-white placeholder-gray-500 focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors resize-none disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full px-4 py-3 bg-white dark:bg-transparent border border-gray-300 dark:border-[#2A2A2A] rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-500 focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors resize-none disabled:opacity-50 disabled:cursor-not-allowed"
         />
       </div>
 

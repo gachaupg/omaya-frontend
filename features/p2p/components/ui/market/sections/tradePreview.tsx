@@ -435,7 +435,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
               <span className="text-[#1D8751]">{advertiserData.commission}</span>
             </div>
             {/* I Want to Send */}
-            <div className="rounded-xl p-3 sm:p-3 flex flex-col gap-2 sm:gap-2 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[#23242A]">
+            <div className="rounded-xl p-3 sm:p-3 flex flex-col gap-2 sm:gap-2 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[var(--card-color)]">
               <div className="text-sm sm:text-base text-gray-500 dark:text-[#788099] font-semibold">
                 I Want to Send
               </div>
@@ -477,7 +477,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
               </div>
             </div>
             {/* I Want to Receive */}
-            <div className="rounded-xl p-3 sm:p-3 flex flex-col gap-2 sm:gap-2 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[#23242A]">
+            <div className="rounded-xl p-3 sm:p-3 flex flex-col gap-2 sm:gap-2 border border-gray-300 dark:border-[#35353E] bg-gray-100 dark:bg-[var(--card-color)]">
               <div className="text-sm sm:text-base text-gray-500 dark:text-[#788099] font-semibold">
                 I Want to Receive
               </div>
@@ -572,7 +572,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
             </div>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <button
-                className="w-full sm:flex-1 py-2.5 sm:py-2 rounded-lg border font-semibold text-sm sm:text-base transition border-gray-400 dark:border-[#788099] text-gray-700 dark:text-[#788099] hover:bg-gray-200 dark:hover:bg-[#23242A]"
+                className="w-full sm:flex-1 py-2.5 sm:py-2 rounded-lg border font-semibold text-sm sm:text-base transition border-gray-400 dark:border-[#788099] text-gray-700 dark:text-[#788099] hover:bg-gray-200 dark:hover:bg-[var(--card-color)]"
                 onClick={onClose}
                 disabled={isSubmitting}
               >

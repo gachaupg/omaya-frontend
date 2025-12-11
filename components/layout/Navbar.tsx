@@ -12,7 +12,6 @@ import {
   getUserProfile,
   logout,
 } from "@/features/auth/slices/authSlice";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useLanguageOptional } from "@/context/language";
 import { useTheme } from "@/context/theme";
 
@@ -221,6 +220,175 @@ const LanguageSelector = () => {
             </div>
           </button>
         </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+const ThemeSelector = ({ isTransparentNavbar }: { isTransparentNavbar: boolean }) => {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
+
+  const toggleDropdown = () => {
+    setDropdownOpen(!dropdownOpen);
+  };
+
+  const selectTheme = (selectedTheme: "light" | "dark" | "deem") => {
+    if (selectedTheme === "deem") {
+      // Don't update anything for deem yet - just close dropdown
+      setDropdownOpen(false);
+      return;
+    }
+    setTheme(selectedTheme);
+    setDropdownOpen(false);
+  };
+
+  const getThemeIcon = () => {
+    if (theme === "dark") {
+      return (
+        <svg
+          className="w-5 h-5 sm:w-6 sm:h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+          />
+        </svg>
+      );
+    } else {
+      return (
+        <svg
+          className="w-5 h-5 sm:w-6 sm:h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+          />
+        </svg>
+      );
+    }
+  };
+
+  return (
+    <div className="relative">
+      <div
+        className={`flex items-center justify-center cursor-pointer min-h-[44px] sm:min-h-0 lg:min-h-0 px-1 sm:px-0 lg:px-0 ${
+          isTransparentNavbar ? "text-white" : "dark:text-white text-gray-900"
+        }`}
+        onClick={toggleDropdown}
+      >
+        {getThemeIcon()}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="12"
+          height="12"
+          className={`ml-1 sm:ml-1 lg:ml-1 w-3 h-3 sm:w-4 sm:h-4 lg:w-4 lg:h-4 ${
+            isTransparentNavbar ? "fill-white" : "fill-current"
+          }`}
+          viewBox="0 0 16 16"
+        >
+          <path d="M1.5 6.5l6 6 6-6h-12z" />
+        </svg>
+      </div>
+      {dropdownOpen && (
+        <>
+          {/* Backdrop for mobile */}
+          <div 
+            className="fixed inset-0 z-40 sm:hidden"
+            onClick={() => setDropdownOpen(false)}
+          />
+          <div className="fixed sm:absolute right-3 sm:right-0 top-14 sm:top-auto sm:mt-2 w-[180px] sm:w-[200px] lg:w-[250px] dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 rounded-lg shadow-lg z-50 max-w-[calc(100vw-1.5rem)] sm:max-w-none">
+            <button
+              className="block w-full text-left px-3 sm:px-4 lg:px-4 py-2.5 sm:py-2 lg:py-2 dark:text-white text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center transition-colors"
+              onClick={() => selectTheme("light")}
+            >
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center space-x-2 sm:space-x-2 lg:space-x-2">
+                  <svg
+                    className="w-5 h-5 sm:w-5 sm:h-5 lg:w-5 lg:h-5 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                    />
+                  </svg>
+                  <span className="text-sm sm:text-sm lg:text-sm">Light</span>
+                </div>
+                {theme === "light" && (
+                  <div className="w-4 h-4 sm:w-4 sm:h-4 lg:w-4 lg:h-4 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-4 lg:h-4 text-[#1D8751]" />
+                  </div>
+                )}
+              </div>
+            </button>
+            <button
+              className="block w-full text-left px-3 sm:px-4 lg:px-4 py-2.5 sm:py-2 lg:py-2 dark:text-white text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center transition-colors"
+              onClick={() => selectTheme("dark")}
+            >
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center space-x-2 sm:space-x-2 lg:space-x-2">
+                  <svg
+                    className="w-5 h-5 sm:w-5 sm:h-5 lg:w-5 lg:h-5 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                    />
+                  </svg>
+                  <span className="text-sm sm:text-sm lg:text-sm">Dark</span>
+                </div>
+                {theme === "dark" && (
+                  <div className="w-4 h-4 sm:w-4 sm:h-4 lg:w-4 lg:h-4 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-4 lg:h-4 text-[#1D8751]" />
+                  </div>
+                )}
+              </div>
+            </button>
+            <button
+              className="block w-full text-left px-3 sm:px-4 lg:px-4 py-2.5 sm:py-2 lg:py-2 dark:text-white text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center transition-colors"
+              onClick={() => selectTheme("deem")}
+            >
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center space-x-2 sm:space-x-2 lg:space-x-2">
+                  <svg
+                    className="w-5 h-5 sm:w-5 sm:h-5 lg:w-5 lg:h-5 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                    />
+                  </svg>
+                  <span className="text-sm sm:text-sm lg:text-sm">Deem</span>
+                </div>
+              </div>
+            </button>
+          </div>
         </>
       )}
     </div>
@@ -528,9 +696,9 @@ export default function Navbar() {
         </div>
 
         {/* Desktop Auth Buttons */}
-        <div className="hidden md:flex items-center space-x-3 lg:space-x-4 2xl:space-x-6 relative">
+        <div className="hidden md:flex items-center space-x-3 lg:space-x-4 2xl:space-x-6 relative flex-shrink-0">
           {isAuthenticated ? (
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 flex-shrink-0">
               <div className="" ref={depositDropdownRef}>
                 <button
                   onClick={toggleDepositDropdown}
@@ -607,12 +775,85 @@ export default function Navbar() {
                           </div>
                           <div className="flex-1">
                             <h4 className="dark:text-white text-gray-900 font-medium text-base mb-1">
-                              Exchange
+                              Express Exchange
                             </h4>
                             <p className="dark:text-gray-400 text-gray-600 text-sm">
                               Trade cryptocurrencies on the exchange with
                               advanced tools and features for optimal
                               transactions
+                            </p>
+                          </div>
+                          <svg
+                            className="w-5 h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                        </div>
+                      </Link>
+
+                      {/* MoneyX Option */}
+                      <Link
+                        href="/dashboard/exchange"
+                        className="block mb-3"
+                        onClick={() => {
+                          setDepositDropdownOpen(false);
+                        }}
+                      >
+                        <div className="flex items-center transition-colors duration-200 group">
+                          <div className="w-10 h-10 flex items-center justify-center mr-4">
+                            <svg
+                              width="100"
+                              height="100"
+                              viewBox="0 0 100 100"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <rect
+                                x="20"
+                                y="25"
+                                width="60"
+                                height="40"
+                                rx="5"
+                                fill="none"
+                                stroke="#1D8751"
+                                strokeWidth="4"
+                              />
+                              <path
+                                d="M30 45 L40 55 L70 25"
+                                stroke="#1D8751"
+                                strokeWidth="4"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                fill="none"
+                              />
+                              <circle
+                                cx="50"
+                                cy="70"
+                                r="8"
+                                fill="#1D8751"
+                              />
+                              <path
+                                d="M50 65 L50 75 M45 70 L55 70"
+                                stroke="white"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                              />
+                            </svg>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="dark:text-white text-gray-900 font-medium text-base mb-1">
+                              MoneyX
+                            </h4>
+                            <p className="dark:text-gray-400 text-gray-600 text-sm">
+                              Transfer money between different payment methods
+                              quickly and securely
                             </p>
                           </div>
                           <svg
@@ -725,7 +966,7 @@ export default function Navbar() {
                       {/* Swap Option */}
                       <Link
                         href="/dashboard/swap"
-                        className="block mb-3"
+                        className="block"
                         onClick={() => {
                           setDepositDropdownOpen(false);
                         }}
@@ -788,85 +1029,12 @@ export default function Navbar() {
                           </svg>
                         </div>
                       </Link>
-
-                      {/* MoneyX Option */}
-                      <Link
-                        href="/dashboard/exchange"
-                        className="block"
-                        onClick={() => {
-                          setDepositDropdownOpen(false);
-                        }}
-                      >
-                        <div className="flex items-center transition-colors duration-200 group">
-                          <div className="w-10 h-10 flex items-center justify-center mr-4">
-                            <svg
-                              width="100"
-                              height="100"
-                              viewBox="0 0 100 100"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <rect
-                                x="20"
-                                y="25"
-                                width="60"
-                                height="40"
-                                rx="5"
-                                fill="none"
-                                stroke="#1D8751"
-                                strokeWidth="4"
-                              />
-                              <path
-                                d="M30 45 L40 55 L70 25"
-                                stroke="#1D8751"
-                                strokeWidth="4"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                fill="none"
-                              />
-                              <circle
-                                cx="50"
-                                cy="70"
-                                r="8"
-                                fill="#1D8751"
-                              />
-                              <path
-                                d="M50 65 L50 75 M45 70 L55 70"
-                                stroke="white"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                              />
-                            </svg>
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="dark:text-white text-gray-900 font-medium text-base mb-1">
-                              MoneyX
-                            </h4>
-                            <p className="dark:text-gray-400 text-gray-600 text-sm">
-                              Transfer money between different payment methods
-                              quickly and securely
-                            </p>
-                          </div>
-                          <svg
-                            className="w-5 h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
-                            />
-                          </svg>
-                        </div>
-                      </Link>
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="relative" ref={profileModalRef}>
+              <div className="relative flex-shrink-0" ref={profileModalRef}>
                 <button
                   onClick={toggleProfileModal}
                   className="text-white focus:outline-none relative"
@@ -1014,7 +1182,7 @@ export default function Navbar() {
 
           <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4 2xl:space-x-6">
             <LanguageSelector />
-            <ThemeToggle />
+            <ThemeSelector isTransparentNavbar={isTransparentNavbar} />
           </div>
         </div>
 
@@ -1628,7 +1796,7 @@ export default function Navbar() {
 
             <div className="flex items-center justify-center gap-6 pt-4 border-t dark:border-gray-700 border-gray-200">
               <LanguageSelector />
-              <ThemeToggle />
+              <ThemeSelector isTransparentNavbar={isTransparentNavbar} />
             </div>
           </div>
         </>

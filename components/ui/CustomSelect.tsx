@@ -143,27 +143,22 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     }
 
     if (sizeMode === "card") {
-      // For card mode, match the trigger width exactly to ensure full width coverage
+      // For card mode, match the trigger width exactly (not bigger)
       const triggerWidth = rect.width;
       
-      // Use the card width if available and it's wider, otherwise use trigger width
-      let dropdownWidth = cardRect && cardRect.width > triggerWidth 
-        ? cardRect.width 
-        : triggerWidth;
+      // Use trigger width exactly, not card width - ensure it never exceeds trigger width
+      let dropdownWidth = triggerWidth;
       
       // Ensure the dropdown doesn't exceed viewport width
       if (viewportWidth) {
         const maxWidth = viewportWidth - minMargin * 2;
         dropdownWidth = Math.min(dropdownWidth, maxWidth);
+        // But also ensure it doesn't exceed the trigger width
+        dropdownWidth = Math.min(dropdownWidth, triggerWidth);
       }
       
-      // Calculate left position to align with trigger
+      // Calculate left position to align with trigger exactly
       let leftPosition = rect.left;
-      
-      // If we have a card and it's being used for width, align with card
-      if (cardRect && cardRect.width > triggerWidth) {
-        leftPosition = cardRect.left;
-      }
       
       // Ensure dropdown doesn't go off screen
       if (viewportWidth) {
@@ -173,6 +168,8 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         if (leftPosition < minMargin) {
           leftPosition = minMargin;
           dropdownWidth = Math.min(dropdownWidth, viewportWidth - minMargin * 2);
+          // Still ensure it doesn't exceed trigger width
+          dropdownWidth = Math.min(dropdownWidth, triggerWidth);
         }
       }
 
@@ -194,7 +191,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       setDropdownStyles({
         top: topPosition,
         left: leftPosition,
-        width: Math.max(dropdownWidth, triggerWidth), // Ensure it's at least as wide as the trigger
+        width: dropdownWidth, // Match trigger width exactly - never bigger
       });
       return;
     }
@@ -373,7 +370,8 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
               top: dropdownStyles.top,
               left: dropdownStyles.left,
               width: `${dropdownStyles.width || 200}px`,
-              minWidth: `${dropdownStyles.width || 200}px`,
+              minWidth: sizeMode === "card" ? `${dropdownStyles.width || 200}px` : `${dropdownStyles.width || 200}px`,
+              maxWidth: sizeMode === "card" ? `${dropdownStyles.width || 200}px` : "none",
               maxHeight: dropdownMaxHeight ? `${dropdownMaxHeight}px` : "300px",
             }}
           >
