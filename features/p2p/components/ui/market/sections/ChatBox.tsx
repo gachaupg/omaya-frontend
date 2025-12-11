@@ -462,7 +462,7 @@ const ChatBox: React.FC<{
           className="messages-list flex-1 flex flex-col gap-2 overflow-y-auto mb-2"
         >
           {autoreply && (
-            <p className="text-[#051015] dark:text-white bg-[#F5F5F5] dark:bg-[#23232B] p-2 rounded-lg text-sm italic">
+            <p className="text-[#051015] dark:text-white bg-gray-100 dark:bg-[var(--card-color)] p-2 rounded-lg text-sm italic">
               {autoreply}
             </p>
           )}
@@ -716,3 +716,5 @@ const ChatBox: React.FC<{
 };
 
 export default ChatBox;
+
+

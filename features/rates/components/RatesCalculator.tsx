@@ -127,6 +127,7 @@ const RatesCalculator = () => {
   const [walletError, setWalletError] = useState<string>("");
   const [showExchanging, setShowExchanging] = useState(false);
   const [exchangingData, setExchangingData] = useState<any>(null);
+  const hasRestoredState = useRef(false);
 
   // API calculation states
   const [estimate, setEstimate] = useState<any>(null);
@@ -234,11 +235,22 @@ const RatesCalculator = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    if (
-      assetsDisplay.displayData &&
-      assetsDisplay.displayData.length > 0 &&
-      !selectedAsset
-    ) {
+    // Don't auto-select if we're trying to restore a saved asset
+    // Also add a delay to ensure restore happens first
+    const hasSavedAsset = localStorage.getItem("rates_calculator_state") || localStorage.getItem("rates_calculator_asset");
+    
+    // Use a timeout to ensure restore useEffect runs first
+    const timeoutId = setTimeout(() => {
+      // Double-check that restoration hasn't happened
+      const stillHasSavedAsset = localStorage.getItem("rates_calculator_asset");
+      
+      if (
+        assetsDisplay.displayData &&
+        assetsDisplay.displayData.length > 0 &&
+        !selectedAsset &&
+        !hasSavedAsset &&
+        !stillHasSavedAsset // Only auto-select if there's no saved asset to restore
+      ) {
       // Use the sorted assets to get the first one (USDT on BSC first, USDC on BSC second)
       const sortedAssets = [...assetsDisplay.displayData].sort((a, b) => {
         const tickerA = (a?.ticker || a?.symbol || a?.name || "")
@@ -287,7 +299,10 @@ const RatesCalculator = () => {
 
       const firstAsset = sortedAssets[0];
       setSelectedAsset(firstAsset);
-    }
+      }
+    }, 100); // Small delay to let restore happen first
+    
+    return () => clearTimeout(timeoutId);
   }, [assetsDisplay.displayData, selectedAsset]);
 
   useEffect(() => {
@@ -1082,9 +1097,259 @@ const RatesCalculator = () => {
     );
   };
 
+  // Save calculator state to localStorage before redirecting to login
+  const saveCalculatorState = () => {
+    try {
+      const stateToSave = {
+        selectedAsset: selectedAsset ? {
+          asset_id: selectedAsset.asset_id,
+          ticker: selectedAsset.ticker,
+          symbol: selectedAsset.symbol,
+          name: selectedAsset.name,
+          network: getAssetNetwork(selectedAsset), // Use the same function to get network
+          image_url: selectedAsset.image_url,
+          asset_image: selectedAsset.asset_image,
+          networks: selectedAsset.networks,
+          // Save all possible identifiers
+          id: selectedAsset.id,
+          assetId: selectedAsset.assetId,
+        } : null,
+        selectedPaymentMethod,
+        selectedPaymentDetail: selectedPaymentDetail ? {
+          provider_id: selectedPaymentDetail.provider_id,
+          provider_name: selectedPaymentDetail.provider_name,
+          payment_provider_name: selectedPaymentDetail.payment_provider_name,
+          payment_method_name: selectedPaymentDetail.payment_method_name,
+          logo: selectedPaymentDetail.logo,
+          account_name: selectedPaymentDetail.account_name,
+          account_number: selectedPaymentDetail.account_number,
+        } : null,
+        amount,
+        receiveAmount,
+        isFieldsSwapped,
+        isDepositMode,
+      };
+      logger.debug('general', "Saving calculator state:", stateToSave);
+      localStorage.setItem("rates_calculator_state", JSON.stringify(stateToSave));
+      // Reset restore flag so it can restore on next login
+      assetRestoreAttempted.current = false;
+    } catch (error) {
+      console.error("Failed to save calculator state:", error);
+    }
+  };
+
+  // Restore calculator state from localStorage
+  useEffect(() => {
+    if (hasRestoredState.current || !isAuthenticated) return;
+    
+    try {
+      const savedState = localStorage.getItem("rates_calculator_state");
+      if (!savedState) return;
+      
+      const state = JSON.parse(savedState);
+      
+      // Restore basic values
+      if (state.amount) setAmount(state.amount);
+      if (state.receiveAmount) setReceiveAmount(state.receiveAmount);
+      if (state.isFieldsSwapped !== undefined) setIsFieldsSwapped(state.isFieldsSwapped);
+      if (state.isDepositMode !== undefined) setIsDepositMode(state.isDepositMode);
+      if (state.selectedPaymentMethod) setSelectedPaymentMethod(state.selectedPaymentMethod);
+      
+      // Store asset and payment detail separately for later restoration (when they load)
+      if (state.selectedAsset) {
+        localStorage.setItem("rates_calculator_asset", JSON.stringify(state.selectedAsset));
+      }
+      
+      if (state.selectedPaymentDetail) {
+        localStorage.setItem("rates_calculator_payment_detail", JSON.stringify(state.selectedPaymentDetail));
+      }
+      
+      // Mark as restored
+      hasRestoredState.current = true;
+      
+      // Clear saved state after extracting asset and payment detail
+      localStorage.removeItem("rates_calculator_state");
+    } catch (error) {
+      console.error("Failed to restore calculator state:", error);
+      // Clear corrupted state
+      localStorage.removeItem("rates_calculator_state");
+      localStorage.removeItem("rates_calculator_asset");
+      localStorage.removeItem("rates_calculator_payment_detail");
+      hasRestoredState.current = true; // Mark as restored even on error to prevent retries
+    }
+  }, [isAuthenticated]);
+
+  // Restore asset separately when assets are loaded - MUST run before auto-select
+  // Use a ref to track if we've already attempted restoration
+  const assetRestoreAttempted = useRef(false);
+  
+  useEffect(() => {
+    if (!isAuthenticated || !assetsDisplay.displayData || assetsDisplay.displayData.length === 0) return;
+    if (assetRestoreAttempted.current) return; // Already attempted restoration
+    
+    const savedAsset = localStorage.getItem("rates_calculator_asset");
+    if (!savedAsset) {
+      assetRestoreAttempted.current = true; // Mark as attempted even if no saved asset
+      return;
+    }
+    
+    try {
+      const state = JSON.parse(savedAsset);
+      
+      logger.debug('general', "Attempting to restore asset:", {
+        saved: state,
+        availableAssetsCount: assetsDisplay.displayData.length,
+      });
+      
+      // Try multiple matching strategies
+      const assetToRestore = assetsDisplay.displayData.find((asset: any) => {
+        // Strategy 1: Match by asset_id (most reliable)
+        if (state.asset_id && asset.asset_id && String(asset.asset_id) === String(state.asset_id)) {
+          logger.debug('general', "Matched by asset_id:", asset.asset_id);
+          return true;
+        }
+        
+        // Strategy 1b: Match by id or assetId
+        if (state.id && asset.id && String(asset.id) === String(state.id)) {
+          logger.debug('general', "Matched by id:", asset.id);
+          return true;
+        }
+        if (state.assetId && asset.assetId && String(asset.assetId) === String(state.assetId)) {
+          logger.debug('general', "Matched by assetId:", asset.assetId);
+          return true;
+        }
+        
+        // Strategy 2: Match by ticker/symbol and network
+        const savedTicker = (state.ticker || state.symbol || "").toLowerCase().trim();
+        const savedNetwork = (state.network || "").toLowerCase().trim();
+        
+        if (!savedTicker) return false;
+        
+        const assetTicker = (asset.ticker || asset.symbol || "").toLowerCase().trim();
+        const assetNetwork = getAssetNetwork(asset).toLowerCase().trim();
+        
+        // Check if ticker matches
+        const tickerMatches = assetTicker && assetTicker === savedTicker;
+        
+        // Check network - use getAssetNetwork for consistency
+        const networkMatches = savedNetwork ? assetNetwork === savedNetwork : true;
+        
+        if (tickerMatches && networkMatches) {
+          logger.debug('general', "Matched by ticker and network:", {
+            ticker: assetTicker,
+            network: assetNetwork,
+          });
+          return true;
+        }
+        
+        return false;
+      });
+      
+      if (assetToRestore) {
+        logger.debug('general', "Successfully restored asset:", {
+          saved: state,
+          restored: {
+            asset_id: assetToRestore.asset_id,
+            ticker: assetToRestore.ticker,
+            network: getAssetNetwork(assetToRestore),
+          }
+        });
+        setSelectedAsset(assetToRestore);
+        // Clear saved asset after successful restoration
+        localStorage.removeItem("rates_calculator_asset");
+      } else {
+        logger.debug('general', "Could not find asset to restore:", {
+          saved: state,
+          availableAssets: assetsDisplay.displayData.slice(0, 5).map((a: any) => ({
+            asset_id: a.asset_id,
+            id: a.id,
+            assetId: a.assetId,
+            ticker: a.ticker,
+            symbol: a.symbol,
+            network: getAssetNetwork(a),
+          }))
+        });
+        // Clear saved asset if we couldn't find it (to prevent retries)
+        localStorage.removeItem("rates_calculator_asset");
+      }
+      
+      // Mark as attempted
+      assetRestoreAttempted.current = true;
+    } catch (error) {
+      console.error("Failed to restore asset:", error);
+      localStorage.removeItem("rates_calculator_asset");
+      assetRestoreAttempted.current = true;
+    }
+  }, [isAuthenticated, assetsDisplay.displayData]);
+
+  // Restore payment detail separately when payment methods are loaded
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    try {
+      const savedPaymentDetail = localStorage.getItem("rates_calculator_payment_detail");
+      if (!savedPaymentDetail) return;
+      
+      const state = JSON.parse(savedPaymentDetail);
+      
+      // Get current payment methods
+      const publicMethodsData = publicPaymentMethods as any;
+      const publicPaymentProviders = Array.isArray(publicMethodsData?.data?.providers)
+        ? publicMethodsData.data.providers
+        : [];
+      
+      const userPaymentArray = Array.isArray(userPaymentDetails) 
+        ? userPaymentDetails 
+        : Array.isArray((userPaymentDetails as any)?.data) 
+          ? (userPaymentDetails as any).data 
+          : [];
+      
+      const publicPaymentArray = Array.isArray(publicPaymentMethods) 
+        ? publicPaymentMethods 
+        : Array.isArray(publicMethodsData?.data?.payment_methods) 
+          ? publicMethodsData.data.payment_methods 
+          : Array.isArray(publicMethodsData?.data?.providers)
+            ? publicMethodsData.data.providers
+            : Array.isArray(publicMethodsData?.data) 
+              ? publicMethodsData.data 
+              : [];
+      
+      const availablePaymentMethods = userPaymentArray.length > 0 
+        ? userPaymentArray 
+        : publicPaymentArray;
+      
+      // Try to find the payment detail
+      const paymentDetailToRestore = 
+        publicPaymentProviders.find((provider: any) => 
+          provider.provider_id === state.provider_id ||
+          provider.provider_name === state.provider_name
+        ) ||
+        availablePaymentMethods.find((detail: any) => 
+          detail.provider_id === state.provider_id ||
+          detail.provider_name === state.provider_name ||
+          detail.payment_provider_name === state.payment_provider_name
+        );
+      
+      if (paymentDetailToRestore) {
+        setSelectedPaymentDetail(paymentDetailToRestore);
+        // Clear saved payment detail after restoring
+        localStorage.removeItem("rates_calculator_payment_detail");
+      } else if (publicPaymentProviders.length > 0 || availablePaymentMethods.length > 0) {
+        // Payment methods are loaded but we couldn't find the saved one
+        // Clear the saved state to prevent retries
+        localStorage.removeItem("rates_calculator_payment_detail");
+      }
+    } catch (error) {
+      console.error("Failed to restore payment detail:", error);
+      localStorage.removeItem("rates_calculator_payment_detail");
+    }
+  }, [isAuthenticated, publicPaymentMethods, userPaymentDetails]);
+
   const handleSubmit = async () => {
     // Check if user is authenticated
     if (!isAuthenticated) {
+      // Save calculator state before redirecting
+      saveCalculatorState();
       // Set redirect path to return to rates page after login
       setAuthRedirectPath("/rates");
       // Redirect to login page
@@ -1906,12 +2171,12 @@ const RatesCalculator = () => {
         <p className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm font-medium mb-2`}>
           {t("rates.amountAndFees", "Amount & Fees")}
         </p>
-        <div className="flex flex-col lg:flex-row gap-4 items-stretch">
+        <div className="flex flex-col lg:flex-row gap-7 items-center">
           <div className="flex-1 flex flex-col justify-start">
             <span className={`${isDark ? "text-white" : "text-[#1F2937]"} text-sm mb-2`}>
               {t("rates.netAmount", "Net Amount to Transfer")}
             </span>
-            <div className="w-full">
+            <div className="max-w-xl">
               <div className={`w-full ${isDark ? "bg-[#35353E]" : "bg-white"} border ${isDark ? "border-[#35353E]" : "border-[#E8EFF5]"} rounded-2xl flex items-center px-2 py-2`}>
                 <button className="flex-1 flex items-center justify-center bg-transparent">
                   <span className={`${isDark ? "text-[#BDF4D8]" : "text-[#051015]"} text-sm ml-4`}>
@@ -1930,8 +2195,8 @@ const RatesCalculator = () => {
             </div>
           </div>
           {/* Right: Fee Breakdown */}
-          <div className={`flex flex-col justify-between min-w-[220px] ${isDark ? "bg-[#1D1D23]" : "bg-white"} border ${isDark ? "border-[#35353E]" : "border-[#E8EFF5]"} rounded-lg px-4 py-3`}>
-            <div className="flex justify-between text-sm mb-1">
+          <div className={`max-w-lg flex flex-col justify-between  ${isDark ? "bg-[#1D1D23]" : "bg-white"} border ${isDark ? "border-accent" : "border-[#E8EFF5]"} rounded-md px-4 py-3`}>
+            <div className="flex justify-between gap-20 text-sm mb-1">
               <span className={isDark ? "text-[#E8EFF5]" : "text-[#051015]"}>
                 {t("rates.commission", "Commission:")}{" "}
                 {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.omaya_fee_percentage 

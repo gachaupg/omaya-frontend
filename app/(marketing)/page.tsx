@@ -4,7 +4,7 @@ import { useMarketingI18n } from "@/lib/useMarketingI18n";
 import Image from "next/image";
 import Link from "next/link";
 import { tokens } from "@/styles/tokens";
-import { Play, MessageCircle, Plus, BarChart, Globe, Lock, DollarSign, Users, TrendingUp, Shield, Zap, Gift, UserPlus, ArrowRight, Building2, Calendar, Clock, MapPin, Phone, Mail, Send, ChevronDown, ChevronUp } from "lucide-react";
+import { Play, MessageCircle, Plus, BarChart, Globe, Lock, DollarSign, Users, TrendingUp, Shield, Zap, Gift, UserPlus, ArrowRight, Building2, Calendar, Clock, MapPin, Phone, Mail, Send, ChevronDown, ChevronUp, ArrowLeftRight } from "lucide-react";
 import ExchangeForm from "@/components/ExchangeForm";
 import { useBlog } from "@/features/blogs/hooks/blog";
 import { BlogPost } from "@/features/blogs/types";
@@ -433,7 +433,7 @@ export default function MarketingPage() {
                   Start Trading Now
                   <span className="text-lg">→</span>
                 </a>
-                <button className="rounded-lg px-5 sm:px-6 py-2.5 sm:py-2.5 text-white bg-[#1D1D23] border border-[#35353E] text-sm sm:text-base font-medium hover:bg-[#23232B] transition-colors min-h-[44px] flex items-center justify-center gap-2">
+                <button className="rounded-lg px-5 sm:px-6 py-2.5 sm:py-2.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] text-sm sm:text-base font-medium hover:bg-gray-200 dark:hover:bg-[#23232B] transition-colors min-h-[44px] flex items-center justify-center gap-2">
                   Watch Demo
                   <Play size={16} className="text-[#1D8751]" />
                 </button>
@@ -933,17 +933,18 @@ export default function MarketingPage() {
       </div>
 
       {/* Safe & Reliable Section */}
-      <div className="w-full bg-white dark:bg-[#0A0A0A] py-16">
+      <div className="w-full bg-white dark:bg-[#0A0A0A] pt-8 pb-16">
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             {/* Left Section - Image */}
             <div className="relative">
-              <div className="relative w-full h-[400px] md:h-[500px] rounded-xl overflow-hidden">
+              <div className="relative w-full overflow-hidden rounded-t-[1.5rem] md:rounded-t-[2rem] rounded-b-lg">
                 <Image
                   src="https://res.cloudinary.com/pitz/image/upload/v1765268255/Container_17_n6i2xm.png"
                   alt="Safe & Reliable Cryptocurrency Exchange Platform"
-                  fill
-                  className="object-cover"
+                  width={800}
+                  height={600}
+                  className="w-full h-auto object-contain"
                   unoptimized
                 />
                 
@@ -962,8 +963,8 @@ export default function MarketingPage() {
             {/* Right Section - Text and Feature Cards */}
             <div className="space-y-6">
               {/* ABOUT OMAYA Header */}
-              <div className="bg-[#1D8751] border border-[#1D8751] rounded-2xl px-4 py-2 inline-block">
-                <div className="text-white text-sm font-medium uppercase tracking-wide">
+              <div className="bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751] rounded-3xl px-4 py-2 inline-block">
+                <div className="text-[#1D8751] text-sm font-medium uppercase tracking-wide">
                   ABOUT OMAYA
                 </div>
               </div>
@@ -1094,22 +1095,242 @@ export default function MarketingPage() {
             Begin your crypto journey in 4 simple steps. Join thousands of traders who trust OMAYA Exchange.
           </p>
 
-          {/* Image with cards */}
-          <div className="w-full flex justify-center">
-            <div className="w-full max-w-6xl">
-              <Image
-                src="https://res.cloudinary.com/pitz/image/upload/v1765269508/Container_21_ftewij.png"
-                alt="Easy Onboarding - Get Set Up And Start Exchanging"
-                width={1680}
-                height={800}
-                className="w-full h-auto"
-                priority
-                unoptimized
-              />
+          {/* Steps Cards */}
+          <div className="w-full max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-4">
+              {[
+                {
+                  number: 1,
+                  icon: UserPlus,
+                  iconBg: "bg-blue-500",
+                  title: t("marketing.steps.create.title", "Create Account"),
+                  description: t("marketing.steps.create.desc", "Create an account quickly and securely to start your digital trading journey."),
+                  features: [
+                    t("marketing.steps.create.feature1", "Instant setup"),
+                    t("marketing.steps.create.feature2", "Email verification"),
+                    t("marketing.steps.create.feature3", "Free account"),
+                  ],
+                },
+                {
+                  number: 2,
+                  icon: Shield,
+                  iconBg: "bg-purple-500",
+                  title: t("marketing.steps.verify.title", "Verify Identity"),
+                  description: t("marketing.steps.verify.desc", "Verify your identity to ensure a secure and compliant trading experience."),
+                  features: [
+                    t("marketing.steps.verify.feature1", "KYC compliance"),
+                    t("marketing.steps.verify.feature2", "Enhanced security"),
+                    t("marketing.steps.verify.feature3", "5-min process"),
+                  ],
+                },
+                {
+                  number: 3,
+                  icon: DollarSign,
+                  iconBg: "bg-[#1D8751]",
+                  title: t("marketing.steps.transfer.title", "Transfer Funds"),
+                  description: t("marketing.steps.transfer.desc", "Transfer funds effortlessly and access a world of digital assets."),
+                  features: [
+                    t("marketing.steps.transfer.feature1", "Multiple methods"),
+                    t("marketing.steps.transfer.feature2", "Instant deposits"),
+                    t("marketing.steps.transfer.feature3", "Low fees"),
+                  ],
+                },
+                {
+                  number: 4,
+                  icon: ArrowLeftRight,
+                  iconBg: "bg-orange-500",
+                  title: t("marketing.steps.start.title", "Start Exchanging"),
+                  description: t("marketing.steps.start.desc", "Start exchanging instantly and explore endless opportunities."),
+                  features: [
+                    t("marketing.steps.start.feature1", "500+ assets"),
+                    t("marketing.steps.start.feature2", "Real-time trading"),
+                    t("marketing.steps.start.feature3", "24/7 support"),
+                  ],
+                },
+              ].map((step, index) => (
+                <div key={step.number} className="relative">
+                  {/* Step Card */}
+                  <div className="relative bg-white dark:bg-[#1D1D23] rounded-2xl p-6 border-2 border-[#1D8751] shadow-lg hover:shadow-xl transition-all duration-300 h-full flex flex-col">
+                    {/* Number Badge - Inside card */}
+                    <div className="absolute top-4 right-4 w-8 h-8 bg-[#13B562]/20 dark:bg-[#13B562]/30 rounded-full flex items-center justify-center">
+                      <span className="text-[#1D8751] dark:text-[#13B562] text-sm font-bold">{step.number}</span>
+                    </div>
+
+                    {/* Icon Container */}
+                    <div className="relative mb-6">
+                      {/* Green dots decoration */}
+                      <div className="absolute -top-1 -left-1 w-2 h-2 bg-[#1D8751] rounded-full opacity-60"></div>
+                      <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-[#1D8751] rounded-full opacity-60"></div>
+                      
+                      {/* Icon background */}
+                      <div className={`${step.iconBg} w-16 h-16 rounded-xl flex items-center justify-center shadow-lg relative`}>
+                        <step.icon className="w-8 h-8 text-white" />
+                      </div>
+                    </div>
+
+                    {/* Title */}
+                    <h3 className="text-gray-900 dark:text-white font-bold text-xl mb-3">
+                      {step.title}
+                    </h3>
+
+                    {/* Description */}
+                    <p className="text-gray-700 dark:text-white/80 text-sm mb-4 flex-grow">
+                      {step.description}
+                    </p>
+
+                    {/* Features List */}
+                    <div className="space-y-2 mt-auto">
+                      {step.features.map((feature, idx) => (
+                        <div key={idx} className="flex items-center gap-2">
+                          <svg
+                            className="w-5 h-5 text-[#1D8751] flex-shrink-0"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                          <span className="text-gray-700 dark:text-white/90 text-sm">
+                            {feature}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Small Arrow Circle between cards (hidden on last card) */}
+                  {index < 3 && (
+                    <div className="hidden lg:block absolute top-1/2 -right-3 transform -translate-y-1/2 z-10">
+                      <div className="bg-[#1D8751] rounded-full w-8 h-8 flex items-center justify-center shadow-lg">
+                        <span className="text-white text-lg font-bold">&gt;</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Why Choose Us Section with Phone */}
+      <section className="w-full bg-white dark:bg-[#0A0A0A] py-16 md:py-24 px-4 md:px-[100px] relative overflow-hidden">
+        <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            {/* Left Side - Phone with Green Gradient Background */}
+            <div className="relative flex justify-center lg:justify-start">
+              {/* Greenish Glowing Circular Pattern Background */}
+              <div className="absolute inset-0 flex items-center justify-center lg:justify-start">
+                <div className="relative w-[500px] h-[500px] lg:w-[600px] lg:h-[600px]">
+                  {/* Large glowing green circles */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#1D8751]/20 via-[#13B562]/15 to-[#0E5531]/10 dark:from-[#1D8751]/40 dark:via-[#13B562]/30 dark:to-[#0E5531]/20 rounded-full blur-3xl animate-pulse"></div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#13B562]/15 via-[#1D8751]/10 to-transparent dark:from-[#13B562]/30 dark:via-[#1D8751]/20 dark:to-transparent rounded-full blur-2xl" style={{ animationDelay: '1s' }}></div>
+                </div>
+              </div>
+              
+              {/* Phone Image */}
+              <div className="relative z-10">
+                <Image
+                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747220053/iphone_vn7ejc.png"
+                  alt="OMAYA Exchange Mobile App"
+                  width={350}
+                  height={700}
+                  className="w-[280px] md:w-[320px] lg:w-[350px] h-auto drop-shadow-2xl"
+                  priority
+                />
+              </div>
+            </div>
+
+            {/* Right Side - Why Choose Us Content */}
+            <div className="space-y-8">
+              {/* Main Heading */}
+              <div>
+                <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4">
+                  <span className="text-gray-900 dark:text-white">Fast and </span>
+                  <span className="text-[#1D8751]">Secure</span>
+                  <span className="text-gray-900 dark:text-white"> Crypto </span>
+                  <span className="text-[#1D8751]">Exchange</span>
+                </h2>
+              </div>
+
+              {/* Feature Cards Grid */}
+              <div className="grid grid-cols-2 gap-4 md:gap-6">
+                {/* Low Transaction Fee */}
+                <div className="bg-gray-50 dark:bg-[#1D1D23] backdrop-blur-sm rounded-xl p-5 border border-gray-200 dark:border-white/10">
+                  <div className="w-12 h-12 bg-[#1D8751] rounded-lg flex items-center justify-center mb-4">
+                    <DollarSign className="w-6 h-6 text-white" />
+                  </div>
+                  <h4 className="text-gray-900 dark:text-white font-bold text-lg mb-2">Low Transaction Fee</h4>
+                  <p className="text-gray-600 dark:text-white/70 text-sm">Industry-leading fees starting from 0.1%</p>
+                </div>
+
+                {/* Secure Payment Service */}
+                <div className="bg-gray-50 dark:bg-[#1D1D23] backdrop-blur-sm rounded-xl p-5 border border-gray-200 dark:border-white/10">
+                  <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mb-4">
+                    <Shield className="w-6 h-6 text-white" />
+                  </div>
+                  <h4 className="text-gray-900 dark:text-white font-bold text-lg mb-2">Secure Payment Service</h4>
+                  <p className="text-gray-600 dark:text-white/70 text-sm">Bank-grade security with 2FA authentication</p>
+                </div>
+
+                {/* Fast Transactions */}
+                <div className="bg-gray-50 dark:bg-[#1D1D23] backdrop-blur-sm rounded-xl p-5 border border-gray-200 dark:border-white/10">
+                  <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center mb-4">
+                    <Zap className="w-6 h-6 text-white" />
+                  </div>
+                  <h4 className="text-gray-900 dark:text-white font-bold text-lg mb-2">Fast Transactions</h4>
+                  <p className="text-gray-600 dark:text-white/70 text-sm">Lightning-fast execution in milliseconds</p>
+                </div>
+
+                {/* We Work 24/7 */}
+                <div className="bg-gray-50 dark:bg-[#1D1D23] backdrop-blur-sm rounded-xl p-5 border border-gray-200 dark:border-white/10">
+                  <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center mb-4">
+                    <Clock className="w-6 h-6 text-white" />
+                  </div>
+                  <h4 className="text-gray-900 dark:text-white font-bold text-lg mb-2">We Work 24/7</h4>
+                  <p className="text-gray-600 dark:text-white/70 text-sm">Round-the-clock support & trading</p>
+                </div>
+              </div>
+
+              {/* App Download Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                <a
+                  href="#"
+                  className="inline-flex items-center justify-center gap-3 bg-gray-900 dark:bg-black/50 hover:bg-gray-800 dark:hover:bg-black/70 border border-gray-300 dark:border-white/20 rounded-xl px-6 py-4 transition-colors min-w-[200px]"
+                >
+                  <Image
+                    src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539125/Appstore_nqe65y.png"
+                    alt="Download on the App Store"
+                    width={28}
+                    height={28}
+                    className="w-7 h-7 object-contain"
+                  />
+                  <span className="text-white font-medium text-sm">Download on the App Store</span>
+                </a>
+                <a
+                  href="#"
+                  className="inline-flex items-center justify-center gap-3 bg-gray-900 dark:bg-black/50 hover:bg-gray-800 dark:hover:bg-black/70 border border-gray-300 dark:border-white/20 rounded-xl px-6 py-4 transition-colors min-w-[200px]"
+                >
+                  <Image
+                    src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539313/googleplay_1_w8djf0.png"
+                    alt="GET IT ON Google Play"
+                    width={28}
+                    height={28}
+                    className="w-7 h-7 object-contain"
+                  />
+                  <span className="text-white font-medium text-sm">GET IT ON Google Play</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
     {/* Benefits Section*/}
     <div className="w-full bg-gradient-to-r from-[#0A3D1F] via-[#095E32] to-[#022E18] py-16 relative overflow-hidden">
         {/* Faint circular patterns/rings in background */}
@@ -1649,12 +1870,12 @@ export default function MarketingPage() {
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ml-4 transition-colors ${
                             isOpen 
                               ? "bg-[#1D8751]" 
-                              : "bg-[#2A2A2A]"
+                              : "bg-gray-200 dark:bg-[#2A2A2A]"
                           }`}>
                             {isOpen ? (
                               <ChevronUp className="w-4 h-4 text-white" />
                             ) : (
-                              <ChevronDown className="w-4 h-4 text-gray-400" />
+                              <ChevronDown className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                             )}
                           </div>
                           </button>

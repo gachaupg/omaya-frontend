@@ -12,9 +12,11 @@ import {
   getUserProfile,
   logout,
 } from "@/features/auth/slices/authSlice";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useLanguageOptional } from "@/context/language";
 import { useTheme } from "@/context/theme";
+
+
+
 
 const DefaultProfileIcon = () => (
   <div className="w-10 h-10 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white">
@@ -46,13 +48,12 @@ const NavLink = ({
   return (
     <Link
       href={href}
-      className={`${
-        active
-          ? "text-[#1D8751]" // Active link in green
-          : isTransparent
+      className={`${active
+        ? "text-[#1D8751]" // Active link in green
+        : isTransparent
           ? "text-gray-900 dark:text-white" // Dark in light mode, white in dark mode when navbar is transparent
           : "dark:text-white text-gray-900" // Theme-based when navbar has background
-      } hover:text-[#1D8751] transition-colors duration-200 text-sm lg:text-base 2xl:text-lg`}
+        } hover:text-[#1D8751] transition-colors duration-200 text-sm lg:text-base 2xl:text-lg`}
     >
       {children}
     </Link>
@@ -83,11 +84,10 @@ const MobileNavLink = ({
   return (
     <Link
       href={href}
-      className={`block py-2 transition-colors duration-200 text-lg ${
-        active
-          ? "text-[#1D8751]"
-          : "dark:text-white text-gray-900 hover:text-[#1D8751]"
-      }`}
+      className={`block py-2 transition-colors duration-200 text-lg ${active
+        ? "text-[#1D8751]"
+        : "dark:text-white text-gray-900 hover:text-[#1D8751]"
+        }`}
       onClick={onClick}
     >
       {children}
@@ -105,11 +105,10 @@ const AuthButton = ({
   fullWidth?: boolean;
 }) => (
   <button
-    className={`${
-      variant === "primary"
-        ? "bg-[#0E5531] hover:bg-[#13B562] text-white" // Primary button always has white text
-        : "bg-transparent border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white" // Secondary button with brand colors
-    } 
+    className={`${variant === "primary"
+      ? "bg-[#0E5531] hover:bg-[#13B562] text-white" // Primary button always has white text
+      : "bg-transparent border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white" // Secondary button with brand colors
+      } 
     px-3 py-1 rounded-[22px] transition-colors duration-200 text-sm md:text-base 2xl:text-lg
     ${fullWidth ? "w-full" : ""}`}
   >
@@ -138,7 +137,7 @@ const LanguageSelector = () => {
       } else {
         document.cookie = `NEXT_LOCALE=${locale}; path=/; max-age=${60 * 60 * 24 * 365}`;
       }
-    } catch {}
+    } catch { }
   };
 
   return (
@@ -171,56 +170,225 @@ const LanguageSelector = () => {
       {dropdownOpen && (
         <>
           {/* Backdrop for mobile */}
+          <div
+            className="fixed inset-0 z-40 sm:hidden"
+            onClick={() => setDropdownOpen(false)}
+          />
+          <div className="fixed sm:absolute right-3 sm:right-0 top-14 sm:top-auto sm:mt-2 w-[180px] sm:w-[200px] lg:w-[250px] dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 rounded-lg shadow-lg z-50 max-w-[calc(100vw-1.5rem)] sm:max-w-none">
+            <button
+              className="block w-full text-left px-3 sm:px-4 lg:px-4 py-2.5 sm:py-2 lg:py-2 dark:text-white text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center transition-colors"
+              onClick={() => selectLanguage("English")}
+            >
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center space-x-2 sm:space-x-2 lg:space-x-2">
+                  <Image
+                    src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746538734/united_kingdom_zud79x.png"
+                    alt="English"
+                    width={20}
+                    height={20}
+                    className="rounded-full w-5 h-5 sm:w-5 sm:h-5 lg:w-5 lg:h-5 flex-shrink-0"
+                  />
+                  <span className="text-sm sm:text-sm lg:text-sm">English</span>
+                </div>
+                {selectedLanguage === "English" && (
+                  <div className="w-4 h-4 sm:w-4 sm:h-4 lg:w-4 lg:h-4 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-4 lg:h-4 text-[#1D8751]" />
+                  </div>
+                )}
+              </div>
+            </button>
+            <button
+              className="block w-full text-left px-3 sm:px-4 lg:px-4 py-2.5 sm:py-2 lg:py-2 dark:text-white text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center transition-colors"
+              onClick={() => selectLanguage("Somali")}
+            >
+              <div className="flex items-center justify-between w-full gap-2 sm:gap-4 lg:gap-8">
+                <div className="flex items-center space-x-2 sm:space-x-2 lg:space-x-2">
+                  <Image
+                    src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747216099/somali_jq5e97.png"
+                    alt="Somali"
+                    width={20}
+                    height={20}
+                    className="rounded-full w-5 h-5 sm:w-5 sm:h-5 lg:w-5 lg:h-5 flex-shrink-0"
+                  />
+                  <span className="text-sm sm:text-sm lg:text-sm">Somali</span>
+                </div>
+                {selectedLanguage === "Somali" && (
+                  <div className="w-4 h-4 sm:w-4 sm:h-4 lg:w-4 lg:h-4 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-[10px] sm:text-[10px] lg:text-[10px] text-[#1D8751]">✓</span>
+                  </div>
+                )}
+              </div>
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+const ThemeSelector = ({ isTransparentNavbar }: { isTransparentNavbar: boolean }) => {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
+
+  const toggleDropdown = () => {
+    setDropdownOpen(!dropdownOpen);
+  };
+
+  const selectTheme = (selectedTheme: "light" | "dark" | "deem") => {
+    if (selectedTheme === "deem") {
+      // Don't update anything for deem yet - just close dropdown
+      setDropdownOpen(false);
+      return;
+    }
+    setTheme(selectedTheme);
+    setDropdownOpen(false);
+  };
+
+  const getThemeIcon = () => {
+    if (theme === "dark") {
+      return (
+        <svg
+          className="w-5 h-5 sm:w-6 sm:h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+          />
+        </svg>
+      );
+    } else {
+      return (
+        <svg
+          className="w-5 h-5 sm:w-6 sm:h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+          />
+        </svg>
+      );
+    }
+  };
+
+  return (
+    <div className="relative">
+      <div
+        className={`flex items-center justify-center cursor-pointer min-h-[44px] sm:min-h-0 lg:min-h-0 px-1 sm:px-0 lg:px-0 ${
+          isTransparentNavbar ? "text-white" : "dark:text-white text-gray-900"
+        }`}
+        onClick={toggleDropdown}
+      >
+        {getThemeIcon()}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="12"
+          height="12"
+          className={`ml-1 sm:ml-1 lg:ml-1 w-3 h-3 sm:w-4 sm:h-4 lg:w-4 lg:h-4 ${
+            isTransparentNavbar ? "fill-white" : "fill-current"
+          }`}
+          viewBox="0 0 16 16"
+        >
+          <path d="M1.5 6.5l6 6 6-6h-12z" />
+        </svg>
+      </div>
+      {dropdownOpen && (
+        <>
+          {/* Backdrop for mobile */}
           <div 
             className="fixed inset-0 z-40 sm:hidden"
             onClick={() => setDropdownOpen(false)}
           />
           <div className="fixed sm:absolute right-3 sm:right-0 top-14 sm:top-auto sm:mt-2 w-[180px] sm:w-[200px] lg:w-[250px] dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 rounded-lg shadow-lg z-50 max-w-[calc(100vw-1.5rem)] sm:max-w-none">
-          <button
+            <button
               className="block w-full text-left px-3 sm:px-4 lg:px-4 py-2.5 sm:py-2 lg:py-2 dark:text-white text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center transition-colors"
-            onClick={() => selectLanguage("English")}
-          >
+              onClick={() => selectTheme("light")}
+            >
               <div className="flex items-center justify-between w-full">
                 <div className="flex items-center space-x-2 sm:space-x-2 lg:space-x-2">
-                <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746538734/united_kingdom_zud79x.png"
-                  alt="English"
-                  width={20}
-                  height={20}
-                    className="rounded-full w-5 h-5 sm:w-5 sm:h-5 lg:w-5 lg:h-5 flex-shrink-0"
-                />
-                  <span className="text-sm sm:text-sm lg:text-sm">English</span>
-              </div>
-              {selectedLanguage === "English" && (
+                  <svg
+                    className="w-5 h-5 sm:w-5 sm:h-5 lg:w-5 lg:h-5 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                    />
+                  </svg>
+                  <span className="text-sm sm:text-sm lg:text-sm">Light</span>
+                </div>
+                {theme === "light" && (
                   <div className="w-4 h-4 sm:w-4 sm:h-4 lg:w-4 lg:h-4 rounded-full flex items-center justify-center flex-shrink-0">
                     <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-4 lg:h-4 text-[#1D8751]" />
-                </div>
-              )}
-            </div>
-          </button>
-          <button
-              className="block w-full text-left px-3 sm:px-4 lg:px-4 py-2.5 sm:py-2 lg:py-2 dark:text-white text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center transition-colors"
-            onClick={() => selectLanguage("Somali")}
-          >
-              <div className="flex items-center justify-between w-full gap-2 sm:gap-4 lg:gap-8">
-                <div className="flex items-center space-x-2 sm:space-x-2 lg:space-x-2">
-                <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747216099/somali_jq5e97.png"
-                  alt="Somali"
-                  width={20}
-                  height={20}
-                    className="rounded-full w-5 h-5 sm:w-5 sm:h-5 lg:w-5 lg:h-5 flex-shrink-0"
-                />
-                  <span className="text-sm sm:text-sm lg:text-sm">Somali</span>
+                  </div>
+                )}
               </div>
-              {selectedLanguage === "Somali" && (
-                  <div className="w-4 h-4 sm:w-4 sm:h-4 lg:w-4 lg:h-4 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-[10px] sm:text-[10px] lg:text-[10px] text-[#1D8751]">✓</span>
+            </button>
+            <button
+              className="block w-full text-left px-3 sm:px-4 lg:px-4 py-2.5 sm:py-2 lg:py-2 dark:text-white text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center transition-colors"
+              onClick={() => selectTheme("dark")}
+            >
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center space-x-2 sm:space-x-2 lg:space-x-2">
+                  <svg
+                    className="w-5 h-5 sm:w-5 sm:h-5 lg:w-5 lg:h-5 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                    />
+                  </svg>
+                  <span className="text-sm sm:text-sm lg:text-sm">Dark</span>
                 </div>
-              )}
-            </div>
-          </button>
-        </div>
+                {theme === "dark" && (
+                  <div className="w-4 h-4 sm:w-4 sm:h-4 lg:w-4 lg:h-4 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-4 lg:h-4 text-[#1D8751]" />
+                  </div>
+                )}
+              </div>
+            </button>
+            <button
+              className="block w-full text-left px-3 sm:px-4 lg:px-4 py-2.5 sm:py-2 lg:py-2 dark:text-white text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center transition-colors"
+              onClick={() => selectTheme("deem")}
+            >
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center space-x-2 sm:space-x-2 lg:space-x-2">
+                  <svg
+                    className="w-5 h-5 sm:w-5 sm:h-5 lg:w-5 lg:h-5 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                    />
+                  </svg>
+                  <span className="text-sm sm:text-sm lg:text-sm">Deem</span>
+                </div>
+              </div>
+            </button>
+          </div>
         </>
       )}
     </div>
@@ -300,6 +468,10 @@ export default function Navbar() {
   const toggleProfileModal = (e: React.MouseEvent) => {
     e.preventDefault();
     setProfileModalOpen(!profileModalOpen);
+  };
+
+  const closeProfileModal = () => {
+    setProfileModalOpen(false);
   };
 
   const handleLogout = () => {
@@ -408,6 +580,7 @@ export default function Navbar() {
   // Use theme context instead of manual localStorage parsing
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [showImagePreview, setShowImagePreview] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -447,11 +620,10 @@ export default function Navbar() {
   if (!mounted) {
     return (
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isTransparentNavbar
-            ? "bg-transparent"
-            : "bg-white dark:bg-gray-900 shadow-lg"
-        }`}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isTransparentNavbar
+          ? "bg-transparent"
+          : "bg-white dark:bg-gray-900 shadow-lg"
+          }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -469,8 +641,32 @@ export default function Navbar() {
     );
   }
 
+  const toggleImageModal = () => {
+    setShowImagePreview(prev => !prev);
+  };
+
+  const closeImageModal = () => {
+    setShowImagePreview(false);
+  };
+
+
+
   return (
     <>
+
+      {showImagePreview && (
+        <div
+          onClick={closeImageModal}
+          className="fixed inset-0 bg-black/70 flex items-center justify-center z-80 transition-opacity duration-100"
+        >
+          <img
+            src={userProfile?.photo || cachedProfilePhoto || ""}
+            alt="Profile enlarged"
+            className="max-w-[90%] max-h-[90%] rounded-lg shadow-lg"
+            onClick={e => e.stopPropagation()} // Prevent closing while clicking the image itself
+          />
+        </div>
+      )}
       <nav
         className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-3 py-3 sm:px-4 sm:py-4 md:px-12 2xl:px-20 transition-all duration-300 ${getNavbarBackground()}`}
       >
@@ -528,9 +724,9 @@ export default function Navbar() {
         </div>
 
         {/* Desktop Auth Buttons */}
-        <div className="hidden md:flex items-center space-x-3 lg:space-x-4 2xl:space-x-6 relative">
+        <div className="hidden md:flex items-center space-x-3 lg:space-x-4 2xl:space-x-6 relative flex-shrink-0">
           {isAuthenticated ? (
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 flex-shrink-0">
               <div className="" ref={depositDropdownRef}>
                 <button
                   onClick={toggleDepositDropdown}
@@ -607,12 +803,85 @@ export default function Navbar() {
                           </div>
                           <div className="flex-1">
                             <h4 className="dark:text-white text-gray-900 font-medium text-base mb-1">
-                              Exchange
+                              Express Exchange
                             </h4>
                             <p className="dark:text-gray-400 text-gray-600 text-sm">
                               Trade cryptocurrencies on the exchange with
                               advanced tools and features for optimal
                               transactions
+                            </p>
+                          </div>
+                          <svg
+                            className="w-5 h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                        </div>
+                      </Link>
+
+                      {/* MoneyX Option */}
+                      <Link
+                        href="/dashboard/exchange"
+                        className="block mb-3"
+                        onClick={() => {
+                          setDepositDropdownOpen(false);
+                        }}
+                      >
+                        <div className="flex items-center transition-colors duration-200 group">
+                          <div className="w-10 h-10 flex items-center justify-center mr-4">
+                            <svg
+                              width="100"
+                              height="100"
+                              viewBox="0 0 100 100"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <rect
+                                x="20"
+                                y="25"
+                                width="60"
+                                height="40"
+                                rx="5"
+                                fill="none"
+                                stroke="#1D8751"
+                                strokeWidth="4"
+                              />
+                              <path
+                                d="M30 45 L40 55 L70 25"
+                                stroke="#1D8751"
+                                strokeWidth="4"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                fill="none"
+                              />
+                              <circle
+                                cx="50"
+                                cy="70"
+                                r="8"
+                                fill="#1D8751"
+                              />
+                              <path
+                                d="M50 65 L50 75 M45 70 L55 70"
+                                stroke="white"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                              />
+                            </svg>
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="dark:text-white text-gray-900 font-medium text-base mb-1">
+                              MoneyX
+                            </h4>
+                            <p className="dark:text-gray-400 text-gray-600 text-sm">
+                              Transfer money between different payment methods
+                              quickly and securely
                             </p>
                           </div>
                           <svg
@@ -725,7 +994,7 @@ export default function Navbar() {
                       {/* Swap Option */}
                       <Link
                         href="/dashboard/swap"
-                        className="block mb-3"
+                        className="block"
                         onClick={() => {
                           setDepositDropdownOpen(false);
                         }}
@@ -788,85 +1057,13 @@ export default function Navbar() {
                           </svg>
                         </div>
                       </Link>
-
-                      {/* MoneyX Option */}
-                      <Link
-                        href="/dashboard/exchange"
-                        className="block"
-                        onClick={() => {
-                          setDepositDropdownOpen(false);
-                        }}
-                      >
-                        <div className="flex items-center transition-colors duration-200 group">
-                          <div className="w-10 h-10 flex items-center justify-center mr-4">
-                            <svg
-                              width="100"
-                              height="100"
-                              viewBox="0 0 100 100"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <rect
-                                x="20"
-                                y="25"
-                                width="60"
-                                height="40"
-                                rx="5"
-                                fill="none"
-                                stroke="#1D8751"
-                                strokeWidth="4"
-                              />
-                              <path
-                                d="M30 45 L40 55 L70 25"
-                                stroke="#1D8751"
-                                strokeWidth="4"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                fill="none"
-                              />
-                              <circle
-                                cx="50"
-                                cy="70"
-                                r="8"
-                                fill="#1D8751"
-                              />
-                              <path
-                                d="M50 65 L50 75 M45 70 L55 70"
-                                stroke="white"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                              />
-                            </svg>
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="dark:text-white text-gray-900 font-medium text-base mb-1">
-                              MoneyX
-                            </h4>
-                            <p className="dark:text-gray-400 text-gray-600 text-sm">
-                              Transfer money between different payment methods
-                              quickly and securely
-                            </p>
-                          </div>
-                          <svg
-                            className="w-5 h-5 dark:text-gray-400 text-gray-500 group-hover:text-[#1D8751] transition-colors"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
-                            />
-                          </svg>
-                        </div>
-                      </Link>
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="relative" ref={profileModalRef}>
+              <div className="relative">
+              <div className="relative flex-shrink-0" ref={profileModalRef}>
                 <button
                   onClick={toggleProfileModal}
                   className="text-white focus:outline-none relative"
@@ -878,7 +1075,6 @@ export default function Navbar() {
                       className="w-10 h-10 rounded-full object-cover"
                       onError={() => {
                         setProfileImageError(true);
-                        // Clear invalid cached photo
                         if (typeof window !== "undefined") {
                           localStorage.removeItem("profile_photo");
                           setCachedProfilePhoto(null);
@@ -920,50 +1116,52 @@ export default function Navbar() {
                       {/* User Info */}
                       <div className="flex items-center mb-4 pb-4 border-b dark:border-[#35353E] border-gray-200">
                         <div className="mr-3 relative">
-                          {(userProfile?.photo || cachedProfilePhoto) && !profileImageError ? (
-                            <>
-                              <img
-                                src={userProfile?.photo || cachedProfilePhoto || ""}
-                                alt="Profile"
-                                className="w-12 h-12 rounded-full object-cover"
-                                onError={() => {
-                                  setProfileImageError(true);
-                                  // Clear invalid cached photo
-                                  if (typeof window !== "undefined") {
-                                    localStorage.removeItem("profile_photo");
-                                    setCachedProfilePhoto(null);
-                                  }
-                                }}
-                              />
-                              {/* Verification Badge */}
-                              <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 z-10">
-                                <svg width="20" height="20" viewBox="0 0 20 20" className="absolute">
-                                  <circle cx="10" cy="10" r="9" fill="white" />
-                                  <circle cx="10" cy="10" r="7.5" fill="#1D8751" />
-                                  {/* Serrated edge using small circles */}
-                                  {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(angle => {
-                                    const rad = (angle * Math.PI) / 180;
-                                    const x = 10 + 8.5 * Math.cos(rad);
-                                    const y = 10 + 8.5 * Math.sin(rad);
-                                    return <circle key={angle} cx={x} cy={y} r="1" fill="white" />;
-                                  })}
-                                </svg>
-                                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg" className="relative z-10">
-                                  <path
-                                    d="M2 5L4 7L8 3"
-                                    stroke="#FFFFFF"
-                                    strokeWidth="1.5"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  />
-                                </svg>
-                              </span>
-                            </>
-                          ) : (
-                            <div className="w-12 h-12 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white">
-                              <User className="w-6 h-6 text-white" />
-                            </div>
-                          )}
+                          <button className="relative" onClick={toggleImageModal}>
+                            {(userProfile?.photo || cachedProfilePhoto) && !profileImageError ? (
+                              <>
+                                <img
+                                  src={userProfile?.photo || cachedProfilePhoto || ""}
+                                  alt="Profile"
+                                  className="w-12 h-12 rounded-full object-cover"
+                                  onError={() => {
+                                    setProfileImageError(true);
+                                    // Clear invalid cached photo
+                                    if (typeof window !== "undefined") {
+                                      localStorage.removeItem("profile_photo");
+                                      setCachedProfilePhoto(null);
+                                    }
+                                  }}
+                                />
+                                {/* Verification Badge */}
+                                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 z-10">
+                                  <svg width="20" height="20" viewBox="0 0 20 20" className="absolute">
+                                    <circle cx="10" cy="10" r="9" fill="white" />
+                                    <circle cx="10" cy="10" r="7.5" fill="#1D8751" />
+                                    {/* Serrated edge using small circles */}
+                                    {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(angle => {
+                                      const rad = (angle * Math.PI) / 180;
+                                      const x = 10 + 8.5 * Math.cos(rad);
+                                      const y = 10 + 8.5 * Math.sin(rad);
+                                      return <circle key={angle} cx={x} cy={y} r="1" fill="white" />;
+                                    })}
+                                  </svg>
+                                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg" className="relative z-10">
+                                    <path
+                                      d="M2 5L4 7L8 3"
+                                      stroke="#FFFFFF"
+                                      strokeWidth="1.5"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                  </svg>
+                                </span>
+                              </>
+                            ) : (
+                              <div className="w-12 h-12 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white">
+                                <User className="w-6 h-6 text-white" />
+                              </div>
+                            )}
+                          </button>
                         </div>
                         <div>
                           <h4 className="dark:text-white text-gray-800 font-medium text-sm">
@@ -977,7 +1175,7 @@ export default function Navbar() {
 
                       {/* Menu Items */}
                       <div className="space-y-2">
-                       
+
 
                         <Link
                           href="/dashboard/account"
@@ -1014,17 +1212,16 @@ export default function Navbar() {
 
           <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4 2xl:space-x-6">
             <LanguageSelector />
-            <ThemeToggle />
+            <ThemeSelector isTransparentNavbar={isTransparentNavbar} />
           </div>
         </div>
 
         {/* Mobile Menu Button */}
         <button
-          className={`md:hidden p-1.5 sm:p-2 rounded-md focus:outline-none ${
-            isTransparentNavbar
-              ? "text-white" // White when navbar is transparent
-              : "dark:text-white text-gray-900" // Theme-based when navbar has background
-          }`}
+          className={`md:hidden p-1.5 sm:p-2 rounded-md focus:outline-none ${isTransparentNavbar
+            ? "text-white" // White when navbar is transparent
+            : "dark:text-white text-gray-900" // Theme-based when navbar has background
+            }`}
           onClick={toggleMobileMenu}
         >
           {mobileMenuOpen ? (
@@ -1067,8 +1264,8 @@ export default function Navbar() {
               About Us
             </MobileNavLink>
             <MobileNavLink href="/contactUs" onClick={toggleMobileMenu} pathname={pathname}>
-                Contact us
-              </MobileNavLink>
+              Contact us
+            </MobileNavLink>
 
             <div className="flex flex-col space-y-4 pt-4">
               {isAuthenticated ? (
@@ -1105,7 +1302,7 @@ export default function Navbar() {
                           strokeWidth="2"
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                      />
+                        />
                       </svg>
                       Deposit
                     </button>
@@ -1179,7 +1376,7 @@ export default function Navbar() {
                                   />
                                 </svg>
                               </div>
-                  </Link>
+                            </Link>
 
                             {/* P2P Option */}
                             <Link
@@ -1628,7 +1825,7 @@ export default function Navbar() {
 
             <div className="flex items-center justify-center gap-6 pt-4 border-t dark:border-gray-700 border-gray-200">
               <LanguageSelector />
-              <ThemeToggle />
+              <ThemeSelector isTransparentNavbar={isTransparentNavbar} />
             </div>
           </div>
         </>

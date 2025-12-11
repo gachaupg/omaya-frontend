@@ -45,7 +45,7 @@ export default function DashboardLayout({
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 w-full h-full max-w-full overflow-x-hidden">
+      <div className="flex-1 w-full h-full max-w-full overflow-x-hidden box-border">
         <AnimatePresence mode="wait">
           <motion.div
             key={pathname} // Use pathname for proper React reconciliation (fixes performance issue)
@@ -53,7 +53,7 @@ export default function DashboardLayout({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.15 }} // Reduced from 0.3s to 0.15s for snappier feel
-            className="page-shell mt-[68px] sm:mt-[68px] md:mt-20 w-full max-w-full px-0 sm:px-0"
+            className="page-shell mt-[68px] sm:mt-[68px] md:mt-20 w-full max-w-full px-0 sm:px-0 overflow-x-hidden box-border"
           >
             {children}
           </motion.div>

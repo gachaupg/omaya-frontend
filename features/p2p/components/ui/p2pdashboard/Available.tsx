@@ -27,25 +27,25 @@ const Available = () => {
   return (
     <div className="mt-3">
       <div
-        className="rounded-[24px] border dark:border-[#35353E] border-gray-300 overflow-hidden bg-black dark:bg-black"
+        className="rounded-[24px] border dark:border-[#35353E] border-gray-300 overflow-hidden bg-white dark:bg-black"
       >
         <div className="w-full h-full">
           {/* Header */}
           <div className="grid grid-cols-3 px-4 sm:px-6 py-2 sm:py-3 dark:bg-[var(--card-color)] bg-gray-50">
-            <div className="text-xs sm:text-sm dark:text-[#788099] text-[#788099] font-medium">
+            <div className="text-xs sm:text-sm dark:text-[#788099] text-gray-600 font-medium">
               Asset
             </div>
-            <div className="text-xs sm:text-sm text-center dark:text-[#788099] text-[#788099] font-medium">
+            <div className="text-xs sm:text-sm text-center dark:text-[#788099] text-gray-600 font-medium">
               Available
             </div>
-            <div className="text-xs sm:text-sm text-center dark:text-[#788099] text-[#788099] font-medium whitespace-normal leading-tight">
+            <div className="text-xs sm:text-sm text-center dark:text-[#788099] text-gray-600 font-medium whitespace-normal leading-tight">
               In Escrow / Locked
             </div>
           </div>
 
           {/* Asset Row */}
           <div
-            className="grid grid-cols-3 px-4 sm:px-6 py-3 sm:py-4 bg-black dark:bg-black"
+            className="grid grid-cols-3 px-4 sm:px-6 py-3 sm:py-4 bg-white dark:bg-black"
           >
             {/* Asset */}
             <div className="flex items-center gap-3">
@@ -55,20 +55,20 @@ const Available = () => {
                 className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white"
               />
               <div>
-                <div className="font-medium text-sm sm:text-base text-white dark:text-white">
+                <div className="font-medium text-sm sm:text-base text-gray-900 dark:text-white">
                   USDT
                 </div>
-                <div className="text-[10px] sm:text-xs text-[#788099] dark:text-[#788099] mt-0.5">
+                <div className="text-[10px] sm:text-xs text-gray-600 dark:text-[#788099] mt-0.5">
                   Tether US
                 </div>
               </div>
             </div>
             {/* Available */}
-            <div className="text-center self-center text-sm sm:text-base text-white dark:text-white font-medium">
+            <div className="text-center self-center text-sm sm:text-base text-gray-900 dark:text-white font-medium">
               {formatNumber(availableBalance)}
             </div>
             {/* Locked */}
-            <div className="text-center self-center text-sm sm:text-base text-white dark:text-white font-medium">
+            <div className="text-center self-center text-sm sm:text-base text-gray-900 dark:text-white font-medium">
               {formatNumber(totalLocked)}
             </div>
           </div>
