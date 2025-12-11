@@ -48,9 +48,10 @@ const NavLink = ({
   return (
     <Link
       href={href}
-      className={`${active
-        ? "text-[#1D8751]" // Active link in green
-        : isTransparent
+      className={`${
+        active
+          ? "text-[#1D8751]" // Active link in green
+          : isTransparent
           ? "text-gray-900 dark:text-white" // Dark in light mode, white in dark mode when navbar is transparent
           : "dark:text-white text-gray-900" // Theme-based when navbar has background
       } hover:text-[#1D8751] transition-colors duration-200 text-xs md:text-sm lg:text-base xl:text-base 2xl:text-lg`}
@@ -1046,7 +1047,6 @@ export default function Navbar() {
                 )}
               </div>
 
-              <div className="relative">
               <div className="relative flex-shrink-0" ref={profileModalRef}>
                 <button
                   onClick={toggleProfileModal}
@@ -1202,10 +1202,11 @@ export default function Navbar() {
 
         {/* Mobile Menu Button */}
         <button
-          className={`md:hidden p-1.5 sm:p-2 rounded-md focus:outline-none ${isTransparentNavbar
-            ? "text-white" // White when navbar is transparent
-            : "dark:text-white text-gray-900" // Theme-based when navbar has background
-            }`}
+          className={`md:hidden p-1.5 sm:p-2 rounded-md focus:outline-none ${
+            isTransparentNavbar
+              ? "text-white" // White when navbar is transparent
+              : "dark:text-white text-gray-900" // Theme-based when navbar has background
+          }`}
           onClick={toggleMobileMenu}
         >
           {mobileMenuOpen ? (
