@@ -17,6 +17,7 @@ import { showToast } from "@/lib/utils/toast";
 import { usePaymentMethodsDisplay } from "@/features/express/hooks/useDataDisplay";
 
 interface TransferFormProps {
+  isHomePage?: boolean;
   onTransfer?: (transactionData: {
     fromPaymentMethod: any;
     toPaymentMethod: any;
@@ -28,7 +29,7 @@ interface TransferFormProps {
   }) => void;
 }
 
-export default function TransferForm({ onTransfer }: TransferFormProps) {
+export default function TransferForm({ isHomePage, onTransfer }: TransferFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const { isDark } = useTheme();
 
