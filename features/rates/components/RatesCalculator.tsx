@@ -1906,12 +1906,12 @@ const RatesCalculator = () => {
         <p className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm font-medium mb-2`}>
           {t("rates.amountAndFees", "Amount & Fees")}
         </p>
-        <div className="flex flex-col lg:flex-row gap-4 items-stretch">
+        <div className="flex flex-col lg:flex-row gap-7 items-center">
           <div className="flex-1 flex flex-col justify-start">
             <span className={`${isDark ? "text-white" : "text-[#1F2937]"} text-sm mb-2`}>
               {t("rates.netAmount", "Net Amount to Transfer")}
             </span>
-            <div className="w-full">
+            <div className="max-w-xl">
               <div className={`w-full ${isDark ? "bg-[#35353E]" : "bg-white"} border ${isDark ? "border-[#35353E]" : "border-[#E8EFF5]"} rounded-2xl flex items-center px-2 py-2`}>
                 <button className="flex-1 flex items-center justify-center bg-transparent">
                   <span className={`${isDark ? "text-[#BDF4D8]" : "text-[#051015]"} text-sm ml-4`}>
@@ -1930,8 +1930,8 @@ const RatesCalculator = () => {
             </div>
           </div>
           {/* Right: Fee Breakdown */}
-          <div className={`flex flex-col justify-between min-w-[220px] ${isDark ? "bg-[#1D1D23]" : "bg-white"} border ${isDark ? "border-[#35353E]" : "border-[#E8EFF5]"} rounded-lg px-4 py-3`}>
-            <div className="flex justify-between text-sm mb-1">
+          <div className={`max-w-lg flex flex-col justify-between  ${isDark ? "bg-[#1D1D23]" : "bg-white"} border ${isDark ? "border-accent" : "border-[#E8EFF5]"} rounded-md px-4 py-3`}>
+            <div className="flex justify-between gap-20 text-sm mb-1">
               <span className={isDark ? "text-[#E8EFF5]" : "text-[#051015]"}>
                 {t("rates.commission", "Commission:")}{" "}
                 {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.omaya_fee_percentage 
