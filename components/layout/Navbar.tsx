@@ -52,7 +52,7 @@ const NavLink = ({
           : isTransparent
           ? "text-gray-900 dark:text-white" // Dark in light mode, white in dark mode when navbar is transparent
           : "dark:text-white text-gray-900" // Theme-based when navbar has background
-      } hover:text-[#1D8751] transition-colors duration-200 text-sm lg:text-base 2xl:text-lg`}
+      } hover:text-[#1D8751] transition-colors duration-200 text-xs md:text-sm lg:text-base xl:text-base 2xl:text-lg`}
     >
       {children}
     </Link>
@@ -472,9 +472,9 @@ export default function Navbar() {
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-3 py-3 sm:px-4 sm:py-4 md:px-12 2xl:px-20 transition-all duration-300 ${getNavbarBackground()}`}
+        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-3 lg:px-8 lg:py-4 xl:px-12 2xl:px-20 transition-all duration-300 ${getNavbarBackground()}`}
       >
-        <div className="flex items-center min-w-0">
+        <div className="flex items-center min-w-0 flex-1">
           <Link href="/" className="mr-6 sm:mr-12 md:mr-20 flex-shrink-0">
             {/* Optimized logo selection using memoized config */}
             {logoConfig && (
@@ -490,7 +490,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-5 lg:space-x-6 2xl:space-x-8">
+          <div className="hidden md:flex space-x-2 md:space-x-3 lg:space-x-4 xl:space-x-5 2xl:space-x-8 flex-shrink-0">
             <NavLink href="/" isTransparent={isTransparentNavbar} pathname={pathname}>
               Home
             </NavLink>
@@ -528,18 +528,16 @@ export default function Navbar() {
         </div>
 
         {/* Desktop Auth Buttons */}
-        <div className="hidden md:flex items-center space-x-3 lg:space-x-4 2xl:space-x-6 relative">
+        <div className="hidden md:flex items-center space-x-2 md:space-x-2.5 lg:space-x-3 xl:space-x-4 2xl:space-x-6 relative flex-shrink-0">
           {isAuthenticated ? (
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 md:space-x-3 lg:space-x-4">
               <div className="" ref={depositDropdownRef}>
                 <button
                   onClick={toggleDepositDropdown}
-                  className="flex items-center bg-[#1D8751] hover:bg-[#13B562] text-white px-6 py-2 rounded-[10px] transition-colors duration-200 text-sm md:text-base 2xl:text-lg"
+                  className="flex items-center bg-[#1D8751] hover:bg-[#13B562] text-white px-3 py-1.5 md:px-4 md:py-2 lg:px-5 lg:py-2 xl:px-6 rounded-[10px] transition-colors duration-200 text-xs md:text-sm lg:text-base xl:text-base 2xl:text-lg"
                 >
                   <svg
-                    className="mr-2"
-                    width="20"
-                    height="20"
+                    className="mr-1 md:mr-1.5 lg:mr-2 w-3.5 h-3.5 md:w-4 md:h-4 lg:w-5 lg:h-5"
                     fill="none"
                     viewBox="0 0 24 24"
                   >
@@ -1012,7 +1010,7 @@ export default function Navbar() {
             </>
           )}
 
-          <div className="flex items-center space-x-2 sm:space-x-3 lg:space-x-4 2xl:space-x-6">
+          <div className="flex items-center space-x-1.5 sm:space-x-2 md:space-x-2.5 lg:space-x-3 xl:space-x-4 2xl:space-x-6">
             <LanguageSelector />
             <ThemeToggle />
           </div>

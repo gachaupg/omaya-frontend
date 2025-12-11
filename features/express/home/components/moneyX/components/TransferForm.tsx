@@ -6,15 +6,15 @@ import { AppDispatch } from "@/store";
 import {
   fetchPublicPaymentMethods,
   fetchAdminPaymentMethods,
-} from "../../p2p/slices/paymentMethodsSlice";
+} from "@/features/p2p/slices/paymentMethodsSlice";
 import {
   createMoneyXTransaction,
   updateMoneyXTransaction,
 } from "../slices/moneyXSlice";
 import { useTheme } from "@/context/theme";
 import CustomSelect from "@/components/ui/CustomSelect";
-import { showToast } from "../../../lib/utils/toast";
-import { usePaymentMethodsDisplay } from "../../express/hooks/useDataDisplay";
+import { showToast } from "@/lib/utils/toast";
+import { usePaymentMethodsDisplay } from "@/features/express/hooks/useDataDisplay";
 
 interface TransferFormProps {
   onTransfer?: (transactionData: {

@@ -191,7 +191,36 @@ const Stats = ({ onSupportClick }: StatsProps) => {
             </span>
             <span className="flex items-center gap-1.5 text-[#1D8751] text-[8px] sm:text-xs font-medium whitespace-nowrap">
               <span className="shrink-0">Verified Profile</span>
-              <VerifiedBadge size={16} />
+              <span className="inline-flex items-center justify-center w-5 h-5 flex-shrink-0" style={{position: 'relative'}}>
+                      <svg width="16" height="16" viewBox="0 0 20 20" style={{position: 'absolute'}}>
+                        <circle cx="10" cy="10" r="9" fill="white" />
+                        <circle cx="10" cy="10" r="7.5" fill="#1D8751" />
+                        {/* Serrated edge using small circles */}
+                        {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(angle => {
+                          const rad = (angle * Math.PI) / 180;
+                          const x = 10 + 8.5 * Math.cos(rad);
+                          const y = 10 + 8.5 * Math.sin(rad);
+                          return <circle key={angle} cx={x} cy={y} r="1" fill="white" />;
+                        })}
+                      </svg>
+                      <svg
+                        width="10"
+                        height="10"
+                        viewBox="0 0 10 10"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        style={{position: 'relative', zIndex: 1}}
+                        className="flex-shrink-0"
+                      >
+                        <path
+                          d="M2 5L4 7L8 3"
+                          stroke="#FFFFFF"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </span>
             </span>
           </div>
         </div>
