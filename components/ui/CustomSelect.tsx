@@ -366,7 +366,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
           <div
             id={dropdownId}
             ref={dropdownContentRef}
-            className="z-[9999] bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl overflow-hidden"
+            className="z-45 bg-white dark:bg-[#1D1D23] border border-border dark:border-accent rounded-2xl shadow-xl overflow-hidden"
             role="listbox"
             style={{
               position: "fixed",
