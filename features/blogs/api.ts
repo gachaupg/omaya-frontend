@@ -8,9 +8,17 @@ import { imageBuilder } from "@/sanity/lib/client";
 import { logger } from '@/lib/utils/logger';
 
 export const blogApi = {
-  async fetchAllPosts(): Promise<BlogPost[]> {
+  async fetchAllPosts(forceRefresh: boolean = false): Promise<BlogPost[]> {
     try {
-      const response = await fetch("/api/blogs/read");
+      // Only add refresh parameter when explicitly requested
+      // Normal requests use cache for fast loading
+      const url = forceRefresh 
+        ? `/api/blogs/read?refresh=true&_t=${Date.now()}&_r=${Math.random()}` 
+        : `/api/blogs/read?_t=${Date.now()}`;
+      
+      const response = await fetch(url, {
+        cache: forceRefresh ? 'no-store' : 'default', // Only bypass browser cache when refreshing
+      });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

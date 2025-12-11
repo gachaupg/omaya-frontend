@@ -10,19 +10,26 @@ export const useBlog = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchBlogs = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  const fetchBlogs = async (forceRefresh: boolean = false) => {
+    try {
+      setLoading(true);
+      setError(null);
 
-        const response = await fetch("/api/blogs/read");
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+      // Only add refresh parameter when explicitly requested
+      // Normal requests use cache for fast loading
+      const url = forceRefresh 
+        ? `/api/blogs/read?refresh=true&_t=${Date.now()}&_r=${Math.random()}` 
+        : `/api/blogs/read?_t=${Date.now()}`;
+      
+      const response = await fetch(url, {
+        cache: forceRefresh ? 'no-store' : 'default', // Only bypass browser cache when refreshing
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-        const data = await response.json();
-        logger.debug('general', "Raw blog data:", data);
+      const data = await response.json();
+      logger.debug('general', "Raw blog data:", data);
 
         // Transform Sanity data to match UI expectations
         const transformedBlogs = data.map((blog: BlogPost, index: number) => ({
@@ -89,16 +96,23 @@ export const useBlog = () => {
       } finally {
         setLoading(false);
       }
-    };
+  };
 
+  useEffect(() => {
     fetchBlogs();
   }, []);
+
+  // Expose refresh function to allow manual cache invalidation
+  const refresh = () => {
+    fetchBlogs(true);
+  };
 
   return {
     blogs,
     news,
     loading,
     error,
+    refresh,
   };
 };
 

@@ -647,9 +647,9 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
   return (
     <div className="flex flex-col gap-1 w-full">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-1">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 w-full md:w-auto">
-          <div className="flex items-center w-full sm:w-auto bg-gray-100 dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] rounded-lg px-3 py-2 gap-2">
-            <div className="flex items-center gap-2 w-full">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full md:w-auto">
+          <div className="flex items-center w-full sm:w-auto bg-gray-100 dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-[22px] px-4 py-2.5 gap-3 min-h-[48px]">
+            <div className="flex items-center gap-3 w-full">
               <Input
                 bgColor="transparent"
                 borderColor="transparent"
@@ -657,14 +657,14 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="Enter amount"
-                className="bg-transparent border-none focus:ring-0 text-[#35353E] dark:text-white w-full text-sm"
+                className="bg-transparent border-none focus:ring-0 text-gray-900 dark:text-white w-full text-[15px] font-medium placeholder:text-gray-400 dark:placeholder:text-[#6E7081]"
               />
-              <span className="w-px h-6 bg-gray-300 dark:bg-[#35353E]" />
+              <span className="w-px h-6 bg-gray-200 dark:bg-[#35353E]" />
               <div className="relative" ref={currencyDropdownRef}>
                 <button
                   type="button"
                   onClick={() => setIsCurrencyDropdownOpen((prev) => !prev)}
-                  className="flex items-center gap-1 text-gray-900 dark:text-white text-sm font-semibold"
+                  className="flex items-center gap-1.5 text-gray-900 dark:text-white text-[15px] font-semibold whitespace-nowrap"
                 >
                   {formatCurrencyLabel(selectedCurrency)}
                   <svg
@@ -677,7 +677,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                   </svg>
                 </button>
                 {isCurrencyDropdownOpen && (
-                  <div className="absolute right-0 mt-3 rounded-2xl border border-gray-300 dark:border-[#35353E] bg-[#0F0F13] text-white shadow-2xl z-30 min-w-[140px]">
+                  <div className="absolute right-0 mt-3 rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#0F0F13] shadow-2xl z-30 min-w-[140px]">
                     {currencyOptions.map((option) => (
                       <button
                         key={option.value}
@@ -686,8 +686,8 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                           setSelectedCurrency(option.value);
                           setIsCurrencyDropdownOpen(false);
                         }}
-                        className={`w-full text-left px-4 py-2 text-sm font-semibold hover:bg-[#1b1b22] ${
-                          option.value === selectedCurrency ? "text-white" : "text-[#C7CAD1]"
+                        className={`w-full text-left px-4 py-3 text-[15px] font-medium hover:bg-gray-50 dark:hover:bg-[#1b1b22] transition-colors ${
+                          option.value === selectedCurrency ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-[#C7CAD1]"
                         }`}
                       >
                         {option.label}
@@ -699,23 +699,25 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
             </div>
           </div>
           <div
-            className="flex items-center gap-2 bg-transparent border border-gray-300 dark:border-[#35353E] rounded-lg px-3 py-2 w-full sm:w-[240px]"
+            className="flex items-center gap-3 bg-gray-100 dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-[22px] px-4 py-2.5 w-full sm:w-[260px] min-h-[48px]"
             ref={paymentDropdownRef}
           >
-            <Image
-              src="https://res.cloudinary.com/pitz/image/upload/v1746710370/coins-rotate_d278mb.png"
-              alt="Payment Method"
-              width={18}
-              height={18}
-              className="text-[#1D8751]"
-            />
+            <div className="flex h-8 w-8 items-center justify-center rounded-full border bg-[#F5F7FB]/80 border-gray-200 dark:bg-[#1B1E2B]/80 dark:border-white/10 flex-shrink-0">
+              <Image
+                src="https://res.cloudinary.com/pitz/image/upload/v1746710370/coins-rotate_d278mb.png"
+                alt="Payment Method"
+                width={20}
+                height={20}
+                className="object-contain"
+              />
+            </div>
             <div className="relative w-full min-w-[180px] sm:min-w-[210px]">
               <button
                 type="button"
                 onClick={() => setIsPaymentDropdownOpen((prev) => !prev)}
-                className={`w-full rounded-lg bg-transparent border-none focus:outline-none py-1.5 pr-10 text-sm font-semibold text-left flex items-center justify-between gap-2 ${
+                className={`w-full rounded-lg bg-transparent border-none focus:outline-none py-0 pr-8 text-[15px] font-semibold text-left flex items-center justify-between gap-2 ${
                   isPaymentSummaryDefault
-                    ? "text-[#7B7F92] dark:text-[#9CA3AF]"
+                    ? "text-gray-500 dark:text-[#7F889F]"
                     : "text-gray-900 dark:text-white"
                 }`}
               >
@@ -730,7 +732,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                 </svg>
               </button>
               {isPaymentDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-3 rounded-2xl border border-gray-300 dark:border-[#35353E] bg-[#0F0F13] text-white shadow-2xl z-30 max-h-72 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-3 rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#0F0F13] shadow-2xl z-30 max-h-72 overflow-y-auto">
                   {paymentMethodOptions.map((option) => {
                     const isSelected =
                       option.value === ""
@@ -741,19 +743,19 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                         key={option.value || option.label}
                         type="button"
                         onClick={() => handlePaymentSelection(option.value)}
-                        className={`w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-[#1b1b22] ${
-                          isSelected ? "text-white" : "text-[#C7CAD1]"
+                        className={`w-full flex items-center gap-3 px-5 py-3.5 text-left hover:bg-gray-50 dark:hover:bg-[#1b1b22] transition-colors ${
+                          isSelected ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-[#C7CAD1]"
                         }`}
                       >
                         <span
-                          className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                            isSelected ? "border-[#4A4A56] bg-[#1D8751]" : "border-[#4A4A56]"
+                          className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                            isSelected ? "border-[#1D8751] bg-[#1D8751]" : "border-gray-300 dark:border-[#4A4A56]"
                           }`}
                         >
                           {isSelected && (
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
-                              className="h-3 w-3 text-white"
+                              className="h-3.5 w-3.5 text-white"
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="currentColor"
@@ -763,7 +765,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                             </svg>
                           )}
                         </span>
-                        <span className="text-sm font-semibold">{option.label}</span>
+                        <span className="text-[15px] font-medium">{option.label}</span>
                       </button>
                     );
                   })}
@@ -773,23 +775,25 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
           </div>
 
           <div
-            className="flex items-center gap-2 bg-transparent border border-gray-300 dark:border-[#35353E] rounded-lg px-3 py-2 w-full sm:w-[240px]"
+            className="flex items-center gap-3 bg-gray-100 dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-[22px] px-4 py-2.5 w-full sm:w-[260px] min-h-[48px]"
             ref={providerDropdownRef}
           >
-            <Image
-              src="https://res.cloudinary.com/pitz/image/upload/v1763535952/tdesign_undertake-transaction_s00yks.png"
-              alt="Bank Provider"
-              width={18}
-              height={18}
-              className="text-[#1D8751]"
-            />
+            <div className="flex h-8 w-8 items-center justify-center rounded-full border bg-[#F5F7FB]/80 border-gray-200 dark:bg-[#1B1E2B]/80 dark:border-white/10 flex-shrink-0">
+              <Image
+                src="https://res.cloudinary.com/pitz/image/upload/v1763535952/tdesign_undertake-transaction_s00yks.png"
+                alt="Bank Provider"
+                width={20}
+                height={20}
+                className="object-contain"
+              />
+            </div>
             <div className="relative w-full min-w-[180px] sm:min-w-[210px]">
               <button
                 type="button"
                 onClick={() => setIsProviderDropdownOpen((prev) => !prev)}
-                className={`w-full rounded-lg bg-transparent border-none focus:outline-none py-1.5 pr-10 text-sm font-semibold text-left flex items-center justify-between gap-2 ${
+                className={`w-full rounded-lg bg-transparent border-none focus:outline-none py-0 pr-8 text-[15px] font-semibold text-left flex items-center justify-between gap-2 ${
                   isProviderSummaryDefault
-                    ? "text-[#7B7F92] dark:text-[#9CA3AF]"
+                    ? "text-gray-500 dark:text-[#7F889F]"
                     : "text-gray-900 dark:text-white"
                 }`}
               >
@@ -804,7 +808,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                 </svg>
               </button>
               {isProviderDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-3 rounded-2xl border border-gray-300 dark:border-[#35353E] bg-[#0F0F13] text-white shadow-2xl z-30 max-h-72 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-3 rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#0F0F13] shadow-2xl z-30 max-h-72 overflow-y-auto">
                   {providerOptions.map((option) => {
                     const isSelected =
                       option.value === ""
@@ -815,19 +819,19 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                         key={option.value || option.label}
                         type="button"
                         onClick={() => handleProviderSelection(option.value)}
-                        className={`w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-[#1b1b22] ${
-                          isSelected ? "text-white" : "text-[#C7CAD1]"
+                        className={`w-full flex items-center gap-3 px-5 py-3.5 text-left hover:bg-gray-50 dark:hover:bg-[#1b1b22] transition-colors ${
+                          isSelected ? "text-gray-900 dark:text-white" : "text-gray-600 dark:text-[#C7CAD1]"
                         }`}
                       >
                         <span
-                          className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                            isSelected ? "border-[#4A4A56] bg-[#1D8751]" : "border-[#4A4A56]"
+                          className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                            isSelected ? "border-[#1D8751] bg-[#1D8751]" : "border-gray-300 dark:border-[#4A4A56]"
                           }`}
                         >
                           {isSelected && (
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
-                              className="h-3 w-3 text-white"
+                              className="h-3.5 w-3.5 text-white"
                               viewBox="0 0 24 24"
                               fill="none"
                               stroke="currentColor"
@@ -837,7 +841,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                             </svg>
                           )}
                         </span>
-                        <span className="text-sm font-semibold">{option.label}</span>
+                        <span className="text-[15px] font-medium">{option.label}</span>
                       </button>
                     );
                   })}
@@ -849,15 +853,15 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
             <button
               type="button"
               onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
-              className="w-10 h-10 bg-gray-100 dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] rounded-lg flex items-center justify-center text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
+              className="w-12 h-12 bg-gray-100 dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] rounded-[22px] flex items-center justify-center text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] transition-all hover:border-[#1D8751]"
             >
-              <FaFilter className="text-[#1D8751]" size={18} />
+              <FaFilter className="text-[#1D8751]" size={20} />
             </button>
             {isFilterDropdownOpen && (
-              <div className="absolute top-full right-0 mt-3 border border-gray-300 dark:border-[#35353E] rounded-xl bg-[#0F0F13] text-white shadow-2xl z-40 min-w-[280px] p-3 space-y-3">
+              <div className="absolute top-full right-0 mt-3 border border-gray-200 dark:border-[#35353E] rounded-2xl bg-white dark:bg-[#0F0F13] text-gray-900 dark:text-white shadow-2xl z-40 min-w-[280px] p-4 space-y-4">
                 <div className="space-y-1">
-                  <span className="text-xs uppercase tracking-wide text-[#7B7F92]">Visibility</span>
-                  <div className="space-y-2">
+                  <span className="text-xs uppercase tracking-wide text-gray-500 dark:text-[#7B7F92] font-semibold">Visibility</span>
+                  <div className="space-y-2.5">
                     <button
                       type="button"
                       onClick={() => {
@@ -867,17 +871,17 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                           return next;
                         });
                       }}
-                      className="flex items-center gap-3 text-left w-full"
+                      className="flex items-center gap-3 text-left w-full py-1 hover:opacity-80 transition-opacity"
                     >
                       <span
-                        className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
-                          showMerchantOnly ? "border-[#4A4A56] bg-[#1D8751]" : "border-[#4A4A56]"
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                          showMerchantOnly ? "border-[#1D8751] bg-[#1D8751]" : "border-gray-300 dark:border-[#4A4A56]"
                         }`}
                       >
                         {showMerchantOnly && (
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            className="h-3 w-3 text-white"
+                            className="h-3.5 w-3.5 text-white"
                             viewBox="0 0 24 24"
                             fill="none"
                             stroke="currentColor"
@@ -887,7 +891,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                           </svg>
                         )}
                       </span>
-                      <span className="text-sm font-semibold text-white leading-tight">Show only Merchant ads</span>
+                      <span className="text-[15px] font-medium text-gray-900 dark:text-white leading-tight">Show only Merchant ads</span>
                     </button>
                     <button
                       type="button"
@@ -898,17 +902,17 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                           return next;
                         });
                       }}
-                      className="flex items-center gap-3 text-left w-full"
+                      className="flex items-center gap-3 text-left w-full py-1 hover:opacity-80 transition-opacity"
                     >
                       <span
-                        className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
-                          showMerchantBusinessOnly ? "border-[#4A4A56] bg-[#1D8751]" : "border-[#4A4A56]"
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                          showMerchantBusinessOnly ? "border-[#1D8751] bg-[#1D8751]" : "border-gray-300 dark:border-[#4A4A56]"
                         }`}
                       >
                         {showMerchantBusinessOnly && (
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            className="h-3 w-3 text-white"
+                            className="h-3.5 w-3.5 text-white"
                             viewBox="0 0 24 24"
                             fill="none"
                             stroke="currentColor"
@@ -918,7 +922,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                           </svg>
                         )}
                       </span>
-                      <span className="text-sm font-semibold text-white leading-tight">Show only Merchant Business ads</span>
+                      <span className="text-[15px] font-medium text-gray-900 dark:text-white leading-tight">Show only Merchant Business ads</span>
                     </button>
                     <button
                       type="button"
@@ -928,17 +932,17 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                         setMinOrderLimit("");
                         setMaxOrderLimit("");
                       }}
-                      className="flex items-center gap-3 text-left w-full"
+                      className="flex items-center gap-3 text-left w-full py-1 hover:opacity-80 transition-opacity"
                     >
                       <span
-                        className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ${
-                          !showMerchantOnly && !showMerchantBusinessOnly ? "border-[#4A4A56] bg-[#1D8751]" : "border-[#4A4A56]"
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                          !showMerchantOnly && !showMerchantBusinessOnly ? "border-[#1D8751] bg-[#1D8751]" : "border-gray-300 dark:border-[#4A4A56]"
                         }`}
                       >
                         {!showMerchantOnly && !showMerchantBusinessOnly && (
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            className="h-3 w-3 text-white"
+                            className="h-3.5 w-3.5 text-white"
                             viewBox="0 0 24 24"
                             fill="none"
                             stroke="currentColor"
@@ -948,26 +952,26 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                           </svg>
                         )}
                       </span>
-                      <span className="text-sm font-semibold text-white leading-tight">Show All</span>
+                      <span className="text-[15px] font-medium text-gray-900 dark:text-white leading-tight">Show All</span>
                     </button>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <span className="text-xs uppercase tracking-wide text-[#7B7F92]">Order Limit</span>
+                  <span className="text-xs uppercase tracking-wide text-gray-500 dark:text-[#7B7F92] font-semibold">Order Limit</span>
                   <div className="grid grid-cols-2 gap-3">
                     <input
                       type="number"
                       value={minOrderLimit}
                       onChange={(e) => setMinOrderLimit(e.target.value)}
                       placeholder="Min"
-                      className="w-full rounded-xl bg-[#14141B] border border-[#35353E] px-3 py-2 text-sm text-white placeholder:text-[#6E7081] focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
+                      className="w-full rounded-xl bg-gray-50 dark:bg-[#14141B] border border-gray-200 dark:border-[#35353E] px-3 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#6E7081] focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
                     />
                     <input
                       type="number"
                       value={maxOrderLimit}
                       onChange={(e) => setMaxOrderLimit(e.target.value)}
                       placeholder="Max"
-                      className="w-full rounded-xl bg-[#14141B] border border-[#35353E] px-3 py-2 text-sm text-white placeholder:text-[#6E7081] focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
+                      className="w-full rounded-xl bg-gray-50 dark:bg-[#14141B] border border-gray-200 dark:border-[#35353E] px-3 py-2.5 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#6E7081] focus:outline-none focus:ring-2 focus:ring-[#1D8751]"
                     />
                   </div>
                 </div>

@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useRouter } from "next/navigation";
 import { AppDispatch } from "@/store";
 import {
   fetchPublicPaymentMethods,
@@ -13,13 +12,11 @@ import {
   updateMoneyXTransaction,
 } from "../slices/moneyXSlice";
 import { useTheme } from "@/context/theme";
-import CustomSelect from "@/components/ui/HomeCommonSelect";
-import { showToast } from "@/lib/utils/toast";
-import { usePaymentMethodsDisplay } from "@/features/express/hooks/useDataDisplay";
-import { setAuthRedirectPath } from "@/lib/utils/authRedirect";
+import CustomSelect from "@/components/ui/CustomSelect";
+import { showToast } from "../../../lib/utils/toast";
+import { usePaymentMethodsDisplay } from "../../express/hooks/useDataDisplay";
 
 interface TransferFormProps {
-  isHomePage?: boolean;
   onTransfer?: (transactionData: {
     fromPaymentMethod: any;
     toPaymentMethod: any;
@@ -31,9 +28,8 @@ interface TransferFormProps {
   }) => void;
 }
 
-export default function TransferForm({ isHomePage = false, onTransfer }: TransferFormProps) {
+export default function TransferForm({ onTransfer }: TransferFormProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const router = useRouter();
   const { isDark } = useTheme();
 
   const {
@@ -52,15 +48,14 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
   } = useSelector((state: any) => state.moneyX);
 
   const { isAuthenticated } = useSelector((state: any) => state.auth);
-  const requiresLoginRedirect = isHomePage && !isAuthenticated;
 
   // Use state to hold payment methods - will trigger re-render when updated
   const [stablePaymentMethods, setStablePaymentMethods] = useState<any[]>([]);
 
-  // Use appropriate payment methods data based on isHomePage
-  const paymentMethodsData = isHomePage ? publicPaymentMethods : adminMethods;
-  const paymentMethodsLoading = isHomePage ? publicMethodsLoading : adminMethodsLoading;
-  const paymentMethodsError = isHomePage ? publicMethodsError : adminMethodsError;
+  // Use appropriate payment methods data
+  const paymentMethodsData = adminMethods;
+  const paymentMethodsLoading = adminMethodsLoading;
+  const paymentMethodsError = adminMethodsError;
 
   const paymentMethodsDisplay = usePaymentMethodsDisplay(
     paymentMethodsData,
@@ -70,38 +65,19 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
 
   // Fetch payment methods on mount
   useEffect(() => {
-    if (isHomePage) {
-      dispatch(fetchPublicPaymentMethods());
-    } else {
-      dispatch(fetchAdminPaymentMethods());
-    }
-  }, [dispatch, isHomePage]);
+    dispatch(fetchAdminPaymentMethods());
+  }, [dispatch]);
 
   // Process payment methods similar to deposit form
   useEffect(() => {
-    const methodsToProcess = isHomePage ? publicPaymentMethods : adminMethods;
+    console.log("🔍 [Dashboard] Processing admin payment methods:", {
+      adminMethodsExists: !!adminMethods,
+      isArray: Array.isArray(adminMethods),
+      length: adminMethods?.length || 0
+    });
     
-    // Handle public payment methods structure (similar to ExchangeForm)
-    let processedMethods: any[] = [];
-    if (isHomePage && publicPaymentMethods) {
-      // Check for providers array (new structure)
-      if (Array.isArray(publicPaymentMethods?.data?.providers)) {
-        processedMethods = publicPaymentMethods.data.providers;
-      }
-      // Check for payment_methods array (older structure)
-      else if (Array.isArray(publicPaymentMethods?.data?.payment_methods)) {
-        processedMethods = publicPaymentMethods.data.payment_methods;
-      }
-      // Check if publicPaymentMethods itself is an array (fallback)
-      else if (Array.isArray(publicPaymentMethods)) {
-        processedMethods = publicPaymentMethods;
-      }
-    } else if (adminMethods && Array.isArray(adminMethods)) {
-      processedMethods = adminMethods;
-    }
-
-    if (processedMethods.length > 0) {
-      const activeMethods = processedMethods
+    if (adminMethods && Array.isArray(adminMethods) && adminMethods.length > 0) {
+      const activeMethods = adminMethods
         .filter((payment: any) => {
           if (payment.is_active === undefined || payment.is_active === null)
             return true;
@@ -116,18 +92,23 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
           ...payment,
           logo: payment.logo || payment.provider_logo || undefined,
           provider_logo: payment.provider_logo || payment.logo || undefined,
-          // Extract provider_name for public methods
-          provider_name: payment.provider_name || payment.provider?.provider_name || payment.method?.method_name || payment.payment_method_name,
         }));
+
+      console.log("✅ [Dashboard] Processed payment methods:", activeMethods.length);
+      console.log("📋 [Dashboard] Payment method names:", activeMethods.map((m: any) => m.provider_name || m.provider || "N/A"));
 
       if (activeMethods.length > 0) {
         setStablePaymentMethods(activeMethods);
+      } else {
+        console.warn("⚠️ [Dashboard] No active payment methods found");
       }
+    } else {
+      console.warn("⚠️ [Dashboard] Admin methods not loaded or empty");
     }
-  }, [adminMethods, publicPaymentMethods, isHomePage]);
+  }, [adminMethods]);
 
 
-  // Fallback payment methods
+  // Fallback payment methods (only used if no real payment methods are loaded)
   const fallbackPaymentMethods = useMemo(
     () => [
       {
@@ -153,18 +134,25 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
   const effectivePaymentMethods = stablePaymentMethods;
 
   const finalPaymentMethods = useMemo(
-    () =>
-      effectivePaymentMethods.length > 0
-        ? effectivePaymentMethods
-        : fallbackPaymentMethods,
+    () => {
+      // Only use fallback if we have NO real payment methods
+      if (effectivePaymentMethods.length > 0) {
+        console.log("✅ [Dashboard] Using real payment methods:", effectivePaymentMethods.length);
+        return effectivePaymentMethods;
+      } else {
+        console.log("⚠️ [Dashboard] No real payment methods, using fallback");
+        return fallbackPaymentMethods;
+      }
+    },
     [effectivePaymentMethods, fallbackPaymentMethods]
   );
 
   // Form state - matching deposit form structure
-  const [payAmount, setPayAmount] = useState(100);
-  const [payAmountInput, setPayAmountInput] = useState("100");
-  const [getAmount, setGetAmount] = useState(98);
-  const [getAmountInput, setGetAmountInput] = useState("98");
+  // Initialize with empty values to allow restoration to work properly
+  const [payAmount, setPayAmount] = useState(0);
+  const [payAmountInput, setPayAmountInput] = useState("");
+  const [getAmount, setGetAmount] = useState(0);
+  const [getAmountInput, setGetAmountInput] = useState("");
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
   const [fromPaymentMethod, setFromPaymentMethod] = useState<string>("");
   const [toPaymentMethod, setToPaymentMethod] = useState<string>("");
@@ -180,10 +168,20 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
 
-  // Helper function to get provider name from payment method (cleaned - removes method suffixes)
+  // Helper function to get provider name from payment method
   // Removes method suffixes like "- Bank", "- Mobile", "- Crypto", etc.
   const getProviderName = useCallback((payment: any) => {
-    let providerName = payment?.provider_name || payment?.provider?.provider_name || payment?.provider || payment?.method?.method_name || payment?.payment_method_name || "";
+    if (!payment) return "";
+    
+    // Priority order: provider_name (dashboard) > provider (home page) > provider.provider_name > method.method_name (fallback)
+    // Dashboard API has: provider_name: "Equity Bank", method: "Bank"
+    // Home page API has: provider_name: "Equity Bank - Bank", provider: "Equity Bank"
+    let providerName = payment.provider_name || payment.provider || payment.provider?.provider_name || "";
+    
+    // Only use method_name as last resort if no provider name exists
+    if (!providerName || providerName.trim() === "") {
+      providerName = payment.method?.method_name || payment.payment_method_name || "";
+    }
     
     // Remove common method suffixes (case-insensitive)
     // Matches patterns like "- Bank", "- Mobile", "- Crypto", "- Forex", "- Marchant", "- Money Transfer", etc.
@@ -208,12 +206,24 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
     );
   }, [getProviderName]);
 
-  // Restore state from localStorage after login (only for home page)
+  // Restore state from localStorage after login (when navigating from home page)
   const hasRestoredState = useRef(false);
   const paymentMethodRestoreAttempted = useRef(false);
   
+  // Restore state on mount and when authentication changes
   useEffect(() => {
-    if (!isHomePage || hasRestoredState.current || !isAuthenticated) {
+    // Only restore if user is authenticated and we haven't restored yet
+    if (hasRestoredState.current) {
+      return;
+    }
+
+    // Wait for authentication status to be available
+    if (isAuthenticated === undefined) {
+      return;
+    }
+
+    // Only restore if authenticated (user has logged in)
+    if (!isAuthenticated) {
       return;
     }
 
@@ -222,61 +232,152 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
       if (savedState) {
         const state = JSON.parse(savedState);
         
-        console.log("Restoring moneyx form state:", state);
+        console.log("🔄 [Dashboard] Restoring moneyx form state:", state);
         
         // Restore amounts immediately
-        if (state.amountInput !== undefined && state.amountInput !== null) {
+        if (state.amountInput !== undefined && state.amountInput !== null && state.amountInput !== "") {
+          const sendAmount = state.amountValue || parseFloat(state.amountInput) || 0;
           setPayAmountInput(state.amountInput);
-          setPayAmount(state.amountValue || parseFloat(state.amountInput) || 0);
+          setPayAmount(sendAmount);
+          console.log("✅ [Dashboard] Restored send amount:", state.amountInput, "=", sendAmount);
         }
-        if (state.receiveAmountInput !== undefined && state.receiveAmountInput !== null) {
+        if (state.receiveAmountInput !== undefined && state.receiveAmountInput !== null && state.receiveAmountInput !== "") {
+          const receiveAmount = state.receiveAmountValue || parseFloat(state.receiveAmountInput) || 0;
           setGetAmountInput(state.receiveAmountInput);
-          setGetAmount(state.receiveAmountValue || parseFloat(state.receiveAmountInput) || 0);
+          setGetAmount(receiveAmount);
+          console.log("✅ [Dashboard] Restored receive amount:", state.receiveAmountInput, "=", receiveAmount);
         }
 
         // Store payment method data for later restoration (after payment methods are loaded)
         if (state.fromPaymentMethod || state.toPaymentMethod) {
-          localStorage.setItem("moneyx_restore_from", state.fromPaymentMethod || "");
-          localStorage.setItem("moneyx_restore_to", state.toPaymentMethod || "");
+          // Use base provider name if available (from home page API), otherwise use cleaned name
+          const fromName = state.fromProviderBase || state.fromPaymentMethod || "";
+          const toName = state.toProviderBase || state.toPaymentMethod || "";
+          
+          localStorage.setItem("moneyx_restore_from", fromName);
+          localStorage.setItem("moneyx_restore_to", toName);
+          localStorage.setItem("moneyx_restore_from_cleaned", state.fromPaymentMethod || "");
+          localStorage.setItem("moneyx_restore_to_cleaned", state.toPaymentMethod || "");
+          
           if (state.fromPaymentDetail) {
             localStorage.setItem("moneyx_restore_from_detail", JSON.stringify(state.fromPaymentDetail));
           }
           if (state.toPaymentDetail) {
             localStorage.setItem("moneyx_restore_to_detail", JSON.stringify(state.toPaymentDetail));
           }
+          console.log("💾 [Dashboard] Stored payment methods for restoration");
+          console.log("💾 [Dashboard] From (base):", fromName, "From (cleaned):", state.fromPaymentMethod);
+          console.log("💾 [Dashboard] To (base):", toName, "To (cleaned):", state.toPaymentMethod);
         }
 
         // Clear the saved state
         localStorage.removeItem("moneyx_form_state");
         hasRestoredState.current = true;
+      } else {
+        console.log("ℹ️ [Dashboard] No saved moneyx form state found");
       }
     } catch (error) {
-      console.error("Failed to restore moneyx form state:", error);
+      console.error("❌ [Dashboard] Failed to restore moneyx form state:", error);
     }
-  }, [isHomePage, isAuthenticated]);
+  }, [isAuthenticated]);
 
   // Restore payment methods after they're loaded
   useEffect(() => {
-    if (!isHomePage || !isAuthenticated || !Array.isArray(finalPaymentMethods) || finalPaymentMethods.length === 0) {
+    console.log("🔍 [Dashboard] Payment method restoration effect triggered", {
+      isAuthenticated,
+      finalPaymentMethodsLength: finalPaymentMethods.length,
+      stablePaymentMethodsLength: stablePaymentMethods.length,
+      paymentMethodRestoreAttempted: paymentMethodRestoreAttempted.current
+    });
+
+    // Wait for authentication status
+    if (isAuthenticated === undefined) {
+      console.log("⏳ [Dashboard] Waiting for authentication status...");
+      return;
+    }
+
+    // Only restore if authenticated
+    if (!isAuthenticated) {
+      console.log("⏳ [Dashboard] User not authenticated, skipping restoration");
+      return;
+    }
+
+    // Check if we have restoration data
+    const restoreFrom = localStorage.getItem("moneyx_restore_from");
+    const restoreTo = localStorage.getItem("moneyx_restore_to");
+    const restoreFromCleaned = localStorage.getItem("moneyx_restore_from_cleaned");
+    const restoreToCleaned = localStorage.getItem("moneyx_restore_to_cleaned");
+    
+    console.log("🔍 [Dashboard] Restoration data check:", { 
+      restoreFrom, 
+      restoreTo,
+      restoreFromCleaned,
+      restoreToCleaned
+    });
+    
+    // If no restoration data, skip
+    if (!restoreFrom && !restoreTo) {
+      console.log("ℹ️ [Dashboard] No restoration data found");
+      return;
+    }
+
+    // IMPORTANT: Only use stablePaymentMethods (real API data), NOT fallback methods
+    // Fallback methods have generic names like "Bank", "Mobile Money" which will cause wrong matches
+    const methodsToCheck = (Array.isArray(stablePaymentMethods) && stablePaymentMethods.length > 0)
+      ? stablePaymentMethods
+      : null;
+
+    // Check if we're using fallback methods (they have generic names like "Bank", "Mobile Money")
+    // We should NEVER restore using fallback methods - they don't have real provider names
+    const isUsingFallback = methodsToCheck && methodsToCheck.length > 0 && 
+      methodsToCheck.some((m: any) => 
+        m.provider_name === "Bank" || 
+        m.provider_name === "Mobile Money" || 
+        m.provider_name === "Cryptocurrency"
+      );
+
+    console.log("🔍 [Dashboard] Payment methods check:", {
+      finalPaymentMethodsLength: finalPaymentMethods.length,
+      stablePaymentMethodsLength: stablePaymentMethods.length,
+      methodsToCheckLength: methodsToCheck?.length || 0,
+      isUsingFallback: isUsingFallback,
+      hasRealMethods: stablePaymentMethods.length > 0
+    });
+
+    // If we're using fallback methods, don't attempt restoration - wait for real methods
+    if (isUsingFallback || !methodsToCheck || methodsToCheck.length === 0) {
+      console.log("⏳ [Dashboard] Waiting for real payment methods to load (not using fallback)...");
+      paymentMethodRestoreAttempted.current = false; // Allow retry when real methods load
       return;
     }
 
     // Only attempt restoration once
     if (paymentMethodRestoreAttempted.current) {
+      console.log("⏳ [Dashboard] Restoration already attempted, skipping");
       return;
     }
 
-    const restoreFrom = localStorage.getItem("moneyx_restore_from");
-    const restoreTo = localStorage.getItem("moneyx_restore_to");
+    console.log("🔄 [Dashboard] Starting payment method restoration");
+    console.log("🔄 [Dashboard] Restoring payment methods - From:", restoreFrom, "To:", restoreTo);
+    console.log("🔄 [Dashboard] Available payment methods count:", methodsToCheck.length);
+    console.log("🔄 [Dashboard] Available payment methods (cleaned):", methodsToCheck.map((m: any) => getProviderName(m)));
+    console.log("🔄 [Dashboard] Available payment methods (raw):", methodsToCheck.map((m: any) => ({
+      provider_name: m.provider_name,
+      provider: m.provider,
+      method: m.method,
+      method_display: m.method_display,
+      id: m.id,
+      provider_id: m.provider_id
+    })));
     
-    if (restoreFrom || restoreTo) {
-      console.log("Restoring payment methods - From:", restoreFrom, "To:", restoreTo);
-      paymentMethodRestoreAttempted.current = true;
-      
-      // Restore "from" payment method
-      if (restoreFrom) {
-        const savedFromDetail = localStorage.getItem("moneyx_restore_from_detail");
-        let matchedFromMethod = null;
+    paymentMethodRestoreAttempted.current = true;
+    
+    let matchedFromMethod = null;
+    let matchedToMethod = null;
+    
+    // Restore "from" payment method
+    if (restoreFrom) {
+      const savedFromDetail = localStorage.getItem("moneyx_restore_from_detail");
 
         if (savedFromDetail) {
           try {
@@ -284,16 +385,22 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
             console.log("Trying to match from payment detail:", fromDetail);
             
             // Try multiple matching strategies
-            matchedFromMethod = finalPaymentMethods.find(
+            matchedFromMethod = methodsToCheck.find(
               (m: any) => {
                 const providerName = getProviderName(m);
+                const savedProviderName = getProviderName(fromDetail);
+                const savedProvider = fromDetail.provider || fromDetail.provider_name || "";
+                const cleanedSavedProvider = getProviderName({ provider_name: savedProvider });
+                
                 return (
                   (m.id && m.id === fromDetail.id) ||
                   (m.provider_id && m.provider_id === fromDetail.provider_id) ||
                   (m.providerId && m.providerId === fromDetail.providerId) ||
-                  (providerName === restoreFrom) ||
-                  (providerName === fromDetail.provider_name) ||
-                  (m.provider_name === fromDetail.provider_name)
+                  (providerName.toLowerCase() === restoreFrom.toLowerCase()) ||
+                  (providerName.toLowerCase() === savedProviderName.toLowerCase()) ||
+                  (providerName.toLowerCase() === cleanedSavedProvider.toLowerCase()) ||
+                  (m.provider_name && getProviderName(m).toLowerCase() === getProviderName(fromDetail).toLowerCase()) ||
+                  (m.provider && getProviderName({ provider_name: m.provider }).toLowerCase() === cleanedSavedProvider.toLowerCase())
                 );
               }
             );
@@ -302,26 +409,85 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
           }
         }
 
-        // If no match by ID, try by name
-        if (!matchedFromMethod) {
-          matchedFromMethod = finalPaymentMethods.find(
-            (m: any) => getProviderName(m) === restoreFrom
-          );
-        }
-
-        if (matchedFromMethod) {
-          console.log("Matched from payment method:", matchedFromMethod);
-          setFromPaymentMethod(restoreFrom);
-          setSelectedFromPaymentDetail(matchedFromMethod);
-        } else {
-          console.warn("Could not match from payment method:", restoreFrom);
-        }
+      // If no match by ID, try by name (use base name first, then cleaned name)
+      if (!matchedFromMethod) {
+        // Try with the base provider name first
+        const baseName = restoreFrom || restoreFromCleaned || "";
+        const cleanedBaseName = getProviderName({ provider_name: baseName });
+        console.log("🔍 [Dashboard] Trying to match - Base:", baseName, "Cleaned:", cleanedBaseName);
+        console.log("🔍 [Dashboard] Comparing against methods:", methodsToCheck.map((m: any) => ({
+          provider_name: m.provider_name,
+          provider: m.provider,
+          method: m.method,
+          id: m.id
+        })));
+        
+        matchedFromMethod = methodsToCheck.find(
+          (m: any) => {
+            // Direct comparison of provider_name field (most reliable) - exact match
+            const directMatch = m.provider_name && m.provider_name.toLowerCase().trim() === baseName.toLowerCase().trim();
+            
+            // Also try cleaned provider_name (removes "- Bank" suffix)
+            const cleanedProviderName = m.provider_name ? getProviderName({ provider_name: m.provider_name }) : "";
+            const cleanedMatch = cleanedProviderName && cleanedProviderName.toLowerCase().trim() === cleanedBaseName.toLowerCase().trim();
+            
+            // Try provider field if available
+            const providerMatch = m.provider && m.provider.toLowerCase().trim() === baseName.toLowerCase().trim();
+            
+            const match = directMatch || cleanedMatch || providerMatch;
+            
+            if (match) {
+              console.log("✅ [Dashboard] Found match!");
+              console.log("   Method provider_name:", m.provider_name);
+              console.log("   Method provider:", m.provider);
+              console.log("   Method cleaned name:", cleanedProviderName);
+              console.log("   Looking for:", baseName);
+              console.log("   Match type:", directMatch ? "direct" : cleanedMatch ? "cleaned" : "provider");
+            }
+            return match;
+          }
+        );
       }
 
-      // Restore "to" payment method
-      if (restoreTo) {
-        const savedToDetail = localStorage.getItem("moneyx_restore_to_detail");
-        let matchedToMethod = null;
+      // If still no match, try partial match on cleaned names
+      if (!matchedFromMethod) {
+        const baseName = restoreFrom || restoreFromCleaned || "";
+        const cleanedRestoreFrom = getProviderName({ provider_name: baseName }).toLowerCase();
+        matchedFromMethod = methodsToCheck.find(
+          (m: any) => {
+            const providerName = getProviderName(m).toLowerCase();
+            return providerName.includes(cleanedRestoreFrom) || cleanedRestoreFrom.includes(providerName);
+          }
+        );
+      }
+
+      if (matchedFromMethod) {
+        // Use the actual provider_name from the matched method for display
+        // This ensures we show "Equity Bank" not "Bank"
+        const matchedName = matchedFromMethod.provider_name || matchedFromMethod.provider || getProviderName(matchedFromMethod);
+        console.log("✅ [Dashboard] Matched and restored from payment method:", restoreFrom, "→", matchedName);
+        console.log("✅ [Dashboard] Matched method details:", {
+          provider_name: matchedFromMethod.provider_name,
+          provider: matchedFromMethod.provider,
+          method: matchedFromMethod.method,
+          method_display: matchedFromMethod.method_display,
+          id: matchedFromMethod.id,
+          provider_id: matchedFromMethod.provider_id
+        });
+        setFromPaymentMethod(matchedName);
+        setSelectedFromPaymentDetail(matchedFromMethod);
+      } else {
+        console.warn("⚠️ [Dashboard] Could not match from payment method:", restoreFrom);
+        console.warn("Cleaned restore name:", getProviderName({ provider_name: restoreFrom }));
+        console.warn("Available methods (cleaned):", methodsToCheck.map((m: any) => getProviderName(m)));
+        console.warn("Available methods (raw provider_name):", methodsToCheck.map((m: any) => m.provider_name || "N/A"));
+        console.warn("Available methods (raw provider):", methodsToCheck.map((m: any) => m.provider || "N/A"));
+      }
+    }
+
+    // Restore "to" payment method
+    if (restoreTo) {
+      const savedToDetail = localStorage.getItem("moneyx_restore_to_detail");
 
         if (savedToDetail) {
           try {
@@ -329,16 +495,22 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
             console.log("Trying to match to payment detail:", toDetail);
             
             // Try multiple matching strategies
-            matchedToMethod = finalPaymentMethods.find(
+            matchedToMethod = methodsToCheck.find(
               (m: any) => {
                 const providerName = getProviderName(m);
+                const savedProviderName = getProviderName(toDetail);
+                const savedProvider = toDetail.provider || toDetail.provider_name || "";
+                const cleanedSavedProvider = getProviderName({ provider_name: savedProvider });
+                
                 return (
                   (m.id && m.id === toDetail.id) ||
                   (m.provider_id && m.provider_id === toDetail.provider_id) ||
                   (m.providerId && m.providerId === toDetail.providerId) ||
-                  (providerName === restoreTo) ||
-                  (providerName === toDetail.provider_name) ||
-                  (m.provider_name === toDetail.provider_name)
+                  (providerName.toLowerCase() === restoreTo.toLowerCase()) ||
+                  (providerName.toLowerCase() === savedProviderName.toLowerCase()) ||
+                  (providerName.toLowerCase() === cleanedSavedProvider.toLowerCase()) ||
+                  (m.provider_name && getProviderName(m).toLowerCase() === getProviderName(toDetail).toLowerCase()) ||
+                  (m.provider && getProviderName({ provider_name: m.provider }).toLowerCase() === cleanedSavedProvider.toLowerCase())
                 );
               }
             );
@@ -347,29 +519,94 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
           }
         }
 
-        // If no match by ID, try by name
-        if (!matchedToMethod) {
-          matchedToMethod = finalPaymentMethods.find(
-            (m: any) => getProviderName(m) === restoreTo
-          );
-        }
-
-        if (matchedToMethod) {
-          console.log("Matched to payment method:", matchedToMethod);
-          setToPaymentMethod(restoreTo);
-          setSelectedToPaymentDetail(matchedToMethod);
-        } else {
-          console.warn("Could not match to payment method:", restoreTo);
-        }
+      // If no match by ID, try by name (use base name first, then cleaned name)
+      if (!matchedToMethod) {
+        // Try with the base provider name first
+        const baseName = restoreTo || restoreToCleaned || "";
+        const cleanedBaseName = getProviderName({ provider_name: baseName });
+        console.log("🔍 [Dashboard] Trying to match - Base:", baseName, "Cleaned:", cleanedBaseName);
+        
+        matchedToMethod = methodsToCheck.find(
+          (m: any) => {
+            // Direct comparison of provider_name field (most reliable) - exact match
+            const directMatch = m.provider_name && m.provider_name.toLowerCase().trim() === baseName.toLowerCase().trim();
+            
+            // Also try cleaned provider_name (removes "- Bank" suffix)
+            const cleanedProviderName = m.provider_name ? getProviderName({ provider_name: m.provider_name }) : "";
+            const cleanedMatch = cleanedProviderName && cleanedProviderName.toLowerCase().trim() === cleanedBaseName.toLowerCase().trim();
+            
+            // Try provider field if available
+            const providerMatch = m.provider && m.provider.toLowerCase().trim() === baseName.toLowerCase().trim();
+            
+            const match = directMatch || cleanedMatch || providerMatch;
+            
+            if (match) {
+              console.log("✅ [Dashboard] Found match!");
+              console.log("   Method provider_name:", m.provider_name);
+              console.log("   Method provider:", m.provider);
+              console.log("   Method cleaned name:", cleanedProviderName);
+              console.log("   Looking for:", baseName);
+              console.log("   Match type:", directMatch ? "direct" : cleanedMatch ? "cleaned" : "provider");
+            }
+            return match;
+          }
+        );
       }
 
-      // Clear restoration keys after attempting restoration
+      // If still no match, try partial match on cleaned names
+      if (!matchedToMethod) {
+        const baseName = restoreTo || restoreToCleaned || "";
+        const cleanedRestoreTo = getProviderName({ provider_name: baseName }).toLowerCase();
+        matchedToMethod = methodsToCheck.find(
+          (m: any) => {
+            const providerName = getProviderName(m).toLowerCase();
+            return providerName.includes(cleanedRestoreTo) || cleanedRestoreTo.includes(providerName);
+          }
+        );
+      }
+
+      if (matchedToMethod) {
+        // Use the actual provider_name from the matched method for display
+        // This ensures we show "Equity Bank" not "Bank"
+        const matchedName = matchedToMethod.provider_name || matchedToMethod.provider || getProviderName(matchedToMethod);
+        console.log("✅ [Dashboard] Matched and restored to payment method:", restoreTo, "→", matchedName);
+        console.log("✅ [Dashboard] Matched method details:", {
+          provider_name: matchedToMethod.provider_name,
+          provider: matchedToMethod.provider,
+          method: matchedToMethod.method,
+          method_display: matchedToMethod.method_display,
+          id: matchedToMethod.id,
+          provider_id: matchedToMethod.provider_id
+        });
+        setToPaymentMethod(matchedName);
+        setSelectedToPaymentDetail(matchedToMethod);
+      } else {
+        console.warn("⚠️ [Dashboard] Could not match to payment method:", restoreTo);
+        console.warn("Cleaned restore name:", getProviderName({ provider_name: restoreTo }));
+        console.warn("Available methods (cleaned):", methodsToCheck.map((m: any) => getProviderName(m)));
+        console.warn("Available methods (raw provider_name):", methodsToCheck.map((m: any) => m.provider_name || "N/A"));
+        console.warn("Available methods (raw provider):", methodsToCheck.map((m: any) => m.provider || "N/A"));
+      }
+    }
+
+    // Only clear restoration keys if we successfully restored at least one payment method
+    // This allows retry if payment methods weren't loaded yet
+    const restoredAny = (restoreFrom && matchedFromMethod) || (restoreTo && matchedToMethod);
+    if (restoredAny || (!restoreFrom && !restoreTo)) {
+      // Clear restoration keys after successful restoration or if there's nothing to restore
       localStorage.removeItem("moneyx_restore_from");
       localStorage.removeItem("moneyx_restore_to");
+      localStorage.removeItem("moneyx_restore_from_cleaned");
+      localStorage.removeItem("moneyx_restore_to_cleaned");
       localStorage.removeItem("moneyx_restore_from_detail");
       localStorage.removeItem("moneyx_restore_to_detail");
+      console.log("✅ [Dashboard] Payment method restoration completed");
+    } else {
+      // Keep keys for retry if payment methods weren't loaded yet
+      console.log("⏳ [Dashboard] Payment methods not fully loaded, keeping restoration keys for retry");
+      paymentMethodRestoreAttempted.current = false; // Allow retry
     }
-  }, [finalPaymentMethods, isHomePage, isAuthenticated, getProviderName]);
+  }, [finalPaymentMethods, stablePaymentMethods, isAuthenticated, getProviderName]);
 
   // Auto-select first payment method for "from" when payment methods are loaded (only if not restored)
   useEffect(() => {
@@ -383,7 +620,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
       return;
     }
 
-    // Check if current selection still exists in the latest list (using cleaned names)
+    // Check if current selection still exists in the latest list
     const currentExists = fromPaymentMethod
       ? finalPaymentMethods.some(
           (m: any) => getProviderName(m) === fromPaymentMethod
@@ -400,67 +637,104 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
 
       const providerName = getProviderName(methodToSelect);
       if (providerName) {
+        // Only set default amounts if they're empty (no restoration happened)
+        if (!payAmountInput || payAmountInput === "" || payAmount === 0) {
+          setPayAmountInput("100");
+          setPayAmount(100);
+          setGetAmountInput("98");
+          setGetAmount(98);
+        }
+        
         setFromPaymentMethod(providerName);
         setSelectedFromPaymentDetail(methodToSelect);
+        
+        // Immediately set "to" to second method (index 1) - run in next tick to ensure state is updated
+        if (finalPaymentMethods.length > 1) {
+          setTimeout(() => {
+            const secondMethod = finalPaymentMethods[1];
+            const secondProviderName = getProviderName(secondMethod);
+            if (secondProviderName && secondProviderName !== providerName) {
+              setToPaymentMethod(secondProviderName);
+              setSelectedToPaymentDetail(secondMethod);
+            } else if (finalPaymentMethods.length > 2) {
+              // Find next different method
+              for (let i = 2; i < finalPaymentMethods.length; i++) {
+                const method = finalPaymentMethods[i];
+                const methodProviderName = getProviderName(method);
+                if (methodProviderName && methodProviderName !== providerName) {
+                  setToPaymentMethod(methodProviderName);
+                  setSelectedToPaymentDetail(method);
+                  break;
+                }
+              }
+            }
+          }, 0);
+        }
       }
     }
   }, [finalPaymentMethods, fromPaymentMethod, isBankMethod, getProviderName]);
 
 
-  // Auto-select second payment method for "to"
-  useEffect(() => {
-    // Skip auto-selection if we're restoring state or if restoration was attempted
-    const isRestoring = localStorage.getItem("moneyx_restore_from") || localStorage.getItem("moneyx_restore_to");
-    if (isRestoring || paymentMethodRestoreAttempted.current) {
-      return;
-    }
+  // Create a stable key from payment methods for dependency tracking
+  const paymentMethodsKey = useMemo(() => {
+    const methods = finalPaymentMethods.length > 0 ? finalPaymentMethods : stablePaymentMethods;
+    return methods.length > 0 ? methods.map((m: any) => m?.provider_name || '').join(',') : '';
+  }, [finalPaymentMethods, stablePaymentMethods]);
 
-    // Only run if we have payment methods, "from" is selected, and "to" is not selected
+  // Auto-select second payment method for "to" - ALWAYS runs when "from" is set
+  useEffect(() => {
+    // Get the methods to check - use finalPaymentMethods first, then stablePaymentMethods
     const methodsToCheck = Array.isArray(finalPaymentMethods) && finalPaymentMethods.length > 0
       ? finalPaymentMethods
       : (Array.isArray(stablePaymentMethods) && stablePaymentMethods.length > 0
         ? stablePaymentMethods
         : null);
     
-    if (methodsToCheck && methodsToCheck.length > 1 && fromPaymentMethod && !toPaymentMethod) {
-      // Filter for banks first
-      const bankMethods = methodsToCheck.filter(isBankMethod);
-      
-      // Select the second bank (index 1) if it exists, otherwise select the second method overall
-      let methodToSelect;
-      if (bankMethods.length > 1) {
-        // Select the second bank in the array (index 1)
-        methodToSelect = bankMethods[1];
-      } else if (bankMethods.length === 1 && methodsToCheck.length > 1) {
-        // If only one bank exists, select the second method overall (index 1) if it's different from "from"
-        if (methodsToCheck[1] && getProviderName(methodsToCheck[1]) !== fromPaymentMethod) {
-          methodToSelect = methodsToCheck[1];
-        } else {
-          // Find first method that's different from "from"
-          methodToSelect = methodsToCheck.find(
-            (method) => getProviderName(method) !== fromPaymentMethod
-          );
-        }
-      } else {
-        // No banks or only one method, select the second method (index 1) if it's different from "from"
-        if (methodsToCheck[1] && getProviderName(methodsToCheck[1]) !== fromPaymentMethod) {
-          methodToSelect = methodsToCheck[1];
-        } else {
-          // Find first method that's different from "from"
-          methodToSelect = methodsToCheck.find(
-            (method) => getProviderName(method) !== fromPaymentMethod
-          );
-        }
-      }
-      
-      const providerName = getProviderName(methodToSelect);
-      if (providerName) {
-        setToPaymentMethod(providerName);
-        setSelectedToPaymentDetail(methodToSelect);
+    // Must have at least 2 methods
+    if (!methodsToCheck || methodsToCheck.length < 2) {
+      return;
+    }
+    
+    // Must have "from" selected
+    if (!fromPaymentMethod || fromPaymentMethod === "") {
+      return;
+    }
+    
+    // Skip if "to" is already selected
+    if (toPaymentMethod && toPaymentMethod !== "") {
+      return;
+    }
+    
+    // ALWAYS select the second payment method (index 1) from the original array
+    const secondMethod = methodsToCheck[1];
+    
+    // If second method exists and is different from "from", use it immediately
+    if (secondMethod?.provider_name && secondMethod.provider_name !== fromPaymentMethod) {
+      setToPaymentMethod(secondMethod.provider_name);
+      setSelectedToPaymentDetail(secondMethod);
+      return;
+    }
+    
+    // If second method is same as "from", find the next different method starting from index 2
+    for (let i = 2; i < methodsToCheck.length; i++) {
+      const method = methodsToCheck[i];
+      if (method?.provider_name && method.provider_name !== fromPaymentMethod) {
+        setToPaymentMethod(method.provider_name);
+        setSelectedToPaymentDetail(method);
+        return;
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [finalPaymentMethods, stablePaymentMethods, fromPaymentMethod, adminMethods, getProviderName]);
+    
+    // Final fallback: find ANY method that's different from "from"
+    const methodToSelect = methodsToCheck.find(
+      (method) => method?.provider_name && method.provider_name !== fromPaymentMethod
+    );
+    
+    if (methodToSelect?.provider_name) {
+      setToPaymentMethod(methodToSelect.provider_name);
+      setSelectedToPaymentDetail(methodToSelect);
+    }
+  }, [paymentMethodsKey, fromPaymentMethod, toPaymentMethod]);
 
   // Prepare options for CustomSelect
   const paymentMethodOptions = finalPaymentMethods.map((payment: any) => {
@@ -480,19 +754,10 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
       logoUrl = payment.logo.trim();
     }
 
-    // Get provider name - handle both admin and public payment methods structure
-    let providerName = payment.provider_name || payment.provider?.provider_name || payment.method?.method_name || payment.payment_method_name || "";
-    const paymentMethod = payment.payment_method || payment.payment_method_type || payment.method?.method_display || "";
-
-    // Clean provider name - remove "- Bank" suffix if present
-    providerName = providerName.replace(/\s*-\s*Bank\s*$/i, "").trim();
-
     return {
-      value: providerName,
-      // Show only provider name (remove - {method} part) for cleaner display
-      label: providerName,
+      value: payment.provider_name,
+      label: `${payment.provider_name} - ${payment.payment_method || payment.payment_method_type || ""}`,
       logo: logoUrl,
-      raw: payment,
     };
   });
 
@@ -540,46 +805,6 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
   };
 
   const handleFirstCardSubmit = async () => {
-    // Check if user needs to login first
-    if (requiresLoginRedirect) {
-      // Save state to localStorage for restoration after login
-      // Get the base provider name (without suffix) for better matching
-      const fromProviderBase = selectedFromPaymentDetail?.provider || getProviderName(selectedFromPaymentDetail) || fromPaymentMethod;
-      const toProviderBase = selectedToPaymentDetail?.provider || getProviderName(selectedToPaymentDetail) || toPaymentMethod;
-      
-      const state = {
-        mode: "moneyx",
-        // Send amounts (You Send)
-        amountInput: payAmountInput,
-        amountValue: payAmount,
-        // Receive amounts (You Receive)
-        receiveAmountInput: getAmountInput,
-        receiveAmountValue: getAmount,
-        // Payment methods - save cleaned names and base provider names for better matching
-        fromPaymentMethod: fromPaymentMethod, // Cleaned name (already cleaned by getProviderName)
-        toPaymentMethod: toPaymentMethod, // Cleaned name
-        fromProviderBase: fromProviderBase, // Base provider name from API
-        toProviderBase: toProviderBase, // Base provider name from API
-        fromPaymentDetail: selectedFromPaymentDetail ? { ...selectedFromPaymentDetail } : null,
-        toPaymentDetail: selectedToPaymentDetail ? { ...selectedToPaymentDetail } : null,
-      };
-      
-      console.log("💾 [Home] Saving moneyx form state before login:", state);
-      console.log("💾 [Home] From payment detail:", selectedFromPaymentDetail);
-      console.log("💾 [Home] To payment detail:", selectedToPaymentDetail);
-      
-      // Save to localStorage
-      localStorage.setItem("moneyx_form_state", JSON.stringify(state));
-      
-      // Set redirect path - redirect to moneyX in dashboard
-      const redirectPath = `/dashboard/exchange?mode=moneyx&source=public-express`;
-      setAuthRedirectPath(redirectPath);
-      
-      // Redirect to login
-      router.push("/auth/login");
-      return;
-    }
-
     // Clear previous errors
     setValidationErrors([]);
     setApiValidationError(null);
@@ -672,9 +897,12 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
     !selectedToPaymentDetail;
 
   return (
-    <div className="w-full flex flex-col dark:bg-[#18181D]  ">
-      <div className="mb-2" />
-    
+    <div className="w-full flex flex-col dark:bg-[var(--bg-color)]">
+      <h2 className="text-lg sm:text-xl font-bold mb-1 sm:mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
+        <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span>
+        Transfer Information
+      </h2>
+
       {/* API Validation Error - Show as simple red text */}
       {apiValidationError && (
         <div className="mb-4 text-red-500 text-sm font-medium">
@@ -688,34 +916,18 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
           {moneyXError}
         </div>
       )}
-      
-      
-      <div className={`w-full ${isDark ? "text-white" : "text-[#1F2937]"}`}>
+
+      <div className="w-full text-white">
         {/* Top Section - Amount and From Payment Method in one card */}
         <div className="relative mb-4">
           {/* Top Card Container */}
-          <div
-            data-asset-card="true"
-            data-select-card="true"
-            className={`relative flex flex-col sm:flex-row gap-4 rounded-2xl p-3 sm:p-4 overflow-visible ${
-              isDark ? "bg-[#0F0F17] border border-[#2F2F3A]" : "bg-white border border-[#E2E8F0] shadow-sm"
-            }`}
-          >
+          <div className="relative flex flex-col sm:flex-row border border-[#35353E] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0 bg-white dark:bg-[#18181D]">
             {/* Amount Section */}
-            <div className="flex-1 min-w-0">
-              <label
-                className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${
-                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                }`}
-              >
+            <div className="flex-1 sm:pr-4">
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 You Send
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
-              <div className={`text-xs mb-1 ${
-                isDark ? "text-[#788099]" : "text-[#64748B]"
-              }`}>
-                Amount
-              </div>
               <div className="relative">
                 <input
                   type="text"
@@ -725,53 +937,53 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                     handleAmountChange(e.target.value, true);
                   }}
                   placeholder="Enter amount"
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
-                    isDark ? "border-white/10 text-white" : "border-gray-200 text-[#111827]"
-                  }`}
+                  className="w-full h-[48px] text-[#35353e] dark:text-white bg-transparent dark:bg-transparent rounded-2xl px-4 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] appearance-none"
                 />
               </div>
             </div>
 
             {/* From Payment Method Section */}
-            <div className="flex-1 min-w-0">
-              <div className={`text-xs mb-1 mt-[30px] ${
-                isDark ? "text-[#788099]" : "text-[#64748B]"
-              }`}>
-                Payment Method
-              </div>
-              <div className="relative">
+            <div
+              data-select-card="true"
+              className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none"
+            >
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+                From Payment Method
+              </label>
+              <div className="relative w-full">
                 <CustomSelect
                   options={paymentMethodOptions}
                   value={fromPaymentMethod}
-                  className="w-full"
-                  placeholderClassName="text-white dark:text-white"
-                  triggerClassName={`px-4 py-2 text-lg border rounded-2xl bg-transparent ${
-                    isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
-                  }`}
+                  sizeMode="card"
                   onChange={(value) => {
                     const selectedPayment = finalPaymentMethods?.find(
-                      (payment: any) => {
-                        const providerName = getProviderName(payment);
-                        return providerName === value;
-                      }
+                      (payment: any) => payment.provider_name === value
                     );
                     setFromPaymentMethod(value);
                     setSelectedFromPaymentDetail(selectedPayment || null);
                     setValidationErrors([]);
                   }}
                   placeholder={
-                    paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0
+                    paymentMethodsDisplay.isLoading &&
+                    finalPaymentMethods.length === 0
                       ? "Loading payment methods..."
-                      : "Payment Method"
+                      : finalPaymentMethods && finalPaymentMethods.length > 0
+                        ? "Select Payment Method"
+                        : "No payment methods available"
                   }
-                  disabled={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
-                  loading={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
+                  disabled={
+                    paymentMethodsDisplay.isLoading &&
+                    finalPaymentMethods.length === 0
+                  }
+                  loading={
+                    paymentMethodsDisplay.isLoading &&
+                    finalPaymentMethods.length === 0
+                  }
                   loadingText="Loading payment methods..."
                   emptyText="No payment methods available"
                   searchable={true}
-                  dropdownTitle="Payment method"
-                  dropdownOffsetY={-68}
-                  dropdownOffsetX={20}
+                  className="w-full"
+                  triggerClassName="h-[48px] w-full"
                 />
               </div>
               {adminMethodsError && (
@@ -783,7 +995,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
           {/* Swap Circle - positioned to touch both borders equally */}
           <div className="absolute left-1/2 transform -translate-x-1/2 top-full -translate-y-1/3 z-10">
             <button
-              className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105"
+              className="w-10 h-10 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105 sm:min-h-0 touch-manipulation"
               onClick={() => {
                 // Swap from and to payment methods
                 const tempFrom = fromPaymentMethod;
@@ -798,13 +1010,13 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
               <img
                 src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
                 alt="swap icon"
-                className="w-10 h-10 dark:hidden"
+                className="w-10 h-10 sm:w-10 sm:h-10 dark:hidden"
               />
               {/* Dark mode image */}
               <img
                 src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
                 alt="swap icon"
-                className="w-10 h-10 hidden dark:block"
+                className="w-10 h-10 sm:w-10 sm:h-10 hidden dark:block"
               />
             </button>
           </div>
@@ -812,27 +1024,18 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
 
         {/* Bottom Section - You Receive and To Payment Method in one card */}
         <div className="relative mb-3">
-          <div
-            data-asset-card="true"
-            className={`relative flex flex-col sm:flex-row gap-4 rounded-2xl p-3 sm:p-4 overflow-visible ${
-              isDark ? "bg-[#0F0F17] border border-[#2F2F3A]" : "bg-white border border-[#E2E8F0] shadow-sm"
-            }`}
-          >
+          <div className="relative flex flex-col sm:flex-row border border-[#35353E] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0 bg-white dark:bg-[#18181D]">
             {/* You Receive Section */}
-            <div className="flex-1 min-w-0">
-              <label
-                className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${
-                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                }`}
-              >
+            <div className="flex-1 sm:pr-4">
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 You Receive
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
+                {!isCalculatingFromPay && (
+                  <span className="text-xs text-[#1D8751] font-medium hidden sm:inline">
+                    (Active)
+                  </span>
+                )}
               </label>
-              <div className={`text-xs mb-1 ${
-                isDark ? "text-[#788099]" : "text-[#64748B]"
-              }`}>
-                Amount
-              </div>
               <div className="relative">
                 <input
                   type="text"
@@ -842,55 +1045,52 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                     handleAmountChange(e.target.value, false);
                   }}
                   placeholder="Enter amount"
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
-                    isDark ? "border-white/10 text-white" : "border-gray-200 text-[#111827]"
-                  }`}
+                  className="w-full h-[48px] text-[#35353e] dark:text-white bg-white dark:bg-[#35353E] rounded-2xl px-4 pr-16 text-base sm:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] appearance-none"
                 />
               </div>
             </div>
 
             {/* To Payment Method Section */}
-            <div className="flex-1 min-w-0">
-              <div className={`text-xs mb-1 mt-[30px] ${
-                isDark ? "text-[#788099]" : "text-[#64748B]"
-              }`}>
-                Payment Method
-              </div>
-              <div className="relative">
+            <div className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none">
+              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+                To Payment Method
+              </label>
+              <div className="relative w-full">
                 <CustomSelect
                   options={paymentMethodOptions.filter(
                     (opt) => opt.value !== fromPaymentMethod
                   )}
                   value={toPaymentMethod}
-                  className="w-full"
-                  placeholderClassName="text-white dark:text-white"
-                  triggerClassName={`px-4 py-2 text-lg border rounded-2xl bg-transparent ${
-                    isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
-                  }`}
+                  sizeMode="card"
                   onChange={(value) => {
                     const selectedPayment = finalPaymentMethods?.find(
-                      (payment: any) => {
-                        const providerName = getProviderName(payment);
-                        return providerName === value;
-                      }
+                      (payment: any) => payment.provider_name === value
                     );
                     setToPaymentMethod(value);
                     setSelectedToPaymentDetail(selectedPayment || null);
                     setValidationErrors([]);
                   }}
                   placeholder={
-                    paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0
+                    paymentMethodsDisplay.isLoading &&
+                    finalPaymentMethods.length === 0
                       ? "Loading payment methods..."
-                      : "Payment Method"
+                      : finalPaymentMethods && finalPaymentMethods.length > 0
+                        ? "Select Payment Method"
+                        : "No payment methods available"
                   }
-                  disabled={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
-                  loading={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
+                  disabled={
+                    paymentMethodsDisplay.isLoading &&
+                    finalPaymentMethods.length === 0
+                  }
+                  loading={
+                    paymentMethodsDisplay.isLoading &&
+                    finalPaymentMethods.length === 0
+                  }
                   loadingText="Loading payment methods..."
                   emptyText="No payment methods available"
                   searchable={true}
-                  dropdownTitle="Payment method"
-                  dropdownOffsetY={-68}
-                  dropdownOffsetX={20}
+                  className="w-full"
+                  triggerClassName="h-[48px] w-full"
                 />
               </div>
               {adminMethodsError && (
@@ -900,14 +1100,22 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
           </div>
         </div>
 
+        {/* Disclaimer Banner */}
+        <div className="flex items-center rounded-2xl px-2 sm:px-3 md:px-4 py-2 sm:py-3 mb-2 sm:mb-4 bg-white dark:bg-[#18181D]">
+          <div className="flex items-center gap-3">
+            <div className="w-5 h-5 border-2 border-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="text-[#1D8751] text-xs font-bold">i</span>
+            </div>
+            <span className="text-[#35353e] dark:text-[#788099] text-sm font-medium">
+              This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds.
+            </span>
+          </div>
+        </div>
+
         {/* Validation Errors Display */}
         {validationErrors.length > 0 && (
           <div className="w-full px-2 mb-4">
-            <div
-              className={`border border-[#1D8751] rounded-2xl p-3 sm:p-4 ${
-                isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"
-              }`}
-            >
+            <div className="bg-white dark:bg-[#18181D] border border-[#1D8751] rounded-2xl p-4">
               <h3 className="text-[#1D8751] font-semibold mb-2">
                 Please fix the following errors:
               </h3>
@@ -924,8 +1132,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
         {!isFirstCardSubmitted && (
           <div className="mt-4 relative">
             <button
-              type="button"
-              className={`w-full text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors text-white ${
+              className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${
                 isTransferDisabled
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
@@ -935,23 +1142,16 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
             >
               {isSubmitting ? (
                 <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#35353e] dark:border-[#788099]"></div>
-                  <span>Posting...</span>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <span>Processing...</span>
                 </div>
               ) : (
-                <span className="flex items-center justify-center">
-                  <span className="text-base font-medium dark:text-white text-white">E</span>
-                  <img
-                    className="mt-2"
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                    alt=""
-                  />
-                </span>
+                <span>Submit</span>
               )}
             </button>
           </div>
         )}
-        </div>
+      </div>
 
       {isFirstCardSubmitted && (
         <>
@@ -962,14 +1162,14 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
           </h2>
           <div
             ref={paymentDetailsRef}
-            className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-2xl p-3 sm:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-6"
+            className="flex flex-col bg-white dark:bg-[#18181D] border-2 border-[#35353E] rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099] mb-4 sm:mb-6"
           >
             {/* Bank Account Address Label */}
             <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
               Bank Account Address
             </label>
             {/* Input group */}
-            <div className="flex items-center dark:bg-[#1D1D23] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-2 sm:px-4 py-2 mb-0 overflow-hidden gap-1 sm:gap-2">
+            <div className="flex items-center bg-white dark:bg-[#18181D] border border-[#39394a] dark:border-[#35353E] rounded-2xl px-2 sm:px-4 py-2 mb-0 overflow-hidden gap-1 sm:gap-2">
               {/* Left icon */}
               <span className="text-[#1D8751] flex-shrink-0">
                 <svg width="22" height="22" fill="none" viewBox="0 0 24 24" className="w-5 h-5 sm:w-[22px] sm:h-[22px]">
@@ -1034,7 +1234,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                     showToast.error("Failed to paste from clipboard");
                   }
                 }}
-                className="flex items-center gap-1 dark:bg-[#1D1D23] border border-[#1D8751] 
+                className="flex items-center gap-1 bg-white dark:bg-[#18181D] border border-[#1D8751] 
                 text-[#1D8751] rounded-full px-2 sm:px-3 py-1.5 sm:py-2 ml-1 sm:ml-2 font-semibold text-xs sm:text-sm hover:bg-[#1D8751] hover:text-white transition-colors min-h-[36px] sm:min-h-[44px] touch-manipulation flex-shrink-0 whitespace-nowrap"
               >
                 <svg width="16" height="16" fill="none" viewBox="0 0 24 24" className="w-4 h-4 sm:w-[18px] sm:h-[18px]">
@@ -1096,27 +1296,23 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                 Terms and Conditions Summary
               </span>
             </div>
-            <div
-              className={`border border-[#1D8751] rounded-xl p-4 ${
-                isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"
-              }`}
-            >
+            <div className="dark:bg-[var(--card-color)] border border-[#1D8751] rounded-xl p-4">
               <ul className="list-none space-y-2">
                 <li className="flex items-start">
                   <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                  <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
+                  <span className="text-[#35353e] dark:text-[#788099] text-sm">
                     Please send the money from your own account Only
                   </span>
                 </li>
                 <li className="flex items-start">
                   <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                  <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
+                  <span className="text-[#35353e] dark:text-[#788099] text-sm">
                     Put transaction ID in the description field of the bank
                   </span>
                 </li>
                 <li className="flex items-start">
                   <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
-                  <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
+                  <span className="text-[#35353e] dark:text-[#788099] text-sm">
                     Please note, If you do not follow above conditions, we will
                     reject your transaction and send you back your money.
                   </span>
@@ -1128,7 +1324,7 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
           {/* Final Submit Button */}
           <div className="flex flex-col gap-3 w-full px-2">
             <button
-              className={`w-full text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors text-white ${
+              className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${
                 !bankAccountAddress.trim() || bankAddressError || !isAddressConfirmed
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
@@ -1191,17 +1387,11 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
             >
               {isSubmitting || isUpdatingTransaction ? (
                 <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#35353e] dark:border-[#35353E]"></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                   <span>Processing...</span>
                 </div>
               ) : (
-                <span className="flex items-center justify-center">
-                  <img
-                    className="mt-2"
-                    src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                    alt=""
-                  />
-                </span>
+                <span>Submit</span>
               )}
             </button>
           </div>

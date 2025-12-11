@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "@/store/rootReducer";
-import { FaUserCircle } from "react-icons/fa";
+import { FaUserCircle, FaChevronRight } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { fetchMatchedTrades } from "@/features/p2p/slices/matchedTradesSlice";
 import { MatchedTradesResponse } from "@/features/p2p/types";
@@ -21,7 +21,7 @@ const getStatus = (trade: any, userEmail: string) => {
     return { text: "Pending Incoming Trade", color: "text-[#1D8751]" };
   } else {
     return {
-      text: `Pending ${trade.order_type==="sell"?"Buy":"Sell"} Trade`,
+      text: `Pending ${trade.order_type === "sell" ? "Buy" : "Sell"} Trade`,
       color: "text-yellow-500",
     };
   }
@@ -119,8 +119,7 @@ const Notifications = () => {
     if (status.text === `Pending ${trade.order_type} Trade`) {
       if (trade.owner === user?.email) {
         router.push(
-          `/p2p/${trade.id}/matched?order_type=${
-            trade.order_type === "sell" ? "sell" : "buy"
+          `/p2p/${trade.id}/matched?order_type=${trade.order_type === "sell" ? "sell" : "buy"
           }&trade=buyer`
         );
       } else {
@@ -135,17 +134,15 @@ const Notifications = () => {
         router.push(`/p2p/${trade.id}/matched?${searchParams.toString()}`);
       }
     } else {
-    {
-      trade.owner===user?.email?  router.push(
-        `/p2p/${trade.id}/matched?order_type=${
-          trade.order_type === "sell" ? "sell" : "buy"
-        }&trade=seller`
-      ) : router.push(
-        `/p2p/${trade.id}/matched?order_type=${
-          trade.order_type === "buy" ? "sell" : "buy"
-        }&trade=buyer`
-      )
-    }
+      {
+        trade.owner === user?.email ? router.push(
+          `/p2p/${trade.id}/matched?order_type=${trade.order_type === "sell" ? "sell" : "buy"
+          }&trade=seller`
+        ) : router.push(
+          `/p2p/${trade.id}/matched?order_type=${trade.order_type === "buy" ? "sell" : "buy"
+          }&trade=buyer`
+        )
+      }
     }
   };
 
@@ -167,17 +164,40 @@ const Notifications = () => {
     return (
       <div className="w-full px-2">
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.push("/dashboard/p2p")}
-              className="text-sm font-semibold text-[#1D8751] hover:text-[#17693F] transition-colors"
-            >
-              ← Back to P2P
-            </button>
-            <h6 className="dark:text-[#A3A3C2] text-gray-800 text-xl font-semibold">
-              Notifications Center
-            </h6>
-          </div>
+          {/* Breadcrumb */}
+          <nav
+            aria-label="Breadcrumb"
+            className="flex items-center text-sm text-gray-500 dark:text-[#A3A3C2] mb-1"
+          >
+            <ol className="inline-flex items-center md:space-x-2">
+
+              <li className="inline-flex items-center">
+                <a onClick={() => router.push("/dashboard")} className="hover:text-muted transition-colors">
+                  Dashboard
+                </a>
+              </li>
+
+              <li>
+                <div className="flex items-center">
+                  <FaChevronRight className="mx-2 text-muted-foreground " size={12} />
+
+                  <a href="/dashboard/notifications" className="text-secondary transition-colors">
+                    Notification center
+                  </a>
+                </div>
+              </li>
+
+              {/* <li aria-current="page">
+              <div className="flex items-center">
+                <i className="bi bi-chevron-right mx-2"></i>
+                <span className="font-medium text-gray-900 dark:text-white">
+                  Notifications
+                </span>
+              </div>
+            </li> */}
+
+            </ol>
+          </nav>
           <span className="text-sm dark:text-[#A3A3C2] text-gray-600">0 notifications</span>
         </div>
 
@@ -200,7 +220,7 @@ const Notifications = () => {
                     d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                   />
                 </svg>
-              
+
               </div>
               {/* Subtle pulse animation */}
               <div className="absolute inset-0 w-24 h-24 bg-gradient-to-br from-[#1D8751] to-[#17693F] rounded-full opacity-20 animate-pulse"></div>
@@ -230,18 +250,42 @@ const Notifications = () => {
   return (
     <div className="w-full px-2">
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center">
-          <button
-            onClick={() => router.push("/dashboard/p2p")}
-            className="flex items-center gap-1 text-sm font-semibold text-[#1D8751] hover:text-[#17693F] transition-colors mr-2"
-          >
-            <span className="text-lg">←</span>
-            Back to P2P
-          </button>
-          <h6 className="text-gray-700 dark:text-[#A3A3C2] text-xl font-semibold">
-            Notifications Center
-          </h6>
-        </div>
+        {/* Breadcrumb */}
+        <nav
+          aria-label="Breadcrumb"
+          className="flex items-center text-sm text-gray-500 dark:text-[#A3A3C2] mb-1"
+        >
+          <ol className="inline-flex items-center md:space-x-2">
+
+            <li className="inline-flex items-center">
+              <a href="/dashboard" className="hover:text-muted transition-colors">
+                Dashboard
+              </a>
+            </li>
+
+            <li>
+              <div className="flex items-center">
+                <FaChevronRight className="mx-2 text-muted-foreground " size={12} />
+
+                <a href="/dashboard/notifications" className="text-secondary transition-colors">
+                  Notification center
+                </a>
+              </div>
+            </li>
+
+            {/* <li aria-current="page">
+              <div className="flex items-center">
+                <i className="bi bi-chevron-right mx-2"></i>
+                <span className="font-medium text-gray-900 dark:text-white">
+                  Notifications
+                </span>
+              </div>
+            </li> */}
+
+          </ol>
+        </nav>
+
+
         <span className="text-sm text-gray-500 dark:text-[#A3A3C2]">
           {matchedTrades.count || matchedTrades.results.length}{" "}
           {(matchedTrades.count || matchedTrades.results.length) === 1
@@ -254,10 +298,10 @@ const Notifications = () => {
         {matchedTrades.results.map((trade: any) => {
           const orderType = getOrderType(trade.order_type);
           const status = getStatus(trade, user?.email || "");
-          const owner=trade.owner===user?.email?trade.buyer:trade.seller
-          const name = trade.advertiser_name===user?.first_name?trade.order_type==="sell" ? truncate(trade.buyer, 10): truncate(trade.seller, 10) : trade.advertiser_name
-          const profileImage =trade.order_type === "sell" && 
-          trade.owner===user?.email? trade.buyer_photo : trade.seller_photo
+          const owner = trade.owner === user?.email ? trade.buyer : trade.seller
+          const name = trade.advertiser_name === user?.first_name ? trade.order_type === "sell" ? truncate(trade.buyer, 10) : truncate(trade.seller, 10) : trade.advertiser_name
+          const profileImage = trade.order_type === "sell" &&
+            trade.owner === user?.email ? trade.buyer_photo : trade.seller_photo
           return (
             <div
               key={trade.id}
@@ -282,9 +326,8 @@ const Notifications = () => {
 
                   {/* Status Dot (Properly Positioned) */}
                   <span
-                    className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-[#23232B] ${
-                      orderType.color === "text-[#1D8751]" ? "bg-[#1D8751]" : "bg-red-400"
-                    }`}
+                    className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white dark:border-[#23232B] ${orderType.color === "text-[#1D8751]" ? "bg-[#1D8751]" : "bg-red-400"
+                      }`}
                   ></span>
                 </div>
 
@@ -314,11 +357,9 @@ const Notifications = () => {
               {/* Status */}
               <div className="min-w-[140px] text-right">
                 <span
-                  className={`${
-                    status.color
-                  } font-semibold text-sm px-3 py-1 rounded-full bg-opacity-10 ${
-                    status.color === "text-[#1D8751]"
-                  }`}
+                  className={`${status.color
+                    } font-semibold text-sm px-3 py-1 rounded-full bg-opacity-10 ${status.color === "text-[#1D8751]"
+                    }`}
                 >
                   {status.text}
                 </span>
@@ -343,11 +384,10 @@ const Notifications = () => {
           <button
             onClick={handlePreviousPage}
             disabled={currentPage === totalPages}
-            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
-              currentPage === totalPages
-                ? "bg-gray-200 dark:bg-[#31313C] text-gray-400 dark:text-[#A3A3C2] cursor-not-allowed"
-                : "bg-[#1D8751] text-white hover:bg-[#17693F]"
-            }`}
+            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${currentPage === totalPages
+              ? "bg-gray-200 dark:bg-[#31313C] text-gray-400 dark:text-[#A3A3C2] cursor-not-allowed"
+              : "bg-[#1D8751] text-white hover:bg-[#17693F]"
+              }`}
           >
             Previous
           </button>
@@ -369,11 +409,10 @@ const Notifications = () => {
                 <button
                   key={pageNum}
                   onClick={() => handlePageChange(pageNum)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                    currentPage === pageNum
-                      ? "bg-[#1D8751] text-white"
-                      : "bg-gray-100 dark:bg-[#31313C] text-gray-600 dark:text-[#A3A3C2] hover:bg-gray-200 dark:hover:bg-[#2A2A33]"
-                  }`}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${currentPage === pageNum
+                    ? "bg-[#1D8751] text-white"
+                    : "bg-gray-100 dark:bg-[#31313C] text-gray-600 dark:text-[#A3A3C2] hover:bg-gray-200 dark:hover:bg-[#2A2A33]"
+                    }`}
                 >
                   {pageNum}
                 </button>
@@ -384,11 +423,10 @@ const Notifications = () => {
           <button
             onClick={handleNextPage}
             disabled={currentPage === 1}
-            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
-              currentPage === 1
-                ? "bg-gray-200 dark:bg-[#31313C] text-gray-400 dark:text-[#A3A3C2] cursor-not-allowed"
-                : "bg-[#1D8751] text-white hover:bg-[#17693F]"
-            }`}
+            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${currentPage === 1
+              ? "bg-gray-200 dark:bg-[#31313C] text-gray-400 dark:text-[#A3A3C2] cursor-not-allowed"
+              : "bg-[#1D8751] text-white hover:bg-[#17693F]"
+              }`}
           >
             Next
           </button>
