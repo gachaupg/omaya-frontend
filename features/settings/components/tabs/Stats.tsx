@@ -24,7 +24,7 @@ import VerifiedBadge from "@/components/ui/VerifiedBadge";
 import { logger } from "@/lib/utils/logger";
 
 const DefaultProfileIcon = () => (
-  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center bg-[#e5e7eb] border-2 border-white">
+  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center bg-gray-200 dark:bg-[#35353E] border-2 border-white dark:border-[var(--card-color)]">
     <svg
       width="56"
       height="56"
@@ -35,11 +35,12 @@ const DefaultProfileIcon = () => (
         cx="100"
         cy="100"
         r="100"
-        fill="#e5e7eb"
-        stroke="#d1d5db"
+        fill="currentColor"
+        className="text-gray-300 dark:text-[#4B5563]"
+        stroke="currentColor"
         strokeWidth="4"
       />
-      <g fill="#9ca3af">
+      <g fill="currentColor" className="text-gray-400 dark:text-[#6B7280]">
         <circle cx="100" cy="75" r="25" />
         <path d="M100 110 C85 110, 60 120, 60 140 L60 160 C60 170, 65 175, 75 175 L125 175 C135 175, 140 170, 140 160 L140 140 C140 120, 115 110, 100 110 Z" />
       </g>
@@ -161,7 +162,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
   }, [dispatch, isAuthenticated, user?.referral_code]);
 
  return (
-   <Card className="w-full p-3 sm:p-4 dark:bg-[var(--card-color)] bg-gray-50 rounded-2xl dark:border-[#35353E] border-gray-300 border-2 dark:text-white text-gray-900 shadow-lg">
+   <Card className="w-full p-3 sm:p-4 dark:bg-[var(--bg-color)] bg-gray-50 rounded-2xl dark:border-[#35353E] border-gray-300 border-2 dark:text-white text-gray-900 shadow-lg">
       {/* Header */}
       <div className="flex w-full flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
@@ -186,7 +187,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
             </div>
           )}
           <div className="flex flex-col min-w-0">
-            <span className="text-sm sm:text-[14px] font-semibold truncate max-w-xs sm:max-w-sm">
+            <span className="text-sm sm:text-[14px] font-semibold truncate max-w-xs sm:max-w-sm text-gray-900 dark:text-white">
               {user?.first_name} 
             </span>
             <span className="flex items-center gap-1.5 text-[#1D8751] text-[8px] sm:text-xs font-medium whitespace-nowrap">
@@ -312,7 +313,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
               >
                 <span>{depositsTimeFilter}</span>
                 <svg
-                  className={`transition-transform duration-200 ${
+                  className={`transition-transform duration-200 text-gray-600 dark:text-[#788099] ${
                     showDepositsDropdown ? "rotate-180" : ""
                   }`}
                   width="12"
@@ -322,7 +323,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
                 >
                   <path
                     d="M6 8L10 12L14 8"
-                    stroke="#788099"
+                    stroke="currentColor"
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -330,11 +331,11 @@ const Stats = ({ onSupportClick }: StatsProps) => {
                 </svg>
               </span>
               {showDepositsDropdown && (
-                <div className="absolute top-6 right-0 dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-300 rounded-lg shadow-lg z-10 w-full border">
+                <div className="absolute top-6 right-0 dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 rounded-lg shadow-lg z-10 w-full border">
                   {timeFilterOptions.map((option) => (
                     <div
                       key={option}
-                      className="px-3 py-2 text-xs sm:text-sm dark:text-white text-gray-900 dark:hover:bg-[var(--card-color)] hover:bg-gray-100 cursor-pointer"
+                      className="px-3 py-2 text-xs sm:text-sm dark:text-white text-gray-900 dark:hover:bg-[#2A2A2A] hover:bg-gray-100 cursor-pointer"
                       onClick={() => {
                         setDepositsTimeFilter(option);
                         setShowDepositsDropdown(false);
@@ -391,7 +392,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
               >
                 <span>{withdrawalsTimeFilter}</span>
                 <svg
-                  className={`transition-transform duration-200 ${
+                  className={`transition-transform duration-200 text-gray-600 dark:text-[#788099] ${
                     showWithdrawalsDropdown ? "rotate-180" : ""
                   }`}
                   width="12"
@@ -401,7 +402,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
                 >
                   <path
                     d="M6 8L10 12L14 8"
-                    stroke="#788099"
+                    stroke="currentColor"
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -409,11 +410,11 @@ const Stats = ({ onSupportClick }: StatsProps) => {
                 </svg>
               </span>
               {showWithdrawalsDropdown && (
-                <div className="absolute top-6 right-0 dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-300 rounded-lg shadow-lg z-10 w-full border">
+                <div className="absolute top-6 right-0 dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 rounded-lg shadow-lg z-10 w-full border">
                   {timeFilterOptions.map((option) => (
                     <div
                       key={option}
-                      className="px-3 py-2 text-xs sm:text-sm dark:text-white text-gray-900 dark:hover:bg-[var(--card-color)] hover:bg-gray-100 cursor-pointer"
+                      className="px-3 py-2 text-xs sm:text-sm dark:text-white text-gray-900 dark:hover:bg-[#2A2A2A] hover:bg-gray-100 cursor-pointer"
                       onClick={() => {
                         setWithdrawalsTimeFilter(option);
                         setShowWithdrawalsDropdown(false);
@@ -449,7 +450,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
 
       {/* Referral Section */}
       <div className="mb-2">
-        <div className="text-lg font-semibold mb-1">Referral</div>
+        <div className="text-lg font-semibold mb-1 text-gray-900 dark:text-white">Referral</div>
         <div className="dark:text-[#788099] text-gray-600 text-sm mb-3">
           Invite friends to earn commission money
         </div>
@@ -464,29 +465,29 @@ const Stats = ({ onSupportClick }: StatsProps) => {
         </div>
         <div className="space-y-2 mt-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center gap-2">
+            <span className="flex items-center gap-2 text-gray-900 dark:text-white">
               <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block" />
               Deposits
             </span>
-            <span className="font-medium text-gray-500 dark:text-[#A0AEC0]">
+            <span className="font-medium text-gray-700 dark:text-[#A0AEC0]">
               {formatCurrency(referralWallet?.total_earned || 0)}
             </span>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center gap-2">
+            <span className="flex items-center gap-2 text-gray-900 dark:text-white">
               <span className="w-3 h-3 rounded-full bg-[#E23D3A] inline-block" />
               Withdrawals
             </span>
-            <span className="font-medium text-gray-500 dark:text-[#A0AEC0]">
+            <span className="font-medium text-gray-700 dark:text-[#A0AEC0]">
               {formatCurrency(referralWallet?.total_withdrawn || 0)}
             </span>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center gap-2">
+            <span className="flex items-center gap-2 text-gray-900 dark:text-white">
               <span className="w-3 h-3 rounded-full bg-[#3B82F6] inline-block" />
               Total
             </span>
-            <span className="font-medium text-gray-500 dark:text-[#A0AEC0]">
+            <span className="font-medium text-gray-700 dark:text-[#A0AEC0]">
               {formatCurrency((referralWallet?.total_earned || 0) + (referralWallet?.total_withdrawn || 0))}
             </span>
           </div>

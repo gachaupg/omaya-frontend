@@ -191,7 +191,7 @@ const KYCVerificationModal: React.FC = () => {
     >
       {/* Success Modal */}
       {showSuccessModal && (
-        <div className="bg-[#1A1A1A] rounded-lg p-6 max-w-md w-full mx-4 border border-[#35353E]">
+        <div className="bg-white dark:bg-[var(--card-color)] rounded-lg p-6 max-w-md w-full mx-4 border border-gray-200 dark:border-[#35353E]">
           <div className="flex flex-col items-center justify-center text-center">
             <div className="flex items-center gap-2 mb-4">
               <svg
@@ -205,11 +205,11 @@ const KYCVerificationModal: React.FC = () => {
                   clipRule="evenodd"
                 />
               </svg>
-              <h2 className="text-xl font-semibold text-white">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                 Account Successfully Verified
               </h2>
             </div>
-            <p className="text-gray-300 text-sm mb-6">
+            <p className="text-gray-600 dark:text-gray-300 text-sm mb-6">
               Your account has been successfully verified. You can now access
               all the features of the platform.
             </p>
@@ -226,14 +226,14 @@ const KYCVerificationModal: React.FC = () => {
 
       {/* Main KYC Modal */}
       {!showSuccessModal && (
-        <div className="bg-[#1A1A1A] rounded-lg p-6 max-w-4xl w-full mx-4 border border-[#35353E]">
+        <div className="bg-white dark:bg-[var(--card-color)] rounded-lg p-6 max-w-4xl w-full mx-4 border border-gray-200 dark:border-[#35353E]">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-white">
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
               Identity Verification Required
             </h2>
             <button
               onClick={handleClose}
-              className="text-gray-400 hover:text-white transition-colors"
+              className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
             >
               <svg
                 className="w-6 h-6"
@@ -252,7 +252,7 @@ const KYCVerificationModal: React.FC = () => {
           </div>
 
           {!showWebSdk ? (
-            <div className="text-gray-300 space-y-4">
+            <div className="text-gray-700 dark:text-gray-300 space-y-4">
               <p>
                 Please verify your identity by clicking the button below. You
                 will be redirected to the SumSub verification page.

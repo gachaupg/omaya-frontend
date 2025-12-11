@@ -289,7 +289,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   };
 
   return (
-    <div className="final-buy-container grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-4 md:gap-6 p-1 sm:p-2 md:p-6 min-h-screen bg-white dark:bg-[var(--bg-color)]">
+    <div className="final-buy-container grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-4 md:gap-6 p-1 sm:p-2 md:p-6 min-h-screen bg-[#EEF1F4] dark:bg-[var(--bg-color)]">
       {/* Left Column: Main Info */}
       <div className="md:col-span-2 flex flex-col mt-6 md:mt-10 gap-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">

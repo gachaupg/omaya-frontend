@@ -220,7 +220,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
       (
         <div
           ref={isFrom ? fromAssetDropdownContentRef : toAssetDropdownContentRef}
-          className="bg-white dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl z-[9999] max-h-[70vh] sm:max-h-[60vh] overflow-hidden"
+          className="bg-white dark:bg-[#18181D] border border-gray-300 dark:border-accent rounded-2xl shadow-xl z-45 max-h-[70vh] sm:max-h-[60vh] overflow-hidden"
           style={dropdownStyle}
         >
           {/* Dropdown Title */}

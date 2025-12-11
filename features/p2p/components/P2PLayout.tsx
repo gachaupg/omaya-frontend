@@ -107,7 +107,7 @@ const handleTabChange = (tab: string) => {
           showUnreadMessages={showUnreadMessages}
           shouldShowMessagesButton={shouldShowMessagesButton}
         />
-        <div className="px-1 sm:px-2 md:px-4 pt-0 mb-2 sm:mb-4 flex flex-col gap-2 sm:gap-3 md:gap-4 rounded-lg w-full">
+        <div className="container mx-auto px-4 sm:px-6 md:px-8 pt-0 mb-2 sm:mb-4 flex flex-col gap-2 sm:gap-3 md:gap-4 rounded-lg overflow-x-hidden">
           {renderTabContent()}
         </div>
       </div>
