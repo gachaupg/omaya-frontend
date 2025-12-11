@@ -47,7 +47,7 @@ function ForexSuccessContent() {
   }
 
   return (
-    <div className={`w-full min-h-screen flex flex-col items-center justify-center pt-8 pb-8 ${isDark ? 'bg-[#18181D]' : 'bg-transparent'}`}>
+    <div className={`container mx-auto px-4 sm:px-6 md:px-8 min-h-screen flex flex-col items-center justify-center pt-8 pb-8 overflow-x-hidden ${isDark ? 'bg-[#18181D]' : 'bg-transparent'}`}>
       {/* Success Animation Card */}
       <div className="w-full max-w-2xl mb-6">
         <div

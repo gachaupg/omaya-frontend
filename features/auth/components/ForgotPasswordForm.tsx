@@ -57,7 +57,7 @@ const ForgetPassword = () => {
   };
 
   return (
-    <div className="flex min-h-screen dark:bg-[#18181D] bg-gray-50 flex-col md:flex-row items-start justify-center relative overflow-hidden px-6 py-8 md:pt-24">
+    <div className="flex min-h-screen bg-app dark:bg-app flex flex-col md:flex-row items-start justify-center relative overflow-hidden px-6 py-8 md:pt-24">
       {/* Left Side - Mobile App Preview */}
       <div className="w-full md:w-1/2 flex justify-center mb-8 md:mb-0 relative z-10">
         {/* Background Glow Effect */}
@@ -73,7 +73,7 @@ const ForgetPassword = () => {
           />
           {/* App store badges */}
           <div className="flex space-x-1 mt-4 justify-center">
-            <div className="rounded px-2 flex items-center border border-gray-700 bg-white">
+            <div className="rounded px-2 flex items-center border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)]">
               <Image
                 src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746787514/Google_Play-Icon-Logo.wine_dqxxk7.svg"
                 alt="Google Play Store"
@@ -82,13 +82,13 @@ const ForgetPassword = () => {
                 className="mr-2"
               />
               <div>
-                <p className="text-[#051015] text-xs">Download on the</p>
-                <span className="text-[#051015] text-sm font-bold">
+                <p className="text-gray-900 dark:text-white text-xs">Download on the</p>
+                <span className="text-gray-900 dark:text-white text-sm font-bold">
                   Google Play
                 </span>
               </div>
             </div>
-            <div className="rounded px-2 flex items-center border border-gray-700 bg-white">
+            <div className="rounded px-2 flex items-center border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)]">
               <Image
                 src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747288173/dark_apple_rwpgwi.png"
                 alt="Apple App Store"
@@ -97,8 +97,8 @@ const ForgetPassword = () => {
                 className="mr-2"
               />
               <div>
-                <p className="text-[#051015] text-xs">Download on the</p>
-                <span className="text-[#051015] text-sm font-bold">
+                <p className="text-gray-900 dark:text-white text-xs">Download on the</p>
+                <span className="text-gray-900 dark:text-white text-sm font-bold">
                   App Store
                 </span>
               </div>
@@ -138,7 +138,7 @@ const ForgetPassword = () => {
                       "auth.forgot.email.placeholder",
                       "Email Address"
                     )}
-                    className="w-full py-2 px-4 pl-9 dark:bg-[#1D1D23] bg-white border dark:border-[#35353E] border-gray-300 rounded-full dark:text-[#788099] text-gray-900 dark:placeholder-[#788099] placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent"
+                    className="w-full py-2 px-4 pl-9 bg-white dark:bg-[var(--card-color)] border border-gray-300 dark:border-[#35353E] rounded-full text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-[#788099] focus:outline-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent"
                   />
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <svg

@@ -43,7 +43,7 @@ export default function DashboardPage() {
   }, [isVerified, loading, error, dispatch]);
 
   return (
-    <div className="pt-0 mb-4 flex flex-col gap-4 rounded-lg w-full">
+    <div className="container mx-auto pt-0 mb-4 flex flex-col gap-4 rounded-lg px-4 sm:px-6 md:px-8 overflow-x-hidden">
       <UserCard />
       <PriceCards />
       <VolumeChart

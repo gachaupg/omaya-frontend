@@ -65,14 +65,14 @@ import { tokens } from "../../../styles/tokens";
   if (!twoFAModalOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/60">
       <div className="w-full max-w-md mx-4">
         <Card className="p-6">
           <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-white mb-2">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
               Two-Factor Authentication
             </h2>
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-600 dark:text-gray-400 text-sm">
               Enter the 6-digit code from your authenticator app
             </p>
           </div>
@@ -81,7 +81,7 @@ import { tokens } from "../../../styles/tokens";
             <div>
               <label
                 htmlFor="2fa-code"
-                className="block text-sm font-medium text-gray-300 mb-2"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
               >
                 2FA Code
               </label>
@@ -92,7 +92,7 @@ import { tokens } from "../../../styles/tokens";
                 onChange={handleCodeChange}
                 placeholder="Enter 6-digit code"
                 maxLength={6}
-                className="w-full px-4 py-3 bg-[#2A2A2A] border border-[#404040] rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent"
+                className="w-full px-4 py-3 bg-white dark:bg-[var(--card-color)] border border-gray-300 dark:border-[#35353E] rounded-lg text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent"
                 autoComplete="one-time-code"
                 autoFocus
               />
@@ -126,7 +126,7 @@ import { tokens } from "../../../styles/tokens";
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-600 dark:text-gray-400">
               Don't have access to your authenticator? Contact support for assistance.
             </p>
           </div>
