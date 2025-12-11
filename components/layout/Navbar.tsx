@@ -1062,7 +1062,6 @@ export default function Navbar() {
                 )}
               </div>
 
-              <div className="relative">
               <div className="relative flex-shrink-0" ref={profileModalRef}>
                 <button
                   onClick={toggleProfileModal}
