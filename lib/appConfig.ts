@@ -110,6 +110,10 @@ export const API_CONFIG = {
   },
   RATES: {
     TRANSACTIONS: "/trading_engine/all-system-transactions/",
+    SOCKETS: {
+      ALL_SYSTEM_TRANSACTIONS: () =>
+        `${getWebSocketBaseUrl()}/ws/all-system-transactions/`,
+    },
   },
   P2P_WITHDRAWAL_DEPOSIT: {
     MY_TRANSACTIONS: "/trading_engine/my-transactions/",

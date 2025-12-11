@@ -1317,9 +1317,18 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
     };
   }, []);
 
-  // Close dropdown when scrolling
+  // Close asset dropdown when page scrolls, but NOT when the user scrolls inside the dropdown itself
   useEffect(() => {
-    const handleScroll = () => {
+    const handleScroll = (event: Event) => {
+      const target = event.target as Node | null;
+      // Ignore scroll events that originate from inside the dropdown content
+      if (
+        assetDropdownContentRef.current &&
+        target &&
+        assetDropdownContentRef.current.contains(target)
+      ) {
+        return;
+      }
       if (isAssetDropdownOpen) {
         setIsAssetDropdownOpen(false);
       }
@@ -3338,7 +3347,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
         <div
           data-asset-card="true"
           data-select-card="true"
-          className={`relative flex gap-4 rounded-2xl p-4 overflow-visible ${
+          className={`relative flex flex-col sm:flex-row gap-4 rounded-2xl p-3 sm:p-4 overflow-visible ${
             isDark ? "bg-[#0F0F17] border border-[#2F2F3A]" : "bg-white border border-[#E2E8F0] shadow-sm"
           }`}
         >
@@ -3684,7 +3693,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
         <div className="relative mb-2 mt-4">
           <div
             data-select-card="true"
-            className={`relative flex gap-4 rounded-2xl p-4 overflow-visible ${
+            className={`relative flex flex-col sm:flex-row gap-4 rounded-2xl p-3 sm:p-4 overflow-visible ${
               isDark ? "bg-[#0F0F17] border border-[#2F2F3A]" : "bg-white border border-[#E2E8F0] shadow-sm"
             }`}
           >
@@ -4080,8 +4089,8 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                       emptyText="No payment methods available"
                       searchable={true}
                       dropdownTitle="Select a payment methods"
-                      dropdownOffsetY={-7.5}
-                      dropdownOffsetX={15}
+                      dropdownOffsetY={-68}
+                      dropdownOffsetX={20}
                     />
                   );
                 })()}
@@ -4377,25 +4386,25 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
       {isTransactionSubmitted && (
         <div
           key={`wallet-section-${forceUpdate}`}
-          className="mb-6 flex flex-col gap-3 w-full px-2"
+          className="mb-6 flex flex-col gap-3 w-full px-0 sm:px-2"
         >
           <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
             <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>
             Wallet Address
           </h2>
-          <div className="dark:bg-[#1D1D23] border-2 border-[#35353e] rounded-2xl p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
+          <div className="dark:bg-[#1D1D23] border-2 border-[#35353e] rounded-2xl p-3 sm:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
             {/* USDT Wallet Address */}
             <div className="mb-4">
-              <h3 className="text-[#35353e] dark:text-[#788099] font-semibold mb-2">
+              <h3 className="text-sm sm:text-base text-[#35353e] dark:text-[#788099] font-semibold mb-2">
                 USDT Wallet Address
               </h3>
               {withdrawalAddress ? (
-                <div className=" dark:bg-[#1D1D23]  border border-[#1D8751] rounded-xl p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[#35353e] dark:text-[#788099] text-sm font-mono break-all">
+                <div className=" dark:bg-[#1D1D23]  border border-[#1D8751] rounded-xl p-3 sm:p-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                    <span className="text-[#35353e] dark:text-[#788099] text-xs sm:text-sm font-mono break-all flex-1">
                       {withdrawalAddress}
                     </span>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText(withdrawalAddress);
@@ -4405,7 +4414,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                             setIsWalletAddressCopied(false);
                           }, 2000);
                         }}
-                        className="flex items-center gap-1 bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] text-[#1D8751] rounded-full px-4 py-1 font-semibold text-base hover:bg-[#1D8751] hover:text-[#35353e] transition-colors"
+                        className="flex items-center gap-1 bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] text-[#1D8751] rounded-full px-2 sm:px-4 py-1 font-semibold text-xs sm:text-base hover:bg-[#1D8751] hover:text-[#35353e] transition-colors"
                       >
                         {isWalletAddressCopied ? (
                           <>
@@ -4604,7 +4613,9 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
           {/* Disclaimer and Button outside the card */}
           <div className="flex flex-col gap-3 w-full px-2">
             <div className="flex items-center text-[#35353e] dark:text-[#788099] text-[16px] font-semibold">
-              <FaExclamationCircle className="mr-2 text-[#1D8751]" />
+              <div className="w-5 h-5 border-2 border-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0 mr-2">
+                <span className="text-[#1D8751] text-xs font-bold">i</span>
+              </div>
               <span>
                 This is only an estimated price based on current market rates.
                 The final price will be confirmed when we receive the funds.

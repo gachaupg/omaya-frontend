@@ -116,9 +116,9 @@ const MarketTable: React.FC<MarketTableProps> = ({
   return (
     <div className="w-full mt-4">
       <div className="overflow-x-auto rounded-2xl">
-        <div className="min-w-0 md:min-w-[800px] w-full overflow-hidden border bg-white border-gray-200 rounded-2xl dark:bg-[#1D1D23] dark:border-[#35353E]">
+        <div className="min-w-0 md:min-w-[800px] w-full overflow-hidden border bg-white border-gray-200 rounded-2xl dark:bg-[var(--card-color)] dark:border-[#35353E]">
           {/* ---------------- Desktop header row ---------------- */}
-          <div className="hidden md:grid grid-cols-5 py-3 px-4 border-b bg-gray-50 border-gray-200 text-xs font-semibold text-gray-500 dark:bg-[#35353E] dark:border-[#35353E] dark:text-[#788099]">
+          <div className="hidden md:grid grid-cols-5 py-3 px-4 border-b bg-gray-50 border-gray-200 text-xs font-semibold text-gray-500 dark:bg-[var(--card-color)] dark:border-[#35353E] dark:text-[#788099]">
             <div
               className="min-w-[200px] flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
               onClick={() => handleSort("advertiser")}
@@ -148,7 +148,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
 
           {/* ---------------- empty state --------------- */}
           {filteredData.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 px-4 bg-white dark:bg-transparent">
+            <div className="flex flex-col items-center justify-center py-8 sm:py-10 md:py-12 px-2 sm:px-3 md:px-4 bg-white dark:bg-[var(--bg-color)]">
               <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-[#35353E] flex items-center justify-center">
                 <FaRegClock className="text-gray-400 dark:text-[#788099] text-2xl" />
               </div>
@@ -166,7 +166,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
             filteredData.map((row, idx) => (
               <React.Fragment key={idx}>
                 {/* Desktop Grid View */}
-                <div className="hidden md:grid grid-cols-5 items-center py-4 px-4 border-b last:border-b-0 bg-white hover:bg-gray-50 border-gray-200 dark:bg-[#18181D] dark:hover:bg-[#2d2d36] dark:border-[#35353E]">
+                <div className="hidden md:grid grid-cols-5 items-center py-4 px-4 border-b last:border-b-0 bg-white hover:bg-gray-50 border-gray-200 dark:bg-[var(--bg-color)] dark:hover:bg-[#2d2d36] dark:border-[#35353E]">
                   {/* Advertiser */}
                   <div className="flex flex-col gap-1 min-w-[200px]">
                     <div className="flex items-center gap-2">
@@ -217,7 +217,12 @@ const MarketTable: React.FC<MarketTableProps> = ({
                   </div>
                   {/* Payment */}
                   <div className="flex flex-wrap gap-2 min-w-[200px]">
-                    {row.payment_details?.map((method, i) => {                      
+                    {row.payment_details?.map((method, i) => {
+                      // Safely check if method exists before accessing properties
+                      if (!method || typeof method !== 'object') {
+                        return null;
+                      }
+                      
                       const imageUrl =
                         (typeof method.provider_logo === "string" &&
                           method.provider_logo.trim()) ||
@@ -230,7 +235,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                         >
                           <img
                             src={imageUrl}
-                            alt={method.provider}
+                            alt={method.provider || ''}
                             className="w-6 h-6 rounded object-contain flex-shrink-0"
                             style={{ 
                               width: '24px', 
@@ -244,7 +249,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                               }
                             }}
                           />
-                          {method.provider}
+                          {method.provider || ''}
                         </span>
                       );
                     })}
@@ -268,7 +273,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                 </div>
 
                 {/* Mobile Card View */}
-                <div className="md:hidden flex flex-col gap-3 p-4 border-b last:border-b-0 bg-white hover:bg-gray-50 border-gray-200 dark:bg-[#18181D] dark:hover:bg-[#2d2d36] dark:border-[#35353E]">
+                <div className="md:hidden flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 md:p-4 border-b last:border-b-0 bg-white hover:bg-gray-50 border-gray-200 dark:bg-[var(--bg-color)] dark:hover:bg-[#2d2d36] dark:border-[#35353E]">
                   {/* Advertiser Section */}
                   <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-[#35353E]">
                     {row.advertiser_photo ? (
@@ -335,6 +340,11 @@ const MarketTable: React.FC<MarketTableProps> = ({
                     <span className="text-xs text-gray-500 dark:text-[#8C8CA1]">Payment Methods</span>
                     <div className="flex flex-wrap gap-2">
                       {row.payment_details?.slice(0, 2).map((method, i) => {
+                        // Safely check if method exists before accessing properties
+                        if (!method || typeof method !== 'object') {
+                          return null;
+                        }
+                        
                         const imageUrl =
                           (typeof method.provider_logo === "string" &&
                             method.provider_logo.trim()) ||
@@ -347,7 +357,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                           >
                             <img
                               src={imageUrl}
-                              alt={method.provider}
+                              alt={method.provider || ''}
                               className="w-5 h-5 rounded object-contain flex-shrink-0"
                               style={{ 
                                 width: '20px', 
@@ -361,7 +371,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                                 }
                               }}
                             />
-                            {method.provider}
+                            {method.provider || ''}
                           </span>
                         );
                       })}
@@ -405,7 +415,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
 
           {/* ---------------- pagination --------------- */}
           {filteredData.length > 0 && (
-            <div className="flex justify-center items-center gap-2 py-4 bg-gray-50 dark:bg-transparent">
+            <div className="flex justify-center items-center gap-2 py-4 bg-gray-50 dark:bg-[var(--bg-color)]">
               <button
                 onClick={() => onPageChange(currentPage - 1)}
                 disabled={currentPage === 1}
@@ -413,7 +423,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                   currentPage === 1
                     ? "opacity-50 cursor-not-allowed"
                     : "hover:bg-gray-100"
-                } dark:bg-[#23232B] dark:border-[#35353E] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]`}
+                } dark:bg-[var(--card-color)] dark:border-[#35353E] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]`}
               >
                 &lt;
               </button>
@@ -424,7 +434,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                   className={`px-3 py-1 rounded-md text-sm font-medium border ${
                     currentPage === i + 1
                       ? "bg-[#1D8751] text-white border-[#1D8751]"
-                      : "bg-white text-gray-500 border-gray-200 hover:bg-gray-100 dark:bg-[#23232B] dark:text-[#8C8CA1] dark:border-[#35353E] dark:hover:bg-[#35353E]"
+                      : "bg-white text-gray-500 border-gray-200 hover:bg-gray-100 dark:bg-[var(--card-color)] dark:text-[#8C8CA1] dark:border-[#35353E] dark:hover:bg-[#35353E]"
                   }`}
                 >
                   {i + 1}
@@ -437,7 +447,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                   currentPage === totalPages
                     ? "opacity-50 cursor-not-allowed"
                     : "hover:bg-gray-100"
-                } dark:bg-[#23232B] dark:border-[#35353E] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]`}
+                } dark:bg-[var(--card-color)] dark:border-[#35353E] dark:text-[#8C8CA1] dark:hover:bg-[#35353E]`}
               >
                 &gt;
               </button>
@@ -453,7 +463,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
           onClick={closeImageModal}
         >
           <div 
-            className="relative bg-white dark:bg-[#1D1D23] rounded-2xl max-w-2xl max-h-[90vh] w-full"
+            className="relative bg-white dark:bg-[var(--card-color)] rounded-2xl max-w-2xl max-h-[90vh] w-full"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}

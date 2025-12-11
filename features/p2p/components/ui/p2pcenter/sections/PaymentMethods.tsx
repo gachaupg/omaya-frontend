@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import Button from "@/features/p2p/components/Common/Button";
 import Input from "@/features/p2p/components/Common/Input";
 import {
@@ -78,6 +78,28 @@ const PaymentMethods = () => {
       dispatch(clearPostStatus());
     }
   }, [showAddDropdown, user, dispatch]);
+
+  // Close dropdown on outside click
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLDivElement | null>(null);
+
+  const handleClickOutside = useCallback((e: MouseEvent) => {
+    const target = e.target as Node;
+    if (
+      showAddDropdown &&
+      dropdownRef.current &&
+      !dropdownRef.current.contains(target) &&
+      buttonRef.current &&
+      !buttonRef.current.contains(target)
+    ) {
+      setShowAddDropdown(false);
+    }
+  }, [showAddDropdown]);
+
+  useEffect(() => {
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [handleClickOutside]);
 
   // Providers for selected method
   const providers = (adminMethods || []).filter(
@@ -182,165 +204,127 @@ const PaymentMethods = () => {
   }, [postError]);
 
   /** Render helpers */
-  const renderPaymentMethod = (method: PaymentMethod) => (
-    <div key={method.id} className="mb-5">
-      <div className="flex items-center mb-3">
-        <img
-          src={getHighResPaymentLogo(method.provider_logo, null, PAYMENT_LOGO_SIZE * 2)}
-          alt={`${method.payment_provider_name} Icon`}
-          className="w-12 h-12 sm:w-14 sm:h-14 rounded-full mr-3 object-contain flex-shrink-0"
-          loading="lazy"
-          onError={(e) => {
-            e.currentTarget.src = "/default-provider-logo.svg";
-          }}
-        />
-        <div className="flex flex-col">
-          <span className="text-gray-900 dark:text-white font-semibold flex items-center text-base sm:text-lg">
-            {method.payment_provider_name}
-          </span>
-          {/* Per–method payment dropdown (borderless) */}
-          <div className="mt-1">
-            <select
-              className="bg-transparent text-xs sm:text-sm text-gray-500 dark:text-gray-400 border-0 focus:ring-0 focus:outline-none cursor-pointer"
-              defaultValue=""
-            >
-              <option value="" disabled>
-                Select payment method
-              </option>
-              <option value={method.payment_method_name}>
-                {method.payment_method_name}
-              </option>
-            </select>
+  const renderPaymentMethod = (method: PaymentMethod) => {
+    // Safety check - return null if method is invalid
+    if (!method || typeof method !== 'object') {
+      return null;
+    }
+    
+    return (
+      <tr key={method.id} className="border-b border-gray-200 dark:border-[#35353E] hover:bg-gray-50 dark:hover:bg-[var(--card-color)] transition-colors">
+        <td className="px-4 py-4">
+          <div className="flex items-center gap-3">
+            <img
+              src={getHighResPaymentLogo(method?.provider_logo, null, PAYMENT_LOGO_SIZE * 2)}
+              alt={`${method?.payment_provider_name || 'Payment'} Icon`}
+              className="w-10 h-10 rounded-full object-contain flex-shrink-0"
+              loading="lazy"
+              onError={(e) => {
+                e.currentTarget.src = "/default-provider-logo.svg";
+              }}
+            />
+            <span className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+              {method.payment_provider_name}
+            </span>
           </div>
-        </div>
-        <button
-          disabled={deletingMethodId === method.id.toString()}
-          className="ml-auto text-[#1D8751] flex items-center hover:opacity-80 transition-opacity"
-          title="Delete"
-          onClick={() => handleDeleteMethod(method.id.toString())}
-        >
-          {deletingMethodId === method.id.toString() ? (
-            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#1D8751]"></div>
-          ) : (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-6 h-6 sm:w-7 sm:h-7 cursor-pointer"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2.5}
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
-              />
-            </svg>
-          )}
-        </button>
-      </div>
-      <div className="flex flex-col sm:flex-row gap-2">
-        {/* Account Name */}
-        <Input
-          placeholder="Accounthhhh Name"
-          value={method.account_name}
-          className="w-full sm:flex-1 h-[52px] rounded-3xl border border-gray-300 dark:border-[#353535] bg-white dark:bg-[#353535] text-gray-900 dark:text-white px-[14px] py-[10px] text-sm sm:text-base"
-          bgColor="#ffffff"
-          borderColor="#d1d5db"
-          disabled={!method.editable}
-          onChange={(e) =>
-            handleInputChange(method.id, "account_name", e.target.value)
-          }
-        />
-        {/* Account Number */}
-        <Input
-          placeholder="Account Number"
-          value={method.account_number}
-          className="w-full sm:flex-1 h-[52px] rounded-3xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#18181D] text-gray-900 dark:text-white px-[14px] py-[10px] text-sm sm:text-base"
-          bgColor="#ffffff"
-          borderColor="#d1d5db"
-          disabled={!method.editable}
-          onChange={(e) =>
-            handleInputChange(method.id, "account_number", e.target.value)
-          }
-        />
-      </div>
-    </div>
-  );
+        </td>
+        <td className="px-4 py-4 text-sm sm:text-base text-gray-900 dark:text-white">
+          {method?.account_name || '—'}
+        </td>
+        <td className="px-4 py-4 text-sm sm:text-base text-gray-900 dark:text-white font-mono">
+          {method?.account_number || '—'}
+        </td>
+        <td className="px-4 py-4 text-right">
+          <button
+            disabled={deletingMethodId === method.id.toString()}
+            className="text-[#1D8751] hover:text-red-500 transition-colors flex items-center justify-end"
+            title="Delete"
+            onClick={() => handleDeleteMethod(method.id.toString())}
+          >
+            {deletingMethodId === method.id.toString() ? (
+              <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-[#1D8751]"></div>
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-5 h-5 cursor-pointer"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
+                />
+              </svg>
+            )}
+          </button>
+        </td>
+      </tr>
+    );
+  };
 
   // Render helper specifically for Mobile Money items
-  const renderMobilePaymentMethod = (method: PaymentMethod) => (
-    <div key={method.id} className="mb-5">
-      <div className="flex items-center mb-3">
-        <img
-          src={method.provider_logo || "/default-provider-logo.svg"}
-          alt={`${method.payment_provider_name} Icon`}
-          className="w-10 h-10 sm:w-12 sm:h-12 rounded-full mr-3 object-cover"
-          onError={(e) => {
-            e.currentTarget.src = "/default-provider-logo.svg";
-          }}
-        />
-        <div className="flex flex-col">
-          <span className="text-gray-900 dark:text-white font-semibold flex items-center text-base sm:text-lg">
-            {method.payment_provider_name}
-          </span>
-        </div>
-        <button
-          disabled={deletingMethodId === method.id.toString()}
-          className="ml-auto text-[#1D8751] flex items-center hover:opacity-80 transition-opacity"
-          title="Delete"
-          onClick={() => handleDeleteMethod(method.id.toString())}
-        >
-          {deletingMethodId === method.id.toString() ? (
-            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#1D8751]"></div>
-          ) : (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-6 h-6 sm:w-7 sm:h-7 cursor-pointer"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2.5}
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
-              />
-            </svg>
-          )}
-        </button>
-      </div>
-
-      <div className="flex flex-col sm:flex-row gap-2">
-        <div className="w-full sm:flex-1">
-          <label className="block text-gray-600 dark:text-[#788099] text-xs sm:text-sm mb-1">Wallet Name</label>
-          <Input
-            placeholder="Wallet Name"
-            value={method.account_name}
-            className="w-full h-[52px] rounded-3xl border border-gray-300 dark:border-[#353535] bg-white dark:bg-[#353535] text-gray-900 dark:text-white px-3.5 py-2.5 text-sm sm:text-base"
-            bgColor="#ffffff"
-            borderColor="#d1d5db"
-            disabled={!method.editable}
-            onChange={(e) => handleInputChange(method.id, "account_name", e.target.value)}
-          />
-        </div>
-
-        <div className="w-full sm:flex-1">
-          <label className="block text-gray-600 dark:text-[#788099] text-xs sm:text-sm mb-1">Wallet Number</label>
-          <Input
-            placeholder="Wallet Number"
-            value={method.account_number}
-            className="w-full h-[52px] rounded-3xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#18181D] text-gray-900 dark:text-white px-3.5 py-2.5 text-sm sm:text-base"
-            bgColor="#ffffff"
-            borderColor="#d1d5db"
-            disabled={!method.editable}
-            onChange={(e) => handleInputChange(method.id, "account_number", e.target.value)}
-          />
-        </div>
-      </div>
-    </div>
-  );
+  const renderMobilePaymentMethod = (method: PaymentMethod) => {
+    // Safety check - return null if method is invalid
+    if (!method || typeof method !== 'object') {
+      return null;
+    }
+    
+    return (
+      <tr key={method.id} className="border-b border-gray-200 dark:border-[#35353E] hover:bg-gray-50 dark:hover:bg-[var(--card-color)] transition-colors">
+        <td className="px-4 py-4">
+          <div className="flex items-center gap-3">
+            <img
+              src={method?.provider_logo || "/default-provider-logo.svg"}
+              alt={`${method?.payment_provider_name || 'Payment'} Icon`}
+              className="w-10 h-10 rounded-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = "/default-provider-logo.svg";
+              }}
+            />
+            <span className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+              {method?.payment_provider_name || ''}
+            </span>
+          </div>
+        </td>
+        <td className="px-4 py-4 text-sm sm:text-base text-gray-900 dark:text-white">
+          {method?.account_name || '—'}
+        </td>
+        <td className="px-4 py-4 text-sm sm:text-base text-gray-900 dark:text-white font-mono">
+          {method?.account_number || '—'}
+        </td>
+        <td className="px-4 py-4 text-right">
+          <button
+            disabled={deletingMethodId === method?.id?.toString()}
+            className="text-[#1D8751] hover:text-red-500 transition-colors flex items-center justify-end"
+            title="Delete"
+            onClick={() => handleDeleteMethod(method?.id?.toString() || '')}
+          >
+            {deletingMethodId === method?.id?.toString() ? (
+              <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-[#1D8751]"></div>
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-5 h-5 cursor-pointer"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
+                />
+              </svg>
+            )}
+          </button>
+        </td>
+      </tr>
+    );
+  };
 
   const renderEmptyState = () => (
     <div className="flex flex-col items-center justify-center py-12 px-4">
@@ -395,7 +379,7 @@ const PaymentMethods = () => {
               onClick={() => setCurrentPage(page)}
               className={`w-8 h-8 rounded-lg ${currentPage === page
                 ? "bg-[#1D8751] text-white"
-                : "bg-gray-100 dark:bg-[#1D1D23] text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                : "bg-gray-100 dark:bg-card text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                 }`}
             >
               {page}
@@ -419,12 +403,17 @@ const PaymentMethods = () => {
 
   // Group methods into two sections: Bank and Mobile Money
   // For now place the first available method under Mobile Money and the rest under Bank
-  const mobileMoneyMethods: PaymentMethod[] = userPaymentDetails.length
-    ? [userPaymentDetails[22]]
+  // Safely filter out any undefined/null methods
+  const safeUserPaymentDetails = Array.isArray(userPaymentDetails) 
+    ? userPaymentDetails.filter((m: any) => m && typeof m === 'object')
+    : [];
+  
+  const mobileMoneyMethods: PaymentMethod[] = safeUserPaymentDetails.length > 22 && safeUserPaymentDetails[22]
+    ? [safeUserPaymentDetails[22]]
     : [];
 
-  const bankMethods: PaymentMethod[] = userPaymentDetails.length > 1
-    ? userPaymentDetails.slice(1)
+  const bankMethods: PaymentMethod[] = safeUserPaymentDetails.length > 1
+    ? safeUserPaymentDetails.slice(1).filter((m: any) => m && typeof m === 'object')
     : [];
 
   // Paginate bank methods only
@@ -443,45 +432,33 @@ const PaymentMethods = () => {
   // Inline Add Method Dropdown
   const renderAddMethodDropdown = () => (
     <div
-      className={`
-      absolute top-full mt-2
-      ${showAddDropdown ? "" : "hidden"}
-      w-[90vw] max-w-xs sm:w-64
-      left-1/2 -translate-x-1/2 sm:left-auto sm:right-0 sm:translate-x-0
-      rounded-xl border-2 border-[#1D8751] bg-[#0F1219] text-white shadow-[0_10px_30px_rgba(0,0,0,0.45)]
-      z-1000
-    `}
+      ref={dropdownRef}
+      className={
+        `absolute top-full mt-2 ${showAddDropdown ? "" : "hidden"} sm:w-48 md:w-56 right-0 rounded-lg border border-[#49C476] bg-[#0F1219] text-white shadow-lg z-10`
+      }
     >
-      <div className="p-3">
-        <p className="text-xs uppercase tracking-wide text-[#49C476] mb-2">Payment Method</p>
-        <div className="flex flex-col gap-2 max-h-64 overflow-y-auto pr-1">
-          {methodTypes.map((type, idx) => {
-            const isSelected = selectedMethod === type;
-            return (
-              <button
-                type="button"
-                key={type + idx}
-                className={`flex items-center gap-3 rounded-lg  px-3 py-2 text-left transition
-                ${isSelected ? "bg-[#14301F]" : "bg-transparent hover:bg-[#101c14]"}
-              `}
-                onClick={() => handleMethodSelection(type)}
-                disabled={adminLoading}
-              >
-                <span
-                  className={`flex h-5 w-5 items-center justify-center rounded-md border-2 ${isSelected ? "border-[#49C476] bg-[#49C476]" : "border-[#49C476]"
-                    }`}
-                >
-                  {isSelected && (
-                    <svg className="w-3 h-3 text-[#0F1219]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
-                      <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  )}
-                </span>
-                <span className="text-sm font-medium">{type}</span>
-              </button>
-            );
-          })}
-        </div>
+      <div className="py-2">
+        {methodTypes.map((type, idx) => {
+          const isSelected = selectedMethod === type;
+          return (
+            <button
+              type="button"
+              key={type + idx}
+              className={`flex items-center gap-3 px-4 py-2.5 text-left transition w-full hover:bg-[#1a1f2e] ${isSelected ? "bg-[#1a1f2e]" : ""}`}
+              onClick={() => { handleMethodSelection(type); setShowAddDropdown(false); }}
+              disabled={adminLoading}
+            >
+              <span className={`flex h-5 w-5 items-center justify-center rounded border-1 flex-shrink-0 ${isSelected ? "border-[#49C476] bg-[#49C476]" : "border-[#49C476]"}`}>
+                {isSelected ? (
+                  <svg className="w-3 h-3 text-[#0F1219]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
+                    <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ) : null}
+              </span>
+              <span className="text-sm">{type}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -489,29 +466,28 @@ const PaymentMethods = () => {
 
   /** Render */
   return (
-    <div className="w-full min-h-[600px] bg-white dark:bg-[#18181D] rounded-2xl p-4 text-gray-900 dark:text-white border-2 border-gray-200 dark:border-[#35353E] overflow-visible">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4 ">
-        <span className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-          Payment Methods
-        </span>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto relative">
-          <div className="w-full sm:w-auto">
+    <div className="w-full min-h-[600px] bg-white dark:bg-[#1D1D23] rounded-2xl p-4 text-gray-900 dark:text-white border-2 border-gray-200 dark:border-[#35353E] overflow-visible">
+      {/* Header: Bank title left, Add Method dropdown right */}
+      <div className="flex items-center justify-between mb-4 gap-4">
+        <div className="flex items-center gap-3">
+          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Bank</h4>
+        </div>
+
+        <div className="relative w-full sm:w-auto">
+          <div className="w-full sm:w-auto ml-auto" ref={buttonRef}>
             <Button
               height={44}
               borderRadius={24}
               variant="outline"
-              className="border-2 border-[#1D8751] w-full text-gray-900 dark:text-white relative flex items-center justify-between"
+              className="border-1 rounded-lg border-[#49C476] lg:w-56 sm:w-auto text-gray-900 dark:text-white relative flex items-center justify-center gap-2 px-4"
               size="md"
               onClick={() => setShowAddDropdown(prev => !prev)}
             >
-              <span className="flex items-center gap-2 text-sm sm:text-base font-semibold">
-                {!selectedMethod && (
-                  <span className="text-[#1D8751] text-xl font-bold">+</span>
-                )}
-                {selectedMethod || "Add Method"}
+              <span className="flex items-center gap-2">
+                <span className="flex items-center justify-center  text-[#49C476] font-light text-3xl">+</span>
+                <span className="text-sm font-medium">Add Method</span>
               </span>
-              <ChevronDown className="w-4 h-4 text-[#1D8751]" />
+              <ChevronDown className="w-4 h-4 text-neutral-200 ml-auto" />
             </Button>
             {renderAddMethodDropdown()}
           </div>
@@ -520,7 +496,7 @@ const PaymentMethods = () => {
 
       {/* Selected Method Details */}
       {selectedMethod && (
-        <div className="w-full border border-gray-200 dark:border-[#35353E] rounded-2xl p-4 sm:p-5 mb-6 bg-gray-50 dark:bg-[#1F1F27]">
+        <div className="w-full border border-gray-200 dark:border-[#35353E] rounded-2xl p-4 sm:p-5 mb-6 bg-gray-50 dark:bg-[#1D1D23]">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div>
               <p className="text-xs sm:text-sm text-gray-500 dark:text-[#8C8CA1]">Selected Method</p>
@@ -541,7 +517,7 @@ const PaymentMethods = () => {
               </label>
               <div className="relative">
                 <select
-                  className="w-full bg-white dark:bg-[#1C1C24] text-gray-900 dark:text-white appearance-none pr-10 rounded-xl border border-gray-200 dark:border-[#35353E] h-12 px-4 text-sm"
+                  className="w-full bg-white dark:bg-[#1D1D23] text-gray-900 dark:text-white appearance-none pr-10 rounded-xl border border-gray-200 dark:border-[#35353E] h-12 px-4 text-sm"
                   value={selectedProvider}
                   onChange={(e) => setSelectedProvider(e.target.value)}
                   disabled={adminLoading}
@@ -562,11 +538,35 @@ const PaymentMethods = () => {
             </div>
 
             {selectedProvider && (
-              <div className="p-3 rounded-xl bg-white dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E] flex items-center gap-3">
+              <div className="p-3 rounded-xl bg-white dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E] flex items-center gap-3">
                 {(() => {
                   const selectedProviderObj = providers.find(
-                    (p: any) => p.provider_name === selectedProvider
+                    (p: any) => p && typeof p === 'object' && p.provider_name === selectedProvider
                   );
+                  // Safely handle case where provider object might not exist
+                  if (!selectedProviderObj || typeof selectedProviderObj !== 'object') {
+                    return (
+                      <>
+                        <img
+                          src="/default-provider-logo.svg"
+                          alt={`${selectedProvider} logo`}
+                          className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-contain flex-shrink-0"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.currentTarget.src = "/default-provider-logo.svg";
+                          }}
+                        />
+                        <div>
+                          <p className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white">
+                            {selectedProvider}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-[#788099]">
+                            Selected Provider
+                          </p>
+                        </div>
+                      </>
+                    );
+                  }
                   return (
                     <>
                       <img
@@ -638,15 +638,26 @@ const PaymentMethods = () => {
         <>
           {/* Bank Section */}
           <div className="mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Bank</h4>
-            </div>
             <div>
               {bankMethods.length === 0 ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400">No bank payment methods added.</p>
               ) : (
                 <>
-                  {bankMethodsPaginated.map(renderPaymentMethod)}
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b-2 border-gray-200 dark:border-[#35353E]">
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Bank</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Account Name</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Account Number</th>
+                          <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-white">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {bankMethodsPaginated.map(renderPaymentMethod)}
+                      </tbody>
+                    </table>
+                  </div>
                   {renderPagination(bankMethods.length)}
                 </>
               )}
@@ -665,7 +676,21 @@ const PaymentMethods = () => {
               {mobileMoneyMethods.length === 0 ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400">No mobile money methods added.</p>
               ) : (
-                mobileMoneyMethods.map(renderMobilePaymentMethod)
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b-2 border-gray-200 dark:border-[#35353E]">
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Provider</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Account Name</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-white">Account Number</th>
+                        <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-white">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {mobileMoneyMethods.map(renderMobilePaymentMethod)}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           </div>

@@ -1,4 +1,4 @@
-/* src/components/Common/charts.tsx (or wherever you keep it) */
+/* src/components/Common/charts.tsx */
 import React, { useEffect, useState, useRef } from "react";
 import { tokens } from "@/styles/tokens";
 import Button from "./Button";
@@ -139,9 +139,7 @@ const Charts: React.FC<ChartProps> = ({
   const CustomTooltip = ({ active, payload, label }: any) =>
     active && payload?.length ? (
       <div
-        className={`rounded-lg border p-2
-          bg-white border-gray-200 text-gray-800
-          dark:bg-[#18181D] dark:border-[${tokens.colors.dark.border}] dark:text-[${tokens.colors.dark.textBody}]`}
+        className="rounded-lg border p-2 bg-white border-gray-200 text-gray-800 dark:bg-[#18181D] dark:border-[#35353E] dark:text-white"
       >
         <p className="font-medium">{label}</p>
         {filter !== "Sells" && (
@@ -176,50 +174,42 @@ const Charts: React.FC<ChartProps> = ({
   return (
     <div className="w-full">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 sm:gap-0 mb-8 pb-2">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
         {/* Title + buy/sell buttons */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-          <h3 className="text-sm sm:text-base text-gray-900 dark:text-white font-medium">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <h3 className="text-base font-medium text-gray-900 dark:text-white whitespace-nowrap">
             {title}
           </h3>
 
-          <div className="flex gap-2 sm:gap-3">
+          <div className="flex gap-2">
             {(["All", "Sells", "Buys"] as const).map((t) => (
-              <Button
+              <button
                 key={t}
-                borderRadius={24}
-                height={36}
-                variant={filter === t ? "primary" : "outline"}
-                size="sm"
                 onClick={() => setFilter(t)}
-                className={`border border-[#1D8751] px-3 sm:px-4 text-xs sm:text-sm
-                  ${filter === t ? "bg-[#1D8751] text-white" : "text-[#1D8751]"}
-                  dark:text-[#1D8751]}]`}
+                className={`px-4 py-1.5 text-sm font-medium rounded-full transition-colors border ${filter === t
+                    ? "bg-[#1D8751] text-white border-[#1D8751]"
+                    : "bg-transparent text-[#1D8751] dark:text-[#1D8751] border-[#1D8751]"
+                  }`}
               >
                 {t}
-              </Button>
+              </button>
             ))}
           </div>
         </div>
 
         {/* Time-filter dropdown */}
-        <div className="relative sm:ml-4" ref={dropdownRef}>
+        <div className="relative" ref={dropdownRef}>
           {showTimeFilter ? (
             <>
               <button
                 onClick={() => setIsDropdownOpen((o) => !o)}
-                className="flex items-center gap-1 px-4 py-1.5 text-sm
-                  text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50
-                  dark:text-[${tokens.colors.dark.textBody}]
-                  dark:border-[${tokens.colors.dark.border}]
-                  dark:hover:bg-[${tokens.colors.dark.card}] transition"
+                className="flex items-center gap-2 px-4 py-1.5 text-sm text-muted-foreground transition whitespace-nowrap"
               >
                 {selectedTimeFilter}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className={`w-4 h-4 transition-transform ${
-                    isDropdownOpen ? "rotate-180" : ""
-                  }`}
+                  className={`w-4 h-4 transition-transform ${isDropdownOpen ? "rotate-180" : ""
+                    }`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -232,31 +222,19 @@ const Charts: React.FC<ChartProps> = ({
               </button>
 
               {isDropdownOpen && (
-                <div
-                  className="absolute right-0 mt-1 z-10 min-w-[140px]
-                    bg-white border border-gray-200 rounded-lg shadow-lg
-                    dark:bg-[${tokens.colors.dark.card}]
-                    dark:border-[${tokens.colors.dark.border}]"
-                >
+                <div className="absolute right-0 mt-1 z-10 min-w-[140px] bg-white border border-gray-200 rounded-lg shadow-lg dark:bg-[#1D1D23] dark:border-[#35353E]">
                   {timeFilterOptions.map((opt) => (
                     <button
                       key={opt}
                       onClick={() => handleTimeFilterSelect(opt)}
-                      className={`block w-full text-left px-4 py-2 text-sm
-                        hover:bg-gray-100 dark:hover:bg-[${
-                          tokens.colors.dark.border
-                        }]
-                        ${
-                          selectedTimeFilter === opt
-                            ? "text-[#1D8751] dark:bg-[${tokens.colors.dark.border}]"
-                            : "text-gray-700 dark:text-[${tokens.colors.dark.textBody}]"
-                        } ${
-                        opt === timeFilterOptions[0] ? "rounded-t-lg" : ""
-                      } ${
-                        opt === timeFilterOptions[timeFilterOptions.length - 1]
+                      className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-[#35353E] ${selectedTimeFilter === opt
+                          ? "text-[#1D8751] bg-gray-50 dark:bg-[#35353E]"
+                          : "text-gray-700 dark:text-white"
+                        } ${opt === timeFilterOptions[0] ? "rounded-t-lg" : ""
+                        } ${opt === timeFilterOptions[timeFilterOptions.length - 1]
                           ? "rounded-b-lg"
                           : ""
-                      }`}
+                        }`}
                     >
                       {opt}
                     </button>
@@ -265,7 +243,7 @@ const Charts: React.FC<ChartProps> = ({
               )}
             </>
           ) : (
-            <button className="flex items-center gap-1 px-4 py-1.5 text-sm text-gray-700 dark:text-[${tokens.colors.dark.textBody}]">
+            <button className="flex items-center gap-2 px-4 py-1.5 text-sm text-gray-700 dark:text-white whitespace-nowrap">
               {timeFrame}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -285,12 +263,7 @@ const Charts: React.FC<ChartProps> = ({
       </div>
 
       {/* Chart card */}
-      <div
-        className={`w-full rounded-2xl p-6 
-          bg-white border border-[#E8EFF5] dark:border-[#35353E]
-          dark:bg-[#18181D]
-          dark:border-[${tokens.colors.dark.border}]`}
-      >
+      <div className="w-full rounded-2xl p-6 bg-white border border-[#E8EFF5] dark:border-[#35353E] dark:bg-[#18181D]">
         <div className="h-48 sm:h-64 md:h-80">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
@@ -317,10 +290,10 @@ const Charts: React.FC<ChartProps> = ({
 
               <XAxis
                 dataKey="name"
-                className="text-gray-700 dark:text-[${tokens.colors.dark.textBody}]"
+                className="text-gray-700 dark:text-white"
               />
               <YAxis
-                className="text-gray-700 dark:text-[${tokens.colors.dark.textBody}]"
+                className="text-gray-700 dark:text-white"
                 tickFormatter={(v) => v.toLocaleString()}
               />
 

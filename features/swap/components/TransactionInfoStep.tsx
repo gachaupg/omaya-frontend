@@ -34,12 +34,12 @@ interface TransactionInfoStepProps {
 }
 
 const strongBorder =
-  "border-[1.5px] border-gray-200 dark:border-white/10 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]";
+  "border-[1.5px] border-[#35353E] dark:border-[#35353E]";
 const baseCard =
-  `rounded-[26px] ${strongBorder} bg-transparent dark:text-white text-gray-900`;
+  `rounded-[26px] ${strongBorder} bg-white dark:bg-[#18181D] dark:text-white text-gray-900`;
 const labelCopy = "text-[12px] uppercase tracking-wide dark:text-[#7d7f95] text-gray-600";
 const inputBase =
-  `rounded-2xl dark:bg-[#1B1B23] bg-white ${strongBorder} dark:text-white text-gray-900 px-4 py-2 w-full text-lg dark:placeholder:text-[#5f6070] placeholder:text-gray-400 focus:outline-none`;
+  `rounded-2xl bg-transparent dark:bg-transparent ${strongBorder} dark:text-white text-[#35353e] px-4 py-2 w-full text-lg dark:placeholder:text-[#5f6070] placeholder:text-gray-400 focus:outline-none h-[48px]`;
 
 const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
   const { isDark } = useTheme();
@@ -86,7 +86,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      
+
       // Check if click is outside from asset dropdown
       if (
         isFromAssetOpen &&
@@ -97,7 +97,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
       ) {
         onFromAssetToggle();
       }
-      
+
       // Check if click is outside to asset dropdown
       if (
         isToAssetOpen &&
@@ -122,87 +122,66 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
   const updateDropdownPosition = (isFrom: boolean): React.CSSProperties => {
     if (typeof window === "undefined") {
       return {
-        position: "fixed",
+        position: "absolute",
         top: 200,
         left: "50%",
         transform: "translateX(-50%)",
         width: 280,
       };
     }
-    
+
     const viewportWidth = window.innerWidth || 0;
     const minMargin = 16;
-    const minWidth = 280;
-    const maxWidth = 450;
-    
-    // Find the specific dropdown trigger element (normal positioning - relative to trigger)
-    const dropdownElement = isFrom ? fromAssetDropdownRef.current : toAssetDropdownRef.current;
-    let currentCard: Element | null = null;
-    
-    if (dropdownElement) {
-      // Find the card that contains this specific dropdown
-      let parent = dropdownElement.parentElement;
+
+    // Get the trigger element
+    const triggerEl = isFrom ? fromAssetDropdownRef.current : toAssetDropdownRef.current;
+    let currentCard: HTMLElement | null = null;
+
+    // Find the parent card containing this trigger
+    if (triggerEl) {
+      let parent = triggerEl.parentElement;
       while (parent) {
         if (parent.hasAttribute("data-swap-card")) {
-          currentCard = parent;
+          currentCard = parent as HTMLElement;
           break;
         }
         parent = parent.parentElement;
       }
     }
-    
-    // Fallback to first card if we can't find via DOM traversal
+
+    // Fallback to first card if none found
     if (!currentCard) {
-      const allCards = document.querySelectorAll("[data-swap-card='true']");
-      if (isFrom && allCards.length > 0) {
-        currentCard = allCards[0];
-      } else if (!isFrom && allCards.length > 1) {
-        currentCard = allCards[1];
-      } else if (allCards.length > 0) {
-        currentCard = allCards[0];
-      }
+      currentCard = document.querySelector("[data-swap-card='true']") as HTMLElement;
     }
-    
+
+    // Default dropdown style (fallback)
     let dropdownStyle: React.CSSProperties = {
-      position: "fixed",
+      position: "absolute",
       top: 200,
-      left: (viewportWidth - minWidth) / 2,
-      width: minWidth,
+      left: "50%",
+      transform: "translateX(-50%)",
+      width: 280,
     };
 
-    if (currentCard && dropdownElement) {
-      const cardRect = currentCard.getBoundingClientRect();
-      const triggerRect = dropdownElement.getBoundingClientRect();
-      
-      // Calculate reduced width so dropdowns don't cover amount inputs (40% of card width)
-      let desiredWidth = Math.min(maxWidth, Math.max(minWidth, cardRect.width * 0.4));
-      
-      // Normal positioning: position dropdown below the trigger element
-      const top = triggerRect.bottom + 4; // 4px below the trigger
-      
-      // Position to align with the trigger element (normal behavior)
-      let left = triggerRect.left;
-      
-      // Ensure dropdown doesn't go off screen on the right
+    if (triggerEl && currentCard) {
+      const triggerRect = triggerEl.getBoundingClientRect();
+
+      // Match dropdown width exactly to trigger button width
+      let desiredWidth = triggerRect.width;
+
+      let top = triggerRect.bottom + window.scrollY + 4; // 4px below button
+      let left = triggerRect.left + window.scrollX;
+
+      // Ensure dropdown doesn't go off-screen
       if (left + desiredWidth > viewportWidth - minMargin) {
-        left = viewportWidth - desiredWidth - minMargin;
+        left = viewportWidth - desiredWidth - minMargin + window.scrollX;
       }
-      
-      // Ensure dropdown doesn't go off the left edge
       if (left < minMargin) {
-        left = minMargin;
-      }
-      
-      // If trigger is too narrow, use trigger width but ensure minimum
-      if (triggerRect.width < desiredWidth) {
-        // Keep left aligned with trigger, but ensure it doesn't overflow
-        if (left + desiredWidth > viewportWidth - minMargin) {
-          left = Math.max(minMargin, viewportWidth - desiredWidth - minMargin);
-        }
+        left = minMargin + window.scrollX;
       }
 
       dropdownStyle = {
-        position: "fixed",
+        position: "absolute",
         top,
         left,
         width: desiredWidth,
@@ -211,6 +190,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
 
     return dropdownStyle;
   };
+
 
   const renderAssetDropdown = (
     asset: SupportedAsset | null,
@@ -240,11 +220,11 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
       (
         <div
           ref={isFrom ? fromAssetDropdownContentRef : toAssetDropdownContentRef}
-          className="bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl z-[9999] max-h-[70vh] sm:max-h-[60vh] overflow-hidden"
+          className="bg-white dark:bg-[#18181D] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl z-[9999] max-h-[70vh] sm:max-h-[60vh] overflow-hidden"
           style={dropdownStyle}
         >
           {/* Dropdown Title */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-600">
+          <div className="flex items-center justify-between px-2 sm:px-3 md:px-4 py-2 sm:py-3 border-b border-gray-200 dark:border-gray-600">
             <h3 className="text-base font-semibold text-gray-900 dark:text-white">Currency from</h3>
             <button
               onClick={toggle}
@@ -256,9 +236,9 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
               </svg>
             </button>
           </div>
-          
+
           {/* Search Input */}
-          <div className="p-2 border-b border-gray-200 dark:border-gray-600">
+          <div className="p-1 sm:p-2 border-b border-gray-200 dark:border-gray-600">
             <div className="relative">
               <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
               <input
@@ -272,7 +252,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
           </div>
 
           {/* Asset List */}
-          <div className="max-h-[60vh] sm:max-h-[50vh] overflow-y-auto p-1">
+          <div className="max-h-[60vh] sm:max-h-[50vh] overflow-y-auto p-0.5 sm:p-1">
             {filtered.length === 0 ? (
               <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
                 {searchValue ? "No assets found" : "No assets available"}
@@ -280,50 +260,48 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
             ) : (
               <>
                 {filtered.map((option, idx) => (
-                <div
-                  key={`${option.ticker}-${option.network}-${idx}`}
-                  className="flex items-center gap-3 p-3 sm:p-4 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors duration-150"
-                  onClick={() => {
-                    onSelect(option);
-                    toggle();
-                  }}
-                >
-                  <img
-                    src={
-                      option.image ||
-                      option.image_url ||
-                      option.asset_image ||
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                    }
-                    alt={option.name || "Asset"}
-                    className="w-6 h-6 rounded-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src =
-                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                  <div
+                    key={`${option.ticker}-${option.network}-${idx}`}
+                    className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 md:p-4 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors duration-150"
+                    onClick={() => {
+                      onSelect(option);
+                      toggle();
                     }}
-                  />
-                  <div className="flex-1">
-                    <div className={`font-medium flex items-center gap-2 ${
-                      isDark ? "text-white" : "text-[#111827]"
-                    }`}>
-                      {(option.ticker || option.symbol || option.name || "Unknown").toUpperCase()}
-                      {option.network && (
-                        <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                          {option.network}
-                        </span>
+                  >
+                    <img
+                      src={
+                        option.image ||
+                        option.image_url ||
+                        option.asset_image ||
+                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                      }
+                      alt={option.name || "Asset"}
+                      className="w-6 h-6 rounded-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src =
+                          "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                      }}
+                    />
+                    <div className="flex-1">
+                      <div className={`font-medium flex items-center gap-2 ${isDark ? "text-white" : "text-[#111827]"
+                        }`}>
+                        {(option.ticker || option.symbol || option.name || "Unknown").toUpperCase()}
+                        {option.network && (
+                          <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                            {option.network}
+                          </span>
+                        )}
+                      </div>
+                      <div className={`text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"
+                        }`}>
+                        {option.name || option.ticker || "Unknown Asset"}
+                      </div>
+                    </div>
+                    {asset?.ticker === option.ticker &&
+                      asset?.network === option.network && (
+                        <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
                       )}
-                    </div>
-                    <div className={`text-sm ${
-                      isDark ? "text-[#788099]" : "text-[#475569]"
-                    }`}>
-                      {option.name || option.ticker || "Unknown Asset"}
-                    </div>
                   </div>
-                  {asset?.ticker === option.ticker &&
-                    asset?.network === option.network && (
-                      <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                    )}
-                </div>
                 ))}
               </>
             )}
@@ -349,7 +327,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
         <button
           type="button"
           onClick={toggle}
-          className={`flex items-center justify-between w-full rounded-2xl ${strongBorder} dark:bg-[#1B1B23] bg-white px-4 py-2 text-lg`}
+          className={`flex items-center justify-between w-full rounded-2xl ${strongBorder} bg-transparent dark:bg-transparent px-4 py-2 text-lg h-[48px]`}
         >
           <div className="flex items-center gap-3 text-left min-w-0">
             <img
@@ -369,15 +347,14 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
             <p className="text-lg dark:text-white text-gray-900 font-semibold truncate">
               {asset
                 ? asset.ticker?.toUpperCase() ||
-                  asset.symbol?.toUpperCase() ||
-                  asset.name
+                asset.symbol?.toUpperCase() ||
+                asset.name
                 : "Select Asset"}
             </p>
           </div>
           <svg
-            className={`w-5 h-5 dark:text-[#7d7f95] text-gray-500 transition-transform flex-shrink-0 ${
-              isOpen ? "rotate-180" : ""
-            }`}
+            className={`w-5 h-5 dark:text-[#7d7f95] text-gray-500 transition-transform flex-shrink-0 ${isOpen ? "rotate-180" : ""
+              }`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -395,8 +372,14 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
     value: string,
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void,
     asset: SupportedAsset | null,
-    isActive: boolean
-  ) => (
+    isActive: boolean,
+    isYouSend: boolean = false
+  ) => {
+    const inputClassName = isYouSend 
+      ? inputBase 
+      : inputBase.replace('bg-transparent dark:bg-transparent', 'bg-white dark:bg-[#35353E]');
+    
+    return (
     <div className="space-y-2">
       {label && <p className={labelCopy}>{label}</p>}
       <div className="relative">
@@ -406,9 +389,9 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
           value={value}
           onChange={onChange}
           placeholder="Enter amount"
-          className={inputBase}
+          className={inputClassName}
         />
-        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold dark:text-white/80 text-gray-700">
+        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#35353e] dark:text-white/80">
           {asset?.ticker?.toUpperCase() ||
             asset?.symbol?.toUpperCase() ||
             "USDT"}
@@ -420,28 +403,41 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
         )}
       </div>
     </div>
-  );
+    );
+  };
 
   return (
     <div className="w-full flex flex-col   dark:text-white text-gray-900">
-      <h2 className="text-base sm:text-lg md:text-xl font-semibold mb-4 dark:text-[#9ba3c5] text-gray-700">
+      <h2 className="text-base sm:text-lg md:text-xl font-semibold mb-2 sm:mb-3 md:mb-4 dark:text-[#9ba3c5] text-gray-700">
         <span className="dark:text-[#7e7e8f] text-gray-500 mr-1">1-</span>
         Transaction Info
       </h2>
 
       {/* You Send */}
-      <div className="relative mb-4">
-        <div className={`${baseCard} p-1 sm:p-6 space-y-4`} data-swap-card="true">
-          <div className="flex flex-col sm:flex-row sm:items-end gap-1 sm:gap-4">
+      <div className="relative mb-2 sm:mb-3 md:mb-4">
+        <div className={`${baseCard} p-2 sm:p-3 md:p-6 space-y-3 sm:space-y-4`} data-swap-card="true">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-3 md:gap-4">
             <div className="space-y-1 sm:flex-1">
               <p className="text-sm sm:text-base font-semibold">You Send</p>
-              <p className={labelCopy}>Asset</p>
+              <p className="text-xs dark:text-[#7d7f95] text-gray-500 pb-1">
+                I want to Send
+              </p>
             </div>
-            <p className="text-xs dark:text-[#7d7f95] text-gray-500 pb-1 ml-2 sm:ml-0 sm:flex-1 sm:pl-10 lg:pl-10">
-              I want to Send
+            <p className={`${labelCopy} ml-2 sm:ml-0 sm:flex-1 sm:pl-10 lg:pl-10 pb-1`}>
+              Asset
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 md:gap-4">
+            <div className="flex-1 min-w-0">
+              {renderAmountInput(
+                "",
+                fromAmount,
+                onFromAmountChange,
+                fromAsset,
+                activeInputField === "from",
+                true
+              )}
+            </div>
             <div className="flex-1 min-w-0">
               {renderAssetSelector(
                 fromAsset,
@@ -451,15 +447,6 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                 searchTerm,
                 onSearchTermChange,
                 true
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              {renderAmountInput(
-                "",
-                fromAmount,
-                onFromAmountChange,
-                fromAsset,
-                activeInputField === "from"
               )}
             </div>
           </div>
@@ -485,18 +472,29 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
       </div>
 
       {/* You Receive */}
-      <div className="mb-4">
-        <div className={`${baseCard} p-4 sm:p-6 space-y-4`} data-swap-card="true">
-          <div className="flex flex-col sm:flex-row sm:items-end gap-1 sm:gap-4">
+      <div className="mb-2 sm:mb-3 md:mb-4">
+        <div className={`${baseCard} p-2 sm:p-3 md:p-6 space-y-3 sm:space-y-4`} data-swap-card="true">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-3 md:gap-4">
             <div className="space-y-1 sm:flex-1">
               <p className="text-sm sm:text-base font-semibold">You Receive</p>
-              <p className={labelCopy}>Asset</p>
+              <p className="text-xs dark:text-[#7d7f95] text-gray-500 pb-1">
+                I want to Receive
+              </p>
             </div>
-            <p className="text-xs dark:text-[#7d7f95] text-gray-500 pb-1 ml-4 sm:ml-0 sm:flex-1 sm:pl-10 lg:pl-16">
-              I want to Receive
+            <p className={`${labelCopy} ml-4 sm:ml-0 sm:flex-1 sm:pl-10 lg:pl-16 pb-1`}>
+              Asset
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 md:gap-4">
+            <div className="flex-1 min-w-0">
+              {renderAmountInput(
+                "",
+                toAmount,
+                onToAmountChange,
+                toAsset,
+                activeInputField === "to"
+              )}
+            </div>
             <div className="flex-1 min-w-0">
               {renderAssetSelector(
                 toAsset,
@@ -508,24 +506,15 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                 false
               )}
             </div>
-            <div className="flex-1 min-w-0">
-              {renderAmountInput(
-                "",
-                toAmount,
-                onToAmountChange,
-                toAsset,
-                activeInputField === "to"
-              )}
-            </div>
           </div>
         </div>
       </div>
 
       {/* Disclaimer */}
       <div className="flex items-center gap-2 text-xs sm:text-sm dark:text-[#d5d7e2] text-gray-600 mb-3">
-        <span className="flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5 rounded-full border border-red-500 text-red-400 text-[10px]">
-          !
-        </span>
+        <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-[#1D8751] rounded-full flex items-center justify-center flex-shrink-0">
+          <span className="text-[#1D8751] text-[10px] font-bold">i</span>
+        </div>
         <p>
           This is only an estimated price based on current market rates. The final price will be
           confirmed when we receive the funds.
@@ -545,17 +534,16 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
             estimateLoading ||
             swapLoading
           }
-          className={`w-full text-white text-sm sm:text-base font-medium py-3 sm:py-2.5 rounded-3xl flex items-center justify-center gap-2 transition-colors min-h-[48px] mb-2 ${
-            !fromAsset ||
+          className={`w-full text-white text-sm sm:text-base font-medium py-3 sm:py-2.5 rounded-3xl flex items-center justify-center gap-2 transition-colors min-h-[48px] mb-2 ${!fromAsset ||
             !toAsset ||
             !fromAmount ||
             parseFloat(fromAmount) <= 0 ||
             !estimate ||
             estimateLoading ||
             swapLoading
-              ? "bg-gray-500 cursor-not-allowed"
-              : "bg-[#1D8751] hover:bg-[#147043]"
-          }`}
+            ? "bg-gray-500 cursor-not-allowed"
+            : "bg-[#1D8751] hover:bg-[#147043]"
+            }`}
         >
           {swapLoading ? (
             <>

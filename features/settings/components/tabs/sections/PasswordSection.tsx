@@ -113,55 +113,37 @@ const PasswordSection: React.FC = () => {
         Password
       </div>
 
-      <section className="dark:bg-[#1D1D23] bg-white rounded-2xl dark:border-[#35353E] border-[#E8EFF5] border-2 p-3 sm:p-4 lg:p-6 shadow-lg">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 mb-2">
+      <section className="dark:bg-[var(--card-color)] bg-white rounded-2xl dark:border-[#35353E] border-[#E8EFF5] border-2 p-2 sm:p-3 md:p-4 lg:p-6 shadow-lg">
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+
           <div>
-            <label className="block text-xs dark:text-[#fff] text-[#051015] mb-1">
+            <label className="block text-xs dark:text-white text-[#051015] mb-1">
               New Password*
             </label>
-            <div className="flex items-center dark:bg-[#23232B] bg-gray-100 rounded-2xl px-3 sm:px-4 py-2 sm:py-2.5 dark:border-[#35353E] border-gray-300 border">
-              <svg
-                width="16"
-                height="16"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="#1D8751"
-              >
-                <rect
-                  x="3"
-                  y="11"
-                  width="18"
-                  height="8"
-                  rx="4"
-                  strokeWidth="2"
-                />
+
+            <div className="flex items-center dark:bg-[var(--card-color)] bg-gray-100 rounded-2xl px-3 sm:px-4 py-2 sm:py-2.5 border dark:border-[#35353E] border-gray-300">
+
+              <svg width="16" height="16" viewBox="0 0 24 24" stroke="#1D8751" fill="none">
+                <rect x="3" y="11" width="18" height="8" rx="4" strokeWidth="2" />
                 <path d="M7 11V7a5 5 0 0110 0v4" strokeWidth="2" />
               </svg>
+
               <input
                 type={showPasswords.new ? "text" : "password"}
-                className="bg-transparent flex-1 ml-2 outline-none text-sm sm:text-base text-[#788099] dark:text-white autofill:bg-transparent autofill:shadow-[inset_0_0_0px_1000px_transparent] dark:autofill:bg-transparent dark:autofill:shadow-[inset_0_0_0px_1000px_transparent]"
+                className="bg-transparent flex-1 min-w-0 ml-2 outline-none text-sm sm:text-base text-[#788099] dark:text-white"
                 placeholder="Enter new password"
                 value={formData.new_password}
-                onChange={(e) =>
-                  handleInputChange("new_password", e.target.value)
-                }
+                onChange={(e) => handleInputChange("new_password", e.target.value)}
                 autoComplete="new-password"
-                data-form-type="other"
-                data-lpignore="true"
-                data-1p-ignore="true"
               />
+
               <button
                 type="button"
                 onClick={() => togglePasswordVisibility("new")}
-                className="dark:text-[#788099] text-gray-500 dark:hover:text-white hover:text-gray-700 transition-colors"
+                className="dark:text-[#788099] text-gray-500 dark:hover:text-white hover:text-gray-700 transition-colors flex-shrink-0"
               >
-                <svg
-                  width="16"
-                  height="16"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
+                <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" fill="none">
                   {showPasswords.new ? (
                     <path
                       d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"
@@ -176,59 +158,40 @@ const PasswordSection: React.FC = () => {
                 </svg>
               </button>
             </div>
+
             {errors.new_password && (
-              <div className="text-red-500 text-xs mt-1">
-                {errors.new_password}
-              </div>
+              <div className="text-red-500 text-xs mt-1">{errors.new_password}</div>
             )}
           </div>
+
+          {/* CONFIRM PASSWORD */}
           <div>
-            <label className="block text-xs dark:text-[#fff] text-[#051015] mb-1">
+            <label className="block text-xs dark:text-white text-[#051015] mb-1">
               Confirm New Password*
             </label>
-            <div className="flex items-center dark:bg-[#23232B] bg-gray-100 rounded-2xl px-3 sm:px-4 py-2 sm:py-2.5 dark:border-[#35353E] border-gray-300 border">
-              <svg
-                width="16"
-                height="16"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="#1D8751"
-              >
-                <rect
-                  x="3"
-                  y="11"
-                  width="18"
-                  height="8"
-                  rx="4"
-                  strokeWidth="2"
-                />
+
+            <div className="flex items-center dark:bg-[var(--card-color)] bg-gray-100 rounded-2xl px-3 sm:px-4 py-2 sm:py-2.5 border dark:border-[#35353E] border-gray-300">
+
+              <svg width="16" height="16" viewBox="0 0 24 24" stroke="#1D8751" fill="none">
+                <rect x="3" y="11" width="18" height="8" rx="4" strokeWidth="2" />
                 <path d="M7 11V7a5 5 0 0110 0v4" strokeWidth="2" />
               </svg>
+
               <input
                 type={showPasswords.confirm ? "text" : "password"}
-                className="bg-transparent flex-1 ml-2 outline-none text-sm sm:text-base text-[#788099] dark:text-white autofill:bg-transparent autofill:shadow-[inset_0_0_0px_1000px_transparent] dark:autofill:bg-transparent dark:autofill:shadow-[inset_0_0_0px_1000px_transparent]"
+                className="bg-transparent flex-1 min-w-0 ml-2 outline-none text-sm sm:text-base text-[#788099] dark:text-white"
                 placeholder="Confirm new password"
                 value={formData.confirm_password}
-                onChange={(e) =>
-                  handleInputChange("confirm_password", e.target.value)
-                }
+                onChange={(e) => handleInputChange("confirm_password", e.target.value)}
                 autoComplete="new-password"
-                data-form-type="other"
-                data-lpignore="true"
-                data-1p-ignore="true"
               />
+
               <button
                 type="button"
                 onClick={() => togglePasswordVisibility("confirm")}
-                className="dark:text-[#788099] text-[#788099] dark:hover:text-white hover:text-gray-700 transition-colors"
+                className="dark:text-[#788099] text-gray-500 dark:hover:text-white hover:text-gray-700 transition-colors flex-shrink-0"
               >
-                <svg
-                  width="16"
-                  height="16"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
+                <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" fill="none">
                   {showPasswords.confirm ? (
                     <path
                       d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"
@@ -243,13 +206,13 @@ const PasswordSection: React.FC = () => {
                 </svg>
               </button>
             </div>
+
             {errors.confirm_password && (
-              <div className="text-red-500 text-xs mt-1">
-                {errors.confirm_password}
-              </div>
+              <div className="text-red-500 text-xs mt-1">{errors.confirm_password}</div>
             )}
           </div>
         </div>
+
         <button
           className="w-full py-2 sm:py-2.5 rounded-[18px] border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={handleSubmit}
@@ -257,7 +220,9 @@ const PasswordSection: React.FC = () => {
         >
           {updating ? "Updating..." : "Update"}
         </button>
+
       </section>
+
     </>
   );
 };

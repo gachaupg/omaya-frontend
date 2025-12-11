@@ -6,7 +6,7 @@ import Filters from "./ui/filters";
 
 const Settings = () => {
   return (
-    <div className="flex flex-col w-full px-3 sm:px-4 pt-2 pb-16 md:pb-24">
+    <div className="flex flex-col w-full px-0 sm:px-1 md:px-4 pt-0 sm:pt-1 md:pt-2 pb-1 sm:pb-2 md:pb-24">
       <Filters />
     </div>
   );

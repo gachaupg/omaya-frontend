@@ -63,7 +63,6 @@ ENV HOSTNAME=0.0.0.0
 
 USER nextjs
 
-# Expose the port the app runs on
 EXPOSE 3000
 
 CMD ["node", "server.js"]

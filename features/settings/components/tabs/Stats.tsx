@@ -19,6 +19,7 @@ import { fetchReferralWallet } from "@/features/settings/slices/referralWalletSl
 import { formatNumber } from "@/utils/formatters";
 import { formatCurrency, formatAmount } from "@/lib/globalFormatter";
 import { useRouter } from "next/navigation";
+import VerifiedBadge from "@/components/ui/VerifiedBadge";
 
 import { logger } from "@/lib/utils/logger";
 
@@ -160,7 +161,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
   }, [dispatch, isAuthenticated, user?.referral_code]);
 
  return (
-   <Card className="w-full p-3 sm:p-4 dark:bg-[#1D1D23] bg-gray-50 rounded-2xl dark:border-[#35353E] border-gray-300 border-2 dark:text-white text-gray-900 shadow-lg">
+   <Card className="w-full p-3 sm:p-4 dark:bg-[var(--card-color)] bg-gray-50 rounded-2xl dark:border-[#35353E] border-gray-300 border-2 dark:text-white text-gray-900 shadow-lg">
       {/* Header */}
       <div className="flex w-full flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
@@ -190,9 +191,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
             </span>
             <span className="flex items-center gap-1.5 text-[#1D8751] text-[8px] sm:text-xs font-medium whitespace-nowrap">
               <span className="shrink-0">Verified Profile</span>
-              <span className="w-4 h-4 bg-[#1D8751] rounded-full flex items-center justify-center shrink-0">
-               <img src="https://res.cloudinary.com/pitz/image/upload/v1763725740/Frame_34214_uymbow.png" alt="" />
-              </span>
+              <VerifiedBadge size={16} />
             </span>
           </div>
         </div>
@@ -302,11 +301,11 @@ const Stats = ({ onSupportClick }: StatsProps) => {
                 </svg>
               </span>
               {showDepositsDropdown && (
-                <div className="absolute top-6 right-0 dark:bg-[#2A2A35] bg-white dark:border-[#35353E] border-gray-300 rounded-lg shadow-lg z-10 w-full border">
+                <div className="absolute top-6 right-0 dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-300 rounded-lg shadow-lg z-10 w-full border">
                   {timeFilterOptions.map((option) => (
                     <div
                       key={option}
-                      className="px-3 py-2 text-xs sm:text-sm dark:text-white text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 cursor-pointer"
+                      className="px-3 py-2 text-xs sm:text-sm dark:text-white text-gray-900 dark:hover:bg-[var(--card-color)] hover:bg-gray-100 cursor-pointer"
                       onClick={() => {
                         setDepositsTimeFilter(option);
                         setShowDepositsDropdown(false);
@@ -381,11 +380,11 @@ const Stats = ({ onSupportClick }: StatsProps) => {
                 </svg>
               </span>
               {showWithdrawalsDropdown && (
-                <div className="absolute top-6 right-0 dark:bg-[#2A2A35] bg-white dark:border-[#35353E] border-gray-300 rounded-lg shadow-lg z-10 w-full border">
+                <div className="absolute top-6 right-0 dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-300 rounded-lg shadow-lg z-10 w-full border">
                   {timeFilterOptions.map((option) => (
                     <div
                       key={option}
-                      className="px-3 py-2 text-xs sm:text-sm dark:text-white text-gray-900 dark:hover:bg-[#35353E] hover:bg-gray-100 cursor-pointer"
+                      className="px-3 py-2 text-xs sm:text-sm dark:text-white text-gray-900 dark:hover:bg-[var(--card-color)] hover:bg-gray-100 cursor-pointer"
                       onClick={() => {
                         setWithdrawalsTimeFilter(option);
                         setShowWithdrawalsDropdown(false);

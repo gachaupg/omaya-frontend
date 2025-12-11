@@ -13,6 +13,7 @@ import Market from "./tabs/Market";
 import Orders from "./tabs/Orders";
 import NotFound from "./tabs/NotFound";
 import P2PCenter from "./tabs/p2pCenter";
+import { Chats } from "./tabs/Chats";
 import { P2PDataProvider } from "./P2PDataProvider";
 import { useGroupedMessages } from "../hooks/useGroupedMessages";
 import { RootState } from "@/store/rootReducer";
@@ -28,10 +29,11 @@ const P2PLayout = () => {
    const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const { totalUnreadCount } = useSelector((state: RootState) => state.unreadMessages);
 
+   // Reduce refetch interval when on chats tab to prevent constant reloading
    useGroupedMessages({ 
     enabled: isAuthenticated,
     limit: 100,
-    refetchInterval: 30000,
+    refetchInterval: activeTab === "chats" ? 60000 : 30000, // 60s for chats, 30s for others
   });
   // Update active tab when query parameter changes
   useEffect(() => {
@@ -81,13 +83,21 @@ const handleTabChange = (tab: string) => {
         return <Orders />;
       case "center":
         return <P2PCenter />;
+          case "chats":
+            return <Chats />;
+      case "chats":
+        return (
+          <div className="w-full rounded-2xl border border-dashed border-[#D1D2D4FF] dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] p-6 text-center text-sm text-[#788099] dark:text-[#A2A4A9]">
+            Chats coming soon.
+          </div>
+        );
       default:
         return <NotFound />;
     }
   };
   return (
     <P2PDataProvider>
-      <div className="dark:bg-[#18181D] bg-[#EEF1F4] w-full min-h-screen">
+      <div className="dark:bg-[var(--bg-color)] bg-[#EEF1F4] w-full min-h-screen">
          <Tabs 
           tabs={p2pTabs} 
           activeTab={activeTab} 
@@ -97,7 +107,7 @@ const handleTabChange = (tab: string) => {
           showUnreadMessages={showUnreadMessages}
           shouldShowMessagesButton={shouldShowMessagesButton}
         />
-        <div className="px-3 sm:px-4 pt-0 mb-4 flex flex-col gap-4 rounded-lg w-full">
+        <div className="px-1 sm:px-2 md:px-4 pt-0 mb-2 sm:mb-4 flex flex-col gap-2 sm:gap-3 md:gap-4 rounded-lg w-full">
           {renderTabContent()}
         </div>
       </div>

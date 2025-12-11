@@ -112,9 +112,20 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
     };
   }, [isFromAssetOpen, isToAssetOpen, onFromAssetToggle, onToAssetToggle]);
 
-  // Close dropdowns when scrolling
+  // Close dropdowns when scrolling the page, but NOT when scrolling inside the dropdown lists
   useEffect(() => {
-    const handleScroll = () => {
+    const handleScroll = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+
+      // If the scroll originated from inside an asset dropdown, ignore it
+      if (
+        target &&
+        target.closest &&
+        target.closest("[data-asset-dropdown='true']")
+      ) {
+        return;
+      }
+
       if (isFromAssetOpen) {
         onFromAssetToggle();
       }
@@ -275,6 +286,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
       (
         <div
           ref={isFrom ? fromAssetDropdownContentRef : toAssetDropdownContentRef}
+          data-asset-dropdown="true"
           className="bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl z-[9999] max-h-[70vh] sm:max-h-[60vh] overflow-hidden"
           style={dropdownStyle}
         >
@@ -375,7 +387,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
           {/* Top Card Container */}
           <div
             data-swap-card="true"
-            className={`relative flex gap-4 rounded-2xl p-4 overflow-visible ${
+            className={`relative flex flex-col sm:flex-row gap-4 rounded-2xl p-3 sm:p-4 overflow-visible ${
               isDark ? "border border-[#2F2F3A] bg-[#0F0F17]" : "border border-[#E2E8F0] bg-white shadow-sm"
             }`}
           >
@@ -523,7 +535,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
         <div className="relative mb-3">
           <div
             data-swap-card="true"
-            className={`relative flex gap-4 rounded-2xl p-4 overflow-visible ${
+            className={`relative flex flex-col sm:flex-row gap-4 rounded-2xl p-3 sm:p-4 overflow-visible ${
               isDark ? "border border-[#2F2F3A] bg-[#0F0F17]" : "border border-[#E2E8F0] bg-white shadow-sm"
             }`}
           >
@@ -703,7 +715,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
 
         {/* Error Display */}
         {localSwapError && (
-          <div className="mt-4 bg-red-500/10 border border-red-500 rounded-2xl p-4">
+          <div className="mt-4 bg-red-500/10 border border-red-500 rounded-2xl p-3 sm:p-4">
             <h3 className="text-red-500 font-semibold mb-2">Error</h3>
             <p className="text-red-400 text-sm">{localSwapError}</p>
           </div>

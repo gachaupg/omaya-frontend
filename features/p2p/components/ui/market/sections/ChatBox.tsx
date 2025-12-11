@@ -390,87 +390,64 @@ const ChatBox: React.FC<{
 
   return (
     <div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs mb-2">
-        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-          <span className="truncate">Chat with {otherPersonData.displayName}</span>
-          {messageType === 'p2p' ? (
-            wsConnected ? (
-              <span className="text-[10px] text-[#1D8751] flex items-center gap-1 whitespace-nowrap">
-                <span className="w-1.5 h-1.5 bg-[#1D8751] rounded-full animate-pulse"></span>
-                Live
-              </span>
-            ) : (
-              <span className="text-[10px] text-[#F79330] flex items-center gap-1 whitespace-nowrap">
-                <span className="w-1.5 h-1.5 bg-[#F79330] rounded-full"></span>
-                Reconnecting...
-              </span>
-            )
-          ) : (
-            <span className="text-[10px] text-[#788099] flex items-center gap-1 whitespace-nowrap">
-              <span className="w-1.5 h-1.5 bg-[#788099] rounded-full"></span>
-              API
-            </span>
-          )}
-          <span className="text-[10px] text-[#788099] whitespace-nowrap">
-            ({sortedMessages.length} msgs)
-          </span>
-        </div>
-      </div>
-      <div className="flex items-center justify-between mb-2">
-        <button
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          className="flex items-center gap-1 px-2 py-1.5 sm:py-1 dark:bg-[#1D8751] bg-[#1D8751] text-white rounded hover:bg-[#166b3e] transition-colors disabled:opacity-50 text-xs font-medium self-start sm:self-auto"
-          title="Refresh messages and load images"
-        >
-          <svg
-            width="12"
-            height="12"
-            className={`sm:w-[14px] sm:h-[14px] ${isRefreshing ? "animate-spin" : ""}`}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M1 4v6h6M23 20v-6h-6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10M23 10l-4.64 4.36A9 9 0 0 1 3.51 15"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <span className="hidden sm:inline">{isRefreshing ? "Refreshing..." : "Refresh"}</span>
-          <span className="sm:hidden">{isRefreshing ? "..." : "↻"}</span>
-        </button>
-        {onClose && (
+      <div className="flex items-center justify-between gap-2 text-xs mb-2">
+        <span className="truncate">Chat with {otherPersonData.displayName}</span>
+        <div className="flex items-center gap-2">
           <button
-            onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-            aria-label="Close chat"
-            title="Close"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="flex items-center gap-1 px-2 py-1.5 sm:py-1 dark:bg-[#1D8751] bg-[#1D8751] text-white rounded hover:bg-[#166b3e] transition-colors disabled:opacity-50 text-xs font-medium flex-shrink-0"
+            title="Refresh messages and load images"
           >
             <svg
-              className="w-5 h-5"
+              width="12"
+              height="12"
+              className={`sm:w-[14px] sm:h-[14px] ${isRefreshing ? "animate-spin" : ""}`}
               fill="none"
               stroke="currentColor"
+              strokeWidth="2"
               viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
             >
               <path
+                d="M1 4v6h6M23 20v-6h-6"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
+              />
+              <path
+                d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10M23 10l-4.64 4.36A9 9 0 0 1 3.51 15"
+                strokeLinecap="round"
+                strokeLinejoin="round"
               />
             </svg>
+            <span className="hidden sm:inline">{isRefreshing ? "Refreshing..." : "Refresh"}</span>
+            <span className="sm:hidden">{isRefreshing ? "..." : "↻"}</span>
           </button>
-        )}
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 flex-shrink-0"
+              aria-label="Close chat"
+              title="Close"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
-      <div className="chat-container mt-4 sm:mt-6 flex flex-col pr-2 sm:pr-10 mb-2 h-80 sm:h-96 bg-white dark:bg-[#18181D] border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px] p-2 sm:p-4 relative">
+      <div className="chat-container mt-4 sm:mt-6 flex flex-col pr-2 sm:pr-10 mb-2 h-80 sm:h-96 bg-white dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px] p-2 sm:p-4 relative">
         <div>
           <div className="flex items-center justify-center gap-2">
             {otherPersonData.photo ? <img className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0" src={otherPersonData.photo} alt={otherPersonData.displayName} /> : <MdAccountCircle  className="w-5 h-5 sm:w-6 sm:h-6 text-[#1D8751] flex-shrink-0"/>}
@@ -534,7 +511,7 @@ const ChatBox: React.FC<{
                   className={
                     isSender
                       ? "bg-[#1D8751] text-white rounded-lg p-2 sm:p-3 max-w-[85%] sm:max-w-xs min-w-[100px] sm:min-w-[120px]"
-                      : "dark:bg-[#23232B] bg-gray-200 dark:text-white text-gray-900 rounded-lg p-2 sm:p-3 max-w-[85%] sm:max-w-xs min-w-[100px] sm:min-w-[120px]"
+                      : "dark:bg-[var(--card-color)] bg-gray-200 dark:text-white text-gray-900 rounded-lg p-2 sm:p-3 max-w-[85%] sm:max-w-xs min-w-[100px] sm:min-w-[120px]"
                   }
                 >
                   {/* Show sender username - "You" for own messages, username for their messages */}
@@ -675,7 +652,7 @@ const ChatBox: React.FC<{
           {/* Paperclip icon for image upload */}
           <button
             type="button"
-            className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 dark:bg-[#23232B] bg-gray-100 rounded-lg flex-shrink-0"
+            className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 dark:bg-[var(--card-color)] bg-gray-100 rounded-lg flex-shrink-0"
             onClick={() => fileInputRef.current && fileInputRef.current.click()}
             title="Attach image"
           >

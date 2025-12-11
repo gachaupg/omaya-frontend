@@ -27,11 +27,11 @@ const Available = () => {
   return (
     <div className="mt-3">
       <div
-        className="rounded-[24px] border dark:border-[#35353E] border-gray-300 overflow-hidden dark:bg-[#35353E] bg-[#F5F5F5]"
+        className="rounded-[24px] border dark:border-[#35353E] border-gray-300 overflow-hidden bg-black dark:bg-black"
       >
         <div className="w-full h-full">
           {/* Header */}
-          <div className="grid grid-cols-3 px-4 sm:px-6 py-2 sm:py-3 dark:bg-[#35353E] bg-gray-200">
+          <div className="grid grid-cols-3 px-4 sm:px-6 py-2 sm:py-3 dark:bg-[var(--card-color)] bg-gray-50">
             <div className="text-xs sm:text-sm dark:text-[#788099] text-[#788099] font-medium">
               Asset
             </div>
@@ -45,7 +45,7 @@ const Available = () => {
 
           {/* Asset Row */}
           <div
-            className="grid grid-cols-3 px-4 sm:px-6 py-3 sm:py-4 dark:bg-[#18181D] bg-[#FFFFFF]"
+            className="grid grid-cols-3 px-4 sm:px-6 py-3 sm:py-4 bg-black dark:bg-black"
           >
             {/* Asset */}
             <div className="flex items-center gap-3">
@@ -55,20 +55,20 @@ const Available = () => {
                 className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white"
               />
               <div>
-                <div className="font-medium text-sm sm:text-base dark:text-white text-[#0D0D0D]">
+                <div className="font-medium text-sm sm:text-base text-white dark:text-white">
                   USDT
                 </div>
-                <div className="text-[10px] sm:text-xs dark:text-[#788099] text-[#788099] mt-0.5">
+                <div className="text-[10px] sm:text-xs text-[#788099] dark:text-[#788099] mt-0.5">
                   Tether US
                 </div>
               </div>
             </div>
             {/* Available */}
-            <div className="text-center self-center text-sm sm:text-base dark:text-white text-[#0D0D0D] font-medium">
+            <div className="text-center self-center text-sm sm:text-base text-white dark:text-white font-medium">
               {formatNumber(availableBalance)}
             </div>
             {/* Locked */}
-            <div className="text-center self-center text-sm sm:text-base dark:text-white text-[#0D0D0D] font-medium">
+            <div className="text-center self-center text-sm sm:text-base text-white dark:text-white font-medium">
               {formatNumber(totalLocked)}
             </div>
           </div>

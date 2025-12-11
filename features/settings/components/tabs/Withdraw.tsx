@@ -186,7 +186,7 @@ const Withdraw = () => {
       {/* Success Message */}
       {showSuccess && (
         <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
-          <div className="bg-[#1D1D23] border border-[#1D8751] rounded-2xl p-8 max-w-md mx-4 text-center shadow-2xl pointer-events-auto">
+          <div className="bg-[var(--card-color)] border border-[#1D8751] rounded-2xl p-8 max-w-md mx-4 text-center shadow-2xl pointer-events-auto">
             <div className="mb-4">
               <svg
                 className="w-16 h-16 text-[#1D8751] mx-auto"
@@ -233,7 +233,7 @@ const Withdraw = () => {
               className={`px-6 py-2 rounded-lg font-semibold text-base ${
                 activeTab === "usdt"
                   ? "bg-[#EF4444] text-white"
-                  : "dark:bg-[#23232B] bg-white text-[#A3A3A3]"
+                  : "dark:bg-[var(--card-color)] bg-white text-[#A3A3A3]"
               }`}
             >
                 USDT TRC20
@@ -244,7 +244,7 @@ const Withdraw = () => {
               className={`px-6 py-2 rounded-lg font-semibold text-base ${
                 activeTab === "cash"
                   ? "bg-[#EF4444] text-white"
-                  : "dark:bg-[#23232B] bg-white text-[#A3A3A3]"
+                  : "dark:bg-[var(--card-color)] bg-white text-[#A3A3A3]"
               }`}
             >
                 Cash
@@ -256,12 +256,12 @@ const Withdraw = () => {
             {/* 1- Transaction Info */}
             <div className="text-md font-bold mb-2">1- Transaction Info</div>
 
-            <div className="mb-3 p-3 border border-[#E8EFF5] dark:border-[#35353F] bg-white dark:bg-[#1D1D23] rounded-[18px]">
+            <div className="mb-3 p-3 border border-[#E8EFF5] dark:border-[#35353F] bg-white dark:bg-[var(--card-color)] rounded-[18px]">
               <div className="flex  flex-col md:flex-row gap-4 mb-2">
                 <div className="flex-1">
                   <label className="block text-sm text-[#788099] dark:text-[#A3A3A3] mb-1">Amount</label>
                   <input
-                    className={`w-full  bg-white dark:bg-[#18181B] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-1 py-1 text-[#788099] dark:text-white text-lg focus:outline-none ${
+                    className={`w-full  bg-white dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-1 py-1 text-[#788099] dark:text-white text-lg focus:outline-none ${
                       errors.amount ? "border-red-500" : ""
                     }`}
                     placeholder="100"
@@ -283,7 +283,7 @@ const Withdraw = () => {
                   <label className="block text-sm text-[#788099] dark:text-[#A3A3A3] mb-1">
                     I want to Recieve Net
                   </label>
-                  <div className="flex items-center bg-white dark:bg-[#18181B] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-1 py-1">
+                  <div className="flex items-center bg-white dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-1 py-1">
                     <span className="text-[#1D8751] text-2xl font-bold mr-2">
                       $ {netAmount ? netAmount.toFixed(2) : "0.00"}
                     </span>
@@ -423,16 +423,16 @@ const Withdraw = () => {
               <div className="text-md font-bold mb-2">
                 2- Your Wallet Address
               </div>
-              <div className="mb-2 border border-[#E8EFF5] dark:border-[#35353F] text_highbg-dark bg-[white] dark:bg-[#1D1D23] p-3 rounded-[18px]">
+              <div className="mb-2 border border-[#E8EFF5] dark:border-[#35353F] text_highbg-dark bg-[white] dark:bg-[var(--card-color)] p-3 rounded-[18px]">
                 <label className="block text-[#A3A3A3] mb-1">
                   Wallet/Account Address
                 </label>
                 <div className="flex gap-2 mb-2">
-                  <div className="flex items-center dark:bg-[#18181B] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-4 py-2 flex-1">
+                  <div className="flex items-center dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-4 py-2 flex-1">
                     <span className="text-[#1D8751] mr-2">📋</span>
                     <input
-                      className="flex-1 bg-transparent text:dark:text-white text-lg focus:outline-none"
-                      placeholder="Paste here your Crypto address"
+                      className="flex-1 bg-transparent text:dark:text-white text-sm sm:text-base lg:text-lg focus:outline-none"
+                      placeholder="Paste your crypto address"
                       value={walletAddress}
                       onChange={(e) => setWalletAddress(e.target.value)}
                     />
@@ -488,7 +488,7 @@ const Withdraw = () => {
                       <circle cx="12" cy="16" r="1" fill="#1D8751" />
                     </svg>
                   </div>
-                <div className="bg-[#1A1D21] dark:bg-[#1A1D21] border border-[#1D8751]/30 rounded-lg p-4 mb-4">
+                <div className="bg-[var(--card-color)] dark:bg-[var(--card-color)] border border-[#1D8751]/30 rounded-lg p-4 mb-4">
                   <style jsx>{`
                     .custom-bullet-list li::marker {
                       color: #1D8751;
@@ -546,7 +546,7 @@ const Withdraw = () => {
           {/* OTP Modal */}
           {showOtpModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-[#1D1D23] border border-[#1D8751] rounded-2xl p-8 max-w-md mx-4">
+              <div className="bg-[var(--card-color)] border border-[#1D8751] rounded-2xl p-8 max-w-md mx-4">
                 <h3 className="text-xl font-bold text-white mb-4">Enter OTP</h3>
                 <p className="text-[#A3A3A3] mb-4">
                   Please enter the OTP sent to verify your withdrawal.
@@ -558,7 +558,7 @@ const Withdraw = () => {
                     onChange={(e) => setOtp(e.target.value)}
                     placeholder="Enter 6-digit OTP"
                     maxLength={6}
-                    className="w-full bg-[#18181B] border border-[#35353F] rounded-xl px-4 py-3 text-white text-lg text-center tracking-widest focus:outline-none focus:border-[#1D8751] mb-4"
+                    className="w-full bg-[var(--bg-color)] border border-[#35353F] rounded-xl px-4 py-3 text-white text-lg text-center tracking-widest focus:outline-none focus:border-[#1D8751] mb-4"
                   />
                   {otpError && (
                     <div className="text-red-500 text-sm mb-4 text-center">

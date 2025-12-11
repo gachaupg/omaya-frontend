@@ -242,10 +242,10 @@ const WalletValidationPage: React.FC<WalletValidationPageProps> = ({
 
             <input
               type="text"
-              placeholder="Paste here your Crypto address"
+              placeholder="Paste your crypto address"
               value={walletAddress}
               onChange={handleWalletAddressChange}
-              className={`w-full dark:bg-[#181820] bg-gray-100 border rounded-[18px] px-12 py-3 dark:text-white text-gray-900 outline-none dark:placeholder-[#8C8CA1] placeholder-gray-500 text-base transition-colors ${
+              className={`w-full dark:bg-[#181820] bg-gray-100 border rounded-[18px] px-12 py-3 dark:text-white text-gray-900 outline-none dark:placeholder-[#8C8CA1] placeholder-gray-500 text-sm sm:text-base transition-colors ${
                 validationError
                   ? "border-red-500 focus:border-red-400"
                   : "dark:border-[#35353E] border-gray-300 focus:border-[#1D8751]"

@@ -97,9 +97,9 @@ const GradientLineChart = React.memo(
       labels && labels.length
         ? labels
         : Array.from(
-            { length: Math.max(data1.data.length, data2.data.length, 1) },
-            (_, idx) => months[idx] || `#${idx + 1}`
-          );
+          { length: Math.max(data1.data.length, data2.data.length, 1) },
+          (_, idx) => months[idx] || `#${idx + 1}`
+        );
 
     const { min, max } = React.useMemo(() => {
       const combinedValues = [...data1.data, ...data2.data];
@@ -133,7 +133,7 @@ const GradientLineChart = React.memo(
               chartDimensions.top +
               (chartDimensions.bottom - chartDimensions.top) -
               ((dataset.data[i] - min) / (max - min || 1)) *
-                (chartDimensions.bottom - chartDimensions.top),
+              (chartDimensions.bottom - chartDimensions.top),
           };
         });
       },
@@ -239,13 +239,13 @@ const GradientLineChart = React.memo(
                   chartDimensions.top +
                   (chartDimensions.bottom - chartDimensions.top) -
                   ((y - min) / (max - min || 1)) *
-                    (chartDimensions.bottom - chartDimensions.top)
+                  (chartDimensions.bottom - chartDimensions.top)
                 }
                 y2={
                   chartDimensions.top +
                   (chartDimensions.bottom - chartDimensions.top) -
                   ((y - min) / (max - min || 1)) *
-                    (chartDimensions.bottom - chartDimensions.top)
+                  (chartDimensions.bottom - chartDimensions.top)
                 }
                 stroke="#44454A"
                 strokeDasharray="6 6"
@@ -257,7 +257,7 @@ const GradientLineChart = React.memo(
                   chartDimensions.top +
                   (chartDimensions.bottom - chartDimensions.top) -
                   ((y - min) / (max - min || 1)) *
-                    (chartDimensions.bottom - chartDimensions.top) +
+                  (chartDimensions.bottom - chartDimensions.top) +
                   2
                 }
                 fill="#A3A3A3"
@@ -425,7 +425,7 @@ function DonutChartWithCenter({
           const value =
             normalizedTotal > 0
               ? (d.value / normalizedTotal) *
-                (circumference - gap * Math.max(data.length - 1, 0))
+              (circumference - gap * Math.max(data.length - 1, 0))
               : 0;
           const el = (
             <circle
@@ -485,7 +485,7 @@ const Dropdown = ({
 }) => (
   <div className="relative w-full sm:w-auto inline-flex">
     <select
-      className="appearance-none bg-transparent text-[#A3A3A3] rounded-full px-2 sm:px-3 py-1.5 text-xs sm:text-sm pr-3.5 sm:pr-4 focus:outline-none w-full sm:w-auto"
+      className="appearance-none bg-transparent text-muted-foreground rounded-full px-2 sm:px-3 py-1.5 text-xs sm:text-sm pr-6 sm:pr-7 focus:outline-none w-full sm:w-auto"
       value={value}
       onChange={(e) => onChange(e.target.value)}
     >
@@ -513,7 +513,7 @@ const Card = ({
   className?: string;
 }) => {
   const [minHeight, setMinHeight] = React.useState(290);
-  
+
   React.useEffect(() => {
     const updateHeight = () => {
       setMinHeight(window.innerWidth < 640 ? 250 : 290);
@@ -522,7 +522,7 @@ const Card = ({
     window.addEventListener("resize", updateHeight);
     return () => window.removeEventListener("resize", updateHeight);
   }, []);
-  
+
   return (
     <div
       className={`bg-[#23232B] shadow-md w-full ${className}`}
@@ -544,14 +544,13 @@ const Legend = ({ data }: { data: DonutChartData[] }) => (
         <span
           style={{
             background: d.color,
-            width: 10,
-            height: 10,
-            borderRadius: "9999px",
+            width: 15,
+            height: 15,
             flexShrink: 0,
           }}
-          className="sm:w-3 sm:h-3"
+          className="rounded-sm block"
         ></span>
-        <span className="dark:text-[#D4D7E9] text-[#1C2537] font-medium flex-1 min-w-0 break-words">
+        <span className="text-muted-foreground font-medium flex-1 min-w-0 wrap-break-word sm:text-sm md:text-base">
           {d.label}
         </span>
         <span className="dark:text-white text-[#051015] font-medium ml-auto min-w-[60px] sm:min-w-[95px] text-right tracking-tight flex-shrink-0 text-[11px] sm:text-sm md:text-base">
@@ -643,9 +642,9 @@ const LineCharts = React.memo(
             const monthIndex = 11 - monthDiff;
             const amount = parseFloat(
               transaction.amount ||
-                transaction.requested_amount ||
-                transaction.total_amount_due ||
-                "0"
+              transaction.requested_amount ||
+              transaction.total_amount_due ||
+              "0"
             );
 
             if (transaction.transaction_type === "deposit") {
@@ -825,7 +824,7 @@ const LineCharts = React.memo(
               }),
             ]);
             await Promise.all([dispatch(fetchReferralWallet())]);
-          } catch (error) {}
+          } catch (error) { }
         }
       };
       fetchData();
@@ -934,112 +933,85 @@ const LineCharts = React.memo(
               />
             </div>
           </Card>
-          {/* Overview Total */}
-          <Card className="w-full rounded-none lg:rounded-2xl flex flex-col lg:flex-row items-center h-full relative dark:bg-[#1D1D23] bg-white">
-            <div className="w-full px-2 pt-2 pb-3 flex flex-col sm:flex-row sm:flex-wrap sm:justify-between sm:items-center gap-3">
-              <h3 className="dark:text-white text-sm sm:text-base md:text-[18px] font-semibold flex-shrink-0">
+          <Card className="w-full rounded-none lg:rounded-2xl dark:bg-[#1D1D23] bg-white">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 pt-4 pb-3">
+              <h3 className="text-sm sm:text-base md:text-lg font-semibold dark:text-white">
                 Overview Total
               </h3>
-              <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                <button
-                  className={`${
-                    activeTab === "exchange"
-                      ? "bg-[#1D8751] text-white"
-                      : "bg-transparent border border-[#1D8751] text-[#1D8751]"
-                  } px-2 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs md:text-[13px] font-semibold whitespace-nowrap`}
-                  onClick={() => setActiveTab("exchange")}
-                >
-                  Exchange
-                </button>
-                <button
-                  className={`${
-                    activeTab === "p2p"
-                      ? "bg-[#1D8751] text-white"
-                      : "bg-transparent border border-[#1D8751] text-[#1D8751]"
-                  } px-2 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs md:text-[13px] font-semibold whitespace-nowrap`}
-                  onClick={() => setActiveTab("p2p")}
-                >
-                  P2P
-                </button>
-                <button
-                  className={`${
-                    activeTab === "swap"
-                      ? "bg-[#1D8751] text-white"
-                      : "bg-transparent border border-[#1D8751] text-[#1D8751]"
-                  } px-2 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs md:text-[13px] font-semibold whitespace-nowrap`}
-                  onClick={() => setActiveTab("swap")}
-                >
-                  Swap
-                </button>
-                <button
-                  className={`${
-                    activeTab === "buy"
-                      ? "bg-[#1D8751] text-white"
-                      : "bg-transparent border border-[#1D8751] text-[#1D8751]"
-                  } px-2 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs md:text-[13px] font-semibold whitespace-nowrap`}
-                  onClick={() => setActiveTab("buy")}
-                >
-                  Buy
-                </button>
+
+              <div className="flex flex-wrap gap-2">
+                {["exchange", "p2p", "swap", "buy"].map(t => (
+                  <button
+                    key={t}
+                    onClick={() => setActiveTab(t as any)}
+                    className={`px-2 md:px-3 py-1 md:py-1.5 rounded-full text-xs
+            ${activeTab === t
+                        ? "bg-[#1D8751] text-white"
+                        : "border-2 border-[#1D8751] text-[#1D8751]"
+                      }
+          `}
+                  >
+                    {t.toUpperCase()}
+                  </button>
+                ))}
               </div>
             </div>
-            <div className="flex flex-col lg:flex-row w-full px-2 pb-4">
-              <Legend data={overviewTotalData(transactionSummary, activeTab)} />
-              <div className="flex-1 flex flex-col items-center justify-center mt-4 lg:mt-0">
+
+            {/* Body */}
+            <div className="flex flex-col lg:flex-row gap-6 px-4 pb-6">
+              <div className="lg:w-1/2">
+                <Legend data={overviewTotalData(transactionSummary, activeTab)} />
+              </div>
+
+              <div className="flex-1 flex justify-center items-center">
                 <DonutChartWithCenter
                   data={overviewTotalData(transactionSummary, activeTab)}
-                  total={
-                    overviewTotalSummary(transactionSummary, activeTab).total
-                  }
+                  total={overviewTotalSummary(transactionSummary, activeTab).total}
                   label={
                     activeTab === "swap"
                       ? "Swaps"
                       : activeTab === "buy"
-                      ? "Buy Orders"
-                      : "Transactions"
+                        ? "Buy Orders"
+                        : "Transactions"
                   }
                 />
               </div>
             </div>
           </Card>
-          {/* Referral Commissions */}
-          <Card className="w-full rounded-none lg:rounded-2xl flex flex-col lg:flex-row items-center h-full relative dark:bg-[#1D1D23] bg-white">
-            <div className="w-full px-2 pt-2 pb-3 flex flex-col sm:flex-row sm:flex-wrap sm:justify-between sm:items-center gap-3">
-              <h3 className="dark:text-white text-sm sm:text-base md:text-lg font-semibold tracking-tight flex-shrink-0">
+
+          <Card className="w-full rounded-none lg:rounded-2xl dark:bg-[#1D1D23] bg-white">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 pt-4 pb-3">
+              <h3 className="text-sm sm:text-base md:text-lg font-semibold dark:text-white">
                 Your Referral Commissions
               </h3>
-              <div className="w-full sm:w-auto">
-                <Dropdown
-                  value={referralTimePeriod}
-                  options={["All", "Last Week", "Month", "One Year"]}
-                  onChange={setReferralTimePeriod}
+
+              <Dropdown
+                value={referralTimePeriod}
+                options={["All", "Last Week", "Month", "One Year"]}
+                onChange={setReferralTimePeriod}
+              />
+            </div>
+
+            {/* Body */}
+            <div className="flex flex-col lg:flex-row gap-6 px-4 pb-6">
+              <div className="lg:w-1/2">
+                <Legend
+                  data={referralCommissionsData(transactionSummary, walletData || undefined)}
                 />
               </div>
-            </div>
-            <div className="flex flex-col lg:flex-row w-full px-2 pb-4">
-              <Legend
-                data={referralCommissionsData(
-                  transactionSummary,
-                  walletData || undefined
-                )}
-              />
-              <div className="flex-1 flex flex-col items-center justify-center mt-4 lg:mt-0">
+
+              <div className="flex-1 flex justify-center items-center">
                 <DonutChartWithCenter
-                  data={referralCommissionsData(
-                    transactionSummary,
-                    walletData || undefined
-                  )}
-                  total={
-                    referralCommissionsSummary(
-                      transactionSummary,
-                      walletData || undefined
-                    ).total
-                  }
+                  data={referralCommissionsData(transactionSummary, walletData || undefined)}
+                  total={referralCommissionsSummary(transactionSummary, walletData || undefined).total}
                   label="Commissions"
                 />
               </div>
             </div>
           </Card>
+
         </div>
       </div>
     );
