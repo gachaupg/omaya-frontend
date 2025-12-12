@@ -3127,7 +3127,7 @@ export default function DepositForm({
             {/* Bank/Payment Method Section */}
             <div
               data-select-card="true"
-              className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-3 sm:pt-0 sm:border-none"
+              className="flex-1 sm:pl-4 border-t sm:border-t-0 sm:border-l border-[#35353E] dark:border-[#35353E] pt-2 sm:pt-0 sm:border-none"
             >
               <div className="text-xs text-[#788099] dark:text-[#788099] mb-1 mt-[30px] sm:mt-[34px]">{t("express.bankPaymentMethod", "Bank/Payment Method")}</div>
               {/* <div>
