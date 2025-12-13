@@ -533,16 +533,16 @@ export default function Footer() {
 
         {/* Copyright Section */}
         <div className="pt-4 sm:pt-6 text-center">
-          <p className="text-xs sm:text-sm text-gray-900 dark:text-white">Copyright © 2024, OMAYA.io</p>
-          <div className="flex flex-col sm:flex-row justify-center items-center mt-2 sm:mt-3 gap-2 sm:gap-2">
-            <span className="text-xs text-gray-900 dark:text-white">Powered by</span>
-            <span className="flex flex-col items-center gap-1 sm:gap-2">
+          <p className="text-xs sm:text-sm text-gray-900 dark:text-white">Copyright © 2026, OMAYA.io</p>
+          <div className="flex flex-row justify-center items-center mt-2 sm:mt-3 gap-2">
+            <span className="text-xs text-gray-900 dark:text-white">Powered By:</span>
+            <span className="flex flex-col items-center">
               <img 
                 src="https://res.cloudinary.com/dmoqammol/image/upload/v1763650633/Group_34253_ysx2s5.png" 
                 alt="OMAYA Technologies" 
-                className="h-6 sm:h-8 w-auto"
+                className="h-5 sm:h-6 w-auto"
               />
-              <h3 className="text-[10px] sm:text-xs text-gray-900 dark:text-white font-bold">TECHNOLOGIES</h3>
+              <span className="text-[8px] sm:text-[9px] text-gray-900 dark:text-white font-medium tracking-wider">TECHNOLOGIES</span>
             </span>
           </div>
         </div>
