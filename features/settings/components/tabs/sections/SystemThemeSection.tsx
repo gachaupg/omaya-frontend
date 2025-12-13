@@ -11,11 +11,11 @@ const SystemThemeSection: React.FC = () => {
 
   return (
     <>
-      <div className="text-base font-bold dark:text-white text-gray-900 mb-0">
+      <div className="text-sm font-bold dark:text-white text-gray-900 mb-1">
         System Theme
       </div>
-      <section className="dark:bg-[#1D1D23] bg-gray-50 rounded-2xl dark:border-[#35353E] border-gray-300 border-2 p-4 shadow-lg">
-        <div className="flex gap-3 mb-3">
+      <section className="dark:bg-transparent bg-white rounded-xl dark:border-[#35353E] border-[#E8EFF5] border p-3 sm:p-4">
+        <div className="flex gap-3">
           <button
             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-2xl font-semibold text-sm transition-all ${
               isLight

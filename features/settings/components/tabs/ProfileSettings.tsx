@@ -11,7 +11,7 @@ const ProfileSettings = () => {
 
   return (
     <div className="w-full">
-      <div className="flex flex-col gap-2 sm:gap-3">
+      <div className="flex flex-col gap-3">
         <ClientIdSection user={user} />
         <BasicInfoSection user={user} />
         <PasswordSection />
