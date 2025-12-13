@@ -122,7 +122,7 @@ const ReferralWithdrawalHistory: React.FC = () => {
 
       {/* Desktop Table View */}
       <div className="hidden md:block overflow-x-auto">
-        <div className="bg-white dark:bg-[#1D1D23] border border-[#E8EFF5] dark:border-[#35353F] rounded-xl overflow-hidden">
+        <div className="bg-white dark:bg-[var(--card-color)] border border-[#E8EFF5] dark:border-[#35353F] rounded-xl overflow-hidden">
           <table className="w-full border-collapse">
             <thead className="bg-gray-100 dark:bg-[#35353E]">
               <tr className="border-b border-[#E8EFF5] dark:border-[#35353F]">
@@ -144,7 +144,7 @@ const ReferralWithdrawalHistory: React.FC = () => {
               {withdrawals.map((withdrawal) => (
                 <tr
                   key={withdrawal.id}
-                  className="border-b border-[#E8EFF5] dark:border-[#35353F] last:border-b-0 hover:bg-gray-50 dark:hover:bg-[#23232B] transition-colors"
+                  className="border-b border-[#E8EFF5] dark:border-[#35353F] last:border-b-0 hover:bg-gray-50 dark:hover:bg-[var(--card-color)] transition-colors"
                 >
                   <td className="py-4 px-4 text-sm text-gray-600 dark:text-gray-400">
                     <div className="flex items-center gap-3">
@@ -186,7 +186,7 @@ const ReferralWithdrawalHistory: React.FC = () => {
         {withdrawals.map((withdrawal) => (
           <div
             key={withdrawal.id}
-            className="bg-white dark:bg-[#1D1D23] border border-[#E8EFF5] dark:border-[#35353F] rounded-xl p-4"
+            className="bg-white dark:bg-[var(--card-color)] border border-[#E8EFF5] dark:border-[#35353F] rounded-xl p-4"
           >
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1">

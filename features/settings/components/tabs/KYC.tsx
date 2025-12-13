@@ -50,13 +50,13 @@ const KYC = () => {
 
   return (
     <div className="p-3 sm:p-4 dark:text-white text-[#0D0D0D]">
-      <section className="rounded-[32px] p-4 sm:p-6 flex flex-col gap-4 border dark:bg-transparent bg-white dark:border-[#2B2B3A] border-[#E2E8F0]">
+      <section className="rounded-[32px] p-4 sm:p-6 flex flex-col gap-4 border dark:bg-[var(--bg-color)] bg-white dark:border-[#2B2B3A] border-[#E2E8F0]">
         <p className="text-sm sm:text-base leading-relaxed dark:text-[#B8BAC7] text-[#4A5568]">
           Your account is fully verified. Keep your personal information up to date so we can continue protecting access to trading,
           payments, and P2P settlements. If you ever need to refresh your documents, you can upload new files directly from this page.
         </p>
 
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 rounded-3xl p-4 dark:bg-transparent bg-[#F8FAFC] dark:border-[#2F2C3C] border-[#E2E8F0]">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 rounded-3xl p-4 dark:bg-[var(--bg-color)] bg-[#F8FAFC] dark:border-[#2F2C3C] border-[#E2E8F0]">
           <div className="flex items-center gap-3">
             <div
               className="relative cursor-pointer"
@@ -104,8 +104,37 @@ const KYC = () => {
                 {fullName}
               </p>
               <div className="flex items-center gap-2 text-sm font-medium dark:text-[#1D8751] text-[#15803D]">
-                Verified Profile
-                <VerifiedBadge size={16} />
+                Verified Profiless
+                <span className="inline-flex items-center justify-center w-5 h-5 flex-shrink-0" style={{position: 'relative'}}>
+                      <svg width="18" height="18" viewBox="0 0 20 20" style={{position: 'absolute'}}>
+                        <circle cx="10" cy="10" r="9" fill="white" />
+                        <circle cx="10" cy="10" r="7.5" fill="#1D8751" />
+                        {/* Serrated edge using small circles */}
+                        {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map(angle => {
+                          const rad = (angle * Math.PI) / 180;
+                          const x = 10 + 8.5 * Math.cos(rad);
+                          const y = 10 + 8.5 * Math.sin(rad);
+                          return <circle key={angle} cx={x} cy={y} r="1" fill="white" />;
+                        })}
+                      </svg>
+                      <svg
+                        width="10"
+                        height="10"
+                        viewBox="0 0 10 10"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        style={{position: 'relative', zIndex: 1}}
+                        className="flex-shrink-0"
+                      >
+                        <path
+                          d="M2 5L4 7L8 3"
+                          stroke="#FFFFFF"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </span>
               </div>
             </div>
           </div>

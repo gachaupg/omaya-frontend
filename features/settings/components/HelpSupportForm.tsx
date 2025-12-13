@@ -82,7 +82,7 @@ const HelpSupportForm: React.FC = () => {
       <div>
         <h1 className="text-base sm:text-lg font-medium text-[#788099] mb-3 sm:mb-4">Help & Support</h1>
         
-        <div className="container mx-auto bg-white dark:bg-[#18181D] border border-[#E8EFF5] dark:border-[#35353E] rounded-2xl shadow-sm p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
+        <div className="container mx-auto bg-white dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#35353E] rounded-2xl shadow-sm p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
           {/* Email Address Field */}
           <div>
             <label htmlFor="email_address" className="block text-sm font-medium text-[#344054] dark:text-white mb-2">
@@ -171,7 +171,7 @@ const HelpSupportForm: React.FC = () => {
             <button
               onClick={handleSubmitEmail}
               disabled={supportRequestLoading || !formData.email_address || !formData.question}
-              className="flex-1 bg-white dark:bg-[#18181D] hover:bg-gray-50 text-[#1D8751] font-medium py-2.5 sm:py-3 px-5 sm:px-6 rounded-full border border-[#1D8751] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+              className="flex-1 bg-white dark:bg-[var(--bg-color)] hover:bg-gray-50 text-[#1D8751] font-medium py-2.5 sm:py-3 px-5 sm:px-6 rounded-full border border-[#1D8751] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
             >
               {supportRequestLoading ? 'Submitting...' : 'Submit Request'}
             </button>

@@ -17,7 +17,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
               First Name*
             </label>
             <input
-              className="dark:bg-transparent bg-white border  border-[#E8EFF5] dark:border-[#35353E] rounded-[18px] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base dark:text-[#788099] text-[#0D0D0D] w-full"
+              className="dark:bg-[var(--bg-color)] bg-white border  border-[#E8EFF5] dark:border-[#35353E] rounded-[18px] px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base dark:text-[#788099] text-[#0D0D0D] w-full"
               value={user?.first_name || ""}
               readOnly
             />

@@ -211,7 +211,7 @@ const PaymentMethods = () => {
     }
     
     return (
-      <tr key={method.id} className="border-b border-gray-200 dark:border-[#35353E] hover:bg-gray-50 dark:hover:bg-[#23232B] transition-colors">
+      <tr key={method.id} className="border-b border-gray-200 dark:border-[#35353E] hover:bg-gray-50 dark:hover:bg-[var(--card-color)] transition-colors">
         <td className="px-4 py-4">
           <div className="flex items-center gap-3">
             <img
@@ -273,7 +273,7 @@ const PaymentMethods = () => {
     }
     
     return (
-      <tr key={method.id} className="border-b border-gray-200 dark:border-[#35353E] hover:bg-gray-50 dark:hover:bg-[#23232B] transition-colors">
+      <tr key={method.id} className="border-b border-gray-200 dark:border-[#35353E] hover:bg-gray-50 dark:hover:bg-[var(--card-color)] transition-colors">
         <td className="px-4 py-4">
           <div className="flex items-center gap-3">
             <img
@@ -379,7 +379,7 @@ const PaymentMethods = () => {
               onClick={() => setCurrentPage(page)}
               className={`w-8 h-8 rounded-lg ${currentPage === page
                 ? "bg-[#1D8751] text-white"
-                : "bg-gray-100 dark:bg-[#1D1D23] text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                : "bg-gray-100 dark:bg-card text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                 }`}
             >
               {page}
@@ -466,7 +466,7 @@ const PaymentMethods = () => {
 
   /** Render */
   return (
-    <div className="w-full min-h-[600px] bg-white dark:bg-[#18181D] rounded-2xl p-4 text-gray-900 dark:text-white border-2 border-gray-200 dark:border-[#35353E] overflow-visible">
+    <div className="w-full min-h-[600px] bg-white dark:bg-[#1D1D23] rounded-2xl p-4 text-gray-900 dark:text-white border-2 border-gray-200 dark:border-[#35353E] overflow-visible">
       {/* Header: Bank title left, Add Method dropdown right */}
       <div className="flex items-center justify-between mb-4 gap-4">
         <div className="flex items-center gap-3">
@@ -496,7 +496,7 @@ const PaymentMethods = () => {
 
       {/* Selected Method Details */}
       {selectedMethod && (
-        <div className="w-full border border-gray-200 dark:border-[#35353E] rounded-2xl p-4 sm:p-5 mb-6 bg-gray-50 dark:bg-[#1F1F27]">
+        <div className="w-full border border-gray-200 dark:border-[#35353E] rounded-2xl p-4 sm:p-5 mb-6 bg-gray-50 dark:bg-[#1D1D23]">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div>
               <p className="text-xs sm:text-sm text-gray-500 dark:text-[#8C8CA1]">Selected Method</p>
@@ -517,7 +517,7 @@ const PaymentMethods = () => {
               </label>
               <div className="relative">
                 <select
-                  className="w-full bg-white dark:bg-[#1C1C24] text-gray-900 dark:text-white appearance-none pr-10 rounded-xl border border-gray-200 dark:border-[#35353E] h-12 px-4 text-sm"
+                  className="w-full bg-white dark:bg-[#1D1D23] text-gray-900 dark:text-white appearance-none pr-10 rounded-xl border border-gray-200 dark:border-[#35353E] h-12 px-4 text-sm"
                   value={selectedProvider}
                   onChange={(e) => setSelectedProvider(e.target.value)}
                   disabled={adminLoading}
@@ -538,7 +538,7 @@ const PaymentMethods = () => {
             </div>
 
             {selectedProvider && (
-              <div className="p-3 rounded-xl bg-white dark:bg-[#23232B] border border-gray-200 dark:border-[#35353E] flex items-center gap-3">
+              <div className="p-3 rounded-xl bg-white dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E] flex items-center gap-3">
                 {(() => {
                   const selectedProviderObj = providers.find(
                     (p: any) => p && typeof p === 'object' && p.provider_name === selectedProvider

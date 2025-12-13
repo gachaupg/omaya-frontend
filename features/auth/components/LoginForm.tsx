@@ -222,7 +222,7 @@ export default function LoginPage() {
   }, []);
 
   return (
-    <div className="min-h-screen dark:bg-[#18181D] bg-gray-50 flex flex-col md:flex-row items-start justify-center relative overflow-hidden px-6 py-16 md:pt-24 md:pb-24">
+    <div className="min-h-screen bg-app dark:bg-app flex flex-col md:flex-row items-start justify-center relative overflow-hidden px-6 py-16 md:pt-24 md:pb-24">
       {/* Left Side - Mobile App Preview */}
       <div className="w-full md:w-1/2 flex justify-center mb-8 md:mb-0 relative z-10">
         {/* Background Glow Effect */}
@@ -238,7 +238,7 @@ export default function LoginPage() {
           />
           {/* App store badges */}
           <div className="flex space-x-1 mt-4 justify-center">
-            <div className="rounded px-2 flex items-center border border-gray-700 bg-white">
+            <div className="rounded px-2 flex items-center border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)]">
               <Image
                 src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746787514/Google_Play-Icon-Logo.wine_dqxxk7.svg"
                 alt="Google Play Store"
@@ -247,13 +247,13 @@ export default function LoginPage() {
                 className="mr-2"
               />
               <div>
-                <p className="text-[#051015] text-xs">Download on the</p>
-                <span className="text-[#051015] text-sm font-bold">
+                <p className="text-gray-900 dark:text-white text-xs">Download on the</p>
+                <span className="text-gray-900 dark:text-white text-sm font-bold">
                   Google Play
                 </span>
               </div>
             </div>
-            <div className="rounded px-2 flex items-center border border-gray-700 bg-white">
+            <div className="rounded px-2 flex items-center border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)]">
               <Image
                 src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747288173/dark_apple_rwpgwi.png"
                 alt="Apple App Store"
@@ -262,8 +262,8 @@ export default function LoginPage() {
                 className="mr-2"
               />
               <div>
-                <p className="text-[#051015] text-xs">Download on the</p>
-                <span className="text-[#051015] text-sm font-bold">
+                <p className="text-gray-900 dark:text-white text-xs">Download on the</p>
+                <span className="text-gray-900 dark:text-white text-sm font-bold">
                   App Store
                 </span>
               </div>
@@ -299,11 +299,11 @@ export default function LoginPage() {
                   id="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className={`w-full py-3 px-4 pl-10 rounded-full dark:bg-[#1D1D23] bg-white border ${
+                  className={`w-full py-3 px-4 pl-10 rounded-full bg-white dark:bg-[var(--card-color)] border ${
                     errors.email
                       ? "border-[#FDA29B]"
-                      : "dark:border-gray-700 border-gray-300"
-                  } dark:text-white text-gray-900 focus:outline-none focus:border-[#13B562]`}
+                      : "border-gray-300 dark:border-[#35353E]"
+                  } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
                   placeholder={t(
                     "auth.login.email.placeholder",
                     "Email Address"
@@ -371,11 +371,11 @@ export default function LoginPage() {
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className={`w-full py-3 px-4 pl-10 pr-12 rounded-full dark:bg-[#1D1D23] bg-white border ${
+                  className={`w-full py-3 px-4 pl-10 pr-12 rounded-full bg-white dark:bg-[var(--card-color)] border ${
                     errors.password
                       ? "border-[#FDA29B]"
-                      : "dark:border-gray-700 border-gray-300"
-                  } dark:text-white text-gray-900 focus:outline-none focus:border-[#13B562]`}
+                      : "border-gray-300 dark:border-[#35353E]"
+                  } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
                   placeholder={t(
                     "auth.login.password.placeholder",
                     "****************"
@@ -569,7 +569,7 @@ export default function LoginPage() {
                 </Link>{" "}
                 now
               </p>
-              <div className="border-t dark:border-gray-700 border-gray-300 flex-grow mt-2"></div>
+              <div className="border-t border-gray-300 dark:border-[#35353E] flex-grow mt-2"></div>
             </div>
 
             {/* Or Login With */}
@@ -597,7 +597,7 @@ export default function LoginPage() {
         <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
           {/* Modal */}
           <div 
-            className="relative bg-white dark:bg-[#18181D] rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 pointer-events-auto border border-gray-200 dark:border-gray-700"
+            className="relative bg-white dark:bg-[var(--card-color)] rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 pointer-events-auto border border-gray-200 dark:border-[#35353E]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -608,7 +608,7 @@ export default function LoginPage() {
               <button
                 onClick={handleCloseCaptchaModal}
                 disabled={captchaSuccess}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-[#2C2C32] rounded-full transition-colors"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-[#35353E] rounded-full transition-colors"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

@@ -58,8 +58,8 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
       onClick={onSelect}
       className={`w-full flex items-start gap-3 rounded-xl px-3 py-3 text-left transition-colors ${
         isActive
-          ? "bg-[#111827] border border-[#1D8751]"
-          : "bg-transparent hover:bg-[#111827]/60 border border-transparent"
+          ? "bg-gray-100 dark:bg-[#111827] border border-[#1D8751]"
+          : "bg-transparent hover:bg-gray-50 dark:hover:bg-[#111827]/60 border border-transparent"
       }`}
     >
       <div className="flex-shrink-0">
@@ -91,16 +91,16 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-xs sm:text-sm font-semibold text-white truncate">
+          <span className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white truncate">
             {displayName}
           </span>
-          <span className="text-[10px] text-[#9CA3AF] ml-2 flex-shrink-0">
+          <span className="text-[10px] text-gray-500 dark:text-[#9CA3AF] ml-2 flex-shrink-0">
             {latestMessage?.timestamp
               ? formatTimestamp(latestMessage.timestamp)
               : ""}
           </span>
         </div>
-        <p className="text-[11px] text-[#9CA3AF] truncate">
+        <p className="text-[11px] text-gray-600 dark:text-[#9CA3AF] truncate">
           {latestMessage?.content ||
             latestMessage?.message ||
             "No messages yet"}
@@ -478,7 +478,7 @@ export const Chats: React.FC = () => {
   const renderMessages = () => {
     if (!selectedUser) {
       return (
-        <div className="flex items-center justify-center h-full text-sm text-[#788099] dark:text-[#A2A4A9]">
+        <div className="flex items-center justify-center h-full text-sm text-gray-600 dark:text-[#A2A4A9]">
           Select a conversation on the left to start chatting.
         </div>
       );
@@ -487,9 +487,14 @@ export const Chats: React.FC = () => {
     // Use displayedMessages which includes optimistic messages
     const allMessages = displayedMessages;
     
+    // Check if chat is closed - only show if status is "Complete"/"completed" or "Responded"/"responded"
+    const chatStatus = selectedUser ? (selectedUser as any).status : null;
+    const normalizedStatus = chatStatus ? String(chatStatus).toLowerCase() : null;
+    const isChatClosed = normalizedStatus === "complete" || normalizedStatus === "responded";
+    
     if (allMessages.length === 0) {
       return (
-        <div className="flex items-center justify-center h-full text-sm text-[#788099] dark:text-[#A2A4A9]">
+        <div className="flex items-center justify-center h-full text-sm text-gray-600 dark:text-[#A2A4A9]">
           Select a conversation on the left to start chatting.
         </div>
       );
@@ -524,11 +529,11 @@ export const Chats: React.FC = () => {
                   className={
                     isSender
                       ? "bg-[#1D8751] text-white rounded-lg px-2.5 py-1 max-w-[85%] sm:max-w-xs min-w-[100px] sm:min-w-[120px]"
-                      : "bg-[#35353E] text-white rounded-lg px-2.5 py-1 max-w-[85%] sm:max-w-xs min-w-[100px] sm:min-w-[120px]"
+                      : "bg-gray-200 dark:bg-[#35353E] text-gray-900 dark:text-white rounded-lg px-2.5 py-1 max-w-[85%] sm:max-w-xs min-w-[100px] sm:min-w-[120px]"
                   }
                 >
                   {/* Show sender username - "You" for own messages, username for their messages */}
-                  <div className={`text-xs font-semibold mb-0 ${isSender ? "text-green-100" : "text-white"}`}>
+                  <div className={`text-xs font-semibold mb-0 ${isSender ? "text-green-100" : "text-gray-900 dark:text-white"}`}>
                     {isSender ? "You" : displayName}
                   </div>
                   
@@ -545,6 +550,39 @@ export const Chats: React.FC = () => {
               </div>
             );
           })}
+        
+        {/* Chat Closed Notification in messages area */}
+        {isChatClosed && (
+          <div className="mt-4 mb-2 bg-gray-100 dark:bg-[#2C2C34] rounded-xl p-4 border border-gray-300 dark:border-[#35353E]">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full border border-gray-400 dark:border-gray-600 flex items-center justify-center bg-transparent">
+                <svg
+                  className="w-4 h-4 text-gray-600 dark:text-gray-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Chat Closed</h3>
+                <p className="text-xs text-gray-600 dark:text-gray-500 leading-relaxed">
+                  This chat is now closed as there are no active or pending orders.
+                </p>
+                <p className="text-xs text-gray-600 dark:text-gray-500 leading-relaxed mt-1">
+                  Please note that the chat will automatically reopen only when there is a new order between you and this user.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div ref={messagesEndRef} />
       </div>
     );
@@ -553,7 +591,7 @@ export const Chats: React.FC = () => {
   if (!isAuthenticated) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500 dark:text-gray-400">
+        <p className="text-gray-600 dark:text-gray-400">
           Please log in to view chats.
         </p>
       </div>
@@ -571,7 +609,7 @@ export const Chats: React.FC = () => {
   if (error) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-sm text-red-500 dark:text-red-400">
+        <p className="text-sm text-red-600 dark:text-red-400">
           Error loading chats: {error}
         </p>
       </div>
@@ -581,18 +619,18 @@ export const Chats: React.FC = () => {
   return (
     <div className="w-full h-full flex flex-col">
       {/* Header */}
-      <div className="px-3 sm:px-4 pt-0 pb-2">
-        <h1 className="text-xl sm:text-2xl font-bold text-white">
+      <div className="px-1 sm:px-2 md:px-4 pt-0 pb-2">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
           P2P Trading Chat
         </h1>
-        <p className="text-xs sm:text-sm text-[#A3A7BF] mt-1">
+        <p className="text-xs sm:text-sm text-gray-600 dark:text-[#A3A7BF] mt-1">
           Communicate securely with traders.
         </p>
       </div>
 
       <div className="flex-1 flex gap-3 sm:gap-4 min-h-[480px]">
         {/* Conversations list - Left Card */}
-        <div className="w-full sm:w-80 md:w-72 lg:w-80 rounded-2xl border border-[#35353E] bg-[#15161D] overflow-hidden flex flex-col">
+        <div className="w-full sm:w-80 md:w-72 lg:w-80 rounded-2xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#15161D] overflow-hidden flex flex-col">
           <div className="px-3 py-2">
             <div className="relative">
               <input
@@ -600,14 +638,14 @@ export const Chats: React.FC = () => {
                 placeholder="Search conversations..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-full bg-[#050608] border border-[#272837] px-4 py-2 text-xs sm:text-sm text-[#E5E7EB] placeholder:text-[#6B7280] focus:outline-none focus:border-[#1D8751]"
+                className="w-full rounded-full bg-gray-100 dark:bg-[#050608] border border-gray-300 dark:border-[#272837] px-4 py-2 text-xs sm:text-sm text-gray-900 dark:text-[#E5E7EB] placeholder:text-gray-500 dark:placeholder:text-[#6B7280] focus:outline-none focus:border-[#1D8751]"
               />
             </div>
           </div>
 
           <div className="px-2 pb-2 space-y-1 flex-1 overflow-y-auto max-h-[calc(100vh-200px)]">
             {filteredConversations.length === 0 && (
-              <div className="px-3 py-4 text-xs text-[#9CA3AF]">
+              <div className="px-3 py-4 text-xs text-gray-600 dark:text-[#9CA3AF]">
                 No conversations yet.
               </div>
             )}
@@ -637,9 +675,9 @@ export const Chats: React.FC = () => {
         </div>
 
         {/* Chat panel - Right Card */}
-        <div className="flex-1 flex flex-col rounded-2xl border border-[#35353E] bg-[#111217] overflow-hidden">
+        <div className="flex-1 flex flex-col rounded-2xl border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#111217] overflow-hidden">
           {/* Chat header */}
-          <div className="px-4 py-3 border-b border-[#1F2937] flex items-center justify-between">
+          <div className="px-4 py-3 border-b border-gray-200 dark:border-[#1F2937] flex items-center justify-between">
             <div className="flex items-center gap-3">
               {selectedUser && (() => {
                 const latestMessage = selectedUser.messages?.[0];
@@ -676,11 +714,11 @@ export const Chats: React.FC = () => {
                       </div>
                     </div>
                     <div>
-                      <div className="text-sm font-semibold text-white">
+                      <div className="text-sm font-semibold text-gray-900 dark:text-white">
                         {displayName}
                       </div>
                       {selectedUser.entity_id && (
-                        <div className="text-[11px] text-[#9CA3AF] mt-0.5">
+                        <div className="text-[11px] text-gray-600 dark:text-[#9CA3AF] mt-0.5">
                           Chat ID: {selectedUser.entity_id}
                         </div>
                       )}
@@ -690,7 +728,7 @@ export const Chats: React.FC = () => {
               })()}
               {!selectedUser && (
                 <div>
-                  <div className="text-sm font-semibold text-white">
+                  <div className="text-sm font-semibold text-gray-900 dark:text-white">
                     No conversation selected
                   </div>
                 </div>
@@ -701,7 +739,7 @@ export const Chats: React.FC = () => {
           {/* Terms banner (only visible if not accepted) */}
           {!termsAccepted && (
             <div className="px-4 pt-4">
-              <div className="rounded-2xl border border-[#1D8751] bg-[#042417] text-white px-4 py-3 sm:px-6 sm:py-4 flex flex-col gap-3">
+              <div className="rounded-2xl border border-[#1D8751] bg-green-50 dark:bg-[#042417] text-gray-900 dark:text-white px-4 py-3 sm:px-6 sm:py-4 flex flex-col gap-3">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-sm font-bold">
                     P2P
@@ -710,7 +748,7 @@ export const Chats: React.FC = () => {
                     <div className="text-xs sm:text-sm font-semibold">
                       P2P Trading Terms &amp; Conditions
                     </div>
-                    <p className="text-[11px] sm:text-xs text-[#D1D5DB] mt-1 max-w-xl">
+                    <p className="text-[11px] sm:text-xs text-gray-700 dark:text-[#D1D5DB] mt-1 max-w-xl">
                       Before you start chatting, please review and accept our P2P Trading
                       Terms and Conditions. These terms ensure a safe and secure trading
                       environment for all users.
@@ -720,7 +758,7 @@ export const Chats: React.FC = () => {
                 <div className="flex flex-wrap gap-2 mt-1">
                   <Link
                     href="/p2p/terms"
-                    className="px-3 py-1.5 rounded-full border border-[#1D8751] text-[11px] sm:text-xs text-[#D1FAE5] bg-transparent hover:bg-[#064E3B] transition-colors inline-block"
+                    className="px-3 py-1.5 rounded-full border border-[#1D8751] text-[11px] sm:text-xs text-[#1D8751] dark:text-[#D1FAE5] bg-transparent hover:bg-green-100 dark:hover:bg-[#064E3B] transition-colors inline-block"
                   >
                     Read Terms &amp; Conditions
                   </Link>
@@ -758,28 +796,71 @@ export const Chats: React.FC = () => {
           <div className="flex-1">{renderMessages()}</div>
 
           {/* Input bar */}
-          <div className="px-4 py-3 border-t border-[#1F2937] bg-[#050608]">
+          <div className="px-4 py-3 border-t border-gray-200 dark:border-[#1F2937] bg-gray-50 dark:bg-[#050608]">
             <div className="flex items-center gap-2">
               <div className="flex-1">
                 <input
                   type="text"
-                  placeholder={termsAccepted ? "Type your message..." : "Accept terms to start chatting"}
+                  placeholder={
+                    !termsAccepted 
+                      ? "Accept terms to start chatting" 
+                      : (() => {
+                          const status = selectedUser ? (selectedUser as any).status : null;
+                          const normalizedStatus = status ? String(status).toLowerCase() : null;
+                          const isClosed = normalizedStatus === "complete" || normalizedStatus === "responded";
+                          return isClosed ? "Chat is closed - No active orders" : "Type your message...";
+                        })()
+                  }
                   value={messageInput}
                   onChange={(e) => setMessageInput(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  disabled={!termsAccepted || isSending}
-                  className="w-full rounded-full bg-[#111827] border border-[#374151] px-4 py-2 text-xs sm:text-sm text-white placeholder:text-[#6B7280] focus:outline-none focus:border-[#1D8751] disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={
+                    !termsAccepted || 
+                    isSending || 
+                    (() => {
+                      const status = selectedUser ? (selectedUser as any).status : null;
+                      const normalizedStatus = status ? String(status).toLowerCase() : null;
+                      return normalizedStatus === "complete" || normalizedStatus === "responded";
+                    })()
+                  }
+                  className="w-full rounded-full bg-white dark:bg-[#111827] border border-gray-300 dark:border-[#374151] px-4 py-2 text-xs sm:text-sm text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-[#6B7280] focus:outline-none focus:border-[#1D8751] disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
               <button
                 onClick={handleSendMessage}
-                disabled={!termsAccepted || !messageInput.trim() || isSending}
+                disabled={
+                  !termsAccepted || 
+                  !messageInput.trim() || 
+                  isSending ||
+                  (() => {
+                    const status = selectedUser ? (selectedUser as any).status : null;
+                    const normalizedStatus = status ? String(status).toLowerCase() : null;
+                    return normalizedStatus === "complete" || normalizedStatus === "responded";
+                  })()
+                }
                 className={`w-8 h-8 rounded-full bg-[#1D8751] text-white flex items-center justify-center transition-opacity ${
-                  termsAccepted && messageInput.trim() && !isSending
+                  (() => {
+                    const status = selectedUser ? (selectedUser as any).status : null;
+                    const normalizedStatus = status ? String(status).toLowerCase() : null;
+                    const isClosed = normalizedStatus === "complete" || normalizedStatus === "responded";
+                    return termsAccepted && 
+                           messageInput.trim() && 
+                           !isSending &&
+                           !isClosed;
+                  })()
                     ? "opacity-100 hover:bg-[#15803D] cursor-pointer"
                     : "opacity-60 cursor-not-allowed"
                 }`}
-                title={!termsAccepted ? "Accept terms to send messages" : isSending ? "Sending..." : "Send message"}
+                title={
+                  !termsAccepted 
+                    ? "Accept terms to send messages" 
+                    : (() => {
+                        const status = selectedUser ? (selectedUser as any).status : null;
+                        const normalizedStatus = status ? String(status).toLowerCase() : null;
+                        const isClosed = normalizedStatus === "complete" || normalizedStatus === "responded";
+                        return isClosed ? "Chat is closed" : (isSending ? "Sending..." : "Send message");
+                      })()
+                }
               >
                 <svg
                   className="w-4 h-4"

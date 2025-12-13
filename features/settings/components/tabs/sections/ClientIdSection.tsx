@@ -86,7 +86,7 @@ const ClientIdSection: React.FC<ClientIdSectionProps> = ({ user }) => {
               </span>
             </div>
             <button
-              className={`flex items-center justify-center gap-1 px-3 py-2 rounded-xl dark:bg-[#23232B] bg-gray-200 text-[#1D8751] font-semibold hover:bg-[#1D8751] hover:text-white transition text-sm whitespace-nowrap flex-shrink-0 ${
+              className={`flex items-center justify-center gap-1 px-3 py-2 rounded-xl dark:bg-[var(--card-color)] bg-gray-200 text-[#1D8751] font-semibold hover:bg-[#1D8751] hover:text-white transition text-sm whitespace-nowrap flex-shrink-0 ${
                 copied ? "bg-[#1D8751] text-white" : ""
               }`}
               onClick={handleCopy}

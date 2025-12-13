@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useMarketingI18n } from "@/lib/useMarketingI18n";
 import { useContact } from "../hooks/useContact";
 import type { ContactFormData } from "../types";
+import { User, Mail, MessageCircle, Send } from "lucide-react";
 
 interface ContactFormProps {
   onSuccess?: () => void;
@@ -12,8 +13,10 @@ interface ContactFormProps {
 
 const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
   const { t } = useMarketingI18n();
-  const [formData, setFormData] = useState<ContactFormData>({
+  const [formData, setFormData] = useState<ContactFormData & { name?: string; subject?: string }>({
+    name: "",
     email_address: "",
+    subject: "",
     question: "",
     supporting_file: null,
   });
@@ -93,7 +96,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
     }
 
     if (!formData.question.trim()) {
-      onError?.("Question is required");
+      onError?.("Message is required");
       return;
     }
 
@@ -104,10 +107,17 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
       return;
     }
 
-    const result = await submitContact(formData);
+    // Prepare data for submission (map to backend format)
+    const submitData: ContactFormData = {
+      email_address: formData.email_address,
+      question: formData.subject ? `${formData.subject}\n\n${formData.question}` : formData.question,
+      supporting_file: formData.supporting_file,
+    };
+
+    const result = await submitContact(submitData);
 
     if (result.success) {
-      setFormData({ email_address: "", question: "", supporting_file: null });
+      setFormData({ name: "", email_address: "", subject: "", question: "", supporting_file: null });
       onSuccess?.();
     } else {
       onError?.(result.error || "Failed to submit support request");
@@ -115,7 +125,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-5">
       {/* Success Message */}
       {success && (
         <div className="bg-[#D1FAE5] dark:bg-[#064E3B] border border-[#10B981] rounded-2xl p-4 flex items-start space-x-3 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -212,161 +222,112 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
         </div>
       )}
 
-      {/* Email Field */}
+      {/* Your Name Field */}
       <div>
         <label
-          htmlFor="email"
-          className="block text-xs sm:text-sm lg:text-sm font-medium text-[#344054] dark:text-white mb-2"
+          htmlFor="name"
+          className="block text-sm font-medium text-gray-900 dark:text-white mb-2"
         >
-          {t("marketing.contact.emailLabel", "Email Address *")}
+          Your Name
         </label>
-        <input
-          type="email"
-          id="email_address"
-          name="email_address"
-          value={formData.email_address}
-          onChange={handleInputChange}
-          placeholder={t(
-            "marketing.contact.emailPlaceholder",
-            "your.email@example.com"
-          )}
-          required
-          disabled={isSubmitting}
-          className="w-full px-3 sm:px-4 lg:px-4 py-2.5 sm:py-3 lg:py-3 border border-[#E8EFF5] dark:border-[#35353E] rounded-xl sm:rounded-xl lg:rounded-2xl focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0"
-        />
+        <div className="relative">
+          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
+          <input
+            type="text"
+            id="name"
+            name="name"
+            value={formData.name || ""}
+            onChange={handleInputChange}
+            placeholder="Enter your name"
+            disabled={isSubmitting}
+            className="w-full pl-10 pr-4 py-3 bg-white dark:bg-transparent border border-gray-300 dark:border-[#2A2A2A] rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-500 focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          />
+        </div>
       </div>
 
-      {/* Question Field */}
+      {/* Email Address Field */}
+      <div>
+        <label
+          htmlFor="email_address"
+          className="block text-sm font-medium text-gray-900 dark:text-white mb-2"
+        >
+          Email Address
+        </label>
+        <div className="relative">
+          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
+          <input
+            type="email"
+            id="email_address"
+            name="email_address"
+            value={formData.email_address}
+            onChange={handleInputChange}
+            placeholder="your@email.com"
+            required
+            disabled={isSubmitting}
+            className="w-full pl-10 pr-4 py-3 bg-white dark:bg-transparent border border-gray-300 dark:border-[#2A2A2A] rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-500 focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          />
+        </div>
+      </div>
+
+      {/* Subject Field */}
+      <div>
+        <label
+          htmlFor="subject"
+          className="block text-sm font-medium text-gray-900 dark:text-white mb-2"
+        >
+          Subject
+        </label>
+        <div className="relative">
+          <MessageCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
+          <input
+            type="text"
+            id="subject"
+            name="subject"
+            value={formData.subject || ""}
+            onChange={handleInputChange}
+            placeholder="How can we help?"
+            disabled={isSubmitting}
+            className="w-full pl-10 pr-4 py-3 bg-white dark:bg-transparent border border-gray-300 dark:border-[#2A2A2A] rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-500 focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          />
+        </div>
+      </div>
+
+      {/* Message Field */}
       <div>
         <label
           htmlFor="question"
-          className="block text-xs sm:text-sm lg:text-sm font-medium text-[#344054] dark:text-white mb-2"
+          className="block text-sm font-medium text-gray-900 dark:text-white mb-2"
         >
-          {t("marketing.contact.questionLabel", "Your Question *")}
+          Message
         </label>
         <textarea
           id="question"
           name="question"
           value={formData.question}
           onChange={handleInputChange}
-          placeholder={t(
-            "marketing.contact.questionPlaceholder",
-            "Please describe your question or issue..."
-          )}
+          placeholder="Tell us more about your inquiry..."
           rows={4}
           required
           disabled={isSubmitting}
-          className="w-full px-3 sm:px-4 lg:px-4 py-2.5 sm:py-3 lg:py-3 border border-[#E8EFF5] dark:border-[#35353E] rounded-xl sm:rounded-xl lg:rounded-2xl focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors resize-none disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base lg:text-base"
+          className="w-full px-4 py-3 bg-white dark:bg-transparent border border-gray-300 dark:border-[#2A2A2A] rounded-xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-500 focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors resize-none disabled:opacity-50 disabled:cursor-not-allowed"
         />
       </div>
 
-      {/* File Upload Field */}
-      <div>
-        <label className="block text-xs sm:text-sm lg:text-sm font-medium text-[#344054] dark:text-white mb-2">
-          {t("marketing.contact.supportingFilesLabel", "Supporting Files")}
-        </label>
-        <p className="text-xs sm:text-xs lg:text-xs text-[#667085] dark:text-[#98A2B3] mb-3 leading-relaxed">
-          {t("marketing.contact.supportingFilesDescription", "You can attach supporting documents, screenshots, or other files that might help us understand your issue better. Supported formats: PDF, DOC, DOCX, TXT, PNG, JPG, JPEG")}
-        </p>
-        
-        {!formData.supporting_file ? (
-          <div className="relative">
-            <input
-              type="file"
-              id="supporting_file"
-              name="supporting_file"
-              onChange={handleFileChange}
-              accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
-              disabled={isSubmitting}
-              className="hidden"
-            />
-            <label
-              htmlFor="supporting_file"
-              className={`flex flex-col items-center justify-center w-full px-3 sm:px-4 lg:px-4 py-4 sm:py-5 lg:py-6 border-2 border-dashed border-[#E8EFF5] dark:border-[#35353E] rounded-xl sm:rounded-xl lg:rounded-2xl cursor-pointer transition-colors hover:border-[#1D8751] dark:hover:border-[#1D8751] min-h-[120px] sm:min-h-[140px] lg:min-h-[160px] ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              <svg
-                className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 mb-2 text-[#667085] dark:text-[#98A2B3]"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                />
-              </svg>
-              <span className="text-xs sm:text-sm lg:text-sm text-[#344054] dark:text-white font-medium text-center px-2">
-                {t("marketing.contact.clickToUpload", "Click to upload file")}
-              </span>
-              <span className="text-xs text-[#667085] dark:text-[#98A2B3] mt-1 text-center px-2">
-                {t("marketing.contact.maxFileSize", "Maximum file size: 10MB")}
-              </span>
-            </label>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between px-4 py-3 border border-[#E8EFF5] dark:border-[#35353E] rounded-2xl">
-            <div className="flex items-center space-x-3">
-              <svg
-                className="w-5 h-5 text-[#1D8751]"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-              <div>
-                <p className="text-sm text-[#344054] dark:text-white font-medium">
-                  {formData.supporting_file.name}
-                </p>
-                <p className="text-xs text-[#667085] dark:text-[#98A2B3]">
-                  {(formData.supporting_file.size / 1024).toFixed(2)} KB
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleRemoveFile}
-              disabled={isSubmitting}
-              className="text-[#F04438] hover:text-[#D92D20] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
-        )}
-      </div>
-
       {/* Submit Button */}
-      <div className="pt-2 sm:pt-3 lg:pt-4">
+      <div className="pt-2">
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-[#1D8751] text-white font-medium py-2.5 sm:py-3 lg:py-3 px-6 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#166b42] text-sm sm:text-base lg:text-base min-h-[44px] sm:min-h-0 lg:min-h-0"
+          className="w-full bg-[#1D8751] text-white font-medium py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#167a47] flex items-center justify-center gap-2"
         >
-          {isSubmitting
-            ? t("marketing.contact.submitting", "Submitting...")
-            : t("marketing.contact.submit", "Submit Contact Form")}
+          {isSubmitting ? (
+            "Sending..."
+          ) : (
+            <>
+              <Send className="w-5 h-5" />
+              Send Message
+            </>
+          )}
         </button>
       </div>
     </form>

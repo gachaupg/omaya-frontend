@@ -228,7 +228,7 @@ function EmailVerificationModal({
       className="fixed inset-0 flex items-center justify-center z-50 px-4"
       style={{ background: "rgba(24, 24, 29, 0.5)" }}
     >
-      <div className="dark:bg-[#1D1D23] bg-white rounded-2xl p-8 max-w-md w-full relative">
+      <div className="bg-white dark:bg-[var(--card-color)] rounded-2xl p-8 max-w-md w-full relative">
         {/* Close button */}
         <button
           onClick={onClose}
@@ -283,7 +283,7 @@ function EmailVerificationModal({
                 className={`w-10 h-12 sm:w-12 sm:h-14 text-center dark:text-white text-gray-900 text-xl font-semibold dark:bg-[#35353E] bg-gray-100 border ${
                   error
                     ? "border-[#F04438]"
-                    : "dark:border-gray-700 border-gray-300"
+                    : "border-gray-300 dark:border-[#35353E]"
                 } rounded-lg focus:outline-none focus:border-[#1D8751] transition-colors`}
               />
             ))}
@@ -757,7 +757,7 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
 
   return (
     <>
-      <div className="min-h-screen dark:bg-[#18181D] bg-gray-50 flex flex-col md:flex-row items-start justify-center relative overflow-hidden px-6 py-16 md:pt-24 md:pb-24">
+      <div className="min-h-screen bg-app dark:bg-app flex flex-col md:flex-row items-start justify-center relative overflow-hidden px-6 py-16 md:pt-24 md:pb-24">
         {/* Left Side - Mobile App Preview */}
         <div className="w-full md:w-1/2 flex justify-center mb-8 md:mb-0 relative z-10">
           {/* Background Glow Effect */}
@@ -773,7 +773,7 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
             />
             {/* App store badges */}
             <div className="flex space-x-1 mt-4 justify-center">
-              <div className="rounded px-2 flex items-center border border-gray-700 bg-white">
+              <div className="rounded px-2 flex items-center border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)]">
                 <Image
                   src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746787514/Google_Play-Icon-Logo.wine_dqxxk7.svg"
                   alt="Google Play Store"
@@ -788,7 +788,7 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                   </span>
                 </div>
               </div>
-              <div className="rounded px-2 flex items-center border border-gray-700 bg-white">
+              <div className="rounded px-2 flex items-center border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)]">
                 <Image
                   src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747288173/dark_apple_rwpgwi.png"
                   alt="Apple App Store"
@@ -857,11 +857,11 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                       id="company-name"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
-                      className={`w-full py-2 px-4 pl-9 rounded-full dark:bg-[#1D1D23] bg-white border ${
-                        errors.firstName
-                          ? "border-[#FDA29B]"
-                          : "border-gray-700"
-                      } dark:text-[#788099] text-gray-900 focus:outline-none focus:border-[#13B562]`}
+                      className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${
+                          errors.firstName
+                            ? "border-[#FDA29B]"
+                            : "border-gray-300 dark:border-[#35353E]"
+                      } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
                       placeholder={t("auth.register.firstName", "Full Name")}
                     />
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -909,9 +909,9 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                       id="establishment-date"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
-                      className={`w-full py-2 px-4 pl-9 rounded-full dark:bg-[#1D1D23] bg-white border ${
-                        errors.lastName ? "border-[#FDA29B]" : "border-gray-700"
-                      } dark:text-[#788099] text-gray-900 focus:outline-none focus:border-[#13B562]`}
+                      className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${
+                        errors.lastName ? "border-[#FDA29B]" : "border-gray-300 dark:border-[#35353E]"
+                      } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
                       placeholder={t("auth.register.lastName", "Last Name")}
                     />
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -961,9 +961,9 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                       id="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className={`w-full py-2 px-4 pl-9 rounded-full dark:bg-[#1D1D23] bg-white border ${
-                        errors.email ? "border-[#FDA29B]" : "border-gray-700"
-                      } dark:text-[#788099] text-gray-900 focus:outline-none focus:border-[#13B562]`}
+                      className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${
+                        errors.email ? "border-[#FDA29B]" : "border-gray-300 dark:border-[#35353E]"
+                      } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
                       placeholder={t(
                         "auth.login.email.placeholder",
                         "Email Address"
@@ -1018,7 +1018,7 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                       onClick={() =>
                         setShowCountryDropdown(!showCountryDropdown)
                       }
-                      className="w-full py-2 px-4 pl-3 pr-20 rounded-full dark:bg-[#1D1D23] bg-white border dark:border-gray-700 border-gray-300 dark:text-white text-gray-900 focus:outline-none focus:border-[#13B562] text-left flex items-center"
+                      className="w-full py-2 px-4 pl-3 pr-20 rounded-full bg-white dark:bg-[var(--card-color)] border border-gray-300 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562] text-left flex items-center"
                     >
                       <img
                         src={`https://flagcdn.com/16x12/${selectedCountry.toLowerCase()}.png`}
@@ -1056,9 +1056,9 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
 
                     {/* Custom Dropdown */}
                     {showCountryDropdown && (
-                      <div className="absolute z-50 w-full sm:w-80 left-0 right-0 sm:right-auto mt-1 max-h-[60vh] overflow-hidden dark:bg-[#1D1D23] bg-white border dark:border-gray-700 border-gray-300 rounded-lg shadow-lg">
+                      <div className="absolute z-50 w-full sm:w-80 left-0 right-0 sm:right-auto mt-1 max-h-[60vh] overflow-hidden bg-white dark:bg-[var(--card-color)] border border-gray-300 dark:border-[#35353E] rounded-lg shadow-lg">
                         {/* Search Input */}
-                        <div className="p-2 sm:p-3 border-b dark:border-gray-700 border-gray-300">
+                        <div className="p-2 sm:p-3 border-b border-gray-300 dark:border-[#35353E]">
                           <div className="relative">
                             <input
                               type="text"
@@ -1109,7 +1109,7 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                                   setShowCountryDropdown(false);
                                   setCountrySearchTerm("");
                                 }}
-                                className="w-full px-3 sm:px-4 py-3 sm:py-3 text-left hover:bg-[#13B562] hover:bg-opacity-10 flex items-center dark:text-white text-gray-900 border-b dark:border-gray-700 border-gray-200 last:border-b-0 min-h-[48px]"
+                                className="w-full px-3 sm:px-4 py-3 sm:py-3 text-left hover:bg-[#13B562] hover:bg-opacity-10 flex items-center dark:text-white text-gray-900 border-b border-gray-200 dark:border-[#35353E] last:border-b-0 min-h-[48px]"
                               >
                                 <img
                                   src={`https://flagcdn.com/16x12/${country.code.toLowerCase()}.png`}
@@ -1158,9 +1158,9 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                       id="phone"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className={`w-full py-2 px-4 pl-9 rounded-full dark:bg-[#1D1D23] bg-white border ${
-                        errors.phone ? "border-[#FDA29B]" : "border-gray-700"
-                      } dark:text-[#788099] text-gray-900 focus:outline-none focus:border-[#13B562]`}
+                      className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${
+                        errors.phone ? "border-[#FDA29B]" : "border-gray-300 dark:border-[#35353E]"
+                      } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
                       placeholder={"+12345678"}
                     />
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -1206,9 +1206,9 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                         setPassword(e.target.value);
                         if (submitAttempted) setSubmitAttempted(false);
                       }}
-                      className={`w-full py-2 px-4 pl-9 rounded-full dark:bg-[#1D1D23] bg-white border ${
-                        errors.password ? "border-[#FDA29B]" : "border-gray-700"
-                      } dark:text-[#788099] text-gray-900 focus:outline-none focus:border-[#13B562]`}
+                      className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${
+                        errors.password ? "border-[#FDA29B]" : "border-gray-300 dark:border-[#35353E]"
+                      } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
                       placeholder={t(
                         "auth.register.password.placeholder",
                         "Enter password"
@@ -1342,11 +1342,11 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                       id="confirm-password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className={`w-full py-2 px-4 pl-9 rounded-full dark:bg-[#1D1D23] bg-white border ${
+                      className={`w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border ${
                         errors.confirmPassword
                           ? "border-[#FDA29B]"
-                          : "border-gray-700"
-                      } dark:text-[#788099] text-gray-900 focus:outline-none focus:border-[#13B562]`}
+                          : "border-gray-300 dark:border-[#35353E]"
+                      } text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]`}
                       placeholder={t(
                         "auth.register.confirm.placeholder",
                         "Confirm password"
@@ -1478,7 +1478,7 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                         ? "bg-[#1D8751]"
                         : submitAttempted
                           ? "bg-red-500"
-                          : "bg-black dark:bg-white"
+                          : "bg-gray-400 dark:bg-gray-500"
                     }`}
                   ></div>
                   <span
@@ -1503,7 +1503,7 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                         ? "bg-[#1D8751]"
                         : submitAttempted
                           ? "bg-red-500"
-                          : "bg-black dark:bg-white"
+                          : "bg-gray-400 dark:bg-gray-500"
                     }`}
                   ></div>
                   <span
@@ -1528,7 +1528,7 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                         ? "bg-[#1D8751]"
                         : submitAttempted
                           ? "bg-red-500"
-                          : "bg-black dark:bg-white"
+                          : "bg-gray-400 dark:bg-gray-500"
                     }`}
                   ></div>
                   <span
@@ -1562,7 +1562,7 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                     id="referral-code"
                     value={referralCode}
                     onChange={(e) => setReferralCode(e.target.value)}
-                    className="w-full py-2 px-4 pl-9 rounded-full dark:bg-[#1D1D23] bg-white border dark:border-gray-700 border-gray-300 dark:text-[#788099] text-gray-900 focus:outline-none focus:border-[#13B562]"
+                    className="w-full py-2 px-4 pl-9 rounded-full bg-white dark:bg-[var(--card-color)] border border-gray-300 dark:border-[#35353E] text-gray-900 dark:text-white focus:outline-none focus:border-[#13B562]"
                     placeholder={t(
                       "auth.register.referral.placeholder",
                       "Paste here your referral code"
@@ -1616,7 +1616,7 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                       {showReferralTooltip && (
                         <div
                           ref={referralTooltipRef}
-                          className="absolute right-0 bottom-full z-20 mb-2 w-64 rounded-xl border border-gray-200 bg-white p-4 text-left shadow-lg dark:border-gray-700 dark:bg-[#1D1D23]"
+                          className="absolute right-0 bottom-full z-20 mb-2 w-64 rounded-xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] p-4 text-left shadow-lg"
                         >
                           <div className="mb-1 text-sm font-semibold text-gray-900 dark:text-white">
                             {t(
@@ -1742,7 +1742,7 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                     {t("auth.register.login", "Log In")}
                   </Link>
                 </p>
-                <div className="border-t dark:border-gray-700 border-gray-300 flex-grow mt-2"></div>
+                <div className="border-t border-gray-300 dark:border-[#35353E] flex-grow mt-2"></div>
               </div>
 
               {/* Or Sign Up with */}
@@ -1756,7 +1756,7 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                 <div className="grid grid-cols-2 gap-2 mt-4">
                   <React.Suspense
                     fallback={
-                      <div className="flex items-center justify-center py-3 px-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-transparent w-full">
+                      <div className="flex items-center justify-center py-3 px-4 rounded-lg border border-gray-300 dark:border-[#35353E] bg-white dark:bg-transparent w-full">
                         <span className="text-gray-700 dark:text-gray-300 font-medium text-sm">
                           Loading Google...
                         </span>
@@ -1770,7 +1770,7 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                   </React.Suspense>
                   <React.Suspense
                     fallback={
-                      <div className="flex items-center justify-center py-3 px-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-transparent w-full">
+                      <div className="flex items-center justify-center py-3 px-4 rounded-lg border border-gray-300 dark:border-[#35353E] bg-white dark:bg-transparent w-full">
                         <span className="text-gray-700 dark:text-gray-300 font-medium text-sm">
                           Loading Facebook...
                         </span>

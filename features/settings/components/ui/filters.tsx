@@ -165,7 +165,7 @@ const Filters = () => {
     <div className="flex flex-col">
       {/* Mobile: Vertical column tabs */}
       <div className="md:hidden">
-        <div className="flex flex-col p-3 sm:p-4 rounded-lg border dark:bg-[#1D1D23] bg-white dark:border-[#35353E] border-gray-300 w-full overflow-hidden">
+        <div className="flex flex-col p-2 sm:p-3 md:p-4 rounded-lg border dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-300 w-full overflow-hidden">
           {tabs.map((tab, idx) => (
             <button
               key={tab.label}

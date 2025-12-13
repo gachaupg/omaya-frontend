@@ -19,7 +19,7 @@ const Card: React.FC<CardProps> = ({
   borderColor = "dark:border-[#35353E] border-gray-200",
   width = "w-full", 
   bgColor = "dark:bg-[#1D1D23] bg-white",
-  borderRadius = "rounded-[20px]",
+  borderRadius = "rounded-xl",
   className = "",
 }) => {
   return (

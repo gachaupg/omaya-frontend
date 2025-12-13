@@ -187,7 +187,7 @@ const ReferralMainCard: React.FC<Props> = ({
           </div>
           <CopyButton
             value={user?.referral_code ?? ""}
-            className="dark:bg-[#23232B] bg-gray-200 text-[#1D8751] bg-gray-200 text-[#1D8751] font-semibold border
+            className="dark:bg-[var(--card-color)] bg-gray-200 text-[#1D8751] bg-gray-200 text-[#1D8751] font-semibold border
                        hover:opacity-80 rounded-[999px] px-4 py-3 text-sm font-semibold transition-opacity flex-shrink-0"
             showIcon={true}
           >
@@ -203,7 +203,7 @@ const ReferralMainCard: React.FC<Props> = ({
           onClick={() => setShowQRCode(false)}
         >
           <div
-            className="bg-white dark:bg-[#1a1a1a] rounded-2xl p-6 max-w-sm w-full shadow-xl"
+            className="bg-white dark:bg-[var(--bg-color)] rounded-2xl p-6 max-w-sm w-full shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
@@ -220,7 +220,7 @@ const ReferralMainCard: React.FC<Props> = ({
             </div>
             {qrCodeDataUrl ? (
               <div className="flex flex-col items-center">
-                <div className="bg-white dark:bg-[#2a2a2a] p-4 rounded-lg border border-[#E2E8F0] dark:border-[#35353e] mb-4">
+                <div className="bg-white dark:bg-[var(--card-color)] p-4 rounded-lg border border-[#E2E8F0] dark:border-[#35353e] mb-4">
                   <img
                     src={qrCodeDataUrl}
                     alt="Referral Code QR Code"

@@ -20,7 +20,7 @@ const SystemThemeSection: React.FC = () => {
             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-2xl font-semibold text-sm transition-all ${
               isLight
                 ? "bg-[#1D8751] text-white"
-                : "bg-[#23232B] text-[#788099] hover:bg-[#2A2A32]"
+                : "bg-[var(--card-color)] text-[#788099] hover:bg-[#2A2A32]"
             }`}
             onClick={() => handleThemeChange("light")}
             aria-pressed={isLight}
