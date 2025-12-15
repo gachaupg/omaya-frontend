@@ -1169,23 +1169,40 @@ export default function ExchangeForm({
       "text-[10px] sm:text-xs md:text-sm lg:text-base font-semibold tracking-wide transition-colors whitespace-nowrap"
     ].join(" ");
 
+    // Text color for tab labels:
+    // - Active in dark mode: white
+    // - Active in light mode: dark color
+    // - Inactive in dark mode: gray (visible on dark bg)
+    // - Inactive in light mode: green (visible on light gray bg)
     const textColorClass = isActive
       ? isDark
         ? "text-white"
-        : "text-[#0B1418]"
-      : "text-[#727272]";
+        : "text-[#1D8751]" // Green for light mode active - matches the green icons
+      : isDark
+        ? "text-[#7C8A97]"
+        : "text-[#1D8751]"; // Green color for light mode inactive tabs - matches the green icons
 
-    const expressActiveIconSrc = isDark ? "https://res.cloudinary.com/pitz/image/upload/v1764698106/Group_8_hjhlxe.png"
-      : "https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png";
-    const expressInactiveIconSrc =
-      "https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png";
+    // Express XCHANGE icon:
+    // - Dark mode active: white text icon (visible on dark bg)
+    // - Dark mode inactive: green icon (visible on dark bg)
+    // - Light mode active: GREEN icon (visible on white bg) 
+    // - Light mode inactive: green icon (visible on light gray bg)
+    const expressActiveIconSrc = isDark 
+      ? "https://res.cloudinary.com/pitz/image/upload/v1764698106/Group_8_hjhlxe.png"
+      : "https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png"; // Green icon for light mode active
+    const expressInactiveIconSrc = 
+      "https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png"; // Green icon - visible on both dark and light bg
 
+    // MoneyX X icon:
+    // - Dark mode active: white X icon (visible on dark bg)
+    // - Dark mode inactive: green X icon (visible on dark bg)  
+    // - Light mode active: GREEN X icon (visible on white bg)
+    // - Light mode inactive: green X icon (visible on light gray bg)
     const moneyXIconSrc = isActive
       ? isDark
         ? "https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png"
-        : "https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"
-      :
-      "https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png";
+        : "https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png" // Green X for light mode active
+      : "https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"; // Green X - visible on both dark and light bg
 
     const ariaLabel =
       variant === "express"
