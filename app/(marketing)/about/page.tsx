@@ -429,7 +429,7 @@ const AboutPage = () => {
                 <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
                   <Eye className="w-4 h-4 text-purple-500" />
                 </div>
-                <span className="text-sm font-medium text-purple-500">Our Vision</span>
+                <span className="text-lg font-bold text-purple-500">Our Vision</span>
               </div>
 
               {/* Main Heading */}
@@ -1053,17 +1053,18 @@ const AboutPage = () => {
             <div className="bg-white dark:bg-[#14141A] rounded-3xl overflow-hidden border border-gray-200 dark:border-[#1E1E26]">
               {/* Image Section */}
               <div className="relative h-64">
-                <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800')] bg-cover bg-center">
-                  <Image
-                    src="https://res.cloudinary.com/pitz/image/upload/v1764574482/Container_ihax20.png"
-                    alt="Dubai"
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 50vw"
+                <img
+                  src="https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800&q=80"
+                  alt="Dubai"
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                <div className="absolute top-4 left-4 w-8 h-6 rounded-sm overflow-hidden shadow-md">
+                  <img
+                    src="https://flagcdn.com/w80/ae.png"
+                    alt="UAE Flag"
+                    className="w-full h-full object-cover"
                   />
-                </div>
-                <div className="absolute top-4 left-4 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                  <span className="text-lg">🇦🇪</span>
                 </div>
                 <div className="absolute top-4 right-4 px-3 py-1.5 rounded-xl bg-[#1D8751] text-white text-sm font-medium">
                   Headquarters
@@ -1118,17 +1119,18 @@ const AboutPage = () => {
             <div className="bg-white dark:bg-[#14141A] rounded-3xl overflow-hidden border border-gray-200 dark:border-[#1E1E26]">
               {/* Image Section */}
               <div className="relative h-64">
-                <div className="absolute inset-0">
-                  <Image
-                    src="https://res.cloudinary.com/pitz/image/upload/v1764574805/Container_2_yazuhu.png"
-                    alt="San Francisco"
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 50vw"
+                <img
+                  src="https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=800&q=80"
+                  alt="San Francisco"
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                <div className="absolute top-4 left-4 w-8 h-6 rounded-sm overflow-hidden shadow-md">
+                  <img
+                    src="https://flagcdn.com/w80/us.png"
+                    alt="US Flag"
+                    className="w-full h-full object-cover"
                   />
-                </div>
-                <div className="absolute top-4 left-4 w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                  <span className="text-lg">🇺🇸</span>
                 </div>
                 <div className="absolute top-4 right-4 px-3 py-1.5 rounded-xl bg-[#1D8751] text-white text-sm font-medium">
                   Regional Office
