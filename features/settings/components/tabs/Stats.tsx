@@ -277,25 +277,25 @@ const Stats = ({ onSupportClick }: StatsProps) => {
         <div className="dark:text-[#788099] text-gray-600 text-sm sm:text-base font-medium">
           Total Transactions
         </div>
-        <div className="text-base sm:text-lg font-semibold mt-1 mb-2 text-gray-500 dark:text-[#A0AEC0]">
+        <div className="text-base sm:text-lg font-semibold mt-1 mb-2 text-muted-foreground dark:text-muted">
           {formatCurrency(
             (summary?.total_approved_p2p_combined || 0) +
             (summary?.total_p2p_orders || 0),
             "USDT"
           )}
         </div>
-        <div className="border-b dark:border-[#35353E] border-gray-300 mt-2" />
+        <div className="border-b dark:border-accent border-border mt-2" />
       </div>
 
       {/* Deposits & Withdrawals */}
       <div className="mb-4 sm:mb-6">
         {/* Deposits */}
         <div className="mb-4">
-          <div className="dark:text-[#788099] text-gray-600 text-sm sm:text-base font-medium mb-1">
+          <div className="text-muted-foreground text-sm sm:text-base font-medium mb-1">
             Deposits
           </div>
           <div className="flex w-full items-center justify-between gap-3 mb-2">
-            <div className="text-sm sm:text-base text-gray-500 dark:text-[#A0AEC0] font-medium">
+            <div className="text-sm sm:text-base text-muted-foreground dark:text-muted font-medium">
               {formatCurrency(
                 getFilteredAmount(
                   summary?.total_approved_p2p_deposits || 0,
@@ -349,7 +349,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
             </div>
           </div>
         </div>
-        <div className="w-full h-4 sm:h-5 dark:bg-[#35353E] bg-gray-300 rounded-r-full mb-4">
+        <div className="w-full h-4 sm:h-5 dark:bg-accent bg-gray-300 rounded-r-full mb-4">
           <div
             className={`h-4 sm:h-5 rounded-r-full ${
               (summary?.total_approved_p2p_deposits || 0) > 0
@@ -368,11 +368,11 @@ const Stats = ({ onSupportClick }: StatsProps) => {
         </div>
         {/* Withdrawals */}
         <div className="mb-4">
-          <div className="dark:text-[#788099] text-gray-600 text-sm sm:text-base font-medium mb-1">
+          <div className="text-muted-foreground text-sm sm:text-base font-medium mb-1">
             Withdrawals
           </div>
           <div className="flex w-full items-center justify-between gap-3 mb-2">
-            <div className="text-sm sm:text-base text-gray-500 dark:text-[#A0AEC0] font-medium">
+            <div className="text-sm sm:text-base text-muted-foreground dark:text-muted font-medium">
               {formatCurrency(
                 getFilteredAmount(
                   summary?.total_approved_p2p_withdrawals || 0,
@@ -410,7 +410,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
                 </svg>
               </span>
               {showWithdrawalsDropdown && (
-                <div className="absolute top-6 right-0 dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 rounded-lg shadow-lg z-10 w-full border">
+                <div className="absolute top-6 right-0 dark:bg-[var(--card-color)] bg-white dark:border-accent border-border rounded-lg shadow-lg z-10 w-full border-2">
                   {timeFilterOptions.map((option) => (
                     <div
                       key={option}
@@ -428,7 +428,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
             </div>
           </div>
         </div>
-        <div className="w-full h-4 sm:h-5 dark:bg-[#35353E] bg-gray-300 rounded-r-full mb-4">
+        <div className="w-full h-4 sm:h-5 dark:bg-accent bg-gray-300 rounded-r-full mb-4">
           <div
             className={`h-4 sm:h-5 rounded-r-full ${
               (summary?.total_approved_p2p_withdrawals || 0) > 0
@@ -445,16 +445,16 @@ const Stats = ({ onSupportClick }: StatsProps) => {
             }}
           />
         </div>
-        <div className="border-b dark:border-[#35353E] border-gray-300 mt-2" />
+        <div className="border-b dark:border-accent border-gray-300 mt-2" />
       </div>
 
       {/* Referral Section */}
       <div className="mb-2">
-        <div className="text-lg font-semibold mb-1 text-gray-900 dark:text-white">Referral</div>
-        <div className="dark:text-[#788099] text-gray-600 text-sm mb-3">
+        <div className="text-lg font-semibold mb-1 text-muted-foreground dark:text-muted">Referral</div>
+        <div className="text-muted-foreground text-sm mb-3">
           Invite friends to earn commission money
         </div>
-        <div className="border-b dark:border-[#35353E] border-gray-300 mb-3" />
+        <div className="border-b dark:border-accent border-gray-300 mb-3" />
         <div className="flex items-center justify-between mb-2">
           <span className="dark:text-[#788099] text-gray-600 text-sm">
             Users Invited:
@@ -465,29 +465,29 @@ const Stats = ({ onSupportClick }: StatsProps) => {
         </div>
         <div className="space-y-2 mt-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center gap-2 text-gray-900 dark:text-white">
-              <span className="w-3 h-3 rounded-full bg-[#1D8751] inline-block" />
+            <span className="flex items-center gap-2 text-muted-foreground">
+              <span className="w-3 h-3 rounded-sm bg-[#1D8751] inline-block" />
               Deposits
             </span>
-            <span className="font-medium text-gray-700 dark:text-[#A0AEC0]">
+            <span className="font-medium text-accent dark:text-muted">
               {formatCurrency(referralWallet?.total_earned || 0)}
             </span>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center gap-2 text-gray-900 dark:text-white">
-              <span className="w-3 h-3 rounded-full bg-[#E23D3A] inline-block" />
+            <span className="flex items-center gap-2 text-muted-foreground">
+              <span className="w-3 h-3 rounded-sm bg-[#E23D3A] inline-block" />
               Withdrawals
             </span>
-            <span className="font-medium text-gray-700 dark:text-[#A0AEC0]">
+            <span className="font-medium text-accent dark:text-muted">
               {formatCurrency(referralWallet?.total_withdrawn || 0)}
             </span>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span className="flex items-center gap-2 text-gray-900 dark:text-white">
-              <span className="w-3 h-3 rounded-full bg-[#3B82F6] inline-block" />
+            <span className="flex items-center gap-2 text-muted-foreground">
+              <span className="w-3 h-3 rounded-sm bg-[#3B82F6] inline-block" />
               Total
             </span>
-            <span className="font-medium text-gray-700 dark:text-[#A0AEC0]">
+            <span className="font-medium text-accent dark:text-muted">
               {formatCurrency((referralWallet?.total_earned || 0) + (referralWallet?.total_withdrawn || 0))}
             </span>
           </div>
