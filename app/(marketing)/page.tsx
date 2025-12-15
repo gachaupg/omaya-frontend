@@ -1485,6 +1485,13 @@ export default function MarketingPage() {
         <div className="max-w-6xl 2xl:max-w-7xl mx-auto">
           {/* Header section */}
           <div className="text-center mb-12">
+                {/* Blogs Pill */}
+            <div className="flex justify-center mb-6">
+              <span className="bg-[#1D8751]/10 border border-[#1D8751] text-[#1D8751] px-4 py-2 rounded-2xl text-sm font-medium">
+                Latest Updates
+              </span>
+            </div>
+
 
             {/* Main Title */}
             <h2 className="text-3xl sm:text-4xl md:text-5xl 2xl:text-6xl font-bold mb-4">
