@@ -1855,7 +1855,7 @@ export default function MarketingPage() {
                   return (
                     <div key={item.id || item._id || index} className="relative">
                       <div
-                        className={`bg-gray-50 dark:bg-[#1D1D23] border rounded-xl overflow-hidden ${
+                        className={`bg-gray-50 dark:bg-[#18181D] border rounded-xl overflow-hidden ${
                           isOpen
                               ? "border-[#1D8751]"
                             : "border-gray-200 dark:border-[#2A2A2A]"
@@ -1889,11 +1889,15 @@ export default function MarketingPage() {
 
                           {/* Accordion Content */}
                         {isOpen && (
-                          <div className="px-5 py-4 bg-gray-50 dark:bg-[#1D1D23] border-t border-gray-200 dark:border-[#2A2A2A]">
-                            <p className="text-gray-700 dark:text-white/80 text-sm md:text-base leading-relaxed">
-                                  {item.answer}
-                                </p>
+                          <div className="bg-gray-50 dark:bg-[#18181D]">
+                            <div className="px-5 pt-4 pb-4">
+                              <div className="border-t border-[#35353E] dark:border-[#2A2A2A] pt-5 -mt-4">
+                                <p className="text-gray-700 dark:text-white/80 text-sm md:text-base leading-relaxed">
+                                    {item.answer}
+                                  </p>
                               </div>
+                            </div>
+                          </div>
                           )}
                         </div>
                       </div>
