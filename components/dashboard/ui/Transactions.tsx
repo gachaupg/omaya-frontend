@@ -20,7 +20,7 @@ export const NoDataFound = ({
 
   return (
     <div className="w-full text-center py-4 sm:py-6 md:py-8">
-      <div className="flex flex-col items-center justify-center dark:border-[#35353E] border-gray-200 border rounded-[24px] p-4 sm:p-6 md:p-8 dark:bg-[#23232B] bg-gray-50">
+      <div className="flex flex-col items-center justify-center dark:border-[#35353E] border-gray-200 border rounded-[24px] p-4 sm:p-6 md:p-8 bg-transparent">
         <div className="w-16 h-16 mb-4 rounded-full dark:bg-[#35353E] bg-gray-200 flex items-center justify-center">
           <svg
             width="24"
@@ -84,7 +84,7 @@ const Transactions = () => {
   };
 
   return (
-    <div className="dark:bg-[#1D1D23] bg-white border border-[#E8EFF5] dark:border-[#35353E] rounded-xl sm:rounded-xl lg:rounded-2xl p-3 sm:p-4 lg:p-4 overflow-hidden">
+    <div className="bg-transparent border border-[#E8EFF5] dark:border-[#35353E] rounded-xl sm:rounded-xl lg:rounded-2xl p-3 sm:p-4 lg:p-4 overflow-hidden">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-4 lg:mb-4 gap-3 sm:gap-4 lg:gap-4">
         <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold dark:text-white text-[#0D0D0D]">
           {t("transactions.title", "Recent Transactions")}

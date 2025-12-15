@@ -43,8 +43,8 @@ export const useThemeToggle = () => {
     const body = document.body;
 
     // Remove existing theme classes
-    root.classList.remove("light", "dark");
-    body.classList.remove("light", "dark");
+    root.classList.remove("light", "dark", "deem");
+    body.classList.remove("light", "dark", "deem");
 
     // Apply current theme
     if (theme.mode === "system") {
@@ -57,6 +57,11 @@ export const useThemeToggle = () => {
     } else {
       root.classList.add(theme.mode);
       body.classList.add(theme.mode);
+      // For deem mode, also add dark class so Tailwind dark: classes work
+      if (theme.mode === "deem") {
+        root.classList.add("dark");
+        body.classList.add("dark");
+      }
     }
 
     // Apply custom colors if available
@@ -77,8 +82,8 @@ export const useThemeToggle = () => {
       const root = document.documentElement;
       const body = document.body;
 
-      root.classList.remove("light", "dark");
-      body.classList.remove("light", "dark");
+      root.classList.remove("light", "dark", "deem");
+      body.classList.remove("light", "dark", "deem");
 
       const newTheme = mediaQuery.matches ? "dark" : "light";
       root.classList.add(newTheme);
@@ -89,7 +94,7 @@ export const useThemeToggle = () => {
     return () => mediaQuery.removeEventListener("change", handleChange);
   }, [theme.mode]);
 
-  const toggleTheme = async (mode: "light" | "dark" | "system") => {
+  const toggleTheme = async (mode: "light" | "dark" | "deem" | "system") => {
     try {
       // Update local state immediately for better UX
       dispatch(setThemeMode(mode));
@@ -143,14 +148,16 @@ export const useThemeToggle = () => {
     return theme.mode;
   };
 
-  const isDark = getCurrentTheme() === "dark";
+  const isDark = getCurrentTheme() === "dark" || getCurrentTheme() === "deem";
   const isLight = getCurrentTheme() === "light";
+  const isDeem = getCurrentTheme() === "deem";
 
   return {
     theme,
     currentTheme: getCurrentTheme(),
     isDark,
     isLight,
+    isDeem,
     isSystem: theme.mode === "system",
     updating,
     mounted,

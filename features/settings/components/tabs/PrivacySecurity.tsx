@@ -558,7 +558,7 @@ const PrivacySecurity = () => {
             )}
             <input
               type="text"
-              className="w-full p-2 sm:p-2.5 rounded dark:border-[#35353E] border-gray-300 border mb-2 dark:bg-[var(--bg-color)] bg-gray-100 dark:text-white text-gray-900 text-sm sm:text-base"
+              className="w-full p-2 sm:p-2.5 rounded dark:border-[#35353E] border-gray-300 border mb-2 dark:bg-[var(--card-color)] bg-gray-100 dark:text-white text-gray-900 text-sm sm:text-base"
               placeholder="Enter code from app"
               value={verifyCode}
               onChange={(e) => setVerifyCode(e.target.value)}
@@ -603,7 +603,7 @@ const PrivacySecurity = () => {
             </div>
             <input
               type="text"
-              className="w-full p-2 sm:p-2.5 rounded dark:border-[#35353E] border-gray-300 border mb-2 dark:bg-[var(--bg-color)] bg-gray-100 dark:text-white text-gray-900 text-sm sm:text-base"
+              className="w-full p-2 sm:p-2.5 rounded dark:border-[#35353E] border-gray-300 border mb-2 dark:bg-[var(--card-color)] bg-gray-100 dark:text-white text-gray-900 text-sm sm:text-base"
               placeholder="Enter code from authenticator app"
               value={disableCode}
               onChange={(e) => {
@@ -954,13 +954,13 @@ const PrivacySecurity = () => {
             </div>
           ) : (
             <div className="border-t dark:border-[#35353E] border-gray-200 rounded-xl overflow-hidden">
-              <div className="px-4 py-3 text-xs font-semibold uppercase tracking-wide dark:text-[#8C8CA1] text-gray-500 space-y-1 bg-gray-50 dark:bg-[var(--bg-color)]">
+              <div className="px-4 py-3 text-xs font-semibold uppercase tracking-wide dark:text-[#8C8CA1] text-gray-500 space-y-1 bg-gray-50 dark:bg-[var(--card-color)]">
                 <div>Signed In</div>
                 <div>Location</div>
                 <div>IP Address</div>
                 <div>Browser</div>
               </div>
-              <div className="divide-y dark:divide-[#2F2C3C] divide-gray-200 dark:text-white text-gray-800 bg-white dark:bg-[var(--bg-color)]">
+              <div className="divide-y dark:divide-[#2F2C3C] divide-gray-200 dark:text-white text-gray-800 bg-white dark:bg-[var(--card-color)]">
                 {paginatedSessions.map((session: DeviceSession) => (
                   <div key={session.session_id} className="px-4 py-4 text-sm space-y-2">
                     <p className="font-semibold">

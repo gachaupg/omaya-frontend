@@ -20,7 +20,7 @@ const Feedback = () => {
     <Card
       borderColor="border-gray-200 dark:border-[#35353E]"
       width="w-full"
-      bgColor="bg-white dark:bg-[#1D1D23]"
+      bgColor="bg-white dark:bg-[var(--card-color)]"
       borderRadius="rounded-[16px]"
       className="min-h-[600px] text-gray-900 dark:text-white"
     >

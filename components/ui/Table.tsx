@@ -3,6 +3,7 @@ import { tokens } from "@/styles/tokens";
 import { TransactionType } from "@/features/p2p/types";
 import Button from "./Button";
 import { MoreHorizontal } from "lucide-react";
+import { useTheme } from "@/context/theme";
 
 type TableProps = {
   title?: string;
@@ -21,8 +22,13 @@ export const Table: React.FC<TableProps> = ({
   onSearch,
   withBorder = false,
 }) => {
+  const { isDark } = useTheme();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  
+  // Direct color values - card background for body, #35353E for header
+  const headerBg = isDark ? '#35353E' : '#f9fafb';
+  const bodyBg = isDark ? 'var(--card-color)' : '#ffffff';
   const totalPages = Math.ceil(data.length / itemsPerPage);
   const paginatedData = data.slice(
     (currentPage - 1) * itemsPerPage,
@@ -59,7 +65,7 @@ export const Table: React.FC<TableProps> = ({
       <div
         key={index}
         className={`w-full grid grid-cols-3 sm:grid-cols-5 py-4 px-4 border-b last:border-b-0 items-center border-[${tokens.colors.dark.border}]`}
-        style={{ background: "#1D1D23" }}
+        style={{ backgroundColor: bodyBg }}
       >
         {/* Asset */}
         <div className="flex items-center gap-2">
@@ -189,13 +195,16 @@ export const Table: React.FC<TableProps> = ({
         <div
           className={`min-w-[800px] w-full overflow-hidden`}
           style={{
-            background: "#1D1D23",
+            backgroundColor: bodyBg,
             ...(withBorder
               ? { border: `1px solid ${tokens.colors.dark.border}` }
               : {}),
           }}
         >          {type === "transactions" ? (
-            <div className="grid grid-cols-3 sm:grid-cols-5 py-3 px-4 border-b bg-[${tokens.colors.dark.card}] border-[${tokens.colors.dark.border}]">
+            <div 
+              className="grid grid-cols-3 sm:grid-cols-5 py-3 px-4 border-b border-[${tokens.colors.dark.border}]"
+              style={{ backgroundColor: headerBg }}
+            >
               <div className="text-sm font-medium text-[${tokens.colors.dark.textTitle}]">
                 Asset
               </div>
@@ -214,7 +223,8 @@ export const Table: React.FC<TableProps> = ({
             </div>
           ) : (
             <div
-              className={`grid grid-cols-4 sm:grid-cols-7 md:grid-cols-8 py-3 px-4 border-b bg-[${tokens.colors.dark.card}] border-[${tokens.colors.dark.border}]`}
+              className={`grid grid-cols-4 sm:grid-cols-7 md:grid-cols-8 py-3 px-4 border-b border-[${tokens.colors.dark.border}]`}
+              style={{ backgroundColor: headerBg }}
             >
               <div
                 className={`text-sm font-medium text-[${tokens.colors.dark.textTitle}]`}

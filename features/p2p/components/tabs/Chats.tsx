@@ -122,17 +122,19 @@ export const Chats: React.FC = () => {
     (state: RootState) => state.auth
   );
 
-  // Reduce refetch interval when on chats page to prevent constant reloading
   const { groupedUsers, loading, error, refetch } = useGroupedMessages({
     enabled: isAuthenticated,
     limit: 100,
-    refetchInterval: 60000, // Increased to 60 seconds to reduce reloading
+    // Disable automatic polling so the page never reloads on a timer;
+    // updates now come from WebSocket events + manual refetch.
+    refetchInterval: undefined,
   });
 
   const [selectedUser, setSelectedUser] = useState<GroupedUser | null>(null);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [messageInput, setMessageInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
   // Check localStorage for terms acceptance on mount
   useEffect(() => {
@@ -150,6 +152,14 @@ export const Chats: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const prevSelectedUserIdRef = useRef<string | null>(null);
+
+  // Track when initial data has been loaded at least once so we don't "reload"
+  // the whole page with a spinner on subsequent background fetches.
+  useEffect(() => {
+    if (!hasLoadedOnce && (groupedUsers || error)) {
+      setHasLoadedOnce(true);
+    }
+  }, [groupedUsers, error, hasLoadedOnce]);
 
   useEffect(() => {
     if (!selectedUser && groupedUsers && groupedUsers.length > 0) {
@@ -598,7 +608,7 @@ export const Chats: React.FC = () => {
     );
   }
 
-  if (loading) {
+  if (loading && !hasLoadedOnce) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1D8751]" />

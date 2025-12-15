@@ -671,7 +671,7 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
   }
 
   return (
-    <div className="mx-auto dark:text-white text-gray-900">
+    <div className="mx-auto dark:text-white text-gray-900 pt-0 mt-0 mb-0">
       {/* Step Indicator */}
       {/* <StepIndicator currentStep={currentStep} /> */}
 
