@@ -2,17 +2,17 @@ import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Card from "../../Common/Card";
 import Button from "../../Common/Button";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { useRouter } from "next/navigation";
 import { RootState } from "@/store/rootReducer";
 import { fetchMatchedTrades } from "@/features/p2p/slices/matchedTradesSlice";
-import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/store";
 import { toast } from "sonner";
 import {
   updateProfileThunk,
   getP2PProfileThunk,
 } from "../../../slices/orderSlice";
+import { getUserProfile } from "@/features/auth/slices/authSlice";
 import useSound from "use-sound";
 import HelpSupportForm from "@/features/settings/components/HelpSupportForm";
 import { useMatchedTradesWebSocket } from "../../../hooks/useMatchedTradesWebSocket";
@@ -138,11 +138,13 @@ const UserCard = () => {
           formData.append("photo", file);
 
           await dispatch(updateProfileThunk(formData)).unwrap();
-          // Refetch profile to get updated photo
+          // Refetch profile to get updated photo in P2P dashboard
           const response = await dispatch(getP2PProfileThunk()).unwrap();
           if (response?.profile?.photo) {
             setProfileImage(response.profile.photo);
           }
+          // Also refresh global auth profile so navbar/other pages update without reload
+          await dispatch(getUserProfile()).unwrap();
           toast.success("Profile image updated successfully");
         } catch (error: any) {
           toast.error(error?.message || "Failed to update profile image");
@@ -158,11 +160,11 @@ const UserCard = () => {
 
   return (
     <Card
-      borderColor="border-[#E8EFF5] dark:border-[#35353E]"
+      borderColor="border-[#35353E]"
       width="w-full"
-      bgColor="bg-[#18D181]"
+      bgColor="bg-transparent"
       borderRadius="rounded-xl sm:rounded-xl lg:rounded-[20px]"
-      className="p-3 sm:p-3 lg:p-2 dark:bg-[var(--bg-color)] bg-white overflow-hidden"
+      className="p-3 sm:p-3 lg:p-2 dark:bg-[#18181D] bg-white overflow-hidden border border-[#35353E]"
     >
       {showHelpSupport ? (
         <div className="w-full mt-4">
@@ -180,14 +182,14 @@ const UserCard = () => {
         <div className="flex items-center gap-3 w-full sm:w-auto">
           {/* User Avatar with Edit Button */}
           <div className="relative">
-            <div className="h-14 w-14 rounded-full overflow-hidden relative">
+            <div className="h-14 w-14 rounded-full overflow-hidden relative bg-[#0F172A] flex items-center justify-center">
               {profileImage ? (
                 <Image
                   src={profileImage}
                   alt="User avatar"
-                  fill
-                  sizes="56px"
-                  className="rounded-full object-fit"
+                  width={56}
+                  height={56}
+                  className="h-12 w-12 rounded-full object-cover object-center"
                   unoptimized={true}
                   onError={(
                     e: React.SyntheticEvent<HTMLImageElement, Event>

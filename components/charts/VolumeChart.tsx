@@ -48,7 +48,7 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ transactionSummary }) => {
         {volumeData.map((item, idx) => (
           <Card
             key={idx}
-            className="flex flex-col items-center justify-center w-full h-[150px] sm:h-[175px] border border-[#E8EFF5] dark:border-[#35353E] dark:bg-[#1D1D23] bg-white rounded-2xl sm:rounded-[24px] p-4 sm:p-6"
+            className="flex flex-col items-center justify-center w-full h-[150px] sm:h-[175px] border border-[#35353E] bg-transparent rounded-2xl sm:rounded-[24px] p-4 sm:p-6"
           >
             <span className="dark:text-[#ffff] text-[#0D0D0D] text-xs sm:text-sm md:text-base mb-2 sm:mb-3 text-center">
               {item.title}

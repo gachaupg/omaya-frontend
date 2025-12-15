@@ -50,7 +50,7 @@ const SwapTransactions = () => {
     return (
       <div className="overflow-x-auto">
         <div className="w-full text-center py-8">
-          <div className="flex flex-col items-center justify-center border border-[#35353E] rounded-[24px] p-8 dark:bg-[#23232B] bg-[#F5F5F5]">
+          <div className="flex flex-col items-center justify-center border border-[#35353E] rounded-[24px] p-8 bg-transparent">
             <div className="w-16 h-16 mb-4 rounded-full dark:bg-[#35353E] bg-white flex items-center justify-center">
               <svg
                 width="24"
@@ -103,7 +103,7 @@ const SwapTransactions = () => {
         {data.data.map((transaction: SwapTransaction) => (
           <div
             key={transaction.id}
-            className="bg-white dark:bg-[#23232B] border border-[#E8EFF5] dark:border-[#35353E] rounded-xl p-4 space-y-3"
+            className="bg-transparent border border-[#E8EFF5] dark:border-[#35353E] rounded-xl p-4 space-y-3"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">

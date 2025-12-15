@@ -538,7 +538,7 @@ export default function Footer() {
             <span className="text-xs text-gray-900 dark:text-white">Powered By:</span>
             <span className="flex flex-col items-center">
               <img 
-                src="https://res.cloudinary.com/dmoqammol/image/upload/v1763650633/Group_34253_ysx2s5.png" 
+                src="https://res.cloudinary.com/pitz/image/upload/v1764572384/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png" 
                 alt="OMAYA Technologies" 
                 className="h-5 sm:h-6 w-auto"
               />

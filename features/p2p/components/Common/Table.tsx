@@ -656,11 +656,11 @@ export const Table: React.FC<TableProps> = ({
 
         <div className="mt-3 overflow-x-auto">
           <div
-            className={`w-full border-2 bg-white dark:bg-black border-gray-200 dark:border-[#35353E] shadow-lg rounded-[24px]`}
+            className={`w-full border-2 bg-white dark:bg-[var(--card-color)] border-gray-200 dark:border-[#35353E] shadow-lg rounded-[24px]`}
           >
             {/* Desktop Table Header - Hidden on mobile */}
             <div
-              className={`hidden md:grid grid-cols-6 ${desktopGridCols} py-2 px-4 border-b bg-gray-50 dark:bg-[var(--card-color)] border-gray-200 dark:border-[#35353E] rounded-t-[24px]`}
+              className={`hidden md:grid grid-cols-6 ${desktopGridCols} py-2 px-4 border-b bg-gray-50 dark:bg-[#35353E] border-gray-200 dark:border-[#35353E] rounded-t-[24px]`}
             >
               <div
                 className={`text-sm font-medium text-gray-900 dark:text-white`}
@@ -708,9 +708,9 @@ export const Table: React.FC<TableProps> = ({
             </div>
 
             {/* Table Body */}
-            <div className="bg-white dark:bg-black">
+            <div className="bg-white dark:bg-[var(--card-color)]">
               {filteredData.length === 0 && data.length > 0 ? (
-                <div className="w-full text-center py-12 px-4 bg-white dark:bg-black">
+                <div className="w-full text-center py-12 px-4 bg-white dark:bg-[var(--card-color)]">
                   <div className="flex flex-col items-center justify-center">
                     <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-[#35353E] flex items-center justify-center">
                       <svg
@@ -778,7 +778,7 @@ export const Table: React.FC<TableProps> = ({
                 <React.Fragment key={idx}>
                   {/* Desktop Grid View */}
                 <div
-                    className={`hidden md:grid ${desktopGridCols} mx-2 py-2 px-2 items-center hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200 bg-white dark:bg-black relative`}
+                    className={`hidden md:grid ${desktopGridCols} mx-2 py-2 px-2 items-center hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200 bg-white dark:bg-[var(--card-color)] relative`}
                 >
                   <div className="flex items-center gap-2">
                     <img
@@ -866,7 +866,7 @@ export const Table: React.FC<TableProps> = ({
 
                   {/* Mobile Card View */}
                   <div
-                    className={`md:hidden flex flex-col gap-2 p-3 mx-4 relative hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200 bg-white dark:bg-black`}
+                    className={`md:hidden flex flex-col gap-2 p-3 mx-4 relative hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200 bg-white dark:bg-[var(--card-color)]`}
                   >
                     {/* Top Row: Asset and Type */}
                     <div className="flex items-center justify-between">
@@ -965,7 +965,7 @@ export const Table: React.FC<TableProps> = ({
             </div>
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-2 py-4 bg-white dark:bg-black rounded-b-[24px]">
+              <div className="flex justify-center items-center gap-2 py-4 bg-white dark:bg-[var(--card-color)] rounded-b-[24px]">
                 <button
                   onClick={() => {
                     logger.debug('p2p', "Previous page clicked, current:", currentPage);

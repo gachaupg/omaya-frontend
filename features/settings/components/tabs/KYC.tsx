@@ -50,13 +50,13 @@ const KYC = () => {
 
   return (
     <div className="p-3 sm:p-4 dark:text-white text-[#0D0D0D]">
-      <section className="rounded-[32px] p-4 sm:p-6 flex flex-col gap-4 border dark:bg-[var(--bg-color)] bg-white dark:border-[#2B2B3A] border-[#E2E8F0]">
+      <section className="rounded-[32px] p-4 sm:p-6 flex flex-col gap-4 border dark:bg-[var(--card-color)] bg-white dark:border-[#2B2B3A] border-[#E2E8F0]">
         <p className="text-sm sm:text-base leading-relaxed dark:text-[#B8BAC7] text-[#4A5568]">
           Your account is fully verified. Keep your personal information up to date so we can continue protecting access to trading,
           payments, and P2P settlements. If you ever need to refresh your documents, you can upload new files directly from this page.
         </p>
 
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 rounded-3xl p-4 dark:bg-[var(--bg-color)] bg-[#F8FAFC] dark:border-[#2F2C3C] border-[#E2E8F0]">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 rounded-3xl p-4 dark:bg-[var(--card-color)] bg-[#F8FAFC] dark:border-[#2F2C3C] border-[#E2E8F0]">
           <div className="flex items-center gap-3">
             <div
               className="relative cursor-pointer"
