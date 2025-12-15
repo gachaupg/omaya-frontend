@@ -81,9 +81,9 @@ export default function Footer() {
   return (
     <footer className="relative z-40 pt-6 sm:pt-8 md:pt-10 pb-4 bg-[var(--bg-color)] text-gray-700 dark:text-[#788099]">
       <div className="container mx-auto px-4 sm:px-6 md:px-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 sm:gap-4 md:gap-6 pb-6 sm:pb-8 border-b border-gray-300 dark:border-gray-700">
+        <div className="flex flex-col lg:flex-row lg:flex-wrap xl:flex-nowrap gap-6 sm:gap-4 md:gap-6 pb-6 sm:pb-8 border-b border-gray-300 dark:border-gray-700">
           {/* Logo and Social Media Column */}
-          <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2 space-y-4 sm:space-y-6">
+          <div className="w-full sm:w-1/2 lg:w-1/3 xl:w-auto xl:flex-1 space-y-4 sm:space-y-6 min-w-0">
             <Link href="/">
               <Image
                 src="https://res.cloudinary.com/pitz/image/upload/v1764572384/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png"
@@ -180,7 +180,7 @@ export default function Footer() {
           </div>
 
           {/* Navigation Column */}
-          <div className="sm:col-span-1 lg:col-span-1">
+          <div className="w-full sm:w-1/2 lg:w-1/3 xl:w-auto xl:flex-1 min-w-0">
             <h3 className="text-base md:text-lg font-semibold mb-3 text-gray-900 dark:text-white">
               Navigation
             </h3>
@@ -249,7 +249,7 @@ export default function Footer() {
           </div>
 
           {/* Quick Links Column */}
-          <div className="sm:col-span-1 lg:col-span-1">
+          <div className="w-full sm:w-1/2 lg:w-1/3 xl:w-auto xl:flex-1 min-w-0">
             <h3 className="text-base md:text-lg font-semibold mb-3 text-gray-900 dark:text-white">
               Quick Links
             </h3>
@@ -288,7 +288,7 @@ export default function Footer() {
           </div>
 
           {/* Company Column */}
-          <div className="sm:col-span-1 lg:col-span-1">
+          <div className="w-full sm:w-1/2 lg:w-1/3 xl:w-auto xl:flex-1 min-w-0">
             <h3 className="text-base md:text-lg font-semibold mb-3 text-gray-900 dark:text-white">
               Company
             </h3>
@@ -327,7 +327,7 @@ export default function Footer() {
           </div>
 
           {/* Legal Policies Column */}
-          <div className="sm:col-span-1 lg:col-span-1">
+          <div className="w-full sm:w-1/2 lg:w-1/3 xl:w-auto xl:flex-1 min-w-0">
             <h3 className="text-base md:text-lg font-semibold mb-3 text-gray-900 dark:text-white">
               Legal Policies
             </h3>
@@ -386,7 +386,7 @@ export default function Footer() {
           </div>
 
           {/* Contact Information Column */}
-          <div className="sm:col-span-2 lg:col-span-1">
+          <div className="w-full sm:w-full lg:w-1/3 xl:w-auto xl:flex-1 min-w-0">
             <h3 className="text-base md:text-lg font-semibold mb-3 text-gray-900 dark:text-white">
               Contact us
             </h3>
@@ -467,7 +467,7 @@ export default function Footer() {
             </div>
           </div>
 
-          <div className="sm:col-span-2 lg:col-span-1 xl:col-span-2 flex flex-col mb-4 items-center lg:items-end gap-3 sm:gap-4">
+          <div className="w-full sm:w-full lg:w-1/3 xl:w-auto xl:flex-1 flex flex-col mb-4 items-center lg:items-end gap-3 sm:gap-4 min-w-0">
             {/* App Download Section */}
             <div className="flex flex-col items-center lg:items-end justify-center gap-2">
               <table className="border-collapse" style={{ width: 'auto' }}>
@@ -533,16 +533,16 @@ export default function Footer() {
 
         {/* Copyright Section */}
         <div className="pt-4 sm:pt-6 text-center">
-          <p className="text-xs sm:text-sm text-gray-900 dark:text-white">Copyright © 2024, OMAYA.io</p>
-          <div className="flex flex-col sm:flex-row justify-center items-center mt-2 sm:mt-3 gap-2 sm:gap-2">
-            <span className="text-xs text-gray-900 dark:text-white">Powered by</span>
-            <span className="flex flex-col items-center gap-1 sm:gap-2">
+          <p className="text-xs sm:text-sm text-gray-900 dark:text-white">Copyright © 2026, OMAYA.io</p>
+          <div className="flex flex-row justify-center items-center mt-2 sm:mt-3 gap-2">
+            <span className="text-xs text-gray-900 dark:text-white">Powered By:</span>
+            <span className="flex flex-col items-center">
               <img 
                 src="https://res.cloudinary.com/dmoqammol/image/upload/v1763650633/Group_34253_ysx2s5.png" 
                 alt="OMAYA Technologies" 
-                className="h-6 sm:h-8 w-auto"
+                className="h-5 sm:h-6 w-auto"
               />
-              <h3 className="text-[10px] sm:text-xs text-gray-900 dark:text-white font-bold">TECHNOLOGIES</h3>
+              <span className="text-[8px] sm:text-[9px] text-gray-900 dark:text-white font-medium tracking-wider">TECHNOLOGIES</span>
             </span>
           </div>
         </div>
