@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { resetPassword } from "@/features/settings/slices/settingsSlice";
+import {
+  sendPasswordResetOTP,
+  verifyPasswordResetOTP,
+  changePasswordWithOTP,
+} from "@/features/settings/slices/settingsSlice";
 import { RootState, AppDispatch } from "@/store/rootReducer";
 import { showToast } from "@/lib/utils/toast";
 
@@ -20,11 +24,15 @@ const PasswordSection: React.FC = () => {
     new_password: "",
     confirm_password: "",
   });
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [maskedEmail, setMaskedEmail] = useState<string | null>(null);
   const [showPasswords, setShowPasswords] = useState({
     new: false,
     confirm: false,
   });
-  const [errors, setErrors] = useState<Partial<PasswordChangeRequest>>({});
+  const [errors, setErrors] = useState<Partial<PasswordChangeRequest & { otp: string }>>({});
 
   const handleInputChange = (
     field: keyof PasswordChangeRequest,
@@ -33,9 +41,21 @@ const PasswordSection: React.FC = () => {
     setFormData((prev: PasswordChangeRequest) => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors((prev: Partial<PasswordChangeRequest>) => ({
+      setErrors((prev) => ({
         ...prev,
         [field]: undefined,
+      }));
+    }
+  };
+
+  const handleOtpChange = (value: string) => {
+    // Only allow numeric input and limit to 6 digits
+    const numericValue = value.replace(/\D/g, "").slice(0, 6);
+    setOtp(numericValue);
+    if (errors.otp) {
+      setErrors((prev) => ({
+        ...prev,
+        otp: undefined,
       }));
     }
   };
@@ -47,7 +67,7 @@ const PasswordSection: React.FC = () => {
     }));
   };
 
-  const validateForm = (): boolean => {
+  const validatePasswordForm = (): boolean => {
     const newErrors: Partial<PasswordChangeRequest> = {};
 
     if (!formData.new_password) {
@@ -66,21 +86,56 @@ const PasswordSection: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async () => {
-    if (!validateForm()) return;
+  const validateOtp = (): boolean => {
+    if (!otp) {
+      setErrors((prev) => ({ ...prev, otp: "OTP is required" }));
+      return false;
+    }
+    if (otp.length !== 6) {
+      setErrors((prev) => ({ ...prev, otp: "OTP must be 6 digits" }));
+      return false;
+    }
+    return true;
+  };
 
-    if (!user?.email) {
-      const errorMessage = "User email not found. Please log in again.";
-      setErrors({ new_password: errorMessage });
-      showToast.error(errorMessage);
+  const handleSendOTP = async () => {
+    if (!validatePasswordForm()) return;
+
+    try {
+      const response = await dispatch(sendPasswordResetOTP()).unwrap();
+      setOtpSent(true);
+      setMaskedEmail(response.masked_email || null);
+      showToast.success("OTP sent to your email");
+    } catch (error: any) {
+      // Error is handled by the slice and toast
+      console.error("Send OTP error:", error);
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (!validateOtp()) return;
+
+    try {
+      await dispatch(verifyPasswordResetOTP(otp)).unwrap();
+      setOtpVerified(true);
+    } catch (error: any) {
+      // Error is handled by the slice and toast
+      console.error("Verify OTP error:", error);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!validatePasswordForm()) return;
+
+    if (!otpVerified) {
+      showToast.error("Please verify OTP first");
       return;
     }
 
     try {
       await dispatch(
-        resetPassword({
-          email: user.email,
-          password: formData.new_password,
+        changePasswordWithOTP({
+          new_password: formData.new_password,
           confirm_password: formData.confirm_password,
         })
       ).unwrap();
@@ -90,13 +145,17 @@ const PasswordSection: React.FC = () => {
         new_password: "",
         confirm_password: "",
       });
+      setOtp("");
+      setOtpSent(false);
+      setOtpVerified(false);
+      setMaskedEmail(null);
       setShowPasswords({
         new: false,
         confirm: false,
       });
     } catch (error: any) {
       // Error is handled by the slice and toast
-      console.error("Password reset error:", error);
+      console.error("Change password error:", error);
     }
   };
 
@@ -106,6 +165,15 @@ const PasswordSection: React.FC = () => {
       setErrors({});
     }
   }, [success]);
+
+  // Reset OTP state when form is cleared
+  const handleReset = () => {
+    setOtpSent(false);
+    setOtpVerified(false);
+    setOtp("");
+    setMaskedEmail(null);
+    setErrors({});
+  };
 
   return (
     <>
@@ -213,13 +281,82 @@ const PasswordSection: React.FC = () => {
           </div>
         </div>
 
-        <button
-          className="w-full mt-3 py-2.5 rounded-xl bg-transparent border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-          onClick={handleSubmit}
-          disabled={updating}
-        >
-          {updating ? "Updating..." : "Update"}
-        </button>
+        {/* OTP Section */}
+        {otpSent && (
+          <div className="mb-3">
+            <label className="block text-xs dark:text-white text-[#051015] mb-1">
+              Enter OTP {maskedEmail && <span className="text-gray-500">(sent to {maskedEmail})</span>}
+            </label>
+            <div className="flex items-center dark:bg-[var(--card-color)] bg-gray-100 rounded-2xl px-3 sm:px-4 py-2 sm:py-2.5 border dark:border-[#35353E] border-gray-300">
+              <svg width="16" height="16" viewBox="0 0 24 24" stroke="#1D8751" fill="none">
+                <rect x="3" y="5" width="18" height="14" rx="2" strokeWidth="2" />
+                <path d="M3 7l9 6 9-6" strokeWidth="2" />
+              </svg>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                className="bg-transparent flex-1 min-w-0 ml-2 outline-none text-sm sm:text-base text-[#788099] dark:text-white tracking-widest text-center"
+                placeholder="000000"
+                value={otp}
+                onChange={(e) => handleOtpChange(e.target.value)}
+                disabled={otpVerified || updating}
+              />
+            </div>
+            {errors.otp && (
+              <div className="text-red-500 text-xs mt-1">{errors.otp}</div>
+            )}
+            {!otpVerified && (
+              <button
+                className="w-full mt-2 py-2 sm:py-2.5 rounded-[18px] border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={handleVerifyOTP}
+                disabled={updating || otp.length !== 6}
+              >
+                {updating ? "Verifying..." : "Verify OTP"}
+              </button>
+            )}
+            {otpVerified && (
+              <div className="mt-2 text-xs text-green-600 dark:text-green-400 flex items-center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="mr-1">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                  <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                OTP Verified
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex flex-col gap-2">
+          {!otpSent ? (
+            <button
+              className="w-full py-2 sm:py-2.5 rounded-[18px] border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleSendOTP}
+              disabled={updating}
+            >
+              {updating ? "Sending..." : "Send OTP"}
+            </button>
+          ) : otpVerified ? (
+            <button
+              className="w-full py-2 sm:py-2.5 rounded-[18px] border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white transition text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleChangePassword}
+              disabled={updating}
+            >
+              {updating ? "Updating..." : "Update Password"}
+            </button>
+          ) : null}
+          
+          {otpSent && !otpVerified && (
+            <button
+              className="w-full py-2 sm:py-2.5 rounded-[18px] border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition text-sm sm:text-base"
+              onClick={handleReset}
+              disabled={updating}
+            >
+              Reset
+            </button>
+          )}
+        </div>
 
       </section>
 

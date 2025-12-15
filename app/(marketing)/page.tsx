@@ -4,7 +4,7 @@ import { useMarketingI18n } from "@/lib/useMarketingI18n";
 import Image from "next/image";
 import Link from "next/link";
 import { tokens } from "@/styles/tokens";
-import { Play, MessageCircle, Plus, BarChart, Globe, Lock, DollarSign, Users, TrendingUp, Shield, Zap, Gift, UserPlus, ArrowRight, Building2, Calendar, Clock, MapPin, Phone, Mail, Send, ChevronDown, ChevronUp, ArrowLeftRight } from "lucide-react";
+import { Play, MessageCircle, Plus, BarChart, Globe, Lock, DollarSign, Users, TrendingUp, Shield, Zap, Gift, UserPlus, ArrowRight, Building2, Calendar, Clock, MapPin, Phone, Mail, Send, ChevronDown, ChevronUp, ArrowLeftRight, HelpCircle } from "lucide-react";
 import ExchangeForm from "@/components/ExchangeForm";
 import { useBlog } from "@/features/blogs/hooks/blog";
 import { BlogPost } from "@/features/blogs/types";
@@ -1407,6 +1407,13 @@ export default function MarketingPage() {
         <div className="max-w-6xl 2xl:max-w-7xl mx-auto">
           {/* Header section */}
           <div className="text-center mb-12">
+                {/* Blogs Pill */}
+            <div className="flex justify-center mb-6">
+              <span className="bg-[#1D8751]/10 border border-[#1D8751] text-[#1D8751] px-4 py-2 rounded-2xl text-sm font-medium">
+                Latest Updates
+              </span>
+            </div>
+
 
             {/* Main Title */}
             <h2 className="text-3xl sm:text-4xl md:text-5xl 2xl:text-6xl font-bold mb-4">
@@ -1692,7 +1699,8 @@ export default function MarketingPage() {
           <div className="text-center mb-12">
             {/* FAQ Pill */}
             <div className="flex justify-center mb-6 -mt-4">
-              <span className="bg-[#1D8751]/10 border border-[#1D8751] text-[#1D8751] px-4 py-1.5 rounded-lg text-sm font-medium">
+              <span className="bg-[#1D8751]/10 border border-[#1D8751] text-[#1D8751] px-4 py-1.5 rounded-full text-sm font-medium flex items-center gap-2">
+                <HelpCircle className="w-4 h-4" />
                 FAQ
               </span>
             </div>
@@ -1770,7 +1778,7 @@ export default function MarketingPage() {
                   return (
                     <div key={item.id || item._id || index} className="relative">
                       <div
-                        className={`bg-gray-50 dark:bg-[#1D1D23] border rounded-xl overflow-hidden ${
+                        className={`bg-gray-50 dark:bg-[#18181D] border rounded-xl overflow-hidden ${
                           isOpen
                               ? "border-[#1D8751]"
                             : "border-gray-200 dark:border-[#2A2A2A]"
@@ -1804,11 +1812,15 @@ export default function MarketingPage() {
 
                           {/* Accordion Content */}
                         {isOpen && (
-                          <div className="px-5 py-4 bg-gray-50 dark:bg-[#1D1D23] border-t border-gray-200 dark:border-[#2A2A2A]">
-                            <p className="text-gray-700 dark:text-white/80 text-sm md:text-base leading-relaxed">
-                                  {item.answer}
-                                </p>
+                          <div className="bg-gray-50 dark:bg-[#18181D]">
+                            <div className="px-5 pt-4 pb-4">
+                              <div className="border-t border-[#35353E] dark:border-[#2A2A2A] pt-5 -mt-4">
+                                <p className="text-gray-700 dark:text-white/80 text-sm md:text-base leading-relaxed">
+                                    {item.answer}
+                                  </p>
                               </div>
+                            </div>
+                          </div>
                           )}
                         </div>
                       </div>
@@ -1857,7 +1869,7 @@ export default function MarketingPage() {
             </p>
             <a
               href="#contact"
-              className="inline-block bg-[#1D8751] text-white px-8 py-3 rounded-lg font-medium hover:bg-[#167a47] transition-colors"
+              className="inline-block bg-[#1D8751] text-white px-8 py-3 rounded-full font-medium hover:bg-[#167a47] transition-colors"
             >
               Contact Support
             </a>

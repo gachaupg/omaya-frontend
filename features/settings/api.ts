@@ -90,6 +90,40 @@ export const settingsApi = {
     });
   },
 
+  // Password Reset with OTP
+  sendPasswordResetOTP: async (): Promise<{ message: string; masked_email?: string }> => {
+    return withRetry(async () => {
+      const response = await apiClient.post(
+        `${SETTINGS_API_BASE}/password-reset/send-otp/`
+      );
+      return response.data;
+    });
+  },
+
+  verifyPasswordResetOTP: async (
+    otp: string
+  ): Promise<{ otp_verified: boolean; message?: string }> => {
+    return withRetry(async () => {
+      const response = await apiClient.post(
+        `${SETTINGS_API_BASE}/password-reset/verify-otp/`,
+        { otp }
+      );
+      return response.data;
+    });
+  },
+
+  changePasswordWithOTP: async (
+    data: { new_password: string; confirm_password: string }
+  ): Promise<{ message: string }> => {
+    return withRetry(async () => {
+      const response = await apiClient.post(
+        `${SETTINGS_API_BASE}/password-reset/change-password/`,
+        data
+      );
+      return response.data;
+    });
+  },
+
   // Theme Management
   getTheme: async (): Promise<ThemeUpdateResponse> => {
     return withRetry(async () => {
