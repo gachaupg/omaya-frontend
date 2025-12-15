@@ -7,7 +7,7 @@ interface BasicInfoSectionProps {
 const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
   return (
     <>
-      <div className="text-base sm:text-lg font-bold dark:text-white text-gray-900 mb-1">
+      <div className="text-sm font-bold dark:text-white text-gray-900 mb-1">
         Basic Info
       </div>
       <section className="dark:bg-[var(--card-color)] bg-white rounded-xl border dark:border-[#35353E] border-[#E8EFF5] p-2 sm:p-3 md:p-4 lg:p-6 shadow-lg">
@@ -52,9 +52,13 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
               readOnly
             />
           </div>
-         
         </div>
-      
+        <button
+          className="w-full mt-3 py-2.5 rounded-xl bg-transparent border border-[#1D8751] text-[#1D8751] font-semibold text-sm hover:bg-[#1D8751] hover:text-white transition"
+          type="button"
+        >
+          Update
+        </button>
       </section>
     </>
   );

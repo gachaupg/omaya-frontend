@@ -194,11 +194,11 @@ const Filters = () => {
       </div>
 
       {/* Desktop: Horizontal tabs */}
-      <div className="hidden md:flex items-center rounded-lg border px-3 py-2 dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-300 w-full h-[48px]">
+      <div className="hidden md:flex items-center justify-between rounded-lg border px-3 py-2 dark:bg-[#1D1D23] bg-white dark:border-[#35353E] border-gray-300 w-full h-[48px]">
         {tabs.map((tab, idx) => (
           <button
             key={tab.label}
-            className="flex flex-row items-center justify-center transition-colors duration-150 focus:outline-none h-full flex-1 bg-transparent dark:text-white text-[#0D0D0D] hover:dark:bg-[var(--card-color)] hover:bg-gray-100 font-normal"
+            className="flex flex-row items-center justify-center transition-colors duration-150 focus:outline-none h-full bg-transparent dark:text-white text-[#0D0D0D] hover:dark:bg-[#23232a] hover:bg-gray-100 font-normal"
             onClick={() => setActiveIdx(idx)}
             type="button"
           >
@@ -215,7 +215,7 @@ const Filters = () => {
       </div>
 
       {/* Content area */}
-      <div className="flex flex-col lg:flex-row gap-2 sm:gap-3 md:gap-4 lg:gap-6 mt-2 sm:mt-3 md:mt-4 lg:mt-6">
+      <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 lg:gap-6 mt-3">
         <div className="w-full lg:flex-1 min-w-0">
           <div className="w-full">
             {renderActiveContent()}
