@@ -787,7 +787,7 @@ export const Table: React.FC<TableProps> = ({
                       className="w-6 h-6"
                     />
                     {getAssetLabel(row.asset) && (
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      <span className="text-sm font-medium text-[#1D8751] dark:text-[#1D8751]">
                         {getAssetLabel(row.asset)}
                       </span>
                     )}
@@ -877,7 +877,7 @@ export const Table: React.FC<TableProps> = ({
                           className="w-6 h-6"
                         />
                         {getAssetLabel(row.asset) && (
-                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          <span className="text-sm font-medium text-[#1D8751] dark:text-[#1D8751]">
                             {getAssetLabel(row.asset)}
                           </span>
                         )}

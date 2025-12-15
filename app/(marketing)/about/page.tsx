@@ -1059,7 +1059,7 @@ const AboutPage = () => {
                   className="absolute inset-0 w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <div className="absolute top-4 left-4 w-8 h-6 rounded-sm overflow-hidden shadow-md">
+                <div className="absolute top-4 left-4 w-8 h-5 rounded-sm overflow-hidden shadow-md">
                   <img
                     src="https://flagcdn.com/w80/ae.png"
                     alt="UAE Flag"
@@ -1125,7 +1125,7 @@ const AboutPage = () => {
                   className="absolute inset-0 w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <div className="absolute top-4 left-4 w-8 h-6 rounded-sm overflow-hidden shadow-md">
+                <div className="absolute top-4 left-4 w-8 h-5 rounded-sm overflow-hidden shadow-md">
                   <img
                     src="https://flagcdn.com/w80/us.png"
                     alt="US Flag"

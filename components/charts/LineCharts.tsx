@@ -483,9 +483,9 @@ const Dropdown = ({
   options: string[];
   onChange: (v: string) => void;
 }) => (
-  <div className="relative w-full sm:w-auto inline-flex">
+  <div className="relative w-auto inline-flex min-w-0">
     <select
-      className="appearance-none bg-transparent text-muted-foreground rounded-full px-2 sm:px-3 py-1.5 text-xs sm:text-sm pr-6 sm:pr-7 focus:outline-none w-full sm:w-auto"
+      className="appearance-none bg-transparent dark:text-gray-300 text-gray-700 rounded-full px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs md:text-sm pr-5 sm:pr-6 md:pr-7 focus:outline-none w-auto min-w-[60px] sm:min-w-[80px] border border-gray-300 dark:border-gray-600"
       value={value}
       onChange={(e) => onChange(e.target.value)}
     >
@@ -500,7 +500,7 @@ const Dropdown = ({
       alt="Dropdown arrow"
       width={15}
       height={15}
-      className="pointer-events-none absolute right-0.5 sm:right-1.5 top-1/2 transform -translate-y-1/2 object-contain"
+      className="pointer-events-none absolute right-0.5 sm:right-1 md:right-1.5 top-1/2 transform -translate-y-1/2 object-contain w-3 h-3 sm:w-[15px] sm:h-[15px]"
     />
   </div>
 );
@@ -935,20 +935,20 @@ const LineCharts = React.memo(
           </Card>
           <Card className="w-full rounded-none lg:rounded-2xl bg-transparent border border-[#35353E]">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 pt-4 pb-3">
-              <h3 className="text-sm sm:text-base md:text-lg font-semibold dark:text-white">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 pt-4 pb-3">
+              <h3 className="text-sm sm:text-base md:text-lg font-semibold dark:text-white text-gray-900">
                 Overview Total
               </h3>
 
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {["exchange", "p2p", "swap", "buy"].map(t => (
                   <button
                     key={t}
                     onClick={() => setActiveTab(t as any)}
-                    className={`px-2 md:px-3 py-1 md:py-1.5 rounded-full text-xs
+                    className={`px-2 sm:px-2.5 md:px-3 py-1 md:py-1.5 rounded-full text-[10px] sm:text-xs whitespace-nowrap
             ${activeTab === t
                         ? "bg-[#1D8751] text-white"
-                        : "border-2 border-[#1D8751] text-[#1D8751]"
+                        : "border border-[#1D8751] sm:border-2 text-[#1D8751]"
                       }
           `}
                   >
