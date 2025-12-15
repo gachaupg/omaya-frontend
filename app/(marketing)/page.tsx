@@ -1935,7 +1935,7 @@ export default function MarketingPage() {
             </p>
             <a
               href="#contact"
-              className="inline-block bg-[#1D8751] text-white px-8 py-3 rounded-lg font-medium hover:bg-[#167a47] transition-colors"
+              className="inline-block bg-[#1D8751] text-white px-8 py-3 rounded-full font-medium hover:bg-[#167a47] transition-colors"
             >
               Contact Support
             </a>
