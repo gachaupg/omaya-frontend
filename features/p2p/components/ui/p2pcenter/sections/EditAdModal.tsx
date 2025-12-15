@@ -93,7 +93,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
 
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="mx-auto w-full max-w-2xl rounded-xl dark:bg-[#1D1D23] bg-white dark:text-white text-gray-900 max-h-[85vh] overflow-hidden">
+        <Dialog.Panel className="mx-auto w-full max-w-2xl rounded-xl dark:bg-[var(--card-color)] bg-white dark:text-white text-gray-900 max-h-[85vh] overflow-hidden">
           <div className="p-6 overflow-y-auto max-h-[85vh]">
             <Dialog.Title className="text-xl font-semibold mb-4 flex items-center justify-between">
               <span>Edit Ad Details</span>

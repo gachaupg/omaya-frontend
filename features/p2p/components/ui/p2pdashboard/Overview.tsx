@@ -196,9 +196,9 @@ const Overview = () => {
       <Card
         borderColor="border-[#E8EFF5] dark:border-[#35353E]"
         width="w-full"
-        bgColor="dark:bg-[var(--bg-color)] bg-white"
+        bgColor="dark:bg-[var(--card-color)] bg-white"
         borderRadius="rounded-[20px]"
-        className="p-3 sm:p-4 md:p-6 flex flex-col items-center justify-center border-2"
+        className="p-3 sm:p-4 md:p-6 flex flex-col items-center justify-center border"
       >
         <div className="relative w-40 h-40 sm:w-48 sm:h-48 md:w-60 md:h-60 flex items-center justify-center">
           {hasNoData ? (
@@ -337,9 +337,9 @@ const Overview = () => {
        <Card
   borderColor="border-[#E8EFF5] dark:border-[#35353E]"
   width="w-full"
-  bgColor="dark:bg-[var(--bg-color)] bg-white"
+  bgColor="dark:bg-[var(--card-color)] bg-white"
   borderRadius="rounded-[14px]"
-  className="p-1 sm:p-2 md:p-4 mb-2 sm:mb-4 border-2"
+  className="p-1 sm:p-2 md:p-4 mb-2 sm:mb-4 border"
 >
   <div className="flex flex-col">
 
@@ -358,7 +358,7 @@ const Overview = () => {
             text-[10px] sm:text-xs md:text-sm 
             appearance-none 
             pr-5 sm:pr-7 
-            dark:bg-[var(--bg-color)] bg-white 
+            dark:bg-[var(--card-color)] bg-white 
             dark:text-[#A0A0A0] text-[#788099]
           "
           value={buyDateFilter}
@@ -442,9 +442,9 @@ const Overview = () => {
         <Card
           borderColor="border-[#E8EFF5] dark:border-[#35353E]"
           width="w-full"
-          bgColor="dark:bg-[var(--bg-color)] bg-white"
+          bgColor="dark:bg-[var(--card-color)] bg-white"
           borderRadius="rounded-[14px]"
-          className="p-2 sm:p-3 md:p-4 border-2"
+          className="p-2 sm:p-3 md:p-4 border"
         >
           <div className="flex flex-col">
 
@@ -463,7 +463,7 @@ const Overview = () => {
             text-[10px] sm:text-xs md:text-sm 
             appearance-none 
             pr-5 sm:pr-7 
-            dark:bg-[var(--bg-color)] bg-white 
+            dark:bg-[var(--card-color)] bg-white 
             dark:text-[#A0A0A0] text-[#788099]
           "
                   value={sellDateFilter}

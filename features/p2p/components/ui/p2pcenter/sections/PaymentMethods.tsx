@@ -328,7 +328,7 @@ const PaymentMethods = () => {
 
   const renderEmptyState = () => (
     <div className="flex flex-col items-center justify-center py-12 px-4">
-      <div className="w-24 h-24 mb-6 rounded-full bg-gray-100 dark:bg-[#1D1D23] flex items-center justify-center">
+      <div className="w-24 h-24 mb-6 rounded-full bg-gray-100 dark:bg-[var(--card-color)] flex items-center justify-center">
         <svg
           className="w-12 h-12 text-[#1D8751]"
           fill="none"
@@ -368,7 +368,7 @@ const PaymentMethods = () => {
         <button
           onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
           disabled={currentPage === 1}
-          className="px-3 py-1 rounded-lg bg-gray-100 dark:bg-[#1D1D23] text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-3 py-1 rounded-lg bg-gray-100 dark:bg-[var(--card-color)] text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Previous
         </button>
@@ -391,7 +391,7 @@ const PaymentMethods = () => {
             setCurrentPage((prev) => Math.min(prev + 1, totalPages))
           }
           disabled={currentPage === totalPages}
-          className="px-3 py-1 rounded-lg bg-gray-100 dark:bg-[#1D1D23] text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-3 py-1 rounded-lg bg-gray-100 dark:bg-[var(--card-color)] text-gray-900 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Next
         </button>
@@ -466,7 +466,7 @@ const PaymentMethods = () => {
 
   /** Render */
   return (
-    <div className="w-full min-h-[600px] bg-white dark:bg-[#1D1D23] rounded-2xl p-4 text-gray-900 dark:text-white border-2 border-gray-200 dark:border-[#35353E] overflow-visible">
+    <div className="w-full min-h-[600px] bg-white dark:bg-[var(--card-color)] rounded-2xl p-4 text-gray-900 dark:text-white border-2 border-gray-200 dark:border-[#35353E] overflow-visible">
       {/* Header: Bank title left, Add Method dropdown right */}
       <div className="flex items-center justify-between mb-4 gap-4">
         <div className="flex items-center gap-3">
@@ -496,7 +496,7 @@ const PaymentMethods = () => {
 
       {/* Selected Method Details */}
       {selectedMethod && (
-        <div className="w-full border border-gray-200 dark:border-[#35353E] rounded-2xl p-4 sm:p-5 mb-6 bg-gray-50 dark:bg-[#1D1D23]">
+        <div className="w-full border border-gray-200 dark:border-[#35353E] rounded-2xl p-4 sm:p-5 mb-6 bg-gray-50 dark:bg-[var(--card-color)]">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div>
               <p className="text-xs sm:text-sm text-gray-500 dark:text-[#8C8CA1]">Selected Method</p>
@@ -517,7 +517,7 @@ const PaymentMethods = () => {
               </label>
               <div className="relative">
                 <select
-                  className="w-full bg-white dark:bg-[#1D1D23] text-gray-900 dark:text-white appearance-none pr-10 rounded-xl border border-gray-200 dark:border-[#35353E] h-12 px-4 text-sm"
+                  className="w-full bg-white dark:bg-[var(--card-color)] text-gray-900 dark:text-white appearance-none pr-10 rounded-xl border border-gray-200 dark:border-[#35353E] h-12 px-4 text-sm"
                   value={selectedProvider}
                   onChange={(e) => setSelectedProvider(e.target.value)}
                   disabled={adminLoading}
@@ -538,7 +538,7 @@ const PaymentMethods = () => {
             </div>
 
             {selectedProvider && (
-              <div className="p-3 rounded-xl bg-white dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E] flex items-center gap-3">
+              <div className="p-3 rounded-xl bg-white dark:bg-[var(--card-color)] border border-gray-200 dark:border-[#35353E] flex items-center gap-3">
                 {(() => {
                   const selectedProviderObj = providers.find(
                     (p: any) => p && typeof p === 'object' && p.provider_name === selectedProvider

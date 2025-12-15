@@ -934,20 +934,10 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
           <div className="flex gap-6 mt-6">
             <Button
               borderRadius={24}
-              className="flex-1 rounded-[24px] border-1 border-[#1D8751]
-              dark:text-white text-black bg-transparent text-base py-2 hover:bg-[#23232B] transition"
+              className="flex-1 rounded-[24px] border-1 border-[#1D8751] dark:text-white text-black bg-transparent text-base py-2 hover:bg-[#23232B] transition"
               variant="outline"
               onClick={() => {
-                setAmount("");
-                setOrderMin("");
-                setOrderMax("");
-                setCommission("1.00");
-                setPaymentMethod(paymentMethods[0].value);
-                setProvider(providers[0].value);
-                setTimeLimit(timeLimits[0].value);
-                setTerms("");
-                setAutoReply("");
-                setErrors({});
+                router.push("/dashboard/p2p");
               }}
             >
               Cancel Post

@@ -132,7 +132,7 @@ const Deposit: React.FC = () => {
   /* -------------------------------- render ------------------------------ */
   return (
     <div className="flex justify-center items-center min-h-screen w-full pt-1">
-      <Card className="w-full h-full min-h-screen sm:min-h-[calc(100vh-2rem)] px-4 sm:px-8 md:px-12 pt-4 p-0 bg-white dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E] shadow-xl rounded-[24px] mx-auto text-gray-900 dark:text-white">
+      <Card className="w-full h-full min-h-screen sm:min-h-[calc(100vh-2rem)] px-4 sm:px-8 md:px-12 pt-4 p-0 bg-white dark:bg-[var(--card-color)] border border-gray-200 dark:border-[#35353E] shadow-xl rounded-[24px] mx-auto text-gray-900 dark:text-white">
         <form onSubmit={handleSubmit}>
           {/* ---------------- Asset & Network ---------------- */}
           <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-4">
@@ -270,7 +270,7 @@ const Deposit: React.FC = () => {
               </span>{" "}
               <AlertCircle className="w-4 h-4 text-[#1D8751]" />
             </div>
-            <div className="border border-[#1D8751] rounded-[16px] bg-gray-50 dark:bg-[#23232B] px-4 py-4 mb-6 text-sm">
+            <div className="border border-[#1D8751] rounded-[16px] bg-gray-50 dark:bg-[var(--card-color)] px-4 py-4 mb-6 text-sm">
               {[
                 "Please send the money from your own account only.",
                 "Put transaction ID in the description field of the bank.",
@@ -285,7 +285,7 @@ const Deposit: React.FC = () => {
           </div>
 
           {/* -------------------- Upload proof ------------------- */}
-          <div className="border border-[#F79330] rounded-[16px] bg-gray-50 dark:bg-[#23232B] px-4 py-4 mb-6">
+          <div className="border border-[#F79330] rounded-[16px] bg-gray-50 dark:bg-[var(--card-color)] px-4 py-4 mb-6">
             <div className="flex items-center mb-2 font-medium">
               Upload Documents
               <label className="ml-2 cursor-pointer">

@@ -920,6 +920,20 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
           </div>
         )}
 
+        {/* Warning Message */}
+        {!isFirstCardSubmitted && (
+          <div className="mt-4 mb-3 flex items-center gap-3 p-3 rounded-2xl bg-transparent">
+            <img
+              src="https://res.cloudinary.com/pitz/image/upload/v1765784047/alert-circle_1_ujybne.png"
+              alt="Warning"
+              className="w-5 h-5 flex-shrink-0"
+            />
+            <p className={`text-sm ${isDark ? "text-white" : "text-gray-900"}`}>
+              This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds.
+            </p>
+          </div>
+        )}
+
         {/* Submit Button for First Card */}
         {!isFirstCardSubmitted && (
           <div className="mt-4 relative">
@@ -939,12 +953,12 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                   <span>Posting...</span>
                 </div>
               ) : (
-                <span className="flex items-center justify-center">
-                  <span className="text-base font-medium dark:text-white text-white">E</span>
+                <span className="flex items-center justify-center gap-2">
+                  <span className="text-base font-medium text-white">Express</span>
                   <img
-                    className="mt-2"
+                    className="h-5 w-auto mt-3"
                     src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                    alt=""
+                    alt="Express icon"
                   />
                 </span>
               )}
@@ -1125,6 +1139,18 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
             </div>
           </div>
 
+          {/* Warning Message */}
+          <div className="mt-4 mb-3 flex items-center gap-3 p-3 rounded-2xl bg-transparent">
+            <img
+              src="https://res.cloudinary.com/pitz/image/upload/v1765784047/alert-circle_1_ujybne.png"
+              alt="Warning"
+              className="w-5 h-5 flex-shrink-0"
+            />
+            <p className={`text-sm ${isDark ? "text-white" : "text-gray-900"}`}>
+              This is only an estimated price based on current market rates. The final price will be confirmed when we receive the funds.
+            </p>
+          </div>
+
           {/* Final Submit Button */}
           <div className="flex flex-col gap-3 w-full px-2">
             <button
@@ -1195,11 +1221,12 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
                   <span>Processing...</span>
                 </div>
               ) : (
-                <span className="flex items-center justify-center">
+                <span className="flex items-center justify-center gap-2">
+                  <span className="text-base font-medium text-white">Express</span>
                   <img
-                    className="mt-2"
+                    className="h-5 w-auto mt-3"
                     src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
-                    alt=""
+                    alt="Express icon"
                   />
                 </span>
               )}

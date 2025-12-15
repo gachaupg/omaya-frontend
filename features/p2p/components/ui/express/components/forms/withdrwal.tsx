@@ -133,7 +133,7 @@ const UserPaymentSelector = ({
   }, [userPaymentDetails, selectedDetails.length, onSelect]);
 
   return (
-    <div className="bg-[#1D1D23] rounded-2xl border border-[#39394a] p-4">
+    <div className="bg-[var(--card-color)] rounded-2xl border border-[#39394a] p-4">
       <h3 className="text-white font-semibold mb-3">Select Payment Methods</h3>
       <div className="space-y-2">
         {userPaymentDetails && userPaymentDetails.length > 0 ? (
@@ -2247,7 +2247,7 @@ export default function WithdrawalForm({
       setIsTransactionSubmitted(false);
       setWithdrawalAddress("");
       setPayoutAddress("");
-      setQrCodeUrl("");
+      setQrCodeUrl(""); 
       setResponseMessage("");
     } finally {
       setIsSubmitting(false);
@@ -2255,7 +2255,7 @@ export default function WithdrawalForm({
   };
 
   return (
-    <div className="w-full min-h-screen flex flex-col dark:bg-[#18181D]  ">
+    <div className="w-full min-h-screen flex flex-col dark:bg-transparent  ">
       <h2 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3 text-[#788099]">
         <span className="text-[#7e7e8f]">1-</span> Transaction Info
       </h2>
@@ -2272,7 +2272,7 @@ export default function WithdrawalForm({
               </label>
               <div className="relative" ref={assetDropdownRef}>
                 <div
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 text-sm sm:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer min-h-[44px] sm:min-h-0`}
+                  className={`w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 text-sm sm:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer min-h-[44px] sm:min-h-0`}
                   onClick={() => {
                     setIsAssetDropdownOpen(!isAssetDropdownOpen);
                   }}
@@ -2349,7 +2349,7 @@ export default function WithdrawalForm({
 
                 {/* Asset Dropdown */}
                 {isAssetDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl z-50 max-h-[60vh] sm:max-h-80 overflow-hidden">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[var(--card-color)] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl z-50 max-h-[60vh] sm:max-h-80 overflow-hidden">
                     {/* Search Input */}
                     <div className="p-2 sm:p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
                       <div className="relative">
@@ -2357,7 +2357,7 @@ export default function WithdrawalForm({
                         <input
                           type="text"
                           placeholder="Search assets..."
-                          className="w-full text-gray-900 dark:text-white dark:bg-[#1D1D23] bg-white rounded-xl px-10 py-2.5 sm:py-2 text-sm sm:text-base focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400 min-h-[44px] sm:min-h-0"
+                          className="w-full text-gray-900 dark:text-white dark:bg-[var(--card-color)] bg-white rounded-xl px-10 py-2.5 sm:py-2 text-sm sm:text-base focus:outline-none border dark:border-[#35353E] border-[#35353E] placeholder-gray-500 dark:placeholder-gray-400 min-h-[44px] sm:min-h-0"
                           value={assetSearchTerm}
                           onChange={(e) => setAssetSearchTerm(e.target.value)}
                         />
@@ -2467,7 +2467,7 @@ export default function WithdrawalForm({
               </label>
               <div className="relative" ref={networkDropdownRef}>
                 <div
-                  className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 text-sm sm:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer hover:border-[#1D8751] dark:hover:border-[#1D8751] transition-colors min-h-[44px] sm:min-h-0"
+                  className="w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 text-sm sm:text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer hover:border-[#1D8751] dark:hover:border-[#1D8751] transition-colors min-h-[44px] sm:min-h-0"
                   onClick={() =>
                     setIsNetworkDropdownOpen(!isNetworkDropdownOpen)
                   }
@@ -2499,7 +2499,7 @@ export default function WithdrawalForm({
 
                 {/* Network Dropdown */}
                 {isNetworkDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl shadow-lg z-50 max-h-[60vh] sm:max-h-60 overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[var(--card-color)] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl shadow-lg z-50 max-h-[60vh] sm:max-h-60 overflow-y-auto">
                     <div className="p-2">
                       {availableNetworks.map((network, index) => (
                         <div
@@ -2623,7 +2623,7 @@ export default function WithdrawalForm({
                   }}
                   onFocus={() => setIsCalculatingFromPay(true)}
                   placeholder="Enter amount"
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 pr-12 sm:pr-16 text-sm sm:text-lg focus:outline-none border appearance-none min-h-[44px] sm:min-h-0 ${
+                  className={`w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 pr-12 sm:pr-16 text-sm sm:text-lg focus:outline-none border appearance-none min-h-[44px] sm:min-h-0 ${
                     apiValidationError
                       ? "border-red-500"
                       : isCalculating || isCalculatingReceive
@@ -2678,7 +2678,7 @@ export default function WithdrawalForm({
                     setWalletAddress(pastedText); // Set the pasted text directly
                   }}
                   placeholder="Enter BEP20 wallet address (0x...)"
-                  className={`w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-8 sm:px-9 py-2.5 sm:py-2 text-sm sm:text-lg focus:outline-none border min-h-[44px] sm:min-h-0 ${
+                  className={`w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-8 sm:px-9 py-2.5 sm:py-2 text-sm sm:text-lg focus:outline-none border min-h-[44px] sm:min-h-0 ${
                     walletError
                       ? "border-red-500"
                       : walletAddress.trim() && !walletError
@@ -2708,7 +2708,7 @@ export default function WithdrawalForm({
               </h3>
               <img className="w-4 h-4" src="https://res.cloudinary.com/pitz/image/upload/v1764942946/alert-circle_llaycw.png" alt="alert-circle" />
             </div>
-            <div className="bg-white dark:bg-[#1D1D23] border border-[#1D8751] rounded-lg sm:rounded-xl p-4">
+            <div className="bg-white dark:bg-[var(--card-color)] border border-[#1D8751] rounded-lg sm:rounded-xl p-4">
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
                   <div className="w-2 h-2 rounded-full bg-[#1D8751] mt-1.5 flex-shrink-0" />
@@ -2811,14 +2811,14 @@ export default function WithdrawalForm({
             <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span>{" "}
             Wallet Address
           </h2>
-          <div className="dark:bg-[#1D1D23] border-2 border-[#35353e] rounded-2xl p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
+          <div className="dark:bg-[var(--card-color)] border border-[#35353e] rounded-2xl p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
             {/* USDT Wallet Address */}
             <div className="mb-4">
               <h3 className="text-[#35353e] dark:text-[#788099] font-semibold mb-2">
                 USDT Wallet Address
               </h3>
               {withdrawalAddress ? (
-                <div className=" dark:bg-[#1D1D23]  border border-[#1D8751] rounded-xl p-4">
+                <div className=" dark:bg-[var(--card-color)]  border border-[#1D8751] rounded-xl p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-[#35353e] dark:text-[#788099] text-sm font-mono break-all">
                       {withdrawalAddress}
@@ -2862,7 +2862,7 @@ export default function WithdrawalForm({
                   </div>
                 </div>
               ) : (
-                <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-4">
+                <div className=" dark:bg-[var(--card-color)] border border-[#1D8751] rounded-xl p-4">
                   <div className="flex items-center gap-3">
                     <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                       <path
@@ -2884,7 +2884,7 @@ export default function WithdrawalForm({
 
             {/* QR Code */}
             <div className="mb-4">
-              <div className=" dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl p-4 flex justify-center">
+              <div className=" dark:bg-[var(--card-color)] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl p-4 flex justify-center">
                 {qrCodeUrl ? (
                   <img src={qrCodeUrl} alt="QR Code" className="w-48 h-48" />
                 ) : (
@@ -2946,7 +2946,7 @@ export default function WithdrawalForm({
                   Terms and Conditions Summary
                 </span>
               </div>
-              <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-4">
+              <div className=" dark:bg-[var(--card-color)] border border-[#1D8751] rounded-xl p-4">
                 <ul className="list-none space-y-2">
                   <li className="flex items-start">
                     <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] dark:bg-[#1D8751] inline-block mr-3"></span>
@@ -2976,7 +2976,7 @@ export default function WithdrawalForm({
               <label className="flex items-start cursor-pointer">
                 <input
                   type="checkbox"
-                  className="mt-1 mr-3 w-4 h-4 text-[#1D8751] bg-[#1D1D23] dark:bg-[#35353E] border-[#A2A4A9FF] dark:border-[#35353E ] rounded focus:ring-[#1D8751] focus:ring-2"
+                  className="mt-1 mr-3 w-4 h-4 text-[#1D8751] bg-[var(--card-color)] dark:bg-[#35353E] border-[#A2A4A9FF] dark:border-[#35353E ] rounded focus:ring-[#1D8751] focus:ring-2"
                 />
                 <span className="text-[#35353e] dark:text-[#788099] text-sm">
                   I've read and agree to the{" "}

@@ -229,27 +229,44 @@ const LanguageSelector = () => {
 
 const ThemeSelector = ({ isTransparentNavbar }: { isTransparentNavbar: boolean }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, isDark } = useTheme();
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
   };
 
   const selectTheme = (selectedTheme: "light" | "dark" | "deem") => {
-    if (selectedTheme === "deem") {
-      // Don't update anything for deem yet - just close dropdown
-      setDropdownOpen(false);
-      return;
-    }
     setTheme(selectedTheme);
     setDropdownOpen(false);
   };
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setDropdownOpen(false);
+      }
+    };
+
+    if (dropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [dropdownOpen]);
+
   const getThemeIcon = () => {
+    const iconClass = "w-5 h-5 sm:w-6 sm:h-6";
     if (theme === "dark") {
       return (
         <svg
-          className="w-5 h-5 sm:w-6 sm:h-6"
+          className={iconClass}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -262,10 +279,26 @@ const ThemeSelector = ({ isTransparentNavbar }: { isTransparentNavbar: boolean }
           />
         </svg>
       );
+    } else if (theme === "deem") {
+      return (
+        <svg
+          className={iconClass}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+          />
+        </svg>
+      );
     } else {
       return (
         <svg
-          className="w-5 h-5 sm:w-6 sm:h-6"
+          className={iconClass}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -282,10 +315,15 @@ const ThemeSelector = ({ isTransparentNavbar }: { isTransparentNavbar: boolean }
   };
 
   return (
-    <div className="relative">
-      <div
-        className={`flex items-center justify-center cursor-pointer min-h-[44px] sm:min-h-0 lg:min-h-0 px-1 sm:px-0 lg:px-0 ${
-          isTransparentNavbar ? "text-white" : "dark:text-white text-gray-900"
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        className={`flex items-center justify-center cursor-pointer min-h-[44px] sm:min-h-0 lg:min-h-0 px-1 sm:px-0 lg:px-0 border-none bg-transparent p-0 ${
+          isTransparentNavbar 
+            ? isDark 
+              ? "text-white" 
+              : "text-gray-900"
+            : "dark:text-white text-gray-900"
         }`}
         onClick={toggleDropdown}
       >
@@ -294,19 +332,17 @@ const ThemeSelector = ({ isTransparentNavbar }: { isTransparentNavbar: boolean }
           xmlns="http://www.w3.org/2000/svg"
           width="12"
           height="12"
-          className={`ml-1 sm:ml-1 lg:ml-1 w-3 h-3 sm:w-4 sm:h-4 lg:w-4 lg:h-4 ${
-            isTransparentNavbar ? "fill-white" : "fill-current"
-          }`}
+          className={`ml-1 sm:ml-1 lg:ml-1 w-3 h-3 sm:w-4 sm:h-4 lg:w-4 lg:h-4 fill-current`}
           viewBox="0 0 16 16"
         >
           <path d="M1.5 6.5l6 6 6-6h-12z" />
         </svg>
-      </div>
+      </button>
       {dropdownOpen && (
         <>
-          {/* Backdrop for mobile */}
+          {/* Backdrop for all screen sizes */}
           <div 
-            className="fixed inset-0 z-40 sm:hidden"
+            className="fixed inset-0 z-40"
             onClick={() => setDropdownOpen(false)}
           />
           <div className="fixed sm:absolute right-3 sm:right-0 top-14 sm:top-auto sm:mt-2 w-[180px] sm:w-[200px] lg:w-[250px] dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 rounded-lg shadow-lg z-50 max-w-[calc(100vw-1.5rem)] sm:max-w-none">
@@ -387,6 +423,11 @@ const ThemeSelector = ({ isTransparentNavbar }: { isTransparentNavbar: boolean }
                   </svg>
                   <span className="text-sm sm:text-sm lg:text-sm">Deem</span>
                 </div>
+                {theme === "deem" && (
+                  <div className="w-4 h-4 sm:w-4 sm:h-4 lg:w-4 lg:h-4 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-4 lg:h-4 text-[#1D8751]" />
+                  </div>
+                )}
               </div>
             </button>
           </div>
@@ -748,7 +789,6 @@ export default function Navbar() {
                   </svg>
                   Deposit
                 </button>
-
                 {/* Deposit Dropdown */}
                 {depositDropdownOpen && (
                   <div className="absolute top-full right-0 mt-2 w-md dark:bg-[#1E2329] bg-white dark:border-[#35353E] border-gray-200 border rounded shadow-xl z-[9999]">
@@ -1053,18 +1093,20 @@ export default function Navbar() {
                   className="text-white focus:outline-none relative"
                 >
                   {(userProfile?.photo || cachedProfilePhoto) && !profileImageError ? (
-                    <img
-                      src={userProfile?.photo || cachedProfilePhoto || ""}
-                      alt="Profile"
-                      className="w-10 h-10 rounded-full object-cover"
-                      onError={() => {
-                        setProfileImageError(true);
-                        if (typeof window !== "undefined") {
-                          localStorage.removeItem("profile_photo");
-                          setCachedProfilePhoto(null);
-                        }
-                      }}
-                    />
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-[#0F172A] border-2 border-white flex items-center justify-center">
+                      <img
+                        src={userProfile?.photo || cachedProfilePhoto || ""}
+                        alt="Profile"
+                        className="w-9 h-9 rounded-full object-cover"
+                        onError={() => {
+                          setProfileImageError(true);
+                          if (typeof window !== "undefined") {
+                            localStorage.removeItem("profile_photo");
+                            setCachedProfilePhoto(null);
+                          }
+                        }}
+                      />
+                    </div>
                   ) : (
                     <DefaultProfileIcon />
                   )}

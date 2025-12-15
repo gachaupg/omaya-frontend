@@ -16,6 +16,7 @@ import {
   updateProfileThunk,
   getP2PProfileThunk,
 } from "@/features/p2p/slices/orderSlice";
+import { getUserProfile } from "@/features/auth/slices/authSlice";
 import HelpSupportForm from "@/features/settings/components/HelpSupportForm";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { useMatchedTradesWebSocket } from "@/features/p2p/hooks/useMatchedTradesWebSocket";
@@ -87,11 +88,13 @@ function UserCard() {
           formData.append("photo", file);
 
           await dispatch(updateProfileThunk(formData)).unwrap();
-          // Refetch profile to get updated photo
+          // Refetch P2P profile to get updated photo in this card
           const response = await dispatch(getP2PProfileThunk()).unwrap();
           if (response?.profile?.photo) {
             setProfileImage(response.profile.photo);
           }
+          // Also refresh main auth profile so navbar/other pages update without reload
+          await dispatch(getUserProfile()).unwrap();
           showToast.success(
             t(
               "userCard.profileImageUpdated",
@@ -115,11 +118,11 @@ function UserCard() {
 
   return (
     <Card
-      borderColor="border-[#E8EFF5] dark:border-[#35353E]"
+      borderColor="border-[#35353E]"
       width="w-full"
-      bgColor="bg-[#1D1D23]"
+      bgColor="bg-transparent"
       borderRadius="rounded-xl sm:rounded-xl lg:rounded-[20px]"
-      className="p-2 sm:p-3 lg:p-2 dark:bg-[#1D1D23] bg-white overflow-hidden"
+      className="p-2 sm:p-3 lg:p-2 bg-transparent overflow-hidden"
     >
       {showHelpSupport ? (
         <div className="w-full mt-2">

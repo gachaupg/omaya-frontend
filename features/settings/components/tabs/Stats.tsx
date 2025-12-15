@@ -162,7 +162,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
   }, [dispatch, isAuthenticated, user?.referral_code]);
 
  return (
-   <Card className="w-full p-3 sm:p-4 dark:bg-[var(--bg-color)] bg-gray-50 rounded-2xl dark:border-[#35353E] border-gray-300 border-2 dark:text-white text-gray-900 shadow-lg">
+   <Card className="w-full p-3 sm:p-4 dark:bg-[var(--card-color)] bg-gray-50 rounded-2xl dark:border-[#35353E] border-gray-300 border dark:text-white text-gray-900 shadow-lg">
       {/* Header */}
       <div className="flex w-full flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">

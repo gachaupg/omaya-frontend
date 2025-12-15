@@ -91,7 +91,7 @@ const P2PTransactions = () => {
   }
 
   return (
-    <div className="w-full h-full dark:bg-[#23232b] bg-[#F5F5F5] rounded-xl sm:rounded-xl lg:rounded-2xl p-3 sm:p-4 lg:p-6">
+    <div className="w-full h-full bg-transparent rounded-xl sm:rounded-xl lg:rounded-2xl p-3 sm:p-4 lg:p-6">
       {/* Mobile Card Layout */}
       <div className="block sm:hidden space-y-3">
         {loading ? (
@@ -110,7 +110,7 @@ const P2PTransactions = () => {
           transformedData.map((transaction) => (
             <div
               key={transaction.id}
-              className="bg-white dark:bg-[#28293d] border border-[#E8EFF5] dark:border-[#35353E] rounded-xl p-4 space-y-3"
+              className="bg-transparent border border-[#E8EFF5] dark:border-[#35353E] rounded-xl p-4 space-y-3"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
