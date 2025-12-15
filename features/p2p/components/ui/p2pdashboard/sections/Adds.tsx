@@ -937,7 +937,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               className="flex-1 rounded-[24px] border-1 border-[#1D8751] dark:text-white text-black bg-transparent text-base py-2 hover:bg-[#23232B] transition"
               variant="outline"
               onClick={() => {
-                router.push("/dashboard/p2p");
+                router.push("/dashboard/p2p/");
               }}
             >
               Cancel Post
