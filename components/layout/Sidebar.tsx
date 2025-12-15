@@ -196,16 +196,18 @@ export default function Sidebar() {
                             "flex items-center justify-center gap-0.5 sm:gap-1",
                             isActive
                               ? "font-bold text-white text-sm sm:text-base"
-                              : "font-normal text-[#727272] text-xs sm:text-sm uppercase"
+                              : "font-normal text-[#727272] text-xs sm:text-sm"
                           )}
                         >
-                          <span className={isActive ? "text-white text-sm sm:text-base uppercase font-bold" : "text-[#727272] text-xs sm:text-sm uppercase font-bold"}>
+                          <span className={isActive ? "dark:text-white text-muted-foreground text-sm sm:text-base uppercase font-bold" : "text-[#727272] text-xs sm:text-sm uppercase font-bold"}>
                             Money
                           </span>
                           <img
-                            className="mt-1 sm:mt-2 w-3 h-3 sm:w-4 sm:h-4"
-                            src={isActive 
-                              ? "https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png"
+                            className="mt-1 w-3 h-3 sm:w-4 sm:h-4"
+                            src={isActive
+
+                              ? isDark ? "https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png"
+                                : "https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"
                               : "https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"
                             }
                             alt=""
@@ -222,67 +224,30 @@ export default function Sidebar() {
                         {item.labelKey === "navigation.express" ? (
                           <span
                             className={clsx(
-                              "flex items-center justify-center gap-1 min-h-[20px]",
+                              "flex items-center justify-center gap-0.5 sm:gap-1",
                               isActive
-                                ? "font-bold text-white text-base"
-                                : "font-normal text-[#727272] text-sm uppercase"
+                                ? "font-bold text-white text-sm sm:text-base"
+                                : "font-normal text-[#727272] text-xs sm:text-sm"
                             )}
                           >
                             <span
-                              className={isActive ? "font-bold" : "font-normal"}
+                              className={isActive ? "dark:text-white text-muted-foreground text-sm sm:text-base font-bold" : "text-muted-foreground text-xs sm:text-sm font-bold"}
                             >
-                              {t("navigation.express", "E")}
+                              E
                             </span>
-                            <svg
-                              width="28"
-                              height="32"
-                              viewBox="0 0 32 32"
-                              className="mx-0 flex-shrink-0"
-                              style={{ minWidth: 28, verticalAlign: "middle" }}
-                            >
-                              {/* Left stroke (upper, green) */}
-                              <line
-                                x1="7"
-                                y1="4"
-                                x2="16"
-                                y2="16"
-                                stroke="#1D8751"
-                                strokeWidth="4"
-                                strokeLinecap="round"
-                              />
-                              {/* Left stroke (lower, white, very long) */}
-                              <line
-                                x1="16"
-                                y1="16"
-                                x2="28"
-                                y2="32"
-                                stroke={isActive ? "#fff" : "#727272"}
-                                strokeWidth="4"
-                                strokeLinecap="round"
-                              />
-                              {/* Right stroke (long, white) */}
-                              <line
-                                x1="25"
-                                y1="4"
-                                x2="7"
-                                y2="28"
-                                stroke={isActive ? "#fff" : "#727272"}
-                                strokeWidth="4"
-                                strokeLinecap="round"
-                              />
-                            </svg>
-                            <span
-                              className={isActive ? "font-bold" : "font-normal"}
-                              style={{ marginLeft: "-6px" }}
-                            >
-                              {isActive
-                                ? t("navigation.expressChange", "Change")
-                                : t(
-                                    "navigation.expressChange",
-                                    "CHANGE"
-                                  ).toUpperCase()}
-                            </span>
+                            <img
+                              className="mt-2 -ml-0.5"
+                              style={{ maxWidth: 'none' }}
+                              src={
+                                isActive
+
+                                  ? isDark ? "https://res.cloudinary.com/pitz/image/upload/v1764698106/Group_8_hjhlxe.png"
+                                    : "https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png"
+                                  : "https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png"
+                              }
+                            />
                           </span>
+
                         ) : (
                           <span className="font-semibold">{label}</span>
                         )}

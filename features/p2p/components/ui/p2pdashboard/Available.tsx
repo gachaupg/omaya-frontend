@@ -31,7 +31,7 @@ const Available = () => {
       >
         <div className="w-full h-full">
           {/* Header */}
-          <div className="grid grid-cols-3 px-4 sm:px-6 py-2 sm:py-3 dark:bg-[var(--card-color)] bg-gray-50">
+          <div className="grid grid-cols-3 px-4 sm:px-6 py-2 sm:py-3 dark:bg-[#35353E] bg-gray-50">
             <div className="text-xs sm:text-sm dark:text-[#788099] text-gray-600 font-medium">
               Asset
             </div>
@@ -45,7 +45,7 @@ const Available = () => {
 
           {/* Asset Row */}
           <div
-            className="grid grid-cols-3 px-4 sm:px-6 py-3 sm:py-4 bg-white dark:bg-black"
+            className="grid grid-cols-3 px-4 sm:px-6 py-3 sm:py-4 bg-white dark:bg-[var(--card-color)]"
           >
             {/* Asset */}
             <div className="flex items-center gap-3">

@@ -635,13 +635,19 @@ const AboutPage = () => {
 
               {/* Right - Text Card */}
               <div className="bg-white dark:bg-[#14141A] border border-gray-200 dark:border-[#1E1E26] rounded-3xl p-8 flex flex-col min-h-[320px] order-1 md:order-2">
-                <div className="flex items-center justify-center gap-3 mb-1">
-                  <div className="w-10 h-10 rounded-xl bg-[#1D8751] flex items-center justify-center">
-                    <Zap className="w-5 h-5 text-white" />
+                <div className="flex items-center justify-start gap-3 mb-2">
+                  <img
+                    src="https://res.cloudinary.com/pitz/image/upload/v1765800834/Container_3_quuszd.png"
+                    alt=""
+                    className="w-20 h-20"
+                  />
+                  <div className="flex flex-col leading-none">
+                    <span className="text-4xl md:text-5xl font-bold text-[#1D8751]">2021</span>
+                    <span className="text-xs md:text-sm text-gray-600 dark:text-gray-500 mt-0.5">
+                      Q3
+                    </span>
                   </div>
-                  <span className="text-4xl md:text-5xl font-bold text-[#1D8751]">2021</span>
                 </div>
-                <span className="text-gray-600 dark:text-gray-500 text-sm text-center mb-6">Q3</span>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white text-center mb-3">Rapid Growth</h3>
                 <p className="text-gray-700 dark:text-gray-400 text-sm leading-relaxed text-center mb-6 flex-1">
                   Expanded to 50 countries and reached 10,000 active users with enhanced trading features and mobile app launch.
@@ -913,7 +919,7 @@ const AboutPage = () => {
 
               {/* Security Features Grid */}
               <div className="grid grid-cols-2 gap-4 mb-8">
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-3 p-4 rounded-2xl border border-gray-200 dark:border-[#2A2A35] bg-white dark:bg-[#14141A]">
                   <div className="w-10 h-10 rounded-xl bg-[#1D8751]/10 border border-[#1D8751]/30 flex items-center justify-center flex-shrink-0">
                     <Lock className="w-5 h-5 text-[#1D8751]" />
                   </div>
@@ -923,7 +929,7 @@ const AboutPage = () => {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-3 p-4 rounded-2xl border border-gray-200 dark:border-[#2A2A35] bg-white dark:bg-[#14141A]">
                   <div className="w-10 h-10 rounded-xl bg-[#1D8751]/10 border border-[#1D8751]/30 flex items-center justify-center flex-shrink-0">
                     <ShieldCheck className="w-5 h-5 text-[#1D8751]" />
                   </div>
@@ -933,7 +939,7 @@ const AboutPage = () => {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-3 p-4 rounded-2xl border border-gray-200 dark:border-[#2A2A35] bg-white dark:bg-[#14141A]">
                   <div className="w-10 h-10 rounded-xl bg-[#1D8751]/10 border border-[#1D8751]/30 flex items-center justify-center flex-shrink-0">
                     <Fingerprint className="w-5 h-5 text-[#1D8751]" />
                   </div>
@@ -943,7 +949,7 @@ const AboutPage = () => {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-3 p-4 rounded-2xl border border-gray-200 dark:border-[#2A2A35] bg-white dark:bg-[#14141A]">
                   <div className="w-10 h-10 rounded-xl bg-[#1D8751]/10 border border-[#1D8751]/30 flex items-center justify-center flex-shrink-0">
                     <Eye className="w-5 h-5 text-[#1D8751]" />
                   </div>
@@ -953,7 +959,7 @@ const AboutPage = () => {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-3 p-4 rounded-2xl border border-gray-200 dark:border-[#2A2A35] bg-white dark:bg-[#14141A]">
                   <div className="w-10 h-10 rounded-xl bg-[#1D8751]/10 border border-[#1D8751]/30 flex items-center justify-center flex-shrink-0">
                     <Key className="w-5 h-5 text-[#1D8751]" />
                   </div>
@@ -963,7 +969,7 @@ const AboutPage = () => {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3">
+                <div className="flex items-start gap-3 p-4 rounded-2xl border border-gray-200 dark:border-[#2A2A35] bg-white dark:bg-[#14141A]">
                   <div className="w-10 h-10 rounded-xl bg-[#1D8751]/10 border border-[#1D8751]/30 flex items-center justify-center flex-shrink-0">
                     <FileLock className="w-5 h-5 text-[#1D8751]" />
                   </div>
@@ -1053,7 +1059,7 @@ const AboutPage = () => {
                   className="absolute inset-0 w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <div className="absolute top-4 left-4 w-8 h-6 rounded-sm overflow-hidden shadow-md">
+                <div className="absolute top-4 left-4 w-8 h-5 rounded-sm overflow-hidden shadow-md">
                   <img
                     src="https://flagcdn.com/w80/ae.png"
                     alt="UAE Flag"
@@ -1119,7 +1125,7 @@ const AboutPage = () => {
                   className="absolute inset-0 w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                <div className="absolute top-4 left-4 w-8 h-6 rounded-sm overflow-hidden shadow-md">
+                <div className="absolute top-4 left-4 w-8 h-5 rounded-sm overflow-hidden shadow-md">
                   <img
                     src="https://flagcdn.com/w80/us.png"
                     alt="US Flag"

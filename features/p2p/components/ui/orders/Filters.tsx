@@ -68,11 +68,11 @@ const Filters: React.FC<FiltersProps> = ({
   logger.debug("p2p", "Order Status Tabs:", orderStatusTabs);
 
   const filterCardBase =
-    "flex w-full min-h-[42px] items-center rounded-[22px] border px-2.5 py-1.5 transition-all duration-200 bg-transparent";
+    "flex w-full min-h-[42px] items-center rounded-[22px] border px-2.5 py-1.5 transition-all duration-200 bg-white dark:bg-transparent";
   const activeCardClasses =
-    "border-gray-200 dark:border-[#272B3F] bg-[#1D8751]/10 shadow-[0_12px_30px_rgba(29,135,81,0.12)]";
+    "border-[#1D8751] dark:border-[#1D8751] bg-[#1D8751]/10 shadow-[0_12px_30px_rgba(29,135,81,0.12)]";
   const inactiveCardClasses =
-    "bg-transparent border-gray-200 dark:border-[#272B3F] group-hover:border-[#1D8751]/60";
+    "bg-white dark:bg-transparent border-gray-300 dark:border-[#272B3F] group-hover:border-[#1D8751]/60";
   const iconWrapper =
     "flex h-8 w-8 items-center justify-center rounded-full border bg-[#F5F7FB]/80 border-gray-200 dark:bg-[#1B1E2B]/80 dark:border-white/10 flex-shrink-0";
   const valueStyleActive =
@@ -139,7 +139,7 @@ const Filters: React.FC<FiltersProps> = ({
     <div className="w-full flex flex-col">
       {/* ───────────────────────── Tabs */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-        <div className="flex items-center gap-0 bg-white dark:bg-[var(--bg-color)] rounded-[14px] border border-[#1D8751]/60 dark:border-[#1D8751]/60 w-full sm:w-fit px-1.5 py-1.5 overflow-x-auto snap-x snap-mandatory scrollbar-none shadow-[0_6px_24px_rgba(4,10,7,0.35)]">
+        <div className="flex items-center gap-0 bg-white dark:bg-[var(--card-color)] rounded-[14px] border border-[#1D8751]/60 dark:border-[#1D8751]/60 w-full sm:w-fit px-1.5 py-1.5 overflow-x-auto snap-x snap-mandatory scrollbar-none shadow-[0_6px_24px_rgba(4,10,7,0.35)]">
           {orderStatusTabs.map((tab) => (
             <Button
               key={tab.id}

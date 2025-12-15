@@ -32,7 +32,7 @@ const Stats = ({ summary = {} }: { summary?: any }) => {
   ];
 
   return (
-    <div className="w-full min-h-[90px] rounded-[24px] border-2 bg-white dark:bg-[#1D1D23] border-gray-200 dark:border-[#35353E] p-3 sm:p-5 box-border">
+    <div className="w-full min-h-[90px] rounded-[24px] border-2 bg-white dark:bg-[var(--card-color)] border-gray-200 dark:border-[#35353E] p-3 sm:p-5 box-border">
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-5 w-full">
         {stats.map((stat, idx) => (
           <div key={idx} className="text-center w-full">

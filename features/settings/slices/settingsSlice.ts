@@ -128,6 +128,56 @@ export const resetPassword = createAsyncThunk(
   }
 );
 
+export const sendPasswordResetOTP = createAsyncThunk(
+  "settings/sendPasswordResetOTP",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await settingsApi.sendPasswordResetOTP();
+      showToast.success(response.message || "OTP sent to your email");
+      return response;
+    } catch (error: any) {
+      showToast.error(error.message || "Failed to send OTP");
+      return rejectWithValue(error.message || "Failed to send OTP");
+    }
+  }
+);
+
+export const verifyPasswordResetOTP = createAsyncThunk(
+  "settings/verifyPasswordResetOTP",
+  async (otp: string, { rejectWithValue }) => {
+    try {
+      const response = await settingsApi.verifyPasswordResetOTP(otp);
+      if (response.otp_verified) {
+        showToast.success(response.message || "OTP verified successfully");
+      } else {
+        showToast.error(response.message || "Invalid OTP");
+        return rejectWithValue(response.message || "Invalid OTP");
+      }
+      return response;
+    } catch (error: any) {
+      showToast.error(error.message || "Failed to verify OTP");
+      return rejectWithValue(error.message || "Failed to verify OTP");
+    }
+  }
+);
+
+export const changePasswordWithOTP = createAsyncThunk(
+  "settings/changePasswordWithOTP",
+  async (
+    data: { new_password: string; confirm_password: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await settingsApi.changePasswordWithOTP(data);
+      showToast.success(response.message || "Password changed successfully");
+      return response;
+    } catch (error: any) {
+      showToast.error(error.message || "Failed to change password");
+      return rejectWithValue(error.message || "Failed to change password");
+    }
+  }
+);
+
 export const fetchTheme = createAsyncThunk(
   "settings/fetchTheme",
   async (_, { rejectWithValue }) => {
@@ -366,7 +416,7 @@ const settingsSlice = createSlice({
     },
     setThemeMode: (
       state,
-      action: PayloadAction<"light" | "dark" | "system">
+      action: PayloadAction<"light" | "dark" | "deem" | "system">
     ) => {
       state.theme.mode = action.payload;
     },
@@ -439,6 +489,42 @@ const settingsSlice = createSlice({
         state.success = action.payload.message || "Password has been reset successfully.";
       })
       .addCase(resetPassword.rejected, (state, action) => {
+        state.updating = false;
+        state.error = action.payload as string;
+      })
+      .addCase(sendPasswordResetOTP.pending, (state) => {
+        state.updating = true;
+        state.error = null;
+      })
+      .addCase(sendPasswordResetOTP.fulfilled, (state, action) => {
+        state.updating = false;
+        state.success = action.payload.message || "OTP sent successfully";
+      })
+      .addCase(sendPasswordResetOTP.rejected, (state, action) => {
+        state.updating = false;
+        state.error = action.payload as string;
+      })
+      .addCase(verifyPasswordResetOTP.pending, (state) => {
+        state.updating = true;
+        state.error = null;
+      })
+      .addCase(verifyPasswordResetOTP.fulfilled, (state, action) => {
+        state.updating = false;
+        state.success = action.payload.message || "OTP verified successfully";
+      })
+      .addCase(verifyPasswordResetOTP.rejected, (state, action) => {
+        state.updating = false;
+        state.error = action.payload as string;
+      })
+      .addCase(changePasswordWithOTP.pending, (state) => {
+        state.updating = true;
+        state.error = null;
+      })
+      .addCase(changePasswordWithOTP.fulfilled, (state, action) => {
+        state.updating = false;
+        state.success = action.payload.message || "Password changed successfully";
+      })
+      .addCase(changePasswordWithOTP.rejected, (state, action) => {
         state.updating = false;
         state.error = action.payload as string;
       });

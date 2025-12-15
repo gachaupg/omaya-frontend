@@ -209,7 +209,7 @@ const P2PWithdrawalDepositTransactions = () => {
           return (
           <div
             key={tx.transaction_id || `tx-${index}`}
-            className="bg-white dark:bg-[#23232A] border border-[#E8EFF5] dark:border-[#35353E] rounded-xl p-4 space-y-3"
+            className="bg-transparent border border-[#E8EFF5] dark:border-[#35353E] rounded-xl p-4 space-y-3"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -317,7 +317,7 @@ const P2PWithdrawalDepositTransactions = () => {
       {/* Desktop Table Layout */}
       <div className="hidden sm:block overflow-x-auto">
       <table className="min-w-full divide-y divide-[#d1d5db] dark:divide-[#35353E]">
-        <thead className="bg-gray-50 dark:bg-transparent">
+        <thead className="bg-transparent">
           <tr>
             {[
               t("transactions.asset", "Asset"),

@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useThemeToggle as useReduxThemeToggle } from "@/features/settings/hooks/useThemeToggle";
 
-type Theme = "light" | "dark";
+type Theme = "light" | "dark" | "deem";
 
 interface ThemeContextType {
   theme: Theme;
   isDark: boolean;
   isLight: boolean;
+  isDeem?: boolean;
   toggleTheme: () => void;
   setTheme: (theme: Theme) => void;
 }
@@ -38,7 +39,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     setThemeState(newTheme);
     // Use Redux theme toggle to update the global state (no server calls)
     try {
-      reduxTheme.toggleTheme(newTheme as "light" | "dark" | "system");
+      reduxTheme.toggleTheme(newTheme as "light" | "dark" | "deem" | "system");
     } catch (error) {
       console.log("Redux theme update failed, using local state:", error);
     }
@@ -49,6 +50,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     theme: reduxTheme.mounted ? theme : "dark", // Default to dark during SSR
     isDark: reduxTheme.mounted ? reduxTheme.isDark : true, // Default to dark during SSR
     isLight: reduxTheme.mounted ? reduxTheme.isLight : false, // Default to false during SSR
+    isDeem: reduxTheme.mounted ? reduxTheme.isDeem : false, // Default to false during SSR
     toggleTheme,
     setTheme,
   };

@@ -24,7 +24,7 @@ export interface UserProfile {
 }
 
 export interface ThemeSettings {
-  mode: "light" | "dark" | "system";
+  mode: "light" | "dark" | "deem" | "system";
   primary_color?: string;
   accent_color?: string;
 }
