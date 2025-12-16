@@ -1974,7 +1974,7 @@ export default function DepositForm({
   }, [selectedPaymentDetail]);
 
   return (
-    <div className="w-full min-h-screen flex flex-col dark:bg-transparent">
+    <div className="w-full min-h-screen flex flex-col dark:bg-[#18181D]">
       <h2 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3 text-[#788099]">
         <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Transaction Info
       </h2>
@@ -2020,7 +2020,7 @@ export default function DepositForm({
                   </label>
                   <div className="relative" ref={assetDropdownRef}>
                     <div
-                      className="w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer min-h-[44px] sm:min-h-0"
+                      className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer min-h-[44px] sm:min-h-0"
                       onClick={() => setIsAssetDropdownOpen(!isAssetDropdownOpen)}
                     >
                       <div className="flex items-center gap-3">
@@ -2052,7 +2052,7 @@ export default function DepositForm({
                     
                     {/* Asset Dropdown */}
                     {isAssetDropdownOpen && (
-                      <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[var(--card-color)] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl z-50 max-h-[60vh] sm:max-h-80 overflow-hidden">
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-[#ffffff] dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl z-50 max-h-[60vh] sm:max-h-80 overflow-hidden">
                         {/* Search Input */}
                         <div className="p-2 sm:p-3 border-b border-[#A2A4A9FF] dark:border-[#35353E]">
                           <div className="relative">
@@ -2135,7 +2135,7 @@ export default function DepositForm({
                   </label>
                   <div className="relative" ref={networkDropdownRef}>
                     <div 
-                      className="w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer hover:border-[#1D8751] dark:hover:border-[#1D8751] transition-colors min-h-[44px] sm:min-h-0"
+                      className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-xl sm:rounded-2xl px-3 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E] flex items-center justify-between cursor-pointer hover:border-[#1D8751] dark:hover:border-[#1D8751] transition-colors min-h-[44px] sm:min-h-0"
                       onClick={() => setIsNetworkDropdownOpen(!isNetworkDropdownOpen)}
                     >
                       <div className="flex items-center gap-3">
@@ -2160,7 +2160,7 @@ export default function DepositForm({
 
                     {/* Network Dropdown */}
                     {isNetworkDropdownOpen && (
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[var(--card-color)] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl shadow-lg z-50 max-h-[60vh] sm:max-h-60 overflow-y-auto">
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1D1D23] border border-[#A2A4A9FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl shadow-lg z-50 max-h-[60vh] sm:max-h-60 overflow-y-auto">
                         <div className="p-2">
                           {availableNetworks.map((network, index) => (
                             <div
@@ -2214,7 +2214,7 @@ export default function DepositForm({
               <h2 className="text-lg sm:text-xl font-bold mb-2 text-[#788099]">
                 <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span> Transaction Code
               </h2>
-              <div className="dark:bg-[var(--card-color)] border border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
+              <div className="dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
                 {/* Transaction Code Row */}
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-3">
                   {/* Display deposit code from API response - each character in its own box */}
@@ -2293,7 +2293,7 @@ export default function DepositForm({
                       Note
                     </span>
                   </div>
-                  <div className=" dark:bg-[var(--card-color)] border border-[#1D8751] rounded-xl p-3">
+                  <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-3">
                     <ul className="list-none space-y-1">
                       <li className="flex items-start">
                         <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-2"></span>
@@ -2320,7 +2320,7 @@ export default function DepositForm({
           <h2 className="text-lg sm:text-xl font-bold mb-2 text-[#788099]">
             <span className="text-[#7e7e8f]">3-</span> Wallet Address
           </h2>
-          <div className="flex flex-col dark:bg-[var(--card-color)] border border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-5 shadow-lg w-full mx-auto text-[#35353e] dark:text-[#788099] mb-4 sm:mb-6">
+          <div className="flex flex-col dark:bg-[#1D1D23] border-2 border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-5 shadow-lg w-full mx-auto text-[#35353e] dark:text-[#788099] mb-4 sm:mb-6">
             {/* Wallet/Account Address Label */}
             <label className="block text-sm sm:text-[17px] text-[#7e7e8f] mb-2 font-semibold">
               Wallet/Account Address
@@ -2339,7 +2339,7 @@ export default function DepositForm({
             )}
             
             {/* Input group */}
-            <div className="flex items-center dark:bg-[var(--card-color)] border border-[#39394a] dark:border-[#35353E] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 mb-3 sm:mb-4 min-h-[44px] sm:min-h-0">
+            <div className="flex items-center dark:bg-[#1D1D23] border border-[#39394a] dark:border-[#35353E] rounded-xl sm:rounded-2xl px-3 sm:px-4 py-2.5 sm:py-2 mb-3 sm:mb-4 min-h-[44px] sm:min-h-0">
               {/* Left icon */}
               <span className="mr-2 text-[#1D8751] flex-shrink-0">
                 <svg width="20" height="20" className="sm:w-[22px] sm:h-[22px]" fill="none" viewBox="0 0 24 24">
@@ -2416,7 +2416,7 @@ export default function DepositForm({
                   navigator.clipboard.writeText(walletAddress);
                   showToast.success("Address copied to clipboard!");
                 }}
-                className="flex items-center gap-1 dark:bg-[var(--card-color)] border border-[#1D8751] text-[#1D8751] rounded-full px-3 sm:px-4 py-2 sm:py-1 ml-1 sm:ml-2 font-semibold text-sm sm:text-base hover:bg-[#1D8751] hover:text-white transition-colors min-h-[44px] sm:min-h-0 touch-manipulation flex-shrink-0"
+                className="flex items-center gap-1 dark:bg-[#1D1D23] border border-[#1D8751] text-[#1D8751] rounded-full px-3 sm:px-4 py-2 sm:py-1 ml-1 sm:ml-2 font-semibold text-sm sm:text-base hover:bg-[#1D8751] hover:text-white transition-colors min-h-[44px] sm:min-h-0 touch-manipulation flex-shrink-0"
               >
                 <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
                   <rect
@@ -2519,7 +2519,7 @@ export default function DepositForm({
                 Terms and Conditions Summary
               </span>
             </div>
-            <div className=" dark:bg-[var(--card-color)] border border-[#1D8751] rounded-xl p-4">
+            <div className=" dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl p-4">
               <ul className="list-none space-y-2">
                 <li className="flex items-start">
                   <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
@@ -2549,7 +2549,7 @@ export default function DepositForm({
           {/* Validation Errors Display */}
           {validationErrors.length > 0 && (
             <div className="max-w-4xl mx-auto w-full px-2 mb-3 sm:mb-4">
-                <div className="dark:bg-[var(--card-color)] border border-[#1D8751] rounded-xl sm:rounded-2xl p-3 sm:p-4">
+                <div className="dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl sm:rounded-2xl p-3 sm:p-4">
                 <h3 className="text-[#1D8751] font-semibold mb-2 text-sm sm:text-base">
                   Please fix the following errors:
                 </h3>
@@ -2715,11 +2715,7 @@ export default function DepositForm({
                 id="confirmPayment"
                 checked={confirmPayment}
                 onChange={(e) => setConfirmPayment(e.target.checked)}
-                className={`w-5 h-5 border-2 rounded cursor-pointer transition-colors ${
-                  confirmPayment
-                    ? "bg-[#1D8751] border-[#1D8751]"
-                    : "bg-transparent border-[#1D8751] dark:border-[#1D8751]"
-                }`}
+                className="w-5 h-5 rounded accent-[#1D8751] cursor-pointer"
               />
               <label htmlFor="confirmPayment" className="text-sm sm:text-base text-[#35353e] dark:text-[#ffffff] select-none cursor-pointer">
                 I confirm I sent the payment

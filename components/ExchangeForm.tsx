@@ -1187,9 +1187,12 @@ export default function ExchangeForm({
     const expressInactiveIconSrc =
       "https://res.cloudinary.com/pitz/image/upload/v1764698096/Group_9_momvgo.png";
 
+    // MoneyX icon: use green X when active in dark mode, dark X for active in light mode, dark X for inactive
     const moneyXIconSrc = isActive
-      ? "https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png"
-      : "https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png";
+      ? isDark
+        ? "https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png" // green X for dark mode active
+        : "https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png" // dark X for light mode active (visible on white)
+      : "https://res.cloudinary.com/pitz/image/upload/v1764661972/Group_6_ohph9q.png"; // dark X for inactive
 
     const ariaLabel =
       variant === "express"
@@ -1211,8 +1214,12 @@ export default function ExchangeForm({
               <img
                 src={moneyXIconSrc}
                 alt="X"
-                className="inline-block mt-1 sm:mt-1.5 md:mt-2 w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5"
-                style={{ marginLeft: 0 }}
+                className="inline-block w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 object-contain -ml-0.5"
+                style={{ verticalAlign: 'middle' }}
+                onError={(e) => {
+                  // Fallback if image fails to load
+                  console.error('MoneyX icon failed to load:', moneyXIconSrc);
+                }}
               />
             </>
           );
