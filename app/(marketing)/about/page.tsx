@@ -10,6 +10,7 @@ import {
   Zap, 
   Globe, 
   Award,
+  Star,
   MapPin,
   Mail,
   Phone,
@@ -565,6 +566,11 @@ const AboutPage = () => {
         <div className="max-w-6xl mx-auto">
           {/* Section Header */}
           <div className="text-center mb-16">
+          <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-[#1D8751]/10 border border-[#1D8751]/30 mb-5">
+              <span className="text-xs md:text-sm font-medium text-[#1D8751]">
+                Our Journey
+              </span>
+            </div>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-3">
               Our Story
             </h2>
@@ -739,6 +745,13 @@ const AboutPage = () => {
         <div className="max-w-6xl mx-auto">
           {/* Header - NO ITALIC */}
           <div className="text-center mb-12">
+            <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-[#1D8751]/10 border border-[#1D8751]/30 mb-5 gap-2">
+              <Star className="w-4 h-4 text-[#1D8751]" />
+              <span className="text-xs md:text-sm font-medium text-[#1D8751]">
+                Recognition & Awards
+              </span>
+            </div>
+
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
               Our Achievements
             </h2>
@@ -994,7 +1007,14 @@ const AboutPage = () => {
       <section className="py-20 px-4 bg-white dark:bg-[#0A0A0F] relative overflow-hidden">
         <div className="max-w-7xl mx-auto relative z-10">
           {/* Header */}
-          <div className="text-center mb-12">
+          <div className="text-center mb-12">      
+           <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-[#1D8751]/10 border border-[#1D8751]/30 mb-5 gap-2">
+              <Globe className="w-4 h-4 text-[#1D8751]" />
+              <span className="text-xs md:text-sm font-medium text-[#1D8751]">
+                Global Network
+              </span>
+            </div>
+
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-4">
               Our Locations
             </h2>
