@@ -19,6 +19,9 @@ const PasswordSection: React.FC = () => {
   const { updating, error, success } = useSelector(
     (state: RootState) => state.settings
   );
+  
+  // Track backend error separately to prioritize it
+  const [backendError, setBackendError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<PasswordChangeRequest>({
     new_password: "",
@@ -39,12 +42,16 @@ const PasswordSection: React.FC = () => {
     value: string
   ) => {
     setFormData((prev: PasswordChangeRequest) => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
+    // Clear error when user starts typing (including backend error)
     if (errors[field]) {
       setErrors((prev) => ({
         ...prev,
         [field]: undefined,
       }));
+    }
+    // Clear backend error when user starts typing
+    if (backendError) {
+      setBackendError(null);
     }
   };
 
@@ -68,6 +75,11 @@ const PasswordSection: React.FC = () => {
   };
 
   const validatePasswordForm = (): boolean => {
+    // Don't show local validation errors if there's a backend error
+    if (backendError) {
+      return false;
+    }
+    
     const newErrors: Partial<PasswordChangeRequest> = {};
 
     if (!formData.new_password) {
@@ -125,6 +137,9 @@ const PasswordSection: React.FC = () => {
   };
 
   const handleChangePassword = async () => {
+    // Clear backend error when user tries again
+    setBackendError(null);
+    
     if (!validatePasswordForm()) return;
 
     if (!otpVerified) {
@@ -149,13 +164,20 @@ const PasswordSection: React.FC = () => {
       setOtpSent(false);
       setOtpVerified(false);
       setMaskedEmail(null);
+      setBackendError(null);
       setShowPasswords({
         new: false,
         confirm: false,
       });
     } catch (error: any) {
-      // Error is handled by the slice and toast
-      console.error("Change password error:", error);
+      // Store backend error to display it in the UI
+      const errorMessage = error || "Failed to change password";
+      setBackendError(errorMessage);
+      // Also set it in the errors object for the new_password field
+      setErrors((prev) => ({
+        ...prev,
+        new_password: errorMessage,
+      }));
     }
   };
 
@@ -163,8 +185,23 @@ const PasswordSection: React.FC = () => {
   useEffect(() => {
     if (success) {
       setErrors({});
+      setBackendError(null);
     }
   }, [success]);
+  
+  // Clear backend error when Redux error changes (from other actions)
+  useEffect(() => {
+    if (error && error !== backendError) {
+      // Only update if it's a different error (not already set)
+      if (!backendError) {
+        setBackendError(error);
+        setErrors((prev) => ({
+          ...prev,
+          new_password: error,
+        }));
+      }
+    }
+  }, [error, backendError]);
 
   // Reset OTP state when form is cleared
   const handleReset = () => {
@@ -173,6 +210,7 @@ const PasswordSection: React.FC = () => {
     setOtp("");
     setMaskedEmail(null);
     setErrors({});
+    setBackendError(null);
   };
 
   return (
