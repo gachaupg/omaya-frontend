@@ -1753,7 +1753,7 @@ const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 mt-4">
+                <div className="grid grid-cols-2 gap-4 mt-4">
                   <React.Suspense
                     fallback={
                       <div className="flex items-center justify-center py-3 px-4 rounded-lg border border-gray-300 dark:border-[#35353E] bg-white dark:bg-transparent w-full">

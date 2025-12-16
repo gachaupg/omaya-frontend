@@ -62,7 +62,7 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
   return (
     <button
       onClick={handleGoogleLogin}
-      className={`flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${className} relative z-10 pointer-events-auto`}
+      className={`flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-transparent border border-gray-300 dark:border-[#35353E] rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-[#2D2D33] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${className} relative z-10 pointer-events-auto`}
       type="button"
       style={{ position: 'relative', zIndex: 10 }}
     >
@@ -82,7 +82,7 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
             <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.197l-6.199-5.238C29.172 35.091 26.715 36 24 36c-5.202 0-9.62-3.317-11.281-7.957l-6.54 5.037C9.49 39.556 16.227 44 24 44z"/>
             <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.793 2.24-2.231 4.166-4.092 5.565.001-.001 6.199 5.238 6.199 5.238C39.723 35.261 44 30.177 44 24c0-1.341-.138-2.651-.389-3.917z"/>
           </svg>
-          <span>Continue with Google</span>
+          <span>Google</span>
         </span>
       )}
     </button>

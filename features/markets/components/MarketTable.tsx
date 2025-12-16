@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSimpleMarkets } from "../hooks/useSimpleMarkets";
 import { MarketData } from "../types";
 import { tokens } from "../../../styles/tokens";
@@ -217,6 +217,7 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
   } | null>(null);
   const [favoritesUpdateTrigger, setFavoritesUpdateTrigger] = useState(0);
   const [localFavorites, setLocalFavorites] = useState<string[]>([]);
+  const favScrollRef = useRef<HTMLDivElement>(null);
 
   const getStoredFavorites = useCallback((): string[] => {
     if (typeof window === "undefined") return [];
@@ -434,11 +435,22 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
       .filter(
         (market): market is (typeof markets)[number] => market !== null
       );
-  }, [localFavorites, markets]);
+  }, [localFavorites, markets, favoritesUpdateTrigger]);
 
   const hasRemoteFavoriteAssets = Boolean(favoriteAssets?.length);
-  const showLocalFavoriteFallback =
-    !hasRemoteFavoriteAssets && localFavoriteMarkets.length > 0;
+  // Combine remote and local favorites - show local favorites even if remote favorites exist
+  const allFavoriteMarketsToShow = useMemo(() => {
+    const remoteSymbols = new Set(
+      (favoriteAssets ?? []).map((fav: FavoriteAsset) => fav.asset_symbol.toLowerCase())
+    );
+    // Only include local favorites that aren't already in remote favorites
+    const uniqueLocalFavorites = localFavoriteMarkets.filter(
+      (market) => !remoteSymbols.has(market.symbol.toLowerCase()) && !remoteSymbols.has(market.name.toLowerCase())
+    );
+    return uniqueLocalFavorites;
+  }, [favoriteAssets, localFavoriteMarkets]);
+  
+  const showLocalFavoriteFallback = allFavoriteMarketsToShow.length > 0;
 
   // Get top 3 markets for favorite assets - memoized
   // const favoriteAssets = useMemo(() => {
@@ -773,17 +785,17 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 gap-3 sm:gap-0">
               <div className="flex items-center gap-2 font-semibold text-gray-900 dark:text-[#fff] text-base sm:text-lg lg:text-lg">
                 Favourite Assets
-                {favoriteAssets && favoriteAssets.length > 0 && (
+                {((favoriteAssets && favoriteAssets.length > 0) || (allFavoriteMarketsToShow && allFavoriteMarketsToShow.length > 0)) && (
                   <>
                     <button
+                      type="button"
                       className="bg-none border-none text-[#1D8751] text-xl sm:text-2xl lg:text-2xl font-semibold leading-none cursor-pointer px-1 sm:px-2 lg:px-2 ml-1 sm:ml-2 lg:ml-2 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center justify-center hover:opacity-70 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        const scrollContainer = document.getElementById("fav-scroll");
-                        if (scrollContainer) {
-                          const scrollAmount = scrollContainer.clientWidth * 0.8;
-                          scrollContainer.scrollBy({ left: -scrollAmount, behavior: "smooth" });
+                        if (favScrollRef.current) {
+                          const scrollAmount = favScrollRef.current.clientWidth * 0.8;
+                          favScrollRef.current.scrollBy({ left: -scrollAmount, behavior: "smooth" });
                         }
                       }}
                       title="Scroll left"
@@ -791,14 +803,14 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
                       &lt;
                     </button>
                     <button
+                      type="button"
                       className="bg-none border-none text-[#1D8751] text-xl sm:text-2xl lg:text-2xl font-semibold leading-none cursor-pointer px-1 sm:px-2 lg:px-2 ml-1 min-h-[44px] sm:min-h-0 lg:min-h-0 flex items-center justify-center hover:opacity-70 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        const scrollContainer = document.getElementById("fav-scroll");
-                        if (scrollContainer) {
-                          const scrollAmount = scrollContainer.clientWidth * 0.8;
-                          scrollContainer.scrollBy({ left: scrollAmount, behavior: "smooth" });
+                        if (favScrollRef.current) {
+                          const scrollAmount = favScrollRef.current.clientWidth * 0.8;
+                          favScrollRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
                         }
                       }}
                       title="Scroll right"
@@ -820,115 +832,119 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
 
             {/* Favourite Assets Cards Row */}
             <div
+              ref={favScrollRef}
               id="fav-scroll"
               className="
-                flex gap-2 sm:gap-3 lg:gap-4 mb-4 sm:mb-6 lg:mb-8 w-full overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory pb-2
+                flex gap-2 sm:gap-3 lg:gap-4 mb-4 sm:mb-6 lg:mb-8 w-full overflow-x-auto overflow-y-hidden scrollbar-hide scroll-smooth snap-x snap-mandatory pb-2
               "
-              style={{ WebkitOverflowScrolling: "touch" }}
+              style={{ WebkitOverflowScrolling: "touch", scrollBehavior: "smooth" }}
             >
               {loadingAssets ? (
                 <div className="flex items-center justify-center min-w-[250px]">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#13B562]"></div>
                 </div>
-              ) : hasRemoteFavoriteAssets ? (
-                (favoriteAssets ?? []).map((asset: FavoriteAsset) => {
-                  const dummyData = DUMMY_ASSET_DATA[asset.asset_symbol] || {
-                    symbol: (asset.asset_symbol ?? "").split(" ")[0],
-                    price: 0,
-                    change: "+0.00%",
-                  };
+              ) : hasRemoteFavoriteAssets || showLocalFavoriteFallback ? (
+                <>
+                  {/* Render remote favorites first */}
+                  {(favoriteAssets ?? []).map((asset: FavoriteAsset) => {
+                    const dummyData = DUMMY_ASSET_DATA[asset.asset_symbol] || {
+                      symbol: (asset.asset_symbol ?? "").split(" ")[0],
+                      price: 0,
+                      change: "+0.00%",
+                    };
 
-                  return (
-                    <div
-                      key={asset.favorite_asset_id}
-                      className="bg-white dark:bg-[#1D1D23] rounded-xl sm:rounded-2xl lg:rounded-2xl p-3 sm:p-4 lg:p-4 flex items-center gap-2 sm:gap-3 lg:gap-3 border border-[#E8EFF5] dark:border-[#35353E] relative flex-shrink-0 w-[85%] sm:w-[45%] md:w-[30%] lg:w-[30%]"
-                    >
-                      <div className="w-8 h-8 sm:w-8 sm:h-8 lg:w-8 lg:h-8 rounded-full flex-shrink-0">
-                        {asset.asset_image &&
-                        typeof asset.asset_image === "string" &&
-                        asset.asset_image.trim() !== "" ? (
-                          <img
-                            src={asset.asset_image}
-                            alt={asset.asset_symbol}
-                            className="object-cover w-8 h-8 rounded-full"
-                            onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).style.display =
-                                "none";
-                            }}
-                          />
-                        ) : (
-                          <CoinIcon
-                            image={null}
-                            symbol={asset.asset_symbol || ""}
-                            size={32}
-                          />
-                        )}
+                    return (
+                      <div
+                        key={asset.favorite_asset_id}
+                        className="bg-white dark:bg-[#1D1D23] rounded-xl sm:rounded-2xl lg:rounded-2xl p-3 sm:p-4 lg:p-4 flex items-center gap-2 sm:gap-3 lg:gap-3 border border-[#E8EFF5] dark:border-[#35353E] relative flex-shrink-0 min-w-[200px] sm:min-w-[220px] lg:min-w-[250px]"
+                      >
+                        <div className="w-8 h-8 sm:w-8 sm:h-8 lg:w-8 lg:h-8 rounded-full flex-shrink-0">
+                          {asset.asset_image &&
+                          typeof asset.asset_image === "string" &&
+                          asset.asset_image.trim() !== "" ? (
+                            <img
+                              src={asset.asset_image}
+                              alt={asset.asset_symbol}
+                              className="object-cover w-8 h-8 rounded-full"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).style.display =
+                                  "none";
+                              }}
+                            />
+                          ) : (
+                            <CoinIcon
+                              image={null}
+                              symbol={asset.asset_symbol || ""}
+                              size={32}
+                            />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-[#051015] dark:text-white truncate text-sm sm:text-base lg:text-base">
+                            {dummyData.symbol}
+                          </div>
+                          <div className="text-xs text-[#788099] dark:text-[#788099] truncate">
+                            {asset.asset_symbol}
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="font-bold text:[#051015] dark:text-white whitespace-nowrap text-sm sm:text-base lg:text-base">
+                            $
+                            {dummyData.price.toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 8,
+                            })}
+                          </div>
+                          <div
+                            className={`text-xs whitespace-nowrap ${
+                              dummyData.change.startsWith("+")
+                                ? "text-[#1D8751]"
+                                : "text-[#1D8751]"
+                            }`}
+                          >
+                            {dummyData.change}
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-[#051015] dark:text-white truncate text-sm sm:text-base lg:text-base">
-                          {dummyData.symbol}
-                        </div>
-                        <div className="text-xs text-[#788099] dark:text-[#788099] truncate">
-                          {asset.asset_symbol}
-                        </div>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <div className="font-bold text:[#051015] dark:text-white whitespace-nowrap text-sm sm:text-base lg:text-base">
-                          $
-                          {dummyData.price.toLocaleString(undefined, {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 8,
-                          })}
-                        </div>
-                        <div
-                          className={`text-xs whitespace-nowrap ${
-                            dummyData.change.startsWith("+")
-                              ? "text-[#1D8751]"
-                              : "text-[#1D8751]"
-                          }`}
-                        >
-                          {dummyData.change}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : showLocalFavoriteFallback ? (
-                localFavoriteMarkets.map((market) => {
-                  const priceChange = market.price_change_percentage_24h ?? 0;
-                  const isPositive = priceChange >= 0;
+                    );
+                  })}
+                  {/* Then render local favorites that aren't in remote favorites */}
+                  {allFavoriteMarketsToShow.map((market) => {
+                    const priceChange = market.price_change_percentage_24h ?? 0;
+                    const isPositive = priceChange >= 0;
 
-                  return (
-                    <div
-                      key={`local-${market.id}`}
-                      className="bg-white dark:bg-[#1D1D23] rounded-xl sm:rounded-2xl lg:rounded-2xl p-3 sm:p-4 lg:p-4 flex items-center gap-2 sm:gap-3 lg:gap-3 border border-[#E8EFF5] dark:border-[#35353E] relative flex-shrink-0 w-[85%] sm:w-[45%] md:w-[30%] lg:w-[30%]"
-                    >
-                      <div className="w-8 h-8 sm:w-8 sm:h-8 lg:w-8 lg:h-8 rounded-full flex-shrink-0">
-                        <CoinIcon image={market.image} symbol={market.symbol} size={32} />
+                    return (
+                      <div
+                        key={`local-${market.id}`}
+                        className="bg-white dark:bg-[#1D1D23] rounded-xl sm:rounded-2xl lg:rounded-2xl p-3 sm:p-4 lg:p-4 flex items-center gap-2 sm:gap-3 lg:gap-3 border border-[#E8EFF5] dark:border-[#35353E] relative flex-shrink-0 min-w-[200px] sm:min-w-[220px] lg:min-w-[250px]"
+                      >
+                        <div className="w-8 h-8 sm:w-8 sm:h-8 lg:w-8 lg:h-8 rounded-full flex-shrink-0">
+                          <CoinIcon image={market.image} symbol={market.symbol} size={32} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-[#051015] dark:text-white truncate text-sm sm:text-base lg:text-base">
+                            {market.symbol.toUpperCase()}
+                          </div>
+                          <div className="text-xs text-[#788099] dark:text-[#788099] truncate">
+                            {market.name}
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="font-bold text:[#051015] dark:text-white whitespace-nowrap text-sm sm:text-base lg:text-base">
+                            {formatPrice(market.current_price)}
+                          </div>
+                          <div
+                            className={`text-xs whitespace-nowrap ${
+                              isPositive ? "text-[#1D8751]" : "text-[#FF6B6B]"
+                            }`}
+                          >
+                            {formatPercentage(priceChange)}
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-[#051015] dark:text-white truncate text-sm sm:text-base lg:text-base">
-                          {market.symbol.toUpperCase()}
-                        </div>
-                        <div className="text-xs text-[#788099] dark:text-[#788099] truncate">
-                          {market.name}
-                        </div>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <div className="font-bold text:[#051015] dark:text-white whitespace-nowrap text-sm sm:text-base lg:text-base">
-                          {formatPrice(market.current_price)}
-                        </div>
-                        <div
-                          className={`text-xs whitespace-nowrap ${
-                            isPositive ? "text-[#1D8751]" : "text-[#FF6B6B]"
-                          }`}
-                        >
-                          {formatPercentage(priceChange)}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
+                    );
+                  })}
+                </>
               ) : (
                 <div className="col-span-3 text-center text-gray-500 text-sm sm:text-base lg:text-base">
                   No favorite assets found. Add some to see them here.

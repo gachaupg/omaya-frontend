@@ -976,16 +976,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               dark:text-white text-black bg-transparent text-base py-2 hover:bg-[#23232B] transition"
                 variant="outline"
                 onClick={() => {
-                  setAmount("");
-                  setOrderMin("");
-                  setOrderMax("");
-                  setCommission("1.00");
-                  setPaymentMethod(paymentMethods[0].value);
-                  setProvider(providers[0].value);
-                  setTimeLimit(timeLimits[0].value);
-                  setTerms("");
-                  setAutoReply("");
-                  setErrors({});
+                  router.push("/dashboard/p2p/");
                 }}
               >
                 Cancel Post

@@ -525,7 +525,7 @@ const Card = ({
 
   return (
     <div
-      className={`bg-[#23232B] shadow-md w-full ${className}`}
+      className={`bg-card shadow-md w-full ${className}`}
       style={{ minHeight, padding: "1rem" }}
     >
       {children}
@@ -834,7 +834,7 @@ const LineCharts = React.memo(
       <div className="w-full">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 w-full">
           {/* Exchange Overview */}
-          <Card className="w-full rounded-none lg:rounded-2xl bg-transparent border border-[#35353E]">
+          <Card className="w-full rounded-none lg:rounded-2xl bg-card border border-[#35353E]">
             <h3 className="text-black dark:text-white text-xs sm:text-sm md:text-[14px] mb-2 font-semibold">
               Exchange Overview (USD)
             </h3>
@@ -884,7 +884,7 @@ const LineCharts = React.memo(
             </div>
           </Card>
           {/* P2P Overview */}
-          <Card className="w-full rounded-none lg:rounded-2xl bg-transparent border border-[#35353E]">
+          <Card className="w-full rounded-none lg:rounded-2xl bg-card border border-[#35353E]">
             <h3 className="dark:text-wh text-[#051015] dark:text-white text-xs sm:text-sm md:text-[14px] mb-2 font-semibold">
               P2P Overview (USD)
             </h3>
@@ -933,7 +933,7 @@ const LineCharts = React.memo(
               />
             </div>
           </Card>
-          <Card className="w-full rounded-none lg:rounded-2xl bg-transparent border border-[#35353E]">
+          <Card className="w-full rounded-none lg:rounded-2xl bg-card border border-[#35353E]">
             {/* Header */}
             <div className="flex items-center justify-between px-4 pt-4 pb-3">
               <h3 className="text-sm sm:text-base md:text-lg font-semibold dark:text-white">
@@ -980,7 +980,7 @@ const LineCharts = React.memo(
             </div>
           </Card>
 
-          <Card className="w-full rounded-none lg:rounded-2xl bg-transparent border border-[#35353E]">
+          <Card className="w-full rounded-none lg:rounded-2xl bg-card border border-[#35353E]">
             {/* Header */}
             <div className="flex items-center justify-between px-4 pt-4 pb-3">
               <h3 className="text-sm sm:text-base md:text-lg font-semibold dark:text-white">
