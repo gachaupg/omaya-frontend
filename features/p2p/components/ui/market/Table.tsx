@@ -139,11 +139,11 @@ const MarketTable: React.FC<MarketTableProps> = ({
             </div>
             <div
               className="min-w-[200px] flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
-              onClick={() => handleSort("payment")}
+              // onClick={() => handleSort("payment")}
             >
-              Payment {getSortIcon("payment")}
+              Payment 
             </div>
-            <div className="min-w-[120px] text-right">Trade</div>
+            <div className="min-w-[120px] text-center">Trade</div>
           </div>
 
           {/* ---------------- empty state --------------- */}
@@ -256,7 +256,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                   </div>
 
                   {/* Trade */}
-                  <div className="flex justify-end gap-2 min-w-[200px]">
+                  <div className="flex justify-center gap-2 min-w-[200px]">
                     <Button
                       width={116}
                       height={35}
