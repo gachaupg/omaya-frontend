@@ -51,7 +51,7 @@ export default function Sidebar() {
                       "flex items-center px-3 md:px-4 lg:px-6 py-3 rounded-lg text-sm md:text-base font-medium gap-2 md:gap-3 lg:gap-4 transition",
                       "w-full",
                       isActive
-                        ? "bg-[#E1E1E1] dark:bg-[#303038] text-[#051015] dark:text-white"
+                        ? "bg-[#E1E1E1] dark:bg-[#303038] text-muted-foreground dark:text-white"
                         : "text-[#727272] dark:hover:text-white hover:bg-white dark:hover:bg-[#23262F]"
                     )}
                   >
@@ -180,7 +180,7 @@ export default function Sidebar() {
                     className={clsx(
                       "flex items-center justify-center px-2.5 sm:px-3 py-2.5 rounded-lg text-xs sm:text-sm font-medium gap-1.5 sm:gap-2 whitespace-nowrap transition min-h-[44px]",
                       isActive
-                        ? "dark:bg-[#303038] bg-[#E1E1E1] dark:text-white text-[#051015]"
+                        ? "dark:bg-[#303038] bg-[#E1E1E1] dark:text-white text-muted-foreground"
                         : "text-[#727272] dark:hover:text-white hover:text-[#051015] dark:hover:bg-[#23262F] hover:bg-gray-100"
                     )}
                   >
