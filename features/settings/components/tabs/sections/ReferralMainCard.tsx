@@ -203,7 +203,7 @@ const ReferralMainCard: React.FC<Props> = ({
           onClick={() => setShowQRCode(false)}
         >
           <div
-            className="bg-white dark:bg-[var(--bg-color)] rounded-2xl p-6 max-w-sm w-full shadow-xl"
+            className="bg-white dark:bg-[var(--card-color)] rounded-2xl p-6 max-w-sm w-full shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">

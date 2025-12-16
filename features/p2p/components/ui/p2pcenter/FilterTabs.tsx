@@ -175,7 +175,7 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
   const MyAdsFilterBar = () => (
     <div className="flex flex-col mb-6 sm:flex-row gap-4 items-start sm:items-center justify-between w-full">
       {/* Token */}
-      <div className="flex items-center bg-gray-100 dark:bg-[#23242A] rounded-full px-5 py-2.5 w-full sm:w-auto">
+      <div className="flex items-center bg-gray-100 dark:bg-[var(--card-color)] rounded-full px-5 py-2.5 w-full sm:w-auto">
         <img
           src="https://res.cloudinary.com/pitz/image/upload/v1746710369/TRC20_tvugf8.png"
           alt="Tether"
@@ -193,7 +193,7 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
       </div>
       {/* Type */}
       <select
-        className="bg-gray-100 dark:bg-[#23242A] rounded-full px-5 py-2.5 text-gray-900 dark:text-white outline-none w-full sm:w-auto text-base font-semibold"
+        className="bg-gray-100 dark:bg-[var(--card-color)] rounded-full px-5 py-2.5 text-gray-900 dark:text-white outline-none w-full sm:w-auto text-base font-semibold"
         value={filters.type}
         onChange={(e) => setFilters((p) => ({ ...p, type: e.target.value }))}
       >
@@ -203,7 +203,7 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
       </select>
       {/* Status */}
       <select
-        className="bg-gray-100 dark:bg-[#23242A] rounded-full px-5 py-2.5 text-gray-900 dark:text-white outline-none w-full sm:w-auto text-base font-semibold"
+        className="bg-gray-100 dark:bg-[var(--card-color)] rounded-full px-5 py-2.5 text-gray-900 dark:text-white outline-none w-full sm:w-auto text-base font-semibold"
         value={filters.status}
         onChange={(e) => setFilters((p) => ({ ...p, status: e.target.value }))}
       >
@@ -213,7 +213,7 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
       </select>
       {/* Date */}
       <select
-        className="bg-gray-100 dark:bg-[#23242A] rounded-full px-5 py-2.5 text-gray-900 dark:text-white outline-none w-full sm:w-auto text-base font-semibold"
+        className="bg-gray-100 dark:bg-[var(--card-color)] rounded-full px-5 py-2.5 text-gray-900 dark:text-white outline-none w-full sm:w-auto text-base font-semibold"
         value={filters.date}
         onChange={(e) => setFilters((p) => ({ ...p, date: e.target.value }))}
       >

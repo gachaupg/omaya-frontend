@@ -22,7 +22,8 @@ const ClientIdSection: React.FC<ClientIdSectionProps> = ({ user }) => {
       <div className="text-sm font-bold dark:text-white text-gray-900 mb-1">
         Client ID
       </div>
-      <section className="dark:bg-transparent bg-white rounded-xl border border-[#E8EFF5] dark:border-[#35353E] p-3">
+      <section className="dark:bg-[var(--card-color)] bg-white rounded-xl border border-[#E8EFF5] dark:border-[#35353E] w-full">
+        <div className="p-4 sm:p-6">
           <label className="dark:text-[#fff] text-gray-700 text-xs mb-1 block">
             Your unique ID
           </label>
@@ -121,6 +122,7 @@ const ClientIdSection: React.FC<ClientIdSectionProps> = ({ user }) => {
               </svg>
             </button>
           </div>
+        </div>
       </section>
     </>
   );

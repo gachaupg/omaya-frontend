@@ -416,7 +416,7 @@ const settingsSlice = createSlice({
     },
     setThemeMode: (
       state,
-      action: PayloadAction<"light" | "dark" | "system">
+      action: PayloadAction<"light" | "dark" | "deem" | "system">
     ) => {
       state.theme.mode = action.payload;
     },

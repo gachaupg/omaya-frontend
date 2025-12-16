@@ -118,7 +118,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
       <div className="overflow-x-auto rounded-2xl">
         <div className="min-w-0 md:min-w-[800px] w-full overflow-hidden border bg-white border-gray-200 rounded-2xl dark:bg-[var(--card-color)] dark:border-[#35353E]">
           {/* ---------------- Desktop header row ---------------- */}
-          <div className="hidden md:grid grid-cols-5 py-3 px-4 border-b bg-gray-50 border-gray-200 text-xs font-semibold text-gray-500 dark:bg-[var(--card-color)] dark:border-[#35353E] dark:text-[#788099]">
+          <div className="hidden md:grid grid-cols-5 py-3 px-4 border-b bg-gray-50 border-gray-200 text-xs font-semibold text-gray-500 dark:bg-[#35353E] dark:border-[#35353E] dark:text-[#788099]">
             <div
               className="min-w-[200px] flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
               onClick={() => handleSort("advertiser")}
@@ -166,7 +166,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
             filteredData.map((row, idx) => (
               <React.Fragment key={idx}>
                 {/* Desktop Grid View */}
-                <div className="hidden md:grid grid-cols-5 items-center py-4 px-4 border-b last:border-b-0 bg-white hover:bg-gray-50 border-gray-200 dark:bg-[var(--bg-color)] dark:hover:bg-[#2d2d36] dark:border-[#35353E]">
+                <div className="hidden md:grid grid-cols-5 items-center py-4 px-4 border-b last:border-b-0 bg-white hover:bg-gray-50 border-gray-200 dark:bg-[var(--card-color)] dark:hover:bg-[#2d2d36] dark:border-[#35353E]">
                   {/* Advertiser */}
                   <div className="flex flex-col gap-1 min-w-[200px]">
                     <div className="flex items-center gap-2">
@@ -263,7 +263,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                       borderRadius={10}
                       variant={activeTab === "sell" ? "secondary" : "primary"}
                       size="sm"
-                      className="min-w-[90px] font-semibold mr-2"
+                      className="min-w-[90px] font-semibold"
                       onClick={() => handleTradeClick(idx)}
                     >
                       {activeTab === "sell" ? "SELL USDT" : "BUY USDT"}
@@ -273,7 +273,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                 </div>
 
                 {/* Mobile Card View */}
-                <div className="md:hidden flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 md:p-4 border-b last:border-b-0 bg-white hover:bg-gray-50 border-gray-200 dark:bg-[var(--bg-color)] dark:hover:bg-[#2d2d36] dark:border-[#35353E]">
+                <div className="md:hidden flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 md:p-4 border-b last:border-b-0 bg-white hover:bg-gray-50 border-gray-200 dark:bg-[var(--card-color)] dark:hover:bg-[#2d2d36] dark:border-[#35353E]">
                   {/* Advertiser Section */}
                   <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-[#35353E]">
                     {row.advertiser_photo ? (
@@ -384,7 +384,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                   </div>
 
                   {/* Trade Button */}
-                  <div className="pt-2">
+                  <div className="pt-2 px-1">
                     <Button
                       width="100%"
                       height={40}

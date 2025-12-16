@@ -180,7 +180,7 @@ const Withdraw: React.FC = () => {
     <div className="flex justify-center items-center min-h-screen w-full pt-2">
       <Card
         className="w-full h-full min-h-screen sm:min-h-[calc(100vh-2rem)]
-                       bg-white dark:bg-[#1D1D23]
+                       bg-white dark:bg-[var(--card-color)]
                        border border-gray-200 dark:border-[#35353E]
                        shadow-xl rounded-[24px]
                        px-4 sm:px-8 md:px-12 pt-4"

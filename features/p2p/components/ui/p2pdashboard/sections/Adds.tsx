@@ -905,8 +905,11 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
 
             <Button
               borderRadius={24}
-              className="w-fit bg-[#1D8751] h-10 text-white hover:bg-[#1D8751]/90"
-              onClick={() => setShowPaymentModal(true)}
+              className="flex-1 rounded-[24px] border-1 border-[#1D8751] dark:text-white text-black bg-transparent text-base py-2 hover:bg-[#23232B] transition"
+              variant="outline"
+              onClick={() => {
+                router.push("/dashboard/p2p/");
+              }}
             >
               Add Payment Method
             </Button>

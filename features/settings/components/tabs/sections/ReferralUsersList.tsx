@@ -91,7 +91,7 @@ const ReferralUsersList: React.FC<Props> = ({ referredUsers, loading }) => {
     >
       <div
         className="w-20 h-20 mb-4 flex items-center justify-center rounded-full
-                      bg-gray-100 dark:bg-[var(--bg-color)] border border-gray-200
+                      bg-gray-100 dark:bg-[var(--card-color)] border border-gray-200
                       dark:border-[#35353F]"
       >
         <svg
@@ -137,7 +137,7 @@ const ReferralUsersList: React.FC<Props> = ({ referredUsers, loading }) => {
               {/* User Row */}
               <div
                 className={`flex items-center gap-4 w-full px-6 py-4
-                           bg-white dark:bg-[var(--bg-color)]
+                           bg-white dark:bg-[var(--card-color)]
                            ${index !== referredUsers.length - 1 ? "border-b border-[#35353F]" : ""}`}
               >
                 {/* OA Avatar */}
@@ -176,7 +176,7 @@ const ReferralUsersList: React.FC<Props> = ({ referredUsers, loading }) => {
 
               {/* Expanded Details */}
               {expandedUser === u.id && (
-                <div className="px-6 py-6 bg-transparent dark:bg-[var(--bg-color)] border-t border-[#DDE3EE] dark:border-[#35353F] rounded-b-[18px]">
+                <div className="px-6 py-6 bg-transparent dark:bg-[var(--card-color)] border-t border-[#DDE3EE] dark:border-[#35353F] rounded-b-[18px]">
                   <dl className="divide-y divide-[#DDE3EE] dark:divide-[#35353F]">
                     {[
                       {

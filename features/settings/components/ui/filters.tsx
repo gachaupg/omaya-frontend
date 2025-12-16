@@ -170,10 +170,9 @@ const Filters = () => {
             <button
               key={tab.label}
               className={`flex flex-row items-center justify-start gap-2 transition-all duration-150 focus:outline-none w-full px-3 py-2 border-b dark:border-[#35353E] border-gray-300 last:border-b-0
-                ${
-                  activeIdx === idx
-                    ? "bg-[#1D8751] text-white font-normal"
-                    : "bg-transparent dark:text-white text-[#0D0D0D] hover:dark:bg-[#23232a] hover:bg-gray-100 font-normal"
+                ${activeIdx === idx
+                  ? "bg-[#1D8751] text-white font-normal"
+                  : "bg-transparent dark:text-white text-[#0D0D0D] hover:dark:bg-[#23232a] hover:bg-gray-100 font-normal"
                 }
               `}
               onClick={() => {
@@ -194,7 +193,7 @@ const Filters = () => {
       </div>
 
       {/* Desktop: Horizontal tabs */}
-      <div className="hidden md:flex items-center justify-between rounded-lg border px-3 py-2 dark:bg-[#1D1D23] bg-white dark:border-[#35353E] border-gray-300 w-full h-[48px]">
+      <div className="hidden md:flex items-center justify-between rounded-xl border-2 px-4 py-3 dark:bg-[#1D1D23] bg-white dark:border-accent border-border w-full overflow-x-auto overflow-y-hidden whitespace-nowrap">
         {tabs.map((tab, idx) => (
           <button
             key={tab.label}
@@ -202,12 +201,11 @@ const Filters = () => {
             onClick={() => setActiveIdx(idx)}
             type="button"
           >
-            <span className={`inline-flex flex-row items-center justify-center gap-1.5 px-3 py-2 rounded-[24px] transition-colors duration-150 ${
-              activeIdx === idx
+            <span className={`inline-flex flex-row items-center justify-center gap-1.5 px-3 py-2 rounded-3xl min-w-32 w-max transition-colors duration-150 ${activeIdx === idx
                 ? "bg-[#1D8751] text-white"
                 : "bg-transparent"
-            }`}>
-              <span className="flex items-center justify-center flex-shrink-0">{tab.icon}</span>
+              }`}>
+              <span className="flex items-center justify-center shrink-0">{tab.icon}</span>
               <span className="text-xs whitespace-nowrap">{t(tab.label, tab.label)}</span>
             </span>
           </button>
@@ -222,7 +220,7 @@ const Filters = () => {
           </div>
         </div>
         {!isReferralWithdrawActive && (
-          <div className="w-full lg:w-[300px] lg:flex-shrink-0">
+          <div className="w-full lg:w-sm lg:flex-shrink-0">
             <Stats onSupportClick={() => setShowHelpSupport((prev) => !prev)} />
           </div>
         )}

@@ -335,17 +335,27 @@ export default function MarketingPage() {
   return (
     <div>
       <section
-        className="relative min-h-screen pt-18 pb-16 mx-auto overflow-visible bg-[#0A0A0A] dark:bg-[#0A0A0A] bg-white"
+        className="relative min-h-screen pt-18 pb-16 mx-auto overflow-visible bg-white dark:bg-[var(--bg-color)]"
       >
-        {/* Green glowing particles background */}
+        {/* Green and Purple glowing particles background */}
         <div className="absolute inset-0 overflow-hidden">
-          {/* Glowing particles */}
+          {/* Green glowing particles */}
           <div className="absolute top-20 left-10 w-2 h-2 bg-[#1D8751] rounded-full opacity-60 blur-sm animate-pulse"></div>
           <div className="absolute top-40 right-20 w-3 h-3 bg-[#1D8751] rounded-full opacity-40 blur-md animate-pulse" style={{ animationDelay: '0.5s' }}></div>
           <div className="absolute bottom-32 left-1/4 w-2 h-2 bg-[#1D8751] rounded-full opacity-50 blur-sm animate-pulse" style={{ animationDelay: '1s' }}></div>
           <div className="absolute top-1/3 right-1/3 w-2.5 h-2.5 bg-[#1D8751] rounded-full opacity-45 blur-sm animate-pulse" style={{ animationDelay: '1.5s' }}></div>
           <div className="absolute bottom-20 right-1/4 w-3 h-3 bg-[#1D8751] rounded-full opacity-35 blur-md animate-pulse" style={{ animationDelay: '2s' }}></div>
           <div className="absolute top-1/2 left-1/3 w-2 h-2 bg-[#1D8751] rounded-full opacity-55 blur-sm animate-pulse" style={{ animationDelay: '2.5s' }}></div>
+          
+          {/* Purple glowing particles */}
+          <div className="absolute top-60 right-1/4 w-2.5 h-2.5 bg-purple-500 rounded-full opacity-40 blur-md animate-pulse" style={{ animationDelay: '0.3s' }}></div>
+          <div className="absolute bottom-40 left-1/3 w-2 h-2 bg-purple-400 rounded-full opacity-50 blur-sm animate-pulse" style={{ animationDelay: '0.8s' }}></div>
+          <div className="absolute top-1/4 left-1/5 w-3 h-3 bg-purple-500 rounded-full opacity-35 blur-lg animate-pulse" style={{ animationDelay: '1.2s' }}></div>
+          <div className="absolute bottom-1/3 right-1/5 w-2 h-2 bg-purple-400 rounded-full opacity-45 blur-sm animate-pulse" style={{ animationDelay: '1.8s' }}></div>
+          
+          {/* Large purple/green gradient backgrounds */}
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-purple-500/20 via-[#1D8751]/15 to-purple-600/10 dark:from-purple-500/30 dark:via-[#1D8751]/25 dark:to-purple-600/20 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-tr from-[#1D8751]/20 via-purple-500/15 to-[#13B562]/10 dark:from-[#1D8751]/30 dark:via-purple-500/25 dark:to-[#13B562]/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
           
           {/* Subtle gradient overlays for depth */}
           <div 
@@ -354,7 +364,9 @@ export default function MarketingPage() {
               background: `
                 radial-gradient(circle at 20% 30%, ${tokens.colors.brand.lightGreen}15 0%, transparent 50%),
                 radial-gradient(circle at 80% 70%, ${tokens.colors.brand.lightGreen}10 0%, transparent 50%),
-                radial-gradient(circle at 50% 50%, ${tokens.colors.brand.hero}08 0%, transparent 60%)
+                radial-gradient(circle at 50% 50%, ${tokens.colors.brand.hero}08 0%, transparent 60%),
+                radial-gradient(circle at 70% 40%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 30% 70%, rgba(168, 85, 247, 0.10) 0%, transparent 50%)
               `,
             }}
           ></div>
@@ -405,7 +417,7 @@ export default function MarketingPage() {
               {/* Green pill banner */}
               <div className="inline-flex items-center justify-center md:justify-start">
                 <span className="bg-[#1D8751]/10 border border-[#1D8751] text-[#1D8751] px-3 py-1 rounded-full text-xs sm:text-sm font-medium">
-                  Somalia's #1 Crypto Exchange.
+                East Africa #1 Crypto Exchange.
                 </span>
               </div>
 
@@ -419,9 +431,11 @@ export default function MarketingPage() {
               </h1>
 
               {/* Description text */}
-              <p className="text-gray-700 dark:text-white/90 leading-relaxed max-w-full sm:max-w-2xl md:max-w-3xl mx-auto lg:mx-0 px-4 sm:px-0 text-xs sm:text-sm md:text-sm lg:text-base">
-                Experience lightning-fast trades, ultra-low fees, and bank-grade security.{" "}
-                <span className="text-[#1D8751]">Join 500,000+ traders worldwide.</span>
+              <p className="leading-relaxed max-w-full sm:max-w-2xl md:max-w-3xl mx-auto lg:mx-0 px-4 sm:px-0 text-xs sm:text-sm md:text-sm lg:text-base">
+                <span className="text-gray-900 dark:text-[#788099]">
+                  Experience lightning-fast trades, ultra-low fees, and bank-grade security.
+                </span>{" "}
+                <span className="text-[#1D8751] dark:text-[#13B562]">Join 500,000+ traders worldwide.</span>
               </p>
 
               {/* CTA Buttons */}
@@ -478,7 +492,7 @@ export default function MarketingPage() {
         </div>
       </section>
 
-      <div className="pt-4 sm:pt-6 md:pt-8 pb-12 sm:pb-16 md:pb-20 px-4 md:px-[100px] bg-white dark:bg-[#0A0A0A]">
+      <div className="pt-4 sm:pt-6 md:pt-8 pb-12 sm:pb-16 md:pb-20 px-4 md:px-[100px] bg-white dark:bg-[var(--bg-color)]">
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl">
           {/* Green pill banner */}
           <div className="flex justify-center mb-4 sm:mb-6">
@@ -493,9 +507,7 @@ export default function MarketingPage() {
               {t(
                 "marketing.achievements.title.leading",
                 "Celebrating Success:"
-              )}
-            </span>{" "}
-            <span className="text-[#1D8751]">
+              )}{" "}
               {t(
                 "marketing.achievements.title.highlight",
                 "Key Achievements"
@@ -570,7 +582,7 @@ export default function MarketingPage() {
                   
                   {/* Number */}
                   <div className="text-[#1D8751] text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-3">
-                    {achievement.value}
+                    {achievement.value}+
                   </div>
                   
                   {/* Title */}
@@ -650,7 +662,7 @@ export default function MarketingPage() {
       {/* Supported Assets Section*/}
       <div
         id="supported-assets"
-        className="w-full bg-white dark:bg-[#0A0A0A] pt-4 md:pt-6 pb-16 px-4 md:px-[100px] relative overflow-hidden"
+        className="w-full bg-white dark:bg-[var(--bg-color)] pt-4 md:pt-6 pb-16 px-4 md:px-[100px] relative overflow-hidden"
       >
         {/* Subtle green glowing dots background */}
         <div className="absolute inset-0 overflow-hidden">
@@ -661,6 +673,11 @@ export default function MarketingPage() {
 
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl relative z-10">
           {/* Section Title */}
+           <div className="flex justify-center mb-2">
+             <span className="border border-[#1D8751] bg-[#1D8751]/10 text-[#1D8751] text-xs sm:text-sm md:text-base font-medium px-3 py-1 rounded-[24px] inline-flex items-center justify-center">
+               SUPPORTED ASSETS
+             </span>
+           </div>
           <h2 className="text-center text-2xl md:text-3xl 2xl:text-4xl font-bold mb-3">
             <span className="text-gray-900 dark:text-white">Trade Your Favorite</span>{" "}
             <span className="text-[#1D8751]">Cryptocurrencies</span>
@@ -933,7 +950,7 @@ export default function MarketingPage() {
       </div>
 
       {/* Safe & Reliable Section */}
-      <div className="w-full bg-white dark:bg-[#0A0A0A] pt-8 pb-16">
+      <div className="w-full bg-white dark:bg-[var(--bg-color)] pt-8 pb-16">
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             {/* Left Section - Image */}
@@ -949,12 +966,12 @@ export default function MarketingPage() {
                 />
                 
                 {/* Badge - Since 2015 */}
-                <div className="absolute top-4 right-4 bg-[#1D8751] rounded-full px-4 py-1.5 z-20">
+                <div className="absolute top-3 right-8 md:top-4 md:right-12 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20">
                   <span className="text-white text-xs font-medium">Since 2015</span>
                 </div>
                 
                 {/* Badge - 100K+ Users */}
-                <div className="absolute bottom-4 left-4 bg-[#1D8751] rounded-full px-4 py-1.5 z-20">
+                <div className="absolute bottom-16 left-8 md:bottom-20 md:left-12 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20">
                   <span className="text-white text-xs font-medium">100K+ Users</span>
                 </div>
               </div>
@@ -1052,7 +1069,7 @@ export default function MarketingPage() {
       </div>
 
       {/* Easy Onboarding Section */}
-      <div className="w-full bg-white dark:bg-[#0A0A0A] pt-4 md:pt-6 pb-16 md:pb-24 relative overflow-hidden">
+      <div className="w-full bg-white dark:bg-[var(--bg-color)] pt-4 md:pt-6 pb-16 md:pb-24 relative overflow-hidden">
         {/* Dark gradient background with green dots */}
         <div className="absolute inset-0 overflow-hidden">
           {/* Green glowing particles background */}
@@ -1150,7 +1167,7 @@ export default function MarketingPage() {
               ].map((step, index) => (
                 <div key={step.number} className="relative">
                   {/* Step Card */}
-                  <div className="relative bg-white dark:bg-[#1D1D23] rounded-2xl p-6 border-2 border-[#1D8751] shadow-lg hover:shadow-xl transition-all duration-300 h-full flex flex-col">
+                  <div className="relative bg-white dark:bg-[#1D1D23] rounded-3xl p-6 border-2 border-[#1D8751] shadow-lg hover:shadow-xl transition-all duration-300 h-full flex flex-col items-center text-center mx-auto">
                     {/* Number Badge - Inside card */}
                     <div className="absolute top-4 right-4 w-8 h-8 bg-[#13B562]/20 dark:bg-[#13B562]/30 rounded-full flex items-center justify-center">
                       <span className="text-[#1D8751] dark:text-[#13B562] text-sm font-bold">{step.number}</span>
@@ -1219,8 +1236,31 @@ export default function MarketingPage() {
       </div>
 
       {/* Why Choose Us Section with Phone */}
-      <section className="w-full bg-white dark:bg-[#0A0A0A] py-16 md:py-24 px-4 md:px-[100px] relative overflow-hidden">
+      <section className="w-full bg-[#050711] py-20 md:py-28 px-4 md:px-[100px] relative overflow-hidden">
+        {/* Subtle floating particles */}
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute top-16 left-1/4 w-2 h-2 bg-[#1D8751] rounded-full opacity-60 blur-sm"></div>
+          <div className="absolute top-32 right-1/3 w-3 h-3 bg-[#13B562] rounded-full opacity-40 blur-md"></div>
+          <div className="absolute bottom-24 left-1/3 w-2 h-2 bg-[#13B562] rounded-full opacity-50 blur-sm"></div>
+          <div className="absolute bottom-12 right-1/4 w-3 h-3 bg-[#1D8751] rounded-full opacity-35 blur-md"></div>
+        </div>
+
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl relative z-10">
+          {/* Top pill */}
+          <div className="flex justify-center mb-4">
+            <span className="bg-[#1D8751]/10 border border-[#1D8751] text-[#1D8751] px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium tracking-wide">
+              WHY CHOOSE US
+            </span>
+          </div>
+
+          {/* Main title */}
+          <div className="text-center mb-10">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold">
+              <span className="text-white">Why Choose </span>
+              <span className="text-[#1D8751]">Us</span>
+            </h2>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             {/* Left Side - Phone with Green Gradient Background */}
             <div className="relative flex justify-center lg:justify-start">
@@ -1228,8 +1268,8 @@ export default function MarketingPage() {
               <div className="absolute inset-0 flex items-center justify-center lg:justify-start">
                 <div className="relative w-[500px] h-[500px] lg:w-[600px] lg:h-[600px]">
                   {/* Large glowing green circles */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#1D8751]/20 via-[#13B562]/15 to-[#0E5531]/10 dark:from-[#1D8751]/40 dark:via-[#13B562]/30 dark:to-[#0E5531]/20 rounded-full blur-3xl animate-pulse"></div>
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#13B562]/15 via-[#1D8751]/10 to-transparent dark:from-[#13B562]/30 dark:via-[#1D8751]/20 dark:to-transparent rounded-full blur-2xl" style={{ animationDelay: '1s' }}></div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#1D8751]/35 via-[#13B562]/25 to-[#0E5531]/15 rounded-full blur-3xl"></div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#13B562]/20 via-[#1D8751]/15 to-transparent rounded-full blur-2xl" style={{ animationDelay: '1s' }}></div>
                 </div>
               </div>
               
@@ -1240,28 +1280,37 @@ export default function MarketingPage() {
                   alt="OMAYA Exchange Mobile App"
                   width={350}
                   height={700}
-                  className="w-[280px] md:w-[320px] lg:w-[350px] h-auto drop-shadow-2xl"
+                  className="w-[260px] sm:w-[300px] lg:w-[340px] h-auto drop-shadow-[0_25px_60px_rgba(0,0,0,0.8)]"
                   priority
                 />
               </div>
             </div>
 
             {/* Right Side - Why Choose Us Content */}
-            <div className="space-y-8">
+            <div className="relative space-y-8">
+              {/* Green gradient background behind text & cards */}
+              <div className="pointer-events-none absolute inset-0 -z-10">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#1D8751]/25 via-[#0E5531]/20 to-transparent rounded-[40px] blur-3xl opacity-70"></div>
+                <div className="absolute -top-10 -right-10 w-56 h-56 bg-[#13B562]/25 rounded-full blur-3xl opacity-80"></div>
+                <div className="absolute bottom-[-40px] left-0 w-64 h-64 bg-[#1D8751]/20 rounded-full blur-3xl opacity-60"></div>
+              </div>
+
               {/* Main Heading */}
               <div>
-                <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4">
-                  <span className="text-gray-900 dark:text-white">Fast and </span>
+                <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 text-left">
+                  <span className="text-white">Fast and </span>
                   <span className="text-[#1D8751]">Secure</span>
-                  <span className="text-gray-900 dark:text-white"> Crypto </span>
-                  <span className="text-[#1D8751]">Exchange</span>
-                </h2>
+                  <span className="text-white"> Crypto Exchange</span>
+                </h3>
+                <p className="text-sm sm:text-base md:text-lg text-gray-300 max-w-xl">
+                  Experience lightning-fast trades, ultra-low fees, and bank-grade security on a platform built for both beginners and pros.
+                </p>
               </div>
 
               {/* Feature Cards Grid */}
-              <div className="grid grid-cols-2 gap-4 md:gap-6">
+              <div className="grid grid-cols-2 gap-4 md:gap-5">
                 {/* Low Transaction Fee */}
-                <div className="bg-gray-50 dark:bg-[#1D1D23] backdrop-blur-sm rounded-xl p-5 border border-gray-200 dark:border-white/10">
+                <div className="bg-gray-50/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-gray-200/10 dark:border-white/10">
                   <div className="w-12 h-12 bg-[#1D8751] rounded-lg flex items-center justify-center mb-4">
                     <DollarSign className="w-6 h-6 text-white" />
                   </div>
@@ -1270,7 +1319,7 @@ export default function MarketingPage() {
                 </div>
 
                 {/* Secure Payment Service */}
-                <div className="bg-gray-50 dark:bg-[#1D1D23] backdrop-blur-sm rounded-xl p-5 border border-gray-200 dark:border-white/10">
+                <div className="bg-gray-50/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-gray-200/10 dark:border-white/10">
                   <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mb-4">
                     <Shield className="w-6 h-6 text-white" />
                   </div>
@@ -1279,7 +1328,7 @@ export default function MarketingPage() {
                 </div>
 
                 {/* Fast Transactions */}
-                <div className="bg-gray-50 dark:bg-[#1D1D23] backdrop-blur-sm rounded-xl p-5 border border-gray-200 dark:border-white/10">
+                <div className="bg-gray-50/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-gray-200/10 dark:border-white/10">
                   <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center mb-4">
                     <Zap className="w-6 h-6 text-white" />
                   </div>
@@ -1288,7 +1337,7 @@ export default function MarketingPage() {
                 </div>
 
                 {/* We Work 24/7 */}
-                <div className="bg-gray-50 dark:bg-[#1D1D23] backdrop-blur-sm rounded-xl p-5 border border-gray-200 dark:border-white/10">
+                <div className="bg-gray-50/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-gray-200/10 dark:border-white/10">
                   <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center mb-4">
                     <Clock className="w-6 h-6 text-white" />
                   </div>
@@ -1332,136 +1381,9 @@ export default function MarketingPage() {
       </section>
 
     {/* Benefits Section*/}
-    <div className="w-full bg-gradient-to-r from-[#0A3D1F] via-[#095E32] to-[#022E18] py-16 relative overflow-hidden">
-        {/* Faint circular patterns/rings in background */}
-        <div className="absolute inset-0 overflow-hidden">
-          {/* Large circular ring on left */}
-          <div className="absolute left-[-100px] top-1/2 transform -translate-y-1/2 w-[400px] h-[400px] border border-white/5 rounded-full"></div>
-          <div className="absolute left-[-80px] top-1/2 transform -translate-y-1/2 w-[360px] h-[360px] border border-white/5 rounded-full"></div>
-          
-          {/* Large circular ring on right */}
-          <div className="absolute right-[-100px] top-1/2 transform -translate-y-1/2 w-[400px] h-[400px] border border-white/5 rounded-full"></div>
-          <div className="absolute right-[-80px] top-1/2 transform -translate-y-1/2 w-[360px] h-[360px] border border-white/5 rounded-full"></div>
-          
-          {/* Additional subtle rings */}
-          <div className="absolute left-[10%] top-[-50px] w-[300px] h-[300px] border border-white/3 rounded-full"></div>
-          <div className="absolute right-[10%] bottom-[-50px] w-[300px] h-[300px] border border-white/3 rounded-full"></div>
-        </div>
-
-        <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4 relative z-10">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Absolute Safety */}
-            <div className="flex">
-              <div className="mr-4 relative">
-                {/* Circular ring around icon */}
-                <div className="absolute -inset-2 border border-white/10 rounded-full"></div>
-                <div className="absolute -inset-4 border border-white/5 rounded-full"></div>
-                
-                {/* Hexagonal icon container */}
-                <div
-                  className="relative w-16 h-16 bg-[#1D8751] flex items-center justify-center shadow-lg p-2"
-                  style={{
-                    clipPath:
-                      "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-                  }}
-                >
-                  {/* Shield icon with checkmark */}
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                </div>
-              </div>
-              <div>
-                <h3 className="text-white font-bold text-lg mb-2 2xl:text-xl">
-                  {t("marketing.benefits.safety.title", "Absolute Safety")}
-                </h3>
-                <p className="text-white/90 text-sm 2xl:text-base">
-                  {t(
-                    "marketing.benefits.safety.desc",
-                    "Exchange confidently with OMAYA, where safety is our top priority."
-                )}
-              </p>
-              </div>
-            </div>
-
-            {/* Fast Deposits & Withdrawals */}
-            <div className="flex">
-              <div className="mr-4 relative">
-                {/* Circular ring around icon */}
-                <div className="absolute -inset-2 border border-white/10 rounded-full"></div>
-                <div className="absolute -inset-4 border border-white/5 rounded-full"></div>
-                
-                {/* Hexagonal icon container */}
-                <div
-                  className="relative w-16 h-16 bg-[#1D8751] flex items-center justify-center shadow-lg p-2"
-                  style={{
-                    clipPath:
-                      "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-                  }}
-                >
-                  {/* Dollar sign icon with circle */}
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="10" strokeWidth="2" stroke="currentColor" fill="none" opacity="0.3" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-              </div>
-              <div>
-                <h3 className="text-white font-bold text-lg 2xl:text-xl mb-2">
-                  {t(
-                    "marketing.benefits.fast.title",
-                    "Fast Deposits & Withdrawals"
-                  )}
-                </h3>
-                <p className="text-white/90 text-sm 2xl:text-base">
-                  {t(
-                    "marketing.benefits.fast.desc",
-                    "Enjoy swift and seamless deposits and withdrawals."
-                  )}
-                </p>
-              </div>
-            </div>
-
-            {/* Invite your friend and earn */}
-            <div className="flex">
-              <div className="mr-4 relative">
-                {/* Circular ring around icon */}
-                <div className="absolute -inset-2 border border-white/10 rounded-full"></div>
-                <div className="absolute -inset-4 border border-white/5 rounded-full"></div>
-                
-                {/* Hexagonal icon container */}
-                <div
-                  className="relative w-16 h-16 bg-[#1D8751] flex items-center justify-center shadow-lg p-2"
-                  style={{
-                    clipPath:
-                      "polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)",
-                  }}
-                >
-                  {/* Users/referral icon */}
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                </div>
-              </div>
-              <div>
-                <h3 className="text-white font-bold text-lg 2xl:text-xl mb-2">
-                  {t(
-                    "marketing.benefits.invite.title",
-                    "Invite your friend and earn"
-                  )}
-                </h3>
-                <p className="text-white/90 text-sm 2xl:text-base">
-                  {t(
-                    "marketing.benefits.invite.desc",
-                    "Refer and invite your friends and earn commission on each transaction they make with us!"
-                  )}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-            </div>
-
+   <div className="w-full bg-white dark:bg-[var(--bg-color)]">
+    <img className="w-full h-auto object-contain" src="https://res.cloudinary.com/pitz/image/upload/v1765800227/Screenshot_2025-12-15_150329_l1z3zp.png" alt="" />
+   </div>
       {/* Refer and Invite Section */}
       <div className="w-full bg-white dark:bg-transparent py-4 md:py-8 my-4 md:my-6">
         <div className="w-full md:container md:mx-auto md:max-w-7xl md:px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
@@ -1481,7 +1403,7 @@ export default function MarketingPage() {
       </div>
 
       {/* Blogs Section */}
-      <div className="w-full bg-white dark:bg-[#0A0A0A] text-gray-900 dark:text-white pt-8 md:pt-12 pb-16 px-6 md:px-12 lg:px-16 xl:px-20">
+      <div className="w-full bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white pt-8 md:pt-12 pb-16 px-6 md:px-12 lg:px-16 xl:px-20">
         <div className="max-w-6xl 2xl:max-w-7xl mx-auto">
           {/* Header section */}
           <div className="text-center mb-12">
@@ -1641,7 +1563,7 @@ export default function MarketingPage() {
       {/* Contact Us Section */}
       <section
         id="contact"
-        className="w-full bg-white dark:bg-[#0A0A0A] text-gray-900 dark:text-white py-16 px-4 md:px-[100px]"
+        className="w-full bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white py-16 px-4 md:px-[100px]"
       >
         <div className="max-w-7xl 2xl:max-w-screen-2xl mx-auto">
           {/* Header Section */}
@@ -1770,7 +1692,7 @@ export default function MarketingPage() {
       {/* FAQ Section */}
       <section
         id="faq"
-        className="w-full bg-white dark:bg-[#0A0A0A] text-gray-900 dark:text-white py-16 px-4 md:px-8"
+        className="w-full bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white py-16 px-4 md:px-8"
       >
         <div className="max-w-4xl mx-auto">
           {/* Header Section */}

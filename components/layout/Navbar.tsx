@@ -229,23 +229,40 @@ const LanguageSelector = () => {
 
 const ThemeSelector = ({ isTransparentNavbar }: { isTransparentNavbar: boolean }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, isDark } = useTheme();
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
   };
 
   const selectTheme = (selectedTheme: "light" | "dark" | "deem") => {
-    if (selectedTheme === "deem") {
-      // Don't update anything for deem yet - just close dropdown
-      setDropdownOpen(false);
-      return;
-    }
     setTheme(selectedTheme);
     setDropdownOpen(false);
   };
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setDropdownOpen(false);
+      }
+    };
+
+    if (dropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [dropdownOpen]);
+
   const getThemeIcon = () => {
+    const iconClass = "w-5 h-5 sm:w-6 sm:h-6";
     if (theme === "dark") {
       return (
         <svg
@@ -259,6 +276,22 @@ const ThemeSelector = ({ isTransparentNavbar }: { isTransparentNavbar: boolean }
             strokeLinejoin="round"
             strokeWidth={2}
             d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+          />
+        </svg>
+      );
+    } else if (theme === "deem") {
+      return (
+        <svg
+          className={iconClass}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
           />
         </svg>
       );
@@ -282,10 +315,15 @@ const ThemeSelector = ({ isTransparentNavbar }: { isTransparentNavbar: boolean }
   };
 
   return (
-    <div className="relative">
-      <div
-        className={`flex items-center justify-center cursor-pointer min-h-[44px] sm:min-h-0 lg:min-h-0 px-1 sm:px-0 lg:px-0 ${
-          isTransparentNavbar ? "text-white" : "dark:text-white text-gray-900"
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        className={`flex items-center justify-center cursor-pointer min-h-[44px] sm:min-h-0 lg:min-h-0 px-1 sm:px-0 lg:px-0 border-none bg-transparent p-0 ${
+          isTransparentNavbar 
+            ? isDark 
+              ? "text-white" 
+              : "text-gray-900"
+            : "dark:text-white text-gray-900"
         }`}
         onClick={toggleDropdown}
       >
@@ -301,12 +339,12 @@ const ThemeSelector = ({ isTransparentNavbar }: { isTransparentNavbar: boolean }
         >
           <path d="M1.5 6.5l6 6 6-6h-12z" />
         </svg>
-      </div>
+      </button>
       {dropdownOpen && (
         <>
-          {/* Backdrop for mobile */}
+          {/* Backdrop for all screen sizes */}
           <div 
-            className="fixed inset-0 z-40 sm:hidden"
+            className="fixed inset-0 z-40"
             onClick={() => setDropdownOpen(false)}
           />
           <div className="fixed sm:absolute right-3 sm:right-0 top-14 sm:top-auto sm:mt-2 w-[180px] sm:w-[200px] lg:w-[250px] dark:bg-[var(--card-color)] bg-white dark:border-[#35353E] border-gray-200 rounded-lg shadow-lg z-50 max-w-[calc(100vw-1.5rem)] sm:max-w-none">
@@ -387,6 +425,11 @@ const ThemeSelector = ({ isTransparentNavbar }: { isTransparentNavbar: boolean }
                   </svg>
                   <span className="text-sm sm:text-sm lg:text-sm">Deem</span>
                 </div>
+                {theme === "deem" && (
+                  <div className="w-4 h-4 sm:w-4 sm:h-4 lg:w-4 lg:h-4 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Check className="w-3.5 h-3.5 sm:w-4 sm:h-4 lg:w-4 lg:h-4 text-[#1D8751]" />
+                  </div>
+                )}
               </div>
             </button>
           </div>
@@ -750,7 +793,6 @@ export default function Navbar() {
                   </svg>
                   Deposit
                 </button>
-
                 {/* Deposit Dropdown */}
                 {depositDropdownOpen && (
                   <div className="absolute top-full right-0 mt-2 w-md dark:bg-[#1E2329] bg-white dark:border-[#35353E] border-gray-200 border rounded shadow-xl z-[9999]">
