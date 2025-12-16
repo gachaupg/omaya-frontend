@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 import { P2POrder } from "@/features/p2p/types";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, usePathname } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store/rootReducer";
 import { AppDispatch } from "@/store/index";
@@ -19,6 +19,7 @@ import { showToast } from "@/lib/utils/toast";
 import { handleCopy } from "../../../Common/utils";
 import dynamic from "next/dynamic";
 import { RefreshCw } from "lucide-react";
+import { FaChevronRight } from "react-icons/fa";
 import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebSocket";
 
 import { logger } from '@/lib/utils/logger';
@@ -35,6 +36,7 @@ const FinalSellClient = dynamic(() => Promise.resolve(FinalSell), {
 const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const params = useParams();
   const router = useRouter();
+  const pathname = usePathname();
   const dispatch = useDispatch<AppDispatch>();
   const { singleOrder, confirmOrder, cancelLoading, confirmTradeLoading } =
     useSelector((state: RootState) => state.p2pMarket);
@@ -374,8 +376,52 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   };
 
   return (
+    <div className="md:mt-20">
+      {/* Breadcrumb */}
+      <nav
+        aria-label="Breadcrumb"
+        className="flex items-center text-sm text-gray-500 dark:text-[#A3A3C2]"
+      >
+        <ol className="inline-flex items-center md:space-x-2">
+          <li className="inline-flex items-center">
+            <a 
+              href="/dashboard" 
+              className={`px-2 py-1 rounded transition-colors ${
+                pathname === "/dashboard" || pathname?.startsWith("/dashboard/")
+                  ? "bg-[#35353E] text-white"
+                  : "dark:hover:text-muted hover:text-accent hover:bg-[#35353E] hover:text-white"
+              }`}
+            >
+              Dashboard
+            </a>
+          </li>
+          <li>
+            <div className="flex items-center">
+              <FaChevronRight className="mx-2 text-muted-foreground " size={12} />
+              <a 
+                href="/dashboard/notifications" 
+                className={`px-2 py-1 rounded transition-colors ${
+                  pathname === "/dashboard/notifications" || pathname?.startsWith("/dashboard/notifications/")
+                    ? "bg-[#35353E] text-white"
+                    : "dark:hover:text-muted hover:text-accent hover:bg-[#35353E] hover:text-white"
+                }`}
+              >
+                Notification center
+              </a>
+            </div>
+          </li>
+          <li aria-current="page">
+            <div className="flex items-center">
+              <FaChevronRight className="mx-2 text-muted-foreground " size={12} />
+              <span className="font-medium text-secondary">
+                View order
+              </span>
+            </div>
+          </li>
+        </ol>
+      </nav>
     <div className="final-buy-container grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3 md:gap-6 p-1 sm:p-2 md:p-6 min-h-screen bg-[#EEF1F4] dark:bg-[var(--bg-color)]">
-      <div className="md:col-span-2 flex flex-col mt-4 md:mt-10 gap-4 md:gap-6">
+      <div className="md:col-span-2 flex flex-col gap-4 md:gap-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <p className="text-gray-900 dark:text-white text-[13px]">
@@ -401,8 +447,24 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
         </div>
 
         <section className="advertiser-info rounded-[18px] p-2 md:p-4 flex flex-col md:flex-row items-start md:items-center gap-4 border-2 border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[var(--card-color)]">
-          <div className="icon rounded-full w-10 h-10 flex items-center justify-center text-xl font-bold bg-[#1D8751] text-white">
-            {(singleOrder?.advertiser_first_name?.[0] || singleOrder?.advertiser_name?.[0] || "?").toUpperCase()}
+          <div className="icon rounded-full w-10 h-10 flex items-center justify-center text-xl font-bold bg-[#1D8751] text-white overflow-hidden">
+            {(confirmOrder?.seller_photo || singleOrder?.advertiser_photo) ? (
+              <img
+                src={confirmOrder?.seller_photo || singleOrder?.advertiser_photo || ""}
+                alt={singleOrder?.advertiser_name || "Advertiser"}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.onerror = null;
+                  target.style.display = "none";
+                }}
+              />
+            ) : (
+              (singleOrder?.advertiser_first_name?.[0] ||
+                singleOrder?.advertiser_name?.[0] ||
+                "?"
+              ).toUpperCase()
+            )}
           </div>
           <div className="flex-1">
             <div className="text-gray-900 dark:text-white text-[13px]">
@@ -954,6 +1016,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 };

@@ -219,7 +219,7 @@ const PasswordSection: React.FC = () => {
         Password
       </div>
 
-      <section className="dark:bg-transparent bg-white rounded-xl dark:border-[#35353E] border-[#E8EFF5] border p-3 sm:p-4">
+      <section className="dark:bg-card bg-card rounded-xl dark:border-[#35353E] border-[#E8EFF5] border p-3 sm:p-4">
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3">
 
@@ -228,7 +228,7 @@ const PasswordSection: React.FC = () => {
               Password*
             </label>
 
-            <div className="flex items-center dark:bg-transparent bg-white rounded-[18px] px-3 sm:px-4 py-2 sm:py-2.5 border dark:border-[#35353E] border-[#E8EFF5]">
+            <div className="flex items-center dark:bg-card bg-card rounded-[18px] px-3 sm:px-4 py-2 sm:py-2.5 border dark:border-[#35353E] border-[#E8EFF5]">
 
               <svg width="16" height="16" viewBox="0 0 24 24" stroke="#1D8751" fill="none">
                 <rect x="3" y="11" width="18" height="8" rx="4" strokeWidth="2" />
@@ -276,7 +276,7 @@ const PasswordSection: React.FC = () => {
               Confirm password*
             </label>
 
-            <div className="flex items-center dark:bg-transparent bg-white rounded-[18px] px-3 sm:px-4 py-2 sm:py-2.5 border dark:border-[#35353E] border-[#E8EFF5]">
+            <div className="flex items-center dark:bg-card bg-card rounded-[18px] px-3 sm:px-4 py-2 sm:py-2.5 border dark:border-[#35353E] border-[#E8EFF5]">
 
               <svg width="16" height="16" viewBox="0 0 24 24" stroke="#1D8751" fill="none">
                 <rect x="3" y="11" width="18" height="8" rx="4" strokeWidth="2" />

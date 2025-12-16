@@ -142,7 +142,7 @@ const Referral: React.FC<ReferralProps> = ({ onWithdrawStateChange }) => {
 
   /* ─────────────────────────────── render ─────────────────────────── */
   return (
-    <div className={`min-h-screen text-gray-900 dark:bg-[var(--card-color)] dark:text-white w-full px-1 sm:px-2 md:px-4 pt-1 sm:pt-2 ${ activeTab === "Referral" || activeTab === "History" ? '': 'bg-white' }` }>
+    <div className={`min-h-screen text-gray-900 rounded-2xl border border-[#35353E] dark:bg-[var(--card-color)] dark:text-white w-full px-1 sm:px-2 md:px-4 pt-1 sm:pt-2 ${ activeTab === "Referral" || activeTab === "History" ? '': 'bg-white' }` }>
       <ReferralTabs
         tab={activeTab}
         setTab={setActiveTab as (tab: string) => void}

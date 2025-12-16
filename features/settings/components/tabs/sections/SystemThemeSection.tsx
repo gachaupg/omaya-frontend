@@ -2,10 +2,10 @@ import React from "react";
 import { useThemeToggle } from "../../../hooks/useThemeToggle";
 
 const SystemThemeSection: React.FC = () => {
-  const { theme, currentTheme, isDark, isLight, updating, toggleTheme } =
+  const { theme, currentTheme, isDark, isLight, isDeem, updating, toggleTheme } =
     useThemeToggle();
 
-  const handleThemeChange = (mode: "light" | "dark" | "system") => {
+  const handleThemeChange = (mode: "light" | "dark" | "deem" | "system") => {
     toggleTheme(mode);
   };
 
@@ -14,13 +14,13 @@ const SystemThemeSection: React.FC = () => {
       <div className="text-sm font-bold dark:text-white text-gray-900 mb-1">
         System Theme
       </div>
-      <section className="dark:bg-transparent bg-white rounded-xl dark:border-[#35353E] border-[#E8EFF5] border p-3 sm:p-4">
+      <section className="dark:bg-card bg-card rounded-xl dark:border-[#35353E] border-[#E8EFF5] border p-3 sm:p-4">
         <div className="flex gap-3">
           <button
             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-2xl font-semibold text-sm transition-all ${
               isLight
                 ? "bg-[#1D8751] text-white"
-                : "bg-[var(--card-color)] text-[#788099] hover:bg-[#2A2A32]"
+                : "border border-gray-400 bg-[#35353E] text-gray-300 hover:bg-[#35353E]/80"
             }`}
             onClick={() => handleThemeChange("light")}
             aria-pressed={isLight}
@@ -43,12 +43,38 @@ const SystemThemeSection: React.FC = () => {
           </button>
           <button
             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-2xl font-semibold text-sm transition-all ${
-              isDark
+              isDeem
+                ? "bg-[#1D8751] text-white"
+                : "border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white"
+            }`}
+            onClick={() => handleThemeChange("deem")}
+            aria-pressed={isDeem}
+            disabled={updating}
+          >
+            <svg
+              width="18"
+              height="18"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <circle cx="12" cy="12" r="5" strokeWidth="2" />
+              <path
+                d="M12 8v8M8 12h8"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+            Deem
+          </button>
+          <button
+            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-2xl font-semibold text-sm transition-all ${
+              currentTheme === "dark"
                 ? "bg-[#1D8751] text-white"
                 : "border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751] hover:text-white"
             }`}
             onClick={() => handleThemeChange("dark")}
-            aria-pressed={isDark}
+            aria-pressed={currentTheme === "dark"}
             disabled={updating}
           >
             <svg

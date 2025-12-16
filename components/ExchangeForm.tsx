@@ -20,6 +20,7 @@ import Express from "@/features/express/home/express/express";
 import SwapWidget from "@/features/express/home/swap copy/components/SwapWidget";
 import MoneyX from "@/features/express/home/components/moneyX/components/MoneyX";
 
+
 /**
  * ExchangeForm – TypeScript version with BTC ⇄ ETH swap support.
  * Image assets expected in /public/images:
@@ -1134,17 +1135,72 @@ export default function ExchangeForm({
         setIsSmallScreen(window.innerWidth < 640);
       };
       checkScreenSize();
-      window.addEventListener('resize', checkScreenSize);
-      return () => window.removeEventListener('resize', checkScreenSize);
+      window.addEventListener("resize", checkScreenSize);
+      return () => window.removeEventListener("resize", checkScreenSize);
     }, []);
     
-    const clipPath = isActive
-      ? position === "first"
-        ? "polygon(0 0, 94% 0, 100% 100%, 0 100%)" // express: slant on the right
-        : position === "middle"
-        ? "polygon(6% 0, 94% 0, 100% 100%, 0 100%)" // moneyX: slant both sides
-        : "polygon(6% 0, 100% 0, 100% 100%, 0 100%)" // swap: slant on the left
-      : "polygon(0 0, 100% 0, 100% 100%, 0 100%)";
+    // Determine if neighbors are active to know where to apply slanting
+    const leftNeighborActive = (position === "middle" && activeTab === "express") || (position === "last" && activeTab === "moneyx");
+    const rightNeighborActive = (position === "first" && activeTab === "moneyx") || (position === "middle" && activeTab === "swap");
+    
+    // Only apply slanting when:
+    // 1. This tab is active (slants where it meets inactive neighbors)
+    // 2. This tab is inactive but neighbor is active (slants where it meets active neighbor)
+    // When both tabs are inactive, no slanting - straight rectangle
+    let clipPath: string | undefined;
+    
+    if (!isActive && !leftNeighborActive && !rightNeighborActive) {
+      // Both neighbors inactive - straight rectangle, no slanting
+      clipPath = undefined;
+    } else if (position === "first") {
+      // Express tab: slanted at top-right if active, or bottom-right (opposite) if MoneyX is active
+      if (isActive) {
+        // Express active: normal top-right slant
+        clipPath = "polygon(0 0, 92% 0, 100% 100%, 0 100%)";
+      } else if (rightNeighborActive) {
+        // MoneyX active: opposite direction - bottom-right slant (downward curve)
+        clipPath = "polygon(0 0, 100% 0, 92% 100%, 0 100%)";
+      } else {
+        clipPath = undefined;
+      }
+    } else if (position === "last") {
+      // Swap tab: slanted at top-left (opposite) if active, or bottom-left if MoneyX is active
+      if (isActive) {
+        // Swap active: opposite direction - top-left slant (downward curve)
+        clipPath = "polygon(8% 0, 100% 0, 100% 100%, 0 100%)";
+      } else if (leftNeighborActive) {
+        // MoneyX active: normal bottom-left slant
+        clipPath = "polygon(0 0, 100% 0, 100% 100%, 8% 100%)";
+      } else {
+        clipPath = undefined;
+      }
+    } else {
+      // Middle tab (MoneyX): slanted on both sides only where it meets active neighbors
+      const slantRight = isActive || rightNeighborActive;
+      const slantLeft = isActive || leftNeighborActive;
+      
+      if (slantRight && slantLeft) {
+        // When MoneyX is active, left side curves downward (from 8% top to 0 bottom)
+        clipPath = isActive 
+          ? "polygon(8% 0, 92% 0, 100% 100%, 0 100%)"
+          : "polygon(0 0, 92% 0, 100% 100%, 8% 100%)";
+      } else if (slantRight) {
+        clipPath = "polygon(0 0, 92% 0, 100% 100%, 0 100%)";
+      } else if (slantLeft) {
+        // When MoneyX is active, left side curves downward (from 8% top to 0 bottom)
+        clipPath = isActive
+          ? "polygon(8% 0, 100% 0, 100% 100%, 0 100%)"
+          : "polygon(0 0, 100% 0, 100% 100%, 8% 100%)";
+      } else {
+        clipPath = undefined;
+      }
+    }
+
+    // Determine border styling: outer edges only, no borders between buttons
+    const borderColor = isDark ? "#2f323b" : "#D0D4DD";
+    const hasLeftBorder = position === "first"; // Only first tab has left border
+    const hasRightBorder = position === "last"; // Only last tab has right border
+    // No borders between buttons (no right border on first/middle, no left border on middle/last)
 
     const buttonClasses = [
       "relative flex w-full items-center justify-center overflow-hidden transition-all duration-200",
@@ -1156,12 +1212,9 @@ export default function ExchangeForm({
         : "bg-[#F4F7F6] text-[#627180]"
     ].join(" ");
 
-    const borderColors = (() => {
-      if (!isActive) return "transparent transparent transparent transparent";
-      if (position === "first") return "transparent #2f323b transparent transparent"; // right only
-      if (position === "middle") return "#2f323b #2f323b transparent #2f323b"; // left & right (top clipped by bg)
-      return "#2f323b transparent transparent #2f323b"; // last: left only
-    })();
+    // We don't use the normal border to draw the joint; it's all done with
+    // the small slanted segments below.
+    const borderColors = "transparent";
 
     const labelWrapperClasses = [
       "relative z-[1] flex items-center",
@@ -1177,7 +1230,7 @@ export default function ExchangeForm({
         ? "text-white"
         : "text-[#0B1418]"
       : "text-[#727272]";
-    
+
     const textColorClass = expressTextColorClass;
 
     // Use Group_9_momvgo.png for active express tab in light mode
@@ -1232,7 +1285,43 @@ export default function ExchangeForm({
     };
 
     const flexGrowValue = variant === "express" || variant === "swap" ? 2 : 1.6;
-    const isLast = position === "last";
+
+    // Determine which edges have slants (for border drawing)
+    const hasSlantRightTop = clipPath && clipPath.includes("92% 0"); // Right edge slants top-right (Express active)
+    const hasSlantRightBottom = clipPath && clipPath.includes("92% 100%"); // Right edge slants bottom-right (MoneyX active, Express inactive)
+    const hasSlantRight = hasSlantRightTop || hasSlantRightBottom;
+    // Check if left edge has downward curve (8% at top) or upward curve (8% at bottom)
+    const hasSlantLeftDownward = clipPath && clipPath.startsWith("polygon(8% 0"); // Downward curve (MoneyX active or Swap active)
+    const hasSlantLeftUpward = clipPath && clipPath.includes("8% 100%"); // Upward curve (MoneyX inactive, Swap inactive)
+    const hasSlantLeft = hasSlantLeftDownward || hasSlantLeftUpward;
+
+    // Calculate border-radius for curved meeting points
+    const getBorderRadius = () => {
+      // Apply curves at meeting points where tabs connect
+      if (position === "first") {
+        // Express tab: curve at top-right meeting point (where it meets MoneyX)
+        if (hasSlantRight) {
+          return '0 12px 0 0'; // Top-right corner curved
+        }
+        return '0';
+      } else if (position === "last") {
+        // Swap tab: curve at bottom-left meeting point (where it meets MoneyX)
+        if (hasSlantLeft) {
+          return '0 0 0 12px'; // Bottom-left corner curved
+        }
+        return '0';
+      } else {
+        // MoneyX tab: curve at both meeting points
+        if (hasSlantLeft && hasSlantRight) {
+          return '0 12px 12px 0'; // Top-right and bottom-left corners curved
+        } else if (hasSlantLeft) {
+          return '0 0 12px 0'; // Bottom-left corner curved
+        } else if (hasSlantRight) {
+          return '0 12px 0 0'; // Top-right corner curved
+        }
+        return '0';
+      }
+    };
 
     return (
       <button
@@ -1240,16 +1329,69 @@ export default function ExchangeForm({
         onClick={() => handleTabClick(id)}
         aria-pressed={isActive}
         aria-label={ariaLabel}
-        className={`group flex-1 px-0 rounded-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1D8751] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent`}
+        className={`group flex-1 px-0 rounded-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1D8751] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent relative overflow-visible`}
         style={{
           clipPath,
           flexGrow: flexGrowValue,
           flexBasis: 0,
-          borderStyle: "solid",
-          borderWidth: isActive ? "1px" : "0px",
-          borderColor: borderColors,
+          borderRadius: getBorderRadius(),
+          // Outer edges only - no borders between buttons (slanted edges handled separately)
+          borderLeft: hasLeftBorder && !isActive && !hasSlantLeft ? `1px solid ${borderColor}` : 'none',
+          borderRight: hasRightBorder && !isActive && !hasSlantRight ? `1px solid ${borderColor}` : 'none',
+          borderTop: !isActive ? `1px solid ${borderColor}` : 'none',
+          borderBottom: !isActive ? `1px solid ${borderColor}` : 'none',
         }}
       >
+        {/* Border on slanted right edge */}
+        {hasSlantRight && !isActive && (
+          <svg
+            className="pointer-events-none absolute top-0 right-0 z-10"
+            style={{ width: '100%', height: '100%', overflow: 'visible' }}
+            aria-hidden="true"
+          >
+            {hasSlantRightTop ? (
+              // Top-right slant: from 92% at top to 100% at bottom (Express active)
+              <line
+                x1="92%"
+                y1="0"
+                x2="100%"
+                y2="100%"
+                stroke={borderColor}
+                strokeWidth="1"
+              />
+            ) : hasSlantRightBottom ? (
+              // Bottom-right slant: from 100% at top to 92% at bottom (MoneyX active, Express inactive - opposite direction)
+              <line
+                x1="100%"
+                y1="0"
+                x2="92%"
+                y2="100%"
+                stroke={borderColor}
+                strokeWidth="1"
+              />
+            ) : null}
+          </svg>
+        )}
+        {/* Border on slanted left edge */}
+        {hasSlantLeft && !isActive && (
+          <svg
+            className="pointer-events-none absolute top-0 left-0 z-10"
+            style={{ width: '100%', height: '100%', overflow: 'visible' }}
+            aria-hidden="true"
+          >
+            {hasSlantLeftUpward ? (
+              // Upward curve: from 0 at top to 8% at bottom (when MoneyX is inactive and Express is active)
+              <line
+                x1="0"
+                y1="0"
+                x2="8%"
+                y2="100%"
+                stroke={borderColor}
+                strokeWidth="1"
+              />
+            ) : null}
+          </svg>
+        )}
         <div className={buttonClasses}>
           <span className={labelWrapperClasses}>
             {renderLabel()}
@@ -1413,9 +1555,7 @@ export default function ExchangeForm({
   /* ------------------- UI ------------------- */
   // Render tabs and content based on active tab
   const renderTabs = () => (
-    <div
-      className="relative flex w-full overflow-hidden bg-transparent mt-0 mb-0 rounded-t-[28px] border border-[#2f323b]"
-    >
+    <div className="relative flex w-full overflow-hidden mt-0 mb-0 rounded-t-[28px] bg-[#F4F7F6] dark:bg-[#18181D] gap-0">
       <TabButton
         id="express"
         variant="express"
@@ -1487,8 +1627,6 @@ export default function ExchangeForm({
     }`}>
       {renderTabs()}
       {/* Express Exchange Content */}
-
-      
       <div className="mt-2 sm:mt-3 px-3 sm:px-4 md:px-5">
         <Express isHomePage={isHomePage} />
       </div>

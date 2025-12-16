@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { tokens } from "@/styles/tokens";
 import { P2POrder } from "@/features/p2p/types";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, usePathname } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store/rootReducer";
 import { AppDispatch } from "@/store/index";
@@ -38,6 +38,7 @@ interface FinalSellProps {
 const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const params = useParams();
   const router = useRouter();
+  const pathname = usePathname();
   const dispatch = useDispatch<AppDispatch>();
   const {
     singleOrder,
@@ -392,12 +393,19 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       {/* Breadcrumb */}
       <nav
         aria-label="Breadcrumb"
-        className="flex items-center text-sm text-gray-500 dark:text-[#A3A3C2] mb-1"
+        className="flex items-center text-sm text-gray-500 dark:text-[#A3A3C2] mt-1"
       >
         <ol className="inline-flex items-center md:space-x-2">
 
           <li className="inline-flex items-center">
-            <a href="/dashboard" className="dark:hover:text-muted hover:text-accent transition-colors">
+            <a 
+              href="/dashboard" 
+              className={`px-2 py-1 rounded transition-colors ${
+                pathname === "/dashboard" || pathname?.startsWith("/dashboard/")
+                  ? "bg-[#35353E] text-white"
+                  : "dark:hover:text-muted hover:text-accent hover:bg-[#35353E] hover:text-white"
+              }`}
+            >
               Dashboard
             </a>
           </li>
@@ -406,7 +414,14 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             <div className="flex items-center">
               <FaChevronRight className="mx-2 text-muted-foreground " size={12} />
 
-              <a href="/dashboard/notifications" className="dark:hover:text-muted hover:text-accent  transition-colors">
+              <a 
+                href="/dashboard/notifications" 
+                className={`px-2 py-1 rounded transition-colors ${
+                  pathname === "/dashboard/notifications" || pathname?.startsWith("/dashboard/notifications/")
+                    ? "bg-[#35353E] text-white"
+                    : "dark:hover:text-muted hover:text-accent hover:bg-[#35353E] hover:text-white"
+                }`}
+              >
                 Notification center
               </a>
             </div>

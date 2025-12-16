@@ -660,6 +660,18 @@ export default function Navbar() {
     }
   }, [mounted, pathname, scrolled, theme]);
 
+  const toggleImageModal = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    setShowImagePreview(prev => !prev);
+  };
+
+  const closeImageModal = () => {
+    setShowImagePreview(false);
+  };
+
   // Don't render theme-dependent content until mounted
   if (!mounted) {
     return (
@@ -685,18 +697,10 @@ export default function Navbar() {
     );
   }
 
-  const toggleImageModal = () => {
-    setShowImagePreview(prev => !prev);
-  };
-
-  const closeImageModal = () => {
-    setShowImagePreview(false);
-  };
-
 
 
   return (
-    <>
+    <div>
       <nav
         className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-3 py-3 sm:px-4 sm:py-4 md:px-4 md:py-2.5 lg:px-8 lg:py-4 xl:px-12 2xl:px-20 transition-all duration-300 ${getNavbarBackground()}`}
       >
@@ -805,7 +809,11 @@ export default function Navbar() {
                           setDepositDropdownOpen(false);
                         }}
                       >
-                        <div className="flex items-center rounded-lg transition-colors duration-200 group">
+                        <div className={`flex items-center rounded-lg transition-colors duration-200 group p-3 -m-3 ${
+                          pathname === "/dashboard/express-exchange" 
+                            ? "bg-[#35353E]" 
+                            : "hover:bg-[#35353E]"
+                        }`}>
                           <div className="flex items-center justify-center mr-4">
                             <svg
                               width="45"
@@ -864,7 +872,11 @@ export default function Navbar() {
                           setDepositDropdownOpen(false);
                         }}
                       >
-                        <div className="flex items-center transition-colors duration-200 group">
+                        <div className={`flex items-center transition-colors duration-200 group rounded-lg p-3 -m-3 ${
+                          pathname === "/dashboard/exchange" 
+                            ? "bg-[#35353E]" 
+                            : "hover:bg-[#35353E]"
+                        }`}>
                           <div className="w-10 h-10 flex items-center justify-center mr-4">
                             <svg
                               width="100"
@@ -937,7 +949,11 @@ export default function Navbar() {
                           setDepositDropdownOpen(false);
                         }}
                       >
-                        <div className="flex items-center rounded-lg transition-colors duration-200 group">
+                        <div className={`flex items-center rounded-lg transition-colors duration-200 group p-3 -m-3 ${
+                          pathname === "/dashboard/p2p" || pathname?.startsWith("/dashboard/p2p/")
+                            ? "bg-[#35353E]" 
+                            : "hover:bg-[#35353E]"
+                        }`}>
                           <div className="w-10 h-10 flex items-center justify-center mr-4">
                             <svg
                               width="120"
@@ -1028,7 +1044,11 @@ export default function Navbar() {
                           setDepositDropdownOpen(false);
                         }}
                       >
-                        <div className="flex items-center transition-colors duration-200 group">
+                        <div className={`flex items-center transition-colors duration-200 group rounded-lg p-3 -m-3 ${
+                          pathname === "/dashboard/swap" || pathname?.startsWith("/dashboard/swap/")
+                            ? "bg-[#35353E]" 
+                            : "hover:bg-[#35353E]"
+                        }`}>
                           <div className="w-10 h-10 flex items-center justify-center mr-4">
                             <svg
                               width="100"
@@ -1146,7 +1166,11 @@ export default function Navbar() {
                       {/* User Info */}
                       <div className="flex items-center mb-4 pb-4 border-b dark:border-[#35353E] border-gray-200">
                         <div className="mr-3 relative">
-                          <button className="relative" onClick={toggleImageModal}>
+                          <button 
+                            className="relative cursor-pointer hover:opacity-80 transition-opacity" 
+                            onClick={toggleImageModal}
+                            type="button"
+                          >
                             {(userProfile?.photo || cachedProfilePhoto) && !profileImageError ? (
                               <>
                                 <img
@@ -1358,7 +1382,11 @@ export default function Navbar() {
                                 toggleMobileMenu();
                               }}
                             >
-                              <div className="flex items-center rounded-lg transition-colors duration-200 group dark:hover:bg-[#35353E] hover:bg-gray-100 p-3">
+                              <div className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${
+                                pathname === "/dashboard/express-exchange" 
+                                  ? "bg-[#35353E]" 
+                                  : "dark:hover:bg-[#35353E] hover:bg-gray-100"
+                              }`}>
                                 <div className="flex items-center justify-center mr-4 flex-shrink-0">
                                   <svg
                                     width="45"
@@ -1418,7 +1446,11 @@ export default function Navbar() {
                                 toggleMobileMenu();
                               }}
                             >
-                              <div className="flex items-center rounded-lg transition-colors duration-200 group dark:hover:bg-[#35353E] hover:bg-gray-100 p-3">
+                              <div className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${
+                                pathname === "/dashboard/p2p" || pathname?.startsWith("/dashboard/p2p/")
+                                  ? "bg-[#35353E]" 
+                                  : "dark:hover:bg-[#35353E] hover:bg-gray-100"
+                              }`}>
                                 <div className="w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
                                   <svg
                                     width="120"
@@ -1510,7 +1542,11 @@ export default function Navbar() {
                                 toggleMobileMenu();
                               }}
                             >
-                              <div className="flex items-center rounded-lg transition-colors duration-200 group dark:hover:bg-[#35353E] hover:bg-gray-100 p-3">
+                              <div className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${
+                                pathname === "/dashboard/swap" || pathname?.startsWith("/dashboard/swap/")
+                                  ? "bg-[#35353E]" 
+                                  : "dark:hover:bg-[#35353E] hover:bg-gray-100"
+                              }`}>
                                 <div className="w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
                                   <svg
                                     width="100"
@@ -1578,7 +1614,11 @@ export default function Navbar() {
                                 toggleMobileMenu();
                               }}
                             >
-                              <div className="flex items-center rounded-lg transition-colors duration-200 group dark:hover:bg-[#35353E] hover:bg-gray-100 p-3">
+                              <div className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${
+                                pathname === "/dashboard/exchange" 
+                                  ? "bg-[#35353E]" 
+                                  : "dark:hover:bg-[#35353E] hover:bg-gray-100"
+                              }`}>
                                 <div className="w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
                                   <svg
                                     width="100"
@@ -1750,8 +1790,13 @@ export default function Navbar() {
                           {/* User Info */}
                           <div className="flex items-center mb-6">
                             <div className="mr-4 relative">
-                              {(userProfile?.photo || cachedProfilePhoto) && !profileImageError ? (
-                                <>
+                              <button
+                                className="relative cursor-pointer hover:opacity-80 transition-opacity"
+                                onClick={toggleImageModal}
+                                type="button"
+                              >
+                                {(userProfile?.photo || cachedProfilePhoto) && !profileImageError ? (
+                                  <>
                                   <img
                                     src={userProfile?.photo || cachedProfilePhoto || ""}
                                     alt="Profile"
@@ -1794,6 +1839,7 @@ export default function Navbar() {
                                   <User className="w-8 h-8 text-white" />
                                 </div>
                               )}
+                              </button>
                             </div>
                             <div>
                               <h4 className="text-white font-medium text-lg">
@@ -1861,6 +1907,36 @@ export default function Navbar() {
           </div>
         </>
       )}
-    </>
+
+      {/* Image Preview Modal */}
+      {showImagePreview && (userProfile?.photo || cachedProfilePhoto) && !profileImageError && (
+        <div 
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black bg-opacity-75 p-4"
+          onClick={closeImageModal}
+        >
+          <div 
+            className="relative max-w-2xl max-h-[90vh] w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={closeImageModal}
+              className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10 bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-70"
+              aria-label="Close image preview"
+            >
+              <X size={24} className="w-6 h-6" />
+            </button>
+            <img
+              src={userProfile?.photo || cachedProfilePhoto || ""}
+              alt="Profile Preview"
+              className="w-full h-auto rounded-lg shadow-2xl object-contain max-h-[90vh]"
+              onError={() => {
+                setProfileImageError(true);
+                closeImageModal();
+              }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

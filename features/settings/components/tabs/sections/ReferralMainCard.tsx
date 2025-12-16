@@ -78,7 +78,7 @@ const ReferralMainCard: React.FC<Props> = ({
   return (
     <>
       <div
-        className="w-full bg-transparent text-[#0B0F23]
+        className="w-full  bg-transparent text-[#0B0F23]
                     flex flex-col gap-8 lg:flex-row lg:items-stretch
  dark:text-white"
       >

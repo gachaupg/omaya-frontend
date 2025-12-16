@@ -447,7 +447,7 @@ const ChatBox: React.FC<{
           )}
         </div>
       </div>
-      <div className="chat-container mt-4 sm:mt-6 flex flex-col pr-2 sm:pr-10 mb-2 h-80 sm:h-96 bg-white dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px] p-2 sm:p-4 relative">
+      <div className="chat-container mt-4 sm:mt-6 flex flex-col pr-2 sm:pr-10 mb-2 h-80 sm:h-96 bg-card border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px] p-2 sm:p-4 relative">
         <div>
           <div className="flex items-center justify-center gap-2">
             {otherPersonData.photo ? <img className="w-6 h-6 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0" src={otherPersonData.photo} alt={otherPersonData.displayName} /> : <MdAccountCircle  className="w-5 h-5 sm:w-6 sm:h-6 text-[#1D8751] flex-shrink-0"/>}
