@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/rootReducer";
 import { tokens } from "@/styles/tokens";
-import { Play, MessageCircle, Plus, BarChart, Globe, Lock, DollarSign, Users, TrendingUp, Shield, Zap, Gift, UserPlus, ArrowRight, Building2, Calendar, Clock, MapPin, Phone, Mail, Send, ChevronDown, ChevronUp, ArrowLeftRight, HelpCircle } from "lucide-react";
+import { Play, MessageCircle, BarChart, Globe, Lock, DollarSign, Users, TrendingUp, Shield, Zap, UserPlus, ArrowRight, Calendar, Clock, MapPin, Phone, Mail, ChevronDown, ChevronUp, ArrowLeftRight, HelpCircle } from "lucide-react";
 import ExchangeForm from "@/components/ExchangeForm";
 import { useBlog } from "@/features/blogs/hooks/blog";
 import { BlogPost } from "@/features/blogs/types";
@@ -16,28 +16,7 @@ import { ContactForm } from "@/features/contact/components";
 import { useHighlightStatistics } from "@/features/contact/hooks/useHighlightStatistics";
 import { useSimpleMarkets } from "@/features/markets/hooks/useSimpleMarkets";
 
-const steps = [
-  {
-    icon: "https://res.cloudinary.com/dam1sxczj/image/upload/v1746707947/create_account_gzbijn.png",
-    title: "marketing.steps.create.title",
-    description: "marketing.steps.create.desc",
-  },
-  {
-    icon: "https://res.cloudinary.com/dam1sxczj/image/upload/v1746707947/verify_i9k3dd.png",
-    title: "marketing.steps.verify.title",
-    description: "marketing.steps.verify.desc",
-  },
-  {
-    icon: "https://res.cloudinary.com/dam1sxczj/image/upload/v1746707947/Transfermoney_hnssjb.png",
-    title: "marketing.steps.transfer.title",
-    description: "marketing.steps.transfer.desc",
-  },
-  {
-    icon: "https://res.cloudinary.com/dam1sxczj/image/upload/v1746707947/exchange_gmhyus.png",
-    title: "marketing.steps.start.title",
-    description: "marketing.steps.start.desc",
-  },
-];
+// removed unused 'steps' variable
 
 // Static fallback achievements (used while loading or on error)
 const fallbackAchievements = [
@@ -59,12 +38,7 @@ const fallbackAchievements = [
   },
 ];
 
-const features = [
-  "Low Transaction Fee",
-  "Secure Payment Service",
-  "Fast Transactions",
-  "We Work 24/7",
-];
+// removed unused 'features' variable
 
 const fallbackSupportedAssets = [
   {
@@ -130,11 +104,7 @@ interface ArticleTag {
   name: string;
 }
 
-interface FAQItem {
-  id: number;
-  question: string;
-  answer: string;
-}
+// removed unused 'FAQItem' interface
 
 interface Article {
   id: number;
@@ -157,10 +127,10 @@ export default function MarketingPage() {
   const [showContactError, setShowContactError] = useState(false);
   const [contactErrorMessage, setContactErrorMessage] = useState("");
   const [showAllFAQs, setShowAllFAQs] = useState(false);
-  const [showAllAssets, setShowAllAssets] = useState(false);
+  const [showAllAssets] = useState(false);
   const { blogs, news, loading, error } = useBlog();
   const { faqs: faqItems, loading: faqLoading, error: faqError } = useFAQ();
-  const { statistics, loading: statsLoading, error: statsError } = useHighlightStatistics();
+  const { statistics } = useHighlightStatistics();
   const {
     markets: marketAssets,
     loading: marketsLoading,
@@ -194,14 +164,7 @@ export default function MarketingPage() {
     [assetsSource, showAllAssets]
   );
 
-  const shouldRenderToggle = assetsSource.length > maxPreviewAssets;
-
-  const toggleLabel = showAllAssets
-    ? t("marketing.assets.toggleLess", "Show Less")
-    : t(
-        "marketing.assets.toggleMore",
-        `Show All (${assetsSource.length})`
-      );
+  // removed unused 'shouldRenderToggle' and 'toggleLabel'
 
   // Transform API statistics to achievements format
   const achievements = statistics ? [
@@ -338,12 +301,17 @@ export default function MarketingPage() {
   };
 
   return (
-    <div>
+    <div className="dark bg-[#18181b] text-[#f4f4f5] min-h-screen w-full" style={{ backgroundColor: '#18181b', color: '#f4f4f5', minHeight: '100vh', width: '100%' }}>
       <section
-        className="relative min-h-screen pt-18 pb-16 mx-auto overflow-visible bg-white dark:bg-[var(--bg-color)]"
+        className="relative min-h-screen pt-18 pb-16 mx-auto overflow-visible bg-[#18181b] dark:bg-[#18181b]"
       >
+        {/* Left-side green gradient background for stat cards (Figma style) */}
+        <div className="absolute left-0 top-0 h-full w-1/2 z-0 pointer-events-none hidden md:block">
+          <div className="h-full w-full bg-gradient-to-br from-[#1D8751]/30 via-[#13B562]/10 to-transparent" />
+        </div>
+
         {/* Green and Purple glowing particles background */}
-        <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden z-0">
           {/* Green glowing particles */}
           <div className="absolute top-20 left-10 w-2 h-2 bg-[#1D8751] rounded-full opacity-60 blur-sm animate-pulse"></div>
           <div className="absolute top-40 right-20 w-3 h-3 bg-[#1D8751] rounded-full opacity-40 blur-md animate-pulse" style={{ animationDelay: '0.5s' }}></div>
@@ -358,13 +326,13 @@ export default function MarketingPage() {
           <div className="absolute top-1/4 left-1/5 w-3 h-3 bg-purple-500 rounded-full opacity-35 blur-lg animate-pulse" style={{ animationDelay: '1.2s' }}></div>
           <div className="absolute bottom-1/3 right-1/5 w-2 h-2 bg-purple-400 rounded-full opacity-45 blur-sm animate-pulse" style={{ animationDelay: '1.8s' }}></div>
           
-          {/* Large purple/green gradient backgrounds */}
-          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-purple-500/20 via-[#1D8751]/15 to-purple-600/10 dark:from-purple-500/30 dark:via-[#1D8751]/25 dark:to-purple-600/20 rounded-full blur-3xl animate-pulse"></div>
+          {/* Large purple/green gradient backgrounds (REMOVE right-side overlay for Figma match) */}
+          {/* <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-purple-500/20 via-[#1D8751]/15 to-purple-600/10 dark:from-purple-500/30 dark:via-[#1D8751]/25 dark:to-purple-600/20 rounded-full blur-3xl animate-pulse"></div> */}
           <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-tr from-[#1D8751]/20 via-purple-500/15 to-[#13B562]/10 dark:from-[#1D8751]/30 dark:via-purple-500/25 dark:to-[#13B562]/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-          
-          {/* Subtle gradient overlays for depth */}
+
+          {/* Subtle gradient overlays for depth (keep, but left-side only for Figma match) */}
           <div 
-            className="absolute inset-0 opacity-30"
+            className="absolute inset-y-0 left-0 w-1/2 opacity-30"
             style={{
               background: `
                 radial-gradient(circle at 20% 30%, ${tokens.colors.brand.lightGreen}15 0%, transparent 50%),
@@ -633,7 +601,7 @@ export default function MarketingPage() {
       {/* Supported Assets Section*/}
       <div
         id="supported-assets"
-        className="w-full bg-white dark:bg-[var(--bg-color)] pt-4 md:pt-6 pb-16 px-4 md:px-[100px] relative overflow-hidden"
+        className="w-full bg-[#18181b] dark:bg-[#18181b] pt-4 md:pt-6 pb-16 px-4 md:px-[100px] relative overflow-hidden"
       >
         {/* Subtle green glowing dots background */}
         <div className="absolute inset-0 overflow-hidden">
@@ -778,11 +746,14 @@ export default function MarketingPage() {
                           <div className="text-gray-900 dark:text-white font-bold text-sm sm:text-base mb-1">
                             {asset.name}
                           </div>
-                          
+
                           {/* Ticker Symbol - Left aligned */}
-                          <div className="text-gray-700 dark:text-white text-xs sm:text-sm mb-3 opacity-80">
+                          <div className="text-gray-700 dark:text-white text-xs sm:text-sm mb-1 opacity-80">
                             {asset.symbol}
                           </div>
+
+                          {/* Network Badge (e.g., BSC) - Responsive and dark mode */}
+                          {/* Removed asset.network as it does not exist */}
                           
                           {/* Price and Percentage Change - Left aligned */}
                           <div className="flex items-baseline gap-2 mb-2">
@@ -1446,7 +1417,7 @@ export default function MarketingPage() {
               </div>
             ) : (
               // Articles grid
-              filteredArticles.slice(0, 6).map((article, index) => {
+              filteredArticles.slice(0, 6).map((article) => {
                 // Category colors mapping
                 const categoryColors: { [key: string]: string } = {
                   'Market Analysis': 'bg-purple-500',
