@@ -1,4 +1,6 @@
-
+/**
+ * VolumeChart.tsx – Transaction Volume Summary
+ */
 
 import Card from "../ui/Card";
 import React from "react";
