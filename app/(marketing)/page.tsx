@@ -1247,7 +1247,7 @@ export default function MarketingPage() {
               {/* Phone Image */}
               <div className="relative z-10">
                 <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747220053/iphone_vn7ejc.png"
+                  src="https://res.cloudinary.com/pitz/image/upload/v1765870778/iPhone_13_Mockup_1_wnbmqk.png"
                   alt="OMAYA Exchange Mobile App"
                   width={350}
                   height={700}

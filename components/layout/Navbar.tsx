@@ -54,7 +54,7 @@ const NavLink = ({
           : isTransparent
           ? "text-gray-900 dark:text-white" // Dark in light mode, white in dark mode when navbar is transparent
           : "dark:text-white text-gray-900" // Theme-based when navbar has background
-      } hover:text-[#1D8751] transition-colors duration-200 text-xs md:text-sm lg:text-base xl:text-base 2xl:text-lg`}
+      } hover:text-[#1D8751] transition-colors duration-200 text-xs md:text-xs lg:text-base xl:text-base 2xl:text-lg`}
     >
       {children}
     </Link>
@@ -156,13 +156,13 @@ const LanguageSelector = () => {
           alt={selectedLanguage}
           width={24}
           height={24}
-          className="rounded-full w-6 h-6 sm:w-8 sm:h-8 lg:w-8 lg:h-8"
+          className="rounded-full w-6 h-6 sm:w-7 sm:h-7 md:w-7 md:h-7 lg:w-8 lg:h-8"
         />
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="12"
           height="12"
-          className="fill-white ml-1 sm:ml-1 lg:ml-1 w-3 h-3 sm:w-4 sm:h-4 lg:w-4 lg:h-4"
+          className="fill-white ml-0.5 sm:ml-1 lg:ml-1 w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3 md:h-3 lg:w-4 lg:h-4"
           viewBox="0 0 16 16"
         >
           <path d="M1.5 6.5l6 6 6-6h-12z" />
@@ -266,7 +266,7 @@ const ThemeSelector = ({ isTransparentNavbar }: { isTransparentNavbar: boolean }
     if (theme === "dark") {
       return (
         <svg
-          className={iconClass}
+          className="w-4 h-4 sm:w-5 sm:h-5 md:w-5 md:h-5 lg:w-6 lg:h-6"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -298,7 +298,7 @@ const ThemeSelector = ({ isTransparentNavbar }: { isTransparentNavbar: boolean }
     } else {
       return (
         <svg
-          className={iconClass}
+          className="w-4 h-4 sm:w-5 sm:h-5 md:w-5 md:h-5 lg:w-6 lg:h-6"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -332,7 +332,9 @@ const ThemeSelector = ({ isTransparentNavbar }: { isTransparentNavbar: boolean }
           xmlns="http://www.w3.org/2000/svg"
           width="12"
           height="12"
-          className={`ml-1 sm:ml-1 lg:ml-1 w-3 h-3 sm:w-4 sm:h-4 lg:w-4 lg:h-4 fill-current`}
+          className={`ml-0.5 sm:ml-1 lg:ml-1 w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-3 md:h-3 lg:w-4 lg:h-4 ${
+            isTransparentNavbar ? "fill-white" : "fill-current"
+          }`}
           viewBox="0 0 16 16"
         >
           <path d="M1.5 6.5l6 6 6-6h-12z" />
@@ -658,6 +660,18 @@ export default function Navbar() {
     }
   }, [mounted, pathname, scrolled, theme]);
 
+  const toggleImageModal = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    setShowImagePreview(prev => !prev);
+  };
+
+  const closeImageModal = () => {
+    setShowImagePreview(false);
+  };
+
   // Don't render theme-dependent content until mounted
   if (!mounted) {
     return (
@@ -683,23 +697,15 @@ export default function Navbar() {
     );
   }
 
-  const toggleImageModal = () => {
-    setShowImagePreview(prev => !prev);
-  };
-
-  const closeImageModal = () => {
-    setShowImagePreview(false);
-  };
-
 
 
   return (
-    <>
+    <div>
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-3 lg:px-8 lg:py-4 xl:px-12 2xl:px-20 transition-all duration-300 ${getNavbarBackground()}`}
+        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-3 py-3 sm:px-4 sm:py-4 md:px-4 md:py-2.5 lg:px-8 lg:py-4 xl:px-12 2xl:px-20 transition-all duration-300 ${getNavbarBackground()}`}
       >
         <div className="flex items-center min-w-0 flex-1">
-          <Link href="/" className="mr-6 sm:mr-12 md:mr-20 flex-shrink-0">
+          <Link href="/" className="mr-4 sm:mr-8 md:mr-6 lg:mr-12 xl:mr-20 flex-shrink-0">
             {/* Optimized logo selection using memoized config */}
             {logoConfig && (
               <Image
@@ -707,14 +713,14 @@ export default function Navbar() {
                 alt={logoConfig.alt}
                 width={150}
                 height={40}
-                className="h-auto w-20 sm:w-28 md:w-40 2xl:w-48 dark:brightness-0 dark:invert"
+                className="h-auto w-20 sm:w-28 md:w-32 lg:w-40 2xl:w-48 dark:brightness-0 dark:invert"
                 priority
               />
             )}
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-2 md:space-x-3 lg:space-x-4 xl:space-x-5 2xl:space-x-8 flex-shrink-0">
+          <div className="hidden md:flex space-x-1 md:space-x-1.5 lg:space-x-4 xl:space-x-5 2xl:space-x-8 flex-shrink-0">
             <NavLink href="/" isTransparent={isTransparentNavbar} pathname={pathname}>
               Home
             </NavLink>
@@ -733,7 +739,8 @@ export default function Navbar() {
               Blog
             </NavLink>
             <NavLink href="/about" isTransparent={isTransparentNavbar} pathname={pathname}>
-              About Us
+              <span className="hidden lg:inline">About Us</span>
+              <span className="lg:hidden">About</span>
             </NavLink>
             {/* Show Contact us only on auth pages */}
             {/* {(pathname?.startsWith("/auth/login") || 
@@ -746,22 +753,23 @@ export default function Navbar() {
             )} */}
 
             <NavLink href="/contactUs" isTransparent={isTransparentNavbar} pathname={pathname}>
-              Contact us
+              <span className="hidden lg:inline">Contact us</span>
+              <span className="lg:hidden">Contact</span>
             </NavLink>
           </div>
         </div>
 
         {/* Desktop Auth Buttons */}
-        <div className="hidden md:flex items-center space-x-2 md:space-x-2.5 lg:space-x-3 xl:space-x-4 2xl:space-x-6 relative flex-shrink-0">
+        <div className="hidden md:flex items-center space-x-1 md:space-x-1.5 lg:space-x-3 xl:space-x-4 2xl:space-x-6 relative flex-shrink-0">
           {isAuthenticated ? (
-            <div className="flex items-center space-x-2 md:space-x-3 lg:space-x-4">
+            <div className="flex items-center space-x-1 md:space-x-1.5 lg:space-x-4">
               <div className="" ref={depositDropdownRef}>
                 <button
                   onClick={toggleDepositDropdown}
-                  className="flex items-center bg-[#1D8751] hover:bg-[#13B562] text-white px-3 py-1.5 md:px-4 md:py-2 lg:px-5 lg:py-2 xl:px-6 rounded-[10px] transition-colors duration-200 text-xs md:text-sm lg:text-base xl:text-base 2xl:text-lg"
+                  className="flex items-center bg-[#1D8751] hover:bg-[#13B562] text-white px-2 py-1 md:px-3 md:py-1.5 lg:px-5 lg:py-2 xl:px-6 rounded-[10px] transition-colors duration-200 text-xs md:text-xs lg:text-base xl:text-base 2xl:text-lg"
                 >
                   <svg
-                    className="mr-1 md:mr-1.5 lg:mr-2 w-3.5 h-3.5 md:w-4 md:h-4 lg:w-5 lg:h-5"
+                    className="mr-0.5 md:mr-1 lg:mr-2 w-3 h-3 md:w-3.5 md:h-3.5 lg:w-5 lg:h-5"
                     fill="none"
                     viewBox="0 0 24 24"
                   >
@@ -801,7 +809,11 @@ export default function Navbar() {
                           setDepositDropdownOpen(false);
                         }}
                       >
-                        <div className="flex items-center rounded-lg transition-colors duration-200 group">
+                        <div className={`flex items-center rounded-lg transition-colors duration-200 group p-3 -m-3 ${
+                          pathname === "/dashboard/express-exchange" 
+                            ? "bg-[#35353E]" 
+                            : "hover:bg-[#35353E]"
+                        }`}>
                           <div className="flex items-center justify-center mr-4">
                             <svg
                               width="45"
@@ -860,7 +872,11 @@ export default function Navbar() {
                           setDepositDropdownOpen(false);
                         }}
                       >
-                        <div className="flex items-center transition-colors duration-200 group">
+                        <div className={`flex items-center transition-colors duration-200 group rounded-lg p-3 -m-3 ${
+                          pathname === "/dashboard/exchange" 
+                            ? "bg-[#35353E]" 
+                            : "hover:bg-[#35353E]"
+                        }`}>
                           <div className="w-10 h-10 flex items-center justify-center mr-4">
                             <svg
                               width="100"
@@ -933,7 +949,11 @@ export default function Navbar() {
                           setDepositDropdownOpen(false);
                         }}
                       >
-                        <div className="flex items-center rounded-lg transition-colors duration-200 group">
+                        <div className={`flex items-center rounded-lg transition-colors duration-200 group p-3 -m-3 ${
+                          pathname === "/dashboard/p2p" || pathname?.startsWith("/dashboard/p2p/")
+                            ? "bg-[#35353E]" 
+                            : "hover:bg-[#35353E]"
+                        }`}>
                           <div className="w-10 h-10 flex items-center justify-center mr-4">
                             <svg
                               width="120"
@@ -1024,7 +1044,11 @@ export default function Navbar() {
                           setDepositDropdownOpen(false);
                         }}
                       >
-                        <div className="flex items-center transition-colors duration-200 group">
+                        <div className={`flex items-center transition-colors duration-200 group rounded-lg p-3 -m-3 ${
+                          pathname === "/dashboard/swap" || pathname?.startsWith("/dashboard/swap/")
+                            ? "bg-[#35353E]" 
+                            : "hover:bg-[#35353E]"
+                        }`}>
                           <div className="w-10 h-10 flex items-center justify-center mr-4">
                             <svg
                               width="100"
@@ -1093,26 +1117,26 @@ export default function Navbar() {
                   className="text-white focus:outline-none relative"
                 >
                   {(userProfile?.photo || cachedProfilePhoto) && !profileImageError ? (
-                    <div className="w-10 h-10 rounded-full overflow-hidden bg-[#0F172A] border-2 border-white flex items-center justify-center">
-                      <img
-                        src={userProfile?.photo || cachedProfilePhoto || ""}
-                        alt="Profile"
-                        className="w-9 h-9 rounded-full object-cover"
-                        onError={() => {
-                          setProfileImageError(true);
-                          if (typeof window !== "undefined") {
-                            localStorage.removeItem("profile_photo");
-                            setCachedProfilePhoto(null);
-                          }
-                        }}
-                      />
-                    </div>
+                    <img
+                      src={userProfile?.photo || cachedProfilePhoto || ""}
+                      alt="Profile"
+                      className="w-8 h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 rounded-full object-cover"
+                      onError={() => {
+                        setProfileImageError(true);
+                        if (typeof window !== "undefined") {
+                          localStorage.removeItem("profile_photo");
+                          setCachedProfilePhoto(null);
+                        }
+                      }}
+                    />
                   ) : (
-                    <DefaultProfileIcon />
+                    <div className="w-8 h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white">
+                      <User className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 text-white" />
+                    </div>
                   )}
                   {/* Verification Badge - positioned on top of profile image */}
-                  <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 z-10">
-                    <svg width="20" height="20" viewBox="0 0 20 20" className="absolute">
+                  <span className="absolute -top-0.5 -right-0.5 md:-top-0.5 md:-right-0.5 lg:-top-1 lg:-right-1 inline-flex items-center justify-center w-4 h-4 md:w-4 md:h-4 lg:w-5 lg:h-5 z-10">
+                    <svg width="20" height="20" viewBox="0 0 20 20" className="absolute w-4 h-4 md:w-4 md:h-4 lg:w-5 lg:h-5">
                       <circle cx="10" cy="10" r="9" fill="white" />
                       <circle cx="10" cy="10" r="7.5" fill="#1D8751" />
                       {/* Serrated edge using small circles */}
@@ -1123,7 +1147,7 @@ export default function Navbar() {
                         return <circle key={angle} cx={x} cy={y} r="1" fill="white" />;
                       })}
                     </svg>
-                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg" className="relative z-10">
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg" className="relative z-10 w-2 h-2 md:w-2.5 md:h-2.5 lg:w-2.5 lg:h-2.5">
                       <path
                         d="M2 5L4 7L8 3"
                         stroke="#FFFFFF"
@@ -1142,7 +1166,11 @@ export default function Navbar() {
                       {/* User Info */}
                       <div className="flex items-center mb-4 pb-4 border-b dark:border-[#35353E] border-gray-200">
                         <div className="mr-3 relative">
-                          <button className="relative" onClick={toggleImageModal}>
+                          <button 
+                            className="relative cursor-pointer hover:opacity-80 transition-opacity" 
+                            onClick={toggleImageModal}
+                            type="button"
+                          >
                             {(userProfile?.photo || cachedProfilePhoto) && !profileImageError ? (
                               <>
                                 <img
@@ -1236,7 +1264,7 @@ export default function Navbar() {
             </>
           )}
 
-          <div className="flex items-center space-x-1.5 sm:space-x-2 md:space-x-2.5 lg:space-x-3 xl:space-x-4 2xl:space-x-6">
+          <div className="flex items-center space-x-1 sm:space-x-1.5 md:space-x-1.5 lg:space-x-3 xl:space-x-4 2xl:space-x-6">
             <LanguageSelector />
             <ThemeSelector isTransparentNavbar={isTransparentNavbar} />
           </div>
@@ -1354,7 +1382,11 @@ export default function Navbar() {
                                 toggleMobileMenu();
                               }}
                             >
-                              <div className="flex items-center rounded-lg transition-colors duration-200 group dark:hover:bg-[#35353E] hover:bg-gray-100 p-3">
+                              <div className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${
+                                pathname === "/dashboard/express-exchange" 
+                                  ? "bg-[#35353E]" 
+                                  : "dark:hover:bg-[#35353E] hover:bg-gray-100"
+                              }`}>
                                 <div className="flex items-center justify-center mr-4 flex-shrink-0">
                                   <svg
                                     width="45"
@@ -1414,7 +1446,11 @@ export default function Navbar() {
                                 toggleMobileMenu();
                               }}
                             >
-                              <div className="flex items-center rounded-lg transition-colors duration-200 group dark:hover:bg-[#35353E] hover:bg-gray-100 p-3">
+                              <div className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${
+                                pathname === "/dashboard/p2p" || pathname?.startsWith("/dashboard/p2p/")
+                                  ? "bg-[#35353E]" 
+                                  : "dark:hover:bg-[#35353E] hover:bg-gray-100"
+                              }`}>
                                 <div className="w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
                                   <svg
                                     width="120"
@@ -1506,7 +1542,11 @@ export default function Navbar() {
                                 toggleMobileMenu();
                               }}
                             >
-                              <div className="flex items-center rounded-lg transition-colors duration-200 group dark:hover:bg-[#35353E] hover:bg-gray-100 p-3">
+                              <div className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${
+                                pathname === "/dashboard/swap" || pathname?.startsWith("/dashboard/swap/")
+                                  ? "bg-[#35353E]" 
+                                  : "dark:hover:bg-[#35353E] hover:bg-gray-100"
+                              }`}>
                                 <div className="w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
                                   <svg
                                     width="100"
@@ -1574,7 +1614,11 @@ export default function Navbar() {
                                 toggleMobileMenu();
                               }}
                             >
-                              <div className="flex items-center rounded-lg transition-colors duration-200 group dark:hover:bg-[#35353E] hover:bg-gray-100 p-3">
+                              <div className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${
+                                pathname === "/dashboard/exchange" 
+                                  ? "bg-[#35353E]" 
+                                  : "dark:hover:bg-[#35353E] hover:bg-gray-100"
+                              }`}>
                                 <div className="w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
                                   <svg
                                     width="100"
@@ -1746,8 +1790,13 @@ export default function Navbar() {
                           {/* User Info */}
                           <div className="flex items-center mb-6">
                             <div className="mr-4 relative">
-                              {(userProfile?.photo || cachedProfilePhoto) && !profileImageError ? (
-                                <>
+                              <button
+                                className="relative cursor-pointer hover:opacity-80 transition-opacity"
+                                onClick={toggleImageModal}
+                                type="button"
+                              >
+                                {(userProfile?.photo || cachedProfilePhoto) && !profileImageError ? (
+                                  <>
                                   <img
                                     src={userProfile?.photo || cachedProfilePhoto || ""}
                                     alt="Profile"
@@ -1790,6 +1839,7 @@ export default function Navbar() {
                                   <User className="w-8 h-8 text-white" />
                                 </div>
                               )}
+                              </button>
                             </div>
                             <div>
                               <h4 className="text-white font-medium text-lg">
@@ -1857,6 +1907,36 @@ export default function Navbar() {
           </div>
         </>
       )}
-    </>
+
+      {/* Image Preview Modal */}
+      {showImagePreview && (userProfile?.photo || cachedProfilePhoto) && !profileImageError && (
+        <div 
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black bg-opacity-75 p-4"
+          onClick={closeImageModal}
+        >
+          <div 
+            className="relative max-w-2xl max-h-[90vh] w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={closeImageModal}
+              className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10 bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-70"
+              aria-label="Close image preview"
+            >
+              <X size={24} className="w-6 h-6" />
+            </button>
+            <img
+              src={userProfile?.photo || cachedProfilePhoto || ""}
+              alt="Profile Preview"
+              className="w-full h-auto rounded-lg shadow-2xl object-contain max-h-[90vh]"
+              onError={() => {
+                setProfileImageError(true);
+                closeImageModal();
+              }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

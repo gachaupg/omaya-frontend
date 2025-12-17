@@ -580,7 +580,7 @@ export default function LoginPage() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mt-4">
+              <div className="grid grid-cols-2 gap-4 mt-4 dark:grid-cols-2">
                 <GoogleAuthButton
                   onSuccess={handleGoogleSuccess}
                   onError={handleGoogleError}

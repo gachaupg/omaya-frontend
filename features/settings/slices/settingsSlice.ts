@@ -172,8 +172,34 @@ export const changePasswordWithOTP = createAsyncThunk(
       showToast.success(response.message || "Password changed successfully");
       return response;
     } catch (error: any) {
-      showToast.error(error.message || "Failed to change password");
-      return rejectWithValue(error.message || "Failed to change password");
+      // Extract backend error message - prioritize error field, then message, then default
+      // Backend returns: {"error":"New password cannot be the same as your current password."}
+      let errorMessage = "Failed to change password";
+      
+      if (error?.response?.data) {
+        // Check for 'error' field first (backend format)
+        if (error.response.data.error) {
+          errorMessage = error.response.data.error;
+        } 
+        // Then check for 'message' field
+        else if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        }
+        // Check for nested error object
+        else if (typeof error.response.data === 'object') {
+          const dataStr = JSON.stringify(error.response.data);
+          if (dataStr.includes('error')) {
+            errorMessage = error.response.data.detail || errorMessage;
+          }
+        }
+      } 
+      // Fallback to error message if no response data
+      else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      showToast.error(errorMessage);
+      return rejectWithValue(errorMessage);
     }
   }
 );
