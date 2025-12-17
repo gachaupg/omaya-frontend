@@ -182,11 +182,11 @@ const Withdraw = () => {
   const disableSubmit = loading || Boolean(normalizedFeesError);
 
   return (
-    <div className="min-h-screen text-white flex flex-col items-center">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0D0D0D] text-[#0D0D0D] dark:text-white flex flex-col items-center">
       {/* Success Message */}
       {showSuccess && (
         <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
-          <div className="bg-[var(--card-color)] border border-[#1D8751] rounded-2xl p-8 max-w-md mx-4 text-center shadow-2xl pointer-events-auto">
+          <div className="bg-white dark:bg-[#1A1A1F] border border-[#1D8751] rounded-2xl p-8 max-w-md mx-4 text-center shadow-2xl pointer-events-auto">
             <div className="mb-4">
               <svg
                 className="w-16 h-16 text-[#1D8751] mx-auto"
@@ -202,10 +202,10 @@ const Withdraw = () => {
                 />
               </svg>
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">
+            <h3 className="text-xl font-bold text-[#0D0D0D] dark:text-white mb-2">
               Withdrawal Successful!
             </h3>
-            <p className="text-[#A3A3A3] mb-6">
+            <p className="text-[#788099] dark:text-[#A3A3A3] mb-6">
               Your withdrawal request has been submitted successfully.
             </p>
             <button
@@ -222,18 +222,18 @@ const Withdraw = () => {
         </div>
       )}
 
-      <div className="min-h-screen dark:text-white text-[#0D0D0D] flex flex-col items-center">
+      <div className="w-full flex flex-col items-center">
         {/* Withdraw Form Card */}
-        <div className="w-full max-w-4xl lg:max-w-5xl rounded-2xl p-6 shadow-lg">
+        <div className="w-full max-w-4xl lg:max-w-5xl rounded-2xl p-6">
             {/* Tabs for USDT BEP20 / Cash */}
-            <div className="flex gap-2 mb-6 border border-[#EF4444] rounded-lg p-1 w-fit flex-wrap">
+            <div className="flex gap-2 mb-6 border border-[#EF4444] bg-white dark:bg-[#1A1A1F] rounded-lg p-1 w-fit flex-wrap">
             <button
               type="button"
               onClick={() => setActiveTab("usdt")}
               className={`px-6 py-2 rounded-lg font-semibold text-base ${
                 activeTab === "usdt"
                   ? "bg-[#EF4444] text-white"
-                  : "dark:bg-[var(--card-color)] bg-white text-[#A3A3A3]"
+                  : "bg-transparent text-[#A3A3A3]"
               }`}
             >
                 USDT TRC20
@@ -244,7 +244,7 @@ const Withdraw = () => {
               className={`px-6 py-2 rounded-lg font-semibold text-base ${
                 activeTab === "cash"
                   ? "bg-[#EF4444] text-white"
-                  : "dark:bg-[var(--card-color)] bg-white text-[#A3A3A3]"
+                  : "bg-transparent text-[#A3A3A3]"
               }`}
             >
                 Cash
@@ -256,12 +256,12 @@ const Withdraw = () => {
             {/* 1- Transaction Info */}
             <div className="text-md font-bold mb-2">1- Transaction Info</div>
 
-            <div className="mb-3 p-3 border border-[#E8EFF5] dark:border-[#35353F] bg-white dark:bg-[var(--card-color)] rounded-[18px]">
+            <div className="mb-3 p-3 border border-[#E8EFF5] dark:border-[#35353F] bg-white dark:bg-[#1A1A1F] rounded-[18px] shadow-sm">
               <div className="flex  flex-col md:flex-row gap-4 mb-2">
                 <div className="flex-1">
                   <label className="block text-sm text-[#788099] dark:text-[#A3A3A3] mb-1">Amount</label>
                   <input
-                    className={`w-full  bg-white dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-1 py-1 text-[#788099] dark:text-white text-lg focus:outline-none ${
+                    className={`w-full  bg-white dark:bg-[#0D0D0D] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-1 py-1 text-[#788099] dark:text-white text-lg focus:outline-none ${
                       errors.amount ? "border-red-500" : ""
                     }`}
                     placeholder="100"
@@ -283,7 +283,7 @@ const Withdraw = () => {
                   <label className="block text-sm text-[#788099] dark:text-[#A3A3A3] mb-1">
                     I want to Recieve Net
                   </label>
-                  <div className="flex items-center bg-white dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-1 py-1">
+                  <div className="flex items-center bg-white dark:bg-[#0D0D0D] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-1 py-1">
                     <span className="text-[#1D8751] text-2xl font-bold mr-2">
                       $ {netAmount ? netAmount.toFixed(2) : "0.00"}
                     </span>
@@ -423,12 +423,12 @@ const Withdraw = () => {
               <div className="text-md font-bold mb-2">
                 2- Your Wallet Address
               </div>
-              <div className="mb-2 border border-[#E8EFF5] dark:border-[#35353F] text_highbg-dark bg-[white] dark:bg-[var(--card-color)] p-3 rounded-[18px]">
+              <div className="mb-2 border border-[#E8EFF5] dark:border-[#35353F] bg-white dark:bg-[#1A1A1F] p-3 rounded-[18px] shadow-sm">
                 <label className="block text-[#A3A3A3] mb-1">
                   Wallet/Account Address
                 </label>
                 <div className="flex gap-2 mb-2">
-                  <div className="flex items-center dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-4 py-2 flex-1">
+                  <div className="flex items-center dark:bg-[#0D0D0D] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-4 py-2 flex-1">
                     <span className="text-[#1D8751] mr-2">📋</span>
                     <input
                       className="flex-1 bg-transparent text:dark:text-white text-sm sm:text-base lg:text-lg focus:outline-none"
@@ -488,14 +488,14 @@ const Withdraw = () => {
                       <circle cx="12" cy="16" r="1" fill="#1D8751" />
                     </svg>
                   </div>
-                <div className="bg-[var(--card-color)] dark:bg-[var(--card-color)] border border-[#1D8751]/30 rounded-lg p-4 mb-4">
+                <div className="bg-[#F5F7FA] dark:bg-[#1A1A1F] border border-[#1D8751]/30 rounded-lg p-4 mb-4">
                   <style jsx>{`
                     .custom-bullet-list li::marker {
                       color: #1D8751;
                       font-size: 1.2rem;
                     }
                   `}</style>
-                  <ul className="custom-bullet-list list-disc pl-5 text-[#C1C1C1] dark:text-[#C1C1C1] text-[13px] leading-relaxed space-y-1 marker:text-[#1D8751] font-normal">
+                  <ul className="custom-bullet-list list-disc pl-5 text-[#788099] dark:text-[#C1C1C1] text-[13px] leading-relaxed space-y-1 marker:text-[#1D8751] font-normal">
                     <li>Please send the money from your own account Only</li>
                     <li>Put transaction ID in the description field of the bank</li>
                     <li>Please note, If you do not follow above conditions, we will reject your transaction and send you back your money.</li>
@@ -546,9 +546,9 @@ const Withdraw = () => {
           {/* OTP Modal */}
           {showOtpModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-[var(--card-color)] border border-[#1D8751] rounded-2xl p-8 max-w-md mx-4">
-                <h3 className="text-xl font-bold text-white mb-4">Enter OTP</h3>
-                <p className="text-[#A3A3A3] mb-4">
+              <div className="bg-white dark:bg-[#1A1A1F] border border-[#1D8751] rounded-2xl p-8 max-w-md mx-4">
+                <h3 className="text-xl font-bold text-[#0D0D0D] dark:text-white mb-4">Enter OTP</h3>
+                <p className="text-[#788099] dark:text-[#A3A3A3] mb-4">
                   Please enter the OTP sent to verify your withdrawal.
                 </p>
                 <form onSubmit={handleOtpSubmit}>
@@ -558,7 +558,7 @@ const Withdraw = () => {
                     onChange={(e) => setOtp(e.target.value)}
                     placeholder="Enter 6-digit OTP"
                     maxLength={6}
-                    className="w-full bg-[var(--bg-color)] border border-[#35353F] rounded-xl px-4 py-3 text-white text-lg text-center tracking-widest focus:outline-none focus:border-[#1D8751] mb-4"
+                    className="w-full bg-[#F5F7FA] dark:bg-[#0D0D0D] border border-[#E8EFF5] dark:border-[#35353F] rounded-xl px-4 py-3 text-[#0D0D0D] dark:text-white text-lg text-center tracking-widest focus:outline-none focus:border-[#1D8751] mb-4"
                   />
                   {otpError && (
                     <div className="text-red-500 text-sm mb-4 text-center">
@@ -569,7 +569,7 @@ const Withdraw = () => {
                     <button
                       type="button"
                       onClick={() => dispatch(closeOtpModal())}
-                      className="flex-1 bg-[#35353F] text-white py-3 rounded-xl text-lg font-medium hover:bg-[#2A2A32] transition-colors"
+                      className="flex-1 bg-[#E8EFF5] dark:bg-[#35353F] text-[#0D0D0D] dark:text-white py-3 rounded-xl text-lg font-medium hover:bg-[#D1D9E6] dark:hover:bg-[#2A2A32] transition-colors"
                     >
                       Cancel
                     </button>
@@ -613,4 +613,3 @@ const Withdraw = () => {
 };
 
 export default Withdraw;
-                {/* Currency Selection */}
