@@ -21,13 +21,13 @@ export default function DashboardLayout({
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen mt-0 md:mt-8 w-full overflow-x-hidden md:flex bg-gray-50 dark:bg-[#0a0a0f]">
+    <div className="min-h-screen mt-0 md:mt-8 w-full overflow-x-hidden md:flex bg-gray-50 dark:bg-[var(--bg-color)]">
       {/* Mobile Sidebar */}
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className="md:hidden sticky top-16 sm:top-20 left-0 right-0 z-40 bg-white dark:bg-[#0D0D0D]"
+        className="md:hidden sticky top-16 sm:top-20 left-0 right-0 z-40 bg-white dark:bg-[var(--bg-color)]"
       >
         <Sidebar />
       </motion.div>
@@ -45,7 +45,7 @@ export default function DashboardLayout({
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 w-full h-full max-w-full overflow-x-hidden box-border bg-gray-50 dark:bg-[#0a0a0f]">
+      <div className="flex-1 w-full h-full max-w-full overflow-x-hidden box-border bg-gray-50 dark:bg-[var(--bg-color)]">
         <AnimatePresence mode="wait">
           <motion.div
             key={pathname} // Use pathname for proper React reconciliation (fixes performance issue)

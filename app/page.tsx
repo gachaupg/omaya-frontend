@@ -335,7 +335,7 @@ export default function MarketingPage() {
   return (
     <div>
   <section
-        className="relative min-h-screen pt-18 pb-16 mx-auto overflow-visible bg-gradient-to-br from-gray-50 to-white dark:bg-[#0A0A0F]"
+        className="relative min-h-screen pt-18 pb-16 mx-auto overflow-visible bg-gradient-to-br from-gray-50 to-white dark:bg-[var(--bg-color)]"
       >
         {/* Background styling - different for light and dark modes */}
         <div className="absolute inset-0 overflow-hidden z-0">

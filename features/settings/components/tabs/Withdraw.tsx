@@ -182,7 +182,7 @@ const Withdraw = () => {
   const disableSubmit = loading || Boolean(normalizedFeesError);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0D0D0D] text-[#0D0D0D] dark:text-white flex flex-col items-center">
+    <div className="min-h-screen bg-gray-50 dark:bg-[var(--bg-color)] text-[#0D0D0D] dark:text-white flex flex-col items-center">
       {/* Success Message */}
       {showSuccess && (
         <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
@@ -261,7 +261,7 @@ const Withdraw = () => {
                 <div className="flex-1">
                   <label className="block text-sm text-[#788099] dark:text-[#A3A3A3] mb-1">Amount</label>
                   <input
-                    className={`w-full  bg-white dark:bg-[#0D0D0D] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-1 py-1 text-[#788099] dark:text-white text-lg focus:outline-none ${
+                    className={`w-full  bg-white dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-1 py-1 text-[#788099] dark:text-white text-lg focus:outline-none ${
                       errors.amount ? "border-red-500" : ""
                     }`}
                     placeholder="100"
@@ -283,7 +283,7 @@ const Withdraw = () => {
                   <label className="block text-sm text-[#788099] dark:text-[#A3A3A3] mb-1">
                     I want to Recieve Net
                   </label>
-                  <div className="flex items-center bg-white dark:bg-[#0D0D0D] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-1 py-1">
+                  <div className="flex items-center bg-white dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-1 py-1">
                     <span className="text-[#1D8751] text-2xl font-bold mr-2">
                       $ {netAmount ? netAmount.toFixed(2) : "0.00"}
                     </span>
@@ -428,7 +428,7 @@ const Withdraw = () => {
                   Wallet/Account Address
                 </label>
                 <div className="flex gap-2 mb-2">
-                  <div className="flex items-center dark:bg-[#0D0D0D] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-4 py-2 flex-1">
+                  <div className="flex items-center dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#35353F] rounded-[18px] px-4 py-2 flex-1">
                     <span className="text-[#1D8751] mr-2">📋</span>
                     <input
                       className="flex-1 bg-transparent text:dark:text-white text-sm sm:text-base lg:text-lg focus:outline-none"
@@ -558,7 +558,7 @@ const Withdraw = () => {
                     onChange={(e) => setOtp(e.target.value)}
                     placeholder="Enter 6-digit OTP"
                     maxLength={6}
-                    className="w-full bg-[#F5F7FA] dark:bg-[#0D0D0D] border border-[#E8EFF5] dark:border-[#35353F] rounded-xl px-4 py-3 text-[#0D0D0D] dark:text-white text-lg text-center tracking-widest focus:outline-none focus:border-[#1D8751] mb-4"
+                    className="w-full bg-[#F5F7FA] dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#35353F] rounded-xl px-4 py-3 text-[#0D0D0D] dark:text-white text-lg text-center tracking-widest focus:outline-none focus:border-[#1D8751] mb-4"
                   />
                   {otpError && (
                     <div className="text-red-500 text-sm mb-4 text-center">

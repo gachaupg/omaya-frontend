@@ -9,7 +9,7 @@
   --card-color: #ffffff;
 }
 
-.dark {
+.dark:not(.deem) {
   --background: #0A0A0A;
   --foreground: #ededed;
   /* Reusable background and card colors for dark mode */
@@ -17,13 +17,12 @@
   --card-color: #18181D;
 }
 
-.deem,
-.deem.dark {
-  --background: #18181D;
-  --foreground: #ededed;
+.deem {
+  --background: #18181D !important;
+  --foreground: #ededed !important;
   /* Reusable background and card colors for deem mode */
-  --bg-color: #18181D;
-  --card-color: #18181D;
+  --bg-color: #18181D !important;
+  --card-color: #18181D !important;
 }
 
 @theme inline {
@@ -52,7 +51,7 @@
   --color-popover-foreground: #171717;
 }
 
-.dark {
+.dark:not(.deem) {
   --color-card: #1D1D23;
   --color-card-foreground: #ededed;
   --color-border: #35353E;
@@ -64,17 +63,16 @@
   --color-popover-foreground: #ededed;
 }
 
-.deem,
-.deem.dark {
-  --color-card: #1D1D23;
-  --color-card-foreground: #ededed;
-  --color-border: #35353E;
-  --color-input: #2A2A2A;
-  --color-ring: #13b562;
-  --color-muted: #262626;
-  --color-muted-foreground: #9ca3af;
-  --color-popover: #1E1E1E;
-  --color-popover-foreground: #ededed;
+.deem {
+  --color-card: #1D1D23 !important;
+  --color-card-foreground: #ededed !important;
+  --color-border: #35353E !important;
+  --color-input: #2A2A2A !important;
+  --color-ring: #13b562 !important;
+  --color-muted: #262626 !important;
+  --color-muted-foreground: #9ca3af !important;
+  --color-popover: #1E1E1E !important;
+  --color-popover-foreground: #ededed !important;
 }
 
 body {
