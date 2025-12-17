@@ -1013,7 +1013,7 @@ export default function ExchangeForm({
     return (
       <div
         ref={paymentDropdownRef}
-        className="absolute top-full left-0 right-3 mt-2 bg-white dark:bg-[#0505F0FF] border border-gray-200 dark:border-[#35353E] rounded-xl shadow-lg z-[9999] w-full"
+        className="absolute top-full left-0 right-3 mt-2 bg-white dark:bg-[var(--bg-color)] border border-gray-200 dark:border-[#35353E] rounded-xl shadow-lg z-[9999] w-full"
       >
         {/* Search Input */}
         <div className="p-3 border-b border-gray-200 dark:border-[#35353E]">
@@ -1554,28 +1554,63 @@ export default function ExchangeForm({
 
   /* ------------------- UI ------------------- */
   // Render tabs and content based on active tab
-  const renderTabs = () => (
-    <div className="relative flex w-full overflow-hidden mt-0 mb-0 rounded-t-[28px] bg-[#F4F7F6] dark:bg-[#18181D] gap-0">
-      <TabButton
-        id="express"
-        variant="express"
-        position="first"
-        label={t("marketing.exchange.tabs.express", "Express")}
-      />
-      <TabButton
-        id="moneyx"
-        variant="moneyx"
-        position="middle"
-        label={t("marketing.exchange.tabs.moneyx", "Money X")}
-      />
-      <TabButton
-        id="swap"
-        variant="swap"
-        position="last"
-        label={t("marketing.exchange.tabs.swap", "Swap")}
-      />
-    </div>
-  );
+  const renderTabs = () => {
+    const borderColor = isDark ? "#2f323b" : "#D0D4DD";
+    
+    return (
+      <div className="relative flex w-full overflow-hidden mt-0 mb-0 rounded-t-[28px] bg-[#F4F7F6] dark:bg-[#18181D] gap-0">
+        <TabButton
+          id="express"
+          variant="express"
+          position="first"
+          label={t("marketing.exchange.tabs.express", "Express")}
+        />
+        <TabButton
+          id="moneyx"
+          variant="moneyx"
+          position="middle"
+          label={t("marketing.exchange.tabs.moneyx", "Money X")}
+        />
+        <TabButton
+          id="swap"
+          variant="swap"
+          position="last"
+          label={t("marketing.exchange.tabs.swap", "Swap")}
+        />
+        
+        {/* Continuous bottom border line for inactive tabs when Express is active */}
+        {activeTab === "express" && (
+          <div 
+            className="absolute bottom-0 h-[1px] pointer-events-none z-20"
+            style={{ 
+              backgroundColor: borderColor,
+              // Start after MoneyX's slanted left edge at the bottom
+              // Express flexGrow=2, MoneyX=1.6, Swap=2, total=5.6
+              // Express takes 2/5.6 = 35.714%, MoneyX starts at 35.714%
+              // MoneyX width = 1.6/5.6 = 28.571%
+              // MoneyX's slanted left edge at bottom: 8% of MoneyX width = 8% of 28.571% = 2.286%
+              // So border should start at: 35.714% + 2.286% = 38%
+              left: '38%',
+              right: '0'
+            }}
+          />
+        )}
+        
+        {/* Continuous bottom border line for inactive tabs when Swap is active */}
+        {activeTab === "swap" && (
+          <div 
+            className="absolute bottom-0 left-0 h-[1px] pointer-events-none z-20"
+            style={{ 
+              backgroundColor: borderColor,
+              // Start from left edge to where Swap tab starts (~64.3%)
+              // Express + MoneyX = (2+1.6)/5.6 ≈ 64.3%
+              width: '64.3%'
+            }}
+          />
+        )}
+      </div>
+    );
+  };
 
   // If Swap Crypto tab is active, render SwapWidget with tab controls
   if (activeTab === "swap") {
@@ -1589,7 +1624,7 @@ export default function ExchangeForm({
           : "max-w-none"
       }`}>
         {renderTabs()}
-        <div className="mt-2 sm:mt-3 px-3 sm:px-4 md:px-5">
+        <div className="mt-5 sm:mt-5 px-3 sm:px-4 md:px-5">
           <SwapWidget usePublicApi={isHomePage} />
         </div>
       </div>

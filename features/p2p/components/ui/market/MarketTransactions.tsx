@@ -677,7 +677,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                   </svg>
                 </button>
                 {isCurrencyDropdownOpen && (
-                  <div className="absolute right-0 mt-3 rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#0F0F13] shadow-2xl z-30 min-w-[140px]">
+                  <div className="absolute right-0 mt-3 rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--bg-color)] shadow-2xl z-30 min-w-[140px]">
                     {currencyOptions.map((option) => (
                       <button
                         key={option.value}
@@ -732,7 +732,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                 </svg>
               </button>
               {isPaymentDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-3 rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#0F0F13] shadow-2xl z-30 max-h-72 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-3 rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--bg-color)] shadow-2xl z-30 max-h-72 overflow-y-auto">
                   {paymentMethodOptions.map((option) => {
                     const isSelected =
                       option.value === ""
@@ -808,7 +808,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
                 </svg>
               </button>
               {isProviderDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 mt-3 rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#0F0F13] shadow-2xl z-30 max-h-72 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-3 rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--bg-color)] shadow-2xl z-30 max-h-72 overflow-y-auto">
                   {providerOptions.map((option) => {
                     const isSelected =
                       option.value === ""
@@ -858,7 +858,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
               <FaFilter className="text-[#1D8751]" size={20} />
             </button>
             {isFilterDropdownOpen && (
-              <div className="absolute top-full right-0 mt-3 border border-gray-200 dark:border-[#35353E] rounded-2xl bg-white dark:bg-[#0F0F13] text-gray-900 dark:text-white shadow-2xl z-40 min-w-[280px] p-4 space-y-4">
+              <div className="absolute top-full right-0 mt-3 border border-gray-200 dark:border-[#35353E] rounded-2xl bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white shadow-2xl z-40 min-w-[280px] p-4 space-y-4">
                 <div className="space-y-1">
                   <span className="text-xs uppercase tracking-wide text-gray-500 dark:text-[#7B7F92] font-semibold">Visibility</span>
                   <div className="space-y-2.5">

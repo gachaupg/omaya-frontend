@@ -147,7 +147,7 @@ const AboutPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0F0F11]">
+    <div className="min-h-screen bg-white dark:bg-[var(--bg-color)]">
       {/* Hero Section */}
       <section className="relative pt-24 md:pt-32 pb-20 px-4 overflow-hidden bg-gradient-to-br from-[#1D8751] via-[#16864a] to-[#0e5c33] dark:from-[#0F0F11] dark:via-[#0F0F11] dark:to-[#0F0F11]">
         
@@ -195,7 +195,7 @@ const AboutPage = () => {
       </section>
 
       {/* Trusted by Millions Worldwide Section */}
-      <section className="py-16 px-4 bg-white dark:bg-[#0F0F11]">
+      <section className="py-16 px-4 bg-white dark:bg-[var(--bg-color)]">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3">
@@ -307,7 +307,7 @@ const AboutPage = () => {
       </section>
 
       {/* Mission Section */}
-      <section className="py-16 px-4 bg-white dark:bg-[#0F0F11]">
+      <section className="py-16 px-4 bg-white dark:bg-[var(--bg-color)]">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             {/* Left Column - Mission Content */}
@@ -375,7 +375,7 @@ const AboutPage = () => {
       </section>
 
       {/* Vision Section */}
-      <section className="py-16 px-4 bg-gray-50 dark:bg-[#0F0F11]">
+      <section className="py-16 px-4 bg-gray-50 dark:bg-[var(--bg-color)]">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             {/* Left Column - Image */}
@@ -533,7 +533,7 @@ const AboutPage = () => {
       </section>
       {/* Our Story Section */} 
 
-      <section id="story" className="py-20 px-4 bg-white dark:bg-[#0A0A0F]">
+      <section id="story" className="py-20 px-4 bg-white dark:bg-[var(--bg-color)]">
         <div className="max-w-6xl mx-auto">
           {/* Section Header */}
           <div className="text-center mb-16">
@@ -718,7 +718,7 @@ const AboutPage = () => {
     {/* Achievements Section - Figma Match */}
 
       {/* Achievements Section */}
-      <section className="py-20 px-4 bg-white dark:bg-[#0A0A0F]">
+      <section className="py-20 px-4 bg-white dark:bg-[var(--bg-color)]">
         <div className="max-w-6xl mx-auto">
           {/* Header - NO ITALIC */}
           <div className="text-center mb-12">
@@ -863,12 +863,12 @@ const AboutPage = () => {
       {/* Security Section - Figma Match */}
      
       {/* Security Section */}
-      <section className="py-20 px-4 bg-white dark:bg-[#0A0A0F]">
+      <section className="py-20 px-4 bg-white dark:bg-[var(--bg-color)]">
         <div className="max-w-6xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             {/* Left Column - Padlock Image - NO OVERLAY (image has badge baked in) */}
             <div className="relative">
-              <div className="relative w-full h-[400px] rounded-3xl overflow-hidden bg-gray-100 dark:bg-[#0F0F14]">
+              <div className="relative w-full h-[400px] rounded-3xl overflow-hidden bg-gray-100 dark:bg-[var(--bg-color)]">
                 <Image
                   src="https://res.cloudinary.com/pitz/image/upload/v1764575591/Container_11_tss9j7.png"
                   alt="Security Padlock"
@@ -981,7 +981,7 @@ const AboutPage = () => {
       {/* Location Section */}
 
       {/* Location Section */}
-      <section className="py-20 px-4 bg-white dark:bg-[#0A0A0F] relative overflow-hidden">
+      <section className="py-20 px-4 bg-white dark:bg-[var(--bg-color)] relative overflow-hidden">
         <div className="max-w-7xl mx-auto relative z-10">
           {/* Header */}
           <div className="text-center mb-12">      

@@ -648,7 +648,7 @@ export const Chats: React.FC = () => {
                 placeholder="Search conversations..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-full bg-gray-100 dark:bg-[#050608] border border-gray-300 dark:border-[#272837] px-4 py-2 text-xs sm:text-sm text-gray-900 dark:text-[#E5E7EB] placeholder:text-gray-500 dark:placeholder:text-[#6B7280] focus:outline-none focus:border-[#1D8751]"
+                className="w-full rounded-full bg-gray-100 dark:bg-[var(--bg-color)] border border-gray-300 dark:border-[#272837] px-4 py-2 text-xs sm:text-sm text-gray-900 dark:text-[#E5E7EB] placeholder:text-gray-500 dark:placeholder:text-[#6B7280] focus:outline-none focus:border-[#1D8751]"
               />
             </div>
           </div>
@@ -806,7 +806,7 @@ export const Chats: React.FC = () => {
           <div className="flex-1">{renderMessages()}</div>
 
           {/* Input bar */}
-          <div className="px-4 py-3 border-t border-gray-200 dark:border-[#1F2937] bg-gray-50 dark:bg-[#050608]">
+          <div className="px-4 py-3 border-t border-gray-200 dark:border-[#1F2937] bg-gray-50 dark:bg-[var(--bg-color)]">
             <div className="flex items-center gap-2">
               <div className="flex-1">
                 <input

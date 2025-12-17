@@ -16,7 +16,7 @@ export default function MatchedOrderLayout({
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className="md:hidden sticky top-16 sm:top-20 left-0 right-0 z-40 bg-white dark:bg-[#0D0D0D]"
+        className="md:hidden sticky top-16 sm:top-20 left-0 right-0 z-40 bg-white dark:bg-[var(--bg-color)]"
       >
         <Sidebar />
       </motion.div>

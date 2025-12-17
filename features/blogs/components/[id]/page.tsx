@@ -42,7 +42,7 @@ const SingleBlogPage = () => {
 
   if (loading) {
     return (
-      <div className="bg-white dark:bg-[#0A0A0A] text-gray-900 dark:text-white min-h-screen p-4 sm:p-6 md:p-8 flex items-center justify-center">
+      <div className="bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white min-h-screen p-4 sm:p-6 md:p-8 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1D8751] mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">
@@ -55,7 +55,7 @@ const SingleBlogPage = () => {
 
   if (error) {
     return (
-      <div className="bg-white dark:bg-[#0A0A0A] text-gray-900 dark:text-white min-h-screen p-4 sm:p-6 md:p-8 flex items-center justify-center">
+      <div className="bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white min-h-screen p-4 sm:p-6 md:p-8 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-400 mb-4">Error: {error}</p>
           <button
@@ -71,7 +71,7 @@ const SingleBlogPage = () => {
 
   if (!blogPost) {
     return (
-      <div className="bg-white dark:bg-[#0A0A0A] text-gray-900 dark:text-white min-h-screen p-4 sm:p-6 md:p-8 flex items-center justify-center">
+      <div className="bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white min-h-screen p-4 sm:p-6 md:p-8 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600 dark:text-gray-400 mb-4">
             Blog post not found
@@ -88,7 +88,7 @@ const SingleBlogPage = () => {
   }
 
   return (
-    <div className="bg-white dark:bg-[#0A0A0A] text-gray-900 dark:text-white min-h-screen p-4 sm:p-6 md:p-8 mt-16">
+    <div className="bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white min-h-screen p-4 sm:p-6 md:p-8 mt-16">
       <div className="container mx-auto">
         {/* Back Button */}
         <button
@@ -149,7 +149,7 @@ const SingleBlogPage = () => {
           </div>
 
           {/* Bottom Footer */}
-          <div className="p-6 md:p-8 border-t border-gray-200 dark:border-[#30363D] bg-gray-100 dark:bg-[#0D1117]">
+          <div className="p-6 md:p-8 border-t border-gray-200 dark:border-[#30363D] bg-gray-100 dark:bg-[var(--bg-color)]">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                 <div className="flex items-center gap-2">

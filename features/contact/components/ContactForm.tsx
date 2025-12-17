@@ -240,7 +240,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
             onChange={handleInputChange}
             placeholder="Enter your name"
             disabled={isSubmitting}
-            className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-[#0e0e14] border border-[#E8EFF5] dark:border-[#3a3a45] rounded-2xl text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-[#6a6a7a] focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+            className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#3a3a45] rounded-2xl text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-[#6a6a7a] focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
           />
         </div>
       </div>
@@ -264,7 +264,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
             placeholder="your@email.com"
             required
             disabled={isSubmitting}
-            className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-[#0e0e14] border border-[#E8EFF5] dark:border-[#3a3a45] rounded-2xl text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-[#6a6a7a] focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+            className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#3a3a45] rounded-2xl text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-[#6a6a7a] focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
           />
         </div>
       </div>
@@ -287,7 +287,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
             onChange={handleInputChange}
             placeholder="How can we help?"
             disabled={isSubmitting}
-            className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-[#0e0e14] border border-[#E8EFF5] dark:border-[#3a3a45] rounded-2xl text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-[#6a6a7a] focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+            className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#3a3a45] rounded-2xl text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-[#6a6a7a] focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
           />
         </div>
       </div>
@@ -309,7 +309,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
           rows={4}
           required
           disabled={isSubmitting}
-          className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-[#0e0e14] border border-[#E8EFF5] dark:border-[#3a3a45] rounded-2xl text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-[#6a6a7a] focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors resize-none disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+          className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-[var(--bg-color)] border border-[#E8EFF5] dark:border-[#3a3a45] rounded-2xl text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-[#6a6a7a] focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors resize-none disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
         />
       </div>
 
