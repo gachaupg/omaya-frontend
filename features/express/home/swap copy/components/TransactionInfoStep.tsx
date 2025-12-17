@@ -666,7 +666,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
             </div>
           </div>
         </div>
-      
+
         {/* Warning Message */}
         {!hideContinueButton && (
           <div className="mt-4 mb-3 flex items-center gap-3 p-3 rounded-2xl bg-transparent">
@@ -680,7 +680,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
             </p>
           </div>
         )}
-
+      
         {/* Submit Button */}
         {!hideContinueButton && (
           <div className="mt-4">

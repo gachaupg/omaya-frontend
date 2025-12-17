@@ -37,7 +37,7 @@ const strongBorder =
   "border-[1.5px] border-[#35353E] dark:border-[#35353E]";
 const baseCard =
   `rounded-[26px] ${strongBorder} bg-white dark:bg-[#18181D] dark:text-white text-gray-900`;
-const labelCopy = "text-[12px] uppercase tracking-wide dark:text-[#7d7f95] text-gray-600";
+const labelCopy = "text-[12px] tracking-wide dark:text-[#7d7f95] text-gray-600";
 const inputBase =
   `rounded-2xl bg-transparent dark:bg-transparent ${strongBorder} dark:text-white text-[#35353e] px-4 py-2 w-full text-lg dark:placeholder:text-[#5f6070] placeholder:text-gray-400 focus:outline-none h-[48px]`;
 
@@ -407,23 +407,23 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
   };
 
   return (
-    <div className="w-full flex flex-col   dark:text-white text-gray-900">
+    <div className="w-full flex flex-col dark:text-white text-gray-900">
       <h2 className="text-base sm:text-lg md:text-xl font-semibold mb-2 sm:mb-3 md:mb-4 dark:text-[#9ba3c5] text-gray-700">
         <span className="dark:text-[#7e7e8f] text-gray-500 mr-1">1-</span>
         Transaction Info
       </h2>
 
       {/* You Send */}
-      <div className="relative mb-2 sm:mb-3 md:mb-4">
-        <div className={`${baseCard} p-2 sm:p-3 md:p-6 space-y-3 sm:space-y-4`} data-swap-card="true">
+      <div className="relative mb-1 sm:mb-2 md:mb-3">
+        <div className={`${baseCard} p-2 sm:p-3 md:p-6 space-y-2 sm:space-y-2.5`} data-swap-card="true">
           <div className="flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-3 md:gap-4">
-            <div className="space-y-1 sm:flex-1">
+            <div className="space-y-0.5 sm:flex-1">
               <p className="text-sm sm:text-base font-semibold">You Send</p>
-              <p className="text-xs dark:text-[#7d7f95] text-gray-500 pb-1">
+              <p className="text-xs dark:text-[#7d7f95] text-gray-500">
                 I want to Send
               </p>
             </div>
-            <p className={`${labelCopy} ml-2 sm:ml-0 sm:flex-1 sm:pl-10 lg:pl-10 pb-1`}>
+            <p className={`${labelCopy} ml-2 sm:ml-0 sm:flex-1`}>
               Asset
             </p>
           </div>
@@ -472,16 +472,16 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
       </div>
 
       {/* You Receive */}
-      <div className="mb-2 sm:mb-3 md:mb-4">
-        <div className={`${baseCard} p-2 sm:p-3 md:p-6 space-y-3 sm:space-y-4`} data-swap-card="true">
+      <div className="mb-1 sm:mb-2 md:mb-3">
+        <div className={`${baseCard} p-2 sm:p-3 md:p-6 space-y-2 sm:space-y-2.5`} data-swap-card="true">
           <div className="flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-3 md:gap-4">
-            <div className="space-y-1 sm:flex-1">
+            <div className="space-y-0.5 sm:flex-1">
               <p className="text-sm sm:text-base font-semibold">You Receive</p>
-              <p className="text-xs dark:text-[#7d7f95] text-gray-500 pb-1">
+              <p className="text-xs dark:text-[#7d7f95] text-gray-500">
                 I want to Receive
               </p>
             </div>
-            <p className={`${labelCopy} ml-4 sm:ml-0 sm:flex-1 sm:pl-10 lg:pl-16 pb-1`}>
+            <p className={`${labelCopy} ml-4 sm:ml-0 sm:flex-1`}>
               Asset
             </p>
           </div>

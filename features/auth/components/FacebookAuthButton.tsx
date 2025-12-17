@@ -242,7 +242,9 @@ const FacebookAuthButton: React.FC<FacebookAuthButtonProps> = ({
     <button
       onClick={handleFacebookLogin}
       disabled={isLoading || !isSDKLoaded}
-      className={`flex items-center justify-center w-full px-4 py-2 text-white bg-[#1877f2] rounded-md hover:bg-[#166fe5] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#1877f2] ${className} ${!isSDKLoaded ? 'opacity-50 cursor-not-allowed' : ''}`}
+      className={`flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-transparent border border-gray-300 dark:border-[#35353E] rounded-md shadow-sm hover:bg-gray-50 dark:hover:bg-[#2D2D33] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${className} ${!isSDKLoaded ? 'opacity-50 cursor-not-allowed' : ''} relative z-10 pointer-events-auto`}
+      type="button"
+      style={{ position: 'relative', zIndex: 10 }}
     >
       {isLoading ? (
         <span>Loading...</span>
@@ -250,18 +252,24 @@ const FacebookAuthButton: React.FC<FacebookAuthButtonProps> = ({
         <span>Initializing Facebook...</span>
       ) : (
         <>
-          <svg
-            className="w-5 h-5 mr-2"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path
-              fillRule="evenodd"
-              d="M20 10c0-5.523-4.477-10-10-10S0 4.477 0 10c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V10h2.54V7.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V10h2.773l-.443 2.89h-2.33v6.988C16.343 19.128 20 14.991 20 10z"
-              clipRule="evenodd"
-            />
-          </svg>
-          {children || 'Continue with Facebook'}
+          {children || (
+            <span className="flex items-center gap-2">
+              <svg
+                className="w-5 h-5"
+                fill="#1877f2"
+                viewBox="0 0 20 20"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M20 10c0-5.523-4.477-10-10-10S0 4.477 0 10c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V10h2.54V7.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V10h2.773l-.443 2.89h-2.33v6.988C16.343 19.128 20 14.991 20 10z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <span>Facebook</span>
+            </span>
+          )}
         </>
       )}
     </button>

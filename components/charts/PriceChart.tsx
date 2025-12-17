@@ -145,7 +145,7 @@ const CryptoCard = ({
   <div
     className="
   flex-1 min-w-[160px] max-w-[260px] sm:min-w-[180px] sm:max-w-[320px] h-[160px]
-  text-[13px] rounded-2xl shadow-lg p-3 flex flex-col justify-between border border-gray-300 relative
+  text-[13px] rounded-2xl shadow-lg p-3 flex flex-col justify-between border border-gray-300 relative bg-card
 "
   >
     <div className="flex items-center justify-between mb-1">

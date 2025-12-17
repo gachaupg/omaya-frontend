@@ -99,7 +99,7 @@ export const Chats = ({ data, symbol = 'BTC/USD', timeRange = '1', height = '100
           tickText: {
             show: true,
             color: '#788099',
-            size: 10,
+            size: 11,
           },
         },
         yAxis: {
@@ -115,7 +115,7 @@ export const Chats = ({ data, symbol = 'BTC/USD', timeRange = '1', height = '100
           tickText: {
             show: true,
             color: '#788099',
-            size: 10,
+            size: 11,
           },
         },
         crosshair: {
@@ -132,9 +132,9 @@ export const Chats = ({ data, symbol = 'BTC/USD', timeRange = '1', height = '100
             text: {
               show: true,
               color: '#788099',
-              size: 10,
-              paddingLeft: 0,
-              paddingRight: 0,
+              size: 11,
+              paddingLeft: 4,
+              paddingRight: 4,
             },
           },
           vertical: {
@@ -149,9 +149,9 @@ export const Chats = ({ data, symbol = 'BTC/USD', timeRange = '1', height = '100
             text: {
               show: true,
               color: '#788099',
-              size: 10,
-              paddingTop: 0,
-              paddingBottom: 0,
+              size: 11,
+              paddingTop: 4,
+              paddingBottom: 4,
             },
           },
         },

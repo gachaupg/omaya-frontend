@@ -120,9 +120,9 @@ function UserCard() {
     <Card
       borderColor="border-[#35353E]"
       width="w-full"
-      bgColor="bg-transparent"
+      bgColor="bg-card"
       borderRadius="rounded-xl sm:rounded-xl lg:rounded-[20px]"
-      className="p-2 sm:p-3 lg:p-2 bg-transparent overflow-hidden"
+      className="p-2 sm:p-3 lg:p-2 bg-card overflow-hidden"
     >
       {showHelpSupport ? (
         <div className="w-full mt-2">
