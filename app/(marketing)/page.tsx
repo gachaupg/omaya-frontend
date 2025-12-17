@@ -921,8 +921,8 @@ export default function MarketingPage() {
       </div>
 
       {/* Safe & Reliable Section */}
-      <div className="w-full bg-white dark:bg-[var(--bg-color)] pt-8 pb-16">
-        <div className="container dark:bg-[#1D1D23] pt-2 mb-2 mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
+      <div className="w-full bg-white rounded-lg dark:bg-[var(--bg-color)] pt-8 pb-16">
+        <div className="container dark:bg-[#1D1D23] rounded-lg pt-2 mb-2 mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             {/* Left Section - Image */}
             <div className="relative">
