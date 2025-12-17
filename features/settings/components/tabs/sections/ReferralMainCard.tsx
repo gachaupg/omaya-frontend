@@ -77,47 +77,43 @@ const ReferralMainCard: React.FC<Props> = ({
   /* ───────────── render ───────────── */
   return (
     <>
+      {/* Single Card containing both sections */}
       <div
-        className="w-full  bg-transparent text-[#0B0F23]
-                    flex flex-col gap-8 lg:flex-row lg:items-stretch
- dark:text-white"
+        className="w-full rounded-[26px] border border-[#E2E8F0] dark:border-[#35353e] bg-white dark:bg-[#1A1A1F] p-5 text-[#0B0F23] dark:text-white"
       >
-        {/* ───────── left column ───────── */}
-        <div className="flex-1 flex flex-col justify-between gap-6">
-          <div className="space-y-4 text-sm leading-6 text-[#4C526A] dark:text-[#A3AED0]">
-            <p>
-              Earn lifetime commissions whenever traders you invite close a deal. Share your code, let them complete their first order, and the platform automatically adds your percentage to this wallet.
-            </p>
-            <p>
-              Withdraw whenever you’re ready—no need to track spreadsheets or manual payouts. Everything syncs in real time so you can focus on growing your network.
-            </p>
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-stretch">
+          {/* ───────── left column ───────── */}
+          <div className="flex-1 flex flex-col justify-between gap-6">
+            <div className="space-y-4 text-sm leading-6 text-[#4C526A] dark:text-[#A3AED0]">
+              <p>
+                Earn lifetime commissions whenever traders you invite close a deal. Share your code, let them complete their first order, and the platform automatically adds your percentage to this wallet.
+              </p>
+              <p>
+                Withdraw whenever you're ready—no need to track spreadsheets or manual payouts. Everything syncs in real time so you can focus on growing your network.
+              </p>
+            </div>
+
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={() => setShowWithdrawPage(true)}
+              className="w-full sm:w-auto px-10 h-[48px] bg-[#FF5E5B] hover:bg-[#ff4946]
+                         rounded-[999px]
+                         text-white font-semibold tracking-wide flex items-center justify-center gap-2"
+            >
+              <img
+                src="https://res.cloudinary.com/pitz/image/upload/v1763908134/Group_3_ocyc3p.png"
+                alt="Withdraw icon"
+                width={22}
+                height={22}
+                className="flex-shrink-0"
+              />
+              Withdraw
+            </Button>
           </div>
 
-          <Button
-            variant="primary"
-            size="lg"
-            onClick={() => setShowWithdrawPage(true)}
-            className="w-full sm:w-auto px-10 h-[48px] bg-[#FF5E5B] hover:bg-[#ff4946]
-                       rounded-[999px]
-                       text-white font-semibold tracking-wide flex items-center justify-center gap-2"
-          >
-            <img
-              src="https://res.cloudinary.com/pitz/image/upload/v1763908134/Group_3_ocyc3p.png"
-              alt="Withdraw icon"
-              width={22}
-              height={22}
-              className="flex-shrink-0"
-            />
-            Withdraw
-          </Button>
-        </div>
-
-        <div className="flex-1 flex items-stretch">
-          <div
-            className="w-full rounded-[26px] border border-[#E2E8F0FF] bg-transparent
-                       px-4 py-4 flex flex-col dark:border-[#35353e]"
-          >
-
+          {/* ───────── right column (chart) ───────── */}
+          <div className="flex-1 flex items-center justify-center">
             {walletError && (
               <p className="text-center text-red-400">Failed to load wallet data</p>
             )}
@@ -127,7 +123,7 @@ const ReferralMainCard: React.FC<Props> = ({
             )}
 
             {!walletLoading && !walletError && (
-              <>
+              <div className="flex flex-col items-center w-full">
                 <div className="flex flex-col items-center gap-4 mb-4">
                   <DonutChartWithCenter
                     data={chartData}
@@ -136,7 +132,7 @@ const ReferralMainCard: React.FC<Props> = ({
                     centerValue={balance}
                   />
                 </div>
-                <div className="flex flex-col gap-3 mt-2">
+                <div className="flex flex-col gap-3 mt-2 w-full max-w-[280px]">
                   {chartData.map(({ label, value, color }) => (
                     <div
                       key={label}
@@ -157,8 +153,7 @@ const ReferralMainCard: React.FC<Props> = ({
                     </div>
                   ))}
                 </div>
-
-              </>
+              </div>
             )}
           </div>
         </div>
@@ -187,8 +182,8 @@ const ReferralMainCard: React.FC<Props> = ({
           </div>
           <CopyButton
             value={user?.referral_code ?? ""}
-            className="dark:bg-[var(--card-color)] bg-gray-200 text-[#1D8751] bg-gray-200 text-[#1D8751] font-semibold border
-                       hover:opacity-80 rounded-[999px] px-4 py-3 text-sm font-semibold transition-opacity flex-shrink-0"
+            className="bg-gray-200 dark:bg-[#1A1A1F] text-[#1D8751] font-semibold border border-[#E2E8F0] dark:border-[#35353e]
+                       hover:opacity-80 rounded-[999px] px-4 py-3 text-sm transition-opacity flex-shrink-0"
             showIcon={true}
           >
             Copy
@@ -203,7 +198,7 @@ const ReferralMainCard: React.FC<Props> = ({
           onClick={() => setShowQRCode(false)}
         >
           <div
-            className="bg-white dark:bg-[var(--card-color)] rounded-2xl p-6 max-w-sm w-full shadow-xl"
+            className="bg-white dark:bg-[#1A1A1F] rounded-2xl p-6 max-w-sm w-full shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-4">
@@ -220,7 +215,7 @@ const ReferralMainCard: React.FC<Props> = ({
             </div>
             {qrCodeDataUrl ? (
               <div className="flex flex-col items-center">
-                <div className="bg-white dark:bg-[var(--card-color)] p-4 rounded-lg border border-[#E2E8F0] dark:border-[#35353e] mb-4">
+                <div className="bg-white p-4 rounded-lg border border-[#E2E8F0] dark:border-[#35353e] mb-4">
                   <img
                     src={qrCodeDataUrl}
                     alt="Referral Code QR Code"

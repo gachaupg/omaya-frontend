@@ -220,3 +220,31 @@ textarea:active {
 .nav-active {
   color: #1D8751 !important;
 }
+
+/* ============================================================================
+   DROPDOWN STYLES - UPDATED TO USE GREEN INSTEAD OF BLUE
+   ============================================================================ */
+
+/* Dropdown item hover effect - consistent across all dropdowns */
+.dropdown-item-hover {
+  transition: background-color 0.15s ease;
+}
+
+/* CHANGED: Blue (rgba(59, 130, 246, 0.2)) -> Transparent (no color on hover for unselected) */
+.dropdown-item-hover:hover {
+  background-color: rgba(29, 135, 81, 0.1) !important; /* Light green hover */
+}
+
+/* CHANGED: Blue (rgba(59, 130, 246, 0.25)) -> Green (#1D8751) for selected items */
+.dropdown-item-selected {
+  background-color: #1D8751 !important; /* Solid green for selected */
+}
+
+/* Additional utility classes for dropdown styling */
+.dropdown-item-unselected {
+  background-color: transparent !important;
+}
+
+.dropdown-item-unselected:hover {
+  background-color: rgba(29, 135, 81, 0.1) !important; /* Light green on hover */
+}
