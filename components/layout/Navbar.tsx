@@ -811,8 +811,8 @@ export default function Navbar() {
                       >
                         <div className={`flex items-center rounded-lg transition-colors duration-200 group p-3 -m-3 ${
                           pathname === "/dashboard/express-exchange" 
-                            ? "bg-[#35353E]" 
-                            : "hover:bg-[#35353E]"
+                            ? "dark:bg-[#35353E] bg-[#e8f5ee]" 
+                            : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                         }`}>
                           <div className="flex items-center justify-center mr-4">
                             <svg
@@ -874,8 +874,8 @@ export default function Navbar() {
                       >
                         <div className={`flex items-center transition-colors duration-200 group rounded-lg p-3 -m-3 ${
                           pathname === "/dashboard/exchange" 
-                            ? "bg-[#35353E]" 
-                            : "hover:bg-[#35353E]"
+                            ? "dark:bg-[#35353E] bg-[#e8f5ee]" 
+                            : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                         }`}>
                           <div className="w-10 h-10 flex items-center justify-center mr-4">
                             <svg
@@ -951,8 +951,8 @@ export default function Navbar() {
                       >
                         <div className={`flex items-center rounded-lg transition-colors duration-200 group p-3 -m-3 ${
                           pathname === "/dashboard/p2p" || pathname?.startsWith("/dashboard/p2p/")
-                            ? "bg-[#35353E]" 
-                            : "hover:bg-[#35353E]"
+                            ? "dark:bg-[#35353E] bg-[#e8f5ee]" 
+                            : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                         }`}>
                           <div className="w-10 h-10 flex items-center justify-center mr-4">
                             <svg
@@ -1046,8 +1046,8 @@ export default function Navbar() {
                       >
                         <div className={`flex items-center transition-colors duration-200 group rounded-lg p-3 -m-3 ${
                           pathname === "/dashboard/swap" || pathname?.startsWith("/dashboard/swap/")
-                            ? "bg-[#35353E]" 
-                            : "hover:bg-[#35353E]"
+                            ? "dark:bg-[#35353E] bg-[#e8f5ee]" 
+                            : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                         }`}>
                           <div className="w-10 h-10 flex items-center justify-center mr-4">
                             <svg
@@ -1384,8 +1384,8 @@ export default function Navbar() {
                             >
                               <div className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${
                                 pathname === "/dashboard/express-exchange" 
-                                  ? "bg-[#35353E]" 
-                                  : "dark:hover:bg-[#35353E] hover:bg-gray-100"
+                                  ? "dark:bg-[#35353E] bg-[#e8f5ee]" 
+                                  : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                               }`}>
                                 <div className="flex items-center justify-center mr-4 flex-shrink-0">
                                   <svg
@@ -1448,8 +1448,8 @@ export default function Navbar() {
                             >
                               <div className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${
                                 pathname === "/dashboard/p2p" || pathname?.startsWith("/dashboard/p2p/")
-                                  ? "bg-[#35353E]" 
-                                  : "dark:hover:bg-[#35353E] hover:bg-gray-100"
+                                  ? "dark:bg-[#35353E] bg-[#e8f5ee]" 
+                                  : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                               }`}>
                                 <div className="w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
                                   <svg
@@ -1544,8 +1544,8 @@ export default function Navbar() {
                             >
                               <div className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${
                                 pathname === "/dashboard/swap" || pathname?.startsWith("/dashboard/swap/")
-                                  ? "bg-[#35353E]" 
-                                  : "dark:hover:bg-[#35353E] hover:bg-gray-100"
+                                  ? "dark:bg-[#35353E] bg-[#e8f5ee]" 
+                                  : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                               }`}>
                                 <div className="w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
                                   <svg
@@ -1616,8 +1616,8 @@ export default function Navbar() {
                             >
                               <div className={`flex items-center rounded-lg transition-colors duration-200 group p-3 ${
                                 pathname === "/dashboard/exchange" 
-                                  ? "bg-[#35353E]" 
-                                  : "dark:hover:bg-[#35353E] hover:bg-gray-100"
+                                  ? "dark:bg-[#35353E] bg-[#e8f5ee]" 
+                                  : "dark:hover:bg-[#35353E] hover:bg-[#f0faf5]"
                               }`}>
                                 <div className="w-10 h-10 flex items-center justify-center mr-4 flex-shrink-0">
                                   <svg

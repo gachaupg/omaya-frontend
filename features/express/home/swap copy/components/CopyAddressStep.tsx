@@ -241,29 +241,29 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center py-8 w-full">
+    <div className="min-h-screen flex flex-col items-center py-4 sm:py-8 px-3 sm:px-4 w-full">
       {/* Top Card */}
-      <div className="flex flex-col md:flex-row justify-between items-stretch bg-white dark:bg-[#23232b] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl p-3 shadow-lg w-full max-w-4xl mb-4 min-h-[180px]">
-        <div className="flex-1 flex flex-col justify-between py-2 pr-2">
-                      <div>
-              <div className="text-gray-600 dark:text-[#7e7e8f] text-xs font-semibold mb-0.5">
-                Amount:
+      <div className="flex flex-col md:flex-row justify-between items-stretch bg-white dark:bg-[#23232b] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl p-3 sm:p-4 shadow-lg w-full max-w-4xl mb-4 min-h-[180px]">
+        <div className="flex-1 flex flex-col justify-between py-2 pr-0 sm:pr-2">
+          <div>
+            <div className="text-gray-600 dark:text-[#7e7e8f] text-xs font-semibold mb-0.5">
+              Amount:
+            </div>
+            <div className="text-gray-900 dark:text-white text-sm sm:text-base font-semibold mb-1">
+              {statusObj?.amount_from || swapResponse.fromAmount} 
+              <span className='uppercase ml-2 sm:ml-4'>{statusObj?.from_currency || swapResponse.fromCurrency}</span>
+            </div>
+           
+            <div className="mt-3 sm:mt-4">
+              <div className="text-gray-600 dark:text-[#7e7e8f] text-xs font-semibold mb-1">
+                To this address:
               </div>
-              <div className="text-gray-900 dark:text-white text-base font-semibold mb-1">
-                {statusObj?.amount_from || swapResponse.fromAmount} 
-                <span className='uppercase ml-4'>{statusObj?.from_currency || swapResponse.fromCurrency}</span>
-              </div>
-             
-              <div className="mt-4">
-                <div className="text-gray-600 dark:text-[#7e7e8f] text-xs font-semibold mb-1">
-                  To this address:
-                </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[#1D8751] dark:text-[#1D8751] font-mono text-base truncate">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <span className="text-[#1D8751] dark:text-[#1D8751] font-mono text-xs sm:text-base break-all sm:truncate max-w-full">
                   {swapResponse.payinAddress}
                 </span>
                 <button
-                  className="bg-[#1D8751] hover:bg-[#16663d] dark:bg-[#1D8751] dark:hover:bg-[#16663d] p-2 rounded-lg text-white transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
+                  className="bg-[#1D8751] hover:bg-[#16663d] dark:bg-[#1D8751] dark:hover:bg-[#16663d] p-2 rounded-lg text-white transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center flex-shrink-0 self-start sm:self-auto"
                   onClick={onCopyAddress}
                   title="Copy Address"
                 >
@@ -282,36 +282,35 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
                     </svg>
                   )}
                 </button>
-
               </div>
             </div>
           </div>
         </div>
-        <div className="flex-shrink-0 ml-0 md:ml-6 flex items-center justify-center py-2">
+        <div className="flex-shrink-0 ml-0 md:ml-6 flex items-center justify-center py-2 mt-3 md:mt-0">
           {/* QR code */}
-          <div className="w-36 h-36 bg-white rounded-lg flex items-center justify-center">
+          <div className="w-28 h-28 sm:w-36 sm:h-36 bg-white rounded-lg flex items-center justify-center">
             <img
               src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${swapResponse.payinAddress}`}
               alt="QR Code"
-              className="w-32 h-32"
+              className="w-24 h-24 sm:w-32 sm:h-32"
             />
           </div>
         </div>
       </div>
 
       {/* Stepper */}
-      <div className="w-full max-w-4xl mb-3">
+      <div className="w-full max-w-4xl mb-3 px-2 sm:px-0 overflow-x-auto">
         {/* Circle and connecting line row */}
-        <div className="flex items-center mb-2">
+        <div className="flex items-center mb-2 min-w-[320px]">
           {statusSteps.map((step, idx) => {
             const isActive = idx === currentStepIndex;
             const isCompleted = idx < currentStepIndex;
             
             return (
               <React.Fragment key={step.key}>
-                <div className="flex items-center">
+                <div className="flex items-center flex-shrink-0">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center p-1 ${
+                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center p-1 ${
                       isActive
                         ? "bg-[#F79330] dark:bg-[#F79330]"
                         : isCompleted
@@ -320,14 +319,14 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
                     }`}
                   >
                     {/* Always show the step's icon, colored appropriately */}
-                    <span className={isActive ? "text-white" : isCompleted ? "text-white" : "text-white"}>
+                    <span className={`${isActive ? "text-white" : isCompleted ? "text-white" : "text-white"} [&>svg]:w-4 [&>svg]:h-4 sm:[&>svg]:w-6 sm:[&>svg]:h-6`}>
                       {StatusIcons[step.key as keyof typeof StatusIcons]}
                     </span>
                   </div>
                 </div>
                 {/* Connecting line at circle center */}
                 {idx < statusSteps.length - 1 && (
-                  <div className="flex-1 h-1 mx-2 rounded-full">
+                  <div className="flex-1 h-0.5 sm:h-1 mx-1 sm:mx-2 rounded-full min-w-[20px]">
                     <div
                       className={`h-full rounded-full transition-all duration-300 ${
                         idx < currentStepIndex
@@ -345,16 +344,16 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
         </div>
         
         {/* Text and dots row */}
-        <div className="flex items-center">
+        <div className="flex items-center min-w-[320px]">
           {statusSteps.map((step, idx) => {
             const isActive = idx === currentStepIndex;
             const isCompleted = idx < currentStepIndex;
             
             return (
               <React.Fragment key={`text-${step.key}`}>
-                <div className="flex flex-col items-center w-10">
+                <div className="flex flex-col items-center w-8 sm:w-10 flex-shrink-0">
                   <span
-                    className={`font-medium text-xs text-center ${
+                    className={`font-medium text-[10px] sm:text-xs text-center leading-tight ${
                       isActive
                         ? "text-[#F79330] dark:text-[#F79330]"
                         : isCompleted
@@ -365,16 +364,16 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
                     {step.label}
                   </span>
                   {isActive && (
-                    <div className="flex gap-1 mt-1">
-                      <span className="w-1.5 h-1.5 bg-yellow-400 rounded-full inline-block animate-bounce" style={{animationDelay: '0s'}}></span>
-                      <span className="w-1.5 h-1.5 bg-yellow-400 rounded-full inline-block animate-bounce" style={{animationDelay: '0.2s'}}></span>
-                      <span className="w-1.5 h-1.5 bg-yellow-400 rounded-full inline-block animate-bounce" style={{animationDelay: '0.4s'}}></span>
+                    <div className="flex gap-0.5 sm:gap-1 mt-1">
+                      <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-yellow-400 rounded-full inline-block animate-bounce" style={{animationDelay: '0s'}}></span>
+                      <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-yellow-400 rounded-full inline-block animate-bounce" style={{animationDelay: '0.2s'}}></span>
+                      <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-yellow-400 rounded-full inline-block animate-bounce" style={{animationDelay: '0.4s'}}></span>
                     </div>
                   )}
                 </div>
                 {/* Spacer for connecting line area */}
                 {idx < statusSteps.length - 1 && (
-                  <div className="flex-1 mx-2"></div>
+                  <div className="flex-1 mx-1 sm:mx-2 min-w-[20px]"></div>
                 )}
               </React.Fragment>
             );
@@ -383,22 +382,22 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
       </div>
 
       {/* Transaction Details Card */}
-      <div className="bg-white dark:bg-[#23232b] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl p-6 shadow-lg w-full max-w-4xl mb-3">
+      <div className="bg-white dark:bg-[#23232b] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl p-4 sm:p-6 shadow-lg w-full max-w-4xl mb-3">
         {/* Title */}
-        <div className="text-gray-900 dark:text-white text-2xl font-semibold mb-4">
+        <div className="text-gray-900 dark:text-white text-xl sm:text-2xl font-semibold mb-4">
           Transaction Details
         </div>
         {/* Transaction ID Row */}
-        <div className="flex items-center justify-between mb-1">
-          <div className="text-gray-600 dark:text-[#7e7e8f] text-base font-medium">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1 gap-2 sm:gap-0">
+          <div className="text-gray-600 dark:text-[#7e7e8f] text-sm sm:text-base font-medium">
             Transaction ID
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-gray-900 dark:text-white text-base font-mono font-semibold">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-gray-900 dark:text-white text-xs sm:text-base font-mono font-semibold truncate max-w-[180px] sm:max-w-none">
               {swapResponse.id}
             </span>
             <button
-              className="ml-2 p-1 rounded transition"
+              className="flex-shrink-0 p-1 rounded transition"
               onClick={() => navigator.clipboard.writeText(swapResponse.id)}
               title="Copy Transaction ID"
             >
@@ -407,36 +406,38 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
           </div>
         </div>
         {/* Dashed Divider */}
-        <div className="border-t border-dashed border-gray-400 dark:border-[#7e7e8f] mb-4"></div>
+        <div className="border-t border-dashed border-gray-400 dark:border-[#7e7e8f] my-4"></div>
         {/* You Get and Recipient Wallet */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-gray-600 dark:text-[#7e7e8f] text-base font-medium">
-            You Get
+        <div className="flex flex-col sm:flex-row gap-4 sm:gap-0">
+          {/* You Get Section */}
+          <div className="flex-1">
+            <div className="text-gray-600 dark:text-[#7e7e8f] text-sm sm:text-base font-medium mb-1">
+              You Get
+            </div>
+            <div className="text-gray-900 dark:text-white text-sm sm:text-base font-mono font-semibold uppercase">
+              {statusObj?.amount_to || swapResponse.toAmount} {statusObj?.to_currency || swapResponse.toCurrency}
+            </div>
           </div>
-          <div className="text-gray-600 dark:text-[#7e7e8f] text-base font-medium">
-            Recipient Wallet
-          </div>
-        </div>
-        <div className="flex items-center justify-between mt-2">
-          <div className="text-gray-900 dark:text-white text-base font-mono font-semibold">
-            {statusObj?.amount_to || swapResponse.toAmount} {statusObj?.to_currency || swapResponse.toCurrency}
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-gray-600 dark:text-[#7e7e8f] text-sm font-mono">
+          {/* Recipient Wallet Section */}
+          <div className="flex-1 sm:text-right">
+            <div className="text-gray-600 dark:text-[#7e7e8f] text-sm sm:text-base font-medium mb-1">
+              Recipient Wallet
+            </div>
+            <div className="text-gray-600 dark:text-[#7e7e8f] text-xs sm:text-sm font-mono break-all sm:break-normal">
               {swapResponse.payoutAddress}
-            </span>
+            </div>
           </div>
         </div>
       </div>
 
       {/* View Results Button - shown when transaction is finished */}
       {mappedStatus === "finished" && (
-        <div className="w-full max-w-4xl mb-4">
-          <div className="bg-[#1D8751] dark:bg-[#1D8751] border border-[#1D8751] dark:border-[#1D8751] rounded-2xl p-4 shadow-lg text-center">
-            <h3 className="text-white dark:text-white text-lg font-semibold mb-2">🎉 Transaction Completed!</h3>
-            <p className="text-white/90 dark:text-white/90 text-sm mb-4">Your swap has been processed successfully.</p>
+        <div className="w-full max-w-4xl mb-4 px-2 sm:px-0">
+          <div className="bg-[#1D8751] dark:bg-[#1D8751] border border-[#1D8751] dark:border-[#1D8751] rounded-2xl p-3 sm:p-4 shadow-lg text-center">
+            <h3 className="text-white dark:text-white text-base sm:text-lg font-semibold mb-2">🎉 Transaction Completed!</h3>
+            <p className="text-white/90 dark:text-white/90 text-xs sm:text-sm mb-3 sm:mb-4">Your swap has been processed successfully.</p>
             <button
-              className="bg-white hover:bg-gray-100 dark:bg-white dark:hover:bg-gray-100 text-[#1D8751] dark:text-[#1D8751] font-semibold py-3 px-8 rounded-xl text-lg transition"
+              className="bg-white hover:bg-gray-100 dark:bg-white dark:hover:bg-gray-100 text-[#1D8751] dark:text-[#1D8751] font-semibold py-2 sm:py-3 px-6 sm:px-8 rounded-xl text-base sm:text-lg transition w-full sm:w-auto"
               onClick={onNext}
             >
               View Results
@@ -446,10 +447,11 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
       )}
 
       {/* Terms and Conditions Summary - always at the very bottom */}
-      <div className="flex items-center mb-2 mt-2 max-w-4xl">
+      <div className="flex items-center justify-center mb-2 mt-2 w-full max-w-4xl px-2 sm:px-0">
         <img
           src="https://res.cloudinary.com/pitz/image/upload/v1752248844/Frame_34947_hxlr7o.png"
-          alt=""
+          alt="Terms and Conditions"
+          className="w-full h-auto max-w-full object-contain"
         />
       </div>
       

@@ -14,7 +14,7 @@ interface WalletAddressStepProps {
 }
 
 const strongBorder =
-  "border-[1.5px] border-gray-200 dark:border-white/10 shadow-[0_0_0_1px_rgba(255,255,255,0.05)]";
+  "border-[1.5px] border-gray-200 dark:border-[#35353E]";
 
 const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   walletAddress,
@@ -153,13 +153,13 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
     shouldBlockWhileValidating;
 
   return (
-    <div className="w-full flex flex-col    gap-4">
-      <div className="mb-2 text-base sm:text-lg md:text-xl font-bold text-[#788099]">
+    <div className="w-full flex flex-col gap-2 sm:gap-4">
+      <div className="mb-1 sm:mb-2 text-base sm:text-lg md:text-xl font-bold text-[#788099]">
         <span className="text-[#7e7e8f]">2-</span> Your Wallet Address
       </div>
       <div className="w-full">
         {/* Combined Wallet Address and Terms Card */}
-        <div className={`bg-white dark:bg-[var(--card-color)] ${strongBorder} rounded-2xl p-3 sm:p-4 md:p-6 lg:p-8 w-full text-gray-900 dark:text-white`}>
+        <div className={`bg-white dark:bg-[var(--card-color)] ${strongBorder} rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 lg:p-8 w-full text-gray-900 dark:text-white`}>
           <div className="flex flex-col gap-3 sm:gap-4 md:gap-6">
             {/* Wallet Address Input Section */}
             <div className="flex flex-col gap-3 sm:gap-4">

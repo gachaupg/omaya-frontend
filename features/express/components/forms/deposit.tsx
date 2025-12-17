@@ -1644,10 +1644,12 @@ export default function DepositForm({
                         Popular
                       </span>
                     </div>
-                    {sortedSwapAssets.slice(0, 3).map((asset: SupportedAsset, index: number) => (
+                    {sortedSwapAssets.slice(0, 3).map((asset: SupportedAsset, index: number) => {
+                      const isCurrentlySelected = selectedAsset?.ticker === asset.ticker && selectedAsset?.network === asset.network;
+                      return (
                       <div
                         key={`popular-${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
-                        className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E]"
+                        className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] transition-colors duration-150 ${isCurrentlySelected ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
                         onClick={() => {
                           handleAssetSelection(asset);
                           setIsAssetDropdownOpen(false);
@@ -1698,7 +1700,7 @@ export default function DepositForm({
                           <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
                         )}
                       </div>
-                    ))}
+                    );})}
 
                     <div className="border-t-2 border-[#D1D2D4FF] dark:border-[#35353E]"></div>
 
@@ -1711,10 +1713,12 @@ export default function DepositForm({
                 )}
 
                 {(assetSearchTerm ? sortedSwapAssets : sortedSwapAssets.slice(3)).map(
-                  (asset: SupportedAsset, index: number) => (
+                  (asset: SupportedAsset, index: number) => {
+                    const isCurrentlySelected = selectedAsset?.ticker === asset.ticker && selectedAsset?.network === asset.network;
+                    return (
                     <div
                       key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
-                      className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0"
+                      className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0 transition-colors duration-150 ${isCurrentlySelected ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
                       onClick={() => {
                         handleAssetSelection(asset);
                         setIsAssetDropdownOpen(false);
@@ -1765,8 +1769,8 @@ export default function DepositForm({
                         <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
                       )}
                     </div>
-                  )
-                )}
+                  );})
+                }
               </>
             ) : (
               <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">

@@ -150,35 +150,6 @@ const AboutPage = () => {
     <div className="min-h-screen bg-white dark:bg-[#0F0F11]">
       {/* Hero Section */}
       <section className="relative pt-24 md:pt-32 pb-20 px-4 overflow-hidden bg-gradient-to-br from-[#1D8751] via-[#16864a] to-[#0e5c33] dark:from-[#0F0F11] dark:via-[#0F0F11] dark:to-[#0F0F11]">
-        {/* Heptagonal Patterns - matching homepage style */}
-        <div className="absolute inset-0 overflow-hidden">
-          {/* Bottom right heptagon */}
-          <div
-            className="absolute bottom-[80px] right-[20px] w-[100px] h-[100px] sm:bottom-[120px] sm:right-[30px] sm:w-[130px] sm:h-[130px] md:bottom-[160px] md:right-[40px] md:w-[170px] md:h-[170px] 2xl:bottom-[220px] 2xl:right-[130px] opacity-20 bg-[#13B562] dark:bg-white/10 hidden sm:block"
-            style={{
-              clipPath:
-                "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
-            }}
-          ></div>
-
-          {/* Top left heptagon */}
-          <div
-            className="absolute top-[-20px] left-[20px] w-[70px] h-[70px] sm:left-[30px] sm:w-[90px] sm:h-[90px] 2xl:left-[60px] opacity-20 bg-[#13B562] dark:bg-white/10 hidden sm:block"
-            style={{
-              clipPath:
-                "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
-            }}
-          ></div>
-
-          {/* Bottom left heptagon */}
-          <div
-            className="absolute bottom-[-40px] left-[150px] w-[120px] h-[120px] sm:left-[200px] sm:w-[150px] sm:h-[150px] md:left-[300px] md:w-[180px] md:h-[180px] opacity-20 bg-[#13B562] dark:bg-white/10 hidden sm:block"
-            style={{
-              clipPath:
-                "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
-            }}
-          ></div>
-        </div>
         
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="text-center">
