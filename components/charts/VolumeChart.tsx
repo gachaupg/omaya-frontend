@@ -1,4 +1,6 @@
-
+/**
+ * VolumeChart.tsx – Transaction Volume Summary
+ */
 
 import Card from "../ui/Card";
 import React from "react";
@@ -10,26 +12,25 @@ interface VolumeChartProps {
 
 const VolumeChart: React.FC<VolumeChartProps> = ({ transactionSummary }) => {
   const formatValue = (value: number) => {
-    if (value >= 1000000) {
-      return `${(value / 1000000).toFixed(1)}M`;
-    } else if (value >= 1000) {
-      return `${(value / 1000).toFixed(1)}K`;
-    }
-    return value?.toFixed(2);
+    // Format with commas and 2 decimal places for actual value display
+    return new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value || 0);
   };
 
   const volumeData = [
     {
       title: "Total Value",
-      value: formatValue(transactionSummary?.total_approved_volume || transactionSummary?.total_approved_all || 0),
+      value: formatValue(transactionSummary?.total_approved_volume || 0),
     },
     {
       title: "Exchange",
-      value: formatValue(transactionSummary.total_approved_exchange_net || transactionSummary.total_approved_exchange_combined || 0),
+      value: formatValue(transactionSummary.total_approved_exchange_volume || transactionSummary.total_approved_exchange_combined || 0),
     },
     {
       title: "P2P",
-      value: formatValue(transactionSummary.total_approved_p2p_net || transactionSummary.total_approved_p2p_combined || 0),
+      value: formatValue(transactionSummary.total_approved_p2p_volume || transactionSummary.total_approved_p2p_combined || 0),
     },
     {
       title: "Swap",

@@ -3,6 +3,9 @@ import React, { useState, useMemo } from "react";
 import { useMarketingI18n } from "@/lib/useMarketingI18n";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/rootReducer";
 import { tokens } from "@/styles/tokens";
 import { Play, MessageCircle, BarChart, Globe, Lock, DollarSign, Users, TrendingUp, Shield, Zap, UserPlus, ArrowRight, Calendar, Clock, MapPin, Phone, Mail, ChevronDown, ChevronUp, ArrowLeftRight, HelpCircle } from "lucide-react";
 import ExchangeForm from "@/components/ExchangeForm";
@@ -116,7 +119,9 @@ interface Article {
 
 export default function MarketingPage() {
   const { t } = useMarketingI18n();
-  // removed unused 'activeCategory' and 'setActiveCategory'
+  const router = useRouter();
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const [activeCategory, setActiveCategory] = useState<Category>("News");
   const [openFAQ, setOpenFAQ] = useState<number | null>(0);
   const [showContactSuccess, setShowContactSuccess] = useState(false);
   const [showContactError, setShowContactError] = useState(false);
@@ -339,45 +344,6 @@ export default function MarketingPage() {
             }}
           ></div>
         </div>
-        
-        {/* Heptagonal Patterns */}
-        <div className="absolute inset-0 overflow-hidden">
-          {/* Bottom right heptagon */}
-          <div
-            className="absolute bottom-[80px] right-[20px] w-[100px] h-[100px] sm:bottom-[120px] sm:right-[30px] sm:w-[130px] sm:h-[130px] md:bottom-[160px] md:right-[40px] md:w-[170px] md:h-[170px] 2xl:bottom-[220px] 2xl:right-[130px] opacity-20 bg-[#1D8751] hidden sm:block"
-            style={{
-              clipPath:
-                "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
-            }}
-          ></div>
-
-          {/* Top left heptagon */}
-          <div
-            className="absolute top-[-20px] left-[20px] w-[70px] h-[70px] sm:left-[30px] sm:w-[90px] sm:h-[90px] 2xl:left-[60px] opacity-20 bg-[#1D8751] hidden sm:block"
-            style={{
-              clipPath:
-                "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
-            }}
-          ></div>
-
-          {/* Bottom left heptagon */}
-          <div
-            className="absolute bottom-[-40px] left-[150px] w-[120px] h-[120px] sm:left-[200px] sm:w-[150px] sm:h-[150px] md:left-[300px] md:w-[180px] md:h-[180px] opacity-20 bg-[#1D8751] hidden sm:block"
-            style={{
-              clipPath:
-                "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
-            }}
-          ></div>
-
-          {/* Top right heptagon */}
-          <div
-            className="absolute top-[40px] left-[50%] translate-x-[-50%] w-[120px] h-[120px] sm:top-[60px] sm:left-[60%] sm:w-[150px] sm:h-[150px] md:top-[70px] md:left-[720px] md:w-[180px] md:h-[180px] 2xl:left-[1250px] opacity-20 bg-[#1D8751] hidden md:block"
-            style={{
-              clipPath:
-                "polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%)",
-            }}
-          ></div>
-        </div>
 
         <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 relative z-10 mt-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 items-start gap-y-5 md:gap-y-4 md:gap-x-6 lg:gap-x-8 xl:gap-x-10">
@@ -460,8 +426,11 @@ export default function MarketingPage() {
         </div>
       </section>
 
-      <div className="pt-4 sm:pt-6 md:pt-8 pb-12 sm:pb-16 md:pb-20 px-4 md:px-[100px] bg-[#18181b] dark:bg-[#18181b]">
-        <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl">
+      <div className="pt-4 sm:pt-6 md:pt-8 pb-12 sm:pb-16 md:pb-20 px-4 md:px-[100px] bg-white dark:bg-[var(--bg-color)] relative overflow-hidden">
+        {/* Greenish gradient background glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] rounded-full blur-3xl pointer-events-none" style={{ background: 'radial-gradient(ellipse at center, rgba(29, 135, 81, 0.35) 0%, rgba(19, 181, 98, 0.20) 40%, transparent 70%)' }}></div>
+        
+        <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl relative z-10">
           {/* Green pill banner */}
           <div className="flex justify-center mb-4 sm:mb-6">
             <span className="bg-[#1D8751]/10 border border-[#1D8751] text-[#1D8751] px-4 py-1.5 sm:px-5 sm:py-2 rounded-full text-xs sm:text-sm font-medium">
@@ -475,7 +444,9 @@ export default function MarketingPage() {
               {t(
                 "marketing.achievements.title.leading",
                 "Celebrating Success:"
-              )}{" "}
+              )}
+            </span>{" "}
+            <span className="text-[#1D8751]">
               {t(
                 "marketing.achievements.title.highlight",
                 "Key Achievements"
@@ -750,7 +721,7 @@ export default function MarketingPage() {
                           <div className="relative mb-3 w-full -mx-4">
                             {/* Colored horizontal bar cutting across - faded, edge to edge, no padding, full right coverage */}
                             <div 
-                              className={`absolute top-1/2 left-0 h-12 ${iconBgColor} transform -translate-y-1/2 opacity-30`}
+                              className={`absolute top-1/2 left-0 h-16 ${iconBgColor} transform -translate-y-1/2 opacity-30`}
                               style={{
                                 right: '-1rem',
                                 width: 'calc(100% + 2rem)'
@@ -758,12 +729,12 @@ export default function MarketingPage() {
                             ></div>
                             {/* Centered asset image */}
                             <div className="relative z-10 flex items-center justify-center">
-                              <div className="w-10 h-10 bg-white dark:bg-[#1D1D23] rounded-full flex items-center justify-center border border-gray-200 dark:border-transparent">
+                              <div className="w-14 h-14 rounded-full flex items-center justify-center">
                                 <Image
                                   src={asset.image}
                                   alt={asset.name}
-                                  width={32}
-                                  height={32}
+                                  width={48}
+                                  height={48}
                                   className="object-contain w-full h-full"
                                   unoptimized
                                 />
@@ -922,7 +893,7 @@ export default function MarketingPage() {
 
       {/* Safe & Reliable Section */}
       <div className="w-full bg-white dark:bg-[var(--bg-color)] pt-8 pb-16">
-        <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
+        <div className="container dark:bg-[#1D1D23] pt-2 mb-2 mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             {/* Left Section - Image */}
             <div className="relative">
@@ -1202,12 +1173,18 @@ export default function MarketingPage() {
                 </div>
               ))}
             </div>
+            <div 
+              className="flex justify-center mt-5 cursor-pointer"
+              onClick={() => router.push(isAuthenticated ? '/dashboard' : '/auth/login')}
+            >
+              <img src="https://res.cloudinary.com/pitz/image/upload/v1765959050/Button_muu3er.png" alt="Get Started" />
+            </div>
           </div>
         </div>
       </div>
 
       {/* Why Choose Us Section with Phone */}
-      <section className="w-full bg-[#050711] py-20 md:py-28 px-4 md:px-[100px] relative overflow-hidden">
+      <section className="w-full bg-[#050711] pt-12 pb-20 md:pt-16 md:pb-28 px-4 md:px-[100px] relative overflow-hidden">
         {/* Subtle floating particles */}
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute top-16 left-1/4 w-2 h-2 bg-[#1D8751] rounded-full opacity-60 blur-sm"></div>

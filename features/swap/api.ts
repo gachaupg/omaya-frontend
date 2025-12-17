@@ -68,6 +68,46 @@ export const getSupportedAssets = async (): Promise<SupportedAsset[]> => {
   });
 };
 
+// Helper function to extract error message from API response
+const extractErrorMessage = (errorData: any): string => {
+  if (!errorData) return "";
+  
+  // Handle format: { "error": { "amount": ["Error message"] } }
+  if (errorData.error && typeof errorData.error === 'object') {
+    const errorFields = Object.entries(errorData.error);
+    if (errorFields.length > 0) {
+      const messages: string[] = [];
+      for (const [field, value] of errorFields) {
+        if (Array.isArray(value)) {
+          messages.push(...value);
+        } else if (typeof value === 'string') {
+          messages.push(value);
+        }
+      }
+      if (messages.length > 0) {
+        return messages.join('. ');
+      }
+    }
+  }
+  
+  // Handle format: { "message": "Error message" }
+  if (errorData.message) {
+    return errorData.message;
+  }
+  
+  // Handle format: { "detail": "Error message" }
+  if (errorData.detail) {
+    return errorData.detail;
+  }
+  
+  // Handle format: { "errors": ["Error message"] }
+  if (Array.isArray(errorData.errors)) {
+    return errorData.errors.join('. ');
+  }
+  
+  return "";
+};
+
 export const getEstimateSwap = async (
   fromCurrency: string,
   fromNetwork: string,
@@ -84,6 +124,7 @@ export const getEstimateSwap = async (
       return response.data;
     } catch (error: any) {
       console.error("Failed to fetch swap estimate:", error);
+      console.error("Error response data:", error.response?.data);
 
       // Handle network errors gracefully
       if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
@@ -92,19 +133,24 @@ export const getEstimateSwap = async (
         );
       }
 
+      // Extract detailed error message from response
+      const detailedError = extractErrorMessage(error.response?.data);
+
       if (error.response?.status === 500) {
         throw new Error(
-          "Server Error: Unable to calculate swap estimate. Please try again later."
+          detailedError || "Server Error: Unable to calculate swap estimate. Please try again later."
         );
       } else if (error.response?.status === 400) {
-        throw new Error("Invalid swap parameters. Please check your input.");
+        throw new Error(detailedError || "Invalid swap parameters. Please check your input.");
       } else if (error.response?.status === 404) {
-        throw new Error("Swap service not available. Please try again later.");
+        throw new Error(detailedError || "Swap service not available. Please try again later.");
+      } else if (error.response?.status === 422) {
+        throw new Error(detailedError || "Validation error. Please check your input.");
       }
 
-      // For other errors, provide a generic message
+      // For other errors, provide a generic message or the detailed error
       throw new Error(
-        "Unable to calculate swap estimate. Please try again later."
+        detailedError || "Unable to calculate swap estimate. Please try again later."
       );
     }
   });
@@ -126,6 +172,7 @@ export const getPublicEstimateSwap = async (
       return response.data;
     } catch (error: any) {
       console.error("Failed to fetch public swap estimate:", error);
+      console.error("Error response data:", error.response?.data);
 
       if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
         throw new Error(
@@ -133,18 +180,23 @@ export const getPublicEstimateSwap = async (
         );
       }
 
+      // Extract detailed error message from response
+      const detailedError = extractErrorMessage(error.response?.data);
+
       if (error.response?.status === 500) {
         throw new Error(
-          "Server Error: Unable to calculate swap estimate. Please try again later."
+          detailedError || "Server Error: Unable to calculate swap estimate. Please try again later."
         );
       } else if (error.response?.status === 400) {
-        throw new Error("Invalid swap parameters. Please check your input.");
+        throw new Error(detailedError || "Invalid swap parameters. Please check your input.");
       } else if (error.response?.status === 404) {
-        throw new Error("Swap service not available. Please try again later.");
+        throw new Error(detailedError || "Swap service not available. Please try again later.");
+      } else if (error.response?.status === 422) {
+        throw new Error(detailedError || "Validation error. Please check your input.");
       }
 
       throw new Error(
-        "Unable to calculate swap estimate. Please try again later."
+        detailedError || "Unable to calculate swap estimate. Please try again later."
       );
     }
   });

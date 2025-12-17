@@ -241,9 +241,9 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center py-2 sm:py-4 md:py-8 w-full px-1 sm:px-2 md:px-4">
+    <div className="min-h-screen flex flex-col items-center py-2 sm:py-4 md:py-8 w-full">
       {/* Top Card */}
-      <div className="flex flex-col md:flex-row justify-between items-stretch bg-white dark:bg-[var(--card-color)] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl p-2 sm:p-3 md:p-4 shadow-lg w-full max-w-4xl mb-2 sm:mb-4 min-h-[180px]">
+      <div className="flex flex-col md:flex-row justify-between items-stretch bg-white dark:bg-[var(--card-color)] border-2 border-gray-200 dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 shadow-lg w-full sm:max-w-4xl mb-2 sm:mb-4 min-h-[160px] sm:min-h-[180px]">
         <div className="flex-1 flex flex-col justify-between py-2 pr-2">
                       <div>
               <div className="text-gray-600 dark:text-[#7e7e8f] text-xs font-semibold mb-0.5">
@@ -300,7 +300,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
       </div>
 
       {/* Stepper */}
-      <div className="w-full max-w-4xl mb-3 overflow-x-auto">
+      <div className="w-full sm:max-w-4xl mb-3 overflow-x-auto">
         {/* Circle and connecting line row */}
         <div className="flex items-center mb-2 min-w-max sm:min-w-0">
           {statusSteps.map((step, idx) => {
@@ -383,7 +383,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
       </div>
 
       {/* Transaction Details Card */}
-      <div className="bg-white dark:bg-[var(--card-color)] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl p-3 sm:p-4 md:p-6 shadow-lg w-full max-w-4xl mb-2 sm:mb-3">
+      <div className="bg-white dark:bg-[var(--card-color)] border-2 border-gray-200 dark:border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 shadow-lg w-full sm:max-w-4xl mb-2 sm:mb-3">
         {/* Title */}
         <div className="text-gray-900 dark:text-white text-lg sm:text-xl md:text-2xl font-semibold mb-3 sm:mb-4">
           Transaction Details
@@ -431,7 +431,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
 
       {/* View Results Button - shown when transaction is finished */}
       {mappedStatus === "finished" && (
-        <div className="w-full max-w-4xl mb-4">
+        <div className="w-full sm:max-w-4xl mb-4">
           <div className="bg-[#1D8751] dark:bg-[#1D8751] border border-[#1D8751] dark:border-[#1D8751] rounded-2xl p-3 sm:p-4 shadow-lg text-center">
             <h3 className="text-white dark:text-white text-base sm:text-lg font-semibold mb-2">🎉 Transaction Completed!</h3>
             <p className="text-white/90 dark:text-white/90 text-xs sm:text-sm mb-4">Your swap has been processed successfully.</p>
@@ -446,7 +446,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
       )}
 
       {/* Terms and Conditions Summary - always at the very bottom */}
-      <div className="flex items-center mb-2 mt-2 max-w-4xl">
+      <div className="flex items-center mb-2 mt-2 w-full sm:max-w-4xl">
         <img
           src="https://res.cloudinary.com/pitz/image/upload/v1752248844/Frame_34947_hxlr7o.png"
           alt=""
