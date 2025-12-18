@@ -770,8 +770,18 @@ const FinalBuy: React.FC<FinalBuyProps> = ({ orderData }) => {
           userId={user?.id.toString() || ""}
           userName={singleOrder?.advertiser_name || singleOrder?.advertiser_first_name || ""}
           autoreply={singleOrder?.auto_reply || ""}
-          seller_photo={confirmOrder?.seller_photo || ""}
-          buyer_photo={confirmOrder?.buyer_photo || ""}
+          // Prefer photos from the trade (confirmOrder) but fall back to data already available on this page.
+          seller_photo={
+            confirmOrder?.seller_photo ||
+            (singleOrder as any)?.seller_photo ||
+            singleOrder?.advertiser_photo ||
+            ""
+          }
+          buyer_photo={
+            confirmOrder?.buyer_photo ||
+            (singleOrder as any)?.buy_photo ||
+            ""
+          }
           buyer={confirmOrder?.buyer || ""}
           seller={confirmOrder?.seller || ""}
           currentUserEmail={user?.email || ""}

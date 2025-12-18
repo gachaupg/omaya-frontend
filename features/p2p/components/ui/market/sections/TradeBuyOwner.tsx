@@ -709,8 +709,20 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               confirmOrder?.advertiser_name || saveOrder?.advertiser_name || ""
             }
             autoreply={saveOrder?.auto_reply || ""}
-            seller_photo={confirmOrder?.seller_photo || ""}
-            buyer_photo={confirmOrder?.buyer_photo || ""}
+            // Prefer photos from the trade (confirmOrder) but fall back to data already available on this page.
+            seller_photo={
+              confirmOrder?.seller_photo ||
+              singleOrder?.advertiser_photo ||
+              (saveOrder as any)?.advertiser_photo ||
+              (saveOrder as any)?.seller_photo ||
+              ""
+            }
+            buyer_photo={
+              confirmOrder?.buyer_photo ||
+              (saveOrder as any)?.buy_photo ||
+              (saveOrder as any)?.buyer_photo ||
+              ""
+            }
             buyer={confirmOrder?.buyer || ""}
             seller={confirmOrder?.seller || ""}
             currentUserEmail={user?.email || ""}

@@ -479,26 +479,38 @@ export default function MarketingPage() {
           {/* Title + Subtitle (small green gradient only around "Celebrating Success:") */}
           <div className="mx-auto mb-8 sm:mb-10 md:mb-12 max-w-3xl px-2">
             {/* Section Title */}
-            <h2 className="text-center text-xl sm:text-2xl md:text-3xl lg:text-4xl 2xl:text-5xl font-bold mb-3 sm:mb-4">
-              <span className="text-gray-900 dark:text-white">
-                <span className="relative inline-flex items-center">
-                  <span
-                    className="pointer-events-none absolute -inset-x-8 -inset-y-4 rounded-full bg-gradient-to-r from-[#1D8751]/25 via-[#1D8751]/10 to-transparent dark:from-[#1D8751]/30 dark:via-[#1D8751]/15 blur-2xl opacity-70"
-                    aria-hidden="true"
-                  />
-                  <span className="relative">
-                    {t(
-                      "marketing.achievements.title.leading",
-                      "Celebrating Success:"
-                    )}
-                  </span>
-                </span>{" "}
-                {t(
-                  "marketing.achievements.title.highlight",
-                  "Key Achievements"
-                )}
-              </span>
-            </h2>
+            <div className="relative flex justify-center mb-3 sm:mb-4">
+              {/* Greenish glow behind the whole title */}
+              <div className="pointer-events-none absolute inset-0 flex justify-center items-center -z-10">
+                <div className="w-[440px] sm:w-[700px] h-[120px] sm:h-[150px] bg-gradient-to-r from-transparent via-[#1D8751]/32 to-transparent blur-3xl rounded-full" />
+                <div className="absolute w-[280px] sm:w-[420px] h-[78px] sm:h-[96px] bg-gradient-to-r from-transparent via-[#13B562]/38 to-transparent blur-2xl rounded-full" />
+                <div className="absolute w-[560px] sm:w-[860px] h-[180px] sm:h-[230px] bg-[#1D8751]/10 blur-[64px] rounded-full" />
+              </div>
+              <h2 className="text-center text-xl sm:text-2xl md:text-3xl lg:text-4xl 2xl:text-5xl font-bold">
+                <span className="text-gray-900 dark:text-white">
+                  <span className="relative inline-flex items-center">
+                    <span
+                      className="pointer-events-none absolute -inset-x-10 -inset-y-5 rounded-full bg-gradient-to-r from-transparent via-[#1D8751]/20 to-transparent dark:via-[#13B562]/24 blur-2xl opacity-70"
+                      aria-hidden="true"
+                    />
+                    <span
+                      className="pointer-events-none absolute -inset-x-6 -inset-y-3 rounded-full bg-gradient-to-r from-transparent via-[#13B562]/28 to-transparent blur-2xl opacity-70"
+                      aria-hidden="true"
+                    />
+                    <span className="relative">
+                      {t(
+                        "marketing.achievements.title.leading",
+                        "Celebrating Success:"
+                      )}
+                    </span>
+                  </span>{" "}
+                  {t(
+                    "marketing.achievements.title.highlight",
+                    "Key Achievements"
+                  )}
+                </span>
+              </h2>
+            </div>
 
             {/* Subtitle */}
             <p className="text-center text-gray-700 dark:text-white text-sm sm:text-base md:text-lg px-4">
@@ -664,10 +676,21 @@ export default function MarketingPage() {
                SUPPORTED ASSETS
              </span>
            </div>
-          <h2 className="text-center text-2xl md:text-3xl 2xl:text-4xl font-bold mb-3">
-            <span className="text-gray-900 dark:text-white">Trade Your Favorite</span>{" "}
-            <span className="text-[#1D8751]">Cryptocurrencies</span>
-          </h2>
+          <div className="relative flex justify-center mb-3">
+            {/* Greenish glow behind title */}
+            <div className="pointer-events-none absolute inset-0 flex justify-center items-center -z-10">
+              {/* Wide soft glow */}
+              <div className="w-[440px] sm:w-[700px] h-[120px] sm:h-[150px] bg-gradient-to-r from-transparent via-[#1D8751]/32 to-transparent blur-3xl rounded-full" />
+              {/* Brighter core glow */}
+              <div className="absolute w-[280px] sm:w-[420px] h-[78px] sm:h-[96px] bg-gradient-to-r from-transparent via-[#13B562]/38 to-transparent blur-2xl rounded-full" />
+              {/* Subtle green tint wash */}
+              <div className="absolute w-[560px] sm:w-[860px] h-[180px] sm:h-[230px] bg-[#1D8751]/10 blur-[64px] rounded-full" />
+            </div>
+            <h2 className="text-center text-2xl md:text-3xl 2xl:text-4xl font-bold">
+              <span className="text-gray-900 dark:text-white">Trade Your Favorite</span>{" "}
+              <span className="text-[#1D8751]">Cryptocurrencies</span>
+            </h2>
+          </div>
           
           {/* Subtitle */}
           <p className="text-center text-gray-700 dark:text-white text-sm sm:text-base md:text-lg mb-12 px-4">
@@ -1227,7 +1250,7 @@ export default function MarketingPage() {
       </div>
 
       {/* Why Choose Us Section with Phone */}
-      <section className="w-full bg-white dark:bg-[#050711] py-20 md:py-28 px-4 md:px-[100px] relative overflow-hidden">
+      <section className="w-full bg-white dark:bg-[#1C1C1CFF] py-20 md:py-28 px-4 md:px-[100px] relative overflow-hidden">
         {/* Subtle floating particles */}
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute top-16 left-1/4 w-2 h-2 bg-[#1D8751] rounded-full opacity-60 blur-sm"></div>
