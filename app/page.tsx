@@ -201,9 +201,9 @@ export default function MarketingPage() {
   const toggleLabel = showAllAssets
     ? t("marketing.assets.toggleLess", "Show Less")
     : t(
-        "marketing.assets.toggleMore",
-        `Show All (${assetsSource.length})`
-      );
+      "marketing.assets.toggleMore",
+      `Show All (${assetsSource.length})`
+    );
 
   // Transform API statistics to achievements format
   const achievements = statistics ? [
@@ -341,30 +341,30 @@ export default function MarketingPage() {
 
   return (
     <div>
-  <section
+      <section
         className="relative min-h-screen pt-18 pb-16 mx-auto overflow-visible bg-gradient-to-br from-gray-50 to-white dark:bg-[var(--bg-color)]"
       >
         {/* Background styling - different for light and dark modes */}
         <div className="absolute inset-0 overflow-hidden z-0">
           {/* Light mode: Subtle gray/white gradient background */}
           <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:hidden"></div>
-          
+
           {/* Dark mode: Dark base background */}
           <div className="absolute inset-0 bg-[#0A0A0F] hidden dark:block"></div>
-          
+
           {/* Left side green gradient - lighter in light mode, darker in dark mode */}
           <div className="absolute left-0 top-0 bottom-0 w-1/2 bg-gradient-to-r from-[#1D8751]/10 via-[#13B562]/5 to-transparent dark:from-[#0D4D2E]/40 dark:via-[#0D4D2E]/20 dark:to-transparent"></div>
-          
+
           {/* Subtle radial gradients for depth */}
           <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-[#1D8751]/8 dark:bg-[#0D4D2E]/20 rounded-full blur-[120px]"></div>
           <div className="absolute bottom-1/4 left-0 w-[500px] h-[500px] bg-[#13B562]/5 dark:bg-[#1D8751]/15 rounded-full blur-[100px]"></div>
-          
+
           {/* Minimal glowing particles - very subtle, more visible in dark mode */}
           <div className="absolute top-20 left-10 w-1.5 h-1.5 bg-[#1D8751] rounded-full opacity-20 dark:opacity-40 blur-sm animate-pulse"></div>
           <div className="absolute top-40 left-1/4 w-2 h-2 bg-[#13B562] rounded-full opacity-15 dark:opacity-30 blur-sm animate-pulse" style={{ animationDelay: '0.8s' }}></div>
           <div className="absolute bottom-32 left-1/5 w-1.5 h-1.5 bg-[#1D8751] rounded-full opacity-20 dark:opacity-35 blur-sm animate-pulse" style={{ animationDelay: '1.5s' }}></div>
         </div>
-        
+
         {/* Simplified heptagonal patterns - matching Figma minimalism */}
         <div className="absolute inset-0 overflow-hidden z-0">
           {/* Bottom left heptagon */}
@@ -392,7 +392,7 @@ export default function MarketingPage() {
               {/* Green pill banner */}
               <div className="inline-flex items-center justify-center md:justify-start">
                 <span className="bg-[#1D8751]/10 border border-[#1D8751] text-[#1D8751] px-3 py-1 rounded-full text-xs sm:text-sm font-medium">
-                East Africa #1 Crypto Exchange.
+                  East Africa #1 Crypto Exchange.
                 </span>
               </div>
 
@@ -527,14 +527,14 @@ export default function MarketingPage() {
                 <TrendingUp key="trending" className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white" />,
                 <Shield key="shield" className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white" />,
               ];
-              
+
               const titles = [
                 "USD Fiat Transactions",
                 "Satisfied Users",
                 "Successful Transactions",
                 "Years Of Experience",
               ];
-              
+
               const descriptions = [
                 "Total trading volume.",
                 "Active traders worldwide.",
@@ -548,50 +548,50 @@ export default function MarketingPage() {
                   className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 flex flex-col relative overflow-hidden border border-gray-200 dark:border-[#2A2A2A]"
                 >
                   {/* Dark mode gradient background */}
-                  <div 
+                  <div
                     className="hidden dark:block absolute inset-0 rounded-lg sm:rounded-xl"
                     style={{
                       background: 'linear-gradient(to bottom, rgba(29, 29, 35, 0.95), rgba(29, 29, 35, 1))'
                     }}
                   ></div>
-                  
+
                   {/* Greenish gradient overlay - lighter in light mode */}
-                  <div 
+                  <div
                     className="absolute top-0 right-0 bottom-0 w-3/4 opacity-30 dark:opacity-60 rounded-lg sm:rounded-xl"
                     style={{
                       background: 'linear-gradient(to left, rgba(29, 135, 81, 0.15) 0%, rgba(29, 135, 81, 0.08) 40%, transparent 100%)'
                     }}
                   ></div>
-                  
+
                   {/* Content wrapper */}
                   <div className="relative z-10 flex flex-col">
-                  
-                  {/* Icon Container - Vibrant green rounded square */}
-                  <div className="relative mb-3 sm:mb-4 self-start">
-                    <div 
-                      className="bg-[#1D8751] rounded-lg p-2 sm:p-2.5 md:p-3 flex items-center justify-center shadow-md"
-                      style={{
-                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
-                      }}
-                    >
-                      {icons[index]}
+
+                    {/* Icon Container - Vibrant green rounded square */}
+                    <div className="relative mb-3 sm:mb-4 self-start">
+                      <div
+                        className="bg-[#1D8751] rounded-lg p-2 sm:p-2.5 md:p-3 flex items-center justify-center shadow-md"
+                        style={{
+                          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+                        }}
+                      >
+                        {icons[index]}
+                      </div>
                     </div>
-                  </div>
-                  
-                  {/* Number */}
-                  <div className="text-[#1D8751] text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-3">
-                    {achievement.value}+
-                  </div>
-                  
-                  {/* Title */}
-                  <div className="text-gray-900 dark:text-white text-sm sm:text-base md:text-lg font-semibold mb-1 sm:mb-2">
-                    {titles[index]}
-                  </div>
-                  
-                  {/* Description */}
-                  <div className="text-gray-700 dark:text-white text-xs sm:text-sm">
-                    {descriptions[index]}
-                  </div>
+
+                    {/* Number */}
+                    <div className="text-[#1D8751] text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-3">
+                      {achievement.value}+
+                    </div>
+
+                    {/* Title */}
+                    <div className="text-gray-900 dark:text-white text-sm sm:text-base md:text-lg font-semibold mb-1 sm:mb-2">
+                      {titles[index]}
+                    </div>
+
+                    {/* Description */}
+                    <div className="text-gray-700 dark:text-white text-xs sm:text-sm">
+                      {descriptions[index]}
+                    </div>
                   </div>
                 </div>
               );
@@ -601,7 +601,7 @@ export default function MarketingPage() {
           {/* Second Row - Feature Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
             {/* 0.1% Trading Fee */}
-            <div 
+            <div
               className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors shadow-lg"
               style={{
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
@@ -614,7 +614,7 @@ export default function MarketingPage() {
             </div>
 
             {/* Bank-Grade Security */}
-            <div 
+            <div
               className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors shadow-lg"
               style={{
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
@@ -627,7 +627,7 @@ export default function MarketingPage() {
             </div>
 
             {/* 24/7 Support */}
-            <div 
+            <div
               className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors shadow-lg"
               style={{
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
@@ -640,7 +640,7 @@ export default function MarketingPage() {
             </div>
 
             {/* Real-Time Charts */}
-            <div 
+            <div
               className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors shadow-lg"
               style={{
                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
@@ -654,7 +654,7 @@ export default function MarketingPage() {
           </div>
         </div>
 
-        </div>
+      </div>
 
 
       {/* Supported Assets Section*/}
@@ -671,11 +671,11 @@ export default function MarketingPage() {
 
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl relative z-10">
           {/* Section Title */}
-           <div className="flex justify-center mb-2">
-             <span className="border border-[#1D8751] bg-[#1D8751]/10 text-[#1D8751] text-xs sm:text-sm md:text-base font-medium px-3 py-1 rounded-[24px] inline-flex items-center justify-center">
-               SUPPORTED ASSETS
-             </span>
-           </div>
+          <div className="flex justify-center mb-2">
+            <span className="border border-[#1D8751] bg-[#1D8751]/10 text-[#1D8751] text-xs sm:text-sm md:text-base font-medium px-3 py-1 rounded-[24px] inline-flex items-center justify-center">
+              SUPPORTED ASSETS
+            </span>
+          </div>
           <div className="relative flex justify-center mb-3">
             {/* Greenish glow behind title */}
             <div className="pointer-events-none absolute inset-0 flex justify-center items-center -z-10">
@@ -691,7 +691,7 @@ export default function MarketingPage() {
               <span className="text-[#1D8751]">Cryptocurrencies</span>
             </h2>
           </div>
-          
+
           {/* Subtitle */}
           <p className="text-center text-gray-700 dark:text-white text-sm sm:text-base md:text-lg mb-12 px-4">
             Access 500+ cryptocurrencies with industry-leading security, competitive fees and lightning-fast transactions.
@@ -701,96 +701,96 @@ export default function MarketingPage() {
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-5 mb-8">
             {marketsLoading
               ? Array.from({ length: 8 }).map((_, index) => (
+                <div
+                  key={`asset-skeleton-${index}`}
+                  className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A] animate-pulse relative overflow-hidden"
+                >
+                  {/* Dark mode gradient background */}
                   <div
-                    key={`asset-skeleton-${index}`}
-                    className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A] animate-pulse relative overflow-hidden"
-                  >
-                    {/* Dark mode gradient background */}
-                    <div 
-                      className="hidden dark:block absolute inset-0 rounded-lg"
-                      style={{
-                        background: 'linear-gradient(to bottom, rgba(29, 29, 35, 0.95), rgba(29, 29, 35, 1))',
-                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
-                      }}
-                    ></div>
-                    <div className="relative z-10">
-                      <div className="w-10 h-10 mb-3 bg-gray-200 dark:bg-[#23232B] rounded"></div>
-                      <div className="h-4 bg-gray-200 dark:bg-[#23232B] rounded mb-2 w-20"></div>
-                      <div className="h-3 bg-gray-200 dark:bg-[#23232B] rounded mb-2 w-12"></div>
-                      <div className="h-5 bg-gray-200 dark:bg-[#23232B] rounded mb-1 w-24"></div>
-                      <div className="h-3 bg-gray-200 dark:bg-[#23232B] rounded w-16"></div>
-                    </div>
+                    className="hidden dark:block absolute inset-0 rounded-lg"
+                    style={{
+                      background: 'linear-gradient(to bottom, rgba(29, 29, 35, 0.95), rgba(29, 29, 35, 1))',
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
+                    }}
+                  ></div>
+                  <div className="relative z-10">
+                    <div className="w-10 h-10 mb-3 bg-gray-200 dark:bg-[#23232B] rounded"></div>
+                    <div className="h-4 bg-gray-200 dark:bg-[#23232B] rounded mb-2 w-20"></div>
+                    <div className="h-3 bg-gray-200 dark:bg-[#23232B] rounded mb-2 w-12"></div>
+                    <div className="h-5 bg-gray-200 dark:bg-[#23232B] rounded mb-1 w-24"></div>
+                    <div className="h-3 bg-gray-200 dark:bg-[#23232B] rounded w-16"></div>
                   </div>
-                ))
+                </div>
+              ))
               : (
-                  <>
-                    {displayedAssets.slice(0, 8).map((asset) => {
-                      const price = asset.current_price || 0;
-                      const change = asset.price_change_percentage_24h || 0;
-                      const formattedPrice = price >= 1 
-                        ? price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                        : price.toFixed(4);
-                      
-                      // Get icon container color based on symbol
-                      const getIconColor = (symbol: string, name: string) => {
-                        const symbolUpper = symbol.toUpperCase();
-                        const nameUpper = name.toUpperCase();
-                        const colorMap: { [key: string]: string } = {
-                          'BTC': 'bg-orange-500', // Bitcoin - orange circle
-                          'BITCOIN': 'bg-orange-500',
-                          'ETH': 'bg-indigo-600', // Ethereum - indigo/purple
-                          'ETHEREUM': 'bg-indigo-600',
-                          'USDT': 'bg-green-500', // Tether - green circle
-                          'TETHER': 'bg-green-500',
-                          'BNB': 'bg-yellow-500', // BNB - yellow
-                          'ADA': 'bg-blue-700', // Cardano - dark blue
-                          'CARDANO': 'bg-blue-700',
-                          'XRP': 'bg-red-500', // Ripple - red circle
-                          'RIPPLE': 'bg-red-500',
-                          'SOL': 'bg-purple-600', // Solana - purple square
-                          'SOLANA': 'bg-purple-600',
-                          'DOT': 'bg-pink-500', // Polkadot - pink square
-                          'POLKADOT': 'bg-pink-500',
-                          'FXP': 'bg-blue-700', // FXPRIMUS - dark blue
-                          'FXPRIMUS': 'bg-blue-700',
-                          'PM': 'bg-red-500', // Perfect Money - red circle
-                          'PERFECT MONEY': 'bg-red-500',
-                          'ICM': 'bg-blue-500', // ICM Capital - blue
-                          'ICM CAPITAL': 'bg-blue-500',
-                        };
-                        return colorMap[symbolUpper] || colorMap[nameUpper] || 'bg-gray-500'; // Default gray
+                <>
+                  {displayedAssets.slice(0, 8).map((asset) => {
+                    const price = asset.current_price || 0;
+                    const change = asset.price_change_percentage_24h || 0;
+                    const formattedPrice = price >= 1
+                      ? price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                      : price.toFixed(4);
+
+                    // Get icon container color based on symbol
+                    const getIconColor = (symbol: string, name: string) => {
+                      const symbolUpper = symbol.toUpperCase();
+                      const nameUpper = name.toUpperCase();
+                      const colorMap: { [key: string]: string } = {
+                        'BTC': 'bg-orange-500', // Bitcoin - orange circle
+                        'BITCOIN': 'bg-orange-500',
+                        'ETH': 'bg-indigo-600', // Ethereum - indigo/purple
+                        'ETHEREUM': 'bg-indigo-600',
+                        'USDT': 'bg-green-500', // Tether - green circle
+                        'TETHER': 'bg-green-500',
+                        'BNB': 'bg-yellow-500', // BNB - yellow
+                        'ADA': 'bg-blue-700', // Cardano - dark blue
+                        'CARDANO': 'bg-blue-700',
+                        'XRP': 'bg-red-500', // Ripple - red circle
+                        'RIPPLE': 'bg-red-500',
+                        'SOL': 'bg-purple-600', // Solana - purple square
+                        'SOLANA': 'bg-purple-600',
+                        'DOT': 'bg-pink-500', // Polkadot - pink square
+                        'POLKADOT': 'bg-pink-500',
+                        'FXP': 'bg-blue-700', // FXPRIMUS - dark blue
+                        'FXPRIMUS': 'bg-blue-700',
+                        'PM': 'bg-red-500', // Perfect Money - red circle
+                        'PERFECT MONEY': 'bg-red-500',
+                        'ICM': 'bg-blue-500', // ICM Capital - blue
+                        'ICM CAPITAL': 'bg-blue-500',
                       };
-                      
-                      const iconBgColor = getIconColor(asset.symbol, asset.name);
-                      
-                      return (
+                      return colorMap[symbolUpper] || colorMap[nameUpper] || 'bg-gray-500'; // Default gray
+                    };
+
+                    const iconBgColor = getIconColor(asset.symbol, asset.name);
+
+                    return (
+                      <div
+                        key={asset.id}
+                        className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors relative overflow-visible"
+                      >
+                        {/* Dark mode gradient background */}
                         <div
-                          key={asset.id}
-                          className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors relative overflow-visible"
-                        >
-                          {/* Dark mode gradient background */}
-                          <div 
-                            className="hidden dark:block absolute inset-0 rounded-lg"
-                            style={{
-                              background: 'linear-gradient(to bottom, rgba(29, 29, 35, 0.95), rgba(29, 29, 35, 1))',
-                              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
-                            }}
-                          ></div>
-                          
-                          {/* Greenish radial gradient from top-right corner - lighter in light mode */}
-                          <div 
-                            className="absolute top-0 right-0 w-3/4 h-3/4 opacity-20 dark:opacity-30 pointer-events-none rounded-lg"
-                            style={{
-                              background: 'radial-gradient(circle at top right, rgba(29, 135, 81, 0.15) 0%, transparent 70%)'
-                            }}
-                          ></div>
-                          
-                          {/* Content wrapper with relative positioning */}
-                          <div className="relative z-10">
+                          className="hidden dark:block absolute inset-0 rounded-lg"
+                          style={{
+                            background: 'linear-gradient(to bottom, rgba(29, 29, 35, 0.95), rgba(29, 29, 35, 1))',
+                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)'
+                          }}
+                        ></div>
+
+                        {/* Greenish radial gradient from top-right corner - lighter in light mode */}
+                        <div
+                          className="absolute top-0 right-0 w-3/4 h-3/4 opacity-20 dark:opacity-30 pointer-events-none rounded-lg"
+                          style={{
+                            background: 'radial-gradient(circle at top right, rgba(29, 135, 81, 0.15) 0%, transparent 70%)'
+                          }}
+                        ></div>
+
+                        {/* Content wrapper with relative positioning */}
+                        <div className="relative z-10">
                           {/* Icon header with colored bar cutting across */}
                           <div className="relative mb-3 w-full -mx-4">
                             {/* Colored horizontal bar cutting across - faded, edge to edge, no padding, full right coverage */}
-                            <div 
+                            <div
                               className={`absolute top-1/2 left-0 h-14 sm:h-16 ${iconBgColor} transform -translate-y-1/2 opacity-40`}
                               style={{
                                 right: '-1rem',
@@ -811,17 +811,17 @@ export default function MarketingPage() {
                               </div>
                             </div>
                           </div>
-                          
+
                           {/* Cryptocurrency Name - Left aligned */}
                           <div className="text-gray-900 dark:text-white font-bold text-sm sm:text-base mb-1">
                             {asset.name}
                           </div>
-                          
+
                           {/* Ticker Symbol - Left aligned */}
                           <div className="text-gray-700 dark:text-white text-xs sm:text-sm mb-3 opacity-80">
                             {asset.symbol}
                           </div>
-                          
+
                           {/* Price and Percentage Change - Left aligned */}
                           <div className="flex items-baseline gap-2 mb-2">
                             <div className="text-gray-900 dark:text-white font-bold text-base sm:text-lg">
@@ -831,7 +831,7 @@ export default function MarketingPage() {
                               {change >= 0 ? '+' : ''}{change.toFixed(2)}%
                             </div>
                           </div>
-                          
+
                           {/* Mini Line Chart */}
                           <div className="h-8 w-full mt-2">
                             <svg width="100%" height="100%" viewBox="0 0 100 30" preserveAspectRatio="none" className="overflow-visible">
@@ -845,22 +845,22 @@ export default function MarketingPage() {
                               />
                             </svg>
                           </div>
-                          </div>
                         </div>
-                      );
-                    })}
-                  </>
-                )}
+                      </div>
+                    );
+                  })}
+                </>
+              )}
           </div>
 
           {/* Feature/Achievement Cards - Bottom Row */}
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-5">
             {/* 500+ Total Assets */}
-            <div 
+            <div
               className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors flex flex-col items-center relative overflow-hidden"
             >
               {/* Dark mode gradient background */}
-              <div 
+              <div
                 className="hidden dark:block absolute inset-0 rounded-lg"
                 style={{
                   background: 'linear-gradient(to bottom, rgba(29, 29, 35, 0.95), rgba(29, 29, 35, 1))',
@@ -870,9 +870,9 @@ export default function MarketingPage() {
               <div className="relative z-10 flex flex-col items-center w-full">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 mb-3 flex items-center justify-center">
                   <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" className="text-blue-400">
-                    <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
                 <div className="text-gray-900 dark:text-white text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-center">500+</div>
@@ -881,11 +881,11 @@ export default function MarketingPage() {
             </div>
 
             {/* 1000+ Trading Pairs */}
-            <div 
+            <div
               className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors flex flex-col items-center relative overflow-hidden"
             >
               {/* Dark mode gradient background */}
-              <div 
+              <div
                 className="hidden dark:block absolute inset-0 rounded-lg"
                 style={{
                   background: 'linear-gradient(to bottom, rgba(29, 29, 35, 0.95), rgba(29, 29, 35, 1))',
@@ -895,8 +895,8 @@ export default function MarketingPage() {
               <div className="relative z-10 flex flex-col items-center w-full">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 mb-3 flex items-center justify-center">
                   <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" className="text-pink-400">
-                    <path d="M3 21L12 3L21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M3 21H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M3 21L12 3L21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M3 21H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
                 <div className="text-gray-900 dark:text-white text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-center">1000+</div>
@@ -905,11 +905,11 @@ export default function MarketingPage() {
             </div>
 
             {/* $2B+ Daily Volume */}
-            <div 
+            <div
               className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors flex flex-col items-center relative overflow-hidden"
             >
               {/* Dark mode gradient background */}
-              <div 
+              <div
                 className="hidden dark:block absolute inset-0 rounded-lg"
                 style={{
                   background: 'linear-gradient(to bottom, rgba(29, 29, 35, 0.95), rgba(29, 29, 35, 1))',
@@ -926,11 +926,11 @@ export default function MarketingPage() {
             </div>
 
             {/* Spot & P2P Markets */}
-            <div 
+            <div
               className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors flex flex-col items-center relative overflow-hidden"
             >
               {/* Dark mode gradient background */}
-              <div 
+              <div
                 className="hidden dark:block absolute inset-0 rounded-lg"
                 style={{
                   background: 'linear-gradient(to bottom, rgba(29, 29, 35, 0.95), rgba(29, 29, 35, 1))',
@@ -962,119 +962,119 @@ export default function MarketingPage() {
       <div className="w-full bg-white dark:bg-[var(--bg-color)] pt-8 pb-16">
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
           <div className="bg-gray-50 dark:bg-[var(--card-color)] border border-gray-200 dark:border-[#2A2A2A] rounded-3xl p-5 sm:p-6 md:p-8 shadow-sm">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-            {/* Left Section - Image */}
-            <div className="relative">
-              <div className="relative w-full overflow-hidden rounded-t-[1.5rem] md:rounded-t-[2rem] rounded-b-lg">
-                <Image
-                  src="https://res.cloudinary.com/pitz/image/upload/v1765268255/Container_17_n6i2xm.png"
-                  alt="Safe & Reliable Cryptocurrency Exchange Platform"
-                  width={800}
-                  height={600}
-                  className="w-full h-auto object-contain"
-                  unoptimized
-                />
-                
-                {/* Badge - Since 2015 */}
-                <div className="absolute top-3 right-8 md:top-4 md:right-12 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20">
-                  <span className="text-white text-xs font-medium">Since 2015</span>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+              {/* Left Section - Image */}
+              <div className="relative">
+                <div className="relative w-full overflow-hidden rounded-t-[1.5rem] md:rounded-t-[2rem] rounded-b-lg">
+                  <Image
+                    src="https://res.cloudinary.com/pitz/image/upload/v1765268255/Container_17_n6i2xm.png"
+                    alt="Safe & Reliable Cryptocurrency Exchange Platform"
+                    width={800}
+                    height={600}
+                    className="w-full h-auto object-contain"
+                    unoptimized
+                  />
+
+                  {/* Badge - Since 2015 */}
+                  <div className="absolute top-3 right-8 md:top-4 md:right-12 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20">
+                    <span className="text-white text-xs font-medium">Since 2015</span>
+                  </div>
+
+                  {/* Badge - 100K+ Users */}
+                  <div className="absolute bottom-16 left-8 md:bottom-20 md:left-12 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20">
+                    <span className="text-white text-xs font-medium">100K+ Users</span>
+                  </div>
                 </div>
-                
-                {/* Badge - 100K+ Users */}
-                <div className="absolute bottom-16 left-8 md:bottom-20 md:left-12 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20">
-                  <span className="text-white text-xs font-medium">100K+ Users</span>
+              </div>
+
+              {/* Right Section - Text and Feature Cards */}
+              <div className="space-y-6">
+                {/* ABOUT OMAYA Header */}
+                <div className="bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751] rounded-3xl px-4 py-2 inline-block">
+                  <div className="text-[#1D8751] text-sm font-medium uppercase tracking-wide">
+                    ABOUT OMAYA
+                  </div>
+                </div>
+
+                {/* Title */}
+                <h2 className="text-3xl md:text-4xl 2xl:text-5xl font-bold text-gray-900 dark:text-white">
+                  <span className="text-[#1D8751]">Safe & Reliable</span>{" "}
+                  <span className="text-gray-900 dark:text-white">Cryptocurrency Exchange Platform</span>
+                </h2>
+
+                {/* Descriptive Text */}
+                <p className="text-gray-700 dark:text-white/80 text-sm md:text-base leading-relaxed">
+                  Established in 2015, OMAYA Exchange is Somalia's leading cryptocurrency exchange,
+                  licensed by the{" "}
+                  <span className="text-[#1D8751] font-semibold">Central Bank of Somalia</span>.
+                  With a team rooted in East Africa, we specialize in localized transactions,
+                  supporting the region's unique demands to meet your financial needs. At OMAYA Exchange,
+                  our focus extends beyond mere transactions. We are committed to empowering you by
+                  offering expert insights and resources that support informed financial decision-making.
+                  Leveraging deep knowledge of East African markets, we provide secure and responsive
+                  solutions tailored to local requirements.
+                </p>
+
+                {/* Feature Boxes - 2x2 Grid */}
+                <div className="grid grid-cols-2 gap-4 mt-8">
+                  {/* Bank-Grade Security */}
+                  <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A]">
+                    <div className="w-10 h-10 bg-blue-400/20 rounded-lg flex items-center justify-center mb-3">
+                      <Shield className="w-6 h-6 text-blue-400" />
+                    </div>
+                    <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">Bank-Grade Security</div>
+                    <div className="text-gray-700 dark:text-white/70 text-xs">Advanced encryption & multi-layer protection</div>
+                  </div>
+
+                  {/* Licensed & Regulated */}
+                  <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A]">
+                    <div className="w-10 h-10 bg-pink-400/20 rounded-lg flex items-center justify-center mb-3">
+                      <Lock className="w-6 h-6 text-pink-400" />
+                    </div>
+                    <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">Licensed & Regulated</div>
+                    <div className="text-gray-700 dark:text-white/70 text-xs">Approved by Central Bank of Somalia</div>
+                  </div>
+
+                  {/* 100K+ Active Users */}
+                  <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A]">
+                    <div className="w-10 h-10 bg-green-400/20 rounded-lg flex items-center justify-center mb-3">
+                      <Users className="w-6 h-6 text-green-400" />
+                    </div>
+                    <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">100K+ Active Users</div>
+                    <div className="text-gray-700 dark:text-white/70 text-xs">Trusted by traders across East Africa</div>
+                  </div>
+
+                  {/* 99.9% Uptime */}
+                  <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A]">
+                    <div className="w-10 h-10 bg-orange-400/20 rounded-lg flex items-center justify-center mb-3">
+                      <TrendingUp className="w-6 h-6 text-orange-400" />
+                    </div>
+                    <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">99.9% Uptime</div>
+                    <div className="text-gray-700 dark:text-white/70 text-xs">Reliable trading 24/7/365</div>
+                  </div>
+                </div>
+
+                {/* Bottom Tags/Buttons */}
+                <div className="flex flex-wrap gap-3 mt-6">
+                  <div className="border border-[#1D8751] rounded-full px-4 py-2 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
+                    <Lock className="w-4 h-4 text-[#1D8751]" />
+                    <span className="text-gray-900 dark:text-white text-xs font-medium">Licensed Exchange</span>
+                  </div>
+                  <div className="border border-[#1D8751] rounded-full px-4 py-2 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
+                    <Globe className="w-4 h-4 text-[#1D8751]" />
+                    <span className="text-gray-900 dark:text-white text-xs font-medium">Global Reach</span>
+                  </div>
+                  <div className="border border-[#1D8751] rounded-full px-4 py-2 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
+                    <Zap className="w-4 h-4 text-[#1D8751]" />
+                    <span className="text-gray-900 dark:text-white text-xs font-medium">Fast Execution</span>
+                  </div>
+                  <div className="border border-[#1D8751] rounded-full px-4 py-2 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
+                    <Shield className="w-4 h-4 text-[#1D8751]" />
+                    <span className="text-gray-900 dark:text-white text-xs font-medium">Verified Platform</span>
+                  </div>
                 </div>
               </div>
             </div>
-
-            {/* Right Section - Text and Feature Cards */}
-            <div className="space-y-6">
-              {/* ABOUT OMAYA Header */}
-              <div className="bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751] rounded-3xl px-4 py-2 inline-block">
-                <div className="text-[#1D8751] text-sm font-medium uppercase tracking-wide">
-                  ABOUT OMAYA
-                </div>
-              </div>
-                  
-              {/* Title */}
-              <h2 className="text-3xl md:text-4xl 2xl:text-5xl font-bold text-gray-900 dark:text-white">
-                <span className="text-[#1D8751]">Safe & Reliable</span>{" "}
-                <span className="text-gray-900 dark:text-white">Cryptocurrency Exchange Platform</span>
-              </h2>
-              
-              {/* Descriptive Text */}
-              <p className="text-gray-700 dark:text-white/80 text-sm md:text-base leading-relaxed">
-                Established in 2015, OMAYA Exchange is Somalia's leading cryptocurrency exchange, 
-                licensed by the{" "}
-                <span className="text-[#1D8751] font-semibold">Central Bank of Somalia</span>.
-                With a team rooted in East Africa, we specialize in localized transactions, 
-                supporting the region's unique demands to meet your financial needs. At OMAYA Exchange, 
-                our focus extends beyond mere transactions. We are committed to empowering you by 
-                offering expert insights and resources that support informed financial decision-making. 
-                Leveraging deep knowledge of East African markets, we provide secure and responsive 
-                solutions tailored to local requirements.
-              </p>
-              
-              {/* Feature Boxes - 2x2 Grid */}
-              <div className="grid grid-cols-2 gap-4 mt-8">
-                {/* Bank-Grade Security */}
-                <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A]">
-                  <div className="w-10 h-10 bg-blue-400/20 rounded-lg flex items-center justify-center mb-3">
-                    <Shield className="w-6 h-6 text-blue-400" />
-                  </div>
-                  <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">Bank-Grade Security</div>
-                  <div className="text-gray-700 dark:text-white/70 text-xs">Advanced encryption & multi-layer protection</div>
-                </div>
-
-                {/* Licensed & Regulated */}
-                <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A]">
-                  <div className="w-10 h-10 bg-pink-400/20 rounded-lg flex items-center justify-center mb-3">
-                    <Lock className="w-6 h-6 text-pink-400" />
-                  </div>
-                  <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">Licensed & Regulated</div>
-                  <div className="text-gray-700 dark:text-white/70 text-xs">Approved by Central Bank of Somalia</div>
-                </div>
-
-                {/* 100K+ Active Users */}
-                <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A]">
-                  <div className="w-10 h-10 bg-green-400/20 rounded-lg flex items-center justify-center mb-3">
-                    <Users className="w-6 h-6 text-green-400" />
-                  </div>
-                  <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">100K+ Active Users</div>
-                  <div className="text-gray-700 dark:text-white/70 text-xs">Trusted by traders across East Africa</div>
-                </div>
-
-                {/* 99.9% Uptime */}
-                <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A]">
-                  <div className="w-10 h-10 bg-orange-400/20 rounded-lg flex items-center justify-center mb-3">
-                    <TrendingUp className="w-6 h-6 text-orange-400" />
-                  </div>
-                  <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">99.9% Uptime</div>
-                  <div className="text-gray-700 dark:text-white/70 text-xs">Reliable trading 24/7/365</div>
-                </div>
-              </div>
-              
-              {/* Bottom Tags/Buttons */}
-              <div className="flex flex-wrap gap-3 mt-6">
-                <div className="border border-[#1D8751] rounded-full px-4 py-2 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
-                  <Lock className="w-4 h-4 text-[#1D8751]" />
-                  <span className="text-gray-900 dark:text-white text-xs font-medium">Licensed Exchange</span>
-                </div>
-                <div className="border border-[#1D8751] rounded-full px-4 py-2 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
-                  <Globe className="w-4 h-4 text-[#1D8751]" />
-                  <span className="text-gray-900 dark:text-white text-xs font-medium">Global Reach</span>
-                </div>
-                <div className="border border-[#1D8751] rounded-full px-4 py-2 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
-                  <Zap className="w-4 h-4 text-[#1D8751]" />
-                  <span className="text-gray-900 dark:text-white text-xs font-medium">Fast Execution</span>
-                </div>
-                <div className="border border-[#1D8751] rounded-full px-4 py-2 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
-                  <Shield className="w-4 h-4 text-[#1D8751]" />
-                  <span className="text-gray-900 dark:text-white text-xs font-medium">Verified Platform</span>
-                </div>
-              </div>
-            </div>
-          </div>
           </div>
         </div>
       </div>
@@ -1089,9 +1089,9 @@ export default function MarketingPage() {
           <div className="absolute bottom-32 left-1/4 w-2 h-2 bg-[#1D8751] rounded-full opacity-50 blur-sm animate-pulse" style={{ animationDelay: '1s' }}></div>
           <div className="absolute top-1/3 right-1/3 w-2.5 h-2.5 bg-[#1D8751] rounded-full opacity-45 blur-sm animate-pulse" style={{ animationDelay: '1.5s' }}></div>
           <div className="absolute bottom-20 right-1/4 w-3 h-3 bg-[#1D8751] rounded-full opacity-35 blur-md animate-pulse" style={{ animationDelay: '2s' }}></div>
-          
+
           {/* Subtle gradient overlays */}
-          <div 
+          <div
             className="absolute inset-0 opacity-30"
             style={{
               background: `
@@ -1189,7 +1189,7 @@ export default function MarketingPage() {
                       {/* Green dots decoration */}
                       <div className="absolute -top-1 -left-1 w-2 h-2 bg-[#1D8751] rounded-full opacity-60"></div>
                       <div className="absolute -bottom-1 -right-1 w-2 h-2 bg-[#1D8751] rounded-full opacity-60"></div>
-                      
+
                       {/* Icon background */}
                       <div className={`${step.iconBg} w-16 h-16 rounded-xl flex items-center justify-center shadow-lg relative`}>
                         <step.icon className="w-8 h-8 text-white" />
@@ -1259,7 +1259,7 @@ export default function MarketingPage() {
           <div className="absolute bottom-12 right-1/4 w-3 h-3 bg-[#1D8751] rounded-full opacity-35 blur-md"></div>
         </div>
 
-        <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl relative z-10">
+        <div className="container mx-auto max-w-4xl 2xl:max-w-7xl relative z-10">
           {/* Top pill */}
           <div className="flex justify-center mb-4">
             <span className="bg-[#1D8751]/10 border border-[#1D8751] text-[#1D8751] px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium tracking-wide">
@@ -1275,9 +1275,9 @@ export default function MarketingPage() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-14 items-center ">
             {/* Left Side - Phone with Green Gradient Background */}
-            <div className="relative flex justify-center lg:justify-start">
+            <div className="relative flex justify-center ">
               {/* Greenish Glowing Circular Pattern Background */}
               <div className="absolute inset-0 flex items-center justify-center lg:justify-start">
                 <div className="relative w-[500px] h-[500px] lg:w-[600px] lg:h-[600px]">
@@ -1286,7 +1286,7 @@ export default function MarketingPage() {
                   <div className="absolute inset-0 bg-gradient-to-br from-[#13B562]/20 via-[#1D8751]/15 to-transparent rounded-full blur-2xl" style={{ animationDelay: '1s' }}></div>
                 </div>
               </div>
-              
+
               {/* Phone Image */}
               <div className="relative z-10">
                 <Image
@@ -1294,7 +1294,7 @@ export default function MarketingPage() {
                   alt="OMAYA Exchange Mobile App"
                   width={350}
                   height={700}
-                  className="w-[260px] sm:w-[300px] lg:w-[340px] h-auto drop-shadow-[0_25px_60px_rgba(0,0,0,0.8)]"
+                  className="w-[260px] sm:w-[280px] lg:w-[300px] h-auto drop-shadow-[0_25px_60px_rgba(0,0,0,0.8)]"
                   priority
                 />
               </div>
@@ -1324,86 +1324,95 @@ export default function MarketingPage() {
               {/* Feature Cards Grid */}
               <div className="grid grid-cols-2 gap-4 md:gap-5">
                 {/* Low Transaction Fee */}
-                <div className="bg-gray-50 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-gray-200 dark:border-white/10">
+                <div className=" flex bg-gray-50 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-4 gap-2 border border-gray-200 dark:border-white/10">
                   <div className="w-12 h-12 bg-[#1D8751] rounded-lg flex items-center justify-center mb-4">
                     <DollarSign className="w-6 h-6 text-white" />
                   </div>
-                  <h4 className="text-gray-900 dark:text-white font-bold text-lg mb-2">Low Transaction Fee</h4>
-                  <p className="text-gray-600 dark:text-white/70 text-sm">Industry-leading fees starting from 0.1%</p>
+                  <div>
+
+                    <h4 className="text-gray-900 dark:text-white font-bold text-lg mb-2">Low Transaction Fee</h4>
+                    <p className="text-gray-600 dark:text-white/70 text-sm">Industry-leading fees starting from 0.1%</p>
+                  </div>
                 </div>
 
                 {/* Secure Payment Service */}
-                <div className="bg-gray-50 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-gray-200 dark:border-white/10">
+                <div className="flex bg-gray-50 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-4 gap-2 border border-gray-200 dark:border-white/10">
                   <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mb-4">
                     <Shield className="w-6 h-6 text-white" />
                   </div>
-                  <h4 className="text-gray-900 dark:text-white font-bold text-lg mb-2">Secure Payment Service</h4>
-                  <p className="text-gray-600 dark:text-white/70 text-sm">Bank-grade security with 2FA authentication</p>
+                  <div>
+                    <h4 className="text-gray-900 dark:text-white font-bold text-lg mb-2">Secure Payment Service</h4>
+                    <p className="text-gray-600 dark:text-white/70 text-sm">Bank-grade security with 2FA authentication</p>
+                  </div>
                 </div>
 
                 {/* Fast Transactions */}
-                <div className="bg-gray-50 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-gray-200 dark:border-white/10">
+                <div className="flex bg-gray-50 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-4 gap-2 border border-gray-200 dark:border-white/10">
                   <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center mb-4">
                     <Zap className="w-6 h-6 text-white" />
                   </div>
-                  <h4 className="text-gray-900 dark:text-white font-bold text-lg mb-2">Fast Transactions</h4>
-                  <p className="text-gray-600 dark:text-white/70 text-sm">Lightning-fast execution in milliseconds</p>
+                  <div>
+                    <h4 className="text-gray-900 dark:text-white font-bold text-lg mb-2">Fast Transactions</h4>
+                    <p className="text-gray-600 dark:text-white/70 text-sm">Lightning-fast execution in milliseconds</p>
+                  </div>
                 </div>
 
                 {/* We Work 24/7 */}
-                <div className="bg-gray-50 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-gray-200 dark:border-white/10">
+                <div className="flex bg-gray-50 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-4 gap-2 border border-gray-200 dark:border-white/10">
                   <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center mb-4">
                     <Clock className="w-6 h-6 text-white" />
                   </div>
-                  <h4 className="text-gray-900 dark:text-white font-bold text-lg mb-2">We Work 24/7</h4>
-                  <p className="text-gray-600 dark:text-white/70 text-sm">Round-the-clock support & trading</p>
+                  <div>
+                    <h4 className="text-gray-900 dark:text-white font-bold text-lg mb-2">We Work 24/7</h4>
+                    <p className="text-gray-600 dark:text-white/70 text-sm">Round-the-clock support & trading</p>
+                  </div>
                 </div>
-              </div>
 
-              {/* App Download Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 pt-4">
-                <a
-                  href="#"
-                  className="inline-flex items-center justify-center gap-3 bg-gray-900 hover:bg-gray-800 dark:bg-black/50 dark:hover:bg-black/70 border border-gray-300 dark:border-white/20 rounded-xl px-6 py-4 transition-colors min-w-[200px]"
-                >
-                  <Image
-                    src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539125/Appstore_nqe65y.png"
-                    alt="Download on the App Store"
-                    width={28}
-                    height={28}
-                    className="w-7 h-7 object-contain"
-                  />
-                  <span className="text-white font-medium text-sm">Download on the App Store</span>
-                </a>
-                <a
-                  href="#"
-                  className="inline-flex items-center justify-center gap-3 bg-gray-900 hover:bg-gray-800 dark:bg-black/50 dark:hover:bg-black/70 border border-gray-300 dark:border-white/20 rounded-xl px-6 py-4 transition-colors min-w-[200px]"
-                >
-                  <Image
-                    src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539313/googleplay_1_w8djf0.png"
-                    alt="GET IT ON Google Play"
-                    width={28}
-                    height={28}
-                    className="w-7 h-7 object-contain"
-                  />
-                  <span className="text-white font-medium text-sm">GET IT ON Google Play</span>
-                </a>
+                {/* App Download Buttons */}
+                <div className="flex flex-col sm:flex-row gap-4 pt-4">
+                  <a
+                    href="#"
+                    className="inline-flex items-center justify-center gap-3 bg-gray-900 hover:bg-gray-800 dark:bg-black/50 dark:hover:bg-black/70 border border-gray-300 dark:border-white/20 rounded-xl px-6 py-4 transition-colors min-w-[200px]"
+                  >
+                    <Image
+                      src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539125/Appstore_nqe65y.png"
+                      alt="Download on the App Store"
+                      width={28}
+                      height={28}
+                      className="w-7 h-7 object-contain"
+                    />
+                    <span className="text-white font-medium text-sm">Download on the App Store</span>
+                  </a>
+                  <a
+                    href="#"
+                    className="inline-flex items-center justify-center gap-3 bg-gray-900 hover:bg-gray-800 dark:bg-black/50 dark:hover:bg-black/70 border border-gray-300 dark:border-white/20 rounded-xl px-6 py-4 transition-colors min-w-[200px]"
+                  >
+                    <Image
+                      src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539313/googleplay_1_w8djf0.png"
+                      alt="GET IT ON Google Play"
+                      width={28}
+                      height={28}
+                      className="w-7 h-7 object-contain"
+                    />
+                    <span className="text-white font-medium text-sm">GET IT ON Google Play</span>
+                  </a>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-    {/* Benefits Section*/}
-   <div className="w-full bg-white dark:bg-[var(--bg-color)]">
-    <img className="w-full h-auto object-contain" src="https://res.cloudinary.com/pitz/image/upload/v1765800227/Screenshot_2025-12-15_150329_l1z3zp.png" alt="" />
-   </div>
+      {/* Benefits Section*/}
+      <div className="w-full bg-white dark:bg-[var(--bg-color)]">
+        <img className="w-full h-auto object-contain" src="https://res.cloudinary.com/pitz/image/upload/v1765800227/Screenshot_2025-12-15_150329_l1z3zp.png" alt="" />
+      </div>
       {/* Refer and Invite Section */}
       <div className="w-full bg-white dark:bg-transparent py-4 md:py-8 my-4 md:my-6">
         <div className="w-full md:container md:mx-auto md:max-w-7xl md:px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
           {/* Card Image - Full width on small screens, centered on larger screens */}
           <div className="w-full md:mx-auto md:max-w-6xl md:rounded-3xl overflow-hidden">
-                <Image
+            <Image
               src="https://res.cloudinary.com/pitz/image/upload/v1765346728/Container_37_fpyfvs.png"
               alt="Refer and Invite your friends and earn commission"
               width={1440}
@@ -1421,7 +1430,7 @@ export default function MarketingPage() {
         <div className="max-w-6xl 2xl:max-w-7xl mx-auto">
           {/* Header section */}
           <div className="text-center mb-12">
-                {/* Blogs Pill */}
+            {/* Blogs Pill */}
             <div className="flex justify-center mb-6">
               <span className="bg-[#1D8751]/10 border border-[#1D8751] text-[#1D8751] px-4 py-2 rounded-2xl text-sm font-medium">
                 Latest Updates
@@ -1432,7 +1441,7 @@ export default function MarketingPage() {
             {/* Main Title */}
             <h2 className="text-3xl sm:text-4xl md:text-5xl 2xl:text-6xl font-bold mb-4">
               Enjoy Our <span className="text-[#1D8751]">Blog</span> & News on the <span className="text-[#1D8751]">Latest Updates</span>
-</h2>
+            </h2>
 
             {/* Subheading */}
             <p className="text-gray-700 dark:text-white/70 text-base md:text-lg max-w-2xl mx-auto">
@@ -1500,32 +1509,32 @@ export default function MarketingPage() {
 
                 const categoryName = article.tags[0]?.name || article.category || 'News';
                 const categoryColor = categoryColors[categoryName] || 'bg-[#1D8751]';
-                
+
                 // Calculate read time (estimate 200 words per minute)
                 const wordCount = article.excerpt.split(' ').length;
                 const readTime = Math.ceil(wordCount / 200) || 5;
 
                 return (
-                <div
-                  key={article.id}
+                  <div
+                    key={article.id}
                     className="bg-gray-50 dark:bg-[#1D1D23] rounded-xl overflow-hidden flex flex-col h-full border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors"
-                >
+                  >
                     {/* Article Image */}
                     <div className="relative w-full h-48 overflow-hidden">
-                    <Image
-                      src={article.image}
-                      alt={article.title}
-                      fill
-                      className="object-cover"
-                    />
+                      <Image
+                        src={article.image}
+                        alt={article.title}
+                        fill
+                        className="object-cover"
+                      />
                       {/* Category Label - positioned absolutely over image */}
                       <div className="absolute top-3 left-3">
                         <span className={`${categoryColor} text-white text-xs font-medium px-3 py-1 rounded-full inline-block shadow-lg`}>
                           {categoryName}
-                          </span>
+                        </span>
                       </div>
                     </div>
-                    
+
                     <div className="p-5 md:p-6 flex flex-col h-full">
 
                       {/* Date and Read Time */}
@@ -1539,24 +1548,24 @@ export default function MarketingPage() {
 
                       {/* Article Title */}
                       <h3 className="font-bold text-base md:text-lg mb-3 text-gray-900 dark:text-white line-clamp-2">
-                      {article.title}
-                    </h3>
+                        {article.title}
+                      </h3>
 
                       {/* Description */}
                       <p className="text-gray-700 dark:text-white/70 text-sm mb-5 flex-grow line-clamp-3">
-                      {article.excerpt}
-                    </p>
+                        {article.excerpt}
+                      </p>
 
                       {/* Read More Link */}
-                    <Link
-                      href={`/blog/${article.id}`}
+                      <Link
+                        href={`/blog/${article.id}`}
                         className="inline-flex items-center gap-2 text-[#1D8751] text-sm font-medium hover:text-[#167a47] transition-colors group mt-auto"
-                    >
+                      >
                         Read More
                         <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </Link>
+                      </Link>
+                    </div>
                   </div>
-                </div>
                 );
               })
             )}
@@ -1593,7 +1602,7 @@ export default function MarketingPage() {
             <h2 className="text-3xl sm:text-4xl md:text-5xl 2xl:text-6xl font-bold mb-4">
               Need Answers to Your Questions?{" "}
               <span className="text-[#1D8751]">Contact Us</span>
-              </h2>
+            </h2>
 
             {/* Subtitle */}
             <p className="text-gray-700 dark:text-white/70 text-base md:text-lg max-w-2xl mx-auto">
@@ -1722,60 +1731,60 @@ export default function MarketingPage() {
             {/* Main Title */}
             <h2 className="text-3xl sm:text-4xl md:text-5xl 2xl:text-6xl font-bold mb-4">
               Frequently Asked <span className="text-[#1D8751]">Questions</span>
-                </h2>
+            </h2>
 
             {/* Subtitle */}
             <p className="text-gray-700 dark:text-white/70 text-base md:text-lg max-w-2xl mx-auto">
               Find answers to common questions about OMAYA Exchange, trading, security, and more
-                </p>
-              </div>
+            </p>
+          </div>
 
           {/* FAQ Accordion */}
           <div className="space-y-4 mb-12">
-                {faqLoading ? (
-                  // Loading state
+            {faqLoading ? (
+              // Loading state
               Array.from({ length: 8 }).map((_, index) => (
-                    <div key={index} className="relative animate-pulse">
+                <div key={index} className="relative animate-pulse">
                   <div className="bg-gray-50 dark:bg-[#1D1D23] border border-gray-200 dark:border-[#2A2A2A] rounded-xl overflow-hidden">
                     <div className="w-full flex justify-between items-center px-5 py-4">
-                          <div className="h-4 bg-gray-700 rounded w-3/4"></div>
-                          <div className="h-4 bg-gray-700 rounded w-4"></div>
-                        </div>
-                      </div>
+                      <div className="h-4 bg-gray-700 rounded w-3/4"></div>
+                      <div className="h-4 bg-gray-700 rounded w-4"></div>
                     </div>
-                  ))
-                ) : faqError ? (
-                  // Error state
-                  <div className="text-center py-8">
-                    <p className="text-red-400 mb-4">
-                      Error loading FAQs: {faqError}
-                    </p>
-                    <button
-                      onClick={() => window.location.reload()}
-                      className="bg-[#1D8751] text-white px-4 py-2 rounded-lg hover:bg-[#167a47] transition-colors"
-                    >
-                      {t("marketing.contact.tryAgain", "Try Again")}
-                    </button>
                   </div>
-                ) : faqItems.length === 0 ? (
-                  // Empty state
-                  <div className="text-center py-8">
-                    <p className="text-gray-400 text-lg">
-                      {t("marketing.faq.empty", "No FAQs available.")}
-                    </p>
-                    <p className="text-gray-500 text-sm mt-2">
-                      {t(
-                        "marketing.faq.addHint",
-                        "Please add some FAQ items to your Sanity CMS."
-                      )}
-                    </p>
-                  </div>
-                ) : (
-                  <>
+                </div>
+              ))
+            ) : faqError ? (
+              // Error state
+              <div className="text-center py-8">
+                <p className="text-red-400 mb-4">
+                  Error loading FAQs: {faqError}
+                </p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="bg-[#1D8751] text-white px-4 py-2 rounded-lg hover:bg-[#167a47] transition-colors"
+                >
+                  {t("marketing.contact.tryAgain", "Try Again")}
+                </button>
+              </div>
+            ) : faqItems.length === 0 ? (
+              // Empty state
+              <div className="text-center py-8">
+                <p className="text-gray-400 text-lg">
+                  {t("marketing.faq.empty", "No FAQs available.")}
+                </p>
+                <p className="text-gray-500 text-sm mt-2">
+                  {t(
+                    "marketing.faq.addHint",
+                    "Please add some FAQ items to your Sanity CMS."
+                  )}
+                </p>
+              </div>
+            ) : (
+              <>
                 {/* FAQ items */}
                 {faqItems.slice(0, showAllFAQs ? faqItems.length : 8).map((item, index) => {
                   const isOpen = openFAQ === (item.id || index);
-                  
+
                   // Category mapping (you can customize this based on your FAQ data)
                   const categories = [
                     'GETTING STARTED',
@@ -1792,16 +1801,15 @@ export default function MarketingPage() {
                   return (
                     <div key={item.id || item._id || index} className="relative">
                       <div
-                        className={`bg-gray-50 dark:bg-[#18181D] border rounded-xl overflow-hidden ${
-                          isOpen
-                              ? "border-[#1D8751]"
-                            : "border-gray-200 dark:border-[#2A2A2A]"
+                        className={`bg-gray-50 dark:bg-[#18181D] border rounded-xl overflow-hidden ${isOpen
+                          ? "border-[#1D8751]"
+                          : "border-gray-200 dark:border-[#2A2A2A]"
                           }`}
-                        >
-                          {/* Accordion Header */}
-                          <button
+                      >
+                        {/* Accordion Header */}
+                        <button
                           onClick={() => toggleFAQ(item.id || index)}
-                            className="w-full flex justify-between items-start px-5 py-4 text-left hover:bg-gray-100 dark:hover:bg-[#23232B] transition-colors"
+                          className="w-full flex justify-between items-start px-5 py-4 text-left hover:bg-gray-100 dark:hover:bg-[#23232B] transition-colors"
                         >
                           <div className="flex flex-col gap-1 flex-1">
                             <span className="text-[#1D8751] text-xs font-semibold uppercase">
@@ -1811,70 +1819,69 @@ export default function MarketingPage() {
                               {item.question}
                             </span>
                           </div>
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ml-4 transition-colors ${
-                            isOpen 
-                              ? "bg-[#1D8751]" 
-                              : "bg-gray-200 dark:bg-[#2A2A2A]"
-                          }`}>
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ml-4 transition-colors ${isOpen
+                            ? "bg-[#1D8751]"
+                            : "bg-gray-200 dark:bg-[#2A2A2A]"
+                            }`}>
                             {isOpen ? (
                               <ChevronUp className="w-4 h-4 text-white" />
                             ) : (
                               <ChevronDown className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                             )}
                           </div>
-                          </button>
+                        </button>
 
-                          {/* Accordion Content */}
+                        {/* Accordion Content */}
                         {isOpen && (
                           <div className="bg-gray-50 dark:bg-[#18181D]">
                             <div className="px-5 pt-4 pb-4">
                               <div className="border-t border-[#35353E] dark:border-[#2A2A2A] pt-5 -mt-4">
                                 <p className="text-gray-700 dark:text-white/80 text-sm md:text-base leading-relaxed">
-                                    {item.answer}
-                                  </p>
+                                  {item.answer}
+                                </p>
                               </div>
                             </div>
                           </div>
-                          )}
-                        </div>
+                        )}
                       </div>
+                    </div>
                   );
                 })}
-                    
+
                 {/* Load All Button - only show if there are more than 8 FAQs */}
                 {faqItems.length > 8 && !showAllFAQs && (
-                      <div className="text-center pt-4">
-                        <button
-                          onClick={() => setShowAllFAQs(true)}
-                          className="bg-[#1D8751] text-white px-6 py-3 rounded-lg hover:bg-[#167a47] transition-colors font-medium"
-                        >
+                  <div className="text-center pt-4">
+                    <button
+                      onClick={() => setShowAllFAQs(true)}
+                      className="bg-[#1D8751] text-white px-6 py-3 rounded-lg hover:bg-[#167a47] transition-colors font-medium"
+                    >
                       {t("marketing.faq.loadAll", "Load All FAQs")} ({faqItems.length - 8} more)
-                        </button>
-                      </div>
-                    )}
-                    
-                    {/* Show Less Button - only show when all FAQs are displayed */}
-                {faqItems.length > 8 && showAllFAQs && (
-                      <div className="text-center pt-4">
-                        <button
-                          onClick={() => setShowAllFAQs(false)}
-                          className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors font-medium"
-                        >
-                          {t("marketing.faq.showLess", "Show Less")}
-                        </button>
-                      </div>
-                    )}
-                  </>
+                    </button>
+                  </div>
                 )}
-              </div>
+
+                {/* Show Less Button - only show when all FAQs are displayed */}
+                {faqItems.length > 8 && showAllFAQs && (
+                  <div className="text-center pt-4">
+                    <button
+                      onClick={() => setShowAllFAQs(false)}
+                      className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                    >
+                      {t("marketing.faq.showLess", "Show Less")}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
 
           {/* Bottom Support Section */}
           <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-2xl p-8 md:p-12 text-center border border-gray-200 dark:border-[#2A2A2A]">
             <div className="flex justify-center mb-4">
               <div className="w-16 h-16 bg-[#1D8751] rounded-full flex items-center justify-center">
                 <MessageCircle className="w-8 h-8 text-white" />
+              </div>
             </div>
-          </div>
             <h3 className="text-gray-900 dark:text-white text-xl md:text-2xl font-bold mb-2">
               Still have questions?
             </h3>
