@@ -3,6 +3,9 @@ import React, { useState, useMemo } from "react";
 import { useMarketingI18n } from "@/lib/useMarketingI18n";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useSelector } from "react-redux";
+import type { RootState } from "@/store/rootReducer";
 import { tokens } from "@/styles/tokens";
 import { Play, MessageCircle, Plus, BarChart, Globe, Lock, DollarSign, Users, TrendingUp, Shield, Zap, Gift, UserPlus, ArrowRight, Building2, Calendar, Clock, MapPin, Phone, Mail, Send, ChevronDown, ChevronUp, ArrowLeftRight, HelpCircle } from "lucide-react";
 import ExchangeForm from "@/components/ExchangeForm";
@@ -146,6 +149,10 @@ interface Article {
 
 export default function MarketingPage() {
   const { t } = useMarketingI18n();
+  const router = useRouter();
+  const isAuthenticated = useSelector(
+    (state: RootState) => state.auth.isAuthenticated
+  );
   const [activeCategory, setActiveCategory] = useState<Category>("News");
   const [openFAQ, setOpenFAQ] = useState<number | null>(0);
   const [showContactSuccess, setShowContactSuccess] = useState(false);
@@ -469,24 +476,35 @@ export default function MarketingPage() {
             </span>
           </div>
 
-          {/* Section Title */}
-          <h2 className="text-center text-xl sm:text-2xl md:text-3xl lg:text-4xl 2xl:text-5xl font-bold mb-3 sm:mb-4">
-            <span className="text-gray-900 dark:text-white">
-              {t(
-                "marketing.achievements.title.leading",
-                "Celebrating Success:"
-              )}{" "}
-              {t(
-                "marketing.achievements.title.highlight",
-                "Key Achievements"
-              )}
-            </span>
-          </h2>
+          {/* Title + Subtitle (small green gradient only around "Celebrating Success:") */}
+          <div className="mx-auto mb-8 sm:mb-10 md:mb-12 max-w-3xl px-2">
+            {/* Section Title */}
+            <h2 className="text-center text-xl sm:text-2xl md:text-3xl lg:text-4xl 2xl:text-5xl font-bold mb-3 sm:mb-4">
+              <span className="text-gray-900 dark:text-white">
+                <span className="relative inline-flex items-center">
+                  <span
+                    className="pointer-events-none absolute -inset-x-8 -inset-y-4 rounded-full bg-gradient-to-r from-[#1D8751]/25 via-[#1D8751]/10 to-transparent dark:from-[#1D8751]/30 dark:via-[#1D8751]/15 blur-2xl opacity-70"
+                    aria-hidden="true"
+                  />
+                  <span className="relative">
+                    {t(
+                      "marketing.achievements.title.leading",
+                      "Celebrating Success:"
+                    )}
+                  </span>
+                </span>{" "}
+                {t(
+                  "marketing.achievements.title.highlight",
+                  "Key Achievements"
+                )}
+              </span>
+            </h2>
 
-          {/* Subtitle */}
-          <p className="text-center text-gray-700 dark:text-white text-sm sm:text-base md:text-lg mb-8 sm:mb-10 md:mb-12 px-4">
-            Join the fastest-growing crypto exchange platform in Somalia.
-          </p>
+            {/* Subtitle */}
+            <p className="text-center text-gray-700 dark:text-white text-sm sm:text-base md:text-lg px-4">
+              Join the fastest-growing crypto exchange platform in Somalia.
+            </p>
+          </div>
 
           {/* First Row - Achievement Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6 mb-6 sm:mb-8 md:mb-10">
@@ -750,7 +768,7 @@ export default function MarketingPage() {
                           <div className="relative mb-3 w-full -mx-4">
                             {/* Colored horizontal bar cutting across - faded, edge to edge, no padding, full right coverage */}
                             <div 
-                              className={`absolute top-1/2 left-0 h-12 ${iconBgColor} transform -translate-y-1/2 opacity-30`}
+                              className={`absolute top-1/2 left-0 h-14 sm:h-16 ${iconBgColor} transform -translate-y-1/2 opacity-40`}
                               style={{
                                 right: '-1rem',
                                 width: 'calc(100% + 2rem)'
@@ -758,13 +776,13 @@ export default function MarketingPage() {
                             ></div>
                             {/* Centered asset image */}
                             <div className="relative z-10 flex items-center justify-center">
-                              <div className="w-10 h-10 bg-white dark:bg-[#1D1D23] rounded-full flex items-center justify-center border border-gray-200 dark:border-transparent">
+                              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white dark:bg-[#1D1D23] rounded-full flex items-center justify-center border border-gray-200 dark:border-transparent">
                                 <Image
                                   src={asset.image}
                                   alt={asset.name}
-                                  width={32}
-                                  height={32}
-                                  className="object-contain w-full h-full"
+                                  width={48}
+                                  height={48}
+                                  className="object-contain w-10 h-10 sm:w-12 sm:h-12"
                                   unoptimized
                                 />
                               </div>
@@ -920,6 +938,7 @@ export default function MarketingPage() {
       {/* Safe & Reliable Section */}
       <div className="w-full bg-white dark:bg-[var(--bg-color)] pt-8 pb-16">
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
+          <div className="bg-gray-50 dark:bg-[var(--card-color)] border border-gray-200 dark:border-[#2A2A2A] rounded-3xl p-5 sm:p-6 md:p-8 shadow-sm">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             {/* Left Section - Image */}
             <div className="relative">
@@ -1032,6 +1051,7 @@ export default function MarketingPage() {
                 </div>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </div>
@@ -1200,11 +1220,14 @@ export default function MarketingPage() {
               ))}
             </div>
           </div>
+          <div className="flex justify-center mt-10" onClick={() => router.push(isAuthenticated ? '/dashboard' : '/auth/login')}>
+            <img src="https://res.cloudinary.com/pitz/image/upload/v1765959050/Button_muu3er.png" alt="" />
+          </div>
         </div>
       </div>
 
       {/* Why Choose Us Section with Phone */}
-      <section className="w-full bg-[#050711] py-20 md:py-28 px-4 md:px-[100px] relative overflow-hidden">
+      <section className="w-full bg-white dark:bg-[#050711] py-20 md:py-28 px-4 md:px-[100px] relative overflow-hidden">
         {/* Subtle floating particles */}
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute top-16 left-1/4 w-2 h-2 bg-[#1D8751] rounded-full opacity-60 blur-sm"></div>
@@ -1224,7 +1247,7 @@ export default function MarketingPage() {
           {/* Main title */}
           <div className="text-center mb-10">
             <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold">
-              <span className="text-white">Why Choose </span>
+              <span className="text-gray-900 dark:text-white">Why Choose </span>
               <span className="text-[#1D8751]">Us</span>
             </h2>
           </div>
@@ -1244,7 +1267,7 @@ export default function MarketingPage() {
               {/* Phone Image */}
               <div className="relative z-10">
                 <Image
-                  src="https://res.cloudinary.com/dam1sxczj/image/upload/v1747220053/iphone_vn7ejc.png"
+                  src="https://res.cloudinary.com/pitz/image/upload/v1765870778/iPhone_13_Mockup_1_wnbmqk.png"
                   alt="OMAYA Exchange Mobile App"
                   width={350}
                   height={700}
@@ -1258,19 +1281,19 @@ export default function MarketingPage() {
             <div className="relative space-y-8">
               {/* Green gradient background behind text & cards */}
               <div className="pointer-events-none absolute inset-0 -z-10">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#1D8751]/25 via-[#0E5531]/20 to-transparent rounded-[40px] blur-3xl opacity-70"></div>
-                <div className="absolute -top-10 -right-10 w-56 h-56 bg-[#13B562]/25 rounded-full blur-3xl opacity-80"></div>
-                <div className="absolute bottom-[-40px] left-0 w-64 h-64 bg-[#1D8751]/20 rounded-full blur-3xl opacity-60"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-[#1D8751]/15 via-[#0E5531]/10 to-transparent rounded-[40px] blur-3xl opacity-60 dark:from-[#1D8751]/25 dark:via-[#0E5531]/20 dark:opacity-70"></div>
+                <div className="absolute -top-10 -right-10 w-56 h-56 bg-[#13B562]/15 rounded-full blur-3xl opacity-60 dark:bg-[#13B562]/25 dark:opacity-80"></div>
+                <div className="absolute bottom-[-40px] left-0 w-64 h-64 bg-[#1D8751]/12 rounded-full blur-3xl opacity-50 dark:bg-[#1D8751]/20 dark:opacity-60"></div>
               </div>
 
               {/* Main Heading */}
               <div>
                 <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 text-left">
-                  <span className="text-white">Fast and </span>
+                  <span className="text-gray-900 dark:text-white">Fast and </span>
                   <span className="text-[#1D8751]">Secure</span>
-                  <span className="text-white"> Crypto Exchange</span>
+                  <span className="text-gray-900 dark:text-white"> Crypto Exchange</span>
                 </h3>
-                <p className="text-sm sm:text-base md:text-lg text-gray-300 max-w-xl">
+                <p className="text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300 max-w-xl">
                   Experience lightning-fast trades, ultra-low fees, and bank-grade security on a platform built for both beginners and pros.
                 </p>
               </div>
@@ -1278,7 +1301,7 @@ export default function MarketingPage() {
               {/* Feature Cards Grid */}
               <div className="grid grid-cols-2 gap-4 md:gap-5">
                 {/* Low Transaction Fee */}
-                <div className="bg-gray-50/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-gray-200/10 dark:border-white/10">
+                <div className="bg-gray-50 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-gray-200 dark:border-white/10">
                   <div className="w-12 h-12 bg-[#1D8751] rounded-lg flex items-center justify-center mb-4">
                     <DollarSign className="w-6 h-6 text-white" />
                   </div>
@@ -1287,7 +1310,7 @@ export default function MarketingPage() {
                 </div>
 
                 {/* Secure Payment Service */}
-                <div className="bg-gray-50/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-gray-200/10 dark:border-white/10">
+                <div className="bg-gray-50 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-gray-200 dark:border-white/10">
                   <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mb-4">
                     <Shield className="w-6 h-6 text-white" />
                   </div>
@@ -1296,7 +1319,7 @@ export default function MarketingPage() {
                 </div>
 
                 {/* Fast Transactions */}
-                <div className="bg-gray-50/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-gray-200/10 dark:border-white/10">
+                <div className="bg-gray-50 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-gray-200 dark:border-white/10">
                   <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center mb-4">
                     <Zap className="w-6 h-6 text-white" />
                   </div>
@@ -1305,7 +1328,7 @@ export default function MarketingPage() {
                 </div>
 
                 {/* We Work 24/7 */}
-                <div className="bg-gray-50/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-gray-200/10 dark:border-white/10">
+                <div className="bg-gray-50 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-5 border border-gray-200 dark:border-white/10">
                   <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center mb-4">
                     <Clock className="w-6 h-6 text-white" />
                   </div>
@@ -1318,7 +1341,7 @@ export default function MarketingPage() {
               <div className="flex flex-col sm:flex-row gap-4 pt-4">
                 <a
                   href="#"
-                  className="inline-flex items-center justify-center gap-3 bg-gray-900 dark:bg-black/50 hover:bg-gray-800 dark:hover:bg-black/70 border border-gray-300 dark:border-white/20 rounded-xl px-6 py-4 transition-colors min-w-[200px]"
+                  className="inline-flex items-center justify-center gap-3 bg-gray-900 hover:bg-gray-800 dark:bg-black/50 dark:hover:bg-black/70 border border-gray-300 dark:border-white/20 rounded-xl px-6 py-4 transition-colors min-w-[200px]"
                 >
                   <Image
                     src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539125/Appstore_nqe65y.png"
@@ -1331,7 +1354,7 @@ export default function MarketingPage() {
                 </a>
                 <a
                   href="#"
-                  className="inline-flex items-center justify-center gap-3 bg-gray-900 dark:bg-black/50 hover:bg-gray-800 dark:hover:bg-black/70 border border-gray-300 dark:border-white/20 rounded-xl px-6 py-4 transition-colors min-w-[200px]"
+                  className="inline-flex items-center justify-center gap-3 bg-gray-900 hover:bg-gray-800 dark:bg-black/50 dark:hover:bg-black/70 border border-gray-300 dark:border-white/20 rounded-xl px-6 py-4 transition-colors min-w-[200px]"
                 >
                   <Image
                     src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539313/googleplay_1_w8djf0.png"
