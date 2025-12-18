@@ -428,29 +428,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                     aria-selected={value === option.value}
                   >
                     <div className="flex items-center gap-2 sm:gap-3 min-w-0 w-full">
-                      {/* Checkbox */}
-                      <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
-                        {isSelected ? (
-                          <div className="w-5 h-5 rounded border-2 border-[#1D8751] bg-[#1D8751] flex items-center justify-center">
-                            <svg
-                              className="w-3.5 h-3.5 text-white"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={3}
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                          </div>
-                        ) : (
-                          <div className="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-600 bg-transparent"></div>
-                        )}
-                      </div>
+                    
                       {option.logo && (
                         <img
                           src={option.logo}
