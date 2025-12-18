@@ -58,7 +58,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                 Wallet/Account Address
               </label>
               {/* Input group - separate bordered container on mobile */}
-              <div className={`flex flex-col gap-3 sm:gap-0 rounded-xl sm:rounded-2xl px-3 sm:px-4 py-3 sm:py-2 mb-2 sm:mb-4 ${
+              <div className={`flex flex-col lg:flex-row lg:items-center gap-3 lg:gap-2 rounded-xl sm:rounded-2xl px-3 sm:px-4 py-3 sm:py-2 mb-2 sm:mb-4 ${
                 isDark 
                   ? "bg-[#2a2a33] border-2 border-[#4a4a55] sm:border sm:border-[#39394a] sm:bg-transparent" 
                   : "bg-[#f5f7fa] border-2 border-[#d1d5db] sm:border sm:border-[#39394a] sm:bg-transparent"
@@ -100,24 +100,13 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                     className={`flex-1 min-w-0 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-xs sm:text-base`}
                     disabled={isLoading}
                   />
-                  {/* Bookmark icon - hidden on very small screens */}
-                  <span className="hidden sm:block mx-2 text-[#788099] cursor-pointer flex-shrink-0">
-                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-                      <path
-                        d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"
-                        stroke="#788099"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </span>
+                  {/* (removed) bookmark icon */}
                 </div>
                 {/* Paste button */}
                 <button
                   onClick={handlePaste}
                   disabled={isLoading}
-                  className={`flex items-center justify-center gap-1 border text-[#1D8751] rounded-full px-3 sm:px-4 py-2 sm:py-1 sm:ml-2 font-semibold text-sm sm:text-base hover:bg-[#1D8751] hover:text-white transition-colors flex-shrink-0 w-full sm:w-auto ${
+                  className={`flex items-center justify-center gap-1 border text-[#1D8751] rounded-full px-3 sm:px-4 py-2 sm:py-1 lg:ml-2 font-semibold text-sm sm:text-base hover:bg-[#1D8751] hover:text-white transition-colors flex-shrink-0 w-full lg:w-auto ${
                     isDark ? "bg-[#1D1D23] border-[#1D8751]" : "bg-transparent border-[#1D8751]"
                   }`}
                 >

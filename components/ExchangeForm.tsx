@@ -1336,10 +1336,13 @@ export default function ExchangeForm({
           flexBasis: 0,
           borderRadius: getBorderRadius(),
           // Outer edges only - no borders between buttons (slanted edges handled separately)
-          borderLeft: hasLeftBorder && !isActive && !hasSlantLeft ? `1px solid ${borderColor}` : 'none',
-          borderRight: hasRightBorder && !isActive && !hasSlantRight ? `1px solid ${borderColor}` : 'none',
-          borderTop: !isActive ? `1px solid ${borderColor}` : 'none',
-          borderBottom: !isActive ? `1px solid ${borderColor}` : 'none',
+          borderLeft: hasLeftBorder && !isActive && !hasSlantLeft ? `2px solid ${borderColor}` : "none",
+          borderRight:
+            hasRightBorder && !isActive && !hasSlantRight
+              ? `2px solid ${borderColor}`
+              : "none",
+          borderTop: !isActive ? `2px solid ${borderColor}` : "none",
+          borderBottom: !isActive ? `2px solid ${borderColor}` : "none",
         }}
       >
         {/* Border on slanted right edge */}
@@ -1357,7 +1360,7 @@ export default function ExchangeForm({
                 x2="100%"
                 y2="100%"
                 stroke={borderColor}
-                strokeWidth="1"
+                strokeWidth="2"
               />
             ) : hasSlantRightBottom ? (
               // Bottom-right slant: from 100% at top to 92% at bottom (MoneyX active, Express inactive - opposite direction)
@@ -1367,7 +1370,7 @@ export default function ExchangeForm({
                 x2="92%"
                 y2="100%"
                 stroke={borderColor}
-                strokeWidth="1"
+                strokeWidth="2"
               />
             ) : null}
           </svg>
@@ -1387,7 +1390,7 @@ export default function ExchangeForm({
                 x2="8%"
                 y2="100%"
                 stroke={borderColor}
-                strokeWidth="1"
+                strokeWidth="2"
               />
             ) : null}
           </svg>
@@ -1556,9 +1559,91 @@ export default function ExchangeForm({
   // Render tabs and content based on active tab
   const renderTabs = () => {
     const borderColor = isDark ? "#2f323b" : "#D0D4DD";
+
+    // Tab layout math (flexGrow: Express=2, MoneyX=1.6, Swap=2 => total=5.6)
+    // Express width = 2/5.6 = 35.714%
+    // MoneyX width  = 1.6/5.6 = 28.571%
+    // Swap starts at 64.285%
+    // Slants used in clipPaths:
+    // - Right slant uses 92% at top (or 92% at bottom depending on state)
+    // - Left slant uses 8% at bottom for the "upward" cut
+    const P_EXPRESS = "35.714%";
+    const P_SWAP_START = "64.285%";
+    const P_MONEYX_W = "28.571%";
+    const P_MONEYX_LEFT_BOTTOM_INSET = "2.286%"; // 8% of MoneyX width (0.08 * 28.571)
+    const P_EXPRESS_RIGHT_BOTTOM_INSET = "32.857%"; // 92% of Express width (0.92 * 35.714)
+    const P_MONEYX_RIGHT_TOP_CUT = "62%"; // Express start + (92% of MoneyX width) = 35.714 + 26.285 ≈ 62
     
     return (
-      <div className="relative flex w-full overflow-hidden mt-0 mb-0 rounded-t-[28px] bg-[#F4F7F6] dark:bg-[#18181D] gap-0">
+      <div
+        className="relative flex w-full overflow-hidden mt-0 mb-0 rounded-t-[28px] bg-[#F4F7F6] dark:bg-[#18181D] gap-0"
+      >
+        {/* Uniform OUTER border that DOES NOT touch the active tab area (segmented). */}
+        {/* Left / Right borders (hide the side border next to the active outer tab) */}
+        {activeTab !== "express" && (
+          <div
+            className="pointer-events-none absolute left-0 top-0 bottom-0 border-l-2 z-30"
+            style={{ borderColor }}
+            aria-hidden="true"
+          />
+        )}
+        {activeTab !== "swap" && (
+          <div
+            className="pointer-events-none absolute right-0 top-0 bottom-0 border-r-2 z-30"
+            style={{ borderColor }}
+            aria-hidden="true"
+          />
+        )}
+
+        {/* Rounded top corners (hide the corner border next to the active tab) */}
+        {activeTab !== "express" && (
+          <div
+            className="pointer-events-none absolute top-0 left-0 h-10 w-10 sm:w-12 rounded-tl-[28px] border-t-2 border-l-2 z-30"
+            style={{ borderColor }}
+            aria-hidden="true"
+          />
+        )}
+        {activeTab !== "swap" && (
+          <div
+            className="pointer-events-none absolute top-0 right-0 h-10 w-10 sm:w-12 rounded-tr-[28px] border-t-2 border-r-2 z-30"
+            style={{ borderColor }}
+            aria-hidden="true"
+          />
+        )}
+
+        {/* Top border segments (skip the active tab width) */}
+        {activeTab === "express" && (
+          <div
+            className="pointer-events-none absolute top-0 border-t-2 z-30"
+            // Express active => MoneyX inactive has a LEFT slant at the BOTTOM only, so TOP join is straight.
+            style={{ borderColor, left: P_EXPRESS, right: 0 }}
+            aria-hidden="true"
+          />
+        )}
+        {activeTab === "moneyx" && (
+          <>
+            <div
+              className="pointer-events-none absolute top-0 left-0 border-t-2 z-30"
+              // MoneyX active => Express inactive join is straight at the TOP.
+              style={{ borderColor, width: P_EXPRESS }}
+              aria-hidden="true"
+            />
+            <div
+              className="pointer-events-none absolute top-0 border-t-2 z-30"
+              // MoneyX active => Swap inactive join is straight at the TOP.
+              style={{ borderColor, left: P_SWAP_START, right: 0 }}
+              aria-hidden="true"
+            />
+          </>
+        )}
+        {activeTab === "swap" && (
+          <div
+            className="pointer-events-none absolute top-0 left-0 border-t-2 z-30"
+            // Swap active => MoneyX inactive has a RIGHT slant at the TOP (92%), so stop before the slant point.
+            style={{ borderColor, width: P_MONEYX_RIGHT_TOP_CUT }}
+            aria-hidden="true"
+          />
+        )}
         <TabButton
           id="express"
           variant="express"
@@ -1578,34 +1663,45 @@ export default function ExchangeForm({
           label={t("marketing.exchange.tabs.swap", "Swap")}
         />
         
-        {/* Continuous bottom border line for inactive tabs when Express is active */}
+        {/* Bottom border segments (skip the active tab width) */}
         {activeTab === "express" && (
-          <div 
-            className="absolute bottom-0 h-[1px] pointer-events-none z-20"
-            style={{ 
+          <div
+            className="pointer-events-none absolute bottom-0 h-[2px] z-30"
+            // Express active => MoneyX inactive LEFT edge is inset by 8% at the BOTTOM.
+            style={{
               backgroundColor: borderColor,
-              // Start after MoneyX's slanted left edge at the bottom
-              // Express flexGrow=2, MoneyX=1.6, Swap=2, total=5.6
-              // Express takes 2/5.6 = 35.714%, MoneyX starts at 35.714%
-              // MoneyX width = 1.6/5.6 = 28.571%
-              // MoneyX's slanted left edge at bottom: 8% of MoneyX width = 8% of 28.571% = 2.286%
-              // So border should start at: 35.714% + 2.286% = 38%
-              left: '38%',
-              right: '0'
+              left: `calc(${P_EXPRESS} + ${P_MONEYX_LEFT_BOTTOM_INSET})`,
+              right: 0,
             }}
+            aria-hidden="true"
           />
         )}
-        
-        {/* Continuous bottom border line for inactive tabs when Swap is active */}
+        {activeTab === "moneyx" && (
+          <>
+            <div
+              className="pointer-events-none absolute bottom-0 left-0 h-[2px] z-30"
+              // MoneyX active => Express inactive RIGHT edge is inset by 92% at the BOTTOM.
+              style={{ backgroundColor: borderColor, width: P_EXPRESS_RIGHT_BOTTOM_INSET }}
+              aria-hidden="true"
+            />
+            <div
+              className="pointer-events-none absolute bottom-0 h-[2px] z-30"
+              // MoneyX active => Swap inactive LEFT edge is inset by 8% at the BOTTOM.
+              style={{
+                backgroundColor: borderColor,
+                left: `calc(${P_SWAP_START} + ${P_MONEYX_LEFT_BOTTOM_INSET})`,
+                right: 0,
+              }}
+              aria-hidden="true"
+            />
+          </>
+        )}
         {activeTab === "swap" && (
-          <div 
-            className="absolute bottom-0 left-0 h-[1px] pointer-events-none z-20"
-            style={{ 
-              backgroundColor: borderColor,
-              // Start from left edge to where Swap tab starts (~64.3%)
-              // Express + MoneyX = (2+1.6)/5.6 ≈ 64.3%
-              width: '64.3%'
-            }}
+          <div
+            className="pointer-events-none absolute bottom-0 left-0 h-[2px] z-30"
+            // Swap active => MoneyX inactive RIGHT edge reaches 100% at the BOTTOM (slant goes to full width).
+            style={{ backgroundColor: borderColor, width: P_SWAP_START }}
+            aria-hidden="true"
           />
         )}
       </div>
@@ -1668,3 +1764,4 @@ export default function ExchangeForm({
     </div>
   );
 }
+
