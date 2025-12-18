@@ -265,7 +265,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
             </div>
           </div>
 
-          {/* Asset List - Limited to 50 items for performance */}
+          {/* Asset List */}
           <div className="max-h-[60vh] sm:max-h-[50vh] overflow-y-auto p-0.5 sm:p-1">
             {filtered.length === 0 ? (
               <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
@@ -273,7 +273,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
               </div>
             ) : (
               <>
-                {filtered.slice(0, 50).map((option, idx) => (
+                {filtered.map((option, idx) => (
                   <div
                     key={`${option.ticker}-${option.network}-${idx}`}
                     className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 md:p-4 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors duration-150"
@@ -318,11 +318,6 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                       )}
                   </div>
                 ))}
-                {filtered.length > 50 && (
-                  <div className="p-3 text-center text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-600">
-                    Showing 50 of {filtered.length} assets. Use search to find more.
-                  </div>
-                )}
               </>
             )}
           </div>
