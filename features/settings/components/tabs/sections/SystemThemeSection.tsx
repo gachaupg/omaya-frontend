@@ -65,7 +65,7 @@ const SystemThemeSection: React.FC = () => {
                 strokeLinecap="round"
               />
             </svg>
-            Deem
+            Dim
           </button>
           <button
             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-2xl font-semibold text-sm transition-all ${
