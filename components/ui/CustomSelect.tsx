@@ -103,6 +103,45 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleScroll = (event: Event) => {
+      const target = event.target as Node | null;
+
+      // 1. Ignore scrolls inside dropdown content
+      if (
+        dropdownContentRef.current &&
+        target &&
+        dropdownContentRef.current.contains(target)
+      ) {
+        return;
+      }
+
+      // 2. Ignore scrolls on the trigger itself (edge case)
+      if (
+        triggerRef.current &&
+        target &&
+        triggerRef.current.contains(target)
+      ) {
+        return;
+      }
+
+      // 3. Close dropdown on any other scroll
+      setIsOpen(false);
+    };
+
+    // Capture phase is CRITICAL
+    window.addEventListener("scroll", handleScroll, true);
+    document.addEventListener("scroll", handleScroll, true);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll, true);
+      document.removeEventListener("scroll", handleScroll, true);
+    };
+  }, [isOpen]);
+
+
   const updateDropdownPosition = () => {
     if (typeof window === "undefined") return;
     const triggerElement = triggerRef.current;
@@ -145,10 +184,10 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     if (sizeMode === "card") {
       // For card mode, match the trigger width exactly (not bigger)
       const triggerWidth = rect.width;
-      
+
       // Use trigger width exactly, not card width - ensure it never exceeds trigger width
       let dropdownWidth = triggerWidth;
-      
+
       // Ensure the dropdown doesn't exceed viewport width
       if (viewportWidth) {
         const maxWidth = viewportWidth - minMargin * 2;
@@ -156,10 +195,10 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         // But also ensure it doesn't exceed the trigger width
         dropdownWidth = Math.min(dropdownWidth, triggerWidth);
       }
-      
+
       // Calculate left position to align with trigger exactly
       let leftPosition = rect.left;
-      
+
       // Ensure dropdown doesn't go off screen
       if (viewportWidth) {
         if (leftPosition + dropdownWidth > viewportWidth - minMargin) {
@@ -299,7 +338,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
           ${sizeMode === "card" ? "h-[48px] flex items-center bg-transparent dark:bg-transparent" : ""}
           ${disabled || loading
             ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed border-gray-300 dark:border-gray-600"
-            : sizeMode === "card" 
+            : sizeMode === "card"
               ? "bg-transparent dark:bg-transparent text-[#35353e] dark:text-[#ffffff] border-[#A2A4A9FF] dark:border-[#35353E] hover:border-blue-400 dark:hover:border-blue-400 cursor-pointer"
               : "bg-white dark:bg-[var(--card-color)] text-[#35353e] dark:text-[#ffffff] border-[#A2A4A9FF] dark:border-[#35353E] hover:border-blue-400 dark:hover:border-blue-400 cursor-pointer"
           }
@@ -311,7 +350,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         role="combobox"
         title={selectedOption ? displayValue : undefined}
       >
-          <div className="flex items-center justify-between min-w-0 w-full">
+        <div className="flex items-center justify-between min-w-0 w-full">
           <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
             {selectedLogo && !loading && (
               <img
@@ -326,11 +365,10 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
             )}
             {!hideSelectedLabel && (
               <span
-                className={`truncate min-w-0 text-base sm:text-lg ${
-                  !selectedOption && !loading
+                className={`truncate min-w-0 text-base sm:text-lg ${!selectedOption && !loading
                     ? placeholderClassName || "text-gray-500 dark:text-gray-400"
                     : ""
-                }`}
+                  }`}
                 title={selectedOption ? displayValue : undefined}
               >
                 {loading ? loadingText : displayValue}
@@ -338,9 +376,8 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
             )}
           </div>
           <svg
-            className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-200 flex-shrink-0 ${
-              isOpen ? "rotate-180" : ""
-            } ${disabled || loading ? "text-gray-400 dark:text-gray-500" : "text-gray-600 dark:text-gray-400"}`}
+            className={`w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-200 flex-shrink-0 ${isOpen ? "rotate-180" : ""
+              } ${disabled || loading ? "text-gray-400 dark:text-gray-500" : "text-gray-600 dark:text-gray-400"}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -390,7 +427,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
             )}
 
             {/* Options List */}
-            <div 
+            <div
               className="overflow-y-auto p-1"
               style={{
                 maxHeight: dropdownMaxHeight ? `${dropdownMaxHeight - (searchable ? 80 : 20)}px` : "250px",
@@ -404,45 +441,45 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                 filteredOptions.map((option) => {
                   const isSelected = value === option.value;
                   return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => handleOptionClick(option.value)}
-                    disabled={option.disabled}
-                    className={`
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => handleOptionClick(option.value)}
+                      disabled={option.disabled}
+                      className={`
                     w-full text-left px-3 sm:px-4 py-2 sm:py-2.5 text-base sm:text-lg transition-colors duration-150
                     hover:bg-blue-50 dark:hover:bg-blue-900/20
                     focus:outline-none focus:bg-blue-50 dark:focus:bg-blue-900/20
                     ${isSelected
-                      ? "bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100 font-medium"
-                      : "text-gray-900 dark:text-white"
-                    }
+                          ? "bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100 font-medium"
+                          : "text-gray-900 dark:text-white"
+                        }
                     ${option.disabled
-                      ? "opacity-50 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent"
-                      : "cursor-pointer"
-                    }
+                          ? "opacity-50 cursor-not-allowed hover:bg-transparent dark:hover:bg-transparent"
+                          : "cursor-pointer"
+                        }
                     ${optionClassName}
                   `}
-                    style={{ minHeight: "32px", marginBottom: "1px" }}
-                    role="option"
-                    aria-selected={value === option.value}
-                  >
-                    <div className="flex items-center gap-2 sm:gap-3 min-w-0 w-full">
-                    
-                      {option.logo && (
-                        <img
-                          src={option.logo}
-                          alt=""
-                          className={resolvedLogoClass}
-                          style={{ width: resolvedLogoSize, height: resolvedLogoSize }}
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = "none";
-                          }}
-                        />
-                      )}
-                      <span className="truncate min-w-0 flex-1 text-left text-base sm:text-lg">{option.label}</span>
-                    </div>
-                  </button>
+                      style={{ minHeight: "32px", marginBottom: "1px" }}
+                      role="option"
+                      aria-selected={value === option.value}
+                    >
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0 w-full">
+
+                        {option.logo && (
+                          <img
+                            src={option.logo}
+                            alt=""
+                            className={resolvedLogoClass}
+                            style={{ width: resolvedLogoSize, height: resolvedLogoSize }}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = "none";
+                            }}
+                          />
+                        )}
+                        <span className="truncate min-w-0 flex-1 text-left text-base sm:text-lg">{option.label}</span>
+                      </div>
+                    </button>
                   );
                 })
               )}
