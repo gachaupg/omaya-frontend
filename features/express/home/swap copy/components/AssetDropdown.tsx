@@ -59,10 +59,10 @@ const AssetDropdown: React.FC<AssetDropdownProps> = ({
               className="w-6 h-6 mr-3"
             />
             <div className="flex flex-col">
-              <span className="dark:text-white text-gray-900 text-xs font-medium">
+              <span className="dark:text-white text-[#1F2937] text-xs font-normal">
                 {selectedAsset.ticker?.toUpperCase()}
               </span>
-              <span className="dark:text-[#8C8CA1] text-gray-500 text-xs">
+              <span className="dark:text-gray-400 text-gray-500 text-xs">
                 {selectedAsset.name}
               </span>
             </div>
@@ -132,10 +132,10 @@ const AssetDropdown: React.FC<AssetDropdownProps> = ({
                     className="w-6 h-6 mr-3"
                   />
                   <div className="flex flex-col">
-                    <span className="dark:text-white text-gray-900 text-xs font-medium">
+                    <span className="dark:text-white text-[#1F2937] text-xs font-normal">
                       {asset.ticker?.toUpperCase()}
                     </span>
-                    <span className="dark:text-[#8C8CA1] text-gray-500 text-xs">
+                    <span className="dark:text-gray-400 text-gray-500 text-xs">
                       {asset.name}
                     </span>
                   </div>

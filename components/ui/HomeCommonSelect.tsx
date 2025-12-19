@@ -8,6 +8,7 @@ interface Option {
   label: string;
   disabled?: boolean;
   logo?: string;
+  subtitle?: string; // Second line for two-line display
 }
 
 type DropdownVerticalAlign = "cardTop" | "cardCenter";
@@ -529,7 +530,14 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                           }}
                         />
                       )}
-                      <span className="truncate min-w-0 flex-1 text-left text-base sm:text-lg">{option.label}</span>
+                      {option.subtitle ? (
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[#1F2937] dark:text-[#ffffff] font-normal text-sm truncate">{option.label}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400 truncate">{option.subtitle}</div>
+                        </div>
+                      ) : (
+                        <span className="truncate min-w-0 flex-1 text-left text-base sm:text-lg">{option.label}</span>
+                      )}
                     </div>
                   </button>
                   );

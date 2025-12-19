@@ -1684,6 +1684,7 @@ export default function DepositForm({
                     </div>
                     {sortedSwapAssets.slice(0, 3).map((asset: SupportedAsset, index: number) => {
                       const isCurrentlySelected = selectedAsset?.ticker === asset.ticker && selectedAsset?.network === asset.network;
+                      const [isHovered, setIsHovered] = useState(false);
                       return (
                         <div
                           key={`popular-${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
@@ -1756,8 +1757,17 @@ export default function DepositForm({
                     const isCurrentlySelected = selectedAsset?.ticker === asset.ticker && selectedAsset?.network === asset.network;
                     return (
                       <div
-                        key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
-                        className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0 transition-colors duration-150 ${isCurrentlySelected ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
+                        key={`popular-${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
+                        className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b transition-all duration-150 ${isCurrentlySelected ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
+                        style={{
+                          borderBottomColor: isCurrentlySelected 
+                            ? '#60a5fa' 
+                            : isHovered 
+                              ? '#60a5fa' 
+                              : isDark ? '#35353E' : '#A2A4A9FF'
+                        }}
+                        onMouseEnter={() => setIsHovered(true)}
+                        onMouseLeave={() => setIsHovered(false)}
                         onClick={() => {
                           handleAssetSelection(asset);
                           setIsAssetDropdownOpen(false);
@@ -1808,8 +1818,86 @@ export default function DepositForm({
                           <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
                         )}
                       </div>
-                    );
-                  })
+                    );})}
+
+                    <div className="border-t-2 border-[#D1D2D4FF] dark:border-[#35353E]"></div>
+
+                    <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+                      <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
+                        All Assets
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                {(assetSearchTerm ? sortedSwapAssets : sortedSwapAssets.slice(3)).map(
+                  (asset: SupportedAsset, index: number) => {
+                    const isCurrentlySelected = selectedAsset?.ticker === asset.ticker && selectedAsset?.network === asset.network;
+                    const [isHovered, setIsHovered] = useState(false);
+                    return (
+                    <div
+                      key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
+                      className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b transition-all duration-150 last:border-b-0 ${isCurrentlySelected ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
+                      style={{
+                        borderBottomColor: isCurrentlySelected 
+                          ? '#60a5fa' 
+                          : isHovered 
+                            ? '#60a5fa' 
+                            : isDark ? '#35353E' : '#A2A4A9FF'
+                      }}
+                      onMouseEnter={() => setIsHovered(true)}
+                      onMouseLeave={() => setIsHovered(false)}
+                      onClick={() => {
+                        handleAssetSelection(asset);
+                        setIsAssetDropdownOpen(false);
+                        setAssetSearchTerm("");
+                      }}
+                    >
+                      <img
+                        src={getHighResAssetIcon(asset, ASSET_ICON_SIZE)}
+                        alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
+                        className={`${ASSET_ICON_BASE_CLASS} w-9 h-9`}
+                        loading="lazy"
+                        onError={(e) => {
+                          e.currentTarget.src = getHighResAssetIcon(null, ASSET_ICON_SIZE);
+                        }}
+                      />
+                      <div className="flex-1">
+                        <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
+                          {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
+                          <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                            {getNetworkDisplayName(getAssetNetwork(asset))}
+                          </span>
+                        </div>
+                        <div className="text-[#35353e] dark:text-[#788099] text-sm">
+                          {(() => {
+                            let displayName =
+                              asset.name || asset.ticker || asset.symbol || "Unknown Asset";
+
+                            displayName = displayName
+                              .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, "")
+                              .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, "")
+                              .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, "")
+                              .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, "")
+                              .replace(/\s*\(TRON\)\s*\(TRX\)/gi, "")
+                              .replace(/\s*\(Solana\)\s*\(SOL\)/gi, "")
+                              .replace(/\s*\(BSC\)$/gi, "")
+                              .replace(/\s*\(ETH\)$/gi, "")
+                              .replace(/\s*\(MATIC\)$/gi, "")
+                              .replace(/\s*\(AVAX\)$/gi, "")
+                              .replace(/\s*\(TRX\)$/gi, "")
+                              .replace(/\s*\(SOL\)$/gi, "")
+                              .trim();
+
+                            return displayName;
+                          })()}
+                        </div>
+                      </div>
+                      {selectedAsset?.asset_id === asset.asset_id && (
+                        <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                      )}
+                    </div>
+                  );})
                 }
               </>
             ) : (

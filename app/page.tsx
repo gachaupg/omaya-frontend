@@ -348,21 +348,37 @@ export default function MarketingPage() {
         <div className="absolute inset-0 overflow-hidden z-0">
           {/* Light mode: Subtle gray/white gradient background */}
           <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:hidden"></div>
-
-          {/* Dark mode: Dark base background */}
-          <div className="absolute inset-0 bg-[#0A0A0F] hidden dark:block"></div>
-
-          {/* Left side green gradient - lighter in light mode, darker in dark mode */}
-          <div className="absolute left-0 top-0 bottom-0 w-1/2 bg-gradient-to-r from-[#1D8751]/10 via-[#13B562]/5 to-transparent dark:from-[#0D4D2E]/40 dark:via-[#0D4D2E]/20 dark:to-transparent"></div>
-
-          {/* Subtle radial gradients for depth */}
-          <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-[#1D8751]/8 dark:bg-[#0D4D2E]/20 rounded-full blur-[120px]"></div>
-          <div className="absolute bottom-1/4 left-0 w-[500px] h-[500px] bg-[#13B562]/5 dark:bg-[#1D8751]/15 rounded-full blur-[100px]"></div>
-
-          {/* Minimal glowing particles - very subtle, more visible in dark mode */}
-          <div className="absolute top-20 left-10 w-1.5 h-1.5 bg-[#1D8751] rounded-full opacity-20 dark:opacity-40 blur-sm animate-pulse"></div>
-          <div className="absolute top-40 left-1/4 w-2 h-2 bg-[#13B562] rounded-full opacity-15 dark:opacity-30 blur-sm animate-pulse" style={{ animationDelay: '0.8s' }}></div>
-          <div className="absolute bottom-32 left-1/5 w-1.5 h-1.5 bg-[#1D8751] rounded-full opacity-20 dark:opacity-35 blur-sm animate-pulse" style={{ animationDelay: '1.5s' }}></div>
+          
+          {/* Dark mode: Very dark base (deep charcoal/near-black) */}
+          <div className="absolute inset-0 bg-[#0a0a0f] hidden dark:block"></div>
+          
+          {/* Pure black overlay at top for navbar area - NO gradients visible behind navbar */}
+          <div className="absolute top-0 left-0 right-0 h-[120px] bg-[#000000] hidden dark:block"></div>
+          <div className="absolute top-0 left-0 right-0 h-[200px] bg-gradient-to-b from-[#000000] via-[#000000]/95 to-transparent hidden dark:block"></div>
+          
+          {/* Dark overlay covering upper regions to suppress gradients */}
+          <div className="absolute top-0 left-0 right-0 h-[400px] bg-gradient-to-b from-[#000000]/80 via-[#000000]/40 to-transparent hidden dark:block"></div>
+          
+          {/* Very subtle purple glow - top left (faint, diffused) - positioned lower to not show behind navbar */}
+          <div className="absolute top-[150px] left-0 w-[500px] h-[500px] bg-purple-600/3 dark:bg-purple-600/5 rounded-full blur-[150px]"></div>
+          <div className="absolute top-[200px] left-[50px] w-[400px] h-[400px] bg-purple-500/2 dark:bg-purple-500/4 rounded-full blur-[120px]"></div>
+          
+          {/* Faint blue glow - top right to center (faint, diffused) - positioned lower */}
+          <div className="absolute top-[150px] right-0 w-[600px] h-[600px] bg-blue-600/3 dark:bg-blue-600/5 rounded-full blur-[160px]"></div>
+          <div className="absolute top-[250px] right-[100px] w-[450px] h-[450px] bg-blue-500/2 dark:bg-blue-500/4 rounded-full blur-[130px]"></div>
+          
+          {/* More noticeable green glow - mid-left and bottom-left (still subtle but more visible) */}
+          <div className="absolute bottom-0 left-0 w-[700px] h-[700px] bg-[#0D4D2E]/8 dark:bg-[#0D4D2E]/12 rounded-full blur-[140px]"></div>
+          <div className="absolute bottom-[100px] left-[100px] w-[600px] h-[600px] bg-[#1D8751]/6 dark:bg-[#1D8751]/10 rounded-full blur-[120px]"></div>
+          <div className="absolute top-[400px] left-[150px] w-[500px] h-[500px] bg-[#13B562]/4 dark:bg-[#13B562]/8 rounded-full blur-[110px]"></div>
+          
+          {/* Very faint, sparse glowing green particles - only in lower areas, not near navbar */}
+          <div className="absolute top-[300px] left-1/4 w-1.5 h-1.5 bg-[#1D8751] rounded-full opacity-8 dark:opacity-15 blur-sm animate-pulse"></div>
+          <div className="absolute top-[500px] left-1/3 w-2 h-2 bg-[#13B562] rounded-full opacity-6 dark:opacity-12 blur-sm animate-pulse" style={{ animationDelay: '0.8s' }}></div>
+          <div className="absolute bottom-32 left-1/5 w-1.5 h-1.5 bg-[#1D8751] rounded-full opacity-8 dark:opacity-15 blur-sm animate-pulse" style={{ animationDelay: '1.5s' }}></div>
+          <div className="absolute top-[600px] right-1/3 w-2 h-2 bg-[#13B562] rounded-full opacity-5 dark:opacity-10 blur-sm animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+          <div className="absolute bottom-1/4 right-1/4 w-1.5 h-1.5 bg-[#1D8751] rounded-full opacity-7 dark:opacity-12 blur-sm animate-pulse" style={{ animationDelay: '1.2s' }}></div>
+          <div className="absolute top-[700px] left-1/2 w-2 h-2 bg-[#13B562] rounded-full opacity-6 dark:opacity-11 blur-sm animate-pulse" style={{ animationDelay: '0.6s' }}></div>
         </div>
 
         {/* Simplified heptagonal patterns - matching Figma minimalism */}
@@ -406,11 +422,17 @@ export default function MarketingPage() {
               </h1>
 
               {/* Description text */}
-              <p className="leading-relaxed max-w-full sm:max-w-2xl md:max-w-3xl mx-auto lg:mx-0 px-4 sm:px-0 text-xs sm:text-sm md:text-sm lg:text-base">
-                <span className="text-gray-900 dark:text-[#788099]">
-                  Experience lightning-fast trades, ultra-low fees, and bank-grade security.
-                </span>{" "}
-                <span className="text-[#1D8751] dark:text-[#13B562]">Join 500,000+ traders worldwide.</span>
+              <p className="leading-relaxed max-w-full sm:max-w-2xl md:max-w-3xl mx-auto lg:mx-0 px-4 sm:px-0 text-xs sm:text-sm md:text-sm lg:text-base relative">
+                {/* Soft, diffused purple glow - only on left side, behind text - more visible */}
+                <span className="absolute -left-8 sm:-left-12 md:-left-16 top-1/2 -translate-y-1/2 w-32 sm:w-40 md:w-48 h-full -z-10 bg-gradient-to-r from-purple-500/20 via-purple-400/12 to-transparent dark:from-purple-500/30 dark:via-purple-400/18 dark:to-transparent rounded-full blur-3xl"></span>
+                <span className="absolute -left-4 sm:-left-6 md:-left-8 top-1/2 -translate-y-1/2 w-24 sm:w-32 md:w-40 h-3/4 -z-10 bg-gradient-to-br from-purple-600/15 via-purple-500/10 to-transparent dark:from-purple-600/25 dark:via-purple-500/15 dark:to-transparent rounded-full blur-2xl"></span>
+                <span className="absolute -left-2 sm:-left-3 md:-left-4 top-1/2 -translate-y-1/2 w-16 sm:w-20 md:w-24 h-1/2 -z-10 bg-gradient-to-r from-purple-400/12 to-transparent dark:from-purple-400/20 dark:to-transparent rounded-full blur-xl"></span>
+                <span className="relative">
+                  <span className="text-gray-900 dark:text-[#788099]">
+                    Experience lightning-fast trades, ultra-low fees, and bank-grade security.
+                  </span>{" "}
+                  <span className="text-[#1D8751] dark:text-[#13B562]">Join 500,000+ traders worldwide.</span>
+                </span>
               </p>
 
               {/* CTA Buttons */}
@@ -598,60 +620,9 @@ export default function MarketingPage() {
             })}
           </div>
 
-          {/* Second Row - Feature Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
-            {/* 0.1% Trading Fee */}
-            <div
-              className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors shadow-lg"
-              style={{
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
-              }}
-            >
-              <Zap className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[#FF9500] mb-2 sm:mb-3" />
-              <p className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base text-center font-medium">
-                0.1% Trading Fee
-              </p>
-            </div>
-
-            {/* Bank-Grade Security */}
-            <div
-              className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors shadow-lg"
-              style={{
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
-              }}
-            >
-              <Shield className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[#3B82F6] mb-2 sm:mb-3" />
-              <p className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base text-center font-medium">
-                Bank-Grade Security
-              </p>
-            </div>
-
-            {/* 24/7 Support */}
-            <div
-              className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors shadow-lg"
-              style={{
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
-              }}
-            >
-              <Globe className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[#8B5CF6] mb-2 sm:mb-3" />
-              <p className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base text-center font-medium">
-                24/7 Support
-              </p>
-            </div>
-
-            {/* Real-Time Charts */}
-            <div
-              className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors shadow-lg"
-              style={{
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
-              }}
-            >
-              <BarChart className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[#1D8751] mb-2 sm:mb-3" />
-              <p className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base text-center font-medium">
-                Real-Time Charts
-              </p>
-            </div>
-          </div>
+        <div>
+          <img src="https://res.cloudinary.com/pitz/image/upload/v1766121183/Container_14_omqgii.png" alt="" />
+        </div>
         </div>
 
       </div>
