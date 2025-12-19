@@ -482,15 +482,19 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
 
     // Get provider name - handle both admin and public payment methods structure
     let providerName = payment.provider_name || payment.provider?.provider_name || payment.method?.method_name || payment.payment_method_name || "";
-    const paymentMethod = payment.payment_method || payment.payment_method_type || payment.method?.method_display || "";
+    const paymentMethod = payment.payment_method || payment.payment_method_type || payment.method?.method_display || payment.method?.method_name || "";
 
     // Clean provider name - remove "- Bank" suffix if present
     providerName = providerName.replace(/\s*-\s*Bank\s*$/i, "").trim();
+    
+    // Create subtitle: Provider - Method
+    const subtitle = paymentMethod ? `${providerName} - ${paymentMethod}` : null;
 
     return {
       value: providerName,
       // Show only provider name (remove - {method} part) for cleaner display
       label: providerName,
+      subtitle: subtitle || undefined,
       logo: logoUrl,
       raw: payment,
     };

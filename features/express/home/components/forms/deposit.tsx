@@ -1458,19 +1458,17 @@ export default function DepositForm({
                           />
                           <div className="flex-1">
                             <div
-                              className={`font-medium flex items-center gap-2 ${
-                                isDark ? "text-white" : "text-[#111827]"
+                              className={`font-normal text-sm flex items-center gap-2 ${
+                                isDark ? "text-white" : "text-[#1F2937]"
                               }`}
                             >
                               {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
-                              <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                              <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
                                 {getNetworkDisplayName(getAssetNetwork(asset))}
                               </span>
                             </div>
                             <div
-                              className={`text-sm ${
-                                isDark ? "text-[#788099]" : "text-[#475569]"
-                              }`}
+                              className={`text-sm text-gray-500 dark:text-gray-400`}
                             >
                               {(() => {
                                 let displayName =
@@ -1539,19 +1537,17 @@ export default function DepositForm({
                     />
                     <div className="flex-1">
                       <div
-                        className={`font-medium flex items-center gap-2 ${
-                          isDark ? "text-white" : "text-[#111827]"
+                        className={`font-normal text-sm flex items-center gap-2 ${
+                          isDark ? "text-white" : "text-[#1F2937]"
                         }`}
                       >
                         {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
-                        <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                        <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
                           {getNetworkDisplayName(getAssetNetwork(asset))}
                         </span>
                       </div>
                       <div
-                        className={`text-sm ${
-                          isDark ? "text-[#788099]" : "text-[#475569]"
-                        }`}
+                        className={`text-sm text-gray-500 dark:text-gray-400`}
                       >
                         {(() => {
                           let displayName =
@@ -2753,9 +2749,14 @@ export default function DepositForm({
                         });
                       }
                       
+                      const providerName = formatPaymentProviderLabel(payment);
+                      const methodName = getPaymentMethodNameToStrip(payment);
+                      const subtitle = methodName ? `${providerName} - ${methodName}` : null;
+                      
                       return {
                         value: payment.provider_name,
-                        label: formatPaymentProviderLabel(payment),
+                        label: providerName,
+                        subtitle: subtitle || undefined,
                         logo: logoUrl,
                         raw: payment,
                       };
@@ -3050,13 +3051,13 @@ export default function DepositForm({
                         <div className="flex flex-col">
                         <div className="flex items-center gap-2">
                             <span
-                              className={`font-semibold ${
-                                isDark ? "text-white" : "text-[#111827]"
+                              className={`font-normal text-sm ${
+                                isDark ? "text-white" : "text-[#1F2937]"
                               }`}
                             >
                               {getAssetPrimaryLabel(selectedAsset).toUpperCase()}
                             </span>
-                            <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                            <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
                               {getNetworkDisplayName(getAssetNetwork(selectedAsset))}
                             </span>
                           </div>
@@ -3808,19 +3809,19 @@ export default function DepositForm({
             >
               <ul className="list-none space-y-2">
                 <li className="flex items-start">
-                  <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                  <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] flex-shrink-0 mr-3"></span>
                   <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
                     Please send the money from your own account Only
                   </span>
                 </li>
                 <li className="flex items-start">
-                  <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                  <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] flex-shrink-0 mr-3"></span>
                     <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
                     Put transaction ID in the description field of the bank
                   </span>
                 </li>
                 <li className="flex items-start">
-                  <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                  <span className="w-2 h-2 mt-1.5 rounded-full bg-[#1D8751] flex-shrink-0 mr-3"></span>
                   <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
                     Please note, If you do not follow above conditions, we will
                     reject your transaction and send you back your money.

@@ -456,7 +456,7 @@ export default function MarketingPage() {
 
           {/* Subtitle */}
           <p className="text-center text-gray-700 dark:text-white text-sm sm:text-base md:text-lg mb-8 sm:mb-10 md:mb-12 px-4">
-            Join the fastest-growing crypto exchange platform in Somalia.
+            Join  the fastest-growing crypto exchange platform in Somalia.
           </p>
 
           {/* First Row - Achievement Cards */}
@@ -539,59 +539,8 @@ export default function MarketingPage() {
             })}
           </div>
 
-          {/* Second Row - Feature Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
-            {/* 0.1% Trading Fee */}
-            <div 
-              className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors shadow-lg"
-              style={{
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
-              }}
-            >
-              <Zap className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[#FF9500] mb-2 sm:mb-3" />
-              <p className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base text-center font-medium">
-                0.1% Trading Fee
-              </p>
-            </div>
-
-            {/* Bank-Grade Security */}
-            <div 
-              className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors shadow-lg"
-              style={{
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
-              }}
-            >
-              <Shield className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[#3B82F6] mb-2 sm:mb-3" />
-              <p className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base text-center font-medium">
-                Bank-Grade Security
-              </p>
-            </div>
-
-            {/* 24/7 Support */}
-            <div 
-              className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors shadow-lg"
-              style={{
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
-              }}
-            >
-              <Globe className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[#8B5CF6] mb-2 sm:mb-3" />
-              <p className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base text-center font-medium">
-                24/7 Support
-              </p>
-            </div>
-
-            {/* Real-Time Charts */}
-            <div 
-              className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors shadow-lg"
-              style={{
-                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
-              }}
-            >
-              <BarChart className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[#1D8751] mb-2 sm:mb-3" />
-              <p className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base text-center font-medium">
-                Real-Time Charts
-              </p>
-            </div>
+          <div>
+            <img src="https://res.cloudinary.com/pitz/image/upload/v1766121183/Container_14_omqgii.png" alt="" />
           </div>
         </div>
 

@@ -1094,14 +1094,14 @@ export default function ExchangeForm({
                         }}
                       />
                       <div className="flex-1 min-w-0">
-                        <div className="text-[#1F2937] dark:text-[#ffffff] font-medium flex items-center gap-2 flex-wrap">
+                        <div className="text-[#1F2937] dark:text-[#ffffff] font-normal text-sm flex items-center gap-2 flex-wrap">
                           <span className="truncate">{provider.provider_name}</span>
                           {isSelected && (
                             <span className="text-[#1D8751] text-sm">✓</span>
                           )}
                         </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                          {provider.method_display || provider.method_name || "Payment Method"}
+                          {provider.provider_name} - {provider.method_display || provider.method_name || "Payment Method"}
                         </div>
                       </div>
                     </div>
@@ -1201,6 +1201,9 @@ export default function ExchangeForm({
     const hasLeftBorder = position === "first"; // Only first tab has left border
     const hasRightBorder = position === "last"; // Only last tab has right border
     // No borders between buttons (no right border on first/middle, no left border on middle/last)
+    
+    // When MoneyX is active, remove all borders from Express tab
+    const shouldHideBorders = position === "first" && activeTab === "moneyx";
 
     const buttonClasses = [
       "relative flex w-full items-center justify-center overflow-hidden transition-all duration-200",
@@ -1222,14 +1225,10 @@ export default function ExchangeForm({
       "text-[10px] sm:text-xs md:text-sm lg:text-base font-semibold tracking-wide transition-colors whitespace-nowrap"
     ].join(" ");
 
-    // For express variant in light mode, use greyish text when active
-    const expressTextColorClass = variant === "express" && isActive && !isDark
-      ? "text-[#788099]"
-      : isActive
-      ? isDark
-        ? "text-white"
-        : "text-[#0B1418]"
-      : "text-[#727272]";
+    // Uniform text color for all tabs in light mode (same color for active and inactive)
+    const expressTextColorClass = isActive && isDark
+      ? "text-white"
+      : "text-[#727272]"; // Light mode: always grey, dark mode: white when active, grey when inactive
 
     const textColorClass = expressTextColorClass;
 
@@ -1267,7 +1266,7 @@ export default function ExchangeForm({
               <img
                 src={moneyXIconSrc}
                 alt="X"
-                className="inline-block w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 object-contain -ml-0.5"
+                className="inline-block w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 object-contain -ml-0.5 mt-2 sm:mt-2.5 md:mt-3 lg:mt-3.5"
                 style={{ verticalAlign: 'middle' }}
                 onError={(e) => {
                   // Fallback if image fails to load
@@ -1300,7 +1299,8 @@ export default function ExchangeForm({
       // Apply curves at meeting points where tabs connect
       if (position === "first") {
         // Express tab: curve at top-right meeting point (where it meets MoneyX)
-        if (hasSlantRight) {
+        // When MoneyX is active, make it straight (no curve)
+        if (hasSlantRight && !shouldHideBorders) {
           return '0 12px 0 0'; // Top-right corner curved
         }
         return '0';
@@ -1336,13 +1336,14 @@ export default function ExchangeForm({
           flexBasis: 0,
           borderRadius: getBorderRadius(),
           // Outer edges only - no borders between buttons (slanted edges handled separately)
-          borderLeft: hasLeftBorder && !isActive && !hasSlantLeft ? `2px solid ${borderColor}` : "none",
+          // When MoneyX is active, remove all borders from Express tab
+          borderLeft: hasLeftBorder && !isActive && !hasSlantLeft && !shouldHideBorders ? `2px solid ${borderColor}` : "none",
           borderRight:
-            hasRightBorder && !isActive && !hasSlantRight
+            hasRightBorder && !isActive && !hasSlantRight && !shouldHideBorders
               ? `2px solid ${borderColor}`
               : "none",
-          borderTop: !isActive ? `2px solid ${borderColor}` : "none",
-          borderBottom: !isActive ? `2px solid ${borderColor}` : "none",
+          borderTop: !isActive && !shouldHideBorders ? `2px solid ${borderColor}` : "none",
+          borderBottom: !isActive && !shouldHideBorders ? `2px solid ${borderColor}` : "none",
         }}
       >
         {/* Border on slanted right edge */}
@@ -1376,7 +1377,7 @@ export default function ExchangeForm({
           </svg>
         )}
         {/* Border on slanted left edge */}
-        {hasSlantLeft && !isActive && (
+        {hasSlantLeft && !isActive && !shouldHideBorders && (
           <svg
             className="pointer-events-none absolute top-0 left-0 z-10"
             style={{ width: '100%', height: '100%', overflow: 'visible' }}
@@ -1463,10 +1464,12 @@ export default function ExchangeForm({
               Loading assets...
             </div>
           ) : sortedAssets.length > 0 ? (
-            sortedAssets.map((asset: Asset, index: number) => (
+            sortedAssets.map((asset: Asset, index: number) => {
+              const isSelected = selectedAsset?.asset_id === asset.asset_id;
+              return (
               <div
                 key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
-                className="flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0 min-w-0"
+                className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0 min-w-0 ${isSelected ? "" : ""}`}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -1483,8 +1486,8 @@ export default function ExchangeForm({
                   }}
                 />
                 <div className="flex-1 min-w-0">
-                  <div className="text-[#111827] dark:text-[#ffffff] font-medium flex items-center gap-2 flex-wrap">
-                    <span className="truncate">
+                  <div className="text-[#1F2937] dark:text-[#ffffff] !font-normal text-sm flex items-center gap-2 flex-wrap">
+                    <span className="truncate !font-normal">
                       {(
                         asset.ticker ||
                         asset.symbol ||
@@ -1492,11 +1495,11 @@ export default function ExchangeForm({
                         "Unknown"
                       ).toUpperCase()}
                     </span>
-                    <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0">
+                    <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs !font-normal px-2 py-0.5 rounded-full flex-shrink-0">
                       {getNetworkDisplayName(getAssetNetwork(asset))}
                     </span>
                   </div>
-                  <div className="text-[#475569] dark:text-[#788099] text-sm truncate">
+                  <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
                     {(() => {
                       // Clean up asset name to remove redundant network information
                       let displayName =
@@ -1540,11 +1543,12 @@ export default function ExchangeForm({
                     })()}
                   </div>
                 </div>
-                {selectedAsset?.asset_id === asset.asset_id && (
+                {isSelected && (
                   <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
                 )}
               </div>
-            ))
+            );
+            })
           ) : (
             <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
               {assetSearchTerm ? "No assets found" : "No assets available"}
@@ -1573,10 +1577,13 @@ export default function ExchangeForm({
     const P_MONEYX_LEFT_BOTTOM_INSET = "2.286%"; // 8% of MoneyX width (0.08 * 28.571)
     const P_EXPRESS_RIGHT_BOTTOM_INSET = "32.857%"; // 92% of Express width (0.92 * 35.714)
     const P_MONEYX_RIGHT_TOP_CUT = "62%"; // Express start + (92% of MoneyX width) = 35.714 + 26.285 ≈ 62
+    // Swap width = 100% - 64.285% = 35.715%, 8% of Swap width = 2.857%
+    const P_SWAP_LEFT_BOTTOM_INSET = "2.857%"; // 8% of Swap width (0.08 * 35.715)
+    const P_SWAP_BOTTOM_END = "67.142%"; // Swap start + 8% of Swap width = 64.285 + 2.857
     
     return (
       <div
-        className="relative flex w-full overflow-hidden mt-0 mb-0 rounded-t-[28px] bg-[#F4F7F6] dark:bg-[#18181D] gap-0"
+        className="relative flex w-full overflow-hidden mt-0 mb-0 rounded-t-[28px] bg-[#F4F7F6] dark:bg-[#18181D] gap-0 border-0"
       >
         {/* Uniform OUTER border that DOES NOT touch the active tab area (segmented). */}
         {/* Left / Right borders (hide the side border next to the active outer tab) */}
@@ -1624,7 +1631,7 @@ export default function ExchangeForm({
           <>
             <div
               className="pointer-events-none absolute top-0 left-0 border-t-2 z-30"
-              // MoneyX active => Express inactive join is straight at the TOP.
+              // MoneyX active => Express top border extends until it meets the start of slanting part (full Express width)
               style={{ borderColor, width: P_EXPRESS }}
               aria-hidden="true"
             />
@@ -1681,15 +1688,17 @@ export default function ExchangeForm({
             <div
               className="pointer-events-none absolute bottom-0 left-0 h-[2px] z-30"
               // MoneyX active => Express inactive RIGHT edge is inset by 92% at the BOTTOM.
+              // Border stops at the slant point (92% of Express width)
               style={{ backgroundColor: borderColor, width: P_EXPRESS_RIGHT_BOTTOM_INSET }}
               aria-hidden="true"
             />
             <div
               className="pointer-events-none absolute bottom-0 h-[2px] z-30"
-              // MoneyX active => Swap inactive LEFT edge is inset by 8% at the BOTTOM.
+              // MoneyX active => Swap inactive LEFT edge slant starts at 8% from Swap's left edge.
+              // Border starts at Swap start + 8% of Swap width, ends at right edge
               style={{
                 backgroundColor: borderColor,
-                left: `calc(${P_SWAP_START} + ${P_MONEYX_LEFT_BOTTOM_INSET})`,
+                left: P_SWAP_BOTTOM_END,
                 right: 0,
               }}
               aria-hidden="true"
@@ -1714,7 +1723,7 @@ export default function ExchangeForm({
       <div 
       className={`w-full mx-auto bg-white dark:bg-[#18181D] 
         rounded-2xl sm:rounded-3xl ${isHomePage ? 
-          "" : ""} shadow-lg ${isDeem ? "border border-[#35353E]" : ""} ${
+          "" : ""} ${isDeem ? "border border-[#35353E]" : ""} ${
         isHomePage 
           ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl" 
           : "max-w-none"
@@ -1733,7 +1742,7 @@ export default function ExchangeForm({
       <div 
       className={`w-full mx-auto bg-white dark:bg-[#18181D] 
         rounded-2xl sm:rounded-3xl ${isHomePage ? 
-          "" : ""} shadow-lg ${isDeem ? "border border-[#35353E]" : ""} ${
+          "" : ""} ${isDeem ? "border border-[#35353E]" : ""} ${
         isHomePage 
           ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl" 
           : "max-w-none"
@@ -1751,7 +1760,7 @@ export default function ExchangeForm({
     <div 
     className={`w-full mx-auto bg-white dark:bg-[#18181D] 
       rounded-2xl sm:rounded-3xl ${isHomePage ? 
-        "" : ""} shadow-lg ${isDeem ? "border border-[#35353E]" : ""} ${
+        "" : ""} ${isDeem ? "border border-[#35353E]" : ""} ${
       isHomePage 
         ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl" 
         : "max-w-none"

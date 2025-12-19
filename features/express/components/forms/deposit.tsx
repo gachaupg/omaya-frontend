@@ -1646,10 +1646,20 @@ export default function DepositForm({
                     </div>
                     {sortedSwapAssets.slice(0, 3).map((asset: SupportedAsset, index: number) => {
                       const isCurrentlySelected = selectedAsset?.ticker === asset.ticker && selectedAsset?.network === asset.network;
+                      const [isHovered, setIsHovered] = useState(false);
                       return (
                       <div
                         key={`popular-${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
-                        className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] transition-colors duration-150 ${isCurrentlySelected ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
+                        className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b transition-all duration-150 ${isCurrentlySelected ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
+                        style={{
+                          borderBottomColor: isCurrentlySelected 
+                            ? '#60a5fa' 
+                            : isHovered 
+                              ? '#60a5fa' 
+                              : isDark ? '#35353E' : '#A2A4A9FF'
+                        }}
+                        onMouseEnter={() => setIsHovered(true)}
+                        onMouseLeave={() => setIsHovered(false)}
                         onClick={() => {
                           handleAssetSelection(asset);
                           setIsAssetDropdownOpen(false);
@@ -1715,10 +1725,20 @@ export default function DepositForm({
                 {(assetSearchTerm ? sortedSwapAssets : sortedSwapAssets.slice(3)).map(
                   (asset: SupportedAsset, index: number) => {
                     const isCurrentlySelected = selectedAsset?.ticker === asset.ticker && selectedAsset?.network === asset.network;
+                    const [isHovered, setIsHovered] = useState(false);
                     return (
                     <div
                       key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
-                      className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0 transition-colors duration-150 ${isCurrentlySelected ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
+                      className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b transition-all duration-150 last:border-b-0 ${isCurrentlySelected ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
+                      style={{
+                        borderBottomColor: isCurrentlySelected 
+                          ? '#60a5fa' 
+                          : isHovered 
+                            ? '#60a5fa' 
+                            : isDark ? '#35353E' : '#A2A4A9FF'
+                      }}
+                      onMouseEnter={() => setIsHovered(true)}
+                      onMouseLeave={() => setIsHovered(false)}
                       onClick={() => {
                         handleAssetSelection(asset);
                         setIsAssetDropdownOpen(false);
