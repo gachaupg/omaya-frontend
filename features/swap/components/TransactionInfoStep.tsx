@@ -78,6 +78,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
   const toAssetDropdownContentRef = useRef<HTMLDivElement | null>(null);
   const [isComponentMounted, setIsComponentMounted] = useState(false);
 
+  
+
   useEffect(() => {
     setIsComponentMounted(true);
   }, []);

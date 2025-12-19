@@ -78,7 +78,7 @@ const RatesCalculator = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("deposit");
   const [isDepositMode, setIsDepositMode] = useState(true);
-  
+
   // Get authentication state
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
 
@@ -139,8 +139,8 @@ const RatesCalculator = () => {
   const [receiveAmountError, setReceiveAmountError] = useState<string | null>(
     null
   );
-  console.log('estimate',estimate);
-  
+  console.log('estimate', estimate);
+
 
   const dispatch = useDispatch<AppDispatch>();
 
@@ -170,16 +170,19 @@ const RatesCalculator = () => {
 
 
 
-  const { 
-    userPaymentDetails, 
-    userDetailsLoading, 
+  const {
+    userPaymentDetails,
+    userDetailsLoading,
     userDetailsError,
     publicPaymentMethods,
     publicMethodsLoading,
     publicMethodsError
   } = useSelector((state: RootState) => state.paymentMethods);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const assetDropdownRef = useRef<HTMLDivElement>(null);
+  const assetDropdownContentRef = useRef<HTMLDivElement | null>(null);  // dropdown panel
+
   const methodDropdownRef = useRef<HTMLDivElement>(null);
+  const methodDropdownContentRef = useRef<HTMLDivElement | null>(null)
   console.log('publicPaymentMethods', publicPaymentMethods);
   useEffect(() => {
     // Fetch exchange assets
@@ -229,7 +232,7 @@ const RatesCalculator = () => {
 
     // Fetch user payment details
     dispatch(fetchUserPaymentDetails());
-    
+
     // Fetch public payment methods (for non-authenticated users)
     dispatch(fetchPublicPaymentMethods());
   }, [dispatch]);
@@ -238,12 +241,12 @@ const RatesCalculator = () => {
     // Don't auto-select if we're trying to restore a saved asset
     // Also add a delay to ensure restore happens first
     const hasSavedAsset = localStorage.getItem("rates_calculator_state") || localStorage.getItem("rates_calculator_asset");
-    
+
     // Use a timeout to ensure restore useEffect runs first
     const timeoutId = setTimeout(() => {
       // Double-check that restoration hasn't happened
       const stillHasSavedAsset = localStorage.getItem("rates_calculator_asset");
-      
+
       if (
         assetsDisplay.displayData &&
         assetsDisplay.displayData.length > 0 &&
@@ -251,65 +254,65 @@ const RatesCalculator = () => {
         !hasSavedAsset &&
         !stillHasSavedAsset // Only auto-select if there's no saved asset to restore
       ) {
-      // Use the sorted assets to get the first one (USDT on BSC first, USDC on BSC second)
-      const sortedAssets = [...assetsDisplay.displayData].sort((a, b) => {
-        const tickerA = (a?.ticker || a?.symbol || a?.name || "")
-          .toString()
-          .toLowerCase();
-        const tickerB = (b?.ticker || b?.symbol || b?.name || "")
-          .toString()
-          .toLowerCase();
-        const networkA = (a?.network || "").toString().toLowerCase();
-        const networkB = (b?.network || "").toString().toLowerCase();
+        // Use the sorted assets to get the first one (USDT on BSC first, USDC on BSC second)
+        const sortedAssets = [...assetsDisplay.displayData].sort((a, b) => {
+          const tickerA = (a?.ticker || a?.symbol || a?.name || "")
+            .toString()
+            .toLowerCase();
+          const tickerB = (b?.ticker || b?.symbol || b?.name || "")
+            .toString()
+            .toLowerCase();
+          const networkA = (a?.network || "").toString().toLowerCase();
+          const networkB = (b?.network || "").toString().toLowerCase();
 
-        // Priority 1: USDT on BSC
-        if (
-          tickerA === "usdt" &&
-          networkA === "bsc" &&
-          !(tickerB === "usdt" && networkB === "bsc")
-        ) {
-          return -1;
-        }
-        if (
-          tickerB === "usdt" &&
-          networkB === "bsc" &&
-          !(tickerA === "usdt" && networkA === "bsc")
-        ) {
-          return 1;
-        }
+          // Priority 1: USDT on BSC
+          if (
+            tickerA === "usdt" &&
+            networkA === "bsc" &&
+            !(tickerB === "usdt" && networkB === "bsc")
+          ) {
+            return -1;
+          }
+          if (
+            tickerB === "usdt" &&
+            networkB === "bsc" &&
+            !(tickerA === "usdt" && networkA === "bsc")
+          ) {
+            return 1;
+          }
 
-        // Priority 2: USDC on BSC
-        if (
-          tickerA === "usdc" &&
-          networkA === "bsc" &&
-          !(tickerB === "usdc" && networkB === "bsc")
-        ) {
-          return -1;
-        }
-        if (
-          tickerB === "usdc" &&
-          networkB === "bsc" &&
-          !(tickerA === "usdc" && networkA === "bsc")
-        ) {
-          return 1;
-        }
+          // Priority 2: USDC on BSC
+          if (
+            tickerA === "usdc" &&
+            networkA === "bsc" &&
+            !(tickerB === "usdc" && networkB === "bsc")
+          ) {
+            return -1;
+          }
+          if (
+            tickerB === "usdc" &&
+            networkB === "bsc" &&
+            !(tickerA === "usdc" && networkA === "bsc")
+          ) {
+            return 1;
+          }
 
-        return 0;
-      });
+          return 0;
+        });
 
-      const firstAsset = sortedAssets[0];
-      setSelectedAsset(firstAsset);
+        const firstAsset = sortedAssets[0];
+        setSelectedAsset(firstAsset);
       }
     }, 100); // Small delay to let restore happen first
-    
+
     return () => clearTimeout(timeoutId);
   }, [assetsDisplay.displayData, selectedAsset]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
+        assetDropdownRef.current &&
+        !assetDropdownRef.current.contains(event.target as Node)
       ) {
         setIsAssetDropdownOpen(false);
       }
@@ -326,6 +329,47 @@ const RatesCalculator = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isAssetDropdownOpen && !isMethodDropdownOpen) return;
+
+    const handleScroll = (event: Event) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+
+      // ---- ASSET DROPDOWN ----
+      if (isAssetDropdownOpen) {
+        if (
+          assetDropdownContentRef.current?.contains(target) ||
+          assetDropdownRef.current?.contains(target)
+        ) {
+          return;
+        }
+        setIsAssetDropdownOpen(false);
+      }
+
+      // ---- PAYMENT METHOD DROPDOWN ----
+      if (isMethodDropdownOpen) {
+        if (
+          methodDropdownContentRef.current?.contains(target) ||
+          methodDropdownRef.current?.contains(target)
+        ) {
+          return;
+        }
+        setIsMethodDropdownOpen(false);
+      }
+    };
+
+    // capture phase is required
+    window.addEventListener("scroll", handleScroll, true);
+    document.addEventListener("scroll", handleScroll, true);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll, true);
+      document.removeEventListener("scroll", handleScroll, true);
+    };
+  }, [isAssetDropdownOpen, isMethodDropdownOpen]);
+
 
   // Fetch estimate for non-direct assets - triggers immediately on asset or amount change
   useEffect(() => {
@@ -509,7 +553,7 @@ const RatesCalculator = () => {
             logger.debug('general', "Using fallback calculation due to server error");
           } else if (error.message?.includes("Invalid swap parameters")) {
             setEstimateError("Invalid parameters: Using fallback calculation");
-            logger.debug('general', 
+            logger.debug('general',
               "Using fallback calculation due to invalid API parameters"
             );
           } else {
@@ -561,7 +605,7 @@ const RatesCalculator = () => {
     if (estimate && !estimateLoading) {
       if (isCalculatingFromPay && parseFloat(amount) > 0) {
         // Forward calculation: update receive amount
-        logger.debug('general', 
+        logger.debug('general',
           "Estimate received, updating receive amount:",
           (estimate as any)?.estimated_amount
         );
@@ -575,7 +619,7 @@ const RatesCalculator = () => {
           setIsCalculating(false);
           setIsCalculatingReceive(false);
         } else {
-          logger.debug('general', 
+          logger.debug('general',
             "DEBUG: Invalid estimate received, clearing loading state"
           );
           setReceiveAmount("0");
@@ -629,7 +673,7 @@ const RatesCalculator = () => {
     // Simply swap the positions of payment method and asset fields
     // Payment method goes down, asset comes up (and vice versa)
     setIsFieldsSwapped(!isFieldsSwapped);
-    
+
     // Reset transaction state when switching
     setIsFirstCardSubmitted(false);
     setTransactionId("");
@@ -640,7 +684,7 @@ const RatesCalculator = () => {
     setQrCodeUrl("");
     setWalletAddress("");
     setWalletError("");
-    
+
     // Clear estimate to force recalculation
     setEstimate(null);
     setEstimateError(null);
@@ -768,7 +812,7 @@ const RatesCalculator = () => {
         status: responseData?.status || "pending",
       };
 
-      logger.debug('general', 
+      logger.debug('general',
         "Proceeding to exchanging with transaction data:",
         transactionData
       );
@@ -787,12 +831,12 @@ const RatesCalculator = () => {
   // Get unique payment methods from userPaymentDetails or public payment methods
   // Ensure we always have an array to work with
   // Handle potential API response wrappers
-  const userPaymentArray = Array.isArray(userPaymentDetails) 
-    ? userPaymentDetails 
-    : Array.isArray((userPaymentDetails as any)?.data) 
-      ? (userPaymentDetails as any).data 
+  const userPaymentArray = Array.isArray(userPaymentDetails)
+    ? userPaymentDetails
+    : Array.isArray((userPaymentDetails as any)?.data)
+      ? (userPaymentDetails as any).data
       : [];
-      
+
   // Handle the new API response structure for public payment methods
   // Extract providers array from the response
   const publicMethodsData = publicPaymentMethods as any;
@@ -800,17 +844,17 @@ const RatesCalculator = () => {
   const publicPaymentProviders = Array.isArray(publicMethodsData?.data?.providers)
     ? publicMethodsData.data.providers
     : [];
-  
-  const publicPaymentArray = Array.isArray(publicPaymentMethods) 
-    ? publicPaymentMethods 
-    : Array.isArray(publicMethodsData?.data?.payment_methods) 
-      ? publicMethodsData.data.payment_methods 
+
+  const publicPaymentArray = Array.isArray(publicPaymentMethods)
+    ? publicPaymentMethods
+    : Array.isArray(publicMethodsData?.data?.payment_methods)
+      ? publicMethodsData.data.payment_methods
       : Array.isArray(publicMethodsData?.data?.providers)
         ? publicMethodsData.data.providers
-        : Array.isArray(publicMethodsData?.data) 
-          ? publicMethodsData.data 
+        : Array.isArray(publicMethodsData?.data)
+          ? publicMethodsData.data
           : [];
-  
+
   // Extract payment method names based on the API structure
   const getPaymentMethodName = (item: any) => {
     // For user payment details (old structure)
@@ -828,10 +872,10 @@ const RatesCalculator = () => {
     return null;
   };
 
-  const availablePaymentMethods = userPaymentArray.length > 0 
-    ? userPaymentArray 
+  const availablePaymentMethods = userPaymentArray.length > 0
+    ? userPaymentArray
     : publicPaymentArray;
-  
+
   // Debug logging
   console.log("RatesCalculator Debug:", {
     userPaymentDetails: userPaymentDetails,
@@ -853,18 +897,18 @@ const RatesCalculator = () => {
   // Filter user payment details based on selected payment method (for withdrawal mode)
   const filteredUserPaymentDetails = selectedPaymentMethod
     ? availablePaymentMethods.filter(
-        (detail: any) => getPaymentMethodName(detail) === selectedPaymentMethod
-      )
+      (detail: any) => getPaymentMethodName(detail) === selectedPaymentMethod
+    )
     : [];
 
   // Enhanced filtering with fallback options
   const enhancedFilteredUserPaymentDetails = selectedPaymentMethod
     ? availablePaymentMethods.filter((detail: any) => {
-        // Try multiple possible field names for payment method
-        const paymentMethodName = getPaymentMethodName(detail);
+      // Try multiple possible field names for payment method
+      const paymentMethodName = getPaymentMethodName(detail);
 
-        return paymentMethodName === selectedPaymentMethod;
-      })
+      return paymentMethodName === selectedPaymentMethod;
+    })
     : [];
 
   // Auto-select first account when accounts are available for selected payment method (withdrawal mode)
@@ -883,24 +927,24 @@ const RatesCalculator = () => {
 
   // Add "Bank" as a default option if not already present
   // Ensure all payment methods are valid strings
-  const validPaymentMethods = uniquePaymentMethods.filter(method => 
+  const validPaymentMethods = uniquePaymentMethods.filter(method =>
     method && typeof method === 'string' && method.trim().length > 0
   );
-  
+
   const allPaymentMethods = validPaymentMethods.includes("Bank")
     ? validPaymentMethods
     : ["Bank", ...validPaymentMethods];
-    
+
   // Debug final payment methods
   console.log("Final Payment Methods:", {
     uniquePaymentMethods,
     validPaymentMethods,
     allPaymentMethods
   });
-  
+
   // Fallback payment methods if data is corrupted
   const fallbackPaymentMethods = ["Bank Transfer", "Mobile Money", "Credit Card"];
-  const finalPaymentMethods = allPaymentMethods.length > 0 && allPaymentMethods.every(method => 
+  const finalPaymentMethods = allPaymentMethods.length > 0 && allPaymentMethods.every(method =>
     typeof method === 'string' && method.trim().length > 0
   ) ? allPaymentMethods : fallbackPaymentMethods;
 
@@ -911,9 +955,9 @@ const RatesCalculator = () => {
       const firstProvider = publicPaymentProviders[0];
       setSelectedPaymentDetail(firstProvider);
       setSelectedPaymentMethod(
-        firstProvider?.provider_name || 
-        firstProvider?.payment_provider_name || 
-        finalPaymentMethods[0] || 
+        firstProvider?.provider_name ||
+        firstProvider?.payment_provider_name ||
+        finalPaymentMethods[0] ||
         ""
       );
     } else if (!selectedPaymentMethod && finalPaymentMethods.length > 0) {
@@ -953,7 +997,7 @@ const RatesCalculator = () => {
     publicPaymentProviders,
     availablePaymentMethods,
   ]);
-  
+
   // selectedPaymentDetail is now a state variable
 
   // Filter assets based on search term - search by ticker and name
@@ -1074,7 +1118,7 @@ const RatesCalculator = () => {
               ).toUpperCase()}
               <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
                 {getNetworkDisplayName(getAssetNetwork(asset))}
-            </span>
+              </span>
             </div>
             <div className="text-[#35353e] dark:text-[#788099] text-sm">
               {asset.name ||
@@ -1141,32 +1185,32 @@ const RatesCalculator = () => {
   // Restore calculator state from localStorage
   useEffect(() => {
     if (hasRestoredState.current || !isAuthenticated) return;
-    
+
     try {
       const savedState = localStorage.getItem("rates_calculator_state");
       if (!savedState) return;
-      
+
       const state = JSON.parse(savedState);
-      
+
       // Restore basic values
       if (state.amount) setAmount(state.amount);
       if (state.receiveAmount) setReceiveAmount(state.receiveAmount);
       if (state.isFieldsSwapped !== undefined) setIsFieldsSwapped(state.isFieldsSwapped);
       if (state.isDepositMode !== undefined) setIsDepositMode(state.isDepositMode);
       if (state.selectedPaymentMethod) setSelectedPaymentMethod(state.selectedPaymentMethod);
-      
+
       // Store asset and payment detail separately for later restoration (when they load)
       if (state.selectedAsset) {
         localStorage.setItem("rates_calculator_asset", JSON.stringify(state.selectedAsset));
       }
-      
+
       if (state.selectedPaymentDetail) {
         localStorage.setItem("rates_calculator_payment_detail", JSON.stringify(state.selectedPaymentDetail));
       }
-      
+
       // Mark as restored
       hasRestoredState.current = true;
-      
+
       // Clear saved state after extracting asset and payment detail
       localStorage.removeItem("rates_calculator_state");
     } catch (error) {
@@ -1182,25 +1226,25 @@ const RatesCalculator = () => {
   // Restore asset separately when assets are loaded - MUST run before auto-select
   // Use a ref to track if we've already attempted restoration
   const assetRestoreAttempted = useRef(false);
-  
+
   useEffect(() => {
     if (!isAuthenticated || !assetsDisplay.displayData || assetsDisplay.displayData.length === 0) return;
     if (assetRestoreAttempted.current) return; // Already attempted restoration
-    
+
     const savedAsset = localStorage.getItem("rates_calculator_asset");
     if (!savedAsset) {
       assetRestoreAttempted.current = true; // Mark as attempted even if no saved asset
       return;
     }
-    
+
     try {
       const state = JSON.parse(savedAsset);
-      
+
       logger.debug('general', "Attempting to restore asset:", {
         saved: state,
         availableAssetsCount: assetsDisplay.displayData.length,
       });
-      
+
       // Try multiple matching strategies
       const assetToRestore = assetsDisplay.displayData.find((asset: any) => {
         // Strategy 1: Match by asset_id (most reliable)
@@ -1208,7 +1252,7 @@ const RatesCalculator = () => {
           logger.debug('general', "Matched by asset_id:", asset.asset_id);
           return true;
         }
-        
+
         // Strategy 1b: Match by id or assetId
         if (state.id && asset.id && String(asset.id) === String(state.id)) {
           logger.debug('general', "Matched by id:", asset.id);
@@ -1218,22 +1262,22 @@ const RatesCalculator = () => {
           logger.debug('general', "Matched by assetId:", asset.assetId);
           return true;
         }
-        
+
         // Strategy 2: Match by ticker/symbol and network
         const savedTicker = (state.ticker || state.symbol || "").toLowerCase().trim();
         const savedNetwork = (state.network || "").toLowerCase().trim();
-        
+
         if (!savedTicker) return false;
-        
+
         const assetTicker = (asset.ticker || asset.symbol || "").toLowerCase().trim();
         const assetNetwork = getAssetNetwork(asset).toLowerCase().trim();
-        
+
         // Check if ticker matches
         const tickerMatches = assetTicker && assetTicker === savedTicker;
-        
+
         // Check network - use getAssetNetwork for consistency
         const networkMatches = savedNetwork ? assetNetwork === savedNetwork : true;
-        
+
         if (tickerMatches && networkMatches) {
           logger.debug('general', "Matched by ticker and network:", {
             ticker: assetTicker,
@@ -1241,10 +1285,10 @@ const RatesCalculator = () => {
           });
           return true;
         }
-        
+
         return false;
       });
-      
+
       if (assetToRestore) {
         logger.debug('general', "Successfully restored asset:", {
           saved: state,
@@ -1272,7 +1316,7 @@ const RatesCalculator = () => {
         // Clear saved asset if we couldn't find it (to prevent retries)
         localStorage.removeItem("rates_calculator_asset");
       }
-      
+
       // Mark as attempted
       assetRestoreAttempted.current = true;
     } catch (error) {
@@ -1285,51 +1329,51 @@ const RatesCalculator = () => {
   // Restore payment detail separately when payment methods are loaded
   useEffect(() => {
     if (!isAuthenticated) return;
-    
+
     try {
       const savedPaymentDetail = localStorage.getItem("rates_calculator_payment_detail");
       if (!savedPaymentDetail) return;
-      
+
       const state = JSON.parse(savedPaymentDetail);
-      
+
       // Get current payment methods
       const publicMethodsData = publicPaymentMethods as any;
       const publicPaymentProviders = Array.isArray(publicMethodsData?.data?.providers)
         ? publicMethodsData.data.providers
         : [];
-      
-      const userPaymentArray = Array.isArray(userPaymentDetails) 
-        ? userPaymentDetails 
-        : Array.isArray((userPaymentDetails as any)?.data) 
-          ? (userPaymentDetails as any).data 
+
+      const userPaymentArray = Array.isArray(userPaymentDetails)
+        ? userPaymentDetails
+        : Array.isArray((userPaymentDetails as any)?.data)
+          ? (userPaymentDetails as any).data
           : [];
-      
-      const publicPaymentArray = Array.isArray(publicPaymentMethods) 
-        ? publicPaymentMethods 
-        : Array.isArray(publicMethodsData?.data?.payment_methods) 
-          ? publicMethodsData.data.payment_methods 
+
+      const publicPaymentArray = Array.isArray(publicPaymentMethods)
+        ? publicPaymentMethods
+        : Array.isArray(publicMethodsData?.data?.payment_methods)
+          ? publicMethodsData.data.payment_methods
           : Array.isArray(publicMethodsData?.data?.providers)
             ? publicMethodsData.data.providers
-            : Array.isArray(publicMethodsData?.data) 
-              ? publicMethodsData.data 
+            : Array.isArray(publicMethodsData?.data)
+              ? publicMethodsData.data
               : [];
-      
-      const availablePaymentMethods = userPaymentArray.length > 0 
-        ? userPaymentArray 
+
+      const availablePaymentMethods = userPaymentArray.length > 0
+        ? userPaymentArray
         : publicPaymentArray;
-      
+
       // Try to find the payment detail
-      const paymentDetailToRestore = 
-        publicPaymentProviders.find((provider: any) => 
+      const paymentDetailToRestore =
+        publicPaymentProviders.find((provider: any) =>
           provider.provider_id === state.provider_id ||
           provider.provider_name === state.provider_name
         ) ||
-        availablePaymentMethods.find((detail: any) => 
+        availablePaymentMethods.find((detail: any) =>
           detail.provider_id === state.provider_id ||
           detail.provider_name === state.provider_name ||
           detail.payment_provider_name === state.payment_provider_name
         );
-      
+
       if (paymentDetailToRestore) {
         setSelectedPaymentDetail(paymentDetailToRestore);
         // Clear saved payment detail after restoring
@@ -1366,15 +1410,15 @@ const RatesCalculator = () => {
     try {
       if (isDepositMode) {
         // Deposit API structure - same as deposit.tsx
-      const formData = new FormData();
+        const formData = new FormData();
         formData.append("requested_amount", amount);
 
         // Wallet address is optional for initial submission
         if (selectedPaymentDetail.account_number?.trim()) {
-        formData.append(
-          "deposit_address",
-          selectedPaymentDetail.account_number
-        );
+          formData.append(
+            "deposit_address",
+            selectedPaymentDetail.account_number
+          );
         } else {
           formData.append("deposit_address", "");
         }
@@ -1465,7 +1509,7 @@ const RatesCalculator = () => {
         setForceUpdate((prev) => prev + 1);
 
         showToast.success("Deposit transaction submitted successfully!");
-        } else {
+      } else {
         // Withdrawal API structure - same as withdrawal.tsx
         const withdrawalPayload: ExpressWithdrawalPayload = {
           asset: (selectedAsset.ticker?.toUpperCase() ||
@@ -1557,17 +1601,17 @@ const RatesCalculator = () => {
   let commissionAmount = 0;
   let commissionRate = 0;
 
-    if (selectedAsset && isSimpleCalculationAsset(selectedAsset)) {
-      // For direct assets, only apply $2 fee if amount is $2 or more
-      commissionAmount = amountNum >= 2 ? 2 : 0; // Flat $2 fee for direct assets (only if amount >= $2)
-      commissionRate = amountNum > 0 ? (commissionAmount / amountNum) * 100 : 0;
-    } else {
-      // Use default commission rate for other assets
-      commissionRate = selectedAsset?.range_commissions?.[0]?.commission
-        ? parseFloat(selectedAsset.range_commissions[0].commission)
-        : 2; // Default 2% commission for other assets
-      commissionAmount = (amountNum * commissionRate) / 100;
-    }
+  if (selectedAsset && isSimpleCalculationAsset(selectedAsset)) {
+    // For direct assets, only apply $2 fee if amount is $2 or more
+    commissionAmount = amountNum >= 2 ? 2 : 0; // Flat $2 fee for direct assets (only if amount >= $2)
+    commissionRate = amountNum > 0 ? (commissionAmount / amountNum) * 100 : 0;
+  } else {
+    // Use default commission rate for other assets
+    commissionRate = selectedAsset?.range_commissions?.[0]?.commission
+      ? parseFloat(selectedAsset.range_commissions[0].commission)
+      : 2; // Default 2% commission for other assets
+    commissionAmount = (amountNum * commissionRate) / 100;
+  }
 
   const totalFees = networkFee + commissionAmount;
 
@@ -1586,492 +1630,93 @@ const RatesCalculator = () => {
           <div
             data-asset-card="true"
             data-select-card="true"
-            className={`relative flex flex-col sm:flex-row gap-6 rounded-2xl p-4 sm:p-6 overflow-visible border-[1.5px] ${
-              isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
-            } bg-transparent`}
+            className={`relative flex flex-col sm:flex-row gap-6 rounded-2xl p-4 sm:p-6 overflow-visible border-[1.5px] ${isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
+              } bg-transparent`}
           >
             {/* Amount Section */}
             <div className="flex-1 min-w-0">
               <label
-                className={`block text-sm mb-2 font-semibold flex items-center gap-2 ${
-                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                }`}
+                className={`block text-sm mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                  }`}
               >
-                    {t("rates.youSend", "You Send")}
+                {t("rates.youSend", "You Send")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
-                  </label>
+              </label>
               <div className="relative">
-                    <input
-                      type="text"
+                <input
+                  type="text"
                   inputMode="decimal"
-                      value={amount}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        logger.debug('general', "You Send input changed:", {
-                          value,
-                          selectedAsset: selectedAsset?.ticker,
-                        });
+                  value={amount}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    logger.debug('general', "You Send input changed:", {
+                      value,
+                      selectedAsset: selectedAsset?.ticker,
+                    });
 
                     // Only allow numbers and decimals
-                        if (value === "" || /^\d*\.?\d*$/.test(value)) {
-                          setAmount(value);
-                          const newAmount = parseFloat(value) || 0;
-                          setIsCalculatingFromPay(true);
+                    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                      setAmount(value);
+                      const newAmount = parseFloat(value) || 0;
+                      setIsCalculatingFromPay(true);
 
                       // For direct assets, calculate immediately
-                          if (
-                            selectedAsset &&
-                            newAmount > 0 &&
-                            isSimpleCalculationAsset(selectedAsset)
-                          ) {
-                            const calculatedReceiveAmount =
-                              newAmount < 2
-                                ? newAmount
-                                : Math.max(0, newAmount - 2);
-                            setReceiveAmount(
-                              calculatedReceiveAmount.toFixed(2)
-                            );
-                          } else if (selectedAsset && newAmount > 0) {
-                            setIsCalculating(true);
-                            setIsCalculatingReceive(true);
-                          } else {
-                            setIsCalculatingReceive(false);
-                            setIsCalculating(false);
-                          }
-                        }
-                      }}
-                      placeholder="Enter amount"
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
-                    (isCalculating || isCalculatingReceive) &&
-                    isCalculatingFromPay &&
-                    selectedAsset &&
-                    !isSimpleCalculationAsset(selectedAsset)
+                      if (
+                        selectedAsset &&
+                        newAmount > 0 &&
+                        isSimpleCalculationAsset(selectedAsset)
+                      ) {
+                        const calculatedReceiveAmount =
+                          newAmount < 2
+                            ? newAmount
+                            : Math.max(0, newAmount - 2);
+                        setReceiveAmount(
+                          calculatedReceiveAmount.toFixed(2)
+                        );
+                      } else if (selectedAsset && newAmount > 0) {
+                        setIsCalculating(true);
+                        setIsCalculatingReceive(true);
+                      } else {
+                        setIsCalculatingReceive(false);
+                        setIsCalculating(false);
+                      }
+                    }
+                  }}
+                  placeholder="Enter amount"
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${(isCalculating || isCalculatingReceive) &&
+                      isCalculatingFromPay &&
+                      selectedAsset &&
+                      !isSimpleCalculationAsset(selectedAsset)
                       ? "border-[#1D8751]"
                       : isDark
-                      ? "border-white/10 text-white"
-                      : "border-gray-200 text-[#111827]"
-                      }`}
-                    />
+                        ? "border-white/10 text-white"
+                        : "border-gray-200 text-[#111827]"
+                    }`}
+                />
                 {/* Show loading spinner */}
-                    {(isCalculating || isCalculatingReceive) &&
-                      isCalculatingFromPay && (
+                {(isCalculating || isCalculatingReceive) &&
+                  isCalculatingFromPay && (
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
+                    </div>
+                  )}
               </div>
-            )}
-          </div>
-        </div>
+            </div>
 
             {/* Conditionally render Payment Method or Asset based on isFieldsSwapped */}
             {!isFieldsSwapped ? (
               /* Bank/Payment Method Section */
               <div className="flex-1 min-w-0">
                 <label
-                  className={`block text-[15px] mb-2 font-semibold ${
-                    isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                  }`}
-                >
-                  {t("rates.bankPaymentMethod", "Bank/Payment Method")}
-                </label>
-                <div className="relative" ref={methodDropdownRef}>
-                <div
-                    className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${
-                      isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                  className={`block text-[15px] mb-2 font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
                     }`}
-                      onClick={() =>
-                        setIsMethodDropdownOpen(!isMethodDropdownOpen)
-                      }
-                >
-                    <div className="flex items-center gap-3 min-w-0">
-                      {selectedPaymentDetail && typeof selectedPaymentDetail === 'object' && selectedPaymentDetail.logo ? (
-                      <img
-                        src={selectedPaymentDetail.logo}
-                        alt={selectedPaymentDetail.provider_name || 'Selected provider'}
-                        className="w-8 h-8 object-contain rounded flex-shrink-0"
-                      />
-                    ) : (
-                      <FaUniversity className="w-8 h-8 flex-shrink-0" />
-                    )}
-                      <span className={`${isDark ? "text-white" : "text-[#1F2937]"}`}>
-                        {selectedPaymentDetail?.payment_provider_name ||
-                          selectedPaymentDetail?.provider_name ||
-                          selectedPaymentMethod ||
-                          t("rates.selectMethod", "Select Method")}
-                    </span>
-                  </div>
-                  <FiChevronDown
-                    className={`transition-transform duration-200 ${
-                      isMethodDropdownOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </div>
-
-                {/* Payment Method Dropdown */}
-                {isMethodDropdownOpen && (
-                    <div className={`absolute top-full left-0 right-0 mt-1 ${isDark ? "bg-[#1D1D23]" : "bg-white"} rounded-2xl border ${isDark ? "border-[#35353E]" : "border-gray-200"} z-10 max-h-60 overflow-y-auto shadow-lg`}>
-                    {(userDetailsLoading || publicMethodsLoading) ? (
-                        <div className={`p-3 text-center ${isDark ? "text-[#788099]" : "text-gray-600"}`}>
-                          {t("rates.loadingMethods", "Loading payment methods...")}
-                      </div>
-                    ) : publicPaymentProviders.length > 0 ? (
-                      publicPaymentProviders.map((provider: any) => (
-                        <div
-                          key={provider.provider_id || provider.provider_name}
-                            className={`p-3 flex items-center hover:${isDark ? "bg-[#35353E]" : "bg-gray-100"} cursor-pointer transition-colors`}
-                          onClick={() => handlePaymentMethodSelect(provider)}
-                        >
-                          {provider.logo ? (
-                              <img
-                                src={provider.logo}
-                                alt={provider.provider_name || 'Provider logo'}
-                                className="w-10 h-10 object-contain rounded mr-3 flex-shrink-0"
-                              />
-                            ) : (
-                              <FaUniversity className="w-10 h-10 mr-3 flex-shrink-0" />
-                            )}
-                            <span className={`${isDark ? "text-white" : "text-gray-900"}`}>
-                              {provider.provider_name || 'Unknown Provider'}
-                            </span>
-                        </div>
-                      ))
-                    ) : finalPaymentMethods.length > 0 ? (
-                      finalPaymentMethods.map((method: string) => (
-                        <div
-                          key={method}
-                            className={`p-3 flex items-center hover:${isDark ? "bg-[#35353E]" : "bg-gray-100"} cursor-pointer transition-colors`}
-                          onClick={() => handlePaymentMethodSelect(method)}
-                        >
-                            <FaUniversity className="w-10 h-10 mr-3 flex-shrink-0" />
-                            <span className={`${isDark ? "text-white" : "text-gray-900"}`}>
-                            {method}
-                          </span>
-                        </div>
-                      ))
-                    ) : (
-                        <div className={`p-3 text-center ${isDark ? "text-[#788099]" : "text-gray-600"}`}>
-                        {t("rates.noMethods", "No payment methods available")}
-                      </div>
-                    )}
-                  </div>
-                )}
-                </div>
-              </div>
-            ) : (
-              /* Asset Section (when swapped) */
-              <div className="flex-1 min-w-0">
-                <label
-                  className={`block text-[15px] mb-2 font-semibold ${
-                    isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                  }`}
-                >
-                  {t("rates.provider", "Provider")}
-                </label>
-                <div className="relative" ref={dropdownRef}>
-                  <div
-                    className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${
-                      isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
-                    }`}
-                    onClick={() => setIsAssetDropdownOpen(!isAssetDropdownOpen)}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      {selectedAsset ? (
-                        <>
-                          <img
-                            src={
-                              selectedAsset?.image_url ||
-                              selectedAsset?.asset_image ||
-                              (selectedAsset as any)?.image ||
-                              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                            }
-                            alt={
-                              selectedAsset?.name ||
-                              selectedAsset?.ticker ||
-                              selectedAsset?.symbol ||
-                              "Asset"
-                            }
-                            className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                          />
-                          <div className="flex flex-col">
-                            <div className="flex items-center gap-2">
-                              <span className={`font-semibold ${isDark ? "text-white" : "text-[#111827]"}`}>
-                                {(
-                                  selectedAsset.ticker ||
-                                  selectedAsset.symbol ||
-                                  selectedAsset.name ||
-                                  "Unknown"
-                                ).toUpperCase()}
-                              </span>
-                              <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                                {getNetworkDisplayName(
-                                  getAssetNetwork(selectedAsset)
-                                )}
-                              </span>
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <img
-                            src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                            alt="asset icon"
-                            className="w-8 h-8 flex-shrink-0"
-                          />
-                          <span className={`${isDark ? "text-[#788099]" : "text-[#64748B]"}`}>
-                            {assetsDisplay.isLoading
-                              ? "Loading assets..."
-                              : "Select Asset"}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                    <FiChevronDown
-                      className={`transition-transform ${
-                        isAssetDropdownOpen ? "rotate-180" : ""
-                      }`}
-                    />
-                  </div>
-
-                  {/* Asset Dropdown */}
-                  {isAssetDropdownOpen && (
-                    <div className={`absolute top-full left-0 right-0 mt-1 ${isDark ? "bg-[#1D1D23]" : "bg-white"} border ${isDark ? "border-[#35353E]" : "border-gray-200"} rounded-2xl z-50 max-h-80 overflow-hidden shadow-lg`}>
-                      {/* Search Input */}
-                      <div className={`p-2 border-b ${isDark ? "border-[#35353E]" : "border-gray-200"}`}>
-                        <div className="relative">
-                          <FaSearch className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${isDark ? "text-[#788099]" : "text-[#7e7e8f]"} w-4 h-4`} />
-                          <input
-                            type="text"
-                            placeholder="Search assets..."
-                            value={assetSearchTerm}
-                            onChange={(e) => setAssetSearchTerm(e.target.value)}
-                            className={`w-full ${isDark ? "text-white bg-[#1D1D23]" : "text-gray-900 bg-white"} rounded-lg px-10 py-2 text-sm focus:outline-none border ${isDark ? "border-[#35353E]" : "border-gray-300"}`}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Asset List */}
-                      <div className="max-h-60 overflow-y-auto">
-                        {renderAssetDropdown()}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-            </div>
-        </div>
-
-        {/* Swap Circle - positioned between both cards, covering both borders */}
-        <div className="relative -my-2 z-30 flex justify-center" style={{ marginTop: '-28px', marginBottom: '-28px' }}>
-          <button
-            className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 bg-transparent dark:bg-transparent dark:border-[#35353E]"
-            onClick={handleModeSwitch}
-            type="button"
-          >
-            <img
-              src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
-              alt="swap icon"
-              className="w-12 h-12 dark:hidden"
-            />
-            <img
-              src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
-              alt="swap icon"
-              className="w-12 h-12 hidden dark:block"
-            />
-          </button>
-        </div>
-
-        {/* Bottom Section - You Get: Amount and Provider in one card */}
-        <div className="relative mb-3 mt-0 pt-2">
-          <div
-            data-asset-card="true"
-            className={`relative flex flex-col sm:flex-row gap-6 rounded-2xl p-4 sm:p-6 overflow-visible border-[1.5px] ${
-              isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
-            } bg-transparent`}
-          >
-            {/* You Get Section */}
-            <div className="flex-1 min-w-0">
-              <label
-                className={`block text-sm mb-2 font-semibold flex items-center gap-2 ${
-                  isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                }`}
-              >
-                {t("rates.youGet", "You Get")}
-                <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
-              </label>
-              <div className="relative">
-                    <input
-                      type="text"
-                  inputMode="decimal"
-                      value={receiveAmount}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                    logger.debug('general', "You Get input changed:", {
-                          value,
-                          selectedAsset: selectedAsset?.ticker,
-                        });
-
-                    // Only allow numbers and decimals
-                        if (value === "" || /^\d*\.?\d*$/.test(value)) {
-                          setReceiveAmount(value);
-                          const newAmount = parseFloat(value) || 0;
-                          setIsCalculatingFromPay(false);
-
-                      // For direct assets, calculate immediately
-                          if (
-                            selectedAsset &&
-                            newAmount > 0 &&
-                            isSimpleCalculationAsset(selectedAsset)
-                          ) {
-                            const calculatedSendAmount =
-                              newAmount < 2 ? newAmount : newAmount + 2;
-                            setAmount(calculatedSendAmount.toFixed(2));
-                          } else if (selectedAsset && newAmount > 0) {
-                            setIsCalculating(true);
-                            setIsCalculatingReceive(true);
-                          } else {
-                            setIsCalculatingReceive(false);
-                            setIsCalculating(false);
-                          }
-                        }
-                      }}
-                      placeholder="Enter amount"
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${
-                    (isCalculating || isCalculatingReceive) &&
-                    !isCalculatingFromPay &&
-                    selectedAsset &&
-                    !isSimpleCalculationAsset(selectedAsset)
-                      ? "border-[#1D8751]"
-                      : isDark
-                      ? "border-white/10 text-white"
-                      : "border-gray-200 text-[#111827]"
-                  }`}
-                />
-                {/* Show loading spinner */}
-                    {(isCalculating || isCalculatingReceive) &&
-                      !isCalculatingFromPay && (
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
-                        </div>
-                      )}
-                  </div>
-                          </div>
-
-            {/* Conditionally render Asset or Payment Method based on isFieldsSwapped */}
-            {!isFieldsSwapped ? (
-              /* Asset Section */
-              <div className="flex-1 min-w-0">
-                <label
-                  className={`block text-[15px] mb-2 font-semibold ${
-                    isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                  }`}
-                >
-                  {t("rates.provider", "Provider")}
-                </label>
-                <div className="relative" ref={dropdownRef}>
-                  <div
-                    className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${
-                      isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
-                    }`}
-                    onClick={() => setIsAssetDropdownOpen(!isAssetDropdownOpen)}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      {selectedAsset ? (
-                        <>
-                          <img
-                            src={
-                              selectedAsset?.image_url ||
-                              selectedAsset?.asset_image ||
-                              (selectedAsset as any)?.image ||
-                              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                            }
-                            alt={
-                              selectedAsset?.name ||
-                              selectedAsset?.ticker ||
-                              selectedAsset?.symbol ||
-                              "Asset"
-                            }
-                            className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                          />
-                          <div className="flex flex-col">
-                            <div className="flex items-center gap-2">
-                              <span className={`font-semibold ${isDark ? "text-white" : "text-[#111827]"}`}>
-                                {(
-                                  selectedAsset.ticker ||
-                                  selectedAsset.symbol ||
-                                  selectedAsset.name ||
-                                  "Unknown"
-                                ).toUpperCase()}
-                              </span>
-                              <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                                {getNetworkDisplayName(
-                                  getAssetNetwork(selectedAsset)
-                                )}
-                              </span>
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <img
-                            src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
-                            alt="asset icon"
-                            className="w-8 h-8 flex-shrink-0"
-                          />
-                          <span className={`${isDark ? "text-[#788099]" : "text-[#64748B]"}`}>
-                            {assetsDisplay.isLoading
-                              ? "Loading assets..."
-                              : "Select Asset"}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                    <FiChevronDown
-                      className={`transition-transform ${
-                        isAssetDropdownOpen ? "rotate-180" : ""
-                      }`}
-                    />
-                  </div>
-
-                  {/* Asset Dropdown */}
-                  {isAssetDropdownOpen && (
-                    <div className={`absolute top-full left-0 right-0 mt-1 ${isDark ? "bg-[#1D1D23]" : "bg-white"} border ${isDark ? "border-[#35353E]" : "border-gray-200"} rounded-2xl z-50 max-h-80 overflow-hidden shadow-lg`}>
-                      {/* Search Input */}
-                      <div className={`p-2 border-b ${isDark ? "border-[#35353E]" : "border-gray-200"}`}>
-                        <div className="relative">
-                          <FaSearch className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${isDark ? "text-[#788099]" : "text-[#7e7e8f]"} w-4 h-4`} />
-                          <input
-                            type="text"
-                            placeholder="Search assets..."
-                            value={assetSearchTerm}
-                            onChange={(e) => setAssetSearchTerm(e.target.value)}
-                            className={`w-full ${isDark ? "text-white bg-[#1D1D23]" : "text-gray-900 bg-white"} rounded-lg px-10 py-2 text-sm focus:outline-none border ${isDark ? "border-[#35353E]" : "border-gray-300"}`}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Asset List */}
-                      <div className="max-h-60 overflow-y-auto">
-                        {renderAssetDropdown()}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              /* Payment Method Section (when swapped) */
-              <div className="flex-1 min-w-0">
-                <label
-                  className={`block text-[15px] mb-2 font-semibold ${
-                    isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                  }`}
                 >
                   {t("rates.bankPaymentMethod", "Bank/Payment Method")}
                 </label>
                 <div className="relative" ref={methodDropdownRef}>
                   <div
-                    className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${
-                      isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
-                    }`}
+                    className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                      }`}
                     onClick={() =>
                       setIsMethodDropdownOpen(!isMethodDropdownOpen)
                     }
@@ -2094,9 +1739,8 @@ const RatesCalculator = () => {
                       </span>
                     </div>
                     <FiChevronDown
-                      className={`transition-transform duration-200 ${
-                        isMethodDropdownOpen ? "rotate-180" : ""
-                      }`}
+                      className={`transition-transform duration-200 ${isMethodDropdownOpen ? "rotate-180" : ""
+                        }`}
                     />
                   </div>
 
@@ -2150,8 +1794,390 @@ const RatesCalculator = () => {
                   )}
                 </div>
               </div>
-            )}
+            ) : (
+              /* Asset Section (when swapped) */
+              <div className="flex-1 min-w-0">
+                <label
+                  className={`block text-[15px] mb-2 font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                    }`}
+                >
+                  {t("rates.provider", "Provider")}
+                </label>
+                <div className="relative" ref={assetDropdownRef}>
+                  <div
+                    className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                      }`}
+                    onClick={() => setIsAssetDropdownOpen(!isAssetDropdownOpen)}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      {selectedAsset ? (
+                        <>
+                          <img
+                            src={
+                              selectedAsset?.image_url ||
+                              selectedAsset?.asset_image ||
+                              (selectedAsset as any)?.image ||
+                              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                            }
+                            alt={
+                              selectedAsset?.name ||
+                              selectedAsset?.ticker ||
+                              selectedAsset?.symbol ||
+                              "Asset"
+                            }
+                            className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                          />
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                              <span className={`font-semibold ${isDark ? "text-white" : "text-[#111827]"}`}>
+                                {(
+                                  selectedAsset.ticker ||
+                                  selectedAsset.symbol ||
+                                  selectedAsset.name ||
+                                  "Unknown"
+                                ).toUpperCase()}
+                              </span>
+                              <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                                {getNetworkDisplayName(
+                                  getAssetNetwork(selectedAsset)
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <img
+                            src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                            alt="asset icon"
+                            className="w-8 h-8 flex-shrink-0"
+                          />
+                          <span className={`${isDark ? "text-[#788099]" : "text-[#64748B]"}`}>
+                            {assetsDisplay.isLoading
+                              ? "Loading assets..."
+                              : "Select Asset"}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    <FiChevronDown
+                      className={`transition-transform ${isAssetDropdownOpen ? "rotate-180" : ""
+                        }`}
+                    />
+                  </div>
+
+                  {/* Asset Dropdown */}
+                  {isAssetDropdownOpen && (
+                    <div ref={assetDropdownContentRef} className={`absolute top-full left-0 right-0 mt-1 ${isDark ? "bg-[#1D1D23]" : "bg-white"} border ${isDark ? "border-[#35353E]" : "border-gray-200"} rounded-2xl z-45 max-h-80 overflow-hidden shadow-lg`}>
+                      {/* Search Input */}
+                      <div className={`p-2 border-b ${isDark ? "border-[#35353E]" : "border-gray-200"}`}>
+                        <div className="relative">
+                          <FaSearch className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${isDark ? "text-[#788099]" : "text-[#7e7e8f]"} w-4 h-4`} />
+                          <input
+                            type="text"
+                            placeholder="Search assets..."
+                            value={assetSearchTerm}
+                            onChange={(e) => setAssetSearchTerm(e.target.value)}
+                            className={`w-full ${isDark ? "text-white bg-[#1D1D23]" : "text-gray-900 bg-white"} rounded-lg px-10 py-2 text-sm focus:outline-none border ${isDark ? "border-[#35353E]" : "border-gray-300"}`}
+                          />
                         </div>
+                      </div>
+
+                      {/* Asset List */}
+                      <div className="max-h-60 overflow-y-auto">
+                        {renderAssetDropdown()}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Swap Circle - positioned between both cards, covering both borders */}
+        <div className="relative -my-2 z-30 flex justify-center" style={{ marginTop: '-28px', marginBottom: '-28px' }}>
+          <button
+            className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-105 bg-transparent dark:bg-transparent dark:border-[#35353E]"
+            onClick={handleModeSwitch}
+            type="button"
+          >
+            <img
+              src="https://res.cloudinary.com/pitz/image/upload/v1756579504/Frame_36261_1_d9cnq1.png"
+              alt="swap icon"
+              className="w-12 h-12 dark:hidden"
+            />
+            <img
+              src="https://res.cloudinary.com/pitz/image/upload/v1755500509/Frame_36261_ledmyw.png"
+              alt="swap icon"
+              className="w-12 h-12 hidden dark:block"
+            />
+          </button>
+        </div>
+
+        {/* Bottom Section - You Get: Amount and Provider in one card */}
+        <div className="relative mb-3 mt-0 pt-2">
+          <div
+            data-asset-card="true"
+            className={`relative flex flex-col sm:flex-row gap-6 rounded-2xl p-4 sm:p-6 overflow-visible border-[1.5px] ${isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
+              } bg-transparent`}
+          >
+            {/* You Get Section */}
+            <div className="flex-1 min-w-0">
+              <label
+                className={`block text-sm mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                  }`}
+              >
+                {t("rates.youGet", "You Get")}
+                <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={receiveAmount}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    logger.debug('general', "You Get input changed:", {
+                      value,
+                      selectedAsset: selectedAsset?.ticker,
+                    });
+
+                    // Only allow numbers and decimals
+                    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                      setReceiveAmount(value);
+                      const newAmount = parseFloat(value) || 0;
+                      setIsCalculatingFromPay(false);
+
+                      // For direct assets, calculate immediately
+                      if (
+                        selectedAsset &&
+                        newAmount > 0 &&
+                        isSimpleCalculationAsset(selectedAsset)
+                      ) {
+                        const calculatedSendAmount =
+                          newAmount < 2 ? newAmount : newAmount + 2;
+                        setAmount(calculatedSendAmount.toFixed(2));
+                      } else if (selectedAsset && newAmount > 0) {
+                        setIsCalculating(true);
+                        setIsCalculatingReceive(true);
+                      } else {
+                        setIsCalculatingReceive(false);
+                        setIsCalculating(false);
+                      }
+                    }
+                  }}
+                  placeholder="Enter amount"
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${(isCalculating || isCalculatingReceive) &&
+                      !isCalculatingFromPay &&
+                      selectedAsset &&
+                      !isSimpleCalculationAsset(selectedAsset)
+                      ? "border-[#1D8751]"
+                      : isDark
+                        ? "border-white/10 text-white"
+                        : "border-gray-200 text-[#111827]"
+                    }`}
+                />
+                {/* Show loading spinner */}
+                {(isCalculating || isCalculatingReceive) &&
+                  !isCalculatingFromPay && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#1D8751]"></div>
+                    </div>
+                  )}
+              </div>
+            </div>
+
+            {/* Conditionally render Asset or Payment Method based on isFieldsSwapped */}
+            {!isFieldsSwapped ? (
+              /* Asset Section */
+              <div className="flex-1 min-w-0">
+                <label
+                  className={`block text-[15px] mb-2 font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                    }`}
+                >
+                  {t("rates.provider", "Provider")}
+                </label>
+                <div className="relative" ref={assetDropdownRef}>
+                  <div
+                    className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                      }`}
+                    onClick={() => setIsAssetDropdownOpen(!isAssetDropdownOpen)}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      {selectedAsset ? (
+                        <>
+                          <img
+                            src={
+                              selectedAsset?.image_url ||
+                              selectedAsset?.asset_image ||
+                              (selectedAsset as any)?.image ||
+                              "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                            }
+                            alt={
+                              selectedAsset?.name ||
+                              selectedAsset?.ticker ||
+                              selectedAsset?.symbol ||
+                              "Asset"
+                            }
+                            className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                          />
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                              <span className={`font-semibold ${isDark ? "text-white" : "text-[#111827]"}`}>
+                                {(
+                                  selectedAsset.ticker ||
+                                  selectedAsset.symbol ||
+                                  selectedAsset.name ||
+                                  "Unknown"
+                                ).toUpperCase()}
+                              </span>
+                              <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                                {getNetworkDisplayName(
+                                  getAssetNetwork(selectedAsset)
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <img
+                            src="https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                            alt="asset icon"
+                            className="w-8 h-8 flex-shrink-0"
+                          />
+                          <span className={`${isDark ? "text-[#788099]" : "text-[#64748B]"}`}>
+                            {assetsDisplay.isLoading
+                              ? "Loading assets..."
+                              : "Select Asset"}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    <FiChevronDown
+                      className={`transition-transform ${isAssetDropdownOpen ? "rotate-180" : ""
+                        }`}
+                    />
+                  </div>
+
+                  {/* Asset Dropdown */}
+                  {isAssetDropdownOpen && (
+                    <div className={`absolute top-full left-0 right-0 mt-1 ${isDark ? "bg-[#1D1D23]" : "bg-white"} border ${isDark ? "border-[#35353E]" : "border-gray-200"} rounded-2xl z-45 max-h-80 overflow-hidden shadow-lg`}>
+                      {/* Search Input */}
+                      <div className={`p-2 border-b ${isDark ? "border-[#35353E]" : "border-gray-200"}`}>
+                        <div className="relative">
+                          <FaSearch className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${isDark ? "text-[#788099]" : "text-[#7e7e8f]"} w-4 h-4`} />
+                          <input
+                            type="text"
+                            placeholder="Search assets..."
+                            value={assetSearchTerm}
+                            onChange={(e) => setAssetSearchTerm(e.target.value)}
+                            className={`w-full ${isDark ? "text-white bg-[#1D1D23]" : "text-gray-900 bg-white"} rounded-lg px-10 py-2 text-sm focus:outline-none border ${isDark ? "border-[#35353E]" : "border-gray-300"}`}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Asset List */}
+                      <div className="max-h-60 overflow-y-auto">
+                        {renderAssetDropdown()}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              /* Payment Method Section (when swapped) */
+              <div className="flex-1 min-w-0">
+                <label
+                  className={`block text-[15px] mb-2 font-semibold ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
+                    }`}
+                >
+                  {t("rates.bankPaymentMethod", "Bank/Payment Method")}
+                </label>
+                <div className="relative" ref={methodDropdownRef}>
+                  <div
+                    className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+                      }`}
+                    onClick={() =>
+                      setIsMethodDropdownOpen(!isMethodDropdownOpen)
+                    }
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      {selectedPaymentDetail && typeof selectedPaymentDetail === 'object' && selectedPaymentDetail.logo ? (
+                        <img
+                          src={selectedPaymentDetail.logo}
+                          alt={selectedPaymentDetail.provider_name || 'Selected provider'}
+                          className="w-8 h-8 object-contain rounded flex-shrink-0"
+                        />
+                      ) : (
+                        <FaUniversity className="w-8 h-8 flex-shrink-0" />
+                      )}
+                      <span className={`${isDark ? "text-white" : "text-[#1F2937]"}`}>
+                        {selectedPaymentDetail?.payment_provider_name ||
+                          selectedPaymentDetail?.provider_name ||
+                          selectedPaymentMethod ||
+                          t("rates.selectMethod", "Select Method")}
+                      </span>
+                    </div>
+                    <FiChevronDown
+                      className={`transition-transform duration-200 ${isMethodDropdownOpen ? "rotate-180" : ""
+                        }`}
+                    />
+                  </div>
+
+                  {/* Payment Method Dropdown */}
+                  {isMethodDropdownOpen && (
+                    <div ref={methodDropdownContentRef} className={`absolute top-full left-0 right-0 mt-1 ${isDark ? "bg-[#1D1D23]" : "bg-white"} rounded-2xl border ${isDark ? "border-[#35353E]" : "border-gray-200"} z-10 max-h-60 overflow-y-auto shadow-lg`}>
+                      {(userDetailsLoading || publicMethodsLoading) ? (
+                        <div className={`p-3 text-center ${isDark ? "text-[#788099]" : "text-gray-600"}`}>
+                          {t("rates.loadingMethods", "Loading payment methods...")}
+                        </div>
+                      ) : publicPaymentProviders.length > 0 ? (
+                        publicPaymentProviders.map((provider: any) => (
+                          <div
+                            key={provider.provider_id || provider.provider_name}
+                            className={`p-3 flex items-center hover:${isDark ? "bg-[#35353E]" : "bg-gray-100"} cursor-pointer transition-colors`}
+                            onClick={() => handlePaymentMethodSelect(provider)}
+                          >
+                            {provider.logo ? (
+                              <img
+                                src={provider.logo}
+                                alt={provider.provider_name || 'Provider logo'}
+                                className="w-10 h-10 object-contain rounded mr-3 flex-shrink-0"
+                              />
+                            ) : (
+                              <FaUniversity className="w-10 h-10 mr-3 flex-shrink-0" />
+                            )}
+                            <span className={`${isDark ? "text-white" : "text-gray-900"}`}>
+                              {provider.provider_name || 'Unknown Provider'}
+                            </span>
+                          </div>
+                        ))
+                      ) : finalPaymentMethods.length > 0 ? (
+                        finalPaymentMethods.map((method: string) => (
+                          <div
+                            key={method}
+                            className={`p-3 flex items-center hover:${isDark ? "bg-[#35353E]" : "bg-gray-100"} cursor-pointer transition-colors`}
+                            onClick={() => handlePaymentMethodSelect(method)}
+                          >
+                            <FaUniversity className="w-10 h-10 mr-3 flex-shrink-0" />
+                            <span className={`${isDark ? "text-white" : "text-gray-900"}`}>
+                              {method}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className={`p-3 text-center ${isDark ? "text-[#788099]" : "text-gray-600"}`}>
+                          {t("rates.noMethods", "No payment methods available")}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -2186,8 +2212,8 @@ const RatesCalculator = () => {
                     )}
                   </span>
                   <span className="bg-[#1D8751] text-white text-lg font-semibold rounded-full px-8 py-1 ml-2">
-                    ${selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.user_amount 
-                      ? estimate.user_amount.toFixed(2) 
+                    ${selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.user_amount
+                      ? estimate.user_amount.toFixed(2)
                       : amountNum > 0 ? amountNum.toFixed(2) : estimate?.user_amount ? estimate.user_amount.toFixed(2) : estimate?.total_fee ? `$${estimate.total_fee}` : "0.00"}
                   </span>
                 </button>
@@ -2199,13 +2225,13 @@ const RatesCalculator = () => {
             <div className="flex justify-between gap-20 text-sm mb-1">
               <span className={isDark ? "text-[#E8EFF5]" : "text-[#051015]"}>
                 {t("rates.commission", "Commission:")}{" "}
-                {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.omaya_fee_percentage 
-                  ? `${estimate.omaya_fee_percentage}%` 
+                {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.omaya_fee_percentage
+                  ? `${estimate.omaya_fee_percentage}%`
                   : amountNum > 0 ? `${commissionRate.toFixed(1)}%` : "0%"}
               </span>
               <span className="text-[#1D8751]">
-                {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.total_fee 
-                  ? `$${estimate.total_fee}` 
+                {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.total_fee
+                  ? `$${estimate.total_fee}`
                   : amountNum > 0 ? `$${commissionAmount.toFixed(2)}` : "$0.00"}
               </span>
             </div>
@@ -2214,8 +2240,8 @@ const RatesCalculator = () => {
                 {t("rates.networkFee", "Network Fee:")}
               </span>
               <span className="text-[#1D8751]">
-                {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.network_fee 
-                  ? `$${estimate.network_fee}` 
+                {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.network_fee
+                  ? `$${estimate.network_fee}`
                   : amountNum > 0 ? `$${networkFee.toFixed(2)}` : "$0.00"}
               </span>
             </div>
@@ -2224,8 +2250,8 @@ const RatesCalculator = () => {
                 {t("rates.totalFees", "Total Fees")}
               </span>
               <span className="text-[#F79330] font-semibold">
-                {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.total_fee 
-                  ? `$${estimate.total_fee}` 
+                {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && estimate?.total_fee
+                  ? `$${estimate.total_fee}`
                   : amountNum > 0 ? `$${totalFees.toFixed(2)}` : "$0.00"}
               </span>
             </div>
@@ -2233,7 +2259,7 @@ const RatesCalculator = () => {
         </div>
       </div>
 
-   
+
 
       <div className="flex items-center text-[#F79330] text-lg mb-6 p-3 rounded-md">
         <FiInfo className="text-[#F79330]" />
@@ -2247,13 +2273,12 @@ const RatesCalculator = () => {
 
       <div className="flex justify-center">
         <button
-          className={`py-3 px-12 rounded-full font-semibold transition-colors text-white ${
-            isSubmitting
+          className={`py-3 px-12 rounded-full font-semibold transition-colors text-white ${isSubmitting
               ? "bg-gray-500 cursor-not-allowed"
               : activeTab === "deposit"
                 ? "bg-[#1D8751] hover:bg-opacity-90"
                 : "bg-red-500 hover:bg-opacity-90"
-          }`}
+            }`}
           onClick={handleSubmit}
           disabled={isSubmitting}
         >
@@ -2527,11 +2552,10 @@ const RatesCalculator = () => {
                     disabled={
                       isSubmitting || !walletAddress.trim() || !!walletError
                     }
-                    className={`flex-1 font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 ${
-                      isSubmitting || !walletAddress.trim() || !!walletError
+                    className={`flex-1 font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 ${isSubmitting || !walletAddress.trim() || !!walletError
                         ? "bg-gray-500 cursor-not-allowed text-white"
                         : "bg-[#1D8751] hover:bg-[#166b3f] text-white"
-                    }`}
+                      }`}
                   >
                     {isSubmitting ? (
                       <>
@@ -2560,11 +2584,10 @@ const RatesCalculator = () => {
                 <button
                   onClick={handleProceedToExchanging}
                   disabled={isSubmitting}
-                  className={`w-full font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 ${
-                    isSubmitting
+                  className={`w-full font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 ${isSubmitting
                       ? "bg-gray-500 cursor-not-allowed text-white"
                       : "bg-[#1D8751] hover:bg-[#166b3f] text-white"
-                  }`}
+                    }`}
                 >
                   {isSubmitting ? (
                     <>

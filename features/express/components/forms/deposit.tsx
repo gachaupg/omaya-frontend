@@ -140,8 +140,8 @@ const normalizePaymentDetails = (payment: any): any => {
       ? (payment as any).payment_details
       : (payment as any).admin_payment_details &&
         (payment as any).admin_payment_details.length > 0
-      ? (payment as any).admin_payment_details
-      : [];
+        ? (payment as any).admin_payment_details
+        : [];
 
   const firstDetail = rawDetails.length > 0 ? rawDetails[0] : null;
 
@@ -249,11 +249,11 @@ export default function DepositForm({
     // Check if we have payment methods data
     const hasPaymentData = isHomePage
       ? publicPaymentMethods?.data?.providers &&
-        Array.isArray(publicPaymentMethods.data.providers) &&
-        publicPaymentMethods.data.providers.length > 0
+      Array.isArray(publicPaymentMethods.data.providers) &&
+      publicPaymentMethods.data.providers.length > 0
       : paymentMethodsData &&
-        Array.isArray(paymentMethodsData) &&
-        paymentMethodsData.length > 0;
+      Array.isArray(paymentMethodsData) &&
+      paymentMethodsData.length > 0;
 
     if (hasPaymentData) {
       let activeMethods;
@@ -269,10 +269,10 @@ export default function DepositForm({
             providersCount: providers.length,
             firstProvider: providers[0]
               ? {
-                  provider_name: providers[0].provider_name,
-                  logo: providers[0].logo,
-                  method: providers[0].method,
-                }
+                provider_name: providers[0].provider_name,
+                logo: providers[0].logo,
+                method: providers[0].method,
+              }
               : null,
           });
 
@@ -284,18 +284,18 @@ export default function DepositForm({
                 ? provider.payment_details[0]
                 : {};
 
-          const detailLogo = extractLogoFromDetail(firstPaymentDetail);
-          const providerLogo = resolveProviderLogo(
-            provider.logo_url,
-            provider.logo,
-            provider.provider_logo,
-            provider.provider_logo_url,
-            provider.logoUrl,
-            provider.linked_bank_provider?.logo_url,
-            provider.linked_bank_provider?.logo,
-            provider.linked_bank_provider?.provider_logo,
-            detailLogo
-          );
+            const detailLogo = extractLogoFromDetail(firstPaymentDetail);
+            const providerLogo = resolveProviderLogo(
+              provider.logo_url,
+              provider.logo,
+              provider.provider_logo,
+              provider.provider_logo_url,
+              provider.logoUrl,
+              provider.linked_bank_provider?.logo_url,
+              provider.linked_bank_provider?.logo,
+              provider.linked_bank_provider?.provider_logo,
+              detailLogo
+            );
 
             const flattened = {
               provider_name: provider.provider_name,
@@ -307,9 +307,9 @@ export default function DepositForm({
                 provider.method?.method_name ||
                 provider.method?.method_display ||
                 "",
-            provider_logo: providerLogo,
-            logo: providerLogo, // Also add as 'logo' for backward compatibility
-            logo_url: provider.logo_url || detailLogo || providerLogo,
+              provider_logo: providerLogo,
+              logo: providerLogo, // Also add as 'logo' for backward compatibility
+              logo_url: provider.logo_url || detailLogo || providerLogo,
               is_active: true, // All public methods are considered active
               payment_details: provider.payment_details || [],
               // Flatten first payment detail for easy access
@@ -360,7 +360,7 @@ export default function DepositForm({
                   // Get the first payment detail for easy access
                   const firstPaymentDetail =
                     provider.payment_details &&
-                    provider.payment_details.length > 0
+                      provider.payment_details.length > 0
                       ? provider.payment_details[0]
                       : {};
 
@@ -411,11 +411,11 @@ export default function DepositForm({
           firstProvider:
             flattenedMethods.length > 0
               ? {
-                  provider_name: flattenedMethods[0].provider_name,
-                  provider_logo: flattenedMethods[0].provider_logo,
-                  logo: flattenedMethods[0].logo,
-                  payment_method: flattenedMethods[0].payment_method,
-                }
+                provider_name: flattenedMethods[0].provider_name,
+                provider_logo: flattenedMethods[0].provider_logo,
+                logo: flattenedMethods[0].logo,
+                payment_method: flattenedMethods[0].payment_method,
+              }
               : null,
         });
 
@@ -430,12 +430,12 @@ export default function DepositForm({
           firstPayment:
             Array.isArray(paymentMethodsData) && paymentMethodsData.length > 0
               ? {
-                  provider_name: paymentMethodsData[0].provider_name,
-                  provider_logo: paymentMethodsData[0].provider_logo,
-                  logo: paymentMethodsData[0].logo,
-                  admin_payment_detail_id:
-                    paymentMethodsData[0].admin_payment_detail_id,
-                }
+                provider_name: paymentMethodsData[0].provider_name,
+                provider_logo: paymentMethodsData[0].provider_logo,
+                logo: paymentMethodsData[0].logo,
+                admin_payment_detail_id:
+                  paymentMethodsData[0].admin_payment_detail_id,
+              }
               : null,
         });
 
@@ -457,8 +457,8 @@ export default function DepositForm({
                 ? (payment as any).payment_details
                 : (payment as any).admin_payment_details &&
                   (payment as any).admin_payment_details.length > 0
-                ? (payment as any).admin_payment_details
-                : [];
+                  ? (payment as any).admin_payment_details
+                  : [];
 
             const firstDetail = rawDetails.length > 0 ? rawDetails[0] : null;
 
@@ -531,10 +531,10 @@ export default function DepositForm({
           count: activeMethods.length,
           firstMethod: activeMethods[0]
             ? {
-                provider_name: activeMethods[0].provider_name,
-                provider_logo: activeMethods[0].provider_logo,
-                logo: activeMethods[0].logo,
-              }
+              provider_name: activeMethods[0].provider_name,
+              provider_logo: activeMethods[0].provider_logo,
+              logo: activeMethods[0].logo,
+            }
             : null,
         });
         setStablePaymentMethods(activeMethods);
@@ -602,14 +602,14 @@ export default function DepositForm({
     firstMethod:
       finalPaymentMethods.length > 0
         ? {
-            provider_name: finalPaymentMethods[0].provider_name,
-            provider_logo: finalPaymentMethods[0].provider_logo,
-            logo: finalPaymentMethods[0].logo,
-            hasLogo: !!(
-              finalPaymentMethods[0].provider_logo ||
-              finalPaymentMethods[0].logo
-            ),
-          }
+          provider_name: finalPaymentMethods[0].provider_name,
+          provider_logo: finalPaymentMethods[0].provider_logo,
+          logo: finalPaymentMethods[0].logo,
+          hasLogo: !!(
+            finalPaymentMethods[0].provider_logo ||
+            finalPaymentMethods[0].logo
+          ),
+        }
         : null,
   });
 
@@ -620,9 +620,9 @@ export default function DepositForm({
     initialState?.amountInput ?? "100"
   );
   const [payBank, setPayBank] = useState(
-    initialState?.payBank || 
-    initialState?.payment?.provider_name || 
-    initialState?.payment?.payment_provider_name || 
+    initialState?.payBank ||
+    initialState?.payment?.provider_name ||
+    initialState?.payment?.payment_provider_name ||
     ""
   );
   // Restore both send and receive amounts from initialState
@@ -661,7 +661,7 @@ export default function DepositForm({
   // Get currency from selectedAsset for validation
   const getCurrencyFromAsset = useCallback((asset: any): string | undefined => {
     if (!asset) return undefined;
-    
+
     // Try different properties in order of preference
     if (asset.ticker) {
       return asset.ticker.toUpperCase();
@@ -671,7 +671,7 @@ export default function DepositForm({
     } else if (asset.name) {
       return asset.name.toUpperCase();
     }
-    
+
     return undefined;
   }, []);
 
@@ -755,7 +755,7 @@ export default function DepositForm({
     // If we have initialState with payment (full object from home page), ensure it's set and payBank is correct
     if (initialState?.payment) {
       const initialStatePayment = initialState.payment;
-      
+
       // Use the payment object directly from initialState (exact object from home page) - normalize to ensure account details
       if (!selectedPaymentDetail || selectedPaymentDetail !== initialStatePayment) {
         const normalized = normalizePaymentDetails(initialStatePayment);
@@ -1038,7 +1038,7 @@ export default function DepositForm({
     // If we have initialState with asset, use it directly (full object from home page)
     if (initialState?.asset && !selectedAsset) {
       const initialStateAsset = initialState.asset;
-      
+
       // Try to find the exact asset in available assets by asset_id
       const matchingAsset = assetsDisplay.displayData.find((asset: any) => {
         if (initialStateAsset.asset_id && asset.asset_id) {
@@ -1049,7 +1049,7 @@ export default function DepositForm({
 
       // Use matched asset if found, otherwise use initialState asset directly
       const assetToUse = matchingAsset || initialStateAsset;
-      
+
       setIsRestoringFromInitialState(true);
       setSelectedAsset(assetToUse);
       const networkValue = getAssetNetwork(assetToUse);
@@ -1153,6 +1153,44 @@ export default function DepositForm({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isAssetDropdownOpen) return;
+
+    const handleScroll = (event: Event) => {
+      const target = event.target as Node | null;
+
+      // Ignore scrolls coming from inside the dropdown content
+      if (
+        assetDropdownContentRef.current &&
+        target &&
+        assetDropdownContentRef.current.contains(target)
+      ) {
+        return;
+      }
+
+      // Ignore scrolls from the trigger itself (edge case)
+      if (
+        assetDropdownRef.current &&
+        target &&
+        assetDropdownRef.current.contains(target)
+      ) {
+        return;
+      }
+
+      setIsAssetDropdownOpen(false);
+    };
+
+    // Capture phase is required
+    window.addEventListener("scroll", handleScroll, true);
+    document.addEventListener("scroll", handleScroll, true);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll, true);
+      document.removeEventListener("scroll", handleScroll, true);
+    };
+  }, [isAssetDropdownOpen]);
+
 
   // Check if asset is one of the first two direct assets (USDT on BSC or USDC on BSC)
   const isSimpleCalculationAsset = (asset: any) => {
@@ -1648,6 +1686,76 @@ export default function DepositForm({
                       const isCurrentlySelected = selectedAsset?.ticker === asset.ticker && selectedAsset?.network === asset.network;
                       const [isHovered, setIsHovered] = useState(false);
                       return (
+                        <div
+                          key={`popular-${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
+                          className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] transition-colors duration-150 ${isCurrentlySelected ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
+                          onClick={() => {
+                            handleAssetSelection(asset);
+                            setIsAssetDropdownOpen(false);
+                            setAssetSearchTerm("");
+                          }}
+                        >
+                          <img
+                            src={getHighResAssetIcon(asset, ASSET_ICON_SIZE)}
+                            alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
+                            className={`${ASSET_ICON_BASE_CLASS} w-9 h-9`}
+                            loading="lazy"
+                            onError={(e) => {
+                              e.currentTarget.src = getHighResAssetIcon(null, ASSET_ICON_SIZE);
+                            }}
+                          />
+                          <div className="flex-1">
+                            <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
+                              {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
+                              <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+                                {getNetworkDisplayName(getAssetNetwork(asset))}
+                              </span>
+                            </div>
+                            <div className="text-[#35353e] dark:text-[#788099] text-sm">
+                              {(() => {
+                                let displayName =
+                                  asset.name || asset.ticker || asset.symbol || "Unknown Asset";
+
+                                displayName = displayName
+                                  .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, "")
+                                  .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, "")
+                                  .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, "")
+                                  .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, "")
+                                  .replace(/\s*\(TRON\)\s*\(TRX\)/gi, "")
+                                  .replace(/\s*\(Solana\)\s*\(SOL\)/gi, "")
+                                  .replace(/\s*\(BSC\)$/gi, "")
+                                  .replace(/\s*\(ETH\)$/gi, "")
+                                  .replace(/\s*\(MATIC\)$/gi, "")
+                                  .replace(/\s*\(AVAX\)$/gi, "")
+                                  .replace(/\s*\(TRX\)$/gi, "")
+                                  .replace(/\s*\(SOL\)$/gi, "")
+                                  .trim();
+
+                                return displayName;
+                              })()}
+                            </div>
+                          </div>
+                          {selectedAsset?.asset_id === asset.asset_id && (
+                            <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    <div className="border-t-2 border-[#D1D2D4FF] dark:border-[#35353E]"></div>
+
+                    <div className="px-3 py-2 bg-[#F5F6F7] dark:bg-[#23232B] border-b border-[#A2A4A9FF] dark:border-[#35353E]">
+                      <span className="text-xs font-semibold text-[#788099] uppercase tracking-wider">
+                        All Assets
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                {(assetSearchTerm ? sortedSwapAssets : sortedSwapAssets.slice(3)).map(
+                  (asset: SupportedAsset, index: number) => {
+                    const isCurrentlySelected = selectedAsset?.ticker === asset.ticker && selectedAsset?.network === asset.network;
+                    return (
                       <div
                         key={`popular-${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
                         className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b transition-all duration-150 ${isCurrentlySelected ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
@@ -3054,71 +3162,70 @@ export default function DepositForm({
                   }`}
                 /> */}
                 <input
-  type="text"
-  inputMode="decimal"
-  value={payAmountInput}
-  onChange={(e) => {
-    const value = e.target.value;
+                  type="text"
+                  inputMode="decimal"
+                  value={payAmountInput}
+                  onChange={(e) => {
+                    const value = e.target.value;
 
-    if (value === payAmountInput) return;
+                    if (value === payAmountInput) return;
 
-    if (value === "" || /^\d*\.?\d*$/.test(value)) {
-      if (value.includes(".")) {
-        const decimalPart = value.split(".")[1];
-        if (decimalPart && decimalPart.length > 8) {
-          setApiValidationError("Number cannot have more than 8 decimal places.");
-          return;
-        }
-      }
+                    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                      if (value.includes(".")) {
+                        const decimalPart = value.split(".")[1];
+                        if (decimalPart && decimalPart.length > 8) {
+                          setApiValidationError("Number cannot have more than 8 decimal places.");
+                          return;
+                        }
+                      }
 
-      const newAmount = parseFloat(value) || 0;
+                      const newAmount = parseFloat(value) || 0;
 
-      if (newAmount !== payAmount || value !== payAmountInput) {
-        setPayAmountInput(value);
-        setPayAmount(newAmount);
-        setIsCalculatingFromPay(true);
-        setApiValidationError(null);
-        setIsUserModifiedAmount(true);
+                      if (newAmount !== payAmount || value !== payAmountInput) {
+                        setPayAmountInput(value);
+                        setPayAmount(newAmount);
+                        setIsCalculatingFromPay(true);
+                        setApiValidationError(null);
+                        setIsUserModifiedAmount(true);
 
-        if (newAmount > 15000) setIsInfoModalOpen(true);
+                        if (newAmount > 15000) setIsInfoModalOpen(true);
 
-        if (selectedAsset && newAmount > 0 && isSimpleCalculationAsset(selectedAsset)) {
-          const calculatedGetAmount =
-            newAmount < 2 ? newAmount : Math.max(0, newAmount - 2);
-          setGetAmount(calculatedGetAmount);
-          setGetAmountInput(calculatedGetAmount.toString());
-        } else if (
-          selectedAsset &&
-          newAmount > 0 &&
-          isForexAsset(selectedAsset)
-        ) {
-          const calculatedGetAmount = newAmount / FXP_EXCHANGE_RATE;
-          setGetAmount(calculatedGetAmount);
-          setGetAmountInput(calculatedGetAmount.toFixed(2));
-        } else if (selectedAsset && newAmount > 0) {
-          setIsCalculating(true);
-          setIsCalculatingReceive(true);
-          calculateAmounts(newAmount, true);
-        } else {
-          setIsCalculatingReceive(false);
-          setIsCalculating(false);
-        }
-      }
-    }
-  }}
-  placeholder="Enter amount"
-  className={`w-full h-[48px] text-[#35353e] dark:text-white bg-transparent dark:bg-transparent
+                        if (selectedAsset && newAmount > 0 && isSimpleCalculationAsset(selectedAsset)) {
+                          const calculatedGetAmount =
+                            newAmount < 2 ? newAmount : Math.max(0, newAmount - 2);
+                          setGetAmount(calculatedGetAmount);
+                          setGetAmountInput(calculatedGetAmount.toString());
+                        } else if (
+                          selectedAsset &&
+                          newAmount > 0 &&
+                          isForexAsset(selectedAsset)
+                        ) {
+                          const calculatedGetAmount = newAmount / FXP_EXCHANGE_RATE;
+                          setGetAmount(calculatedGetAmount);
+                          setGetAmountInput(calculatedGetAmount.toFixed(2));
+                        } else if (selectedAsset && newAmount > 0) {
+                          setIsCalculating(true);
+                          setIsCalculatingReceive(true);
+                          calculateAmounts(newAmount, true);
+                        } else {
+                          setIsCalculatingReceive(false);
+                          setIsCalculating(false);
+                        }
+                      }
+                    }
+                  }}
+                  placeholder="Enter amount"
+                  className={`w-full h-[48px] text-[#35353e] dark:text-white bg-transparent dark:bg-transparent
     rounded-2xl px-3 sm:px-4 pr-12 sm:pr-16 text-base sm:text-lg focus:outline-none
     border appearance-none
-    ${
-      (isCalculating || isCalculatingReceive) &&
-      isCalculatingFromPay &&
-      selectedAsset &&
-      !isForexAsset(selectedAsset)
-        ? "border-[#1D8751]"
-        : "border-[#A2A4A9FF] dark:border-[#35353E]"
-    }`}
-/>
+    ${(isCalculating || isCalculatingReceive) &&
+                      isCalculatingFromPay &&
+                      selectedAsset &&
+                      !isForexAsset(selectedAsset)
+                      ? "border-[#1D8751]"
+                      : "border-[#A2A4A9FF] dark:border-[#35353E]"
+                    }`}
+                />
 
 
                 {/* Show loading spinner when calculating "You Receive" from "You Send" */}
@@ -3174,7 +3281,7 @@ export default function DepositForm({
                     if (initialState?.payment && selectedPaymentDetail) {
                       const initialStatePayment = initialState.payment;
                       const isAlreadyInOptions = finalPaymentMethods?.some(
-                        (method: any) => 
+                        (method: any) =>
                           method.provider_name === initialStatePayment.provider_name ||
                           (method.id && initialStatePayment.id && String(method.id) === String(initialStatePayment.id))
                       );
@@ -3182,13 +3289,13 @@ export default function DepositForm({
                         optionsToMap = [initialStatePayment, ...optionsToMap];
                       }
                     }
-                    
+
                     const mappedOptions = optionsToMap.map(
                       (payment: any, index: number) => {
                         // Get logo URL - check all known fields and ensure it's a valid string
                         const firstDetail =
                           payment.payment_details &&
-                          payment.payment_details.length > 0
+                            payment.payment_details.length > 0
                             ? payment.payment_details[0]
                             : null;
                         const detailLogo = extractLogoFromDetail(firstDetail);
@@ -3238,15 +3345,15 @@ export default function DepositForm({
                               paymentKeys: Object.keys(payment),
                               hasProviderLogo: !!payment.provider_logo,
                               hasLogo: !!payment.logo,
-                                hasLogoUrl: !!payment.logo_url,
-                                hasDetailLogo: !!detailLogo,
+                              hasLogoUrl: !!payment.logo_url,
+                              hasDetailLogo: !!detailLogo,
                               providerLogoValue: payment.provider_logo,
                               logoValue: payment.logo,
-                                logoUrlValue: payment.logo_url,
-                                detailLogo,
+                              logoUrlValue: payment.logo_url,
+                              detailLogo,
                               providerLogoType: typeof payment.provider_logo,
                               logoType: typeof payment.logo,
-                                logoUrlType: typeof payment.logo_url,
+                              logoUrlType: typeof payment.logo_url,
                             }
                           );
                         }
@@ -3316,7 +3423,7 @@ export default function DepositForm({
                   }}
                   placeholder={
                     paymentMethodsDisplay.isLoading &&
-                    finalPaymentMethods.length === 0
+                      finalPaymentMethods.length === 0
                       ? "Loading payment methods..."
                       : finalPaymentMethods && finalPaymentMethods.length > 0
                         ? "Select Payment Method"
@@ -3465,19 +3572,18 @@ export default function DepositForm({
                     }
                   }}
                   placeholder="Enter amount"
-                  className={`w-full h-[48px] text-[#35353e] dark:text-white bg-white dark:bg-[#35353E] rounded-2xl px-4 pr-16 text-base sm:text-lg focus:outline-none border appearance-none ${
-                    receiveAmountError &&
-                    (receiveAmountError.includes("Rough estimate") ||
-                      receiveAmountError.includes("Using estimated rate"))
+                  className={`w-full h-[48px] text-[#35353e] dark:text-white bg-white dark:bg-[#35353E] rounded-2xl px-4 pr-16 text-base sm:text-lg focus:outline-none border appearance-none ${receiveAmountError &&
+                      (receiveAmountError.includes("Rough estimate") ||
+                        receiveAmountError.includes("Using estimated rate"))
                       ? "border-[#F79330]"
                       : receiveAmountError
                         ? "border-red-500"
                         : (isCalculating || isCalculatingReceive) &&
-                            selectedAsset &&
-                            !isForexAsset(selectedAsset)
+                          selectedAsset &&
+                          !isForexAsset(selectedAsset)
                           ? "border-[#1D8751]"
                           : "border-[#A2A4A9FF] dark:border-[#35353E]"
-                  }`}
+                    }`}
                 />
                 {/* Show loading spinner when calculating "You Send" from "You Receive" */}
                 {(isCalculating || isCalculatingReceive) &&
@@ -3509,12 +3615,11 @@ export default function DepositForm({
                       />
                     </svg>
                     <span
-                      className={`text-sm font-medium ${
-                        receiveAmountError.includes("Rough estimate") ||
-                        receiveAmountError.includes("Using estimated rate")
+                      className={`text-sm font-medium ${receiveAmountError.includes("Rough estimate") ||
+                          receiveAmountError.includes("Using estimated rate")
                           ? "text-[#F79330]"
                           : "text-red-500"
-                      }`}
+                        }`}
                     >
                       {receiveAmountError}
                     </span>
@@ -3667,9 +3772,8 @@ export default function DepositForm({
                     )}
                   </div>
                   <svg
-                    className={`w-5 h-5 text-[#7e7e8f] transition-transform ${
-                      isAssetDropdownOpen ? "rotate-180" : ""
-                    }`}
+                    className={`w-5 h-5 text-[#7e7e8f] transition-transform ${isAssetDropdownOpen ? "rotate-180" : ""
+                      }`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -3731,19 +3835,18 @@ export default function DepositForm({
         {!isFirstCardSubmitted && !showForexForm && (
           <div className="mt-2 sm:mt-3 md:mt-4 relative">
             <button
-              className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${
-                isHomePage
+              className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${isHomePage
                   ? "bg-[#1D8751] hover:bg-[#166b3e] cursor-pointer"
                   : isSubmitting ||
-                      !selectedAsset ||
-                      !payBank ||
-                      (selectedAsset &&
-                        !isSimpleCalculationAsset(selectedAsset) &&
-                        !isForexAsset(selectedAsset) &&
-                        estimateLoading)
+                    !selectedAsset ||
+                    !payBank ||
+                    (selectedAsset &&
+                      !isSimpleCalculationAsset(selectedAsset) &&
+                      !isForexAsset(selectedAsset) &&
+                      estimateLoading)
                     ? "bg-gray-500 cursor-not-allowed"
                     : "bg-[#1D8751] hover:bg-[#166b3e]"
-              }`}
+                }`}
               onClick={() => {
                 if (isHomePage) {
                   const state = {
@@ -3761,31 +3864,31 @@ export default function DepositForm({
                   return;
                 }
 
-                      if (selectedAsset && isForexAsset(selectedAsset)) {
-                        if (!payAmount || payAmount <= 0) {
-                          showToast.error("Please enter a valid amount");
-                          return;
-                        }
-                        if (!selectedPaymentDetail) {
-                          showToast.error("Please select a payment method");
-                          return;
-                        }
-                        setShowForexForm(true);
-                      } else {
-                        handleFirstCardSubmit();
-                      }
+                if (selectedAsset && isForexAsset(selectedAsset)) {
+                  if (!payAmount || payAmount <= 0) {
+                    showToast.error("Please enter a valid amount");
+                    return;
+                  }
+                  if (!selectedPaymentDetail) {
+                    showToast.error("Please select a payment method");
+                    return;
+                  }
+                  setShowForexForm(true);
+                } else {
+                  handleFirstCardSubmit();
+                }
               }}
               disabled={
                 isHomePage
                   ? false
                   : isSubmitting ||
-                    !selectedAsset ||
-                    !payBank ||
-                    (walletAddress.trim() && !!walletError) ||
-                    (selectedAsset &&
-                      !isSimpleCalculationAsset(selectedAsset) &&
-                      !isForexAsset(selectedAsset) &&
-                      estimateLoading)
+                  !selectedAsset ||
+                  !payBank ||
+                  (walletAddress.trim() && !!walletError) ||
+                  (selectedAsset &&
+                    !isSimpleCalculationAsset(selectedAsset) &&
+                    !isForexAsset(selectedAsset) &&
+                    estimateLoading)
               }
             >
               {isSubmitting ? (
@@ -3836,7 +3939,7 @@ export default function DepositForm({
                             selectedPaymentDetail.provider_logo
                           ),
                           selectedPaymentDetail.logo ||
-                            selectedPaymentDetail.provider_logo,
+                          selectedPaymentDetail.provider_logo,
                           PAYMENT_LOGO_SIZE
                         )}
                         alt={`${selectedPaymentDetail.provider_name || "Bank"} Logo`}
@@ -3951,11 +4054,10 @@ export default function DepositForm({
 
             {/* Submit Forex Exchange Button */}
             <button
-              className={`w-full text-white text-sm sm:text-base font-medium py-3 sm:py-3 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${
-                isSubmitting || !forexAccountNumber.trim()
+              className={`w-full text-white text-sm sm:text-base font-medium py-3 sm:py-3 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${isSubmitting || !forexAccountNumber.trim()
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
-              }`}
+                }`}
               onClick={async () => {
                 if (!forexAccountNumber.trim()) {
                   showToast.error("Please enter your forex account number");
@@ -4060,7 +4162,7 @@ export default function DepositForm({
                         selectedPaymentDetail.provider_logo
                       ),
                       selectedPaymentDetail.logo ||
-                        selectedPaymentDetail.provider_logo,
+                      selectedPaymentDetail.provider_logo,
                       PAYMENT_LOGO_SIZE
                     )}
                     alt={`${selectedPaymentDetail.provider_name || "Bank"} Logo`}
@@ -4310,13 +4412,12 @@ export default function DepositForm({
                     setForceUpdate((prev) => prev + 1);
                   }}
                   placeholder="Paste your crypto address"
-                  className={`flex-1 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-sm sm:text-base min-w-0 ${
-                    walletError
+                  className={`flex-1 bg-transparent border-none outline-none text-[#35353e] dark:text-[#788099] placeholder-[#788099] text-sm sm:text-base min-w-0 ${walletError
                       ? "border-red-500"
                       : walletAddress.trim() && !walletError && addressValidationResult?.isValid
                         ? "border-green-500"
                         : ""
-                  }`}
+                    }`}
                 />
                 {/* Validation status indicator */}
                 {walletAddress.trim() && currentCurrency && (
@@ -4430,7 +4531,7 @@ export default function DepositForm({
               </p>
             )}
 
-           
+
             <label className="flex mb-2 sm:mb-4 items-center gap-2 mt-2 sm:mt-3 md:mt-4 text-sm text-[#35353e] dark:text-[#788099]">
               <input
                 type="checkbox"
@@ -4578,11 +4679,10 @@ export default function DepositForm({
 
             {/* Button outside the card */}
             <button
-              className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${
-                isProceedDisabled
+              className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${isProceedDisabled
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
-              }`}
+                }`}
               onClick={handleProceedToNext}
               disabled={isProceedDisabled}
             >
