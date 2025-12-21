@@ -33,6 +33,7 @@ import { FaSearch } from "react-icons/fa";
 import { showToast } from "@/lib/utils/toast";
 import Exchanging from "../../express/components/exchnaging";
 import { useTheme } from "@/context/theme";
+import MoneyXRates from "./MoneyXRates";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -72,12 +73,25 @@ const isSimpleCalculationAsset = (asset: any) => {
   );
 };
 
-const RatesCalculator = () => {
+interface RatesCalculatorProps {
+  activeTab?: 'crypto' | 'moneyx';
+}
+
+const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
+  // Debug: Log activeTab on every render
+  console.log('RatesCalculator render - activeTab:', activeTab, 'type:', typeof activeTab, '=== moneyx?', activeTab === 'moneyx');
+  
   const { t } = useRatesI18n();
   const { isDark } = useTheme();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("deposit");
+  const [internalActiveTab, setInternalActiveTab] = useState("deposit");
   const [isDepositMode, setIsDepositMode] = useState(true);
+
+  // Debug: Log activeTab changes
+  useEffect(() => {
+    console.log('RatesCalculator activeTab changed:', activeTab);
+    console.log('Will render MoneyX?', activeTab === 'moneyx');
+  }, [activeTab]);
 
   // Get authentication state
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
@@ -1617,6 +1631,14 @@ const RatesCalculator = () => {
 
   const assetAmount = amountNum + totalFees;
 
+  // If MoneyX tab is active, render MoneyX rates component (check first, after all hooks)
+  if (activeTab === 'moneyx') {
+    console.log('Rendering MoneyXRates component, activeTab:', activeTab);
+    return <MoneyXRates />;
+  }
+  
+  console.log('Rendering Crypto calculator, activeTab:', activeTab);
+
   // If showing exchanging component, render it instead of the main form
   if (showExchanging && exchangingData) {
     return <Exchanging transactionData={exchangingData} />;
@@ -2275,7 +2297,7 @@ const RatesCalculator = () => {
         <button
           className={`py-3 px-12 rounded-full font-semibold transition-colors text-white ${isSubmitting
               ? "bg-gray-500 cursor-not-allowed"
-              : activeTab === "deposit"
+              : internalActiveTab === "deposit"
                 ? "bg-[#1D8751] hover:bg-opacity-90"
                 : "bg-red-500 hover:bg-opacity-90"
             }`}

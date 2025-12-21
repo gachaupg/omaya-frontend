@@ -8,6 +8,11 @@ import { useRatesI18n } from "@/lib/useRatesI18n";
 const Rates = () => {
   const [activeTab, setActiveTab] = React.useState<'crypto' | 'moneyx'>('crypto');
   const { t } = useRatesI18n();
+  
+  // Debug
+  React.useEffect(() => {
+    console.log('Rates component - activeTab changed to:', activeTab);
+  }, [activeTab]);
   return (
     <div className="max-w-5xl text-gray-900 dark:text-white px-4 sm:px-6 lg:px-0">
       {/* Back Button */}
@@ -27,19 +32,19 @@ const Rates = () => {
       <p className="text-gray-700 dark:text-[#788099] mb-4 sm:mb-6 lg:mb-8 max-w-full sm:max-w-2xl lg:max-w-4xl">
         {t(
           "rates.subtitle",
-          "Check live rates andkkkkkk estimate your transaction fees."
+          "Check live rates and estimate your transaction fees."
         )}
       </p>
 
       {/* Tab System */}
-      <div className="flex p-1 rounded-xl border-2 border-secondary w-fit bg-transparent mb-2 sm:mb-4 lg:mb-6">
+      <div className="flex p-1 rounded-xl border-2 border-[#1D8751] w-fit bg-transparent mb-2 sm:mb-4 lg:mb-6">
         {/* Crypto */}
         <button
           onClick={() => setActiveTab('crypto')}
           className={`px-6 py-2.5 rounded-lg transition-all
       ${activeTab === 'crypto'
-              ? 'bg-secondary text-muted'
-              : 'bg-transparent text-muted-foreground'
+              ? 'bg-[#1D8751] text-white'
+              : 'bg-transparent text-gray-600 dark:text-[#788099]'
             }`}
         >
           Crypto
@@ -50,8 +55,8 @@ const Rates = () => {
           onClick={() => setActiveTab('moneyx')}
           className={`px-4 sm:px-6 py-1 md:py-2 rounded-lg transition-all flex items-center gap-1 
       ${activeTab === 'moneyx'
-              ? 'bg-secondary text-muted'
-              : 'bg-transparent text-muted-foreground'
+              ? 'bg-[#1D8751] text-white'
+              : 'bg-transparent text-gray-600 dark:text-[#788099]'
             }`}
         >
           <span>Money</span>
@@ -67,7 +72,7 @@ const Rates = () => {
         </button>
       </div>
 
-      <RatesCalculator />
+      <RatesCalculator key={activeTab} activeTab={activeTab} />
 
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mt-8 sm:mt-10 lg:mt-12 mb-3 sm:mb-4 lg:mb-4">
         <h2 className="text-xl sm:text-2xl lg:text-2xl font-bold">
