@@ -437,13 +437,16 @@ export default function MarketingPage() {
 
               {/* CTA Buttons */}
               <div className="flex flex-wrap gap-2 sm:gap-3 justify-center md:justify-start w-full sm:w-auto">
-                <a
-                  href="#contact"
-                  className="rounded-lg px-5 sm:px-6 py-2.5 sm:py-2.5 text-white bg-[#1D8751] text-sm sm:text-base font-medium hover:bg-[#167a47] transition-colors min-h-[44px] flex items-center justify-center gap-2"
+                <button
+                  type="button"
+                  onClick={() =>
+                    router.push(isAuthenticated ? "/dashboard/express-exchange" : "/auth/login")
+                  }
+                  className="cursor-pointer rounded-lg px-5 sm:px-6 py-2.5 sm:py-2.5 text-white bg-[#1D8751] text-sm sm:text-base font-medium hover:bg-[#167a47] transition-colors min-h-[44px] flex items-center justify-center gap-2"
                 >
                   Start Trading Now
                   <span className="text-lg">→</span>
-                </a>
+                </button>
                 <button className="rounded-lg px-5 sm:px-6 py-2.5 sm:py-2.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] text-sm sm:text-base font-medium hover:bg-gray-200 dark:hover:bg-[#23232B] transition-colors min-h-[44px] flex items-center justify-center gap-2">
                   Watch Demo
                   <Play size={16} className="text-[#1D8751]" />
@@ -451,32 +454,44 @@ export default function MarketingPage() {
               </div>
 
               {/* Three stat cards */}
-              <div className="flex flex-wrap gap-2 sm:gap-3 justify-center md:justify-start pt-1 md:pt-2">
+              <div className="flex flex-wrap md:flex-nowrap gap-2 sm:gap-3 justify-center md:justify-start pt-2 md:pt-3 w-full">
                 {/* Trading Volume Card */}
-                <div className="bg-gray-100 dark:bg-white/10 backdrop-blur-sm rounded-lg px-5 py-3 flex flex-col items-center gap-2 min-w-[160px]">
+                <div className="bg-gray-100 dark:bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3.5 flex flex-col items-center gap-2.5 shadow-sm flex-1">
                   <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
                     <BarChart className="w-5 h-5 text-blue-400" />
                   </div>
-                  <p className="text-gray-900 dark:text-white text-sm font-semibold text-center">$50M+</p>
-                  <p className="text-gray-700 dark:text-white text-xs font-medium text-center">Trading Volume</p>
+                  <p className="text-gray-900 dark:text-white text-lg sm:text-xl md:text-2xl font-extrabold text-center">
+                    100M+
+                  </p>
+                  <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm font-semibold text-center tracking-wide">
+                    Trading Volume
+                  </p>
                 </div>
 
                 {/* Countries Card */}
-                <div className="bg-gray-100 dark:bg-white/10 backdrop-blur-sm rounded-lg px-5 py-3 flex flex-col items-center gap-2 min-w-[160px]">
+                <div className="bg-gray-100 dark:bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3.5 flex flex-col items-center gap-2.5 shadow-sm flex-1">
                   <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
                     <Globe className="w-5 h-5 text-purple-400" />
                   </div>
-                  <p className="text-gray-900 dark:text-white text-sm font-semibold text-center">50+</p>
-                  <p className="text-gray-700 dark:text-white text-xs font-medium text-center">Countries</p>
+                  <p className="text-gray-900 dark:text-white text-lg sm:text-xl md:text-2xl font-extrabold text-center">
+                    150+
+                  </p>
+                  <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm font-semibold text-center tracking-wide">
+                    Countries
+                  </p>
                 </div>
 
                 {/* Uptime Card */}
-                <div className="bg-gray-100 dark:bg-white/10 backdrop-blur-sm rounded-lg px-5 py-3 flex flex-col items-center gap-2 min-w-[160px]">
+                <div className="bg-gray-100 dark:bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3.5 flex flex-col items-center gap-2.5 shadow-sm flex-1">
                   <div className="w-10 h-10 rounded-lg bg-[#1D8751]/20 flex items-center justify-center">
                     <Lock className="w-5 h-5 text-[#1D8751]" />
                   </div>
-                  <p className="text-gray-900 dark:text-white text-sm font-semibold text-center">99.9%</p>
-                  <p className="text-gray-700 dark:text-white text-xs font-medium text-center">Uptime</p>
+                  <p className="text-gray-900 dark:text-white text-lg sm:text-xl md:text-2xl font-extrabold text-center">
+                    99.9%
+                  </p>
+                  <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm font-semibold text-center tracking-wide">
+                    Uptime
+                  </p>
                 </div>
               </div>
             </div>
@@ -620,9 +635,13 @@ export default function MarketingPage() {
             })}
           </div>
 
-        <div>
-          <img src="https://res.cloudinary.com/pitz/image/upload/v1766121183/Container_14_omqgii.png" alt="" />
-        </div>
+          <div className="w-full mt-4">
+            <img
+              src="https://res.cloudinary.com/pitz/image/upload/v1766121183/Container_14_omqgii.png"
+              alt=""
+              className="w-full h-auto object-cover"
+            />
+          </div>
         </div>
 
       </div>
@@ -826,7 +845,7 @@ export default function MarketingPage() {
 
           {/* Feature/Achievement Cards - Bottom Row */}
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-5">
-            {/* 500+ Total Assets */}
+            {/* 1000+ Total Assets */}
             <div
               className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors flex flex-col items-center relative overflow-hidden"
             >
@@ -846,7 +865,7 @@ export default function MarketingPage() {
                     <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
-                <div className="text-gray-900 dark:text-white text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-center">500+</div>
+                <div className="text-gray-900 dark:text-white text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-center">1000+</div>
                 <div className="text-gray-700 dark:text-white text-xs sm:text-sm md:text-base text-center">Total Assets</div>
               </div>
             </div>
@@ -875,7 +894,7 @@ export default function MarketingPage() {
               </div>
             </div>
 
-            {/* $2B+ Daily Volume */}
+            {/* $2M+ Daily Volume */}
             <div
               className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors flex flex-col items-center relative overflow-hidden"
             >
@@ -891,7 +910,7 @@ export default function MarketingPage() {
                 <div className="w-8 h-8 sm:w-10 sm:h-10 mb-3 flex items-center justify-center">
                   <DollarSign className="w-full h-full text-[#13B562]" />
                 </div>
-                <div className="text-gray-900 dark:text-white text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-center">$2B+</div>
+                <div className="text-gray-900 dark:text-white text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-center">$2M+</div>
                 <div className="text-gray-700 dark:text-white text-xs sm:text-sm md:text-base text-center">Daily Volume</div>
               </div>
             </div>
@@ -946,14 +965,14 @@ export default function MarketingPage() {
                     unoptimized
                   />
 
-                  {/* Badge - Since 2015 */}
+                  {/* Badge - Since 2019 */}
                   <div className="absolute top-3 right-8 md:top-4 md:right-12 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20">
-                    <span className="text-white text-xs font-medium">Since 2015</span>
+                    <span className="text-white text-xs font-medium">Since 2019</span>
                   </div>
-
-                  {/* Badge - 100K+ Users */}
+                  
+                  {/* Badge - 10K+ Users */}
                   <div className="absolute bottom-16 left-8 md:bottom-20 md:left-12 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20">
-                    <span className="text-white text-xs font-medium">100K+ Users</span>
+                    <span className="text-white text-xs font-medium">10K+ Users</span>
                   </div>
                 </div>
               </div>
@@ -975,15 +994,17 @@ export default function MarketingPage() {
 
                 {/* Descriptive Text */}
                 <p className="text-gray-700 dark:text-white/80 text-sm md:text-base leading-relaxed">
-                  Established in 2015, OMAYA Exchange is Somalia's leading cryptocurrency exchange,
+                  Established in 2019, OMAYA.io is a leading digital asset and cryptocurrency trading platform in Somalia,
                   licensed by the{" "}
                   <span className="text-[#1D8751] font-semibold">Central Bank of Somalia</span>.
-                  With a team rooted in East Africa, we specialize in localized transactions,
-                  supporting the region's unique demands to meet your financial needs. At OMAYA Exchange,
-                  our focus extends beyond mere transactions. We are committed to empowering you by
-                  offering expert insights and resources that support informed financial decision-making.
-                  Leveraging deep knowledge of East African markets, we provide secure and responsive
-                  solutions tailored to local requirements.
+                  With a team deeply rooted in East Africa, OMAYA.io is built to serve the region&apos;s unique financial
+                  landscape by delivering secure, compliant, and localized trading and exchange solutions.
+                  <br />
+                  <br />
+                  At OMAYA.io, we go beyond transactions. We are committed to empowering our users through education,
+                  transparency, and access to expert insights that support informed financial decision-making. Backed by
+                  deep regional market knowledge, we provide reliable, responsive, and secure services tailored to the
+                  evolving needs of individuals, traders, and businesses across emerging markets.
                 </p>
 
                 {/* Feature Boxes - 2x2 Grid */}
@@ -1006,12 +1027,12 @@ export default function MarketingPage() {
                     <div className="text-gray-700 dark:text-white/70 text-xs">Approved by Central Bank of Somalia</div>
                   </div>
 
-                  {/* 100K+ Active Users */}
+                {/* 10K Active users */}
                   <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A]">
                     <div className="w-10 h-10 bg-green-400/20 rounded-lg flex items-center justify-center mb-3">
                       <Users className="w-6 h-6 text-green-400" />
                     </div>
-                    <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">100K+ Active Users</div>
+                  <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">10K Active users</div>
                     <div className="text-gray-700 dark:text-white/70 text-xs">Trusted by traders across East Africa</div>
                   </div>
 
