@@ -348,30 +348,30 @@ export default function MarketingPage() {
         <div className="absolute inset-0 overflow-hidden z-0">
           {/* Light mode: Subtle gray/white gradient background */}
           <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:hidden"></div>
-          
+
           {/* Dark mode: Very dark base (deep charcoal/near-black) */}
           <div className="absolute inset-0 bg-[#0a0a0f] hidden dark:block"></div>
-          
+
           {/* Pure black overlay at top for navbar area - NO gradients visible behind navbar */}
           <div className="absolute top-0 left-0 right-0 h-[120px] bg-[#000000] hidden dark:block"></div>
           <div className="absolute top-0 left-0 right-0 h-[200px] bg-gradient-to-b from-[#000000] via-[#000000]/95 to-transparent hidden dark:block"></div>
-          
+
           {/* Dark overlay covering upper regions to suppress gradients */}
           <div className="absolute top-0 left-0 right-0 h-[400px] bg-gradient-to-b from-[#000000]/80 via-[#000000]/40 to-transparent hidden dark:block"></div>
-          
+
           {/* Very subtle purple glow - top left (faint, diffused) - positioned lower to not show behind navbar */}
           <div className="absolute top-[150px] left-0 w-[500px] h-[500px] bg-purple-600/3 dark:bg-purple-600/5 rounded-full blur-[150px]"></div>
           <div className="absolute top-[200px] left-[50px] w-[400px] h-[400px] bg-purple-500/2 dark:bg-purple-500/4 rounded-full blur-[120px]"></div>
-          
+
           {/* Faint blue glow - top right to center (faint, diffused) - positioned lower */}
           <div className="absolute top-[150px] right-0 w-[600px] h-[600px] bg-blue-600/3 dark:bg-blue-600/5 rounded-full blur-[160px]"></div>
           <div className="absolute top-[250px] right-[100px] w-[450px] h-[450px] bg-blue-500/2 dark:bg-blue-500/4 rounded-full blur-[130px]"></div>
-          
+
           {/* More noticeable green glow - mid-left and bottom-left (still subtle but more visible) */}
           <div className="absolute bottom-0 left-0 w-[700px] h-[700px] bg-[#0D4D2E]/8 dark:bg-[#0D4D2E]/12 rounded-full blur-[140px]"></div>
           <div className="absolute bottom-[100px] left-[100px] w-[600px] h-[600px] bg-[#1D8751]/6 dark:bg-[#1D8751]/10 rounded-full blur-[120px]"></div>
           <div className="absolute top-[400px] left-[150px] w-[500px] h-[500px] bg-[#13B562]/4 dark:bg-[#13B562]/8 rounded-full blur-[110px]"></div>
-          
+
           {/* Very faint, sparse glowing green particles - only in lower areas, not near navbar */}
           <div className="absolute top-[300px] left-1/4 w-1.5 h-1.5 bg-[#1D8751] rounded-full opacity-8 dark:opacity-15 blur-sm animate-pulse"></div>
           <div className="absolute top-[500px] left-1/3 w-2 h-2 bg-[#13B562] rounded-full opacity-6 dark:opacity-12 blur-sm animate-pulse" style={{ animationDelay: '0.8s' }}></div>
@@ -1242,16 +1242,25 @@ export default function MarketingPage() {
       </div>
 
       {/* Why Choose Us Section with Phone */}
-      <section className="w-full bg-white dark:bg-[#1C1C1CFF] py-20 md:py-28 px-4 md:px-[100px] relative overflow-hidden">
+      <section className="
+  w-full bg-white dark:bg-[#1C1C1CFF]
+  py-16 sm:py-20 lg:py-28
+  px-4 sm:px-6 md:px-10 lg:px-20 xl:px-28
+  relative overflow-hidden
+">
         {/* Subtle floating particles */}
-        <div className="pointer-events-none absolute inset-0">
+        <div className="pointer-events-none absolute inset-0 hidden sm:block">
           <div className="absolute top-16 left-1/4 w-2 h-2 bg-[#1D8751] rounded-full opacity-60 blur-sm"></div>
           <div className="absolute top-32 right-1/3 w-3 h-3 bg-[#13B562] rounded-full opacity-40 blur-md"></div>
           <div className="absolute bottom-24 left-1/3 w-2 h-2 bg-[#13B562] rounded-full opacity-50 blur-sm"></div>
           <div className="absolute bottom-12 right-1/4 w-3 h-3 bg-[#1D8751] rounded-full opacity-35 blur-md"></div>
         </div>
 
-        <div className="container mx-auto max-w-4xl 2xl:max-w-7xl relative z-10">
+        <div className="
+    container mx-auto
+    max-w-5xl lg:max-w-6xl xl:max-w-7xl
+    relative z-10
+  ">
           {/* Top pill */}
           <div className="flex justify-center mb-4">
             <span className="bg-[#1D8751]/10 border border-[#1D8751] text-[#1D8751] px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium tracking-wide">
@@ -1267,15 +1276,19 @@ export default function MarketingPage() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-14 items-center ">
-            {/* Left Side - Phone with Green Gradient Background */}
-            <div className="relative flex justify-center ">
-              {/* Greenish Glowing Circular Pattern Background */}
+          <div className="
+      grid grid-cols-1
+      lg:grid-cols-2
+      gap-10 sm:gap-12 lg:gap-16 xl:gap-20
+      items-center
+    ">
+            {/* Left Side - Phone */}
+            <div className="relative flex justify-center">
+              {/* Green Glow */}
               <div className="absolute inset-0 flex items-center justify-center lg:justify-start">
-                <div className="relative w-[500px] h-[500px] lg:w-[600px] lg:h-[600px]">
-                  {/* Large glowing green circles */}
+                <div className="relative w-[320px] h-[320px] sm:w-[420px] sm:h-[420px] lg:w-[560px] lg:h-[560px]">
                   <div className="absolute inset-0 bg-gradient-to-br from-[#1D8751]/35 via-[#13B562]/25 to-[#0E5531]/15 rounded-full blur-3xl"></div>
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#13B562]/20 via-[#1D8751]/15 to-transparent rounded-full blur-2xl" style={{ animationDelay: '1s' }}></div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-[#13B562]/20 via-[#1D8751]/15 to-transparent rounded-full blur-2xl"></div>
                 </div>
               </div>
 
@@ -1286,114 +1299,140 @@ export default function MarketingPage() {
                   alt="OMAYA Exchange Mobile App"
                   width={350}
                   height={700}
-                  className="w-[260px] sm:w-[280px] lg:w-[300px] h-auto drop-shadow-[0_25px_60px_rgba(0,0,0,0.8)]"
                   priority
+                  className="
+              w-[220px] sm:w-[240px] md:w-[260px] lg:w-[280px]
+              h-auto
+              drop-shadow-[0_25px_60px_rgba(0,0,0,0.8)]
+            "
                 />
               </div>
             </div>
 
-            {/* Right Side - Why Choose Us Content */}
-            <div className="relative space-y-8">
-              {/* Green gradient background behind text & cards */}
+            {/* Right Side - Content */}
+            <div className="relative space-y-6 sm:space-y-8 max-w-xl lg:max-w-none">
+              {/* Background glows */}
               <div className="pointer-events-none absolute inset-0 -z-10">
                 <div className="absolute inset-0 bg-gradient-to-br from-[#1D8751]/15 via-[#0E5531]/10 to-transparent rounded-[40px] blur-3xl opacity-60 dark:from-[#1D8751]/25 dark:via-[#0E5531]/20 dark:opacity-70"></div>
                 <div className="absolute -top-10 -right-10 w-56 h-56 bg-[#13B562]/15 rounded-full blur-3xl opacity-60 dark:bg-[#13B562]/25 dark:opacity-80"></div>
                 <div className="absolute bottom-[-40px] left-0 w-64 h-64 bg-[#1D8751]/12 rounded-full blur-3xl opacity-50 dark:bg-[#1D8751]/20 dark:opacity-60"></div>
               </div>
 
-              {/* Main Heading */}
+              {/* Heading */}
               <div>
-                <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 text-left">
+                <h3 className="
+            text-2xl sm:text-3xl md:text-4xl
+            font-bold
+            mb-4 sm:mb-6
+            leading-tight sm:leading-snug
+          ">
                   <span className="text-gray-900 dark:text-white">Fast and </span>
-                  <span className="text-[#1D8751]">Secure</span>
+                  <span className="text-[#1D8751]">Secure</span><br />
                   <span className="text-gray-900 dark:text-white"> Crypto Exchange</span>
                 </h3>
-                <p className="text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300 max-w-xl">
-                  Experience lightning-fast trades, ultra-low fees, and bank-grade security on a platform built for both beginners and pros.
-                </p>
               </div>
 
-              {/* Feature Cards Grid */}
-              <div className="grid grid-cols-2 gap-4 md:gap-5">
-                {/* Low Transaction Fee */}
-                <div className=" flex bg-gray-50 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-4 gap-2 border border-gray-200 dark:border-white/10">
-                  <div className="w-12 h-12 bg-[#1D8751] rounded-lg flex items-center justify-center mb-4">
-                    <DollarSign className="w-6 h-6 text-white" />
+              {/* Feature Cards */}
+              <div className="
+          grid grid-cols-1
+          sm:grid-cols-2
+          gap-3 sm:gap-4 lg:gap-5
+        ">
+                {[
+                  {
+                    title: "Low Transaction Fee",
+                    desc: "Industry-leading fees starting from 0.1%",
+                    icon: <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-white" />,
+                    bg: "bg-[#1D8751]"
+                  },
+                  {
+                    title: "Secure Payment Service",
+                    desc: "Bank-grade security with 2FA authentication",
+                    icon: <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-white" />,
+                    bg: "bg-blue-500"
+                  },
+                  {
+                    title: "Fast Transactions",
+                    desc: "Lightning-fast execution in milliseconds",
+                    icon: <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-white" />,
+                    bg: "bg-orange-500"
+                  },
+                  {
+                    title: "We Work 24/7",
+                    desc: "Round-the-clock support & trading",
+                    icon: <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-white" />,
+                    bg: "bg-purple-500"
+                  }
+                ].map((item, i) => (
+                  <div
+                    key={i}
+                    className="
+                flex items-start gap-3 sm:gap-4
+                bg-gray-50 dark:bg-[#18181D]
+                rounded-2xl
+                p-4
+                border border-gray-200 dark:border-secondary/15
+              "
+                  >
+                    <div className={`${item.bg} w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center shrink-0`}>
+                      {item.icon}
+                    </div>
+                    <div>
+                      <h4 className="text-gray-900 dark:text-white font-bold text-base  mb-1 sm:mb-2">
+                        {item.title}
+                      </h4>
+                      <p className="text-gray-600 dark:text-muted-foreground text-sm">
+                        {item.desc}
+                      </p>
+                    </div>
                   </div>
-                  <div>
+                ))}
+              </div>
 
-                    <h4 className="text-gray-900 dark:text-white font-bold text-lg mb-2">Low Transaction Fee</h4>
-                    <p className="text-gray-600 dark:text-white/70 text-sm">Industry-leading fees starting from 0.1%</p>
-                  </div>
-                </div>
-
-                {/* Secure Payment Service */}
-                <div className="flex bg-gray-50 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-4 gap-2 border border-gray-200 dark:border-white/10">
-                  <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mb-4">
-                    <Shield className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h4 className="text-gray-900 dark:text-white font-bold text-lg mb-2">Secure Payment Service</h4>
-                    <p className="text-gray-600 dark:text-white/70 text-sm">Bank-grade security with 2FA authentication</p>
-                  </div>
-                </div>
-
-                {/* Fast Transactions */}
-                <div className="flex bg-gray-50 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-4 gap-2 border border-gray-200 dark:border-white/10">
-                  <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center mb-4">
-                    <Zap className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h4 className="text-gray-900 dark:text-white font-bold text-lg mb-2">Fast Transactions</h4>
-                    <p className="text-gray-600 dark:text-white/70 text-sm">Lightning-fast execution in milliseconds</p>
-                  </div>
-                </div>
-
-                {/* We Work 24/7 */}
-                <div className="flex bg-gray-50 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-4 gap-2 border border-gray-200 dark:border-white/10">
-                  <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center mb-4">
-                    <Clock className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h4 className="text-gray-900 dark:text-white font-bold text-lg mb-2">We Work 24/7</h4>
-                    <p className="text-gray-600 dark:text-white/70 text-sm">Round-the-clock support & trading</p>
-                  </div>
-                </div>
-
-                {/* App Download Buttons */}
-                <div className="flex flex-col sm:flex-row gap-4 pt-4">
+              {/* App Buttons */}
+              <div className="
+          flex flex-col sm:flex-row
+          gap-3 sm:gap-4
+          pt-6
+        ">
+                {[
+                  { src: "https://res.cloudinary.com/dam1sxczj/image/upload/v1746539125/Appstore_nqe65y.png", pre: 'Download on the', text: "App Store" },
+                  { src: "https://res.cloudinary.com/dam1sxczj/image/upload/v1746539313/googleplay_1_w8djf0.png", pre: "GET IT ON", text: "Google Play" }
+                ].map((btn, i) => (
                   <a
+                    key={i}
                     href="#"
-                    className="inline-flex items-center justify-center gap-3 bg-gray-900 hover:bg-gray-800 dark:bg-black/50 dark:hover:bg-black/70 border border-gray-300 dark:border-white/20 rounded-xl px-6 py-4 transition-colors min-w-[200px]"
+                    className="
+                inline-flex items-center justify-center gap-3
+                bg-gray-900 hover:bg-gray-800
+                dark:bg-black/50 dark:hover:bg-black/70
+                border border-secondary/20
+                rounded-xl
+                px-5 sm:px-6 py-3.5 sm:py-4
+                min-w-[180px] sm:min-w-[200px]
+                transition-colors
+              "
                   >
                     <Image
-                      src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539125/Appstore_nqe65y.png"
-                      alt="Download on the App Store"
+                      src={btn.src}
+                      alt={btn.text}
                       width={28}
                       height={28}
                       className="w-7 h-7 object-contain"
                     />
-                    <span className="text-white font-medium text-sm">Download on the App Store</span>
+                    <div className="flex flex-col items-start leading-tight">
+                    <span className="text-muted-foreground font-medium text-sm">{btn.pre}</span>
+                    <span className="text-white font-medium text-sm">{btn.text}</span>
+
+                    </div>
                   </a>
-                  <a
-                    href="#"
-                    className="inline-flex items-center justify-center gap-3 bg-gray-900 hover:bg-gray-800 dark:bg-black/50 dark:hover:bg-black/70 border border-gray-300 dark:border-white/20 rounded-xl px-6 py-4 transition-colors min-w-[200px]"
-                  >
-                    <Image
-                      src="https://res.cloudinary.com/dam1sxczj/image/upload/v1746539313/googleplay_1_w8djf0.png"
-                      alt="GET IT ON Google Play"
-                      width={28}
-                      height={28}
-                      className="w-7 h-7 object-contain"
-                    />
-                    <span className="text-white font-medium text-sm">GET IT ON Google Play</span>
-                  </a>
-                </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
       </section>
+
 
       {/* Benefits Section*/}
       <div className="w-full bg-white dark:bg-[var(--bg-color)]">
