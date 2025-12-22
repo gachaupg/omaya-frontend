@@ -702,10 +702,10 @@ export default function Navbar() {
   return (
     <div>
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-3 py-3 sm:px-4 sm:py-4 md:px-4 md:py-2.5 lg:px-8 lg:py-4 xl:px-12 2xl:px-20 transition-all duration-300 ${getNavbarBackground()}`}
+        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between max-w-[1550px] mx-auto px-3 py-3 sm:px-4 sm:py-4 md:px-4 md:py-2.5 lg:px-8 lg:py-4 xl:px-12 2xl:px-20 transition-all duration-300 ${getNavbarBackground()}`}
       >
         <div className="flex items-center min-w-0 flex-1">
-          <Link href="/" className="mr-4 sm:mr-8 md:mr-6 lg:mr-12 xl:mr-20 flex-shrink-0">
+          <Link href="/" className="mr-4 sm:mr-8 md:mr-6 lg:mr-12 xl:mr-20 shrink-0">
             {/* Optimized logo selection using memoized config */}
             {logoConfig && (
               <Image
@@ -720,7 +720,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-1 md:space-x-1.5 lg:space-x-4 xl:space-x-5 2xl:space-x-8 flex-shrink-0">
+          <div className="hidden md:flex space-x-1 md:space-x-1.5 lg:space-x-5 shrink-0 wrap-break-word">
             <NavLink href="/" isTransparent={isTransparentNavbar} pathname={pathname}>
               Home
             </NavLink>
