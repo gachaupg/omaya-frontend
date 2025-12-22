@@ -1197,7 +1197,7 @@ export default function ExchangeForm({
     }
 
     // Determine border styling: outer edges only, no borders between buttons
-    const borderColor = isDark ? "#2f323b" : "#D0D4DD";
+    const borderColor = isDark ? "#2f323b" : "#6B7280";
     const hasLeftBorder = position === "first"; // Only first tab has left border
     const hasRightBorder = position === "last"; // Only last tab has right border
     // No borders between buttons (no right border on first/middle, no left border on middle/last)
@@ -1212,7 +1212,7 @@ export default function ExchangeForm({
         ? "bg-transparent text-white"
         : isDark
         ? "bg-[#0e1018] text-[#7C8A97]"
-        : "bg-[#F4F7F6] text-[#627180]"
+        : "bg-gray-300 text-[#627180]"
     ].join(" ");
 
     // We don't use the normal border to draw the joint; it's all done with
@@ -1562,7 +1562,7 @@ export default function ExchangeForm({
   /* ------------------- UI ------------------- */
   // Render tabs and content based on active tab
   const renderTabs = () => {
-    const borderColor = isDark ? "#2f323b" : "#D0D4DD";
+    const borderColor = isDark ? "#2f323b" : "#6B7280";
 
     // Tab layout math (flexGrow: Express=2, MoneyX=1.6, Swap=2 => total=5.6)
     // Express width = 2/5.6 = 35.714%
@@ -1583,7 +1583,7 @@ export default function ExchangeForm({
     
     return (
       <div
-        className="relative flex w-full overflow-hidden mt-0 mb-0 rounded-t-[28px] bg-[#F4F7F6] dark:bg-[#18181D] gap-0 border-0"
+        className="relative flex w-full overflow-hidden mt-0 mb-0 rounded-t-[28px] bg-gray-300 dark:bg-[#18181D] gap-0 border-0"
       >
         {/* Uniform OUTER border that DOES NOT touch the active tab area (segmented). */}
         {/* Left / Right borders (hide the side border next to the active outer tab) */}
@@ -1721,15 +1721,14 @@ export default function ExchangeForm({
   if (activeTab === "swap") {
     return (
       <div 
-      className={`w-full mx-auto bg-white dark:bg-[#18181D] 
-        rounded-2xl sm:rounded-3xl ${isHomePage ? 
-          "" : ""} ${isDeem ? "border border-[#35353E]" : ""} ${
+      className={`w-full mx-auto bg-gray-200 dark:bg-[#18181D] 
+        rounded-2xl sm:rounded-3xl shadow-md ${
         isHomePage 
           ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl" 
           : "max-w-none"
       }`}>
         {renderTabs()}
-        <div className="mt-5 sm:mt-5 px-3 sm:px-4 md:px-5">
+        <div className="mt-5 sm:mt-5 px-3 sm:px-4 md:px-5 border-l border-r border-b border-gray-300 dark:border-[#35353E] rounded-b-2xl sm:rounded-b-3xl">
           <SwapWidget usePublicApi={isHomePage} />
         </div>
       </div>
@@ -1740,15 +1739,14 @@ export default function ExchangeForm({
   if (activeTab === "moneyx") {
     return (
       <div 
-      className={`w-full mx-auto bg-white dark:bg-[#18181D] 
-        rounded-2xl sm:rounded-3xl ${isHomePage ? 
-          "" : ""} ${isDeem ? "border border-[#35353E]" : ""} ${
+      className={`w-full mx-auto bg-gray-200 dark:bg-[#18181D] 
+        rounded-2xl sm:rounded-3xl shadow-md ${
         isHomePage 
           ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl" 
           : "max-w-none"
       }`}>
         {renderTabs()}
-        <div className="mt-2 sm:mt-3 px-3 sm:px-4 md:px-5">
+        <div className="mt-2 sm:mt-3 px-3 sm:px-4 md:px-5 border-l border-r border-b border-gray-300 dark:border-[#35353E] rounded-b-2xl sm:rounded-b-3xl">
           <MoneyX isHomePage={isHomePage} />
         </div>
       </div>
@@ -1758,16 +1756,15 @@ export default function ExchangeForm({
   // Default: Express Exchange tab
   return (
     <div 
-    className={`w-full mx-auto bg-white dark:bg-[#18181D] 
-      rounded-2xl sm:rounded-3xl ${isHomePage ? 
-        "" : ""} ${isDeem ? "border border-[#35353E]" : ""} ${
+    className={`w-full mx-auto bg-gray-200 dark:bg-[#18181D] 
+      rounded-2xl sm:rounded-3xl shadow-md ${
       isHomePage 
         ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl" 
         : "max-w-none"
     }`}>
       {renderTabs()}
       {/* Express Exchange Content */}
-      <div className="mt-2 sm:mt-3 px-3 sm:px-4 md:px-5">
+      <div className="mt-2 sm:mt-3 px-3 sm:px-4 md:px-5 border-l border-r border-b border-gray-300 dark:border-[#35353E] rounded-b-2xl sm:rounded-b-3xl">
         <Express isHomePage={isHomePage} />
       </div>
     </div>
