@@ -428,10 +428,8 @@ export default function MarketingPage() {
                 <span className="absolute -left-4 sm:-left-6 md:-left-8 top-1/2 -translate-y-1/2 w-24 sm:w-32 md:w-40 h-3/4 -z-10 bg-gradient-to-br from-purple-600/15 via-purple-500/10 to-transparent dark:from-purple-600/25 dark:via-purple-500/15 dark:to-transparent rounded-full blur-2xl"></span>
                 <span className="absolute -left-2 sm:-left-3 md:-left-4 top-1/2 -translate-y-1/2 w-16 sm:w-20 md:w-24 h-1/2 -z-10 bg-gradient-to-r from-purple-400/12 to-transparent dark:from-purple-400/20 dark:to-transparent rounded-full blur-xl"></span>
                 <span className="relative">
-                  <span className="text-gray-900 dark:text-[#788099]">
-                    Experience lightning-fast trades, ultra-low fees, and bank-grade security.
-                  </span>{" "}
-                  <span className="text-[#1D8751] dark:text-[#13B562]">Join 500,000+ traders worldwide.</span>
+                  <span className="text-gray-900 dark:text-[#788099]">Buy, Sell, Exchange, and Trade Crypto with Speed, Security, and Full Regulatory Compliance!</span>
+                  {/* <span className="text-[#1D8751] dark:text-[#13B562]">Join 500,000+ traders worldwide.</span> */}
                 </span>
               </p>
 
@@ -969,7 +967,7 @@ export default function MarketingPage() {
                   <div className="absolute top-3 right-8 md:top-4 md:right-12 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20">
                     <span className="text-white text-xs font-medium">Since 2019</span>
                   </div>
-                  
+
                   {/* Badge - 10K+ Users */}
                   <div className="absolute bottom-16 left-8 md:bottom-20 md:left-12 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20">
                     <span className="text-white text-xs font-medium">10K+ Users</span>
@@ -1027,12 +1025,12 @@ export default function MarketingPage() {
                     <div className="text-gray-700 dark:text-white/70 text-xs">Approved by Central Bank of Somalia</div>
                   </div>
 
-                {/* 10K Active users */}
+                  {/* 10K Active users */}
                   <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A]">
                     <div className="w-10 h-10 bg-green-400/20 rounded-lg flex items-center justify-center mb-3">
                       <Users className="w-6 h-6 text-green-400" />
                     </div>
-                  <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">10K Active users</div>
+                    <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">10K Active users</div>
                     <div className="text-gray-700 dark:text-white/70 text-xs">Trusted by traders across East Africa</div>
                   </div>
 
@@ -1421,8 +1419,8 @@ export default function MarketingPage() {
                       className="w-7 h-7 object-contain"
                     />
                     <div className="flex flex-col items-start leading-tight">
-                    <span className="text-muted-foreground font-medium text-sm">{btn.pre}</span>
-                    <span className="text-white font-medium text-sm">{btn.text}</span>
+                      <span className="text-muted-foreground font-medium text-sm">{btn.pre}</span>
+                      <span className="text-white font-medium text-sm">{btn.text}</span>
 
                     </div>
                   </a>
