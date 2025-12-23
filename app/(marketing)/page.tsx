@@ -865,24 +865,31 @@ export default function MarketingPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             {/* Left Section - Image */}
             <div className="relative">
-              <div className="relative w-full overflow-hidden rounded-t-[1.5rem] md:rounded-t-[2rem] rounded-b-lg">
-                <Image
-                  src="https://res.cloudinary.com/pitz/image/upload/v1765268255/Container_17_n6i2xm.png"
-                  alt="Safe & Reliable Cryptocurrency Exchange Platform"
-                  width={800}
-                  height={600}
-                  className="w-full h-auto object-contain"
-                  unoptimized
-                />
-                
-                {/* Badge - Since 2019 */}
-                <div className="absolute top-3 right-8 md:top-4 md:right-12 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20">
-                  <span className="text-white text-xs font-medium">Since 2019</span>
-                </div>
-                
-                {/* Badge - 10K+ Users */}
-                <div className="absolute bottom-16 left-8 md:bottom-20 md:left-12 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20">
-                  <span className="text-white text-xs font-medium">10K+ Users</span>
+              {/* Outer card with border that fades out toward the bottom */}
+              <div className="relative w-full rounded-[2rem] border border-[#2EF299]/50 bg-[#050712] overflow-hidden">
+                {/* Overlay to hide/fade the bottom part of the border */}
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#050712] to-transparent" />
+
+                {/* Main illustration area */}
+                <div className="relative w-full">
+                  <Image
+                    src="https://res.cloudinary.com/pitz/image/upload/v1765268255/Container_17_n6i2xm.png"
+                    alt="Safe & Reliable Cryptocurrency Exchange Platform"
+                    width={800}
+                    height={600}
+                    className="w-full h-auto object-contain"
+                    unoptimized
+                  />
+                  
+                  {/* Badge - Since 2019 */}
+                  <div className="absolute top-4 right-6 md:top-6 md:right-10 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 shadow-lg shadow-[#1D8751]/30 z-20">
+                    <span className="text-white text-xs md:text-sm font-medium">Since 2019</span>
+                  </div>
+                  
+                  {/* Badge - 10K+ Users */}
+                  <div className="absolute bottom-4 left-6 md:bottom-8 md:left-10 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 shadow-lg shadow-[#1D8751]/30 z-20">
+                    <span className="text-white text-xs md:text-sm font-medium">10K+ Users</span>
+                  </div>
                 </div>
               </div>
             </div>

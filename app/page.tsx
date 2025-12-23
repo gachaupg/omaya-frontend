@@ -456,45 +456,80 @@ export default function MarketingPage() {
                 </button>
               </div>
 
-              {/* Three stat cards */}
-              <div className="flex flex-wrap md:flex-nowrap gap-2 sm:gap-3 justify-center md:justify-start pt-2 md:pt-3 w-full">
-                {/* Trading Volume Card */}
-                <div className="bg-gray-100 dark:bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3.5 flex flex-col items-center gap-2.5 shadow-sm flex-1">
+              {/* Security & Reliability Stat Cards (Hero) */}
+              <div className="flex flex-wrap gap-2 sm:gap-3 justify-center md:justify-start pt-2 md:pt-3 w-full">
+                {/* Bank-Grade Security */}
+                <div className="bg-gray-100 dark:bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3.5 flex flex-col items-center gap-2.5 shadow-sm flex-1 min-w-[150px]">
                   <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                    <BarChart className="w-5 h-5 text-blue-400" />
+                    <Shield className="w-5 h-5 text-blue-400" />
                   </div>
-                  <p className="text-gray-900 dark:text-white text-lg sm:text-xl md:text-2xl font-extrabold text-center">
-                    100M+
+                  <p className="text-gray-900 dark:text-white text-sm sm:text-base md:text-lg font-bold text-center">
+                    Bank-Grade Security
                   </p>
-                  <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm font-semibold text-center tracking-wide">
-                    Trading Volume
+                  <p className="text-gray-500 dark:text-gray-300 text-[11px] sm:text-xs font-medium text-center leading-snug">
+                    Advanced encryption & multi-layer protection
                   </p>
                 </div>
 
-                {/* Countries Card */}
-                <div className="bg-gray-100 dark:bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3.5 flex flex-col items-center gap-2.5 shadow-sm flex-1">
-                  <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                    <Globe className="w-5 h-5 text-purple-400" />
+                {/* Licensed & Regulated */}
+                <div className="bg-gray-100 dark:bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3.5 flex flex-col items-center gap-2.5 shadow-sm flex-1 min-w-[150px]">
+                  <div className="w-10 h-10 rounded-lg bg-pink-500/20 flex items-center justify-center">
+                    <Lock className="w-5 h-5 text-pink-400" />
                   </div>
-                  <p className="text-gray-900 dark:text-white text-lg sm:text-xl md:text-2xl font-extrabold text-center">
-                    150+
+                  <p className="text-gray-900 dark:text-white text-sm sm:text-base md:text-lg font-bold text-center">
+                    Licensed & Regulated
                   </p>
-                  <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm font-semibold text-center tracking-wide">
-                    Countries
+                  <p className="text-gray-500 dark:text-gray-300 text-[11px] sm:text-xs font-medium text-center leading-snug">
+                    Approved by Central Bank of Somalia
                   </p>
                 </div>
 
-                {/* Uptime Card */}
-                <div className="bg-gray-100 dark:bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3.5 flex flex-col items-center gap-2.5 shadow-sm flex-1">
-                  <div className="w-10 h-10 rounded-lg bg-[#1D8751]/20 flex items-center justify-center">
-                    <Lock className="w-5 h-5 text-[#1D8751]" />
+                {/* 10K Active Users */}
+                <div className="bg-gray-100 dark:bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3.5 flex flex-col items-center gap-2.5 shadow-sm flex-1 min-w-[150px]">
+                  <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-green-400" />
                   </div>
-                  <p className="text-gray-900 dark:text-white text-lg sm:text-xl md:text-2xl font-extrabold text-center">
-                    99.9%
+                  <p className="text-gray-900 dark:text-white text-sm sm:text-base md:text-lg font-bold text-center">
+                    10K Active users
                   </p>
-                  <p className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm font-semibold text-center tracking-wide">
-                    Uptime
+                  <p className="text-gray-500 dark:text-gray-300 text-[11px] sm:text-xs font-medium text-center leading-snug">
+                    Trusted by traders across East Africa
                   </p>
+                </div>
+
+                {/* 99.9% Uptime */}
+                <div className="bg-gray-100 dark:bg-white/10 backdrop-blur-sm rounded-xl px-4 py-3.5 flex flex-col items-center gap-2.5 shadow-sm flex-1 min-w-[150px]">
+                  <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
+                    <TrendingUp className="w-5 h-5 text-orange-400" />
+                  </div>
+                  <p className="text-gray-900 dark:text-white text-sm sm:text-base md:text-lg font-bold text-center">
+                    99.9% Uptime
+                  </p>
+                  <p className="text-gray-500 dark:text-gray-300 text-[11px] sm:text-xs font-medium text-center leading-snug">
+                    Reliable trading 24/7/365
+                  </p>
+                </div>
+              </div>
+
+              {/* Trust tags under hero stats */}
+              <div className="flex flex-wrap gap-2 sm:gap-3 justify-center md:justify-start mt-3">
+                <div className="border border-[#1D8751] rounded-full px-3 sm:px-4 py-1.5 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
+                  <Lock className="w-4 h-4 text-[#1D8751]" />
+                  <span className="text-gray-900 dark:text-white text-[11px] sm:text-xs font-medium">
+                    Licensed Exchange
+                  </span>
+                </div>
+                <div className="border border-[#1D8751] rounded-full px-3 sm:px-4 py-1.5 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
+                  <Globe className="w-4 h-4 text-[#1D8751]" />
+                  <span className="text-gray-900 dark:text-white text-[11px] sm:text-xs font-medium">
+                    Global Reach
+                  </span>
+                </div>
+                <div className="border border-[#1D8751] rounded-full px-3 sm:px-4 py-1.5 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
+                  <Zap className="w-4 h-4 text-[#1D8751]" />
+                  <span className="text-gray-900 dark:text-white text-[11px] sm:text-xs font-medium">
+                    Fast Execution
+                  </span>
                 </div>
               </div>
             </div>
@@ -957,8 +992,39 @@ export default function MarketingPage() {
       {/* Safe & Reliable Section */}
       <div className="w-full bg-white dark:bg-[var(--bg-color)] pt-8 pb-16">
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
-          <div className="bg-gray-50 dark:bg-[var(--card-color)] border border-gray-200 dark:border-[#2A2A2A] rounded-3xl p-5 sm:p-6 md:p-8 shadow-sm">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+          {/* Outer card with border that fades downward (no rounded top edge) */}
+          <div className="relative rounded-b-3xl">
+            {/* Content wrapper without visible border */}
+            <div className="rounded-b-3xl">
+              {/* Inner content card (flat top, rounded bottom) */}
+              <div className="relative bg-gray-50 dark:bg-[var(--card-color)] rounded-b-3xl p-5 sm:p-6 md:p-8 shadow-sm overflow-hidden">
+                {/* Overlay to fade card background to page background at bottom */}
+                <div 
+                  className="absolute inset-x-0 bottom-0 h-3/4 rounded-b-3xl pointer-events-none dark:hidden"
+                  style={{
+                    background: 'linear-gradient(to top, rgb(255, 255, 255) 0%, rgba(255, 255, 255, 0.95) 25%, rgba(255, 255, 255, 0.8) 50%, rgba(255, 255, 255, 0.5) 75%, transparent 100%)',
+                  }}
+                ></div>
+                <div 
+                  className="absolute inset-x-0 bottom-0 h-3/4 rounded-b-3xl pointer-events-none hidden dark:block"
+                  style={{
+                    background: 'linear-gradient(to top, rgb(10, 10, 15) 0%, rgba(10, 10, 15, 0.95) 25%, rgba(10, 10, 15, 0.8) 50%, rgba(10, 10, 15, 0.5) 75%, transparent 100%)',
+                  }}
+                ></div>
+                {/* Overlay to fade border at bottom - keep behind content */}
+                <div 
+                  className="absolute inset-x-0 bottom-0 h-1/2 rounded-b-3xl pointer-events-none z-0 dark:hidden"
+                  style={{
+                    background: 'linear-gradient(to top, rgb(255, 255, 255) 0%, transparent 100%)',
+                  }}
+                ></div>
+                <div 
+                  className="absolute inset-x-0 bottom-0 h-1/2 rounded-b-3xl pointer-events-none hidden dark:block z-0"
+                  style={{
+                    background: 'linear-gradient(to top, rgb(10, 10, 15) 0%, transparent 100%)',
+                  }}
+                ></div>
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
               {/* Left Section - Image */}
               <div className="relative">
                 <div className="relative w-full overflow-hidden rounded-t-[1.5rem] md:rounded-t-[2rem] rounded-b-lg">
@@ -970,16 +1036,16 @@ export default function MarketingPage() {
                     className="w-full h-auto object-contain"
                     unoptimized
                   />
+                </div>
 
-                  {/* Badge - Since 2019 */}
-                  <div className="absolute top-3 right-8 md:top-4 md:right-12 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20">
-                    <span className="text-white text-xs font-medium">Since 2019</span>
-                  </div>
-
-                  {/* Badge - 10K+ Users */}
-                  <div className="absolute bottom-16 left-8 md:bottom-20 md:left-12 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20">
-                    <span className="text-white text-xs font-medium">10K+ Users</span>
-                  </div>
+                {/* Badge - Since 2019 (above image card, clearly visible) */}
+                <div className="absolute -top-3 right-4 md:-top-4 md:right-8 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20 shadow-md">
+                  <span className="text-white text-xs font-medium">Since 2019</span>
+                </div>
+                
+                {/* Badge - 10K+ Users (inside image card, raised above bottom edge) */}
+                <div className="absolute bottom-6 left-4 md:bottom-8 md:left-8 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20 shadow-md">
+                  <span className="text-white text-xs font-medium">10K+ Users</span>
                 </div>
               </div>
 
@@ -1016,25 +1082,25 @@ export default function MarketingPage() {
                 {/* Feature Boxes - 2x2 Grid */}
                 <div className="grid grid-cols-2 gap-4 mt-8">
                   {/* Bank-Grade Security */}
-                  <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A]">
+                  <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4">
                     <div className="w-10 h-10 bg-blue-400/20 rounded-lg flex items-center justify-center mb-3">
                       <Shield className="w-6 h-6 text-blue-400" />
                     </div>
                     <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">Bank-Grade Security</div>
-                    <div className="text-gray-700 dark:text-white/70 text-xs">Advanced encryption & multi-layer protection</div>
+                    <div className="text-gray-700 dark:text-white text-xs">Advanced encryption & multi-layer protection</div>
                   </div>
 
                   {/* Licensed & Regulated */}
-                  <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A]">
+                  <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4">
                     <div className="w-10 h-10 bg-pink-400/20 rounded-lg flex items-center justify-center mb-3">
                       <Lock className="w-6 h-6 text-pink-400" />
                     </div>
                     <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">Licensed & Regulated</div>
-                    <div className="text-gray-700 dark:text-white/70 text-xs">Approved by Central Bank of Somalia</div>
+                    <div className="text-gray-700 dark:text-white text-xs">Approved by Central Bank of Somalia</div>
                   </div>
 
-                  {/* 10K Active users */}
-                  <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A]">
+                {/* 10K Active users */}
+                  <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4">
                     <div className="w-10 h-10 bg-green-400/20 rounded-lg flex items-center justify-center mb-3">
                       <Users className="w-6 h-6 text-green-400" />
                     </div>
@@ -1043,7 +1109,7 @@ export default function MarketingPage() {
                   </div>
 
                   {/* 99.9% Uptime */}
-                  <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A]">
+                  <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4">
                     <div className="w-10 h-10 bg-orange-400/20 rounded-lg flex items-center justify-center mb-3">
                       <TrendingUp className="w-6 h-6 text-orange-400" />
                     </div>
@@ -1071,6 +1137,8 @@ export default function MarketingPage() {
                     <span className="text-gray-900 dark:text-white text-xs font-medium">Verified Platform</span>
                   </div>
                 </div>
+              </div>
+            </div>
               </div>
             </div>
           </div>
