@@ -1170,7 +1170,7 @@ export default function MarketingPage() {
                   title: t("marketing.steps.start.title", "Start Exchanging"),
                   description: t("marketing.steps.start.desc", "Start exchanging instantly and explore endless opportunities."),
                   features: [
-                    t("marketing.steps.start.feature1", "500+ assets"),
+                    t("marketing.steps.start.feature1", "1000+ assets"),
                     t("marketing.steps.start.feature2", "Real-time trading"),
                     t("marketing.steps.start.feature3", "24/7 support"),
                   ],
