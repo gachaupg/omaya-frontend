@@ -1247,7 +1247,7 @@ export default function MarketingPage() {
 
       {/* Why Choose Us Section with Phone */}
       <section className="
-  w-full bg-white dark:bg-[#1C1C1CFF]
+  w-full bg-white dark:bg-linear-to-t from-[#0A0A0F] to-[#18181D]
   py-16 sm:py-20 lg:py-28
   px-4 sm:px-6 md:px-10 lg:px-20 xl:px-28
   relative overflow-hidden
