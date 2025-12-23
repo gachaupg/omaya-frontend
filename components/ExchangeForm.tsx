@@ -1006,8 +1006,8 @@ export default function ExchangeForm({
       if (typeof selectedPayment === 'string') {
         return selectedPayment === provider.provider_name || selectedPayment === provider.method_name;
       }
-      return selectedPayment.provider_id === provider.provider_id || 
-             selectedPayment.provider_name === provider.provider_name;
+      return selectedPayment.provider_id === provider.provider_id ||
+        selectedPayment.provider_name === provider.provider_name;
     };
 
     return (
@@ -1071,13 +1071,12 @@ export default function ExchangeForm({
               (provider: any, index: number) => {
                 const isSelected = isProviderSelected(provider);
                 const fallbackLogo = "https://res.cloudinary.com/pitz/image/upload/v1752248530/image_7_jijlik.png";
-                
+
                 return (
                   <div
                     key={provider.provider_id || index}
-                    className={`p-3 hover:bg-gray-50 dark:hover:bg-[#2A2A2A] cursor-pointer border-b border-gray-100 dark:border-[#35353E] last:border-b-0 ${
-                      isSelected ? "bg-[#1D8751]/10" : ""
-                    }`}
+                    className={`p-3 hover:bg-gray-50 dark:hover:bg-[#2A2A2A] cursor-pointer border-b border-gray-100 dark:border-[#35353E] last:border-b-0 ${isSelected ? "bg-[#1D8751]/10" : ""
+                      }`}
                     onClick={() => {
                       onSelect(provider);
                     }}
@@ -1129,7 +1128,7 @@ export default function ExchangeForm({
   }> = ({ id, label, variant, position = "middle" }) => {
     const isActive = activeTab === id;
     const [isSmallScreen, setIsSmallScreen] = useState(false);
-    
+
     useEffect(() => {
       const checkScreenSize = () => {
         setIsSmallScreen(window.innerWidth < 640);
@@ -1138,17 +1137,17 @@ export default function ExchangeForm({
       window.addEventListener("resize", checkScreenSize);
       return () => window.removeEventListener("resize", checkScreenSize);
     }, []);
-    
+
     // Determine if neighbors are active to know where to apply slanting
     const leftNeighborActive = (position === "middle" && activeTab === "express") || (position === "last" && activeTab === "moneyx");
     const rightNeighborActive = (position === "first" && activeTab === "moneyx") || (position === "middle" && activeTab === "swap");
-    
+
     // Only apply slanting when:
     // 1. This tab is active (slants where it meets inactive neighbors)
     // 2. This tab is inactive but neighbor is active (slants where it meets active neighbor)
     // When both tabs are inactive, no slanting - straight rectangle
     let clipPath: string | undefined;
-    
+
     if (!isActive && !leftNeighborActive && !rightNeighborActive) {
       // Both neighbors inactive - straight rectangle, no slanting
       clipPath = undefined;
@@ -1178,10 +1177,10 @@ export default function ExchangeForm({
       // Middle tab (MoneyX): slanted on both sides only where it meets active neighbors
       const slantRight = isActive || rightNeighborActive;
       const slantLeft = isActive || leftNeighborActive;
-      
+
       if (slantRight && slantLeft) {
         // When MoneyX is active, left side curves downward (from 8% top to 0 bottom)
-        clipPath = isActive 
+        clipPath = isActive
           ? "polygon(8% 0, 92% 0, 100% 100%, 0 100%)"
           : "polygon(0 0, 92% 0, 100% 100%, 8% 100%)";
       } else if (slantRight) {
@@ -1201,7 +1200,7 @@ export default function ExchangeForm({
     const hasLeftBorder = position === "first"; // Only first tab has left border
     const hasRightBorder = position === "last"; // Only last tab has right border
     // No borders between buttons (no right border on first/middle, no left border on middle/last)
-    
+
     // When MoneyX is active, remove all borders from Express tab
     const shouldHideBorders = position === "first" && activeTab === "moneyx";
 
@@ -1211,8 +1210,8 @@ export default function ExchangeForm({
       isActive
         ? "bg-transparent text-white"
         : isDark
-        ? "bg-[#0e1018] text-[#7C8A97]"
-        : "bg-gray-300 text-[#627180]"
+          ? "bg-[#0e1018] text-[#7C8A97]"
+          : "bg-gray-300 text-[#627180]"
     ].join(" ");
 
     // We don't use the normal border to draw the joint; it's all done with
@@ -1250,8 +1249,8 @@ export default function ExchangeForm({
       variant === "express"
         ? t("marketing.exchange.tabs.express", "Express Exchange")
         : variant === "moneyx"
-        ? t("marketing.exchange.tabs.moneyx", "Money X")
-        : label || t("marketing.exchange.tabs.swap", "Swap");
+          ? t("marketing.exchange.tabs.moneyx", "Money X")
+          : label || t("marketing.exchange.tabs.swap", "Swap");
 
     // Process label for moneyx variant - replace "X" with icon
     const renderLabel = () => {
@@ -1424,9 +1423,8 @@ export default function ExchangeForm({
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
       placeholder="0"
-      className={`border border-gray-300 dark:border-gray-300/20 bg-white dark:bg-transparent text-gray-900 dark:text-white w-full px-3 sm:px-4 md:px-5 py-2.5 sm:py-3 md:py-3.5 rounded-3xl placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent min-h-[44px] text-sm sm:text-base ${
-        disabled ? "opacity-50 cursor-not-allowed" : ""
-      }`}
+      className={`border border-gray-300 dark:border-gray-300/20 bg-white dark:bg-transparent text-gray-900 dark:text-white w-full px-3 sm:px-4 md:px-5 py-2.5 sm:py-3 md:py-3.5 rounded-3xl placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#1D8751] focus:border-transparent min-h-[44px] text-sm sm:text-base ${disabled ? "opacity-50 cursor-not-allowed" : ""
+        }`}
     />
   );
 
@@ -1467,87 +1465,87 @@ export default function ExchangeForm({
             sortedAssets.map((asset: Asset, index: number) => {
               const isSelected = selectedAsset?.asset_id === asset.asset_id;
               return (
-              <div
-                key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
-                className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0 min-w-0 ${isSelected ? "" : ""}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onSelect(asset);
-                }}
-              >
-                <img
-                  src={getAssetImageUrl(asset)}
-                  alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
-                  className="w-6 h-6 rounded-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.src =
-                      "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                <div
+                  key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
+                  className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-[#78787AFF] dark:hover:bg-[#35353E] cursor-pointer border-b border-[#A2A4A9FF] dark:border-[#35353E] last:border-b-0 min-w-0 ${isSelected ? "" : ""}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onSelect(asset);
                   }}
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="text-[#1F2937] dark:text-[#ffffff] !font-normal text-sm flex items-center gap-2 flex-wrap">
-                    <span className="truncate !font-normal">
-                      {(
-                        asset.ticker ||
-                        asset.symbol ||
-                        asset.name ||
-                        "Unknown"
-                      ).toUpperCase()}
-                    </span>
-                    <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs !font-normal px-2 py-0.5 rounded-full flex-shrink-0">
-                      {getNetworkDisplayName(getAssetNetwork(asset))}
-                    </span>
+                >
+                  <img
+                    src={getAssetImageUrl(asset)}
+                    alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
+                    className="w-6 h-6 rounded-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src =
+                        "https://res.cloudinary.com/pitz/image/upload/v1752248529/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                    }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[#1F2937] dark:text-[#ffffff] !font-normal text-sm flex items-center gap-2 flex-wrap">
+                      <span className="truncate !font-normal">
+                        {(
+                          asset.ticker ||
+                          asset.symbol ||
+                          asset.name ||
+                          "Unknown"
+                        ).toUpperCase()}
+                      </span>
+                      <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs !font-normal px-2 py-0.5 rounded-full flex-shrink-0">
+                        {getNetworkDisplayName(getAssetNetwork(asset))}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                      {(() => {
+                        // Clean up asset name to remove redundant network information
+                        let displayName =
+                          asset.name ||
+                          asset.ticker ||
+                          asset.symbol ||
+                          "Unknown Asset";
+                        const originalName = displayName;
+
+                        // Remove common redundant patterns - less aggressive approach
+                        // Only remove redundant network info when it's duplicated in the network badge
+                        displayName = displayName
+                          // Handle cases like "Tether (Binance Smart Chain) (BSC)" - remove duplicate BSC
+                          .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, "")
+                          .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, "")
+                          .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, "")
+                          .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, "")
+                          .replace(/\s*\(TRON\)\s*\(TRX\)/gi, "")
+                          .replace(/\s*\(Solana\)\s*\(SOL\)/gi, "")
+                          // Only remove single network references if they're clearly redundant
+                          .replace(/\s*\(BSC\)$/gi, "") // Only remove BSC at the end
+                          .replace(/\s*\(ETH\)$/gi, "") // Only remove ETH at the end
+                          .replace(/\s*\(MATIC\)$/gi, "") // Only remove MATIC at the end
+                          .replace(/\s*\(AVAX\)$/gi, "") // Only remove AVAX at the end
+                          .replace(/\s*\(TRX\)$/gi, "") // Only remove TRX at the end
+                          .replace(/\s*\(SOL\)$/gi, "") // Only remove SOL at the end
+                          .trim();
+
+                        // Debug logging for all assets to see the pattern
+                        console.log("🔍 Asset name processing:", {
+                          original: originalName,
+                          cleaned: displayName,
+                          assetName: asset.name,
+                          assetTicker: asset.ticker,
+                          assetSymbol: asset.symbol,
+                          assetNetwork: asset.network,
+                          changed: originalName !== displayName,
+                        });
+
+                        return displayName;
+                      })()}
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                    {(() => {
-                      // Clean up asset name to remove redundant network information
-                      let displayName =
-                        asset.name ||
-                        asset.ticker ||
-                        asset.symbol ||
-                        "Unknown Asset";
-                      const originalName = displayName;
-
-                      // Remove common redundant patterns - less aggressive approach
-                      // Only remove redundant network info when it's duplicated in the network badge
-                      displayName = displayName
-                        // Handle cases like "Tether (Binance Smart Chain) (BSC)" - remove duplicate BSC
-                        .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, "")
-                        .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, "")
-                        .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, "")
-                        .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, "")
-                        .replace(/\s*\(TRON\)\s*\(TRX\)/gi, "")
-                        .replace(/\s*\(Solana\)\s*\(SOL\)/gi, "")
-                        // Only remove single network references if they're clearly redundant
-                        .replace(/\s*\(BSC\)$/gi, "") // Only remove BSC at the end
-                        .replace(/\s*\(ETH\)$/gi, "") // Only remove ETH at the end
-                        .replace(/\s*\(MATIC\)$/gi, "") // Only remove MATIC at the end
-                        .replace(/\s*\(AVAX\)$/gi, "") // Only remove AVAX at the end
-                        .replace(/\s*\(TRX\)$/gi, "") // Only remove TRX at the end
-                        .replace(/\s*\(SOL\)$/gi, "") // Only remove SOL at the end
-                        .trim();
-
-                      // Debug logging for all assets to see the pattern
-                      console.log("🔍 Asset name processing:", {
-                        original: originalName,
-                        cleaned: displayName,
-                        assetName: asset.name,
-                        assetTicker: asset.ticker,
-                        assetSymbol: asset.symbol,
-                        assetNetwork: asset.network,
-                        changed: originalName !== displayName,
-                      });
-
-                      return displayName;
-                    })()}
-                  </div>
+                  {isSelected && (
+                    <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+                  )}
                 </div>
-                {isSelected && (
-                  <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                )}
-              </div>
-            );
+              );
             })
           ) : (
             <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
@@ -1580,7 +1578,7 @@ export default function ExchangeForm({
     // Swap width = 100% - 64.285% = 35.715%, 8% of Swap width = 2.857%
     const P_SWAP_LEFT_BOTTOM_INSET = "2.857%"; // 8% of Swap width (0.08 * 35.715)
     const P_SWAP_BOTTOM_END = "67.142%"; // Swap start + 8% of Swap width = 64.285 + 2.857
-    
+
     return (
       <div
         className="relative flex w-full overflow-hidden mt-0 mb-0 rounded-t-[28px] bg-gray-300 dark:bg-[#18181D] gap-0 border-0"
@@ -1669,7 +1667,7 @@ export default function ExchangeForm({
           position="last"
           label={t("marketing.exchange.tabs.swap", "Swap")}
         />
-        
+
         {/* Bottom border segments (skip the active tab width) */}
         {activeTab === "express" && (
           <div
@@ -1720,15 +1718,14 @@ export default function ExchangeForm({
   // If Swap Crypto tab is active, render SwapWidget with tab controls
   if (activeTab === "swap") {
     return (
-      <div 
-      className={`w-full mx-auto bg-gray-200 dark:bg-[#18181D] 
-        rounded-2xl sm:rounded-3xl shadow-md ${
-        isHomePage 
-          ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl" 
-          : "max-w-none"
-      }`}>
+      <div
+        className={`w-full mx-auto bg-background dark:bg-[#18181D]
+        rounded-2xl sm:rounded-3xl shadow-xl ${isHomePage
+            ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl"
+            : "max-w-none"
+          }`}>
         {renderTabs()}
-        <div className="mt-5 sm:mt-5 px-3 sm:px-4 md:px-5 border-l border-r border-b border-gray-300 dark:border-[#35353E] rounded-b-2xl sm:rounded-b-3xl">
+        <div className="mt-5 sm:mt-5 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl sm:rounded-b-3xl">
           <SwapWidget usePublicApi={isHomePage} />
         </div>
       </div>
@@ -1738,15 +1735,14 @@ export default function ExchangeForm({
   // If Money X tab is active, render MoneyX component
   if (activeTab === "moneyx") {
     return (
-      <div 
-      className={`w-full mx-auto bg-gray-200 dark:bg-[#18181D] 
-        rounded-2xl sm:rounded-3xl shadow-md ${
-        isHomePage 
-          ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl" 
-          : "max-w-none"
-      }`}>
+      <div
+        className={`w-full mx-auto bg-background dark:bg-[#18181D] 
+        rounded-2xl sm:rounded-3xl shadow-xl ${isHomePage
+            ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl"
+            : "max-w-none"
+          }`}>
         {renderTabs()}
-        <div className="mt-2 sm:mt-3 px-3 sm:px-4 md:px-5 border-l border-r border-b border-gray-300 dark:border-[#35353E] rounded-b-2xl sm:rounded-b-3xl">
+        <div className="mt-2 sm:mt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl sm:rounded-b-3xl">
           <MoneyX isHomePage={isHomePage} />
         </div>
       </div>
@@ -1755,16 +1751,15 @@ export default function ExchangeForm({
 
   // Default: Express Exchange tab
   return (
-    <div 
-    className={`w-full mx-auto bg-gray-200 dark:bg-[#18181D] 
-      rounded-2xl sm:rounded-3xl shadow-md ${
-      isHomePage 
-        ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl" 
-        : "max-w-none"
-    }`}>
+    <div
+      className={`w-full mx-auto bg-background dark:bg-[#18181D] 
+      rounded-2xl sm:rounded-3xl shadow-xl ${isHomePage
+          ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl"
+          : "max-w-none"
+        }`}>
       {renderTabs()}
       {/* Express Exchange Content */}
-      <div className="mt-2 sm:mt-3 px-3 sm:px-4 md:px-5 border-l border-r border-b border-gray-300 dark:border-[#35353E] rounded-b-2xl sm:rounded-b-3xl">
+      <div className="mt-2 sm:mt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl sm:rounded-b-3xl">
         <Express isHomePage={isHomePage} />
       </div>
     </div>
