@@ -16,6 +16,10 @@ import { ContactForm } from "@/features/contact/components";
 import { useHighlightStatistics } from "@/features/contact/hooks/useHighlightStatistics";
 import { useSimpleMarkets } from "@/features/markets/hooks/useSimpleMarkets";
 
+import { HiOutlineDeviceMobile } from "react-icons/hi";
+import { FaRegStar } from "react-icons/fa";
+
+
 const steps = [
   {
     icon: "https://res.cloudinary.com/dam1sxczj/image/upload/v1746707947/create_account_gzbijn.png",
@@ -969,7 +973,7 @@ export default function MarketingPage() {
                   <div className="absolute top-3 right-8 md:top-4 md:right-12 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20">
                     <span className="text-white text-xs font-medium">Since 2019</span>
                   </div>
-                  
+
                   {/* Badge - 10K+ Users */}
                   <div className="absolute bottom-16 left-8 md:bottom-20 md:left-12 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20">
                     <span className="text-white text-xs font-medium">10K+ Users</span>
@@ -1027,12 +1031,12 @@ export default function MarketingPage() {
                     <div className="text-gray-700 dark:text-white/70 text-xs">Approved by Central Bank of Somalia</div>
                   </div>
 
-                {/* 10K Active users */}
+                  {/* 10K Active users */}
                   <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 border border-gray-200 dark:border-[#2A2A2A]">
                     <div className="w-10 h-10 bg-green-400/20 rounded-lg flex items-center justify-center mb-3">
                       <Users className="w-6 h-6 text-green-400" />
                     </div>
-                  <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">10K Active users</div>
+                    <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">10K Active users</div>
                     <div className="text-gray-700 dark:text-white/70 text-xs">Trusted by traders across East Africa</div>
                   </div>
 
@@ -1262,14 +1266,15 @@ export default function MarketingPage() {
     relative z-10
   ">
           {/* Top pill */}
-          <div className="flex justify-center mb-4">
-            <span className="bg-[#1D8751]/10 border border-[#1D8751] text-[#1D8751] px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium tracking-wide">
+          <div className="flex justify-center mb-6">
+            <span className="flex justify-center items-center gap-2 bg-[#1D8751]/10 border-2 border-[#1D8751]/30 text-[#1D8751] px-4 py-1.5 sm:px-6 sm:py-2 rounded-full text-xs sm:text-sm">
+              <FaRegStar className=" text-lg -mt-0.5" />
               WHY CHOOSE US
             </span>
           </div>
 
           {/* Main title */}
-          <div className="text-center mb-10">
+          <div className="text-center mb-17">
             <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold">
               <span className="text-gray-900 dark:text-white">Why Choose </span>
               <span className="text-[#1D8751]">Us</span>
@@ -1279,13 +1284,13 @@ export default function MarketingPage() {
           <div className="
       grid grid-cols-1
       lg:grid-cols-2
-      gap-10 sm:gap-12 lg:gap-16 xl:gap-20
+      gap-10 sm:gap-12 lg:gap-5 xl:gap-7
       items-center
     ">
             {/* Left Side - Phone */}
             <div className="relative flex justify-center">
               {/* Green Glow */}
-              <div className="absolute inset-0 flex items-center justify-center lg:justify-start">
+              <div className="absolute inset-0 flex items-center justify-center">
                 <div className="relative w-[320px] h-[320px] sm:w-[420px] sm:h-[420px] lg:w-[560px] lg:h-[560px]">
                   <div className="absolute inset-0 bg-gradient-to-br from-[#1D8751]/35 via-[#13B562]/25 to-[#0E5531]/15 rounded-full blur-3xl"></div>
                   <div className="absolute inset-0 bg-gradient-to-br from-[#13B562]/20 via-[#1D8751]/15 to-transparent rounded-full blur-2xl"></div>
@@ -1324,9 +1329,10 @@ export default function MarketingPage() {
             text-2xl sm:text-3xl md:text-4xl
             font-bold
             mb-4 sm:mb-6
-            leading-tight sm:leading-snug
+            leading-tight
           ">
-                  <span className="text-gray-900 dark:text-white">Fast and </span>
+                  <span className="text-[#1D8751]">Fast</span>
+                  <span className="text-gray-900 dark:text-white"> and </span>
                   <span className="text-[#1D8751]">Secure</span><br />
                   <span className="text-gray-900 dark:text-white"> Crypto Exchange</span>
                 </h3>
@@ -1336,7 +1342,7 @@ export default function MarketingPage() {
               <div className="
           grid grid-cols-1
           sm:grid-cols-2
-          gap-3 sm:gap-4 lg:gap-5
+          gap-2
         ">
                 {[
                   {
@@ -1374,7 +1380,7 @@ export default function MarketingPage() {
                 border border-gray-200 dark:border-secondary/15
               "
                   >
-                    <div className={`${item.bg} w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center shrink-0`}>
+                    <div className={`${item.bg} w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0`}>
                       {item.icon}
                     </div>
                     <div>
@@ -1396,33 +1402,27 @@ export default function MarketingPage() {
           pt-6
         ">
                 {[
-                  { src: "https://res.cloudinary.com/dam1sxczj/image/upload/v1746539125/Appstore_nqe65y.png", pre: 'Download on the', text: "App Store" },
-                  { src: "https://res.cloudinary.com/dam1sxczj/image/upload/v1746539313/googleplay_1_w8djf0.png", pre: "GET IT ON", text: "Google Play" }
+                  { pre: 'Download on the', text: "App Store" },
+                  { pre: "GET IT ON", text: "Google Play" }
                 ].map((btn, i) => (
                   <a
                     key={i}
                     href="#"
                     className="
-                inline-flex items-center justify-center gap-3
+                inline-flex items-center justify-start gap-3
                 bg-gray-900 hover:bg-gray-800
-                dark:bg-black/50 dark:hover:bg-black/70
-                border border-secondary/20
-                rounded-xl
+                dark:bg-[#18181D] dark:hover:bg-black/70
+                border-2 border-[#1D8751]/30
+                rounded-2xl
                 px-5 sm:px-6 py-3.5 sm:py-4
                 min-w-[180px] sm:min-w-[200px]
                 transition-colors
               "
                   >
-                    <Image
-                      src={btn.src}
-                      alt={btn.text}
-                      width={28}
-                      height={28}
-                      className="w-7 h-7 object-contain"
-                    />
-                    <div className="flex flex-col items-start leading-tight">
-                    <span className="text-muted-foreground font-medium text-sm">{btn.pre}</span>
-                    <span className="text-white font-medium text-sm">{btn.text}</span>
+                    <HiOutlineDeviceMobile className="text-3xl text-[#1D8751]" />
+                    <div className="flex flex-col items-start">
+                      <span className="text-muted-foreground font-medium text-sm tracking-wide">{btn.pre}</span>
+                      <span className="text-white font-medium text-sm tracking-wide">{btn.text}</span>
 
                     </div>
                   </a>
