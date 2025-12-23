@@ -18,6 +18,7 @@ import { useSimpleMarkets } from "@/features/markets/hooks/useSimpleMarkets";
 
 import { HiOutlineDeviceMobile } from "react-icons/hi";
 import { FaRegStar } from "react-icons/fa";
+import { Sparkles } from "lucide-react"
 
 import { GoDotFill } from "react-icons/go";
 
@@ -1171,7 +1172,8 @@ export default function MarketingPage() {
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4 relative z-10">
           {/* Green pill label */}
           <div className="flex justify-center mb-6">
-            <span className="bg-[#1D8751]/10 border border-[#1D8751] text-[#1D8751] px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium">
+            <span className="flex justify-center items-center gap-2 bg-[#1D8751]/10 border border-secondary/20 text-[#1D8751] px-4 py-1.5 sm:px-6 sm:py-2 rounded-full text-xs sm:text-sm">
+              <Sparkles className=" h-4 w-4 -mt-0.5 " />
               EASY ONBOARDING
             </span>
           </div>
@@ -1185,12 +1187,12 @@ export default function MarketingPage() {
           </div>
 
           {/* Description */}
-          <p className="text-center text-gray-700 dark:text-white/90 text-sm sm:text-base md:text-lg mb-12 max-w-2xl mx-auto">
+          <p className="text-center text-gray-700 dark:text-[#99A1AF] text-sm sm:text-base md:text-lg mb-12 max-w-2xl mx-auto">
             Begin your crypto journey in 4 simple steps. Join thousands of traders who trust OMAYA Exchange.
           </p>
 
           {/* Steps Cards */}
-          <div className="w-full max-w-7xl mx-auto">
+          <div className="w-full max-w-6xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-4">
               {[
                 {
@@ -1236,7 +1238,7 @@ export default function MarketingPage() {
                   title: t("marketing.steps.start.title", "Start Exchanging"),
                   description: t("marketing.steps.start.desc", "Start exchanging instantly and explore endless opportunities."),
                   features: [
-                    t("marketing.steps.start.feature1", "500+ assets"),
+                    t("marketing.steps.start.feature1", "1000+ assets"),
                     t("marketing.steps.start.feature2", "Real-time trading"),
                     t("marketing.steps.start.feature3", "24/7 support"),
                   ],
@@ -1244,10 +1246,10 @@ export default function MarketingPage() {
               ].map((step, index) => (
                 <div key={step.number} className="relative">
                   {/* Step Card */}
-                  <div className="relative bg-white dark:bg-[#1D1D23] rounded-3xl p-6 border-2 border-[#1D8751] shadow-lg hover:shadow-xl transition-all duration-300 h-full flex flex-col items-center text-center mx-auto">
+                  <div className="relative bg-white dark:bg-[#18181D] rounded-3xl p-6 border-2 border-[#1D8751] shadow-lg hover:shadow-xl transition-all duration-300 h-full flex flex-col items-center text-center mx-auto">
                     {/* Number Badge - Inside card */}
-                    <div className="absolute top-4 right-4 w-8 h-8 bg-[#13B562]/20 dark:bg-[#13B562]/30 rounded-full flex items-center justify-center">
-                      <span className="text-[#1D8751] dark:text-[#13B562] text-sm font-bold">{step.number}</span>
+                    <div className="absolute top-4 right-4 w-9 h-9 bg-[#1D8751]/20 rounded-full border border-[#1D8751]/30 flex items-center justify-center">
+                      <span className="text-[#1D8751] dark:text-[#1D8751] text-sm font-bold">{step.number}</span>
                     </div>
 
                     {/* Icon Container */}
@@ -1268,16 +1270,16 @@ export default function MarketingPage() {
                     </h3>
 
                     {/* Description */}
-                    <p className="text-gray-700 dark:text-white/80 text-sm mb-4 flex-grow">
+                    <p className="text-gray-700 dark:text-[#99A1AF] text-sm mb-4 flex-grow">
                       {step.description}
                     </p>
 
                     {/* Features List */}
-                    <div className="space-y-2 mt-auto">
+                    <div className="flex flex-col space-y-2 mt-auto justify-start">
                       {step.features.map((feature, idx) => (
                         <div key={idx} className="flex items-center gap-2">
                           <svg
-                            className="w-5 h-5 text-[#1D8751] flex-shrink-0"
+                            className="w-5 h-5 text-[#1D8751] shrink-0"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -1289,7 +1291,7 @@ export default function MarketingPage() {
                               d="M5 13l4 4L19 7"
                             />
                           </svg>
-                          <span className="text-gray-700 dark:text-white/90 text-sm">
+                          <span className="text-gray-700 dark:text-[#99A1AF] text-sm">
                             {feature}
                           </span>
                         </div>
@@ -1300,8 +1302,8 @@ export default function MarketingPage() {
                   {/* Small Arrow Circle between cards (hidden on last card) */}
                   {index < 3 && (
                     <div className="hidden lg:block absolute top-1/2 -right-3 transform -translate-y-1/2 z-10">
-                      <div className="bg-[#1D8751] rounded-full w-8 h-8 flex items-center justify-center shadow-lg">
-                        <span className="text-white text-lg font-bold">&gt;</span>
+                      <div className="bg-[#1D8751] rounded-full w-6 h-6 flex items-center justify-center shadow-lg">
+                        <span className="text-white text-md ml-0.5 font-light">&gt;</span>
                       </div>
                     </div>
                   )}
