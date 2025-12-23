@@ -19,6 +19,7 @@ import { useSimpleMarkets } from "@/features/markets/hooks/useSimpleMarkets";
 import { HiOutlineDeviceMobile } from "react-icons/hi";
 import { FaRegStar } from "react-icons/fa";
 
+import { GoDotFill } from "react-icons/go";
 
 const steps = [
   {
@@ -432,10 +433,8 @@ export default function MarketingPage() {
                 <span className="absolute -left-4 sm:-left-6 md:-left-8 top-1/2 -translate-y-1/2 w-24 sm:w-32 md:w-40 h-3/4 -z-10 bg-gradient-to-br from-purple-600/15 via-purple-500/10 to-transparent dark:from-purple-600/25 dark:via-purple-500/15 dark:to-transparent rounded-full blur-2xl"></span>
                 <span className="absolute -left-2 sm:-left-3 md:-left-4 top-1/2 -translate-y-1/2 w-16 sm:w-20 md:w-24 h-1/2 -z-10 bg-gradient-to-r from-purple-400/12 to-transparent dark:from-purple-400/20 dark:to-transparent rounded-full blur-xl"></span>
                 <span className="relative">
-                  <span className="text-gray-900 dark:text-[#788099]">
-                    Experience lightning-fast trades, ultra-low fees, and bank-grade security.
-                  </span>{" "}
-                  <span className="text-[#1D8751] dark:text-[#13B562]">Join 500,000+ traders worldwide.</span>
+                  <span className="text-gray-900 dark:text-[#788099]">Buy, Sell, Exchange, and Trade Crypto with Speed, Security, and Full Regulatory Compliance!</span>
+                  {/* <span className="text-[#1D8751] dark:text-[#13B562]">Join 500,000+ traders worldwide.</span> */}
                 </span>
               </p>
 
@@ -512,7 +511,8 @@ export default function MarketingPage() {
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl">
           {/* Green pill banner */}
           <div className="flex justify-center mb-4 sm:mb-6">
-            <span className="bg-[#1D8751]/10 border border-[#1D8751] text-[#1D8751] px-4 py-1.5 sm:px-5 sm:py-2 rounded-full text-xs sm:text-sm font-medium">
+            <span className=" flex justify-center items-center gap-1 bg-[#1D8751]/10 border-2 border-secondary/20 text-secondary/60 px-4 py-1.5 sm:px-5 sm:py-3 rounded-full text-xs sm:text-sm font-semibold">
+              <GoDotFill className="text-secondary text-lg" />
               Trusted by Thousands
             </span>
           </div>
@@ -545,22 +545,24 @@ export default function MarketingPage() {
                       )}
                     </span>
                   </span>{" "}
-                  {t(
-                    "marketing.achievements.title.highlight",
-                    "Key Achievements"
-                  )}
+                  <span className="text-secondary" >
+                    {t(
+                      "marketing.achievements.title.highlight",
+                      "Key Achievements"
+                    )}
+                  </span>
                 </span>
               </h2>
             </div>
 
             {/* Subtitle */}
-            <p className="text-center text-gray-700 dark:text-white text-sm sm:text-base md:text-lg px-4">
+            <p className="text-center text-[#99A1AF] text-sm sm:text-base md:text-lg px-4">
               Join the fastest-growing crypto exchange platform in Somalia.
             </p>
           </div>
 
           {/* First Row - Achievement Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6 mb-6 sm:mb-8 md:mb-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6 mb-6 sm:mb-8 md:mb-10 max-w-8xl mx-auto">
             {achievements.map((achievement, index) => {
               const icons = [
                 <DollarSign key="dollar" className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white" />,
@@ -586,7 +588,7 @@ export default function MarketingPage() {
               return (
                 <div
                   key={index}
-                  className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg sm:rounded-xl p-4 sm:p-5 md:p-6 flex flex-col relative overflow-hidden border border-gray-200 dark:border-[#2A2A2A]"
+                  className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg sm:rounded-3xl p-4 sm:p-5 md:p-6 flex flex-col relative overflow-hidden border-2 border-gray-200 dark:border-[#2A2A2A]"
                 >
                   {/* Dark mode gradient background */}
                   <div
@@ -610,7 +612,7 @@ export default function MarketingPage() {
                     {/* Icon Container - Vibrant green rounded square */}
                     <div className="relative mb-3 sm:mb-4 self-start">
                       <div
-                        className="bg-[#1D8751] rounded-lg p-2 sm:p-2.5 md:p-3 flex items-center justify-center shadow-md"
+                        className="bg-[#1D8751] rounded-xl p-2 sm:p-2.5 md:p-3 flex items-center justify-center shadow-md"
                         style={{
                           boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
                         }}
@@ -620,17 +622,17 @@ export default function MarketingPage() {
                     </div>
 
                     {/* Number */}
-                    <div className="text-[#1D8751] text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-3">
+                    <div className="text-[#1D8751] text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold mb-2 sm:mb-3">
                       {achievement.value}+
                     </div>
 
                     {/* Title */}
-                    <div className="text-gray-900 dark:text-white text-sm sm:text-base md:text-lg font-semibold mb-1 sm:mb-2">
+                    <div className="text-gray-900 dark:text-muted text-sm sm:text-base md:text-lg mb-1 sm:mb-2">
                       {titles[index]}
                     </div>
 
                     {/* Description */}
-                    <div className="text-gray-700 dark:text-white text-xs sm:text-sm">
+                    <div className="text-gray-700 dark:text-[#99A1AF] text-xs sm:text-sm">
                       {descriptions[index]}
                     </div>
                   </div>
@@ -821,7 +823,7 @@ export default function MarketingPage() {
                             <div className="text-gray-900 dark:text-white font-bold text-base sm:text-lg">
                               ${formattedPrice}
                             </div>
-                            <div className={`text-xs sm:text-sm font-medium ${change >= 0 ? 'text-[#13B562]' : 'text-red-500'}`}>
+                            <div className={`text-xs sm:text-sm font-medium ${change >= 0 ? 'text-secondary' : 'text-red-500'}`}>
                               {change >= 0 ? '+' : ''}{change.toFixed(2)}%
                             </div>
                           </div>
