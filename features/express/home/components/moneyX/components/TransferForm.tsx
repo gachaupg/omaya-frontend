@@ -1121,19 +1121,19 @@ export default function TransferForm({ isHomePage = false, onTransfer }: Transfe
             >
               <ul className="list-none space-y-2">
                 <li className="flex items-start">
-                  <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                  <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
                   <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
                     Please send the money from your own account Only
                   </span>
                 </li>
                 <li className="flex items-start">
-                  <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                  <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
                   <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
                     Put transaction ID in the description field of the bank
                   </span>
                 </li>
                 <li className="flex items-start">
-                  <span className="w-3 h-3 mt-1 rounded-full bg-[#1D8751] inline-block mr-3"></span>
+                  <span className="w-2 h-2 mt-1 rounded-full bg-[#1D8751] inline-block mr-3 shrink-0"></span>
                   <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm`}>
                     Please note, If you do not follow above conditions, we will
                     reject your transaction and send you back your money.
