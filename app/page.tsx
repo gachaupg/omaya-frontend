@@ -543,7 +543,11 @@ export default function MarketingPage() {
         </div>
       </section>
 
-      <div className="pt-4 sm:pt-6 md:pt-8 pb-12 sm:pb-16 md:pb-20 px-4 md:px-[100px] bg-white dark:bg-[var(--bg-color)]">
+      <div className="pt-4 sm:pt-6 md:pt-8 pb-12 sm:pb-16 md:pb-20 px-4 md:px-[100px] bg-white dark:bg-[var(--bg-color)] relative z-10">
+
+        <div className="absolute inset-0 overflow-hidden pointer-events-none -z-1">
+          <div className="absolute w-[280px] sm:w-[300px] h-[500px] right-90 bottom-25 sm:h-24 blur-3xl bg-[#9810FA] rounded-full opacity-25" />
+        </div>
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl">
           {/* Green pill banner */}
           <div className="flex justify-center mb-4 sm:mb-6">
@@ -562,6 +566,7 @@ export default function MarketingPage() {
                 <div className="w-[440px] sm:w-[700px] h-[120px] sm:h-[150px] bg-gradient-to-r from-transparent via-[#1D8751]/32 to-transparent blur-3xl rounded-full" />
                 <div className="absolute w-[280px] sm:w-[420px] h-[78px] sm:h-[96px] bg-gradient-to-r from-transparent via-[#13B562]/38 to-transparent blur-2xl rounded-full" />
                 <div className="absolute w-[560px] sm:w-[860px] h-[180px] sm:h-[230px] bg-[#1D8751]/10 blur-[64px] rounded-full" />
+
               </div>
               <h2 className="text-center text-xl sm:text-2xl md:text-3xl lg:text-4xl 2xl:text-5xl font-bold">
                 <span className="text-gray-900 dark:text-white">
@@ -681,7 +686,7 @@ export default function MarketingPage() {
             <img
               src="https://res.cloudinary.com/pitz/image/upload/v1766121183/Container_14_omqgii.png"
               alt=""
-              className="w-full h-auto object-cover"
+              className="w-full h-auto object-cover z-10"
             />
           </div>
         </div>
@@ -1000,146 +1005,146 @@ export default function MarketingPage() {
               {/* Inner content card (flat top, rounded bottom) */}
               <div className="relative bg-gray-50 dark:bg-[var(--card-color)] rounded-b-3xl p-5 sm:p-6 md:p-8 shadow-sm overflow-hidden">
                 {/* Overlay to fade card background to page background at bottom */}
-                <div 
+                <div
                   className="absolute inset-x-0 bottom-0 h-3/4 rounded-b-3xl pointer-events-none dark:hidden"
                   style={{
                     background: 'linear-gradient(to top, rgb(255, 255, 255) 0%, rgba(255, 255, 255, 0.95) 25%, rgba(255, 255, 255, 0.8) 50%, rgba(255, 255, 255, 0.5) 75%, transparent 100%)',
                   }}
                 ></div>
-                <div 
+                <div
                   className="absolute inset-x-0 bottom-0 h-3/4 rounded-b-3xl pointer-events-none hidden dark:block"
                   style={{
                     background: 'linear-gradient(to top, rgb(10, 10, 15) 0%, rgba(10, 10, 15, 0.95) 25%, rgba(10, 10, 15, 0.8) 50%, rgba(10, 10, 15, 0.5) 75%, transparent 100%)',
                   }}
                 ></div>
                 {/* Overlay to fade border at bottom - keep behind content */}
-                <div 
+                <div
                   className="absolute inset-x-0 bottom-0 h-1/2 rounded-b-3xl pointer-events-none z-0 dark:hidden"
                   style={{
                     background: 'linear-gradient(to top, rgb(255, 255, 255) 0%, transparent 100%)',
                   }}
                 ></div>
-                <div 
+                <div
                   className="absolute inset-x-0 bottom-0 h-1/2 rounded-b-3xl pointer-events-none hidden dark:block z-0"
                   style={{
                     background: 'linear-gradient(to top, rgb(10, 10, 15) 0%, transparent 100%)',
                   }}
                 ></div>
-            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-              {/* Left Section - Image */}
-              <div className="relative">
-                <div className="relative w-full overflow-hidden rounded-t-[1.5rem] md:rounded-t-[2rem] rounded-b-lg">
-                  <Image
-                    src="https://res.cloudinary.com/pitz/image/upload/v1765268255/Container_17_n6i2xm.png"
-                    alt="Safe & Reliable Cryptocurrency Exchange Platform"
-                    width={800}
-                    height={600}
-                    className="w-full h-auto object-contain"
-                    unoptimized
-                  />
-                </div>
-
-                {/* Badge - Since 2019 (above image card, clearly visible) */}
-                <div className="absolute -top-3 right-4 md:-top-4 md:right-8 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20 shadow-md">
-                  <span className="text-white text-xs font-medium">Since 2019</span>
-                </div>
-                
-                {/* Badge - 10K+ Users (inside image card, raised above bottom edge) */}
-                <div className="absolute bottom-6 left-4 md:bottom-8 md:left-8 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20 shadow-md">
-                  <span className="text-white text-xs font-medium">10K+ Users</span>
-                </div>
-              </div>
-
-              {/* Right Section - Text and Feature Cards */}
-              <div className="space-y-6">
-                {/* ABOUT OMAYA Header */}
-                <div className="bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751] rounded-3xl px-4 py-2 inline-block">
-                  <div className="text-[#1D8751] text-sm font-medium uppercase tracking-wide">
-                    ABOUT OMAYA
-                  </div>
-                </div>
-
-                {/* Title */}
-                <h2 className="text-3xl md:text-4xl 2xl:text-5xl font-bold text-gray-900 dark:text-white">
-                  <span className="text-[#1D8751]">Safe & Reliable</span>{" "}
-                  <span className="text-gray-900 dark:text-white">Cryptocurrency Exchange Platform</span>
-                </h2>
-
-                {/* Descriptive Text */}
-                <p className="text-gray-700 dark:text-white/80 text-sm md:text-base leading-relaxed">
-                  Established in 2019, OMAYA.io is a leading digital asset and cryptocurrency trading platform in Somalia,
-                  licensed by the{" "}
-                  <span className="text-[#1D8751] font-semibold">Central Bank of Somalia</span>.
-                  With a team deeply rooted in East Africa, OMAYA.io is built to serve the region&apos;s unique financial
-                  landscape by delivering secure, compliant, and localized trading and exchange solutions.
-                  <br />
-                  <br />
-                  At OMAYA.io, we go beyond transactions. We are committed to empowering our users through education,
-                  transparency, and access to expert insights that support informed financial decision-making. Backed by
-                  deep regional market knowledge, we provide reliable, responsive, and secure services tailored to the
-                  evolving needs of individuals, traders, and businesses across emerging markets.
-                </p>
-
-                {/* Feature Boxes - 2x2 Grid */}
-                <div className="grid grid-cols-2 gap-4 mt-8">
-                  {/* Bank-Grade Security */}
-                  <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4">
-                    <div className="w-10 h-10 bg-blue-400/20 rounded-lg flex items-center justify-center mb-3">
-                      <Shield className="w-6 h-6 text-blue-400" />
+                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+                  {/* Left Section - Image */}
+                  <div className="relative">
+                    <div className="relative w-full overflow-hidden rounded-t-[1.5rem] md:rounded-t-[2rem] rounded-b-lg">
+                      <Image
+                        src="https://res.cloudinary.com/pitz/image/upload/v1765268255/Container_17_n6i2xm.png"
+                        alt="Safe & Reliable Cryptocurrency Exchange Platform"
+                        width={800}
+                        height={600}
+                        className="w-full h-auto object-contain"
+                        unoptimized
+                      />
                     </div>
-                    <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">Bank-Grade Security</div>
-                    <div className="text-gray-700 dark:text-white text-xs">Advanced encryption & multi-layer protection</div>
+
+                    {/* Badge - Since 2019 (above image card, clearly visible) */}
+                    <div className="absolute -top-3 right-4 md:-top-4 md:right-8 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20 shadow-md">
+                      <span className="text-white text-xs font-medium">Since 2019</span>
+                    </div>
+
+                    {/* Badge - 10K+ Users (inside image card, raised above bottom edge) */}
+                    <div className="absolute bottom-6 left-4 md:bottom-8 md:left-8 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20 shadow-md">
+                      <span className="text-white text-xs font-medium">10K+ Users</span>
+                    </div>
                   </div>
 
-                  {/* Licensed & Regulated */}
-                  <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4">
-                    <div className="w-10 h-10 bg-pink-400/20 rounded-lg flex items-center justify-center mb-3">
-                      <Lock className="w-6 h-6 text-pink-400" />
+                  {/* Right Section - Text and Feature Cards */}
+                  <div className="space-y-6">
+                    {/* ABOUT OMAYA Header */}
+                    <div className="bg-[#1D8751]/10 dark:bg-[#1D8751]/20 border border-[#1D8751] rounded-3xl px-4 py-2 inline-block">
+                      <div className="text-[#1D8751] text-sm font-medium uppercase tracking-wide">
+                        ABOUT OMAYA
+                      </div>
                     </div>
-                    <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">Licensed & Regulated</div>
-                    <div className="text-gray-700 dark:text-white text-xs">Approved by Central Bank of Somalia</div>
-                  </div>
 
-                {/* 10K Active users */}
-                  <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4">
-                    <div className="w-10 h-10 bg-green-400/20 rounded-lg flex items-center justify-center mb-3">
-                      <Users className="w-6 h-6 text-green-400" />
-                    </div>
-                    <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">10K Active users</div>
-                    <div className="text-gray-700 dark:text-white/70 text-xs">Trusted by traders across East Africa</div>
-                  </div>
+                    {/* Title */}
+                    <h2 className="text-3xl md:text-4xl 2xl:text-5xl font-bold text-gray-900 dark:text-white">
+                      <span className="text-[#1D8751]">Safe & Reliable</span>{" "}
+                      <span className="text-gray-900 dark:text-white">Cryptocurrency Exchange Platform</span>
+                    </h2>
 
-                  {/* 99.9% Uptime */}
-                  <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4">
-                    <div className="w-10 h-10 bg-orange-400/20 rounded-lg flex items-center justify-center mb-3">
-                      <TrendingUp className="w-6 h-6 text-orange-400" />
+                    {/* Descriptive Text */}
+                    <p className="text-gray-700 dark:text-white/80 text-sm md:text-base leading-relaxed">
+                      Established in 2019, OMAYA.io is a leading digital asset and cryptocurrency trading platform in Somalia,
+                      licensed by the{" "}
+                      <span className="text-[#1D8751] font-semibold">Central Bank of Somalia</span>.
+                      With a team deeply rooted in East Africa, OMAYA.io is built to serve the region&apos;s unique financial
+                      landscape by delivering secure, compliant, and localized trading and exchange solutions.
+                      <br />
+                      <br />
+                      At OMAYA.io, we go beyond transactions. We are committed to empowering our users through education,
+                      transparency, and access to expert insights that support informed financial decision-making. Backed by
+                      deep regional market knowledge, we provide reliable, responsive, and secure services tailored to the
+                      evolving needs of individuals, traders, and businesses across emerging markets.
+                    </p>
+
+                    {/* Feature Boxes - 2x2 Grid */}
+                    <div className="grid grid-cols-2 gap-4 mt-8">
+                      {/* Bank-Grade Security */}
+                      <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4">
+                        <div className="w-10 h-10 bg-blue-400/20 rounded-lg flex items-center justify-center mb-3">
+                          <Shield className="w-6 h-6 text-blue-400" />
+                        </div>
+                        <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">Bank-Grade Security</div>
+                        <div className="text-gray-700 dark:text-white text-xs">Advanced encryption & multi-layer protection</div>
+                      </div>
+
+                      {/* Licensed & Regulated */}
+                      <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4">
+                        <div className="w-10 h-10 bg-pink-400/20 rounded-lg flex items-center justify-center mb-3">
+                          <Lock className="w-6 h-6 text-pink-400" />
+                        </div>
+                        <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">Licensed & Regulated</div>
+                        <div className="text-gray-700 dark:text-white text-xs">Approved by Central Bank of Somalia</div>
+                      </div>
+
+                      {/* 10K Active users */}
+                      <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4">
+                        <div className="w-10 h-10 bg-green-400/20 rounded-lg flex items-center justify-center mb-3">
+                          <Users className="w-6 h-6 text-green-400" />
+                        </div>
+                        <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">10K Active users</div>
+                        <div className="text-gray-700 dark:text-white/70 text-xs">Trusted by traders across East Africa</div>
+                      </div>
+
+                      {/* 99.9% Uptime */}
+                      <div className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4">
+                        <div className="w-10 h-10 bg-orange-400/20 rounded-lg flex items-center justify-center mb-3">
+                          <TrendingUp className="w-6 h-6 text-orange-400" />
+                        </div>
+                        <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">99.9% Uptime</div>
+                        <div className="text-gray-700 dark:text-white/70 text-xs">Reliable trading 24/7/365</div>
+                      </div>
                     </div>
-                    <div className="text-gray-900 dark:text-white font-bold text-sm mb-1">99.9% Uptime</div>
-                    <div className="text-gray-700 dark:text-white/70 text-xs">Reliable trading 24/7/365</div>
+
+                    {/* Bottom Tags/Buttons */}
+                    <div className="flex flex-wrap gap-3 mt-6">
+                      <div className="border border-[#1D8751] rounded-full px-4 py-2 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
+                        <Lock className="w-4 h-4 text-[#1D8751]" />
+                        <span className="text-gray-900 dark:text-white text-xs font-medium">Licensed Exchange</span>
+                      </div>
+                      <div className="border border-[#1D8751] rounded-full px-4 py-2 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
+                        <Globe className="w-4 h-4 text-[#1D8751]" />
+                        <span className="text-gray-900 dark:text-white text-xs font-medium">Global Reach</span>
+                      </div>
+                      <div className="border border-[#1D8751] rounded-full px-4 py-2 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
+                        <Zap className="w-4 h-4 text-[#1D8751]" />
+                        <span className="text-gray-900 dark:text-white text-xs font-medium">Fast Execution</span>
+                      </div>
+                      <div className="border border-[#1D8751] rounded-full px-4 py-2 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
+                        <Shield className="w-4 h-4 text-[#1D8751]" />
+                        <span className="text-gray-900 dark:text-white text-xs font-medium">Verified Platform</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                {/* Bottom Tags/Buttons */}
-                <div className="flex flex-wrap gap-3 mt-6">
-                  <div className="border border-[#1D8751] rounded-full px-4 py-2 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
-                    <Lock className="w-4 h-4 text-[#1D8751]" />
-                    <span className="text-gray-900 dark:text-white text-xs font-medium">Licensed Exchange</span>
-                  </div>
-                  <div className="border border-[#1D8751] rounded-full px-4 py-2 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
-                    <Globe className="w-4 h-4 text-[#1D8751]" />
-                    <span className="text-gray-900 dark:text-white text-xs font-medium">Global Reach</span>
-                  </div>
-                  <div className="border border-[#1D8751] rounded-full px-4 py-2 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
-                    <Zap className="w-4 h-4 text-[#1D8751]" />
-                    <span className="text-gray-900 dark:text-white text-xs font-medium">Fast Execution</span>
-                  </div>
-                  <div className="border border-[#1D8751] rounded-full px-4 py-2 flex items-center gap-2 bg-gray-50 dark:bg-transparent">
-                    <Shield className="w-4 h-4 text-[#1D8751]" />
-                    <span className="text-gray-900 dark:text-white text-xs font-medium">Verified Platform</span>
-                  </div>
-                </div>
-              </div>
-            </div>
               </div>
             </div>
           </div>
