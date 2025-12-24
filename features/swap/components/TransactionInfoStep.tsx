@@ -236,7 +236,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
       (
         <div
           ref={isFrom ? fromAssetDropdownContentRef : toAssetDropdownContentRef}
-          className="bg-white dark:bg-[#18181D] border border-gray-300 dark:border-accent rounded-2xl shadow-xl z-45 max-h-[70vh] sm:max-h-[60vh] overflow-hidden"
+          className="flex flex-col bg-white dark:bg-[#18181D] border border-gray-300 dark:border-accent rounded-2xl shadow-xl z-45 max-h-[70vh] sm:max-h-[60vh]"
           style={dropdownStyle}
         >
           {/* Dropdown Title */}
@@ -268,7 +268,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
           </div>
 
           {/* Asset List */}
-          <div className="max-h-[60vh] sm:max-h-[50vh] overflow-y-auto p-0.5 sm:p-1">
+          <div className="flex-1 overflow-y-auto p-0.5 sm:p-1">
             {filtered.length === 0 ? (
               <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
                 {searchValue ? "No assets found" : "No assets available"}
