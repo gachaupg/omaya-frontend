@@ -299,28 +299,28 @@ const Overview = () => {
         </div>
         <div className="mt-3 sm:mt-4 md:mt-6 w-full flex flex-col gap-1.5 sm:gap-2">
           <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
-            <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4 rounded-md bg-[#1D8751] inline-block flex-shrink-0" />
+            <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3  rounded-sm bg-[#1D8751] inline-block flex-shrink-0" />
             <span className="text-neutral-500 text-xs sm:text-sm md:text-base">Deposits</span>
             <span className="text-right text-[#0D0D0D] dark:text-white/80 text-xs sm:text-sm">
               {deposits.toLocaleString()} USD
             </span>
           </div>
           <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
-            <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4 rounded-md bg-[#E23D3A] inline-block flex-shrink-0" />
+            <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-sm bg-[#E23D3A] inline-block flex-shrink-0" />
             <span className="text-neutral-500 text-xs sm:text-sm md:text-base truncate max-w-20 sm:max-w-[120px]">Withdrawals</span>
             <span className=" text-[#0D0D0D] dark:text-white/80 text-xs sm:text-sm ">
               {withdrawals.toLocaleString()} USD
             </span>
           </div>
           <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
-            <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4 rounded-md bg-[#FFD600] inline-block flex-shrink-0" />
+            <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3  rounded-sm bg-[#FFD600] inline-block flex-shrink-0" />
             <span className="text-neutral-500 text-xs sm:text-sm md:text-base ">In Progress</span>
             <span className=" text-[#0D0D0D] dark:text-white/80 text-xs sm:text-sm">
               {inProgress.toLocaleString()} USD
             </span>
           </div>
           <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
-            <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4 rounded-md bg-[#386AB5] inline-block flex-shrink-0" />
+            <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-sm bg-[#386AB5] inline-block flex-shrink-0" />
             <span className="text-neutral-500 text-xs sm:text-sm md:text-base">P2P</span>
             <span className=" text-[#0D0D0D] dark:text-white/80 text-xs sm:text-sm">
               {p2p.toLocaleString()} USD
