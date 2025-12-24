@@ -191,7 +191,7 @@ const Overview = () => {
     <div className="w-full">
 
       <h3 className="dark:text-white text-[#0D0D0D] mb-2 text-xs sm:text-sm font-medium">
-        Overview Totall
+        Overview Total
       </h3>
       <Card
         borderColor="border-[#E8EFF5] dark:border-[#35353E]"
