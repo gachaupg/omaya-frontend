@@ -685,7 +685,7 @@ const FloatingParticles = ({ count = 12 }) => {
 
                     {/* Number */}
                     <div className="text-[#1D8751] text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold mb-2 sm:mb-3">
-                      {achievement.value}+
+                      {achievement.value}
                     </div>
 
                     {/* Title */}
