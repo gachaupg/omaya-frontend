@@ -203,7 +203,7 @@ export default function Sidebar() {
                             Money
                           </span>
                           <img
-                            className="mt-1 w-3 h-3 sm:w-4 sm:h-4"
+                            className="mt-[5px] w-3.5 h-3.5"
                             src={isActive
 
                               ? isDark ? "https://res.cloudinary.com/pitz/image/upload/v1764663236/Group_7_ichuyz.png"
@@ -219,7 +219,7 @@ export default function Sidebar() {
                         <img
                           src={item.icon}
                           alt={label + " icon"}
-                          className="w-4 h-4 sm:w-5 sm:h-5 object-contain flex-shrink-0"
+                          className="w-4 h-4 sm:w-5 sm:h-5 object-contain shrink-0"
                         />
                         {item.labelKey === "navigation.express" ? (
                           <span
@@ -231,12 +231,12 @@ export default function Sidebar() {
                             )}
                           >
                             <span
-                              className={isActive ? "dark:text-white text-muted-foreground text-sm sm:text-base font-bold" : "text-muted-foreground text-xs sm:text-sm font-bold"}
+                              className={isActive ? "dark:text-white text-muted-foreground text-sm sm:text-base font-bold" : "text-[#727272] text-xs sm:text-sm font-bold"}
                             >
                               E
                             </span>
                             <img
-                              className="mt-2 -ml-0.5"
+                              className="h-4 mt-[7px]"
                               style={{ maxWidth: 'none' }}
                               src={
                                 isActive

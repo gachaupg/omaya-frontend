@@ -345,6 +345,32 @@ export default function MarketingPage() {
     }, 5000);
   };
 
+const FloatingParticles = ({ count = 12 }) => {
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      {Array.from({ length: count }).map((_, i) => {
+        const size = Math.random() * 4 + 6 // Size between 6px and 10px
+        const duration = Math.random() * 20 + 10
+
+        return (
+          <span
+            key={i}
+            className="absolute rounded-full bg-[#1D8751]/50  animate-floatSlow"
+            style={{
+              width: `${size}px`,
+              height: `${size}px`,
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDuration: `${duration}s`,
+            }}
+          />
+        )
+      })}
+    </div>
+  )
+}
+
+
   return (
     <div>
       <section
@@ -1325,12 +1351,13 @@ export default function MarketingPage() {
   relative overflow-hidden
 ">
         {/* Subtle floating particles */}
-        <div className="pointer-events-none absolute inset-0 hidden sm:block">
-          <div className="absolute top-16 left-1/4 w-2 h-2 bg-[#1D8751] rounded-full opacity-60 blur-sm"></div>
-          <div className="absolute top-32 right-1/3 w-3 h-3 bg-[#13B562] rounded-full opacity-40 blur-md"></div>
-          <div className="absolute bottom-24 left-1/3 w-2 h-2 bg-[#13B562] rounded-full opacity-50 blur-sm"></div>
-          <div className="absolute bottom-12 right-1/4 w-3 h-3 bg-[#1D8751] rounded-full opacity-35 blur-md"></div>
-        </div>
+        <FloatingParticles count={10} />
+        {/* <div className="pointer-events-none absolute inset-0 hidden sm:block">
+          <div className="absolute top-16 left-1/4 w-2 h-2 bg-[#1D8751] rounded-full opacity-60"></div>
+          <div className="absolute top-32 right-1/3 w-3 h-3 bg-[#13B562] rounded-full opacity-40 "></div>
+          <div className="absolute bottom-24 left-1/3 w-2 h-2 bg-[#13B562] rounded-full opacity-50 "></div>
+          <div className="absolute bottom-12 right-1/4 w-3 h-3 bg-[#1D8751] rounded-full opacity-35 "></div>
+        </div> */}
 
         <div className="
     container mx-auto
@@ -1339,7 +1366,7 @@ export default function MarketingPage() {
   ">
           {/* Top pill */}
           <div className="flex justify-center mb-6">
-            <span className="flex justify-center items-center gap-2 bg-[#1D8751]/10 border-2 border-[#1D8751]/30 text-[#1D8751] px-4 py-1.5 sm:px-6 sm:py-2 rounded-full text-xs sm:text-sm">
+            <span className="flex justify-center items-center gap-2 bg-[#1D8751]/10 border border-[#1D8751]/30 text-[#1D8751] px-4 py-1.5 sm:px-6 sm:py-2 rounded-full text-xs sm:text-sm">
               <FaRegStar className=" text-lg -mt-0.5" />
               WHY CHOOSE US
             </span>
@@ -1363,9 +1390,9 @@ export default function MarketingPage() {
             <div className="relative flex justify-center">
               {/* Green Glow */}
               <div className="absolute inset-0 flex items-center justify-center">
-                <div className="relative w-[320px] h-[320px] sm:w-[420px] sm:h-[420px] lg:w-[560px] lg:h-[560px]">
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#1D8751]/35 via-[#13B562]/25 to-[#0E5531]/15 rounded-full blur-3xl"></div>
-                  <div className="absolute inset-0 bg-gradient-to-br from-[#13B562]/20 via-[#1D8751]/15 to-transparent rounded-full blur-2xl"></div>
+                <div className="relative w-[320px] h-[320px] sm:w-[420px] sm:h-[420px] lg:w-[650px] lg:h-[650px]">
+                  <div className="absolute inset-0 bg-[#1D8751]/30 rounded-full blur-3xl"></div>
+                  {/* <div className="absolute inset-0 bg-gradient-to-br from-[#13B562]/20 via-[#1D8751]/15 to-transparent rounded-full blur-2xl"></div> */}
                 </div>
               </div>
 
@@ -1380,7 +1407,8 @@ export default function MarketingPage() {
                   className="
               w-[220px] sm:w-[240px] md:w-[260px] lg:w-[280px]
               h-auto
-              drop-shadow-[0_25px_60px_rgba(0,0,0,0.8)]
+            drop-shadow-[8px_14px_28px_rgba(0,0,0,0.45)]
+
             "
                 />
               </div>
@@ -1391,8 +1419,7 @@ export default function MarketingPage() {
               {/* Background glows */}
               <div className="pointer-events-none absolute inset-0 -z-10">
                 <div className="absolute inset-0 bg-gradient-to-br from-[#1D8751]/15 via-[#0E5531]/10 to-transparent rounded-[40px] blur-3xl opacity-60 dark:from-[#1D8751]/25 dark:via-[#0E5531]/20 dark:opacity-70"></div>
-                <div className="absolute -top-10 -right-10 w-56 h-56 bg-[#13B562]/15 rounded-full blur-3xl opacity-60 dark:bg-[#13B562]/25 dark:opacity-80"></div>
-                <div className="absolute bottom-[-40px] left-0 w-64 h-64 bg-[#1D8751]/12 rounded-full blur-3xl opacity-50 dark:bg-[#1D8751]/20 dark:opacity-60"></div>
+                <div className="absolute -bottom-1 -right-10 w-90 h-110 rounded-full blur-3xl opacity-60 bg-[#1D8751]/30 dark:opacity-80"></div>
               </div>
 
               {/* Heading */}
