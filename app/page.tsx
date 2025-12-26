@@ -19,6 +19,7 @@ import { useSimpleMarkets } from "@/features/markets/hooks/useSimpleMarkets";
 import { HiOutlineDeviceMobile } from "react-icons/hi";
 import { FaRegStar } from "react-icons/fa";
 import { Sparkles } from "lucide-react"
+import { MdCurrencyBitcoin } from "react-icons/md";
 
 import { GoDotFill } from "react-icons/go";
 
@@ -1553,9 +1554,9 @@ export default function MarketingPage() {
               <div className="absolute bottom-[-50px] left-[-50px] w-96 h-96 bg-white/5 rounded-full blur-3xl"></div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-8 md:p-12 lg:p-16 relative z-10 items-center">
+            <div className="flex flex-col lg:grid lg:grid-cols-2 gap-8 p-8 md:p-12 lg:p-16 relative z-10 items-center overflow-hidden">
               {/* Left Content */}
-              <div className="space-y-5">
+              <div className="space-y-5 relative z-20">
                 {/* Pill */}
                 <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20 w-fit">
                   <Gift className="w-4 h-4 text-white" />
@@ -1618,14 +1619,18 @@ export default function MarketingPage() {
               </div>
 
               {/* Right Content - Visuals */}
-              {/* Right Content - Visuals */}
-              <div className="relative h-[280px] sm:h-[400px] lg:h-full min-h-[280px] lg:min-h-[400px] flex items-center justify-center perspective-1000 -mr-4 lg:mr-0">
+              <div className="
+                  absolute bottom-0 right-0 w-full h-[300px] z-0 opacity-25 overflow-hidden pointer-events-none
+                  sm:opacity-40 sm:h-[400px]
+                  lg:relative lg:opacity-100 lg:pointer-events-auto lg:h-full lg:w-auto lg:overflow-visible lg:z-10
+                  perspective-1000 flex items-center justify-end lg:mr-0
+                ">
                 {/* Circle Decorations */}
                 <div className="absolute top-4 left-4 lg:top-10 lg:left-10 w-8 h-8 lg:w-12 lg:h-12 bg-[#FDC700] rounded-full opacity-50 animate-floatSlow"></div>
-                <div className="absolute bottom-10 right-10 lg:bottom-10 lg:right-10 w-12 h-12 lg:w-20 lg:h-20 bg-white/30 rounded-full opacity-40"></div>
+                <div className="absolute bottom-10 right-10 lg:bottom-10 lg:right-1 w-12 h-12 lg:w-20 lg:h-20 bg-white/30 rounded-full opacity-40"></div>
 
                 {/* Floating Glass Cards Container - Scaled for Mobile */}
-                <div className="relative w-[340px] h-[300px] lg:w-[400px] lg:h-[300px] transform scale-[0.55] sm:scale-[0.6] md:scale-[0.85] lg:scale-85 origin-center lg:origin-right transition-transform duration-500">
+                <div className="relative w-[340px] h-[300px] lg:w-[400px] lg:h-[300px] transform scale-[0.55] sm:scale-[0.6] md:scale-[0.85] lg:scale-85 origin-bottom-right lg:origin-center transition-transform duration-500">
 
                   {/* Money Bag Emoji - Floating Top Right */}
                   <div className="absolute -top-6 right-20 text-4xl lg:text-5xl animate-float-delayed z-20 drop-shadow-md">💰</div>
@@ -1634,7 +1639,7 @@ export default function MarketingPage() {
                   <div className="absolute top-0 left-0 w-64 h-40 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 transform rotate-6 shadow-xl p-5 flex flex-col justify-between z-0">
                     {/* Yellow Coin Circle */}
                     <div className="w-10 h-10 rounded-full bg-[#FDC700] flex items-center justify-center shadow-lg">
-                      <span className="text-xl">$</span>
+                      <span className="text-xl -ml-0.5"><MdCurrencyBitcoin /></span>
                     </div>
                     <div className="space-y-3">
                       <div className="w-3/4 h-3 bg-white/20 rounded-full"></div>
@@ -1648,7 +1653,7 @@ export default function MarketingPage() {
                     <div className="w-12 h-12 rounded-full bg-[#134e32]/40 absolute top-1/2 left-[45%] transform -translate-x-1/2 -translate-y-1/2 blur-lg"></div>
 
                     <div className="w-10 h-10 rounded-full bg-[#1D8751] flex items-center justify-center shadow-lg">
-                      <span className="text-xl">£</span>
+                      <span className="text-xl">$</span>
                     </div>
                     <div className="absolute top-4 right-4 text-2xl">💸</div>
 
@@ -1660,7 +1665,7 @@ export default function MarketingPage() {
 
                   {/* Card 3 - Bottom Left (Blue Dot) */}
                   <div className="absolute bottom-[-10px] left-8 w-60 h-36 bg-white/20 backdrop-blur-xl rounded-2xl border border-white/40 shadow-2xl p-5 flex flex-col justify-between transform -rotate-2 z-20 hover:-translate-y-2 transition-transform duration-300">
-                    <div className="w-10 h-10 rounded-full bg-[#3B82F6] shadow-md flex items-center justify-center"></div>
+                    <div className="w-10 h-10 rounded-full bg-[#3B82F6] shadow-md flex items-center justify-center">£</div>
                     <div className="space-y-3">
                       <div className="w-4/5 h-3 bg-white/40 rounded-full"></div>
                       <div className="w-3/5 h-2 bg-white/40 rounded-full"></div>
