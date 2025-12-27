@@ -375,11 +375,11 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                   checked={hasAcceptedTerms}
                   onChange={(e) => setHasAcceptedTerms(e.target.checked)}
                   disabled={isLoading}
-                  className="w-4 h-4 sm:w-5 sm:h-5 text-[#1D8751] bg-white dark:bg-[var(--card-color)] border-gray-300 dark:border-[#39394a] rounded focus:ring-[#1D8751] focus:ring-2 disabled:opacity-50 flex-shrink-0"
+                  className="w-4 h-4 sm:w-5 sm:h-5 accent-[#1D8751] text-[#1D8751] bg-white dark:bg-[var(--card-color)] border-gray-300 dark:border-[#39394a] rounded focus:ring-[#1D8751] focus:ring-2 disabled:opacity-50 flex-shrink-0 cursor-pointer"
                 />
                 <label
                   htmlFor="accept-terms"
-                  className="text-xs sm:text-sm text-[#1D8751] leading-relaxed"
+                  className="text-xs sm:text-sm text-[#1D8751] leading-relaxed cursor-pointer"
                 >
                   <span className="text-gray-900 dark:text-white font-medium">
                     I have read and agreed to Omaya Exchange{" "}
