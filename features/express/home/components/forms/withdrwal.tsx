@@ -1449,7 +1449,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
   const getDefaultAmount = (asset: any) => {
     if (!asset) return 100;
     const ticker = (asset?.ticker || asset?.symbol || "").toLowerCase();
-    return ticker === "usdt" || ticker === "usdc" ? 100 : 0.001;
+    return ticker === "usdt" || ticker === "usdc" ? 100 : 0.1;
   };
 
   // Get minimum amount based on asset type
@@ -4386,7 +4386,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                 </div>
               ) : (
                 <span className="flex items-center justify-center gap-2">
-                  <span className="text-base font-medium">Express</span>
+                  <span className="text-base font-medium text-white">Express</span>
                   <img
                     className="h-5 w-auto mt-3"
                     src="https://res.cloudinary.com/pitz/image/upload/v1752244135/Group_5_gkxzdz.png"
