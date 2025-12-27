@@ -19,6 +19,7 @@ import { useSimpleMarkets } from "@/features/markets/hooks/useSimpleMarkets";
 import { HiOutlineDeviceMobile } from "react-icons/hi";
 import { FaRegStar } from "react-icons/fa";
 import { Sparkles } from "lucide-react"
+import { MdCurrencyBitcoin } from "react-icons/md";
 
 import { GoDotFill } from "react-icons/go";
 
@@ -345,30 +346,30 @@ export default function MarketingPage() {
     }, 5000);
   };
 
-const FloatingParticles = ({ count = 12 }) => {
-  return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      {Array.from({ length: count }).map((_, i) => {
-        const size = Math.random() * 4 + 6 // Size between 6px and 10px
-        const duration = Math.random() * 20 + 10
+  const FloatingParticles = ({ count = 12 }) => {
+    return (
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        {Array.from({ length: count }).map((_, i) => {
+          const size = Math.random() * 4 + 6 // Size between 6px and 10px
+          const duration = Math.random() * 20 + 10
 
-        return (
-          <span
-            key={i}
-            className="absolute rounded-full bg-[#1D8751]/50  animate-floatSlow"
-            style={{
-              width: `${size}px`,
-              height: `${size}px`,
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDuration: `${duration}s`,
-            }}
-          />
-        )
-      })}
-    </div>
-  )
-}
+          return (
+            <span
+              key={i}
+              className="absolute rounded-full bg-[#1D8751]/50  animate-floatSlow"
+              style={{
+                width: `${size}px`,
+                height: `${size}px`,
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDuration: `${duration}s`,
+              }}
+            />
+          )
+        })}
+      </div>
+    )
+  }
 
 
   return (
@@ -1544,18 +1545,143 @@ const FloatingParticles = ({ count = 12 }) => {
       </div>
       {/* Refer and Invite Section */}
       <div className="w-full bg-white dark:bg-transparent py-4 md:py-8 my-4 md:my-6">
-        <div className="w-full md:container md:mx-auto md:max-w-7xl md:px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
-          {/* Card Image - Full width on small screens, centered on larger screens */}
-          <div className="w-full md:mx-auto md:max-w-6xl md:rounded-3xl overflow-hidden">
-            <Image
-              src="https://res.cloudinary.com/pitz/image/upload/v1765346728/Container_37_fpyfvs.png"
-              alt="Refer and Invite your friends and earn commission"
-              width={1440}
-              height={800}
-              className="w-full h-auto object-contain"
-              priority
-              quality={100}
-            />
+        <div className="w-full md:container md:mx-auto md:max-w-8xl md:px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16">
+          <div className="w-full md:mx-auto md:max-w-7xl rounded-3xl overflow-hidden bg-[#1D8751] relative">
+
+            {/* Background Elements */}
+            <div className="absolute top-0 right-0 w-full h-full overflow-hidden pointer-events-none">
+              <div className="absolute top-10 right-10 w-64 h-64 bg-white/5 rounded-full blur-3xl"></div>
+              <div className="absolute bottom-[-50px] left-[-50px] w-96 h-96 bg-white/5 rounded-full blur-3xl"></div>
+            </div>
+
+            <div className="flex flex-col lg:grid lg:grid-cols-2 gap-8 p-8 md:p-12 lg:p-16 relative z-10 items-center overflow-hidden">
+              {/* Left Content */}
+              <div className="space-y-5 relative z-20">
+                {/* Pill */}
+                <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20 w-fit">
+                  <Gift className="w-4 h-4 text-white" />
+                  <span className="text-white text-xs font-medium tracking-wide">Earn Rewards</span>
+                </div>
+
+                {/* Heading */}
+                <div>
+                  <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tighter mb-4">
+                    Refer and Invite your friends and earn commission
+                  </h2>
+                  <p className="text-white/80 text-lg font-light">
+                    on each transaction they make with us
+                  </p>
+                </div>
+
+                {/* Steps */}
+                <div className="space-y-6">
+                  {/* Step 1 */}
+                  <div className="flex gap-4">
+                    <div className="shrink-0 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                      <Users className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="text-white text-lg">Invite Friends</h4>
+                      <p className="text-white/70 text-sm">Share your unique referral link</p>
+                    </div>
+                  </div>
+
+                  {/* Step 2 */}
+                  <div className="flex gap-4">
+                    <div className="shrink-0 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="text-white text-lg">They Trade</h4>
+                      <p className="text-white/70 text-sm">Your friends start trading on OMAYA</p>
+                    </div>
+                  </div>
+
+                  {/* Step 3 */}
+                  <div className="flex gap-4">
+                    <div className="shrink-0 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                      <Gift className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="text-white text-lg">Earn Commission</h4>
+                      <p className="text-white/70 text-sm">Get commission on every trade</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Button */}
+                <div className="pt-2">
+                  <Link href="/dashboard/referrals" className="inline-flex items-center gap-2 bg-white text-[#1D8751] px-8 py-3.5 rounded-full font-bold text-sm md:text-base hover:bg-gray-100 transition-colors shadow-xl shadow-black/10">
+                    Start Referring
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* Right Content - Visuals */}
+              <div className="
+                  absolute bottom-0 right-0 w-full h-[300px] z-0 opacity-25 overflow-hidden pointer-events-none
+                  sm:opacity-40 sm:h-[400px]
+                  lg:relative lg:opacity-100 lg:pointer-events-auto lg:h-full lg:w-auto lg:overflow-visible lg:z-10
+                  perspective-1000 flex items-center justify-end lg:mr-0
+                ">
+                {/* Circle Decorations */}
+                <div className="absolute top-4 left-4 lg:top-10 lg:left-10 w-8 h-8 lg:w-12 lg:h-12 bg-[#FDC700] rounded-full opacity-50 animate-floatSlow"></div>
+                <div className="absolute bottom-10 right-10 lg:bottom-10 lg:right-1 w-12 h-12 lg:w-20 lg:h-20 bg-white/30 rounded-full opacity-40"></div>
+
+                {/* Floating Glass Cards Container - Scaled for Mobile */}
+                <div className="relative w-[340px] h-[300px] lg:w-[400px] lg:h-[300px] transform scale-[0.55] sm:scale-[0.6] md:scale-[0.85] lg:scale-85 origin-bottom-right lg:origin-center transition-transform duration-500">
+
+                  {/* Money Bag Emoji - Floating Top Right */}
+                  <div className="absolute -top-6 right-20 text-4xl lg:text-5xl animate-float-delayed z-20 drop-shadow-md">💰</div>
+
+                  {/* Card 1 - Top Left (Greenish/Yellow tint) */}
+                  <div className="absolute top-0 left-0 w-64 h-40 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 transform rotate-6 shadow-xl p-5 flex flex-col justify-between z-0">
+                    {/* Yellow Coin Circle */}
+                    <div className="w-10 h-10 rounded-full bg-[#FDC700] flex items-center justify-center shadow-lg">
+                      <span className="text-xl -ml-0.5"><MdCurrencyBitcoin /></span>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="w-3/4 h-3 bg-white/20 rounded-full"></div>
+                      <div className="w-1/2 h-2 bg-white/20 rounded-full"></div>
+                    </div>
+                  </div>
+
+                  {/* Card 2 - Middle Right (Main) */}
+                  <div className="absolute top-17 right-0 w-72 h-44 bg-white/10 backdrop-blur-lg rounded-2xl border border-white/30 transform shadow-2xl p-5 flex flex-col justify-between animate-floatSlow z-10 transition-transform hover:scale-105 duration-300">
+                    {/* Dark Green Circle Decoration */}
+                    <div className="w-12 h-12 rounded-full bg-[#134e32]/40 absolute top-1/2 left-[45%] transform -translate-x-1/2 -translate-y-1/2 blur-lg"></div>
+
+                    <div className="w-10 h-10 rounded-full bg-[#1D8751] flex items-center justify-center shadow-lg">
+                      <span className="text-xl">$</span>
+                    </div>
+                    <div className="absolute top-4 right-4 text-2xl">💸</div>
+
+                    <div className="mt-auto space-y-3 relative z-10">
+                      <div className="w-full h-3 bg-white/30 rounded-full"></div>
+                      <div className="w-2/3 h-2 bg-white/30 rounded-full"></div>
+                    </div>
+                  </div>
+
+                  {/* Card 3 - Bottom Left (Blue Dot) */}
+                  <div className="absolute bottom-[-10px] left-8 w-60 h-36 bg-white/20 backdrop-blur-xl rounded-2xl border border-white/40 shadow-2xl p-5 flex flex-col justify-between transform -rotate-2 z-20 hover:-translate-y-2 transition-transform duration-300">
+                    <div className="w-10 h-10 rounded-full bg-[#3B82F6] shadow-md flex items-center justify-center">£</div>
+                    <div className="space-y-3">
+                      <div className="w-4/5 h-3 bg-white/40 rounded-full"></div>
+                      <div className="w-3/5 h-2 bg-white/40 rounded-full"></div>
+                    </div>
+
+                    {/* Dollar Bill Emoji - Floating Left */}
+                    <div
+                      className="absolute top-1/2 -left-20 transform -translate-y-1/2 text-3xl animate-bounce  drop-shadow-md"
+                      style={{ animationDuration: '3s' }}
+                    >
+                      💵
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
