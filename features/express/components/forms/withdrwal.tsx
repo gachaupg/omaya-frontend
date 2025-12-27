@@ -64,6 +64,80 @@ interface UserPaymentDetail {
   payment_provider?: string;
 }
 
+// Asset dropdown item component to fix hooks order issue
+const AssetDropdownItem = ({
+  asset,
+  isSelected,
+  onSelect,
+  getHighResAssetIcon,
+  ASSET_ICON_BASE_CLASS,
+  ASSET_ICON_SIZE,
+  getNetworkDisplayName,
+  getAssetNetwork,
+  selectedAsset,
+}: {
+  asset: SupportedAsset;
+  isSelected: boolean;
+  onSelect: () => void;
+  getHighResAssetIcon: (asset: any, size: number) => string;
+  ASSET_ICON_BASE_CLASS: string;
+  ASSET_ICON_SIZE: number;
+  getNetworkDisplayName: (network: string) => string;
+  getAssetNetwork: (asset: SupportedAsset) => string;
+  selectedAsset: any;
+}) => {
+  // Clean up display name
+  const displayName = (() => {
+    let name = asset.name || asset.ticker || asset.symbol || "Unknown Asset";
+    name = name
+      .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, "")
+      .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, "")
+      .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, "")
+      .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, "")
+      .replace(/\s*\(TRON\)\s*\(TRX\)/gi, "")
+      .replace(/\s*\(Solana\)\s*\(SOL\)/gi, "")
+      .replace(/\s*\(BSC\)$/gi, "")
+      .replace(/\s*\(ETH\)$/gi, "")
+      .replace(/\s*\(MATIC\)$/gi, "")
+      .replace(/\s*\(AVAX\)$/gi, "")
+      .replace(/\s*\(TRX\)$/gi, "")
+      .replace(/\s*\(SOL\)$/gi, "")
+      .trim();
+    return name;
+  })();
+
+  return (
+    <div
+      className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b transition-all duration-150 last:border-b-0 group ${
+        isSelected ? "bg-blue-50 dark:bg-blue-900/20 border-b-blue-400" : ""
+      }`}
+      onClick={onSelect}
+    >
+      <img
+        src={getHighResAssetIcon(asset, ASSET_ICON_SIZE)}
+        alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
+        className={`${ASSET_ICON_BASE_CLASS} w-11 h-11`}
+        loading="lazy"
+        onError={(e) => {
+          e.currentTarget.src = getHighResAssetIcon(null, ASSET_ICON_SIZE);
+        }}
+      />
+      <div className="flex-1">
+        <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
+          {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
+          <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
+            {getNetworkDisplayName(getAssetNetwork(asset))}
+          </span>
+        </div>
+        <div className="text-[#35353e] dark:text-[#788099] text-sm">{displayName}</div>
+      </div>
+      {selectedAsset?.asset_id === asset.asset_id && (
+        <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
+      )}
+    </div>
+  );
+};
+
 // Add UserPaymentSelector component
 const UserPaymentSelector = ({
   userPaymentDetails,
@@ -3073,79 +3147,25 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                       .slice(0, 3)
                       .map((asset: SupportedAsset, index: number) => {
                         const isCurrentlySelected = selectedAsset?.ticker === asset.ticker && selectedAsset?.network === asset.network;
-                        const [isHovered, setIsHovered] = useState(false);
                         return (
-                        <div
-                          key={`popular-${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
-                          className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b transition-all duration-150 ${isCurrentlySelected ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
-                          style={{
-                            borderBottomColor: isCurrentlySelected 
-                              ? '#60a5fa' 
-                              : isHovered 
-                                ? '#60a5fa' 
-                                : undefined
-                          }}
-                          onMouseEnter={() => setIsHovered(true)}
-                          onMouseLeave={() => setIsHovered(false)}
-                          onClick={() => {
-                            handleAssetSelection(asset);
-                            setIsAssetDropdownOpen(false);
-                            setAssetSearchTerm("");
-                          }}
-                        >
-                          <img
-                            src={getHighResAssetIcon(asset, ASSET_ICON_SIZE)}
-                            alt={
-                              asset?.name ||
-                              asset?.ticker ||
-                              asset?.symbol ||
-                              "Asset"
-                            }
-                            className={`${ASSET_ICON_BASE_CLASS} w-11 h-11`}
-                            loading="lazy"
-                            onError={(e) => {
-                              e.currentTarget.src = getHighResAssetIcon(
-                                null,
-                                ASSET_ICON_SIZE
-                              );
+                          <AssetDropdownItem
+                            key={`popular-${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
+                            asset={asset}
+                            isSelected={isCurrentlySelected}
+                            onSelect={() => {
+                              handleAssetSelection(asset);
+                              setIsAssetDropdownOpen(false);
+                              setAssetSearchTerm("");
                             }}
+                            getHighResAssetIcon={getHighResAssetIcon}
+                            ASSET_ICON_BASE_CLASS={ASSET_ICON_BASE_CLASS}
+                            ASSET_ICON_SIZE={ASSET_ICON_SIZE}
+                            getNetworkDisplayName={getNetworkDisplayName}
+                            getAssetNetwork={getAssetNetwork}
+                            selectedAsset={selectedAsset}
                           />
-                          <div className="flex-1">
-                            <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
-                              {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
-                              <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                                {getNetworkDisplayName(getAssetNetwork(asset))}
-                              </span>
-                            </div>
-                            <div className="text-[#35353e] dark:text-[#788099] text-sm">
-                              {(() => {
-                                let displayName =
-                                  asset.name || asset.ticker || asset.symbol || "Unknown Asset";
-
-                                displayName = displayName
-                                  .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, "")
-                                  .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, "")
-                                  .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, "")
-                                  .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, "")
-                                  .replace(/\s*\(TRON\)\s*\(TRX\)/gi, "")
-                                  .replace(/\s*\(Solana\)\s*\(SOL\)/gi, "")
-                                  .replace(/\s*\(BSC\)$/gi, "")
-                                  .replace(/\s*\(ETH\)$/gi, "")
-                                  .replace(/\s*\(MATIC\)$/gi, "")
-                                  .replace(/\s*\(AVAX\)$/gi, "")
-                                  .replace(/\s*\(TRX\)$/gi, "")
-                                  .replace(/\s*\(SOL\)$/gi, "")
-                                  .trim();
-
-                                return displayName;
-                              })()}
-                            </div>
-                          </div>
-                          {selectedAsset?.asset_id === asset.asset_id && (
-                            <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                          )}
-                        </div>
-                      );})}
+                        );
+                      })}
 
                     <div className="border-t-2 border-[#D1D2D4FF] dark:border-[#35353E]"></div>
 
@@ -3163,79 +3183,25 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
                   : sortedSwapAssets.slice(3)
                 ).map((asset: SupportedAsset, index: number) => {
                   const isCurrentlySelected = selectedAsset?.ticker === asset.ticker && selectedAsset?.network === asset.network;
-                  const [isHovered, setIsHovered] = useState(false);
                   return (
-                  <div
-                    key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
-                    className={`flex items-center gap-3 p-3 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b transition-all duration-150 last:border-b-0 ${isCurrentlySelected ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
-                    style={{
-                      borderBottomColor: isCurrentlySelected 
-                        ? '#60a5fa' 
-                        : isHovered 
-                          ? '#60a5fa' 
-                          : undefined
-                    }}
-                    onMouseEnter={() => setIsHovered(true)}
-                    onMouseLeave={() => setIsHovered(false)}
-                    onClick={() => {
-                      handleAssetSelection(asset);
-                      setIsAssetDropdownOpen(false);
-                      setAssetSearchTerm("");
-                    }}
-                  >
-                    <img
-                      src={getHighResAssetIcon(asset, ASSET_ICON_SIZE)}
-                      alt={
-                        asset?.name ||
-                        asset?.ticker ||
-                        asset?.symbol ||
-                        "Asset"
-                      }
-                      className={`${ASSET_ICON_BASE_CLASS} w-11 h-11`}
-                      loading="lazy"
-                      onError={(e) => {
-                        e.currentTarget.src = getHighResAssetIcon(
-                          null,
-                          ASSET_ICON_SIZE
-                        );
+                    <AssetDropdownItem
+                      key={`${asset.asset_id || "asset"}-${asset.symbol || asset.ticker || asset.name}-${asset.network || "unknown"}-${index}`}
+                      asset={asset}
+                      isSelected={isCurrentlySelected}
+                      onSelect={() => {
+                        handleAssetSelection(asset);
+                        setIsAssetDropdownOpen(false);
+                        setAssetSearchTerm("");
                       }}
+                      getHighResAssetIcon={getHighResAssetIcon}
+                      ASSET_ICON_BASE_CLASS={ASSET_ICON_BASE_CLASS}
+                      ASSET_ICON_SIZE={ASSET_ICON_SIZE}
+                      getNetworkDisplayName={getNetworkDisplayName}
+                      getAssetNetwork={getAssetNetwork}
+                      selectedAsset={selectedAsset}
                     />
-                    <div className="flex-1">
-                      <div className="text-[#35353e] dark:text-[#ffffff] font-medium flex items-center gap-2">
-                        {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
-                        <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                          {getNetworkDisplayName(getAssetNetwork(asset))}
-                        </span>
-                      </div>
-                      <div className="text-[#35353e] dark:text-[#788099] text-sm">
-                        {(() => {
-                          let displayName =
-                            asset.name || asset.ticker || asset.symbol || "Unknown Asset";
-
-                          displayName = displayName
-                            .replace(/\s*\(Binance Smart Chain\)\s*\(BSC\)/gi, "")
-                            .replace(/\s*\(Ethereum\)\s*\(ETH\)/gi, "")
-                            .replace(/\s*\(Polygon\)\s*\(MATIC\)/gi, "")
-                            .replace(/\s*\(Avalanche\)\s*\(AVAX\)/gi, "")
-                            .replace(/\s*\(TRON\)\s*\(TRX\)/gi, "")
-                            .replace(/\s*\(Solana\)\s*\(SOL\)/gi, "")
-                            .replace(/\s*\(BSC\)$/gi, "")
-                            .replace(/\s*\(ETH\)$/gi, "")
-                            .replace(/\s*\(MATIC\)$/gi, "")
-                            .replace(/\s*\(AVAX\)$/gi, "")
-                            .replace(/\s*\(TRX\)$/gi, "")
-                            .replace(/\s*\(SOL\)$/gi, "")
-                            .trim();
-
-                          return displayName;
-                        })()}
-                      </div>
-                    </div>
-                    {selectedAsset?.asset_id === asset.asset_id && (
-                      <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                    )}
-                  </div>
-                );})}
+                  );
+                })}
               </>
             ) : (
               <div className="p-4 text-center text-[#7e7e8f] dark:text-[#788099]">
