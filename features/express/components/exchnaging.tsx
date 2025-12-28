@@ -707,7 +707,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   // If showing success page, render it with real transaction data and snapshot websocket data
   if (showSuccess) {
     return (
-      <div className="w-full min-h-screen flex flex-col items-center justify-center pt-0 sm:pt-1 md:pt-2 px-1 sm:px-2 md:px-0">
+      <div className="w-full min-h-screen flex flex-col items-center justify-center pt-0 sm:pt-1 md:pt-2 px-0 sm:px-2 md:px-0">
         <SuccessPage
           transactionData={effectiveTransactionData}
           websocketData={snapshotWebsocketData || finalWebsocketData}
@@ -720,7 +720,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   if (!effectiveTransactionData) {
     return (
       <div
-        className={`w-full min-h-screen flex flex-col items-center justify-center pt-0 sm:pt-1 md:pt-2 px-1 sm:px-2 md:px-0 ${
+        className={`w-full min-h-screen flex flex-col items-center justify-center pt-0 sm:pt-1 md:pt-2 px-0 sm:px-2 md:px-0 ${
           isDark ? "bg-[#0A0A0A]" : "bg-gray-50"
         }`}
       >

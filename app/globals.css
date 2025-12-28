@@ -246,6 +246,20 @@ textarea:active {
   padding-inline: var(--layout-gutter);
 }
 
+.dashboard-page-wrapper {
+  padding-inline: 0 !important;
+  margin-left: 0.5rem !important; /* 8px margin left on small screens */
+  margin-right: 1rem !important; /* 16px margin right on small screens */
+}
+
+@media (min-width: 640px) {
+  .dashboard-page-wrapper {
+    padding-inline: var(--layout-gutter) !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+}
+
 /* Line clamp utility for text truncation */
 .line-clamp-3 {
   display: -webkit-box;

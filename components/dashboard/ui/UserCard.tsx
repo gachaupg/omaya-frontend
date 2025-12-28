@@ -117,15 +117,16 @@ function UserCard() {
   };
 
   return (
-    <Card
-      borderColor="border-[#35353E]"
-      width="w-full"
-      bgColor="bg-card"
-      borderRadius="rounded-xl sm:rounded-xl lg:rounded-[20px]"
-      className="p-2 sm:p-3 lg:p-2 bg-card overflow-hidden"
-    >
+    <div className="mx-2 sm:mx-0">
+      <Card
+        borderColor="border-[#35353E]"
+        width="w-full"
+        bgColor="bg-card"
+        borderRadius="rounded-xl sm:rounded-xl lg:rounded-[20px]"
+        className="p-0 sm:p-3 lg:p-2 bg-card overflow-hidden"
+      >
       {showHelpSupport ? (
-        <div className="w-full mt-2">
+        <div className="w-full mt-2 px-4 sm:px-0">
           <button
             className="mb-4 px-4 py-2 bg-gray-200 text-[#1D8751] font-medium text-sm hover:bg-[#1D8751]/10 dark:bg-[#2C2C32] rounded"
             onClick={() => setShowHelpSupport(false)}
@@ -135,7 +136,7 @@ function UserCard() {
           <HelpSupportForm />
         </div>
       ) : (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-3 sm:gap-4 md:gap-6 min-w-0 overflow-hidden">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-3 sm:gap-4 md:gap-6 min-w-0 overflow-x-hidden px-4 sm:px-0 py-2 sm:py-0">
           {/* Left Side: Avatar, User Info, User ID, User Type */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 md:gap-6 min-w-0 flex-1 overflow-hidden">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink">
@@ -303,7 +304,7 @@ function UserCard() {
           </div>
 
           {/* Right Side: Action Buttons */}
-          <div className="flex flex-row items-center gap-2 sm:gap-3 flex-shrink-0">
+          <div className="flex flex-row items-center gap-2 sm:gap-3 flex-shrink-0 min-w-0">
             <Button
               variant="ghost"
               size="sm"
@@ -391,7 +392,8 @@ function UserCard() {
           </div>
         </div>
       )}
-    </Card>
+      </Card>
+    </div>
   );
 }
 

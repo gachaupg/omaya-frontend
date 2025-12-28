@@ -53,7 +53,7 @@ export default function DashboardLayout({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.15 }} // Reduced from 0.3s to 0.15s for snappier feel
-            className="page-shell mt-[68px] sm:mt-[68px] md:mt-20 w-full max-w-full px-0 overflow-x-hidden box-border"
+            className="dashboard-page-wrapper mt-[68px] sm:mt-[68px] md:mt-20 w-full max-w-full overflow-x-hidden box-border"
           >
             {children}
           </motion.div>
