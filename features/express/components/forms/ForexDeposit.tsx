@@ -97,13 +97,13 @@ export default function ForexDeposit() {
   );
 
   return (
-    <div className="w-full flex flex-col dark:bg-[#18181D]">
+    <div className="flex flex-col dark:bg-[#18181D] pl-4 mr-40" style={{ width: 'calc(100% - 12rem)' }}>
       <form onSubmit={handleSubmit}>
         <h2 className="text-lg font-semibold mb-3 text-[#788099] inline-flex items-center gap-2">
           <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span> Forex Exchange Info
         </h2>
 
-        <div className="w-full max-w-4xl mx-auto mb-4">
+        <div className="w-full mb-4">
           <div className="border border-[#D1D2D4FF] dark:border-[#35353E] rounded-2xl p-4 bg-white dark:bg-[#1D1D23]">
             {/* Currency Selection */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -297,7 +297,7 @@ export default function ForexDeposit() {
         </div>
 
         {/* Submit Button */}
-        <div className="w-full max-w-4xl mx-auto mt-4">
+        <div className="w-full mt-4">
           <button
             type="submit"
             disabled={forexLoading}
@@ -322,7 +322,7 @@ export default function ForexDeposit() {
         </div>
 
         {/* Terms */}
-        <div className="w-full max-w-4xl mx-auto mt-4">
+        <div className="w-full mt-4">
           <div className="border border-[#1D8751] dark:border-[#1D8751] rounded-xl p-3">
             <div className="flex items-center mb-2">
               <svg width="16" height="16" fill="none" viewBox="0 0 24 24" className="mr-2">

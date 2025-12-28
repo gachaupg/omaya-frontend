@@ -2951,7 +2951,7 @@ export default function DepositForm({
   }, [selectedPaymentDetail]);
 
   return (
-    <div className="w-full flex flex-col dark:bg-[var(--bg-color)] px-0 sm:px-1 md:px-0">
+    <div className="flex flex-col dark:bg-[var(--bg-color)] pl-4 mr-40" style={{ width: 'calc(100% - 12rem)' }}>
       <h2 className="text-xl font-bold mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
         <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span>{" "}
         {t("express.transactionInfo", "Transaction Info")}
@@ -2970,7 +2970,7 @@ export default function DepositForm({
           {/* Top Card Container */}
           <div className="relative flex flex-col sm:flex-row border border-[#35353E] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0 bg-white dark:bg-[#18181D]">
             {/* Amount Section */}
-            <div className="flex-1 sm:pr-4">
+            <div className="flex-1">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 {t("express.youSend", "You Send")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
@@ -3398,7 +3398,7 @@ export default function DepositForm({
         <div className="relative mb-2 sm:mb-3">
           <div className="relative flex flex-col sm:flex-row border border-[#35353E] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-2 sm:p-3 md:p-4 overflow-visible gap-2 sm:gap-3 md:gap-0 bg-white dark:bg-[#18181D]">
             {/* You Receive Section */}
-            <div className="flex-1 sm:pr-4">
+            <div className="flex-1">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
                 {t("express.youReceive", "You Receive")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>

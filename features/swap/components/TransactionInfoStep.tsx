@@ -36,7 +36,7 @@ interface TransactionInfoStepProps {
 const strongBorder =
   "border-[1.5px] border-gray-200 dark:border-[#35353E]";
 const baseCard =
-  `rounded-xl sm:rounded-[26px] ${strongBorder} bg-white dark:bg-[#18181D] dark:text-white text-gray-900`;
+  `rounded-2xl ${strongBorder} bg-white dark:bg-[#18181D] dark:text-white text-gray-900`;
 const labelCopy = "text-[12px] tracking-wide dark:text-[#7d7f95] text-gray-600";
 const inputBase =
   `rounded-lg sm:rounded-2xl bg-transparent dark:bg-transparent ${strongBorder} dark:text-white text-[#35353e] px-2 sm:px-4 py-2 w-full text-sm sm:text-lg dark:placeholder:text-[#5f6070] placeholder:text-gray-400 focus:outline-none h-[42px] sm:h-[48px]`;
