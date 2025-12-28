@@ -65,7 +65,7 @@ const MoneyX = ({ isHomePage = false, onTransferComplete }: MoneyXProps) => {
   };
 
   return (
-    <div className="w-full mx-auto px-0 sm:px-0.5 pt-0 mb-0">
+    <div className="w-full pl-4 pt-0 mb-0">
       <TransferForm isHomePage={isHomePage} onTransfer={handleTransfer} />
     </div>
   );

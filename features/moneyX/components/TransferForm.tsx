@@ -897,7 +897,7 @@ export default function TransferForm({ onTransfer }: TransferFormProps) {
     !selectedToPaymentDetail;
 
   return (
-    <div className="w-full flex flex-col dark:bg-[var(--bg-color)]">
+    <div className="flex flex-col dark:bg-[var(--bg-color)] pl-4 mr-40" style={{ width: 'calc(100% - 12rem)' }}>
       <h2 className="text-lg sm:text-xl font-bold mb-1 sm:mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
         <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span>
         Transfer Information

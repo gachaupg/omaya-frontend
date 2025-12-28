@@ -1063,18 +1063,36 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
         </div>
         <div className="flex-shrink-0 ml-0 md:ml-6 flex items-center justify-center py-2">
           {/* QR code */}
-          <div className="w-36 h-36 bg-white rounded-lg flex items-center justify-center">
-            <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${
-                effectiveTransactionData?.type === "deposit" &&
-                effectiveTransactionData?.paymentDetail
-                  ? effectiveTransactionData.paymentDetail.account_number
-                  : effectiveTransactionData?.walletAddress || ""
-              }`}
-              alt="QR Code"
-              className="w-32 h-32"
-            />
-          </div>
+          {(() => {
+            const qrData = liveTransactionId || effectiveTransactionData?.transactionId || "";
+            
+            if (!qrData) {
+              return (
+                <div className="w-36 h-36 bg-white rounded-lg flex items-center justify-center">
+                  <span className="text-gray-400 text-xs">No QR data</span>
+                </div>
+              );
+            }
+
+            const encodedData = encodeURIComponent(qrData);
+            return (
+              <div className="w-36 h-36 bg-white rounded-lg flex items-center justify-center">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodedData}`}
+                  alt="QR Code"
+                  className="w-32 h-32"
+                  onError={(e) => {
+                    // Fallback if QR code fails to load
+                    e.currentTarget.style.display = 'none';
+                    const parent = e.currentTarget.parentElement;
+                    if (parent) {
+                      parent.innerHTML = '<span class="text-gray-400 text-xs">QR unavailable</span>';
+                    }
+                  }}
+                />
+              </div>
+            );
+          })()}
         </div>
       </div>
 

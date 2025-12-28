@@ -80,7 +80,7 @@ export default function ForexWithdrawal({
   };
 
   return (
-    <div className="w-full flex flex-col dark:bg-[#18181D] mt-4">
+    <div className="flex flex-col dark:bg-[#18181D] mt-0 pl-4 mr-40" style={{ width: 'calc(100% - 12rem)' }}>
       <form onSubmit={handleSubmit}>
         <h2 className="text-xl font-bold mb-2 text-[#788099] inline-flex items-center gap-2">
           <span className="text-[#7e7e8f] dark:text-[#788099]">2-</span> Confirm FXP Withdrawal
