@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { tokens } from "@/styles/tokens";
+import { useState, useEffect, useRef } from "react";
 // Custom Telegram Icon Component
 const TelegramIcon = ({
   size = 20,
@@ -65,6 +66,8 @@ export default function Footer() {
   const pathname = usePathname();
   const { primary } = tokens.colors.brand;
   const { textTitle, textBody, background, card } = tokens.colors.dark;
+  const [isVisible, setIsVisible] = useState(false);
+  const footerRef = useRef<HTMLElement>(null);
 
   // Helper function to check if a link is active
   const isActive = (href: string) => {
@@ -78,8 +81,55 @@ export default function Footer() {
     return pathname === href || pathname?.startsWith(href + "/");
   };
 
+  // Scroll detection to change background when footer reaches sidebar area
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!footerRef.current) return;
+
+      // Check if sidebar exists on the page (dashboard pages have sidebar)
+      const sidebar = document.querySelector('aside, [class*="sidebar"], [class*="Sidebar"]');
+      if (!sidebar) {
+        // No sidebar, keep default background
+        setIsVisible(false);
+        return;
+      }
+
+      const footerRect = footerRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      
+      // Sidebar is fixed at top-28 (112px from top)
+      // Change background when footer's top reaches the sidebar's vertical position
+      // This happens when scrolling down and footer reaches ~112px from top of viewport
+      const sidebarTopPosition = 112; // top-28 = 7rem = 112px
+      
+      // When footer top reaches or passes the sidebar's top position (scrolling up into sidebar area)
+      if (footerRect.top <= sidebarTopPosition + 50) {
+        setIsVisible(true);
+      } else {
+        setIsVisible(false);
+      }
+    };
+
+    // Start with default background (isVisible = false)
+    // Only check when scrolling
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
+    };
+  }, []);
+
   return (
-    <footer className="relative z-40 pt-6 sm:pt-8 md:pt-10 pb-4 bg-(--bg-color)] text-gray-700 dark:text-[#788099]">
+    <footer 
+      ref={footerRef}
+      className={`relative z-40 pt-6 sm:pt-8 md:pt-10 pb-4 text-gray-700 dark:text-[#788099] transition-colors duration-300 ${
+        isVisible 
+          ? "bg-white dark:bg-[#1D1D23]" 
+          : "bg-[var(--bg-color)]"
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-8 pb-8 border-b border-border dark:border-accent">
 

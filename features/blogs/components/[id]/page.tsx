@@ -88,8 +88,8 @@ const SingleBlogPage = () => {
   }
 
   return (
-    <div className="bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white min-h-screen p-4 sm:p-6 md:p-8 mt-16">
-      <div className="container mx-auto">
+    <div className="bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white min-h-screen p-0 sm:p-6 md:p-8 mt-16">
+      <div className="w-full px-0 sm:px-4 md:px-6 lg:px-8">
         {/* Back Button */}
         <button
           onClick={() => router.push("/blog")}

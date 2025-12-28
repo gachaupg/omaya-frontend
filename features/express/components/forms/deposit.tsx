@@ -2951,7 +2951,7 @@ export default function DepositForm({
   }, [selectedPaymentDetail]);
 
   return (
-    <div className="flex flex-col dark:bg-[var(--bg-color)] pl-4 mr-40" style={{ width: 'calc(100% - 12rem)' }}>
+    <div className="flex flex-col dark:bg-[var(--bg-color)] pl-0 sm:pl-4 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full sm:w-[calc(100%-12rem)]">
       <h2 className="text-xl font-bold mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">
         <span className="text-[#7e7e8f] dark:text-[#788099]">1-</span>{" "}
         {t("express.transactionInfo", "Transaction Info")}

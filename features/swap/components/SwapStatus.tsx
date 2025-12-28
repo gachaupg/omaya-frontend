@@ -31,7 +31,7 @@ const SwapStatusComponent: React.FC<SwapStatusProps> = ({
 }) => {
   const router = useRouter();
   return (
-    <div className="min-h-screen flex flex-col items-center py-6 sm:py-12 px-3 sm:px-4">
+    <div className="min-h-screen flex flex-col items-center py-6 sm:py-12 pl-3 sm:pl-4 pr-2 sm:pr-4">
       {/* Success Icon and Message */}
       <div className="flex flex-col items-center mb-6 sm:mb-8">
         <div className="relative mb-3 sm:mb-4">

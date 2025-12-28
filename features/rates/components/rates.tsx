@@ -14,7 +14,7 @@ const Rates = () => {
     console.log('Rates component - activeTab changed to:', activeTab);
   }, [activeTab]);
   return (
-    <div className="max-w-5xl text-gray-900 dark:text-white px-4 sm:px-6 lg:px-0">
+    <div className="w-full text-gray-900 dark:text-white px-0 sm:px-6 lg:px-0 max-w-5xl mx-auto">
       {/* Back Button */}
       <Link
         href="/dashboard"

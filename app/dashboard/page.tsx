@@ -43,16 +43,18 @@ export default function DashboardPage() {
   }, [isVerified, loading, error, dispatch]);
 
   return (
-    <div className="container mx-auto pt-0 mb-4 flex flex-col gap-4 rounded-lg px-4 sm:px-6 md:px-8 overflow-x-hidden">
+    <div className="w-full min-h-screen pt-0 pb-4 flex flex-col gap-0 sm:gap-4 overflow-x-hidden">
       <UserCard />
-      <PriceCards />
-      <VolumeChart
-        transactionSummary={transactionSummary || emptyTransactionSummary}
-      />
-      <LineCharts
-        transactionSummary={transactionSummary || emptyTransactionSummary}
-      />
-      <Transactions />
+      <div className="w-full px-2 sm:px-6 md:px-8 flex flex-col gap-4">
+        <PriceCards />
+        <VolumeChart
+          transactionSummary={transactionSummary || emptyTransactionSummary}
+        />
+        <LineCharts
+          transactionSummary={transactionSummary || emptyTransactionSummary}
+        />
+        <Transactions />
+      </div>
     </div>
   );
 }

@@ -3216,7 +3216,7 @@ const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
   };
 
   return (
-    <div className="flex flex-col dark:bg-[var(--bg-color)] pl-4 mr-40" style={{ width: 'calc(100% - 12rem)' }}>
+    <div className="flex flex-col dark:bg-[var(--bg-color)] pl-0 sm:pl-4 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full sm:w-[calc(100%-12rem)]">
       {/* Crypto/Forex Toggle Buttons Removed */}
 
       {transactionMode === "forex" ? (
