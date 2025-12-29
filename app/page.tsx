@@ -570,10 +570,11 @@ export default function MarketingPage() {
         </div>
       </section>
 
-      <div className="pt-4 sm:pt-6 md:pt-8 pb-12 sm:pb-16 md:pb-20 px-4 md:px-[100px] bg-white dark:bg-[var(--bg-color)] relative z-10">
+      <div className="pt-4 sm:pt-6 md:pt-8 pb-12 sm:pb-16 md:pb-20 px-4 md:px-[100px] bg-white dark:bg-(--card-color) relative z-10">
+        <div className="absolute -top-10 left-90 w-[200px] sm:w-[300px] h-[200px] sm:h-[300px] bg-[#1D8751]/10 blur-3xl rounded-full" />
 
         <div className="absolute inset-0 overflow-hidden pointer-events-none -z-1">
-          <div className="absolute w-[280px] sm:w-[300px] h-[500px] right-90 bottom-25 sm:h-24 blur-3xl bg-[#9810FA] rounded-full opacity-25" />
+          <div className="absolute w-[280px] sm:w-[300px] h-[600px] right-90 bottom-25 sm:h-24 blur-3xl bg-[#9810FA] rounded-full opacity-15" />
         </div>
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl">
           {/* Green pill banner */}
@@ -585,27 +586,12 @@ export default function MarketingPage() {
           </div>
 
           {/* Title + Subtitle (small green gradient only around "Celebrating Success:") */}
-          <div className="mx-auto mb-8 sm:mb-10 md:mb-12 max-w-3xl px-2">
+          <div className="mx-auto mb-8 sm:mb-10 md:mb-12 max-w-5xl px-2">
             {/* Section Title */}
             <div className="relative flex justify-center mb-3 sm:mb-4">
-              {/* Greenish glow behind the whole title */}
-              <div className="pointer-events-none absolute inset-0 flex justify-center items-center -z-10">
-                <div className="w-[440px] sm:w-[700px] h-[120px] sm:h-[150px] bg-gradient-to-r from-transparent via-[#1D8751]/32 to-transparent blur-3xl rounded-full" />
-                <div className="absolute w-[280px] sm:w-[420px] h-[78px] sm:h-[96px] bg-gradient-to-r from-transparent via-[#13B562]/38 to-transparent blur-2xl rounded-full" />
-                <div className="absolute w-[560px] sm:w-[860px] h-[180px] sm:h-[230px] bg-[#1D8751]/10 blur-[64px] rounded-full" />
-
-              </div>
               <h2 className="text-center text-xl sm:text-2xl md:text-3xl lg:text-4xl 2xl:text-5xl font-bold">
                 <span className="text-gray-900 dark:text-white">
                   <span className="relative inline-flex items-center">
-                    <span
-                      className="pointer-events-none absolute -inset-x-10 -inset-y-5 rounded-full bg-gradient-to-r from-transparent via-[#1D8751]/20 to-transparent dark:via-[#13B562]/24 blur-2xl opacity-70"
-                      aria-hidden="true"
-                    />
-                    <span
-                      className="pointer-events-none absolute -inset-x-6 -inset-y-3 rounded-full bg-gradient-to-r from-transparent via-[#13B562]/28 to-transparent blur-2xl opacity-70"
-                      aria-hidden="true"
-                    />
                     <span className="relative">
                       {t(
                         "marketing.achievements.title.leading",
@@ -656,23 +642,13 @@ export default function MarketingPage() {
               return (
                 <div
                   key={index}
-                  className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg sm:rounded-3xl p-4 sm:p-5 md:p-6 flex flex-col relative overflow-hidden border-2 border-gray-200 dark:border-[#2A2A2A]"
+                  className="bg-gray-50 dark:bg-white/2 rounded-lg sm:rounded-3xl p-4 sm:p-5 md:p-6 flex flex-col relative overflow-hidden border-2 border-gray-200 dark:border-white/10"
                 >
-                  {/* Dark mode gradient background */}
-                  <div
-                    className="hidden dark:block absolute inset-0 rounded-lg sm:rounded-xl"
-                    style={{
-                      background: 'linear-gradient(to bottom, rgba(29, 29, 35, 0.95), rgba(29, 29, 35, 1))'
-                    }}
-                  ></div>
+                  {/* Subtle white gradient overlay */}
+                  <div className="absolute inset-0 bg-linear-to-b from-white/5 via-white/2 to-transparent pointer-events-none rounded-lg sm:rounded-3xl"></div>
 
-                  {/* Greenish gradient overlay - lighter in light mode */}
-                  <div
-                    className="absolute top-0 right-0 bottom-0 w-3/4 opacity-30 dark:opacity-60 rounded-lg sm:rounded-xl"
-                    style={{
-                      background: 'linear-gradient(to left, rgba(29, 135, 81, 0.15) 0%, rgba(29, 135, 81, 0.08) 40%, transparent 100%)'
-                    }}
-                  ></div>
+                  {/* Greenish blur glow at top-right */}
+                  <div className="absolute top-2 right-1 w-25 h-25 bg-[#1D8751]/25 blur-3xl rounded-full pointer-events-none"></div>
 
                   {/* Content wrapper */}
                   <div className="relative z-10 flex flex-col">
@@ -709,12 +685,50 @@ export default function MarketingPage() {
             })}
           </div>
 
-          <div className="w-full mt-4">
-            <img
-              src="https://res.cloudinary.com/pitz/image/upload/v1766121183/Container_14_omqgii.png"
-              alt=""
-              className="w-full h-auto object-cover z-10"
-            />
+          {/* New Features Banner */}
+          <div className="w-full mt-8 sm:mt-12 relative z-10">
+            <div className="bg-white dark:bg-white/2 rounded-2xl sm:rounded-3xl p-6 sm:p-10 relative overflow-hidden shadow-2xl border border-border dark:border-[#1D8751]/20">
+              {/* Glow effects */}
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-0 left-1/4 w-96 h-96 bg-[#1D8751]/10 rounded-full blur-[100px] -translate-y-1/2"></div>
+                <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[#13B562]/5 rounded-full blur-[100px] translate-y-1/2"></div>
+                <div className="absolute bottom-0 left-0 w-96 h-96 bg-[#1D8751]/15 rounded-full blur-[100px] translate-y-1/2"></div>
+              </div>
+
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-y-8 gap-x-4 relative z-10 w-full">
+                {/* 0.1% Trading Fee */}
+                <div className="flex flex-col items-center justify-center text-center group">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#FF9F43] flex items-center justify-center mb-4 shadow-lg shadow-orange-500/20 group-hover:scale-110 transition-transform duration-150">
+                    <Zap className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="white" />
+                  </div>
+                  <h3 className="text-gray-900 dark:text-white font-bold text-sm sm:text-base md:text-lg">0.1% Trading Fee</h3>
+                </div>
+
+                {/* Bank-Grade Security */}
+                <div className="flex flex-col items-center justify-center text-center group">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#0EA5E9] flex items-center justify-center mb-4 shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform duration-150">
+                    <Shield className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="white" />
+                  </div>
+                  <h3 className="text-gray-900 dark:text-white font-bold text-sm sm:text-base md:text-lg">Bank-Grade Security</h3>
+                </div>
+
+                {/* 24/7 Support */}
+                <div className="flex flex-col items-center justify-center text-center group">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#D946EF] flex items-center justify-center mb-4 shadow-lg shadow-pink-500/20 group-hover:scale-110 transition-transform duration-150">
+                    <Globe className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                  </div>
+                  <h3 className="text-gray-900 dark:text-white font-bold text-sm sm:text-base md:text-lg">24/7 Support</h3>
+                </div>
+
+                {/* Real-Time Charts */}
+                <div className="flex flex-col items-center justify-center text-center group">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#1D8751] flex items-center justify-center mb-4 shadow-lg shadow-green-500/20 group-hover:scale-110 transition-transform duration-150">
+                    <TrendingUp className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                  </div>
+                  <h3 className="text-gray-900 dark:text-white font-bold text-sm sm:text-base md:text-lg">Real-Time Charts</h3>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
